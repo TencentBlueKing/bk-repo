@@ -49,5 +49,13 @@ interface NotifyService {
      */
     fun sendWeworkBot(bot: WeworkBot, message: MessageBody)
 
+    /**
+     * 通过默认企业微信机器人发消息
+     *
+     * @param chatIds 用户id或会话id，多个id用|隔开
+     * @param message 消息
+     */
+    fun sendWeworkBot(chatIds: String, message: MessageBody)
+
     fun sendWechat(receivers: List<String>, body: String)
 }

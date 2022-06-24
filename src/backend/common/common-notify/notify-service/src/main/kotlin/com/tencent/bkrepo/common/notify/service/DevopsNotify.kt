@@ -126,6 +126,12 @@ class DevopsNotify constructor(
         }
     }
 
+    override fun sendWeworkBot(chatIds: String, message: MessageBody) {
+        if (notifyProperties.weworkBotWebhook.isNotEmpty()) {
+            sendWeworkBot(WeworkBot(notifyProperties.weworkBotWebhook, chatIds), message)
+        }
+    }
+
     override fun sendWechat(receivers: List<String>, body: String) {
         val url = "${getServer()}/notify/api/service/notifies/wechat"
         val message = WechatNotifyMessage(

@@ -93,43 +93,45 @@ class ScanTaskStatusChangedEventListener(
             return
         }
 
-        val messageBody = buildMarkdownMessage(scanTask)
-
-        if (!weworkBotNotify(scanTask, messageBody)) {
-            // 未配置机器人通知时才应用通知插件
-            applyNotifyPlugin(scanTask, messageBody)
-        }
-    }
-
-    private fun applyNotifyPlugin(scanTask: ScanTask, message: String) {
-        // 由于制品库存在独立用户，用户id不统一，暂时只对流水线触发的扫描进行通知
-        if (scanTask.triggerType != ScanTriggerType.PIPELINE.name) {
-            return
-        }
-
         // 不通知匿名用户和系统用户
         if (scanTask.createdBy == ANONYMOUS_USER || scanTask.createdBy == SYSTEM_USER) {
             return
         }
 
-        val reportUrl = reportUrl(scanTask.projectId!!, scanTask.taskId, scanTask.scanPlan!!)
-        val context = ScanResultNotifyContext(
-            userIds = setOf(scanTask.createdBy),
-            reportUrl = reportUrl,
-            scanTask = scanTask,
-            body = message
-        )
-        pluginManager.applyExtension<ScanResultNotifyExtension> { notify(context) }
+        // 由于制品库存在独立用户，用户id不统一，暂时只对流水线触发的扫描进行通知
+        if (scanTask.triggerType != ScanTriggerType.PIPELINE.name) {
+            return
+        }
+
+        val message = buildMessage(scanTask)
+        weworkBotNotify(scanTask, message)
+        applyNotifyPlugin(scanTask, message)
     }
 
-    private fun weworkBotNotify(scanTask: ScanTask, message: String): Boolean {
-        val weworkBot = getWeworkBot(scanTask.taskId) ?: return false
-        send(weworkBot, message)
+    private fun applyNotifyPlugin(scanTask: ScanTask, message: String) {
+        pluginManager.applyExtension<ScanResultNotifyExtension> {
+            val reportUrl = reportUrl(scanTask.projectId!!, scanTask.taskId, scanTask.scanPlan!!)
+            val context = ScanResultNotifyContext(
+                userIds = setOf(scanTask.createdBy),
+                reportUrl = reportUrl,
+                scanTask = scanTask,
+                body = message
+            )
+            notify(context)
+        }
+    }
+
+    private fun weworkBotNotify(scanTask: ScanTask, message: String) {
+        val weworkBot = getWeworkBot(scanTask.taskId)
+        if (weworkBot != null) {
+            notifyService.sendWeworkBot(weworkBot, TextMessage(message))
+        } else {
+            notifyService.sendWeworkBot(scanTask.createdBy, TextMessage(message))
+        }
         logger.info("notify by wework bot success taskId[{${scanTask.taskId}}]")
-        return true
     }
 
-    private fun buildMarkdownMessage(task: ScanTask): String {
+    private fun buildMessage(task: ScanTask): String {
         val metadata = task.metadata.associateBy { it.key }
 
         val summary = StringBuilder()
@@ -184,10 +186,6 @@ class ScanTaskStatusChangedEventListener(
     @Suppress("MaxLineLength")
     private fun reportUrl(projectId: String, taskId: String, scanPlan: ScanPlan) =
         "${scannerProperties.detailReportUrl}/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
-
-    private fun send(bot: WeworkBot, message: String) {
-        notifyService.sendWeworkBot(bot, TextMessage(message))
-    }
 
     private fun getWeworkBot(scanTaskId: String): WeworkBot? {
         return redisTemplate.opsForValue().get(weworkBotKey(scanTaskId))?.readJsonString()
