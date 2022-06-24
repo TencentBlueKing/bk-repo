@@ -70,7 +70,6 @@
             return {
                 breadcrumbList: [],
                 cacheData: [],
-                cacheFatherData: [],
                 curData: [],
                 pagination: {
                     current: 1,
@@ -155,7 +154,6 @@
             },
             openFolder (row, event, column, rowIndex) {
                 if (!row.folder) return
-                this.cacheFatherData = this.curData
                 this.cacheData = this.curData[rowIndex].children
                 this.curData = this.getDataByPage(this.cacheData, this.pagination.current)
                 this.breadcrumbList.push({
