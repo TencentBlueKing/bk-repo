@@ -127,7 +127,7 @@
                             <operation-list
                                 :list="[
                                     { clickEvent: () => handlerDownload(row), label: $t('download') },
-                                    !row.folder && row.name.endsWith('txt') && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
+                                    !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
                                     !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     !row.folder && { clickEvent: () => handlerShare(row), label: $t('share') },
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
@@ -628,16 +628,17 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
+                this.$refs.previewBasicFileDialog.setDialogData({
+                    show: true,
+                    title: row.name,
+                    isLoading: true
+                })
                 const res = await this.previewBasicFile({
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
                 })
-                this.$refs.previewBasicFileDialog.setData({
-                    show: true,
-                    title: row.name,
-                    basicFileText: res
-                })
+                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
             async handlerPreviewCompressedFile (row) {
                 if (row.size > 1073741824) {
@@ -650,7 +651,8 @@
                 this.$refs.compressedFileTable.setData({
                     show: true,
                     title: row.name,
-                    isLoading: true
+                    isLoading: true,
+                    path: row.fullPath
                 })
                 
                 const res = await this.previewCompressedFileList({
@@ -674,17 +676,32 @@
             
             async handleShowPreview (row) {
                 const { projectId, repoName, path, filePath } = row
+                this.$refs.previewBasicFileDialog.setDialogData({
+                    show: true,
+                    title: filePath,
+                    isLoading: true
+                })
                 const res = await this.previewCompressedBasicFile({
                     projectId,
                     repoName,
                     path,
                     filePath
                 })
-                this.$refs.previewBasicFileDialog.setData({
-                    show: true,
-                    title: filePath,
-                    basicFileText: res
-                })
+                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+            },
+            
+            getBtnDisabled (name) {
+                return name.endsWith('txt')
+                    || name.endsWith('sh')
+                    || name.endsWith('bat')
+                    || name.endsWith('json')
+                    || name.endsWith('yaml')
+                    || name.endsWith('xml')
+                    || name.endsWith('log')
+                    || name.endsWith('ini')
+                    || name.endsWith('log')
+                    || name.endsWith('properties')
+                    || name.endsWith('toml')
             }
         }
     }

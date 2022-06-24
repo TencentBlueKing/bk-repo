@@ -5,7 +5,8 @@
         :width="dialogWidth"
         :show-footer="false"
         :title="($t('preview') + ' - ' + previewDialog.title)">
-        <textarea v-model="previewDialog.basicFileText" class="textarea" readonly></textarea>
+        <div v-if="previewDialog.isLoading" style="windt: 100%;" v-bkloading="{ isLoading: previewDialog.isLoading }"></div>
+        <textarea v-else v-model="basicFileText" class="textarea" readonly></textarea>
     </bk-dialog>
 </template>
 
@@ -14,16 +15,21 @@
         name: 'previewBasicFileDialog',
         data () {
             return {
+                basicFileText: '',
                 previewDialog: {
-                    show: false,
                     title: '',
-                    basicFileText: ''
+                    show: false,
+                    isLoading: true
                 },
                 dialogWidth: window.innerWidth - 600
             }
         },
         methods: {
             setData (data) {
+                this.basicFileText = data
+                this.previewDialog.isLoading = false
+            },
+            setDialogData (data) {
                 this.previewDialog = {
                     ...data
                 }
@@ -39,7 +45,7 @@
     .textarea {
         resize: none;
         width: 100%;
-        height: 400px;
+        height: 500px;
         border: none;
     }
 </style>

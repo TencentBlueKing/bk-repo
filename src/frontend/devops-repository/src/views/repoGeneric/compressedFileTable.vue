@@ -35,8 +35,8 @@
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row, $index }">
-                    <div v-if="!row.folder" v-bk-tooltips="{ disabled: row.name.endsWith('txt'), content: $t('supportPreview') }">
-                        <bk-button class="mr10" :ext-cls="!row.name.endsWith('txt') ? 'preview-btn' : ''" text :disabled="!row.name.endsWith('txt')" @click="handlerPreview(row)">{{ $t('preview') }}</bk-button>
+                    <div v-if="!row.folder" v-bk-tooltips="{ disabled: getBtnDisabled(row.name), content: $t('supportPreview') }">
+                        <bk-button class="mr10" :ext-cls="!getBtnDisabled(row.name) ? 'preview-btn' : ''" text :disabled="!getBtnDisabled(row.name)" @click="handlerPreview(row)">{{ $t('preview') }}</bk-button>
                     </div>
                     <bk-button v-else text @click="openFolder(row, null, null, $index)">打开</bk-button>
                 </template>
@@ -80,7 +80,8 @@
                 previewDialog: {
                     show: false,
                     title: '',
-                    isLoading: false
+                    isLoading: false,
+                    path: ''
                 },
                 dialogWidth: window.innerWidth - 400
             }
@@ -148,7 +149,7 @@
                 this.$emit('show-preview', {
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    path: '/' + this.previewDialog.title,
+                    path: this.previewDialog.path,
                     filePath: row.filePath
                 })
             },
@@ -175,6 +176,19 @@
                     this.curData = row.data
                     this.breadcrumbList = this.breadcrumbList.slice(0, index + 1)
                 }
+            },
+            getBtnDisabled (name) {
+                return name.endsWith('txt')
+                    || name.endsWith('sh')
+                    || name.endsWith('bat')
+                    || name.endsWith('json')
+                    || name.endsWith('yaml')
+                    || name.endsWith('xml')
+                    || name.endsWith('log')
+                    || name.endsWith('ini')
+                    || name.endsWith('log')
+                    || name.endsWith('properties')
+                    || name.endsWith('toml')
             }
         }
     }
