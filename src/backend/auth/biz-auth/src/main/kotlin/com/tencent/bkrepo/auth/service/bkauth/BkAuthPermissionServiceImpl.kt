@@ -184,13 +184,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
-        // bcs或bkrepo账号
-        if (matchBcsOrRepoCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
-
         // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)
 
-        // 非devops体系
+        // 其他账号
         return super.checkPermission(request) || checkDevopsPermission(request)
     }
 
