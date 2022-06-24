@@ -98,6 +98,10 @@
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>
+                            <forbid-tag class="mr5"
+                                v-if="!row.folder && row.metadata.forbidStatus"
+                                v-bind="row.metadata">
+                            </forbid-tag>
                             <Icon class="table-svg" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
                             <span class="ml10">{{row.name}}</span>
                         </template>
@@ -126,13 +130,20 @@
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
-                                    { clickEvent: () => handlerDownload(row), label: $t('download') },
-                                    !row.folder && { clickEvent: () => handlerShare(row), label: $t('share') },
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
-                                    permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },
-                                    permission.write && repoName !== 'pipeline' && { clickEvent: () => moveRes(row), label: $t('move') },
-                                    permission.write && repoName !== 'pipeline' && { clickEvent: () => copyRes(row), label: $t('copy') },
-                                    !row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' },
+                                    ...(!row.metadata.forbidStatus ? [
+                                        { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                        ...(repoName !== 'pipeline' ? [
+                                            permission.edit && { clickEvent: () => renameRes(row), label: $t('rename') },
+                                            permission.write && { clickEvent: () => moveRes(row), label: $t('move') },
+                                            permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
+                                        ] : []),
+                                        ...(!row.folder ? [
+                                            { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' }
+                                        ] : [])
+                                    ] : []),
+                                    // !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
@@ -166,6 +177,7 @@
     import MoveSplitBar from '@repository/components/MoveSplitBar'
     import RepoTree from '@repository/components/RepoTree'
     import ScanTag from '@repository/views/repoScan/scanTag'
+    import forbidTag from '@repository/components/ForbidTag'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import genericUploadDialog from '@repository/views/repoGeneric/genericUploadDialog'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
@@ -177,6 +189,7 @@
     export default {
         name: 'repoGeneric',
         components: {
+            forbidTag,
             OperationList,
             Breadcrumb,
             MoveSplitBar,
@@ -275,7 +288,8 @@
                 'deleteMultiArtifactory',
                 'getFolderSize',
                 'getFileNumOfFolder',
-                'getMultiFileNumOfFolder'
+                'getMultiFileNumOfFolder',
+                'forbidMetadata'
             ]),
             changeSideBarWidth (sideBarWidth) {
                 if (sideBarWidth > 260) {
@@ -570,6 +584,22 @@
                         theme: 'error',
                         message
                     })
+                })
+            },
+            handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
+                this.forbidMetadata({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    fullPath,
+                    body: {
+                        nodeMetadata: [{ key: 'forbidStatus', value: !forbidStatus }]
+                    }
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: (forbidStatus ? '解除禁止' : '禁止使用') + this.$t('success')
+                    })
+                    this.getArtifactories()
                 })
             },
             calculateFolderSize (row) {

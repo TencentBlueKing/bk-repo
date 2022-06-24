@@ -31,7 +31,8 @@
         props: {
             status: String,
             repoType: String,
-            fullPath: String
+            fullPath: String,
+            readonly: Boolean
         },
         data () {
             return {
@@ -48,16 +49,16 @@
         methods: {
             ...mapActions(['getArtiScanList']),
             showScanList (e) {
-                if (!this.status) return
+                if (this.readonly || !this.status) return
                 this.openScanList(e)
                 this.isLoading = true
                 const { projectId, repoType = this.repoType } = this.$route.params
-                const { repoName, version } = this.$route.query
+                const { repoName, version, packageKey } = this.$route.query
                 this.getArtiScanList({
                     projectId,
                     repoType,
                     repoName,
-                    packageKey: this.$route.query.packageKey || undefined,
+                    packageKey: packageKey || undefined,
                     version: version || undefined,
                     fullPath: this.fullPath || undefined
                 }).then(res => {

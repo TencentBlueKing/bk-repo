@@ -190,12 +190,5 @@ export default {
                 }
             }
         )
-    },
-    // 添加元数据
-    addPackageMetadata (_, { projectId, repoName, body }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/metadata/package/${projectId}/${repoName}`,
-            body
-        )
     }
 }

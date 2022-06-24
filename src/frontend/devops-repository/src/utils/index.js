@@ -86,7 +86,7 @@ export function formatDuration (duration, unit = 's', target = []) {
     const current = duration % deno ? `${duration % deno}${label}` : ''
     duration = Math.floor(duration / deno)
     if (!duration) {
-        return [current, ...target].slice(0, 2).join('')
+        return [current, ...target].slice(0, 2).join('') || '小于1秒'
     }
     return formatDuration(duration, next, [current, ...target])
 }

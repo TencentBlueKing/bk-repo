@@ -173,7 +173,7 @@
                     OVERVIEW: '总览视图',
                     TASKVIEW: '任务视图'
                 },
-                viewType: 'OVERVIEW',
+                viewType: this.$route.query.viewType || 'OVERVIEW',
                 taskLoading: false,
                 taskNameSearch: '',
                 taskSelected: {},

@@ -256,6 +256,13 @@ export default {
             body
         )
     },
+    // 禁止使用/解除禁止
+    forbidMetadata (_, { projectId, repoName, fullPath, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/metadata/forbid/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
     // 删除元数据
     deleteMetadata (_, { projectId, repoName, fullPath, body }) {
         return Vue.prototype.$ajax.delete(

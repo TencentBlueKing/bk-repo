@@ -79,12 +79,12 @@ export const asyncPlanStatusEnum = {
 // 扫描方案类型
 export const scanTypeEnum = {
     GENERIC: 'Generic仓库漏洞扫描',
-    DOCKER: 'Docker仓库漏洞扫描',
-    MAVEN: 'Maven仓库漏洞扫描',
-    NPM: 'Npm仓库漏洞扫描',
-    PYPI: 'Pypi仓库漏洞扫描',
-    GENERIC_LICENSE: 'Generic仓库许可证扫描',
-    MAVEN_LICENSE: 'Maven仓库许可证扫描'
+    // DOCKER: 'Docker仓库漏洞扫描',
+    MAVEN: 'Maven仓库漏洞扫描'
+    // NPM: 'Npm仓库漏洞扫描',
+    // PYPI: 'Pypi仓库漏洞扫描',
+    // GENERIC_LICENSE: 'Generic仓库许可证扫描',
+    // MAVEN_LICENSE: 'Maven仓库许可证扫描'
 }
 
 export const scannerTypeEnum = {

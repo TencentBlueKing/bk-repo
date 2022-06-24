@@ -217,7 +217,7 @@
             },
             back () {
                 const { repoType, repoName } = this.baseInfo
-                const { scanType, scanName, path, packageKey, version } = this.$route.query
+                const { viewType, scanType, scanName, path, packageKey, version } = this.$route.query
                 this.$router.push({
                     name: scanName ? 'scanReport' : (this.packageKey ? 'commonPackage' : 'repoGeneric'),
                     params: {
@@ -225,7 +225,7 @@
                         [this.planId ? 'planId' : 'repoType']: this.planId || repoType
                     },
                     query: scanName
-                        ? { scanType, scanName }
+                        ? { viewType, scanType, scanName }
                         : (this.packageKey
                             ? { repoName, packageKey, version }
                             : { repoName, path })
