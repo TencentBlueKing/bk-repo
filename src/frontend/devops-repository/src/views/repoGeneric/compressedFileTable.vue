@@ -140,14 +140,10 @@
 
             handlePageChange (page) {
                 this.pagination.current = page
-                this.curData = this.getDataByPage(this.cacheData, page)
+                const list = this.list.length === 1 ? this.data : this.cacheData
+                this.curData = this.getDataByPage(list, page)
             },
 
-            handlePageLimitChange (limit) {
-                this.pagination.limit = limit
-                this.pagination.current = 1
-                this.handlePageChange(this.pagination.current)
-            },
             handlerPreview (row) {
                 this.$emit('show-preview', {
                     projectId: this.projectId,
