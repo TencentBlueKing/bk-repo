@@ -39,13 +39,13 @@
                             <bk-option v-for="[id, name] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="name"></bk-option>
                         </bk-select>
                     </bk-form-item>
-                    <bk-form-item label="质量规则状态">
+                    <!-- <bk-form-item label="质量规则状态">
                         <bk-select
                             v-model="filter.qualityRedLine">
                             <bk-option :id="true" name="通过"></bk-option>
                             <bk-option :id="false" name="不通过"></bk-option>
                         </bk-select>
-                    </bk-form-item>
+                    </bk-form-item> -->
                 </bk-form>
                 <div class="pr30 sideslider-footer flex-end-center">
                     <bk-button class="mr10" theme="default" @click="reset()">重置</bk-button>
