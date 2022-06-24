@@ -1,9 +1,11 @@
 <template>
-    <bk-dialog v-model="previewDialog.show"
+    <bk-dialog
+        class="previewBasic-file-dialog"
+        v-model="previewDialog.show"
         :width="dialogWidth"
         :show-footer="false"
         :title="($t('preview') + ' - ' + previewDialog.title)">
-        <p v-text="previewDialog.basicFileText"></p>
+        <textarea v-model="previewDialog.basicFileText" class="textarea" readonly></textarea>
     </bk-dialog>
 </template>
 
@@ -29,3 +31,15 @@
         }
     }
 </script>
+
+<style lang="scss">
+    .preview-basic-file-dialog {
+        height: 600px;
+    }
+    .textarea {
+        resize: none;
+        width: 100%;
+        height: 400px;
+        border: none;
+    }
+</style>

@@ -640,6 +640,13 @@
                 })
             },
             async handlerPreviewCompressedFile (row) {
+                if (row.size > 1073741824) {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('previewCompressedLimitTips')
+                    })
+                    return
+                }
                 this.$refs.compressedFileTable.setData({
                     show: true,
                     title: row.name,
@@ -651,8 +658,20 @@
                     repoName: row.repoName,
                     path: row.fullPath
                 })
-                this.compressedData = res
+
+                this.compressedData = res.reduce((acc, item) => {
+                    const names = item.name.split('/')
+                    names.reduce((target, name) => {
+                        let temp = target.find(o => o.name === name)
+                        if (!temp) {
+                            target.push(temp = { name, children: [], filePath: item.name, folder: !name.includes('.'), size: item.size })
+                        }
+                        return temp.children
+                    }, acc)
+                    return acc
+                }, [])
             },
+            
             async handleShowPreview (row) {
                 const { projectId, repoName, path, filePath } = row
                 const res = await this.previewCompressedBasicFile({

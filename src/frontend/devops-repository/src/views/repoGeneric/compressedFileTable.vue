@@ -1,50 +1,62 @@
 <template>
-    <div>
-        <bk-dialog v-model="previewDialog.show"
-            :width="dialogWidth"
-            :show-footer="false"
-            :title="($t('preview') + '-' + previewDialog.title)">
-            <bk-table
-                v-bkloading="{ isLoading: previewDialog.isLoading }"
-                :data="curData"
-            >
-                <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
-                    <template #default="{ row }">
-                        <span class="ml10">{{row.name}}</span>
-                    </template>
-                </bk-table-column>
-                <bk-table-column :label="$t('size')" width="90" show-overflow-tooltip>
-                    <template #default="{ row }">
-                        <span v-if="row.size > -1">
-                            {{ convertFileSize(row.size || 0) }}
-                        </span>
-                        <span v-else>{{ $t('unknownSize') }}</span>
-                    </template>
-                </bk-table-column>
-                <bk-table-column :label="$t('operation')" width="70">
-                    <template #default="{ row }">
-                        <div v-bk-tooltips="{ disabled: row.name.endsWith('txt'), content: $t('supportPreview') }">
-                            <bk-button ext-cls="preview-btn" text :disabled="!row.name.endsWith('txt')" @click="handlerPreview(row)">{{ $t('preview') }}</bk-button>
-                        </div>
-                    </template>
-                </bk-table-column>
-            </bk-table>
-            <bk-pagination
-                class="p10"
-                size="small"
-                @change="current => handlePageChange(current)"
-                @limit-change="limit => handlePageLimitChange(limit)"
-                :current.sync="pagination.current"
-                :limit="pagination.limit"
-                :count="pagination.count">
-            </bk-pagination>
-        </bk-dialog>
-    </div>
+    <bk-dialog v-model="previewDialog.show"
+        :width="dialogWidth"
+        :show-footer="false"
+        :title="($t('preview') + '-' + previewDialog.title)">
+        <span
+            v-for="(item, index) in list"
+            :key="item.name"
+            class="breadcrumb-list"
+        >
+            <span
+                :class="{ 'breadcrumb-item': true, 'hover-cursor': index !== list.length - 1 }"
+                @click="handleBreadcrumbItemClick(item, index)">{{ item.name }} </span>
+            <span v-if="index !== list.length - 1" class="mr10">/</span>
+        </span>
+        <bk-table
+            v-bkloading="{ isLoading: previewDialog.isLoading }"
+            :data="curData"
+            @row-dblclick="openFolder"
+            style="margin-top: 10px;"
+        >
+            <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <Icon class="table-svg" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
+                    <span class="ml10">{{row.name}}</span>
+                </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('size')" width="90" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span v-if="row.size > -1">
+                        {{ convertFileSize(row.size || 0) }}
+                    </span>
+                    <span v-else>{{ $t('unknownSize') }}</span>
+                </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('operation')" width="100">
+                <template #default="{ row, $index }">
+                    <div v-if="!row.folder" v-bk-tooltips="{ disabled: row.name.endsWith('txt'), content: $t('supportPreview') }">
+                        <bk-button class="mr10" :ext-cls="!row.name.endsWith('txt') ? 'preview-btn' : ''" text :disabled="!row.name.endsWith('txt')" @click="handlerPreview(row)">{{ $t('preview') }}</bk-button>
+                    </div>
+                    <bk-button v-else text @click="openFolder(row, null, null, $index)">打开</bk-button>
+                </template>
+            </bk-table-column>
+        </bk-table>
+        <bk-pagination
+            class="p10"
+            size="small"
+            :show-limit="false"
+            @change="current => handlePageChange(current)"
+            :current.sync="pagination.current"
+            :count="pagination.count">
+        </bk-pagination>
+    </bk-dialog>
 </template>
 
 <script>
     import { convertFileSize } from '@repository/utils'
     import { mapActions } from 'vuex'
+    import { getIconName } from '@repository/store/publicEnum'
 
     export default {
         name: 'previewBasicFileDialog',
@@ -56,6 +68,9 @@
         },
         data () {
             return {
+                list: [],
+                cacheData: [],
+                cacheFatherData: [],
                 curData: [],
                 pagination: {
                     current: 1,
@@ -82,8 +97,14 @@
             data: {
                 handler (val) {
                     this.previewDialog.isLoading = false
+                    this.pagination.current = 1
                     this.pagination.count = val.length
-                    this.curData = this.getDataByPage(this.pagination.current)
+                    this.curData = this.getDataByPage(this.data, this.pagination.current)
+                    this.list = [{
+                        name: this.previewDialog.title,
+                        index: -1,
+                        data: this.curData
+                    }]
                 },
                 deep: true
             }
@@ -92,31 +113,34 @@
             ...mapActions([
                 'previewBasicFile'
             ]),
+            getIconName,
             convertFileSize,
             setData (data) {
                 this.previewDialog = {
                     ...data
                 }
+                this.list = []
                 this.curData = []
                 this.pagination.count = 0
             },
 
-            getDataByPage (page) {
+            getDataByPage (list, page) {
+                this.pagination.count = list.length
                 let startIndex = (page - 1) * this.pagination.limit
                 let endIndex = page * this.pagination.limit
                 if (startIndex < 0) {
                     startIndex = 0
                 }
-                if (endIndex > this.data.length) {
-                    endIndex = this.data.length
+                if (endIndex > list.length) {
+                    endIndex = list.length
                 }
                 this.curData = []
-                return this.data.slice(startIndex, endIndex)
+                return list.slice(startIndex, endIndex)
             },
 
             handlePageChange (page) {
                 this.pagination.current = page
-                this.curData = this.getDataByPage(page)
+                this.curData = this.getDataByPage(this.cacheData, page)
             },
 
             handlePageLimitChange (limit) {
@@ -129,8 +153,32 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     path: '/' + this.previewDialog.title,
-                    filePath: row.name
+                    filePath: row.filePath
                 })
+            },
+            openFolder (row, event, column, rowIndex) {
+                if (!row.folder) return
+                this.cacheFatherData = this.curData
+                this.cacheData = this.curData[rowIndex].children
+                this.curData = this.getDataByPage(this.cacheData, this.pagination.current)
+                this.list.push({
+                    name: row.name,
+                    index: rowIndex,
+                    data: this.curData
+                })
+            },
+            handleBreadcrumbItemClick (row, index) {
+                this.pagination.current = 1
+                if (row.index === -1) {
+                    this.curData = this.getDataByPage(this.data, 1)
+                    this.list = [{
+                        name: this.previewDialog.title,
+                        index: -1
+                    }]
+                } else {
+                    this.curData = row.data
+                    this.list = this.list.slice(0, index + 1)
+                }
             }
         }
     }
@@ -140,6 +188,14 @@
     .preview-btn {
         &:hover {
             color: #dcdee5 !important;
+        }
+    }
+    .breadcrumb-list {
+        .hover-cursor {
+            cursor: pointer;
+            &:hover {
+                color: #699df4;
+            }
         }
     }
 </style>

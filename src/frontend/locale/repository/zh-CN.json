@@ -204,5 +204,6 @@
     "viewMetadataDocument": "查看元数据规范文档",
     "preview": "预览",
     "unknownSize": "未知大小",
-    "supportPreview": "该文件不支持预览"
+    "supportPreview": "该文件不支持预览",
+    "previewCompressedLimitTips": "仅支持预览1Gb以内的压缩文件"
 }
