@@ -58,6 +58,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.TaskMetadata
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Async
@@ -94,8 +95,10 @@ class ScanTaskStatusChangedEventListener(
 
         val messageBody = buildMarkdownMessage(scanTask)
 
-        applyNotifyPlugin(scanTask, messageBody)
-        weworkBotNotify(scanTask, messageBody)
+        if (!weworkBotNotify(scanTask, messageBody)) {
+            // 未配置机器人通知时才应用通知插件
+            applyNotifyPlugin(scanTask, messageBody)
+        }
     }
 
     private fun applyNotifyPlugin(scanTask: ScanTask, message: String) {
@@ -119,9 +122,11 @@ class ScanTaskStatusChangedEventListener(
         pluginManager.applyExtension<ScanResultNotifyExtension> { notify(context) }
     }
 
-    private fun weworkBotNotify(scanTask: ScanTask, message: String) {
-        val weworkBot = getWeworkBot(scanTask.taskId) ?: return
+    private fun weworkBotNotify(scanTask: ScanTask, message: String): Boolean {
+        val weworkBot = getWeworkBot(scanTask.taskId) ?: return false
         send(weworkBot, message)
+        logger.info("notify by wework bot success taskId[{${scanTask.taskId}}]")
+        return true
     }
 
     private fun buildMarkdownMessage(task: ScanTask): String {
@@ -197,6 +202,7 @@ class ScanTaskStatusChangedEventListener(
             CveOverviewKey.CVE_HIGH_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH,
             CveOverviewKey.CVE_CRITICAL_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_CRITICAL
         )
+        private val logger = LoggerFactory.getLogger(ScanTaskStatusChangedEventListener::class.java)
         private const val DEFAULT_EXPIRED_DAY = 1L
     }
 }
