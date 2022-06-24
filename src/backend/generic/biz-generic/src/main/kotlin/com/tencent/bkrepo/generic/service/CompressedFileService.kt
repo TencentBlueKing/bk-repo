@@ -88,8 +88,13 @@ class CompressedFileService(
         val artifactResource: ArtifactResource
         while (inputStream.nextEntry.also { entry = it } != null) {
             if (entry!!.name == filePath) {
-                artifactResource =
-                    ArtifactResource(ArtifactInputStream(inputStream, Range.full(entry!!.size)), entry!!.name)
+                var byteArray = ByteArray(PREVIEW_FILE_SIZE_LIMIT)
+                val size = inputStream.read(byteArray, 0, PREVIEW_FILE_SIZE_LIMIT)
+                byteArray = byteArray.sliceArray(IntRange(0, size - 1))
+                artifactResource = ArtifactResource(
+                    inputStream = ArtifactInputStream(byteArray.inputStream(), Range.full(size.toLong())),
+                    artifactName = entry!!.name
+                )
                 artifactResourceWriter.write(artifactResource)
                 return
             }
@@ -122,6 +127,7 @@ class CompressedFileService(
         private const val COMPRESSED_FILE_TYPE_PATTERN = "(rar|zip|gz|tgz|tar|jar)\$"
         private const val COMPRESSED_FILE_SIZE_LIMIT = 1024 * 1024 * 1024
         private const val COMPRESSED_FILE_SIZE_LIMIT_DESC = "1GB"
+        private const val PREVIEW_FILE_SIZE_LIMIT = 50 * 1024 * 1024
         private const val GZ_FILE_TYPE = "gz"
         private const val TGZ_FILE_TYPE = "tgz"
     }
