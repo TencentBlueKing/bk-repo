@@ -89,7 +89,7 @@ class MetadataServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteMetadata(request: MetadataDeleteRequest) {
         with(request) {
-            if (keyList.isNullOrEmpty()) {
+            if (keyList.isEmpty()) {
                 logger.info("Metadata key list is empty, skip deleting")
                 return
             }
@@ -97,7 +97,11 @@ class MetadataServiceImpl(
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
 
             // 检查是否有更新权限
-            nodeDao.findOne(query)?.metadata?.forEach { MetadataUtils.checkPermission(it, operator) }
+            nodeDao.findOne(query)?.metadata?.forEach {
+                if (it.key in keyList) {
+                    MetadataUtils.checkPermission(it, operator)
+                }
+            }
 
             val update = Update().pull(
                 TNode::metadata.name,

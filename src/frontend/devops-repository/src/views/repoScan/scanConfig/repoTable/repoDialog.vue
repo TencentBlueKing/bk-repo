@@ -33,13 +33,12 @@
     </canway-dialog>
 </template>
 <script>
-    import { mapState } from 'vuex'
     export default {
         name: 'repoDialog',
         props: {
             show: Boolean,
             defaultRepos: Array,
-            scanType: String
+            repoList: Array
         },
         data () {
             return {
@@ -48,16 +47,8 @@
             }
         },
         computed: {
-            ...mapState(['repoListAll']),
             projectId () {
                 return this.$route.params.projectId
-            },
-            repoList () {
-                return this.repoListAll
-                    .filter(r => r.type === this.scanType)
-                    .sort((a, b) => {
-                        return Boolean(a.type > b.type) || -1
-                    })
             }
         },
         watch: {

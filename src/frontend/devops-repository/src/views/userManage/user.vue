@@ -31,7 +31,7 @@
         </div>
         <bk-table
             class="mt10"
-            height="calc(100% - 102px)"
+            height="calc(100% - 100px)"
             :data="userListPages"
             :outer-border="false"
             :row-border="false"

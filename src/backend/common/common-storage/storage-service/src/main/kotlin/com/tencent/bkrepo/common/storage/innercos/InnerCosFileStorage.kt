@@ -58,7 +58,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
 
     override fun load(path: String, name: String, range: Range, client: CosClient): InputStream? {
         val request = GetObjectRequest(name, range.start, range.end)
-        return client.getObject(request).inputStream
+        return client.getObjectByChunked(request).inputStream
     }
 
     override fun delete(path: String, name: String, client: CosClient) {

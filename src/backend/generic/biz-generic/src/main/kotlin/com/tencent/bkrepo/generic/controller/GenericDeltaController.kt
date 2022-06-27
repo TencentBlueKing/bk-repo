@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -16,7 +17,9 @@ import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.service.DeltaSyncService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -76,5 +79,14 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
         val clientIp = HttpContextHolder.getClientAddress()
         val speed = deltaSyncService.getSpeed(clientIp, action)
         return ResponseBuilder.success(speed)
+    }
+
+    @PostMapping("delta/metrics")
+    fun recordMetrics(
+        @RequestBody metrics: BkSyncMetrics
+    ): Response<Void> {
+        val clientIp = HttpContextHolder.getClientAddress()
+        deltaSyncService.recordMetrics(clientIp, metrics)
+        return ResponseBuilder.success()
     }
 }

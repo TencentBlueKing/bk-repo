@@ -45,6 +45,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 支持缓存的存储服务
@@ -53,7 +54,13 @@ class CacheStorageService(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor
 ) : AbstractStorageService() {
 
-    override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
+    override fun doStore(
+        path: String,
+        filename: String,
+        artifactFile: ArtifactFile,
+        credentials: StorageCredentials,
+        cancel: AtomicBoolean?
+    ) {
         when {
             artifactFile.isInMemory() -> {
                 fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
@@ -63,16 +70,34 @@ class CacheStorageService(
             }
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
-                threadPoolTaskExecutor.execute {
-                    try {
-                        fileStorage.store(path, filename, cacheFile, credentials)
-                    } catch (ignored: Exception) {
-                        // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
-                        logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
-                        // 失败时把文件放入暂存区，后台任务会进行补偿。
-                        stagingFile(credentials, path, filename, cacheFile)
-                    }
+                async2Store(cancel, filename, credentials, path, cacheFile)
+            }
+        }
+    }
+
+    private fun async2Store(
+        cancel: AtomicBoolean?,
+        filename: String,
+        credentials: StorageCredentials,
+        path: String,
+        cacheFile: File
+    ) {
+        threadPoolTaskExecutor.execute {
+            try {
+                if (cancel?.get() == true) {
+                    logger.info("Cancel store fle [$filename] on [${credentials.key}]")
+                    return@execute
                 }
+                fileStorage.store(path, filename, cacheFile, credentials)
+            } catch (ignored: Exception) {
+                if (cancel?.get() == true) {
+                    logger.info("Cancel store fle [$filename] on [${credentials.key}]")
+                    return@execute
+                }
+                // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
+                logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
+                // 失败时把文件放入暂存区，后台任务会进行补偿。
+                stagingFile(credentials, path, filename, cacheFile)
             }
         }
     }

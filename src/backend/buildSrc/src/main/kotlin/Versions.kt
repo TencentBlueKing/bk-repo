@@ -57,4 +57,5 @@ object Versions {
     const val MockitoKotlin = "4.0.0"
     const val XStream = "1.4.19"
     const val DockerJava = "3.2.13"
+    const val Mockk = "1.12.2"
 }

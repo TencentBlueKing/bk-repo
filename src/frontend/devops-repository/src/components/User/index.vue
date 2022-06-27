@@ -13,7 +13,7 @@
         <ul class="user-menu">
             <li class="flex-align-center" v-for="name in menuList" :key="name" @click="changeRoute(name)">
                 <router-link
-                    class="hover-btn flex-align-center"
+                    class="flex-align-center"
                     :to="{ name }"
                     @click.stop.prevent="() => {}">
                     <Icon :name="name" size="14" />
@@ -115,9 +115,12 @@
             padding: 0 16px;
             margin-bottom: 6px;
             height: 30px;
+            a {
+                color: var(--fontPrimaryColor);
+            }
             &:hover {
                 a {
-                    color: var(--primaryColor);
+                    color: var(--primaryWeightColor);
                 }
                 background-color: var(--bgHoverLighterColor);
             }

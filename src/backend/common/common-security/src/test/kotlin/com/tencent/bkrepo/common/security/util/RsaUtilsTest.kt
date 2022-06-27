@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.security.util
 
-import cn.hutool.crypto.CryptoException
 import cn.hutool.crypto.asymmetric.RSA
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import org.junit.jupiter.api.Assertions
@@ -43,32 +42,6 @@ internal class RsaUtilsTest {
     private var cryptoProperties: CryptoProperties? = null
 
     @Test
-    @DisplayName("测试默认算法加解密-无key")
-    fun testRsaUtilsWithNullKey() {
-        cryptoProperties = CryptoProperties(
-            rsaAlgorithm = rsaAlgorithm,
-            privateKeyStr = privateKeyStr,
-            publicKeyStr = publicKeyStr
-        )
-        RsaUtils(cryptoProperties!!)
-        val publicKey = RsaUtils.publicKey
-        val privateKey = RsaUtils.privateKey
-        val encryptResult = RsaUtils.encrypt("test")
-        val decryptResult = RsaUtils.decrypt(encryptResult)
-        Assertions.assertEquals("test", decryptResult)
-        RsaUtils(cryptoProperties!!)
-        val publicKey1 = RsaUtils.publicKey
-        val privateKey1 = RsaUtils.privateKey
-        val encryptResult1 = RsaUtils.encrypt("test")
-        val decryptResult1 = RsaUtils.decrypt(encryptResult1)
-        Assertions.assertNotEquals(publicKey, publicKey1)
-        Assertions.assertNotEquals(privateKey, privateKey1)
-        Assertions.assertNotEquals(encryptResult, encryptResult1)
-        Assertions.assertEquals(decryptResult, decryptResult1)
-        Assertions.assertThrows(CryptoException::class.java) { RsaUtils.decrypt(encryptResult) }
-    }
-
-    @Test
     @DisplayName("测试默认算法加解密-有key")
     fun testRsaUtilsWithKey() {
         val rsa = RSA()
@@ -77,9 +50,7 @@ internal class RsaUtilsTest {
         println("$privateKeyStr")
         println("$publicKeyStr")
         cryptoProperties = CryptoProperties(
-            rsaAlgorithm = rsaAlgorithm,
-            privateKeyStr = privateKeyStr,
-            publicKeyStr = publicKeyStr
+            rsaAlgorithm = rsaAlgorithm
         )
         RsaUtils(cryptoProperties!!)
         val encryptResult = RsaUtils.encrypt("test")

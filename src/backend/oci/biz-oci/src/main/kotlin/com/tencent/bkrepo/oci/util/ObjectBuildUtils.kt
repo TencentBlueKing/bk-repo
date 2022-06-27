@@ -104,7 +104,7 @@ object ObjectBuildUtils {
         packageName: String,
         version: String,
         size: Long,
-        fullPath: String,
+        manifestPath: String,
         repoType: String,
         metadata: Map<String, Any>? = null
     ): PackageVersionCreateRequest {
@@ -120,7 +120,8 @@ object ObjectBuildUtils {
                 packageType = packageType,
                 versionName = version,
                 size = size,
-                artifactPath = fullPath,
+                artifactPath = manifestPath,
+                manifestPath = manifestPath,
                 packageMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = true,
                 createdBy = SecurityUtils.getUserId()
@@ -132,7 +133,7 @@ object ObjectBuildUtils {
         ociArtifactInfo: OciManifestArtifactInfo,
         version: String,
         size: Long,
-        fullPath: String,
+        manifestPath: String,
         metadata: Map<String, Any>? = null,
         packageKey: String
     ): PackageVersionUpdateRequest {
@@ -143,7 +144,8 @@ object ObjectBuildUtils {
                 packageKey = packageKey,
                 versionName = version,
                 size = size,
-                manifestPath = fullPath,
+                artifactPath = manifestPath,
+                manifestPath = manifestPath,
                 packageMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
             )
         }
@@ -171,7 +173,7 @@ object ObjectBuildUtils {
             return BasicInfo(
                 version = packageVersion.name,
                 fullPath = fullPath,
-                size = size,
+                size = packageVersion.size,
                 sha256 = sha256.orEmpty(),
                 md5 = md5.orEmpty(),
                 stageTag = packageVersion.stageTag,

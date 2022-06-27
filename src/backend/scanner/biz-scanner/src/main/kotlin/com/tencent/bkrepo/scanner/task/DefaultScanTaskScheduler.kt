@@ -169,6 +169,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         } catch (e: TaskSubmitInterruptedException) {
             logger.info("task[${e.taskId}] has been stopped")
             return
+        } catch (e: Exception) {
+            logger.warn("submit task[${scanTask.taskId}] failed", e)
+            throw e
         } finally {
             lock?.unlock()
         }

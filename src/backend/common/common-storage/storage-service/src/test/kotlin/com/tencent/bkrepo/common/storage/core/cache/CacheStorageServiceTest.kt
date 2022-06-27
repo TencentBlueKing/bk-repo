@@ -43,25 +43,26 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.io.File
 import java.nio.charset.Charset
 import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
-@SpringBootTest
-@ImportAutoConfiguration(StorageAutoConfiguration::class)
+@ExtendWith(SpringExtension::class)
+@ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
 @TestPropertySource(locations = ["classpath:storage-cache-fs.properties"])
 internal class CacheStorageServiceTest {
 
@@ -223,6 +224,16 @@ internal class CacheStorageServiceTest {
         Assertions.assertFalse(cacheClient.exist(path, sha256))
     }
 
+    @Test
+    fun cancelStoreTest() {
+        val size = 1024L
+        val artifactFile = createTempArtifactFile(size)
+        val sha256 = artifactFile.getFileSha256()
+        val cancel = AtomicBoolean(false)
+        cancel.set(true)
+        assertDoesNotThrow { storageService.store(sha256, artifactFile, null, cancel) }
+    }
+
     private fun createTempArtifactFile(size: Long): ArtifactFile {
         val tempFile = createTempFile()
         val content = StringPool.randomString(size.toInt())
@@ -232,15 +243,5 @@ internal class CacheStorageServiceTest {
             }
         }
         return FileSystemArtifactFile(tempFile)
-    }
-
-    @TestConfiguration
-    class CacheStorageTestConfig {
-
-        @Bean
-        fun storageHealthMonitor(storageProperties: StorageProperties): StorageHealthMonitor {
-            val path = storageProperties.defaultStorageCredentials().upload.location
-            return StorageHealthMonitor(storageProperties, path)
-        }
     }
 }
