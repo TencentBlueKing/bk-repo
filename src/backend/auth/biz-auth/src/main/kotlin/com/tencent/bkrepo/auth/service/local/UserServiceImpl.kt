@@ -328,7 +328,7 @@ class UserServiceImpl constructor(
         logger.debug("find user userId : [$userId]")
         if (pwd == DEFAULT_PASSWORD) {
             logger.warn("login with default password [$userId]")
-            if (bkAuthConfig.userIdSet.split(",").contains(userId)) {
+            if (!bkAuthConfig.userIdSet.split(",").contains(userId)) {
                 logger.warn("login with default password not in list[$userId]")
                 return null
             }
