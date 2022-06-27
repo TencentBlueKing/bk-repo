@@ -88,11 +88,12 @@ class CompressedFileService(
         val artifactResource: ArtifactResource
         while (inputStream.nextEntry.also { entry = it } != null) {
             if (entry!!.name == filePath) {
-                var byteArray = ByteArray(PREVIEW_FILE_SIZE_LIMIT)
-                val size = inputStream.read(byteArray, 0, PREVIEW_FILE_SIZE_LIMIT)
-                byteArray = byteArray.sliceArray(IntRange(0, size - 1))
+                var byteArray = inputStream.readBytes()
+                if (byteArray.size > PREVIEW_FILE_SIZE_LIMIT) {
+                    byteArray = byteArray.sliceArray(IntRange(0, PREVIEW_FILE_SIZE_LIMIT-1))
+                }
                 artifactResource = ArtifactResource(
-                    inputStream = ArtifactInputStream(byteArray.inputStream(), Range.full(size.toLong())),
+                    inputStream = ArtifactInputStream(byteArray.inputStream(), Range.full(byteArray.size.toLong())),
                     artifactName = entry!!.name
                 )
                 artifactResourceWriter.write(artifactResource)
