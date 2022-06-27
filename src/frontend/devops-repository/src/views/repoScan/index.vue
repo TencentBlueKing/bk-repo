@@ -1,7 +1,10 @@
 <template>
     <div class="scan-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('create') }}</bk-button>
+            <div class="flex-align-center">
+                <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('create') }}</bk-button>
+                <!-- <bk-button class="ml10" @click="() => $router.push({ name: 'securityConfig' })">安全设置</bk-button> -->
+            </div>
             <div class="flex-align-center">
                 <bk-input
                     class="w250"
@@ -23,7 +26,7 @@
         </div>
         <bk-table
             class="mt10 scan-table"
-            height="calc(100% - 102px)"
+            height="calc(100% - 100px)"
             :data="scanList"
             :outer-border="false"
             :row-border="false"
@@ -50,10 +53,10 @@
                     <operation-list
                         :list="[
                             { label: '详情', clickEvent: () => showScanReport(row) },
-                            { label: '设置', clickEvent: () => showScanConfig(row) },
+                            !row.readOnly && { label: '设置', clickEvent: () => showScanConfig(row) },
                             // { label: '中止', clickEvent: () => stopScanHandler(row) },
-                            { label: '扫描', clickEvent: () => startScanHandler(row) },
-                            { label: '删除', clickEvent: () => deleteScanHandler(row) }
+                            !row.readOnly && { label: '扫描', clickEvent: () => startScanHandler(row) },
+                            !row.readOnly && { label: '删除', clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>
                 </template>
             </bk-table-column>
@@ -111,7 +114,8 @@
             formatDate,
             ...mapActions([
                 'getScanList',
-                'deleteScan'
+                'deleteScan',
+                'stopScan'
             ]),
             showCreateDialog () {
                 this.$refs.createScanDialog.setData({
@@ -160,7 +164,7 @@
                     }
                 })
             },
-            showScanReport ({ id, name }) {
+            showScanReport ({ id, planType, name }) {
                 this.$router.push({
                     name: 'scanReport',
                     params: {
@@ -168,11 +172,12 @@
                         planId: id
                     },
                     query: {
+                        scanType: planType,
                         scanName: name
                     }
                 })
             },
-            showScanConfig ({ id, name }) {
+            showScanConfig ({ id, planType, name }) {
                 this.$router.push({
                     name: 'scanConfig',
                     params: {
@@ -180,11 +185,12 @@
                         planId: id
                     },
                     query: {
+                        scanType: planType,
                         scanName: name
                     }
                 })
             },
-            startScanHandler ({ id, name }) {
+            startScanHandler ({ id, planType, name }) {
                 this.$router.push({
                     name: 'startScan',
                     params: {
@@ -192,6 +198,7 @@
                         planId: id
                     },
                     query: {
+                        scanType: planType,
                         scanName: name
                     }
                 })
@@ -199,17 +206,18 @@
             stopScanHandler ({ id, name }) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认中止扫描计划 ${name} 的全部扫描任务?`,
+                    message: `确认中止扫描方案 ${name} 的所有扫描任务?`,
                     confirmFn: () => {
-                        // return this.deletePlan({
-                        //     id
-                        // }).then(() => {
-                        //     this.handlerPaginationChange()
-                        //     this.$bkMessage({
-                        //         theme: 'success',
-                        //         message: '删除计划' + this.$t('success')
-                        //     })
-                        // })
+                        return this.stopScan({
+                            projectId: this.projectId,
+                            id
+                        }).then(() => {
+                            this.handlerPaginationChange()
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: '中止方案' + this.$t('success')
+                            })
+                        })
                     }
                 })
             }

@@ -8,7 +8,7 @@
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn" class="rule-list">
-            <component :is="`${scanType.toLowerCase()}-rule`"
+            <component :is="`${scanType.replace(/^([A-Z]+).*$/, '$1').toLowerCase()}-rule`"
                 class="mt10"
                 v-for="(rule, ind) in defaultRules"
                 :key="ind"

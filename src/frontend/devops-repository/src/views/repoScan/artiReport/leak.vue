@@ -12,7 +12,7 @@
                     <span class="ml20">{{ baseInfo[item.key] }}</span>
                 </div>
             </div>
-            <div v-if="baseInfo.qualityRedLine !== null" class="arti-quality">
+            <!-- <div v-if="baseInfo.qualityRedLine !== null" class="arti-quality">
                 <div class="flex-align-center">
                     <span class="mr20" style="color:var(--fontSubsidiaryColor);">质量规则</span>
                     <span v-if="baseInfo.qualityRedLine" class="repo-tag SUCCESS">通过</span>
@@ -24,7 +24,7 @@
                     :key="item.id"
                     :data-name="item.label">
                 </div>
-            </div>
+            </div> -->
             <div class="arti-leak">
                 <div style="color:var(--fontSubsidiaryColor);">漏洞数量统计</div><div></div>
                 <div class="status-sign"
@@ -35,8 +35,7 @@
                 </div>
             </div>
         </div>
-        <div class="leak-list display-block" data-title="漏洞列表">
-            <bk-button class="scan-btn" theme="default" @click="startScanSingleHandler">重新扫描</bk-button>
+        <div class="leak-list">
             <div class="flex-align-center">
                 <bk-input
                     class="w250"
@@ -54,10 +53,13 @@
                     @change="handlerPaginationChange()">
                     <bk-option v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="name"></bk-option>
                 </bk-select>
+                <div class="flex-1 flex-end-center">
+                    <bk-button theme="default" @click="startScanSingleHandler">重新扫描</bk-button>
+                </div>
             </div>
             <bk-table
                 class="mt10 leak-table"
-                height="calc(100% - 82px)"
+                height="calc(100% - 80px)"
                 :data="leakList"
                 :outer-border="false"
                 :row-border="false"
@@ -82,7 +84,7 @@
                         <div class="leak-tip">{{ row.officialSolution || '/' }}</div>
                         <template v-if="row.reference && row.reference.length">
                             <div class="leak-title">相关资料</div>
-                            <div class="leak-tip" display v-for="url in row.reference" :key="url">
+                            <div class="leak-tip" v-for="url in row.reference" :key="url">
                                 <a :href="url" target="_blank">{{ url }}</a>
                             </div>
                         </template>
@@ -117,7 +119,7 @@
     import { formatDate, segmentNumberThree, formatDuration } from '@repository/utils'
     import { leakLevelEnum } from '@repository/store/publicEnum'
     export default {
-        name: 'artiReport',
+        name: 'leak',
         data () {
             return {
                 leakLevelEnum,
@@ -170,7 +172,9 @@
         created () {
             this.artiReportOverview({
                 projectId: this.projectId,
-                recordId: this.recordId
+                recordId: this.recordId,
+                taskId: this.$route.query.taskId,
+                viewType: this.$route.query.viewType
             }).then(res => {
                 this.baseInfo = {
                     ...res,
@@ -198,6 +202,7 @@
                 return this.getLeakList({
                     projectId: this.projectId,
                     recordId: this.recordId,
+                    viewType: this.$route.query.viewType,
                     vulId: this.filter.vulId,
                     severity: this.filter.severity,
                     current: this.pagination.current,
@@ -243,7 +248,7 @@
             },
             back () {
                 const { repoType, repoName } = this.baseInfo
-                const { scanName, path, packageKey, version } = this.$route.query
+                const { viewType, scanType, scanName, path, packageKey, version } = this.$route.query
                 this.$router.push({
                     name: scanName ? 'scanReport' : (this.packageKey ? 'commonPackage' : 'repoGeneric'),
                     params: {
@@ -251,7 +256,7 @@
                         [this.planId ? 'planId' : 'repoType']: this.planId || repoType
                     },
                     query: scanName
-                        ? { scanName }
+                        ? { viewType, scanType, scanName }
                         : (this.packageKey
                             ? { repoName, packageKey, version }
                             : { repoName, path })
@@ -304,14 +309,8 @@
     }
     .leak-list {
         flex: 1;
-        height: calc(100% - 35px);
+        height: 100%;
         margin-left: 20px;
-        margin-top: 35px;
-        .scan-btn {
-            position: absolute;
-            right: 0;
-            margin-top: -32px;
-        }
         .leak-title {
             padding: 5px 20px 0;
             font-weight: 800;

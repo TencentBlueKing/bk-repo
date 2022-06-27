@@ -4,7 +4,7 @@
         <bk-table
             class="mt10"
             :data="tokenList"
-            height="calc(100% - 52px)"
+            height="calc(100% - 50px)"
             :outer-border="false"
             :row-border="false"
             size="small">

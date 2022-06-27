@@ -96,7 +96,7 @@ export default {
         )
     },
     // 跨仓库搜索
-    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20 }) {
+    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/query' : 'package/search'}`,
@@ -152,7 +152,8 @@ export default {
                                 value: false,
                                 operation: 'EQ'
                             }]
-                            : [])
+                            : []),
+                        ...extRules
                         
                     ],
                     relation: 'AND'
@@ -160,29 +161,22 @@ export default {
             }
         )
     },
-    // 获取docker域名
-    getDockerDomain ({ commit }) {
+    // 获取相应服务的域名
+    getDomain ({ state, commit }, repoType) {
+        const urlMap = {
+            docker: 'docker/ext/addr',
+            npm: 'npm/ext/address'
+        }
+        if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(
-            'docker/ext/addr'
+            urlMap[repoType]
         ).then(domain => {
             commit('SET_DOMAIN', {
-                type: 'docker',
-                domain
+                type: repoType,
+                domain: domain || `${location.origin}/${repoType}`
             })
         })
     },
-    // 获取npm域名
-    getNpmDomain ({ commit }) {
-        Vue.prototype.$ajax.get(
-            'npm/ext/address'
-        ).then(({ domain }) => {
-            commit('SET_DOMAIN', {
-                type: 'npm',
-                domain: domain || `${location.origin}/npm`
-            })
-        })
-    },
-
     // 制品晋级
     changeStageTag (_, { projectId, repoName, packageKey, version, tag }) {
         return Vue.prototype.$ajax.post(
@@ -195,13 +189,6 @@ export default {
                     tag
                 }
             }
-        )
-    },
-    // 添加元数据
-    addPackageMetadata (_, { projectId, repoName, body }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/metadata/package/${projectId}/${repoName}`,
-            body
         )
     }
 }

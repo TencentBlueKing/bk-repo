@@ -1,5 +1,7 @@
-const repoHome = () => import('@repository/views')
+const repoPreview = () => import('@repository/views/preview')
+const scanTask = () => import('@repository/views/preview/scanTask')
 
+const repoHome = () => import('@repository/views')
 const repoList = () => import('@repository/views/repoList')
 const repoConfig = () => import('@repository/views/repoConfig')
 const repoToken = () => import('@repository/views/repoToken')
@@ -19,6 +21,8 @@ const artiReport = () => import('@repository/views/repoScan/artiReport')
 const scanConfig = () => import('@repository/views/repoScan/scanConfig')
 const startScan = () => import('@repository/views/repoScan/startScan')
 
+const securityConfig = () => import('@repository/views/repoScan/securityConfig')
+
 const repoGeneric = () => import('@repository/views/repoGeneric')
 
 const commonPackageList = () => import('@repository/views/repoCommon/commonPackageList')
@@ -27,6 +31,16 @@ const commonPackageDetail = () => import('@repository/views/repoCommon/commonPac
 const repoSearch = () => import('@repository/views/repoSearch')
 
 const routes = [
+    {
+        path: '/ui/:projectId/preview',
+        component: repoPreview,
+        children: [
+            {
+                path: 'scanTask/:planId/:taskId',
+                component: scanTask
+            }
+        ]
+    },
     {
         path: '/ui/:projectId',
         component: repoHome,
@@ -257,6 +271,17 @@ const routes = [
                         { name: 'repoScan', label: '制品扫描' },
                         { name: 'scanReport', label: '{scanName}', template: '扫描详情' },
                         { name: 'startScan', label: '立即扫描' }
+                    ]
+                }
+            },
+            {
+                path: 'securityConfig',
+                name: 'securityConfig',
+                component: securityConfig,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'securityConfig', label: '安全设置' }
                     ]
                 }
             },
