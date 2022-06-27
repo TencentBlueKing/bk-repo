@@ -25,15 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.common.notify.api.weworkbot
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-
-@ApiModel("企业微信你机器人")
-data class WeworkBot(
-    @ApiModelProperty("用于发消息的webhook地址")
-    val webhookUrl: String,
-    @ApiModelProperty("需要发消息的会话id，多个id用|分隔")
-    val chatIds: String? = null
-)
+interface MessageBody {
+    fun type(): String
+}

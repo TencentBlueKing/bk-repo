@@ -32,8 +32,9 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
-import com.tencent.bkrepo.common.notify.api.message.weworkbot.TextMessage
-import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
+import com.tencent.bkrepo.common.notify.api.weworkbot.TextMessage
+import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
+import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -58,6 +59,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.TaskMetadata
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import okhttp3.HttpUrl
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.data.redis.core.RedisTemplate
@@ -124,11 +126,21 @@ class ScanTaskStatusChangedEventListener(
     private fun weworkBotNotify(scanTask: ScanTask, message: String) {
         val weworkBot = getWeworkBot(scanTask.taskId)
         if (weworkBot != null) {
-            notifyService.sendWeworkBot(weworkBot, TextMessage(message))
+            val webhookKey = HttpUrl.parse(weworkBot.webhookUrl)?.queryParameter("key")
+            if (webhookKey.isNullOrEmpty()) {
+                logger.warn("get webhook key failed[${weworkBot.webhookUrl}]")
+                return
+            }
+            val credential = WeworkBotChannelCredential(key = webhookKey)
+            val chatIds = weworkBot.chatIds?.split("|")?.toSet()
+            notifyService.send(
+                WeworkBotMessage(TextMessage(message), chatIds),
+                credential
+            )
         } else {
-            notifyService.sendWeworkBot(scanTask.createdBy, TextMessage(message))
+            notifyService.send(WeworkBotMessage(TextMessage(message), setOf(scanTask.createdBy)))
         }
-        logger.info("notify by wework bot success taskId[{${scanTask.taskId}}]")
+        logger.info("notify by wework bot taskId[{${scanTask.taskId}}]")
     }
 
     private fun buildMessage(task: ScanTask): String {
@@ -203,4 +215,18 @@ class ScanTaskStatusChangedEventListener(
         private val logger = LoggerFactory.getLogger(ScanTaskStatusChangedEventListener::class.java)
         private const val DEFAULT_EXPIRED_DAY = 1L
     }
+
+    /**
+     * 企业微信机器人
+     */
+    data class WeworkBot(
+        /**
+         * 用于发消息的webhook地址
+         */
+        val webhookUrl: String,
+        /**
+         * 需要发消息的会话id，多个id用|分隔
+         */
+        val chatIds: String? = null
+    )
 }

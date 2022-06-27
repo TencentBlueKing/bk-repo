@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.common.notify.api.weworkbot
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

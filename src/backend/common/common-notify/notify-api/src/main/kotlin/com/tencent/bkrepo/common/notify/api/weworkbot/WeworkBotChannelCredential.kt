@@ -25,8 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.common.notify.api.weworkbot
 
-interface MessageBody {
-    fun type(): String
+import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("企业微信机器人")
+data class WeworkBotChannelCredential(
+    override var name: String = "",
+    override var default: Boolean = false,
+    @ApiModelProperty("企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
+    var key: String
+) : NotifyChannelCredential(name, type, default) {
+    companion object {
+        const val type = "wework-bot"
+    }
 }
