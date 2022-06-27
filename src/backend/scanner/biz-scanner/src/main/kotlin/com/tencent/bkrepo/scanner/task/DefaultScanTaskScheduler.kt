@@ -165,6 +165,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val (submittedSubTaskCount, reuseResultTaskCount) = try {
             lock?.lock()
             submit(scanTask)
+        } catch (e: Exception) {
+            logger.warn("submit task[${scanTask.taskId}] failed", e)
+            throw e
         } finally {
             lock?.unlock()
         }
