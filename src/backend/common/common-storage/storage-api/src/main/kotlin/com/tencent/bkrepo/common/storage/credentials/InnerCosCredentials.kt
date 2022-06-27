@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.storage.credentials
 
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
+import java.time.Duration
 
 /**
  * inner cos 身份认证信息
@@ -47,7 +48,11 @@ data class InnerCosCredentials(
     var timeout: Float = 0.5F,
     var public: Boolean = false,
     var slowLogSpeed: Int = MB,
-    var slowLogTimeInMillis: Long = 30 * 1000,
+    var slowLogTimeInMillis: Duration = Duration.ofSeconds(30),
+    var downloadWorkers: Int = 0,
+    var downloadTimeHighWaterMark: Duration = Duration.ofSeconds(25),
+    var downloadTimeLowWaterMark: Duration = Duration.ofSeconds(5),
+    var downloadTaskInterval: Duration = Duration.ofMillis(10),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()
