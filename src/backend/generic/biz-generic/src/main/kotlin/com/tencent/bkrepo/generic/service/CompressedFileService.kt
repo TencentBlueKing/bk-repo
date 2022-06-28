@@ -46,6 +46,7 @@ import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import org.apache.commons.compress.utils.IOUtils
 import org.springframework.stereotype.Service
 import java.io.BufferedInputStream
 import java.io.InputStream
@@ -88,9 +89,10 @@ class CompressedFileService(
         val artifactResource: ArtifactResource
         while (inputStream.nextEntry.also { entry = it } != null) {
             if (entry!!.name == filePath) {
-                var byteArray = inputStream.readBytes()
-                if (byteArray.size > PREVIEW_FILE_SIZE_LIMIT) {
-                    byteArray = byteArray.sliceArray(IntRange(0, PREVIEW_FILE_SIZE_LIMIT-1))
+                var byteArray = ByteArray(PREVIEW_FILE_SIZE_LIMIT)
+                val size = IOUtils.readFully(inputStream, byteArray)
+                if (size < PREVIEW_FILE_SIZE_LIMIT) {
+                    byteArray = byteArray.sliceArray(IntRange(0, size - 1))
                 }
                 artifactResource = ArtifactResource(
                     inputStream = ArtifactInputStream(byteArray.inputStream(), Range.full(byteArray.size.toLong())),
