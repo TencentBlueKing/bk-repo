@@ -25,12 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor
+package com.tencent.bkrepo.scanner.executor.util
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import java.io.InputStream
 
-interface ScanExecutor {
-    fun scan(task: ScanExecutorTask): ScanExecutorResult
-    fun stop(taskId: String): Boolean
+object Converter {
+    fun convert(subScanTask: SubScanTask, inputStream: InputStream): ScanExecutorTask {
+        with(subScanTask) {
+            return ScanExecutorTask(
+                taskId = taskId,
+                parentTaskId = parentScanTaskId,
+                inputStream = inputStream,
+                scanner = scanner,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                sha256 = sha256
+            )
+        }
+    }
 }

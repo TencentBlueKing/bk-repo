@@ -68,5 +68,13 @@ data class SubScanTask(
     /**
      * 文件所在存储使用的凭据
      */
-    val credentialsKey: String?
+    val credentialsKey: String?,
+    /**
+     * 文件下载链接
+     */
+    val url: String? = null,
+    /**
+     * 用于容器化扫描时，状态、结果上报接口鉴权
+     */
+    val token: String? = null
 )
