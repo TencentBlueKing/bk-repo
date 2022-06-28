@@ -6,7 +6,10 @@
         :show-footer="false"
         :title="($t('preview') + ' - ' + previewDialog.title)">
         <div v-if="previewDialog.isLoading" style="windt: 100%;" v-bkloading="{ isLoading: previewDialog.isLoading }"></div>
-        <textarea v-else v-model="basicFileText" class="textarea" readonly></textarea>
+        <div v-else>
+            <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
+            <textarea v-model="basicFileText" class="textarea" readonly></textarea>
+        </div>
     </bk-dialog>
 </template>
 
@@ -38,14 +41,16 @@
     }
 </script>
 
-<style lang="scss">
-    .preview-basic-file-dialog {
-        height: 600px;
+<style lang="scss" scoped>
+    .preview-file-tips {
+        margin-bottom: 10px;
+        color: #707070;
     }
     .textarea {
         resize: none;
         width: 100%;
         height: 500px;
-        border: none;
+        border: 1px solid #ccc;
+        padding: 0 5px;
     }
 </style>

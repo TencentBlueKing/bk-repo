@@ -195,5 +195,6 @@
     "preview": "preview",
     "unknownSize": "The size of the unknown",
     "supportPreview": "This file does not support preview",
-    "previewCompressedLimitTips": "You can preview only compressed files smaller than 1Gb"
+    "previewCompressedLimitTips": "You can preview only compressed files smaller than 1Gb",
+    "previewFileTips": "Note: text files larger than 50M are displayed only for the first 50M"
 }
