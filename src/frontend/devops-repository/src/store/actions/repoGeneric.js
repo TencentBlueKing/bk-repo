@@ -264,7 +264,11 @@ export default {
     // 预览基本文件
     previewBasicFile (_, { projectId, repoName, path }) {
         return Vue.prototype.$ajax.get(
-            `generic/${projectId}/${repoName}${path}?preview=true`
+            `generic/${projectId}/${repoName}${path}?preview=true`, {
+                headers: {
+                    range: 'bytes=0-52428800'
+                }
+            }
         )
     },
     previewCompressedFileList (_, { projectId, repoName, path }) {
