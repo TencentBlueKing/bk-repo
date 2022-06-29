@@ -43,6 +43,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
@@ -66,12 +67,14 @@ object Main {
         val startTimestamp = System.currentTimeMillis()
         val task = args[0].readJsonString<SubScanTask>()
         val serverHost = args[1]
+        val workDirPath = args[2]
+        val workDir = File(workDirPath)
         val token = task.token ?: throw RuntimeException("token is null")
 
         try {
             val url = task.url ?: throw RuntimeException("file url is null")
             val executorTask = convert(task, loadFile(url))
-            val result = createExecutor(task.scanner.type).scan(executorTask)
+            val result = createExecutor(workDir, task.scanner.type).scan(executorTask)
             val finishedTimestamp = System.currentTimeMillis()
             report(serverHost, token, task.taskId, task.parentScanTaskId, startTimestamp, finishedTimestamp, result)
         } catch (e: Exception) {
@@ -89,9 +92,9 @@ object Main {
         return res.body()!!.byteStream()
     }
 
-    private fun createExecutor(type: String): ScanExecutor {
+    private fun createExecutor(workDir: File, type: String): ScanExecutor {
         return when (type) {
-            ArrowheadScanner.TYPE -> ArrowheadScanExecutor()
+            ArrowheadScanner.TYPE -> ArrowheadCmdScanExecutor(workDir)
             else -> throw RuntimeException("unknown scanner type[$type]")
         }
     }

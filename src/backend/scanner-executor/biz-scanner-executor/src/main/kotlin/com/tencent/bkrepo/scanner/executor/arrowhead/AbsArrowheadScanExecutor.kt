@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.image
+package com.tencent.bkrepo.scanner.executor.arrowhead
 
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -49,145 +49,61 @@ import org.slf4j.LoggerFactory
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 
-class ArrowheadScanExecutor(
-    private val workDir: File = File(System.getProperty("java.io.tmpdir")),
-    private val maxScannerLogLines: Int = 200
-) : ScanExecutor {
-    private val arrowheadConfigTemplate by lazy {
-        val loader = ArrowheadScanExecutor::class.java.classLoader
-        loader.getResourceAsStream(CONFIG_FILE_TEMPLATE)!!.use {
-            it.reader().readText()
-        }
-    }
-    private val taskIdProcessMap = ConcurrentHashMap<String, Process>()
+abstract class AbsArrowheadScanExecutor : ScanExecutor {
 
     override fun scan(task: ScanExecutorTask): ScanExecutorResult {
+        require(task.scanner is ArrowheadScanner)
         val scanner = task.scanner
-        require(scanner is ArrowheadScanner)
+        // 创建工作目录
         val taskWorkDir = createTaskWorkDir(scanner.rootPath, task.taskId)
         logger.info(logMsg(task, "create work dir success, $taskWorkDir"))
         try {
-            // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
-            val fileExtension = task.fullPath.substringAfterLast(CharPool.DOT, "")
-            val scannerInputFile = File(File(taskWorkDir, scanner.container.inputDir), "${task.sha256}.$fileExtension")
-            scannerInputFile.parentFile.mkdirs()
-            task.inputStream.use { taskInputStream ->
-                scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
-            }
-            logger.info(logMsg(task, "read file success"))
-
+            // 加载待扫描文件
+            val scannerInputFile = loadFile(taskWorkDir, task)
             // 加载扫描配置文件
-            loadConfigFile(task, taskWorkDir, scannerInputFile)
-            logger.info(logMsg(task, "load config success"))
-
+            val configFile = loadConfigFile(task, taskWorkDir, scannerInputFile)
             // 执行扫描
-            val scanStatus = doScan(taskWorkDir, task, scannerInputFile.length())
-            return result(
-                File(taskWorkDir, scanner.container.outputDir),
-                scanStatus
-            )
+            val scanStatus = doScan(taskWorkDir, configFile, task, scannerInputFile.length())
+            return result(File(taskWorkDir, scanner.container.outputDir), scanStatus)
         } finally {
             // 清理工作目录
-            if (scanner.cleanWorkDir) {
+            if (task.scanner.cleanWorkDir) {
                 FileUtils.deleteRecursively(taskWorkDir)
             }
         }
     }
 
-    override fun stop(taskId: String): Boolean {
-        return taskIdProcessMap[taskId]?.destroyForcibly()?.isAlive == false
-    }
+    protected abstract fun workDir(): File
 
-    private fun createTaskWorkDir(rootPath: String, taskId: String): File {
-        // 创建工作目录
-        val taskWorkDir = File(File(workDir, rootPath), taskId)
-        if (!taskWorkDir.deleteRecursively() || !taskWorkDir.mkdirs()) {
-            throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, taskWorkDir.absolutePath)
-        }
-        return taskWorkDir
-    }
-
-    /**
-     * 加载扫描器配置文件
-     *
-     * @param scanTask 扫描任务
-     * @param workDir 工作目录
-     * @param scannerInputFile 待扫描文件
-     *
-     * @return 扫描器配置文件
-     */
-    private fun loadConfigFile(
-        scanTask: ScanExecutorTask,
-        workDir: File,
-        scannerInputFile: File
-    ): File {
-        val scanner = scanTask.scanner
-        require(scanner is ArrowheadScanner)
-        val knowledgeBase = scanner.knowledgeBase
-        val dockerImage = scanner.container
-        val inputFilePath = dockerImage.inputDir.removePrefix(StringPool.SLASH) +
-            "${StringPool.SLASH}${scannerInputFile.name}"
-        val outputDir = dockerImage.outputDir.removePrefix(StringPool.SLASH)
-        val params = mapOf(
-            TEMPLATE_KEY_INPUT_FILE to inputFilePath,
-            TEMPLATE_KEY_OUTPUT_DIR to outputDir,
-            TEMPLATE_KEY_LOG_FILE to RESULT_FILE_NAME_LOG,
-            TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID to knowledgeBase.secretId,
-            TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY to knowledgeBase.secretKey,
-            TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT to knowledgeBase.endpoint
-        )
-
-        val content = SpelExpressionParser()
-            .parseExpression(arrowheadConfigTemplate, TemplateParserContext())
-            .getValue(params, String::class.java)!!
-
-        val configFile = File(workDir, scanner.configFilePath)
-        configFile.writeText(content)
-        return configFile
-    }
+    protected abstract fun configTemplate(): String
 
     /**
      * 创建容器执行扫描
-     * @param workDir 工作目录,将挂载到容器中
+     * @param taskWorkDir 工作目录,将挂载到容器中
+     * @param configFile arrowhead扫描配置文件
      * @param task 扫描任务
+     * @param fileSize 文件大小
      *
      * @return true 扫描成功， false 扫描失败
      */
-    private fun doScan(workDir: File, task: ScanExecutorTask, fileSize: Long): SubScanTaskStatus {
-        val scanner = task.scanner
-        require(scanner is ArrowheadScanner)
-
-        val maxScanDuration = scanner.maxScanDuration(fileSize)
-
-
-        val process = Runtime.getRuntime().exec(arrayOf("/bin/bash", "-c", "./arrowhead"))
-        try {
-            taskIdProcessMap[task.taskId] = process
-            logger.info(logMsg(task, "running arrowhead [$workDir]"))
-            val result = process.waitFor(maxScanDuration, TimeUnit.MILLISECONDS)
-            logger.info(logMsg(task, "arrowhead run result[$result], [$workDir]"))
-            if (!result) {
-                return scanStatus(task, workDir, SubScanTaskStatus.TIMEOUT)
-            }
-            return scanStatus(task, workDir)
-        } finally {
-            if (process.isAlive) {
-                process.destroyForcibly()
-                logger.info("destroy arrowhead process, process is alive[${process.isAlive}]")
-            }
-            taskIdProcessMap.remove(task.taskId)
-        }
-    }
-
-    private fun scanStatus(
+    protected abstract fun doScan(
+        taskWorkDir: File,
+        configFile: File,
         task: ScanExecutorTask,
-        workDir: File,
-        status: SubScanTaskStatus = SubScanTaskStatus.FAILED
+        fileSize: Long
+    ): SubScanTaskStatus
+
+    /**
+     * 解析arrowhead输出日志，判断扫描结果
+     */
+    protected fun scanStatus(
+        task: ScanExecutorTask,
+        taskWorkDir: File,
+        status: SubScanTaskStatus = SubScanTaskStatus.FAILED,
+        maxScannerLogLines: Int = 200
     ): SubScanTaskStatus {
-        val logFile = File(workDir, RESULT_FILE_NAME_LOG)
+        val logFile = File(taskWorkDir, RESULT_FILE_NAME_LOG)
         if (!logFile.exists()) {
             logger.info(logMsg(task, "arrowhead log file not exists"))
             return status
@@ -212,6 +128,50 @@ class ArrowheadScanExecutor(
         }
 
         return status
+    }
+
+    protected fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
+    }
+
+    /**
+     * 加载扫描器配置文件
+     *
+     * @param scanTask 扫描任务
+     * @param taskWorkDir 工作目录
+     * @param scannerInputFile 待扫描文件
+     *
+     * @return 扫描器配置文件
+     */
+    private fun loadConfigFile(
+        scanTask: ScanExecutorTask,
+        taskWorkDir: File,
+        scannerInputFile: File
+    ): File {
+        require(scanTask.scanner is ArrowheadScanner)
+        val scanner = scanTask.scanner
+        val knowledgeBase = scanner.knowledgeBase
+        val containerConfig = scanner.container
+        val template = configTemplate()
+        val inputFilePath = "${containerConfig.inputDir.removePrefix(StringPool.SLASH)}/${scannerInputFile.name}"
+        val outputDir = containerConfig.outputDir.removePrefix(StringPool.SLASH)
+        val params = mapOf(
+            TEMPLATE_KEY_INPUT_FILE to inputFilePath,
+            TEMPLATE_KEY_OUTPUT_DIR to outputDir,
+            TEMPLATE_KEY_LOG_FILE to RESULT_FILE_NAME_LOG,
+            TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID to knowledgeBase.secretId,
+            TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY to knowledgeBase.secretKey,
+            TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT to knowledgeBase.endpoint
+        )
+
+        val content = SpelExpressionParser()
+            .parseExpression(template, TemplateParserContext())
+            .getValue(params, String::class.java)!!
+
+        val configFile = File(taskWorkDir, scanner.configFilePath)
+        configFile.writeText(content)
+        logger.info(logMsg(scanTask, "load config success"))
+        return configFile
     }
 
     /**
@@ -288,38 +248,60 @@ class ArrowheadScanExecutor(
         }
     }
 
-    private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
+
+    private fun loadFile(taskWorkDir: File, task: ScanExecutorTask): File {
+        val scanner = task.scanner as ArrowheadScanner
+        // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
+        val fileExtension = task.fullPath.substringAfterLast(CharPool.DOT, "")
+        val scannerInputFile = File(File(taskWorkDir, scanner.container.inputDir), "${task.sha256}.$fileExtension")
+        scannerInputFile.parentFile.mkdirs()
+        task.inputStream.use { taskInputStream ->
+            scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
+        }
+        logger.info(logMsg(task, "read file success"))
+        return scannerInputFile
+    }
+
+    /**
+     * 创建工作目录
+     *
+     * @param rootPath 扫描器根目录
+     * @param taskId 任务id
+     *
+     * @return 工作目录
+     */
+    private fun createTaskWorkDir(rootPath: String, taskId: String): File {
+        // 创建工作目录
+        val taskWorkDir = File(File(workDir(), rootPath), taskId)
+        if (!taskWorkDir.deleteRecursively() || !taskWorkDir.mkdirs()) {
+            throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, taskWorkDir.absolutePath)
+        }
+        return taskWorkDir
     }
 
     companion object {
-        // arrowhead配置文件模板key
-        private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
-        private const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
-        private const val TEMPLATE_KEY_LOG_FILE = "logFile"
-        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
-        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
-        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
+        private val logger = LoggerFactory.getLogger(AbsArrowheadScanExecutor::class.java)
 
-        /**
-         * arrowhead输出日志路径
-         */
+        // arrowhead配置文件模板key
+        protected const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
+        protected const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
+        protected const val TEMPLATE_KEY_LOG_FILE = "logFile"
+        protected const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
+        protected const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
+        protected const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
+
+        // arrowhead输出日志路径
         private const val RESULT_FILE_NAME_LOG = "sysauditor.log"
 
+        // arrowhead扫描结果文件名
         /**
          * 证书扫描结果文件名
          */
-        private const val RESULT_FILE_NAME_APPLICATION_ITEMS = "application_items.json"
+        protected const val RESULT_FILE_NAME_APPLICATION_ITEMS = "application_items.json"
 
         /**
          * CVE扫描结果文件名
          */
-        private const val RESULT_FILE_NAME_CVE_SEC_ITEMS = "cvesec_items.json"
-
-        /**
-         * 扫描器配置文件路径
-         */
-        private const val CONFIG_FILE_TEMPLATE = "standalone.toml"
-        private val logger = LoggerFactory.getLogger(ArrowheadScanExecutor::class.java)
+        protected const val RESULT_FILE_NAME_CVE_SEC_ITEMS = "cvesec_items.json"
     }
 }
