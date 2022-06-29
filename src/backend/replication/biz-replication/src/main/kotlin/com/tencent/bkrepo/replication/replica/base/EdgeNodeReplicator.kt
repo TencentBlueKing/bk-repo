@@ -72,6 +72,7 @@ class EdgeNodeReplicator(
         packageVersion: PackageVersion
     ): Boolean {
         with(context) {
+            if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return true
             var affected = false
             // 文件数据
             PackageNodeMappings.map(
@@ -98,7 +99,7 @@ class EdgeNodeReplicator(
             val artifactInputStream = localDataManager.getBlobData(sha256, node.size, localRepo)
             val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
 //            val file = InputStreamMultipartFile(rateLimitInputStream, node.size)
-            if (blobReplicaClient.check(sha256).data != true) {
+            if (blobReplicaClient?.check(sha256)?.data != true) {
                 pushBlob(
                     inputStream = rateLimitInputStream,
                     size = node.size,

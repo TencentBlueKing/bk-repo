@@ -35,6 +35,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 class NpmPackageNodeMapper : PackageNodeMapper {
 
     override fun type() = RepositoryType.NPM
+    override fun extraType(): RepositoryType? {
+        return null
+    }
 
     override fun map(
         packageSummary: PackageSummary,

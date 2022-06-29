@@ -65,42 +65,53 @@ class ReplicaContext(
     val localRepoType: RepositoryType = taskObject.repoType
 
     // 远程仓库信息
-    val remoteProjectId: String = taskObject.remoteProjectId
-    val remoteRepoName: String = taskObject.remoteRepoName
+    val remoteProjectId: String? = taskObject.remoteProjectId
+    val remoteRepoName: String? = taskObject.remoteRepoName
     val remoteRepoType: RepositoryType = taskObject.repoType
-    lateinit var remoteRepo: RepositoryDetail
+    var remoteRepo: RepositoryDetail? = null
 
     // 事件
     lateinit var event: ArtifactEvent
 
     // 同步状态
     var status = ExecutionStatus.RUNNING
-    val artifactReplicaClient: ArtifactReplicaClient
-    val blobReplicaClient: BlobReplicaClient
+    var artifactReplicaClient: ArtifactReplicaClient? = null
+    var blobReplicaClient: BlobReplicaClient? = null
     val replicator: Replicator
 
     // TODO: Feign暂时不支持Stream上传，11+之后支持，升级后可以移除HttpClient上传
     private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
-    private val httpClient: OkHttpClient
+    val httpClient: OkHttpClient
+    var cluster: RemoteClusterInfo
 
     init {
-        val cluster = RemoteClusterInfo(
+        cluster = RemoteClusterInfo(
             name = remoteCluster.name,
             url = remoteCluster.url,
             username = remoteCluster.username,
             password = remoteCluster.password,
             certificate = remoteCluster.certificate
         )
-        artifactReplicaClient = FeignClientFactory.create(cluster)
-        blobReplicaClient = FeignClientFactory.create(cluster)
+
+        // 外部集群仓库特殊处理, 外部集群走对应制品类型协议传输
+        if (remoteCluster.type != ClusterNodeType.EXTERNAL) {
+            artifactReplicaClient = FeignClientFactory.create(cluster)
+            blobReplicaClient = FeignClientFactory.create(cluster)
+        }
         replicator = when (remoteCluster.type) {
             ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
             ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
+            ClusterNodeType.EXTERNAL -> SpringContextUtils.getBean<ExternalReplicator>()
             else -> throw UnsupportedOperationException()
         }
-        httpClient = HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
-            BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
-        ).build()
+        // 外部集群仓库特殊处理, 外部集群请求鉴权特殊处理
+        httpClient = if (remoteCluster.type != ClusterNodeType.EXTERNAL) {
+            HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
+                BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
+            ).build()
+        } else {
+            HttpClientBuilderFactory.create().build()
+        }
     }
 
     /**

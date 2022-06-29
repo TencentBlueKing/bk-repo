@@ -55,6 +55,8 @@ data class ClusterNodeInfo(
     val certificate: String?,
     @ApiModelProperty("创建者")
     val createdBy: String,
+    @ApiModelProperty("集群额外信息")
+    var extension: Map<String, Any>? = null,
     @ApiModelProperty("创建日期")
     val createdDate: String,
     @ApiModelProperty("上次修改者")

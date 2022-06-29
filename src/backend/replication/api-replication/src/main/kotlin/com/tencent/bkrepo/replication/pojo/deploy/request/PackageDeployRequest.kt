@@ -25,26 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.pojo.deploy.request
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-/**
- * 添加集群节点请求
- */
-@ApiModel("添加集群节点请求")
-data class ClusterNodeCreateRequest(
-    @ApiModelProperty("添加的集群名称", required = true)
-    val name: String,
-    @ApiModelProperty("集群地址", required = true)
-    val url: String,
-    @ApiModelProperty("集群的证书", required = false)
-    val certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = false)
-    val username: String? = null,
-    @ApiModelProperty("集群认证密码", required = false)
-    val password: String? = null,
-    @ApiModelProperty("集群节点类型", required = true)
-    val type: ClusterNodeType
+@ApiModel("Package推动到远端仓库请求")
+data class PackageDeployRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名")
+    val repoName: String,
+    @ApiModelProperty("Package key")
+    val packageKey: String,
+    @ApiModelProperty("Package版本名")
+    val packageVersion: String,
+    @ApiModelProperty("Package名")
+    var packageName: String,
+    @ApiModelProperty("Package类型")
+    var packageType: String
 )

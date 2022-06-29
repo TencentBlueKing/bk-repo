@@ -55,6 +55,7 @@ const val COUNT = "count"
 const val TYPE = "type"
 const val CATEGORY = "category"
 const val CREATED_DATE = "createdDate"
+const val LAST_MODIFIED_DATE = "lastModifiedDate"
 
 /**
  * metrics

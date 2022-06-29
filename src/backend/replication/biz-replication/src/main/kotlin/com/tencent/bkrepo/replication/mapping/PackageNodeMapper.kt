@@ -38,6 +38,12 @@ interface PackageNodeMapper {
     fun type(): RepositoryType
 
     /**
+     * 额外兼容仓库类型
+     * (现主要是因为使用oci替换docker，需要兼容)
+     */
+    fun extraType(): RepositoryType?
+
+    /**
      * 匹配对应node节点的fullPath
      */
     fun map(

@@ -1,11 +1,13 @@
 package com.tencent.bkrepo.replication.mapping
 
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.constant.DOCKER_LAYER_FULL_PATH
+import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
+import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH
+import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
+import com.tencent.bkrepo.replication.util.FileParser
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -23,6 +25,9 @@ class DockerPackageNodeMapper(
 ) : PackageNodeMapper {
 
     override fun type() = RepositoryType.DOCKER
+    override fun extraType(): RepositoryType? {
+        return RepositoryType.OCI
+    }
 
     override fun map(
         packageSummary: PackageSummary,
@@ -31,42 +36,34 @@ class DockerPackageNodeMapper(
     ): List<String> {
         with(packageSummary) {
             val result = mutableListOf<String>()
-            val name = PackageKeys.resolveDocker(key)
+            val name = packageSummary.name
             val version = packageVersion.name
-            val manifestFullPath = DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version)
+            var isOci = false
             val repository = repositoryClient.getRepoDetail(projectId, repoName, type.name).data!!
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data!!
+            var manifestFullPath = DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version)
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data ?: run {
+                // 针对使用oci替换了docker仓库，需要进行数据兼容
+                isOci = true
+                manifestFullPath = OCI_MANIFEST_JSON_FULL_PATH.format(name, version)
+                nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data!!
+            }
             val inputStream = storageService.load(
                 nodeDetail.sha256.orEmpty(),
                 Range.full(nodeDetail.size),
                 repository.storageCredentials
             )!!
-            val layersList = parseManifest(inputStream)
+            val layersList = FileParser.parseManifest(inputStream)
             layersList.forEach {
                 val replace = it.replace(":", "__")
-                result.add(DOCKER_LAYER_FULL_PATH.format(name, version, replace))
+                if (isOci) {
+                    result.add(OCI_LAYER_FULL_PATH.format(name, replace))
+                } else {
+                    result.add(DOCKER_LAYER_FULL_PATH.format(name, version, replace))
+                }
             }
-            result.add(DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version))
+            result.add(manifestFullPath)
             return result
         }
-    }
-
-    private fun parseManifest(inputStream: ArtifactInputStream): List<String> {
-        val list = mutableListOf<String>()
-        val manifest = inputStream.use { it.readJsonString<Manifest>() }
-        val configFullPath = manifest.config.digest
-        val iterator = manifest.layers.iterator()
-        while (iterator.hasNext()) {
-            val next = iterator.next()
-            list.add(next.digest)
-        }
-        list.add(configFullPath)
-        return list
-    }
-
-    companion object {
-        const val DOCKER_MANIFEST_JSON_FULL_PATH = "/%s/%s/manifest.json"
-        const val DOCKER_LAYER_FULL_PATH = "/%s/%s/%s"
     }
 
     data class Manifest(

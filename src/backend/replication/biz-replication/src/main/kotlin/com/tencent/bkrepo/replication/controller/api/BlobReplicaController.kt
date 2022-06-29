@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller
+package com.tencent.bkrepo.replication.controller.api
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -43,6 +43,8 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
+import com.tencent.bkrepo.replication.replica.external.rest.helm.HelmDeployClient
+import com.tencent.bkrepo.replication.replica.external.rest.oci.OciDeployClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
@@ -64,7 +66,9 @@ import java.util.concurrent.TimeUnit
 class BlobReplicaController(
     storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient
+    private val storageCredentialsClient: StorageCredentialsClient,
+    private val ociDeployClient: OciDeployClient,
+    private val helmDeployClient: HelmDeployClient
 ) {
 
     private val defaultCredentials = storageProperties.defaultStorageCredentials()

@@ -41,5 +41,9 @@ data class JobProperties(
     @NestedConfigurationProperty
     var signFileCleanupJobProperties: SignFileCleanupJobProperties = SignFileCleanupJobProperties(),
     @NestedConfigurationProperty
-    var fileSynchronizeJobProperties: FileSynchronizeJobProperties = FileSynchronizeJobProperties()
+    var fileSynchronizeJobProperties: FileSynchronizeJobProperties = FileSynchronizeJobProperties(),
+    @NestedConfigurationProperty
+    var packageDeployJobProperties: PackageDeployJobProperties = PackageDeployJobProperties(),
+    @NestedConfigurationProperty
+    var externalClusterJobProperties: PackageDeployJobProperties = PackageDeployJobProperties()
 )

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.base
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
@@ -183,6 +184,8 @@ abstract class AbstractReplicaService(
     ) {
         with(context) {
             replicator.replicaPackage(replicaContext, packageSummary)
+            // 同步package功能： 对应内部集群配置是当version不存在时则同步全部的package version
+            // 而对于外部集群配置而言，当version不存在时，则不进行同步
             val versions = versionNames?.map {
                 localDataManager.findPackageVersion(
                     projectId = replicaContext.localProjectId,
@@ -190,12 +193,18 @@ abstract class AbstractReplicaService(
                     packageKey = packageSummary.key,
                     version = it
                 )
-            } ?: localDataManager.listAllVersion(
-                projectId = replicaContext.localProjectId,
-                repoName = replicaContext.localRepoName,
-                packageKey = packageSummary.key,
-                option = VersionListOption()
-            )
+            } ?: run {
+                if (replicaContext.remoteCluster.type == ClusterNodeType.EXTERNAL) {
+                    emptyList()
+                } else {
+                    localDataManager.listAllVersion(
+                        projectId = replicaContext.localProjectId,
+                        repoName = replicaContext.localRepoName,
+                        packageKey = packageSummary.key,
+                        option = VersionListOption()
+                    )
+                }
+            }
             versions.forEach {
                 replicaPackageVersion(this, packageSummary, it)
             }

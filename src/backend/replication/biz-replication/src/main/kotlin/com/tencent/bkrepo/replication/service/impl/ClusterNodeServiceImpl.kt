@@ -36,20 +36,24 @@ import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
+import com.tencent.bkrepo.replication.util.HttpUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
@@ -59,7 +63,7 @@ import java.util.regex.Pattern
 
 @Service
 class ClusterNodeServiceImpl(
-    private val clusterNodeDao: ClusterNodeDao
+    private val clusterNodeDao: ClusterNodeDao,
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
@@ -111,21 +115,23 @@ class ClusterNodeServiceImpl(
             if (type == ClusterNodeType.CENTER && checkCenterNodeExist()) {
                 throw ErrorCodeException(ReplicationMessageCode.CLUSTER_CENTER_NODE_EXISTS, name)
             }
+            // password加密存储
             val clusterNode = TClusterNode(
                 name = name,
                 status = ClusterNodeStatus.HEALTHY,
                 url = UrlFormatter.formatUrl(url),
                 username = username,
-                password = password,
+                password = crypto(password, false),
                 certificate = certificate,
                 type = type,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
+                extension = extension
             )
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(clusterNode)!!)
+            tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
             return try {
                 clusterNodeDao.insert(clusterNode)
                     .also { logger.info("Create cluster node [$name] with url [$url] success.") }
@@ -142,6 +148,48 @@ class ClusterNodeServiceImpl(
         return clusterNodeList.isNotEmpty() && clusterNodeList.size == 1
     }
 
+    /**
+     * 更新cluster节点，当前只针对external节点进行更新
+     */
+    override fun update(userId: String, request: ClusterNodeUpdateRequest): ClusterNodeInfo {
+        with(request) {
+            validateParameter(this)
+            val clusterNode = checkExternalNodeExist(name)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+            clusterNode.apply {
+                this.url = UrlFormatter.formatUrl(request.url)
+                this.name = request.name
+                this.username = request.username
+                this.password = crypto(request.password, false)
+                this.certificate = request.certificate
+                this.lastModifiedBy = userId
+                this.lastModifiedDate = LocalDateTime.now()
+            }
+            // 检测远程集群网络连接是否可用
+            tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
+            return try {
+                clusterNodeDao.save(clusterNode)
+                    .also { logger.info("Update cluster node [$name] with url [$url] success.") }
+                    .let { convert(it)!! }
+            } catch (exception: DuplicateKeyException) {
+                logger.warn("Update cluster node [$name] error: [${exception.message}]")
+                getByClusterName(name)!!
+            }
+        }
+    }
+
+    /**
+     * 查询external仓库
+     */
+    private fun checkExternalNodeExist(name: String): TClusterNode? {
+        val clusterNodeList = clusterNodeDao.listByNameAndType(
+            name = name,
+            type = ClusterNodeType.EXTERNAL
+        )
+        if (clusterNodeList.isEmpty()) return null
+        return clusterNodeList[0]
+    }
+
     override fun deleteById(id: String) {
         getByClusterId(id)?.let {
             clusterNodeDao.removeById(id)
@@ -150,9 +198,10 @@ class ClusterNodeServiceImpl(
     }
 
     override fun tryConnect(name: String) {
-        val clusterNodeInfo = convertRemoteInfo(clusterNodeDao.findByName(name))
+        val clusterNode = clusterNodeDao.findByName(name)
+        val clusterNodeInfo = convertRemoteInfo(clusterNode)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-        tryConnect(clusterNodeInfo)
+        tryConnect(clusterNodeInfo, clusterNode!!.type)
     }
 
     override fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest) {
@@ -171,7 +220,20 @@ class ClusterNodeServiceImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnect(remoteClusterInfo: RemoteClusterInfo, type: ClusterNodeType) {
+        with(remoteClusterInfo) {
+            if (ClusterNodeType.EXTERNAL == type) {
+                tryConnectExternalCluster(this)
+            } else {
+                tryConnectNonExternalCluster(this)
+            }
+        }
+    }
+
+    /**
+     * 针对非external集群做连接判断
+     */
+    fun tryConnectNonExternalCluster(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
@@ -185,7 +247,22 @@ class ClusterNodeServiceImpl(
         }
     }
 
-    private fun validateParameter(request: ClusterNodeCreateRequest) {
+    /**
+     * 针对external集群做额外的判断
+     */
+    fun tryConnectExternalCluster(remoteClusterInfo: RemoteClusterInfo) {
+        with(remoteClusterInfo) {
+            try {
+                HttpUtils.pingURL(remoteClusterInfo.url, 60000)
+            } catch (exception: Exception) {
+                val message = exception.message ?: UNKNOWN
+                logger.error("ping cluster [$name] failed, reason: $message")
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
+            }
+        }
+    }
+
+    private fun validateParameter(request: ClusterRequest) {
         with(request) {
             Preconditions.checkNotBlank(name, this::name.name)
             Preconditions.checkNotBlank(url, this::url.name)
@@ -217,8 +294,9 @@ class ClusterNodeServiceImpl(
                     type = it.type,
                     url = it.url,
                     username = it.username,
-                    password = it.password,
+                    password = crypto(it.password, true),
                     certificate = it.certificate,
+                    extension = it.extension,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -234,7 +312,7 @@ class ClusterNodeServiceImpl(
                     url = it.url,
                     certificate = it.certificate,
                     username = it.username,
-                    password = it.password
+                    password = crypto(it.password, true)
                 )
             }
         }
@@ -245,6 +323,22 @@ class ClusterNodeServiceImpl(
                     id = it.id!!,
                     name = it.name
                 )
+            }
+        }
+
+        /**
+         * 加解密
+         */
+        private fun crypto(pw: String?, decrypt: Boolean): String? {
+            if (pw.isNullOrBlank()) return pw
+            return if (!decrypt) {
+                RsaUtils.encrypt(pw)
+            } else {
+                try {
+                    RsaUtils.decrypt(pw)
+                } catch (e: Exception) {
+                    pw
+                }
             }
         }
     }

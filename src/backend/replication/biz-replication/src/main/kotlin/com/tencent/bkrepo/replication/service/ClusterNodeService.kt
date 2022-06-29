@@ -30,11 +30,12 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
 
 /**
  * 集群节点服务接口
@@ -89,6 +90,11 @@ interface ClusterNodeService {
      * 根据[request]创建集群节点，创建成功后返回集群节点信息
      */
     fun create(userId: String, request: ClusterNodeCreateRequest): ClusterNodeInfo
+
+    /**
+     * 根据[request]更新集群节点，更新成功后返回集群节点信息
+     */
+    fun update(userId: String, request: ClusterNodeUpdateRequest): ClusterNodeInfo
 
     /**
      * 根据集群[id]删除集群节点

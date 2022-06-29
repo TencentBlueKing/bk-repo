@@ -38,5 +38,8 @@ enum class ClusterNodeType {
     EDGE,
 
     // 独立集群
-    STANDALONE
+    STANDALONE,
+
+    // 外部集群
+    EXTERNAL
 }

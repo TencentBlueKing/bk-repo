@@ -118,3 +118,10 @@ const val PARAM_PREVIEW = "preview"
 // 内存文件
 const val SOURCE_IN_MEMORY = "memory"
 const val SOURCE_IN_REMOTE = "remote"
+
+/**
+ * 用于标识制品来源
+ * ArtifactChannel.LOCAL
+ * ArtifactChannel.PROXY
+ */
+const val SOURCE_TYPE = "source"

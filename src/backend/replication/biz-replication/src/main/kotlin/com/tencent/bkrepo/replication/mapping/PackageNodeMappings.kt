@@ -47,6 +47,7 @@ object PackageNodeMappings {
 
     private fun addMapper(mapper: PackageNodeMapper) {
         mappers[mapper.type()] = mapper
+        mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
     }
 
     /**

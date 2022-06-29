@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.event
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.base.AbstractReplicaService
@@ -51,10 +52,22 @@ class EventBasedReplicaService(
             replicator.replicaRepo(this)
             when (event.type) {
                 EventType.NODE_CREATED -> {
+                    // 只有非external集群支持该消息
+                    if (context.remoteCluster.type == ClusterNodeType.EXTERNAL)
+                        throw UnsupportedOperationException()
                     val pathConstraint = PathConstraint(event.resourceKey)
                     replicaByPathConstraint(this, pathConstraint)
                 }
                 EventType.VERSION_CREATED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageVersion = event.data["packageVersion"].toString()
+                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+                    replicaByPackageConstraint(this, packageConstraint)
+                }
+                EventType.VERSION_UPDATED -> {
+                    // 只有external集群支持该消息
+                    if (context.remoteCluster.type != ClusterNodeType.EXTERNAL)
+                        throw UnsupportedOperationException()
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()
                     val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))

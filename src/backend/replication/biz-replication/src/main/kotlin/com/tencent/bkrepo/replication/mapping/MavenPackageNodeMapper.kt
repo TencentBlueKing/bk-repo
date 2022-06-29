@@ -40,6 +40,9 @@ class MavenPackageNodeMapper(
 ) : PackageNodeMapper {
 
     override fun type() = RepositoryType.MAVEN
+    override fun extraType(): RepositoryType? {
+        return null
+    }
 
     override fun map(
         packageSummary: PackageSummary,

@@ -145,11 +145,17 @@ class LocalDataManager(
      */
     @Throws(IllegalStateException::class)
     fun findNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val nodeDetail = findNode(projectId, repoName, fullPath)
         check(nodeDetail != null) { "Local node path [$fullPath] does not exist" }
         return nodeDetail
     }
 
+    /**
+     * 查找节点
+     */
+    fun findNode(projectId: String, repoName: String, fullPath: String): NodeDetail? {
+        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+    }
     /**
      * 分页查询包
      */

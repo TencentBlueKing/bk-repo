@@ -29,12 +29,15 @@ package com.tencent.bkrepo.job.config
 
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.api.HelmClient
+import com.tencent.bkrepo.job.batch.ExternalClusterRepoJob
 import com.tencent.bkrepo.job.batch.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.FileSynchronizeJob
+import com.tencent.bkrepo.job.batch.PackageDeployExternalClusterJob
 import com.tencent.bkrepo.job.batch.RemoteRepoInitJob
 import com.tencent.bkrepo.job.batch.RemoteRepoRefreshJob
 import com.tencent.bkrepo.job.batch.SignFileCleanupJob
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
+import com.tencent.bkrepo.replication.api.ExternalClusterClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
@@ -124,6 +127,30 @@ class JobConfig {
             properties = jobProperties.fileSynchronizeJobProperties,
             storageService = storageService,
             storageCredentialsClient = storageCredentialsClient
+        )
+    }
+
+    @Bean
+    fun packageDeployJob(
+        mongoTemplate: MongoTemplate,
+        jobProperties: JobProperties,
+        externalClusterClient: ExternalClusterClient
+    ): PackageDeployExternalClusterJob {
+        return PackageDeployExternalClusterJob(
+            properties = jobProperties.packageDeployJobProperties,
+            mongoTemplate = mongoTemplate,
+            externalClusterClient = externalClusterClient
+        )
+    }
+
+    @Bean
+    fun externalClusterRepoJob(
+        jobProperties: JobProperties,
+        externalClusterClient: ExternalClusterClient
+    ): ExternalClusterRepoJob {
+        return ExternalClusterRepoJob(
+            properties = jobProperties.externalClusterJobProperties,
+            externalClusterClient = externalClusterClient
         )
     }
 }

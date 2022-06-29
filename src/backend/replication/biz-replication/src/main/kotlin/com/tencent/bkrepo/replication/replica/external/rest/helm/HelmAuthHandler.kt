@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.replica.external.rest.helm
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.replication.constant.PASSWORD
+import com.tencent.bkrepo.replication.constant.USERNAME
+import com.tencent.bkrepo.replication.replica.external.rest.base.AuthHandler
+import org.slf4j.LoggerFactory
 
 /**
- * 更新集群节点请求
+ * 权限处理类
  */
-@ApiModel("更新集群节点请求")
-data class ClusterNodeStatusUpdateRequest(
-    @ApiModelProperty("集群名称", required = true)
-    val name: String,
-    @ApiModelProperty("集群状态", required = false)
-    val status: ClusterNodeStatus = ClusterNodeStatus.HEALTHY,
-    @ApiModelProperty("状态为非健康时显示失败原因", required = false)
-    val errorReason: String? = null,
-    @ApiModelProperty("操作用户", required = true)
-    val operator: String
-)
+class HelmAuthHandler : AuthHandler() {
+
+    /**
+     * 获取token
+     */
+    override fun obtainToken(extraMap: Map<String, Any>?): String? {
+        return if (this.map[USERNAME] != null) {
+            BasicAuthUtils.encode(this.map[USERNAME] as String, this.map[PASSWORD] as String)
+        } else null
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(HelmAuthHandler::class.java)
+    }
+}

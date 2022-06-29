@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.replication.replica.base
 
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
-import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.config.ReplicationProperties
+import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.mapping.PackageNodeMappings
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
@@ -62,7 +62,7 @@ class ClusterReplicator(
 
     override fun checkVersion(context: ReplicaContext) {
         with(context) {
-            val remoteVersion = artifactReplicaClient.version().data.orEmpty()
+            val remoteVersion = artifactReplicaClient!!.version().data.orEmpty()
             if (version != remoteVersion) {
                 logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
             }
@@ -71,6 +71,8 @@ class ClusterReplicator(
 
     override fun replicaProject(context: ReplicaContext) {
         with(context) {
+            // 外部集群仓库没有project/repoName
+            if (remoteProjectId.isNullOrBlank()) return
             val localProject = localDataManager.findProjectById(localProjectId)
             val request = ProjectCreateRequest(
                 name = remoteProjectId,
@@ -78,12 +80,14 @@ class ClusterReplicator(
                 description = localProject.description,
                 operator = localProject.createdBy
             )
-            artifactReplicaClient.replicaProjectCreateRequest(request)
+            artifactReplicaClient!!.replicaProjectCreateRequest(request)
         }
     }
 
     override fun replicaRepo(context: ReplicaContext) {
         with(context) {
+            // 外部集群仓库没有project/repoName
+            if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return
             val localRepo = localDataManager.findRepoByName(localProjectId, localRepoName, localRepoType.name)
             val request = RepoCreateRequest(
                 projectId = remoteProjectId,
@@ -95,7 +99,7 @@ class ClusterReplicator(
                 configuration = localRepo.configuration,
                 operator = localRepo.createdBy
             )
-            context.remoteRepo = artifactReplicaClient.replicaRepoCreateRequest(request).data!!
+            context.remoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
         }
     }
 
@@ -109,6 +113,8 @@ class ClusterReplicator(
         packageVersion: PackageVersion
     ): Boolean {
         with(context) {
+            // 外部集群仓库没有project/repoName
+            if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return true
             // 包版本冲突检查
             val fullPath = "${packageSummary.name}-${packageVersion.name}"
             val checkRequest = PackageVersionExistCheckRequest(
@@ -117,7 +123,7 @@ class ClusterReplicator(
                 packageKey = packageSummary.key,
                 versionName = packageVersion.name
             )
-            if (artifactReplicaClient.checkPackageVersionExist(checkRequest).data == true) {
+            if (artifactReplicaClient!!.checkPackageVersionExist(checkRequest).data == true) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> return false
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("Package [$fullPath] conflict.")
@@ -157,7 +163,7 @@ class ClusterReplicator(
                 overwrite = true,
                 createdBy = packageVersion.createdBy
             )
-            artifactReplicaClient.replicaPackageVersionCreatedRequest(request)
+            artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
         }
         return true
     }
@@ -172,7 +178,7 @@ class ClusterReplicator(
                     inputStream = rateLimitInputStream,
                     size = it.size!!,
                     sha256 = it.sha256.orEmpty(),
-                    storageKey = remoteRepo.storageCredentials?.key
+                    storageKey = remoteRepo?.storageCredentials?.key
                 )
 //                val file = InputStreamMultipartFile(rateLimitInputStream, it.size!!)
 //                blobReplicaClient.push(
@@ -181,7 +187,7 @@ class ClusterReplicator(
 //                    storageKey = remoteRepo.storageCredentials?.key
 //                )
                 // 2. 同步节点信息
-                artifactReplicaClient.replicaNodeCreateRequest(it)
+                artifactReplicaClient!!.replicaNodeCreateRequest(it)
                 true
             } ?: false
         }
@@ -190,16 +196,18 @@ class ClusterReplicator(
     override fun replicaDir(context: ReplicaContext, node: NodeInfo) {
         with(context) {
             buildNodeCreateRequest(this, node)?.let {
-                artifactReplicaClient.replicaNodeCreateRequest(it)
+                artifactReplicaClient!!.replicaNodeCreateRequest(it)
             }
         }
     }
 
     private fun buildNodeCreateRequest(context: ReplicaContext, node: NodeInfo): NodeCreateRequest? {
         with(context) {
+            // 外部集群仓库没有project/repoName
+            if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
             val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
             // 节点冲突检查
-            if (artifactReplicaClient.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true) {
+            if (artifactReplicaClient!!.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> return null
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")

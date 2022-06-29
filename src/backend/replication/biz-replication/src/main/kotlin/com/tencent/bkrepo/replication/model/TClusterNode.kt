@@ -67,11 +67,16 @@ data class TClusterNode(
     /**
      * 集群访问密码, 独立集群需要此字段
      */
-    val password: String?,
+    var password: String?,
     /**
      * 集群访问证书, 独立集群需要此字段
      */
-    val certificate: String?,
+    var certificate: String?,
+    /**
+     * 额外信息，
+     * 针对external集群，将用于存储对应的限制规则
+     */
+    var extension: Map<String, Any>? = null,
     /**
      * 审计信息
      */
