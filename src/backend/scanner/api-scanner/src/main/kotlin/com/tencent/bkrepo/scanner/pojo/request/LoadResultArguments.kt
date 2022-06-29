@@ -31,7 +31,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivyLoadResultArguments
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -39,7 +41,8 @@ import io.swagger.annotations.ApiModelProperty
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrowheadLoadResultArguments::class, name = ArrowheadScanner.TYPE),
-    JsonSubTypes.Type(value = DependencyLoadResultArguments::class, name = DependencyScanner.TYPE)
+    JsonSubTypes.Type(value = DependencyLoadResultArguments::class, name = DependencyScanner.TYPE),
+    JsonSubTypes.Type(value = TrivyLoadResultArguments::class, name = TrivyScanner.TYPE)
 )
 open class LoadResultArguments(
     @ApiModelProperty("扫描器类型")

@@ -25,26 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.scanner.executor.pojo
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencySaveResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivySaveResultArguments
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@ApiModel("存储制品扫描结果时的参数")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes(
-    JsonSubTypes.Type(value = ArrowheadSaveResultArguments::class, name = ArrowheadScanner.TYPE),
-    JsonSubTypes.Type(value = DependencySaveResultArguments::class, name = DependencyScanner.TYPE),
-    JsonSubTypes.Type(value = TrivySaveResultArguments::class, name = TrivyScanner.TYPE)
+/**
+ * ManifestV1
+ */
+data class ManifestV1(
+    /**
+     * manifests
+     */
+    val manifests: List<Manifest>,
 )
-open class SaveResultArguments(
-    @ApiModelProperty("扫描器类型")
-    val type: String
+
+data class Manifest(
+    @JsonProperty("Config")
+    val config: String,
+    @JsonProperty("RepoTags")
+    val repoTags: List<String>,
+    @JsonProperty("Layers")
+    val layers: List<String>
 )

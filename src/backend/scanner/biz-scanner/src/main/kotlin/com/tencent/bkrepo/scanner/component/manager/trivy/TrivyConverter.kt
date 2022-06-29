@@ -25,46 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead
+package com.tencent.bkrepo.scanner.component.manager.trivy
 
+import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.scanner.component.manager.BaseScannerConverter
-import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
+import com.tencent.bkrepo.scanner.component.manager.trivy.model.TVulnerabilityItem
+import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivyLoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
 
-@Component("${ArrowheadScanner.TYPE}Converter")
-class ArrowheadConverter : BaseScannerConverter() {
+@Component("${TrivyScanner.TYPE}Converter")
+class TrivyConverter : BaseScannerConverter() {
     @Suppress("UNCHECKED_CAST")
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
-        result as Page<CveSecItem>
-        val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
+        result as Page<TVulnerabilityItem>
+        val pageRequest = PageRequest.of(result.pageNumber, result.pageSize)
         val reports = result.records.mapTo(HashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
-                vulId = getVulId(it),
-                severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),
-                pkgName = it.component,
-                installedVersion = it.versions,
-                title = it.name,
-                vulnerabilityName = it.name,
-                description = it.description,
-                officialSolution = it.officialSolution.ifEmpty { it.defenseSolution },
-                reference = it.references,
-                path = it.path
+                vulId = it.data.vulnerabilityID,
+                severity = ScanPlanConverter.convertToLeakLevel(it.data.severity.toLowerCase()),
+                pkgName = it.data.pkgName,
+                installedVersion = setOf(it.data.installedVersion),
+                title = it.data.title,
+                vulnerabilityName = "",
+                description = it.data.description,
+                officialSolution = "",
+                reference = it.data.references,
+                path = ""
             )
         }.toList()
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)
     }
 
     override fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments {
-        return ArrowheadLoadResultArguments(
+        return TrivyLoadResultArguments(
             vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
             reportType = request.reportType,
@@ -72,20 +75,9 @@ class ArrowheadConverter : BaseScannerConverter() {
         )
     }
 
-    private fun getVulId(cveSecItem: CveSecItem): String {
-        with(cveSecItem) {
-            if (cveId.isNotEmpty()) {
-                return cveId
-            }
-
-            if (cnnvdId.isNotEmpty()) {
-                return cnnvdId
-            }
-
-            if (cnvdId.isNotEmpty()) {
-                return cnvdId
-            }
-            return pocId
-        }
+    override fun convertToNode(node: Node): Node {
+        node.fullPath = node.fullPath.substringBeforeLast(SLASH)
+        node.artifactName = node.fullPath.split(SLASH).get(1)
+        return super.convertToNode(node)
     }
 }

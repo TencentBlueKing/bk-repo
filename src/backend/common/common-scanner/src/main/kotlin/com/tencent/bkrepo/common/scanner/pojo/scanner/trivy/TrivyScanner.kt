@@ -25,26 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.common.scanner.pojo.scanner.trivy
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencySaveResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivySaveResultArguments
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("存储制品扫描结果时的参数")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes(
-    JsonSubTypes.Type(value = ArrowheadSaveResultArguments::class, name = ArrowheadScanner.TYPE),
-    JsonSubTypes.Type(value = DependencySaveResultArguments::class, name = DependencyScanner.TYPE),
-    JsonSubTypes.Type(value = TrivySaveResultArguments::class, name = TrivyScanner.TYPE)
+@ApiModel("trivy扫描器配置")
+class TrivyScanner(
+    override val name: String,
+    /**
+     * 格式为ArrowheadImageVersion::KnowledgeBaseVervion::StandaloneConfigTemplateVersion
+     * 或者ArrowheadImageVersion::KnowledgeBaseVervion
+     */
+    @ApiModelProperty("扫描器版本")
+    override val version: String,
+    @ApiModelProperty("扫描器缓存目录，存放漏洞数据库文件目录")
+    val cacheDir: String,
+    @ApiModelProperty("扫描器根目录")
+    val rootPath: String,
+    @ApiModelProperty("扫描结束后是否清理工作目录")
+    val cleanWorkDir: Boolean = true,
+    @ApiModelProperty("使用的容器镜像")
+    val container: TrivyDockerImage
+) : Scanner(name, TYPE, version) {
+    companion object {
+        const val TYPE = "trivy"
+    }
+}
+
+@ApiModel("Trivy容器镜像配置")
+data class TrivyDockerImage(
+    @ApiModelProperty("使用的镜像名和版本")
+    val image: String,
+    @ApiModelProperty("容器内的工作目录")
+    val workDir: String = "/data",
+    @ApiModelProperty("输入目录，相对于workDir的路径")
+    val inputDir: String = "/package",
+    @ApiModelProperty("输出目录，相对于workDir的路径")
+    val outputDir: String = "/output"
 )
-open class SaveResultArguments(
-    @ApiModelProperty("扫描器类型")
-    val type: String
-)
+

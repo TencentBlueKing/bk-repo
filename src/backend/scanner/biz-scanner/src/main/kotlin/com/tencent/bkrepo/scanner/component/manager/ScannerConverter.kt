@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.component.manager
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 interface ScannerConverter {
     fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo>
     fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments
+    fun convertToNode(node: Node): Node
 
     companion object {
         fun name(scannerType: String) =  "${scannerType}Converter"

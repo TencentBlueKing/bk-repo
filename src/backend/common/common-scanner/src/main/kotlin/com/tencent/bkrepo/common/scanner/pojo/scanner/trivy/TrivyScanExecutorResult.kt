@@ -25,26 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.common.scanner.pojo.scanner.trivy
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencySaveResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivySaveResultArguments
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("存储制品扫描结果时的参数")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes(
-    JsonSubTypes.Type(value = ArrowheadSaveResultArguments::class, name = ArrowheadScanner.TYPE),
-    JsonSubTypes.Type(value = DependencySaveResultArguments::class, name = DependencyScanner.TYPE),
-    JsonSubTypes.Type(value = TrivySaveResultArguments::class, name = TrivyScanner.TYPE)
-)
-open class SaveResultArguments(
-    @ApiModelProperty("扫描器类型")
-    val type: String
-)
+@ApiModel("trivy扫描器扫描结果")
+data class TrivyScanExecutorResult(
+    override val scanStatus: String,
+    override val overview: Map<String, Any?>,
+    @ApiModelProperty("cve审计结果")
+    val vulnerabilityItems: List<VulnerabilityItem>
+) : ScanExecutorResult(scanStatus, overview, TrivyScanner.TYPE)

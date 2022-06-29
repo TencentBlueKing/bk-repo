@@ -217,8 +217,8 @@ class PackageIterator(
             }
             val packageVersion = Request.request {
                 packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
-            } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey, packageVersion!!)
-            pkg.fullPath = packageVersion.contentPath
+            }
+            pkg.fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
         }
         return pkg
     }
