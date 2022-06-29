@@ -18,7 +18,7 @@
         </div>
         <repo-dialog :show="showAddDialog"
             :default-repos="defaultRepos"
-            :scan-type="scanType"
+            :repo-list="repoListLimit"
             @confirm="confirm"
             @cancel="showAddDialog = false">
         </repo-dialog>
@@ -55,6 +55,14 @@
             },
             repoList () {
                 return this.defaultRepos.map(name => this.repoListAll.find(r => r.name === name)).filter(Boolean)
+            },
+            repoListLimit () {
+                const repoTypeLimit = [this.scanType.replace(/^([A-Z]+).*$/, '$1')]
+                return this.repoListAll
+                    .filter(r => repoTypeLimit.includes(r.type))
+                    .sort((a, b) => {
+                        return Boolean(a.type > b.type) || -1
+                    })
             }
         },
         watch: {

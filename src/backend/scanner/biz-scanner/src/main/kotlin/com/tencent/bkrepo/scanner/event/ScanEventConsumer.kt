@@ -99,7 +99,9 @@ class ScanEventConsumer(
         if (!supportFileNameExtension(event.resourceKey)) {
             return false
         }
-        logger.info("receive event resourceKey[${event.resourceKey}]")
+        if (logger.isDebugEnabled) {
+            logger.debug("receive event resourceKey[${event.resourceKey}]")
+        }
 
         var hasScanTask = false
         with(event) {

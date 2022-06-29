@@ -789,11 +789,15 @@ export default {
             return this[`${guideMap[this.repoType] || this.repoType}Install`]
         }
     },
-    created () {
-        !this.domain.docker && this.getDockerDomain()
-        !this.domain.npm && this.getNpmDomain()
+    watch: {
+        repoType: {
+            handler (type) {
+                type && this.getDomain(type)
+            },
+            immediate: true
+        }
     },
     methods: {
-        ...mapActions(['getDockerDomain', 'getNpmDomain'])
+        ...mapActions(['getDomain'])
     }
 }

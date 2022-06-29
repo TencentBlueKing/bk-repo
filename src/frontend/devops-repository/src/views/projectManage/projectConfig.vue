@@ -39,7 +39,7 @@
                 <bk-table
                     class="mt10"
                     :data="tab.items"
-                    height="calc(100% - 104px)"
+                    height="calc(100% - 40px)"
                     :outer-border="false"
                     :row-border="false"
                     size="small"

@@ -3,8 +3,17 @@
         <Icon class="mr20 card-icon" size="70" :name="cardData.type ? cardData.type.toLowerCase() : getIconName(cardData.name)" />
         <div class="mr20 package-card-main flex-column">
             <div class="flex-align-center">
-                <span class="pr10 card-name text-overflow" :title="cardData.name">{{ cardData.name }}</span>
-                <span class="repo-tag" v-if="cardData.type === 'MAVEN'">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
+                <span class="card-name text-overflow" :title="cardData.name">{{ cardData.name }}</span>
+                <span class="ml10 repo-tag" v-if="['MAVEN'].includes(cardData.type)">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
+                <scan-tag class="ml10"
+                    v-if="isEnterprise && !cardData.type && /\.(ipa)|(apk)|(jar)$/.test(cardData.name)"
+                    :status="(cardData.metadata || {}).scanStatus"
+                    readonly>
+                </scan-tag>
+                <forbid-tag class="ml10"
+                    v-if="!cardData.type && (cardData.metadata || {}).forbidStatus"
+                    v-bind="cardData.metadata">
+                </forbid-tag>
             </div>
             <span class="package-card-description text-overflow" :title="cardData.description">{{ cardData.description }}</span>
             <div class="package-card-data">
@@ -27,19 +36,22 @@
                 v-if="!cardData.type"
                 :list="[
                     { label: '详情', clickEvent: () => detail() },
-                    { label: '下载', clickEvent: () => download() },
-                    { label: '共享', clickEvent: () => share() }
+                    !(cardData.metadata || {}).forbidStatus && { label: '下载', clickEvent: () => download() },
+                    !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
+    import ScanTag from '@repository/views/repoScan/scanTag'
+    import forbidTag from '@repository/components/ForbidTag'
+    import { mapGetters } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
     export default {
         name: 'packageCard',
-        components: { OperationList },
+        components: { OperationList, ScanTag, forbidTag },
         props: {
             cardData: {
                 type: Object,
@@ -50,15 +62,20 @@
                 default: false
             }
         },
+        computed: {
+            ...mapGetters(['isEnterprise'])
+        },
         methods: {
             convertFileSize,
             formatDate,
             getIconName,
             deleteCard () {
-                this.$emit('delete-card')
+                debugger
+                // this.$emit('delete-card')
             },
             detail () {
-                this.$emit('show-detail', this.cardData)
+                debugger
+                // this.$emit('show-detail', this.cardData)
             },
             download () {
                 const url = `/generic/${this.cardData.projectId}/${this.cardData.repoName}/${this.cardData.fullPath}?download=true`

@@ -17,7 +17,7 @@
             </template>
             <template v-else-if="genericForm.type === 'rename'">
                 <bk-form-item :label="$t('file') + $t('name')" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model.trim="genericForm.name" :placeholder="$t('folderNamePlacehodler')" maxlength="50" show-word-limit></bk-input>
+                    <bk-input v-model.trim="genericForm.name" :placeholder="$t('folderNamePlacehodler')" maxlength="255" show-word-limit></bk-input>
                 </bk-form-item>
             </template>
             <template v-else-if="genericForm.type === 'scan'">

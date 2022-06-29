@@ -13,7 +13,7 @@
         </bk-form-item>
         <bk-form-item label="触发事件">
             <div style="color:var(--fontSubsidiaryColor);">可勾选下方按钮，在扫描或扫描结束后触发勾选项</div>
-            <div><bk-checkbox class="mt10" v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div>
+            <!-- <div><bk-checkbox class="mt10" v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div> -->
             <div><bk-checkbox class="mt10" v-model="rule.forbidQualityUnPass">自动禁止使用制品：质量规则未通过的制品</bk-checkbox></div>
         </bk-form-item>
         <bk-form-item>

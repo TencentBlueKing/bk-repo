@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import cookies from 'js-cookie'
 
 const prefix = 'repository/api'
 
@@ -208,6 +209,7 @@ export default {
             xhr.setRequestHeader('Content-Type', headers['Content-Type'])
             xhr.setRequestHeader('X-BKREPO-OVERWRITE', headers['X-BKREPO-OVERWRITE'])
             xhr.setRequestHeader('X-BKREPO-EXPIRES', headers['X-BKREPO-EXPIRES'])
+            xhr.setRequestHeader('X-CSRFToken', cookies.get(MODE_CONFIG === 'ci' ? 'bk_token' : 'bkrepo_ticket'))
             xhr.addEventListener('error', e => reject(e.target.response))
             xhr.send(body)
         })
@@ -251,6 +253,13 @@ export default {
     addMetadata (_, { projectId, repoName, fullPath, body }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/metadata/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
+    // 禁止使用/解除禁止
+    forbidMetadata (_, { projectId, repoName, fullPath, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/metadata/forbid/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
             body
         )
     },

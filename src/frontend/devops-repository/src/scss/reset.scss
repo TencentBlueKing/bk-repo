@@ -14,10 +14,6 @@ body {
             float: initial;
             .bk-select {
                 margin: 0 10px;
-                .bk-select-name {
-                    height: 28px;
-                    line-height: 28px;
-                }
             }
         }
         .bk-page-list {
@@ -150,6 +146,17 @@ body {
     .bk-options .bk-option.is-highlight,
     .bk-options .bk-option:hover {
         color: var(--fontPrimaryColor);
+    }
+    .bk-form-input,
+    .bk-form-password,
+    .bk-form-select,
+    .bk-form-textarea {
+        height: 30px;
+    }
+    
+    .bk-select .bk-select-name {
+        height: 28px;
+        line-height: 28px;
     }
 
     .bk-options.bk-options-single .bk-option.is-selected {
@@ -375,7 +382,6 @@ body {
                     border-color: var(--primaryColor);
                 }
                 .bk-form-input {
-                    height: 30px;
                     line-height: initial;
                 }
             }
@@ -452,7 +458,13 @@ body {
 
     .bk-date-picker {
         .bk-date-picker-rel {
+            .icon-wrapper {
+                width: 30px;
+                height: 30px;
+            }
             .bk-date-picker-editor {
+                height: 30px;
+                line-height: 30px;
                 color: var(--fontPrimaryColor);
                 border-color: var(--borderWeightColor);
             }
@@ -591,6 +603,7 @@ body {
     
     .bk-dialog-wrapper {
         .bk-dialog-body {
+            font-size: 12px;
             min-height: 148px;
             color: var(--fontPrimaryColor);
         }
