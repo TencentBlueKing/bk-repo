@@ -131,6 +131,8 @@
                             <operation-list
                                 :list="[
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
+                                    !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
+                                    !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     ...(!row.metadata.forbidStatus ? [
                                         { clickEvent: () => handlerDownload(row), label: $t('download') },
                                         ...(repoName !== 'pipeline' ? [
@@ -169,6 +171,8 @@
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <generic-upload-dialog ref="genericUploadDialog" @update="getArtifactories"></generic-upload-dialog>
+        <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
+        <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
     </div>
 </template>
 <script>
@@ -183,9 +187,12 @@
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
+    import previewBasicFileDialog from './previewBasicFileDialog'
+    import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
+
     export default {
         name: 'repoGeneric',
         components: {
@@ -199,7 +206,9 @@
             genericUploadDialog,
             genericFormDialog,
             genericShareDialog,
-            genericTreeDialog
+            genericTreeDialog,
+            previewBasicFileDialog,
+            compressedFileTable
         },
         data () {
             return {
@@ -225,7 +234,9 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
+                compressedData: []
             }
         },
         computed: {
@@ -289,6 +300,9 @@
                 'getFolderSize',
                 'getFileNumOfFolder',
                 'getMultiFileNumOfFolder',
+                'previewBasicFile',
+                'previewCompressedBasicFile',
+                'previewCompressedFileList',
                 'forbidMetadata'
             ]),
             changeSideBarWidth (sideBarWidth) {
@@ -642,6 +656,82 @@
                         })
                     }
                 })
+            },
+            async handlerPreviewBasicsFile (row) {
+                this.$refs.previewBasicFileDialog.setDialogData({
+                    show: true,
+                    title: row.name,
+                    isLoading: true
+                })
+                const res = await this.previewBasicFile({
+                    projectId: row.projectId,
+                    repoName: row.repoName,
+                    path: row.fullPath
+                })
+                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+            },
+            async handlerPreviewCompressedFile (row) {
+                if (row.size > 1073741824) {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('previewCompressedLimitTips')
+                    })
+                    return
+                }
+                this.$refs.compressedFileTable.setData({
+                    show: true,
+                    title: row.name,
+                    isLoading: true,
+                    path: row.fullPath
+                })
+                
+                const res = await this.previewCompressedFileList({
+                    projectId: row.projectId,
+                    repoName: row.repoName,
+                    path: row.fullPath
+                })
+
+                this.compressedData = res.reduce((acc, item) => {
+                    const names = item.name.split('/')
+                    names.reduce((target, name) => {
+                        let temp = target.find(o => o.name === name)
+                        if (!temp) {
+                            target.push(temp = { name, children: [], filePath: item.name, folder: !name.includes('.'), size: item.size })
+                        }
+                        return temp.children
+                    }, acc)
+                    return acc
+                }, [])
+            },
+            
+            async handleShowPreview (row) {
+                const { projectId, repoName, path, filePath } = row
+                this.$refs.previewBasicFileDialog.setDialogData({
+                    show: true,
+                    title: filePath,
+                    isLoading: true
+                })
+                const res = await this.previewCompressedBasicFile({
+                    projectId,
+                    repoName,
+                    path,
+                    filePath
+                })
+                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+            },
+            
+            getBtnDisabled (name) {
+                return name.endsWith('txt')
+                    || name.endsWith('sh')
+                    || name.endsWith('bat')
+                    || name.endsWith('json')
+                    || name.endsWith('yaml')
+                    || name.endsWith('xml')
+                    || name.endsWith('log')
+                    || name.endsWith('ini')
+                    || name.endsWith('log')
+                    || name.endsWith('properties')
+                    || name.endsWith('toml')
             }
         }
     }
