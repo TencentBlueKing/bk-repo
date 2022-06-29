@@ -25,29 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.common.notify.config
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
+import com.tencent.bkrepo.common.notify.client.NotifyClient
+import com.tencent.bkrepo.common.notify.client.weworkbot.WeworkBotClient
+import okhttp3.OkHttpClient
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import java.util.concurrent.TimeUnit
 
-@ApiModel("获取扫描任务")
-data class ScanTaskQuery(
-    @ApiModelProperty("任务所属项目")
-    val projectId: String,
-    @ApiModelProperty("任务名前缀")
-    val namePrefix: String? = null,
-    @ApiModelProperty("扫描方案id")
-    val planId: String? = null,
-    @ApiModelProperty("任务触发方式")
-    val triggerType: String? = null,
-    @ApiModelProperty("在这个时间戳之后创建的任务")
-    var after: Long? = null,
-    @ApiModelProperty("在这个时间戳之前创建的任务")
-    var before: Long? = null,
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String? = null,
-    @ApiModelProperty("使用的扫描器类型")
-    val scannerType: String? = null,
-    @ApiModelProperty("当前任务状态")
-    val status: String? = null
-)
+@Configuration
+class NotifyClientConfiguration {
+
+    @Bean(WeworkBotChannelCredential.type)
+    fun weworkBotClient(notifyProperties: NotifyProperties): NotifyClient {
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(DEFAULT_CONNECT_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            .writeTimeout(DEFAULT_WRITE_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            .build()
+        return WeworkBotClient(okHttpClient, notifyProperties)
+    }
+
+    companion object {
+        private const val DEFAULT_CONNECT_TIMEOUT_SECOND = 5L
+        private const val DEFAULT_READ_TIMEOUT_SECOND = 30L
+        private const val DEFAULT_WRITE_TIMEOUT_SECOND = 30L
+    }
+}

@@ -25,29 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.scanner.extension
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.devops.plugin.api.ExtensionPoint
 
-@ApiModel("获取扫描任务")
-data class ScanTaskQuery(
-    @ApiModelProperty("任务所属项目")
-    val projectId: String,
-    @ApiModelProperty("任务名前缀")
-    val namePrefix: String? = null,
-    @ApiModelProperty("扫描方案id")
-    val planId: String? = null,
-    @ApiModelProperty("任务触发方式")
-    val triggerType: String? = null,
-    @ApiModelProperty("在这个时间戳之后创建的任务")
-    var after: Long? = null,
-    @ApiModelProperty("在这个时间戳之前创建的任务")
-    var before: Long? = null,
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String? = null,
-    @ApiModelProperty("使用的扫描器类型")
-    val scannerType: String? = null,
-    @ApiModelProperty("当前任务状态")
-    val status: String? = null
-)
+interface ScanResultNotifyExtension: ExtensionPoint {
+    /**
+     * 扫描结束后通知用户
+     */
+    fun notify(context: ScanResultNotifyContext)
+}

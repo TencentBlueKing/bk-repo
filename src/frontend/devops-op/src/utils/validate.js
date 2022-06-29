@@ -11,3 +11,4 @@ export function isExternal(path) {
 }
 
 export const FILE_PATH_REGEX = /^(((\/?[\w-]+)+\/?)|([A-Za-z]:(\\[\w-~]+)+)\\?)$/
+export const UUID_REGEX = /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/

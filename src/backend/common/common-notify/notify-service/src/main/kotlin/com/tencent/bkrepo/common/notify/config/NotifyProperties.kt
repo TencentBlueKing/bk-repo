@@ -45,7 +45,7 @@ data class NotifyProperties(
     @NestedConfigurationProperty
     var devopsServer: String = "",
     /**
-     * 用于替换企业微信通知的scheme://host:port，为empty时不替换
+     * 企业微信api地址
      */
-    var replaceWeworkUrl: String = ""
+    var weworkApiHost: String = ""
 )

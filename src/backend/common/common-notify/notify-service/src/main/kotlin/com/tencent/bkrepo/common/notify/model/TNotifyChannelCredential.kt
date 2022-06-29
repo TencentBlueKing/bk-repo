@@ -25,29 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.common.notify.model
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@ApiModel("获取扫描任务")
-data class ScanTaskQuery(
-    @ApiModelProperty("任务所属项目")
-    val projectId: String,
-    @ApiModelProperty("任务名前缀")
-    val namePrefix: String? = null,
-    @ApiModelProperty("扫描方案id")
-    val planId: String? = null,
-    @ApiModelProperty("任务触发方式")
-    val triggerType: String? = null,
-    @ApiModelProperty("在这个时间戳之后创建的任务")
-    var after: Long? = null,
-    @ApiModelProperty("在这个时间戳之前创建的任务")
-    var before: Long? = null,
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String? = null,
-    @ApiModelProperty("使用的扫描器类型")
-    val scannerType: String? = null,
-    @ApiModelProperty("当前任务状态")
-    val status: String? = null
+@Document("notify_channel_credential")
+@CompoundIndexes(
+    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
+)
+data class TNotifyChannelCredential(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+
+    /**
+     * 通知渠道名
+     */
+    var name: String,
+    /**
+     * 通知渠道类型
+     */
+    var type: String,
+    /**
+     * 是否为默认通知渠道，默认通知渠道可以有多个
+     */
+    var default: Boolean,
+    /**
+     * 通知渠道凭据
+     */
+    var credential: String
 )

@@ -37,6 +37,11 @@ enum class ScanTriggerType {
     MANUAL,
 
     /**
+     * 手动触发单制品扫描
+     */
+    MANUAL_SINGLE,
+
+    /**
      * 流水线触发扫描
      */
     PIPELINE,

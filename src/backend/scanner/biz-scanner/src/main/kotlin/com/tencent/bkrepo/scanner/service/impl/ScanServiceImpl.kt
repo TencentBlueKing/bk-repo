@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
@@ -46,6 +47,7 @@ import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.event.listener.ScanTaskStatusChangedEventListener
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
@@ -83,6 +85,8 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Service
 class ScanServiceImpl @Autowired constructor(
@@ -119,7 +123,7 @@ class ScanServiceImpl @Autowired constructor(
     override fun pipelineScan(pipelineScanRequest: PipelineScanRequest): ScanTask {
         with(pipelineScanRequest) {
             val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId)
-            val metadata = if(pid != null && bid != null) {
+            val metadata = if (pid != null && bid != null) {
                 val data = ArrayList<TaskMetadata>()
                 pid?.let { data.add(TaskMetadata(key = TASK_METADATA_KEY_PID, value = it)) }
                 bid?.let { data.add(TaskMetadata(key = TASK_METADATA_KEY_BID, value = it)) }
@@ -153,6 +157,32 @@ class ScanServiceImpl @Autowired constructor(
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
         val userId = SecurityUtils.getUserId()
         return updateScanTaskResult(subtask, SubScanTaskStatus.STOPPED.name, emptyMap(), userId)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun stopTask(projectId: String, taskId: String): Boolean {
+        val task = scanTaskDao.findByProjectIdAndId(projectId, taskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
+        if (ScanTaskStatus.finishedStatus(task.status)) {
+            return false
+        }
+
+        // 设置停止中的标记，中止提交子任务
+        if (scanTaskDao.updateStatus(task.id!!, ScanTaskStatus.STOPPING, task.lastModifiedDate).modifiedCount == 1L) {
+            val userId = SecurityUtils.getUserId()
+            scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.STOPPING)
+            // 延迟停止任务，让剩余子任务提交完
+            val command = {
+                subScanTaskDao.findByParentId(task.id).forEach {
+                    updateScanTaskResult(it, SubScanTaskStatus.STOPPED.name, emptyMap(), userId)
+                }
+                scanTaskDao.updateStatus(task.id, ScanTaskStatus.STOPPED)
+                scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.STOPPED)
+            }
+            scheduler.schedule(command, STOP_TASK_DELAY_SECONDS, TimeUnit.SECONDS)
+            return true
+        }
+        return false
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -407,6 +437,7 @@ class ScanServiceImpl @Autowired constructor(
                     createdDate = now,
                     lastModifiedBy = userId ?: SecurityUtils.getUserId(),
                     lastModifiedDate = now,
+                    name = scanTaskName(triggerType, metadata),
                     rule = rule.toJsonString(),
                     triggerType = triggerType.name,
                     planId = plan?.id,
@@ -431,6 +462,20 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
+    private fun scanTaskName(triggerType: ScanTriggerType, metadata: List<TaskMetadata>): String {
+        return when (triggerType) {
+            ScanTriggerType.PIPELINE -> {
+                val metadataMap = metadata.associateBy { it.key }
+                val pipelineName = metadataMap[TASK_METADATA_PIPELINE_NAME]?.value ?: ""
+                val buildNo = metadataMap[TASK_METADATA_BUILD_NUMBER]?.value ?: ""
+                val pluginName = metadataMap[TASK_METADATA_PLUGIN_NAME]?.value ?: ""
+                "$pipelineName-$buildNo-$pluginName"
+            }
+            ScanTriggerType.MANUAL_SINGLE -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
+            else -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
+        }
+    }
+
     private fun projectId(rule: Rule?, plan: TScanPlan?): String {
         // 尝试从rule取projectId，不存在时从plan中取projectId
         val projectIds = RuleUtil.getProjectIds(rule)
@@ -448,6 +493,13 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     companion object {
+        private val scheduler = Executors.newScheduledThreadPool(200)
+
+        /**
+         * 延迟停止任务时间
+         */
+        private const val STOP_TASK_DELAY_SECONDS = 2L
+
         /**
          * 默认任务最长执行时间，超过后会触发重试
          */

@@ -25,8 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.scanner.exception
 
-interface MessageBody {
-    fun type(): String
-}
+/**
+ * 任务提交被中止
+ */
+class TaskSubmitInterruptedException(val taskId: String) : RuntimeException()

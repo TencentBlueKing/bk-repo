@@ -48,6 +48,7 @@ import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
+import com.tencent.bkrepo.scanner.exception.TaskSubmitInterruptedException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
 import com.tencent.bkrepo.scanner.model.TFileScanResult
@@ -165,6 +166,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val (submittedSubTaskCount, reuseResultTaskCount) = try {
             lock?.lock()
             submit(scanTask)
+        } catch (e: TaskSubmitInterruptedException) {
+            logger.info("task[${e.taskId}] has been stopped")
+            return
         } catch (e: Exception) {
             logger.warn("submit task[${scanTask.taskId}] failed", e)
             throw e
@@ -406,6 +410,15 @@ class DefaultScanTaskScheduler @Autowired constructor(
         if (subScanTasks.isEmpty()) {
             return emptyList()
         }
+
+        // 更新当前正在扫描的任务数
+        val parentTaskId = subScanTasks.first().parentScanTaskId
+        val updateResult = scanTaskDao.updateScanningCount(parentTaskId, subScanTasks.size)
+        if (updateResult.modifiedCount == 0L) {
+            // 没有更新表示任务已被停止
+            throw TaskSubmitInterruptedException(parentTaskId)
+        }
+
         val tasks = subScanTaskDao.insert(subScanTasks)
 
         // 保存方案制品最新扫描记录
@@ -413,10 +426,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubScanTasks)
         archiveSubScanTaskDao.insert(tasks.map { TArchiveSubScanTask.from(it, it.status) })
         planArtifactLatestSubScanTasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
-
-        // 更新当前正在扫描的任务数
-        val task = tasks.first()
-        scanTaskDao.updateScanningCount(task.parentScanTaskId, tasks.size)
 
         // 统计BLOCKED与CREATED任务数量
         val createdTasks = tasks.filter { it.status == SubScanTaskStatus.CREATED.name }

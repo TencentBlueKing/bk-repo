@@ -48,6 +48,11 @@ enum class ScanTaskStatus {
      * 扫描暂停
      */
     PAUSE,
+
+    /**
+     * 扫描停止中
+     */
+    STOPPING,
     /**
      * 扫描中止
      */
@@ -56,4 +61,10 @@ enum class ScanTaskStatus {
      * 扫描结束
      */
     FINISHED;
+
+    companion object {
+        fun finishedStatus(status: String): Boolean {
+            return status == STOPPING.name || status == STOPPED.name || status == FINISHED.name
+        }
+    }
 }

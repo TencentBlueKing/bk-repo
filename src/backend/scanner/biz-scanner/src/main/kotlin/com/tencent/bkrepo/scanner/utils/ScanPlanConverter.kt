@@ -281,6 +281,7 @@ object ScanPlanConverter {
 
             SubScanTaskStatus.STOPPED.name,
             ScanTaskStatus.PAUSE.name,
+            ScanTaskStatus.STOPPING.name,
             ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
 
             SubScanTaskStatus.SUCCESS.name,
