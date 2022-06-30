@@ -31,3 +31,19 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp")
     implementation("commons-io:commons-io")
 }
+
+tasks.register<Jar>("fatJar") {
+    group = "build"
+    manifest {
+        attributes(
+            "Main-Class" to "com.tencent.bkrepo.scanner.image.ScanRunner"
+        )
+    }
+    archiveClassifier.set("fat")
+
+    from(sourceSets.main.get().output)
+
+    dependsOn(configurations.runtimeClasspath)
+    from({ configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) } })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

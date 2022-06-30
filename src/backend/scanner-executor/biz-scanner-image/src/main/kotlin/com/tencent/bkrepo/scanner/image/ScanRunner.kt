@@ -47,7 +47,7 @@ import java.io.File
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
-object Main {
+object ScanRunner {
     private const val DEFAULT_CONNECT_TIMEOUT_SECONDS = 5L
     private const val DEFAULT_READ_TIMEOUT_SECONDS = 30L
     private const val DEFAULT_WRITE_TIMEOUT_SECONDS = 30L
@@ -60,7 +60,7 @@ object Main {
             .writeTimeout(DEFAULT_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
     }
-    private val logger = LoggerFactory.getLogger(Main::class.java)
+    private val logger = LoggerFactory.getLogger(ScanRunner::class.java)
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -133,4 +133,3 @@ object Main {
         }
     }
 }
-
