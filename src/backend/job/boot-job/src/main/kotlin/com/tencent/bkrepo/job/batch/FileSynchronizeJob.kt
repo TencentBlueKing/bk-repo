@@ -30,9 +30,9 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.job.batch.base.BatchJob
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.FileSynchronizeJobProperties
+import com.tencent.bkrepo.job.config.properties.FileSynchronizeJobProperties
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -48,14 +48,14 @@ class FileSynchronizeJob(
     private val properties: FileSynchronizeJobProperties,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageService: StorageService
-) : BatchJob(properties) {
+) : DefaultContextJob(properties) {
 
     @Scheduled(cron = "0 0 */1 * * ?") // 每小时同步一次文件
     override fun start(): Boolean {
         return super.start()
     }
 
-    override fun doStart(jobContext: JobContext) {
+    override fun doStart0(jobContext: JobContext) {
         // cleanup default storage
         syncStorage()
         // cleanup extended storage

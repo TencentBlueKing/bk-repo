@@ -89,7 +89,6 @@ class DeletedNodeCleanupJob(
             deletedNodeList.forEach { node ->
                 cleanUpNode(repo, node)
                 if (node.folder) {
-                    FileReferenceCleanupJob
                     context.folder += 1
                 } else {
                     context.file += 1

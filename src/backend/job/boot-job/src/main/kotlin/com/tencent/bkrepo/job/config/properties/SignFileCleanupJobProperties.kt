@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
-open class BatchJobProperties(
-    /**
-     * 是否开启任务
-     * */
-    open var enabled: Boolean = true
-)
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("job.sign-file-cleanup")
+class SignFileCleanupJobProperties(
+    var expireOfDays: Int = 15
+) : MongodbJobProperties()

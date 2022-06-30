@@ -30,7 +30,7 @@ package com.tencent.bkrepo.job.batch.base
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.config.BatchJobProperties
+import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,7 +39,7 @@ import java.time.Duration
 /**
  * 抽象批处理作业Job
  * */
-abstract class BatchJob(private val batchJobProperties: BatchJobProperties) {
+abstract class BatchJob<C : JobContext>(private val batchJobProperties: BatchJobProperties) {
     /**
      * 锁名称
      */
@@ -50,7 +50,7 @@ abstract class BatchJob(private val batchJobProperties: BatchJobProperties) {
      */
     open fun getJobName(): String = javaClass.simpleName
 
-    open fun createJobContext(): JobContext = JobContext()
+    abstract fun createJobContext(): C
 
     /**
      * Job停止标志
@@ -124,7 +124,15 @@ abstract class BatchJob(private val batchJobProperties: BatchJobProperties) {
     /**
      * 启动任务的具体实现
      * */
-    abstract fun doStart(jobContext: JobContext)
+    fun doStart(jobContext: C) {
+        try {
+            doStart0(jobContext)
+        } catch (e: Exception) {
+            logger.info("Job[${getJobName()}] execution failed.", e)
+        }
+    }
+
+    abstract fun doStart0(jobContext: C)
 
     /**
      * 停止任务

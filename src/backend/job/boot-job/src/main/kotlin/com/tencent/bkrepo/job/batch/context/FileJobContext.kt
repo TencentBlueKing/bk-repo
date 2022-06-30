@@ -25,11 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.base
+package com.tencent.bkrepo.job.batch.context
 
+import com.tencent.bkrepo.job.batch.base.JobContext
 import java.util.concurrent.atomic.AtomicLong
 
-class FileJobContext(
+open class FileJobContext(
     // 文件丢失数
     var fileMissing: AtomicLong = AtomicLong()
 ) : JobContext() {

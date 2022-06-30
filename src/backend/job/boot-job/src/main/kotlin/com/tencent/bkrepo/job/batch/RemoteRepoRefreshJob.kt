@@ -35,9 +35,9 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.job.CATEGORY
 import com.tencent.bkrepo.job.TYPE
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
-import com.tencent.bkrepo.job.config.RepoRefreshJobProperties
+import com.tencent.bkrepo.job.config.properties.RepoRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.time.Duration
@@ -54,7 +54,7 @@ import org.springframework.stereotype.Component
 open class RemoteRepoRefreshJob(
     private val properties: RepoRefreshJobProperties,
     private val helmClient: HelmClient
-) : MongoDbBatchJob<RemoteRepoRefreshJob.ProxyRepoData>(properties) {
+) : DefaultContextMongoDbJob<RemoteRepoRefreshJob.ProxyRepoData>(properties) {
 
     private val types: List<String>
         get() = properties.types
@@ -103,7 +103,7 @@ open class RemoteRepoRefreshJob(
         private const val COLLECTION_NAME = "repository"
     }
 
-    override fun mapToObject(row: Map<String, Any?>): ProxyRepoData {
+    override fun mapToEntity(row: Map<String, Any?>): ProxyRepoData {
         return ProxyRepoData(row)
     }
 
