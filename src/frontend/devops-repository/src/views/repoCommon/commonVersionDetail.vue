@@ -214,7 +214,7 @@
                     .map(item => ({ ...item, value: this.detail.basic[item.name] }))
             },
             metadataMap () {
-                return (this.basic.metadata || []).reduce((target, meta) => {
+                return (this.detail.metadata || []).reduce((target, meta) => {
                     target[meta.key] = meta.value
                     return target
                 }, {})
