@@ -15,7 +15,6 @@
             :data="dataList"
             :outer-border="false"
             :row-border="false"
-            row-key="userId"
             size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading"></empty-data>

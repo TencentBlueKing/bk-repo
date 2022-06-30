@@ -1,11 +1,11 @@
 <template>
     <bk-tab class="common-version-container" type="unborder-card" :active.sync="tabName" v-bkloading="{ isLoading }">
         <template #setting>
-            <bk-button v-if="!(detail.metadata && detail.metadata.forbidStatus) && repoType !== 'docker'"
+            <bk-button v-if="!metadataMap.forbidStatus && repoType !== 'docker'"
                 outline class="mr10" @click="$emit('download')">下载</bk-button>
             <operation-list class="mr20"
                 :list="operationBtns">
-                <bk-button @click.stop="() => {}" icon="ellipsis"></bk-button>
+                <bk-button icon="ellipsis"></bk-button>
             </operation-list>
         </template>
         <bk-tab-panel v-if="detail.basic" name="basic" :label="$t('baseInfo')">
@@ -29,10 +29,10 @@
                                 :key="tag">
                                 {{ tag }}
                             </span>
-                            <scan-tag v-if="['maven'].includes(repoType)" class="ml10" :status="detail.metadata.scanStatus"></scan-tag>
+                            <scan-tag v-if="['maven', 'npm', 'pypi', 'docker'].includes(repoType)" class="ml10" :status="metadataMap.scanStatus"></scan-tag>
                             <forbid-tag class="ml10"
-                                v-if="detail.metadata.forbidStatus"
-                                v-bind="detail.metadata">
+                                v-if="metadataMap.forbidStatus"
+                                v-bind="metadataMap">
                             </forbid-tag>
                         </template>
                     </span>
@@ -65,15 +65,16 @@
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
             <div class="version-metadata display-block" :data-title="$t('metaData')">
                 <bk-table
-                    :data="Object.entries(detail.metadata)"
+                    :data="detail.metadata"
                     :outer-border="false"
                     :row-border="false"
                     size="small">
                     <template #empty>
                         <empty-data ex-style="margin-top:130px;"></empty-data>
                     </template>
-                    <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
-                    <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('key')" prop="key" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('value')" prop="value" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
                 </bk-table>
             </div>
         </bk-tab-panel>
@@ -167,8 +168,7 @@
                 detail: {
                     basic: {
                         readme: ''
-                    },
-                    metadata: {}
+                    }
                 },
                 readmeContent: '',
                 selectedHistory: {},
@@ -213,16 +213,23 @@
                 ].filter(({ name }) => name in this.detail.basic)
                     .map(item => ({ ...item, value: this.detail.basic[item.name] }))
             },
+            metadataMap () {
+                return (this.basic.metadata || []).reduce((target, meta) => {
+                    target[meta.key] = meta.value
+                    return target
+                }, {})
+            },
             operationBtns () {
-                const { basic, metadata } = this.detail
+                const basic = this.detail.basic
+                const metadataMap = this.metadataMap
                 return [
-                    ...(!metadata.forbidStatus
+                    ...(!metadataMap.forbidStatus
                         ? [
                             this.permission.edit && { clickEvent: () => this.$emit('tag'), label: '晋级', disabled: (basic.stageTag || '').includes('@release') },
-                            ['maven'].includes(this.repoType) && { clickEvent: () => this.$emit('scan'), label: '安全扫描' }
+                            ['maven', 'npm', 'pypi', 'docker'].includes(this.repoType) && { clickEvent: () => this.$emit('scan'), label: '安全扫描' }
                         ]
                         : []),
-                    // { clickEvent: () => this.$emit('forbid'), label: metadata.forbidStatus ? '解除禁止' : '禁止使用' },
+                    ['maven', 'npm', 'pypi', 'docker'].includes(this.repoType) && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }

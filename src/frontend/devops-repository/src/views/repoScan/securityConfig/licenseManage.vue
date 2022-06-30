@@ -28,7 +28,6 @@
             :data="licenseList"
             :outer-border="false"
             :row-border="false"
-            row-key="userId"
             size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(name || isTrust)"></empty-data>
