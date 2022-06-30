@@ -25,25 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+plugins {
+    application
+}
+
+application {
+    mainClass.set("com.tencent.bkrepo.scanner.image.ScanRunner")
+}
+
 dependencies {
     implementation(project(":scanner:api-scanner"))
     implementation(project(":scanner-executor:biz-scanner-executor"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("commons-io:commons-io")
-}
-
-tasks.register<Jar>("fatJar") {
-    group = "build"
-    manifest {
-        attributes(
-            "Main-Class" to "com.tencent.bkrepo.scanner.image.ScanRunner"
-        )
-    }
-    archiveClassifier.set("fat")
-
-    from(sourceSets.main.get().output)
-
-    dependsOn(configurations.runtimeClasspath)
-    from({ configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) } })
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
