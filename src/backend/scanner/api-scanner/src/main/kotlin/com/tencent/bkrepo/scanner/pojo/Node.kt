@@ -42,11 +42,11 @@ data class Node(
     /**
      * 文件完整路径
      */
-    var fullPath: String,
+    val fullPath: String,
     /**
      * 制品名
      */
-    var artifactName: String,
+    val artifactName: String,
     /**
      * 依赖包唯一标识，制品为依赖包时候存在
      */

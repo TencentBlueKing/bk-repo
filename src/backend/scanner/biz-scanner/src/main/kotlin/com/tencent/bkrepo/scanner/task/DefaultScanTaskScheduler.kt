@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
@@ -96,8 +95,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val publisher: ApplicationEventPublisher,
     private val scannerProperties: ScannerProperties,
-    private val scanQualityService: ScanQualityService,
-    private val scannerConverters: Map<String, ScannerConverter>
+    private val scanQualityService: ScanQualityService
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -214,32 +212,28 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         val qualityRule = scanTask.scanPlan?.scanQuality
         for (node in nodeIterator) {
-            // 不通扫描类型的扫描器node转化为扫描器需要的node
-            val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)]
-            val convertNode = scannerConverter?.convertToNode(node) ?: node
-
             // 未使用扫描方案的情况直接取node的projectId
             projectScanConfiguration = projectScanConfiguration
-                ?: projectScanConfigurationDao.findByProjectId(convertNode.projectId)
-            scanningCount = scanningCount ?: subScanTaskDao.scanningCount(convertNode.projectId)
+                ?: projectScanConfigurationDao.findByProjectId(node.projectId)
+            scanningCount = scanningCount ?: subScanTaskDao.scanningCount(node.projectId)
 
             val storageCredentialsKey = repoInfoCache
-                .get(generateKey(convertNode.projectId, convertNode.repoName))
+                .get(generateKey(node.projectId, node.repoName))
                 .storageCredentialsKey
 
             // 文件已存在扫描结果，跳过扫描
             val existsFileScanResult =
-                fileScanResultDao.find(storageCredentialsKey, convertNode.sha256, scanner.name, scanner.version)
+                fileScanResultDao.find(storageCredentialsKey, node.sha256, scanner.name, scanner.version)
             if (existsFileScanResult != null && !scanTask.force) {
-                logger.info("skip scan file[${convertNode.sha256}], credentials[$storageCredentialsKey]")
+                logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
                 val finishedSubtask = createFinishedSubTask(
-                    scanTask, existsFileScanResult, convertNode, storageCredentialsKey, qualityRule
+                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule
                 )
                 finishedSubScanTasks.add(finishedSubtask)
             } else {
                 // 添加到扫描任务队列
                 val status = status(scanningCount, projectScanConfiguration)
-                subScanTasks.add(createSubTask(scanTask, scanner, convertNode, storageCredentialsKey, status))
+                subScanTasks.add(createSubTask(scanTask, scanner, node, storageCredentialsKey, status))
                 if (status == SubScanTaskStatus.CREATED) {
                     scanningCount++
                 }

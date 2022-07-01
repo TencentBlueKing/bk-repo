@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.scanner.component.manager.BaseScannerConverter
+import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
@@ -42,7 +42,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
 
 @Component("${DependencyScanner.TYPE}Converter")
-class DependencyCheckConverter : BaseScannerConverter() {
+class DependencyCheckConverter : ScannerConverter {
     @Suppress("UNCHECKED_CAST")
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
         result as Page<DependencyItem>

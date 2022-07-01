@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
-import org.bouncycastle.asn1.x500.style.RFC4519Style.name
 import java.time.LocalDateTime
 
 object Converter {
@@ -39,8 +38,6 @@ object Converter {
      * 未计算cvss评分
      */
     private const val NO_CVSS_SCORE = 0.0
-
-    private const val UNKNOWN = ""
 
     fun convertToCve(vulnerabilityItem: VulnerabilityItem): TCve {
         return with(vulnerabilityItem) {
@@ -56,8 +53,8 @@ object Converter {
                 name = title,
                 description = description,
                 references = references ?: emptyList(),
-                pocId = pocIdOf(vulnerabilityID),
-                cveId = vulnerabilityID,
+                pocId = pocIdOf(vulnerabilityId),
+                cveId = vulnerabilityId,
                 cvssRank = severity,
                 cvss = NO_CVSS_SCORE,
                 cvssV3 = null,
@@ -66,5 +63,5 @@ object Converter {
         }
     }
 
-    fun pocIdOf(vulnerabilityID: String) = "${TrivyScanner.TYPE.toLowerCase()}-$vulnerabilityID"
+    private fun pocIdOf(vulnerabilityId: String) = "${TrivyScanner.TYPE.toLowerCase()}-$vulnerabilityId"
 }

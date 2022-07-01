@@ -42,17 +42,11 @@ data class ManifestV2(
     /**
      * 配置信息
      */
-    val config: Config,
+    val config: Layer,
     /**
      * 层
      */
     val layers: List<Layer>
-)
-
-data class Config(
-    val mediaType: String,
-    val size: Long,
-    val digest: String
 )
 
 data class Layer(

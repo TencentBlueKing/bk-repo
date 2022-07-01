@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.scanner.component.manager.BaseScannerConverter
+import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
@@ -41,7 +41,7 @@ import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.springframework.stereotype.Component
 
 @Component("${ArrowheadScanner.TYPE}Converter")
-class ArrowheadConverter : BaseScannerConverter() {
+class ArrowheadConverter : ScannerConverter {
     @Suppress("UNCHECKED_CAST")
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
         result as Page<CveSecItem>

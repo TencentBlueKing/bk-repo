@@ -27,14 +27,12 @@
 
 package com.tencent.bkrepo.scanner.component.manager.trivy
 
-import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.scanner.component.manager.BaseScannerConverter
+import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.component.manager.trivy.model.TVulnerabilityItem
-import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivyLoadResultArguments
@@ -44,14 +42,14 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
 
 @Component("${TrivyScanner.TYPE}Converter")
-class TrivyConverter : BaseScannerConverter() {
+class TrivyConverter : ScannerConverter {
     @Suppress("UNCHECKED_CAST")
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
         result as Page<TVulnerabilityItem>
         val pageRequest = PageRequest.of(result.pageNumber, result.pageSize)
         val reports = result.records.mapTo(HashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
-                vulId = it.data.vulnerabilityID,
+                vulId = it.data.vulnerabilityId,
                 severity = ScanPlanConverter.convertToLeakLevel(it.data.severity.toLowerCase()),
                 pkgName = it.data.pkgName,
                 installedVersion = setOf(it.data.installedVersion),
@@ -68,16 +66,9 @@ class TrivyConverter : BaseScannerConverter() {
 
     override fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments {
         return TrivyLoadResultArguments(
-            vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
+            vulnerabilityLevels = request.leakType?.let { listOf(it.toUpperCase()) } ?: emptyList(),
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
-            reportType = request.reportType,
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
-    }
-
-    override fun convertToNode(node: Node): Node {
-        node.fullPath = node.fullPath.substringBeforeLast(SLASH)
-        node.artifactName = node.fullPath.split(SLASH).get(1)
-        return super.convertToNode(node)
     }
 }

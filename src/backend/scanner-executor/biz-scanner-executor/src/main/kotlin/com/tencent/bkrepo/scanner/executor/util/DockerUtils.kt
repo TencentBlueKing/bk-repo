@@ -3,7 +3,7 @@ package com.tencent.bkrepo.scanner.executor.util
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
-import com.github.dockerjava.api.model.Bind
+import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Ulimit
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
@@ -61,14 +61,16 @@ object DockerUtils {
     }
 
     fun dockerHostConfig(
-        bind: Bind,
-        maxTime: Long
+        binds: Binds,
+        maxSize: Long,
+        withPrivileged: Boolean = false
     ): HostConfig {
         return HostConfig().apply {
-            withBinds(bind)
-            withUlimits(arrayOf(Ulimit("fsize", maxTime, maxTime)))
+            withBinds(binds)
+            withUlimits(arrayOf(Ulimit("fsize", maxSize, maxSize)))
             // 降低容器CPU优先级，限制可用的核心，避免调用DockerDaemon获其他系统服务时超时
             withCpuShares(CONTAINER_CPU_SHARES)
+            withPrivileged(withPrivileged)
             val processorCount = Runtime.getRuntime().availableProcessors()
             if (processorCount > 2) {
                 withCpusetCpus("0-${processorCount - 2}")
