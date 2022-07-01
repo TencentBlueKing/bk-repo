@@ -33,7 +33,11 @@ package com.tencent.bkrepo.common.notify.service
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
+import com.tencent.bkrepo.common.notify.api.NotifyMessage
 import com.tencent.bkrepo.common.notify.api.NotifyService
+import com.tencent.bkrepo.common.notify.client.NotifyClient
+import com.tencent.bkrepo.common.notify.config.NotifyProperties
 import com.tencent.bkrepo.common.notify.pojo.BaseMessage
 import com.tencent.bkrepo.common.notify.pojo.DevopsResult
 import com.tencent.bkrepo.common.notify.pojo.EmailNotifyMessage
@@ -45,13 +49,17 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
 /**
  * 蓝盾通知服务
  */
+@Service
 class DevopsNotify constructor(
-    val devopsServer: String
+    private val notifyProperties: NotifyProperties,
+    private val notifyChannelCredentialService: NotifyChannelCredentialService,
+    private val notifyClients: Map<String, NotifyClient>
 ) : NotifyService {
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(5L, TimeUnit.SECONDS)
@@ -89,6 +97,16 @@ class DevopsNotify constructor(
         postMessage(url, message)
     }
 
+    override fun send(message: NotifyMessage, credential: NotifyChannelCredential?) {
+        if (credential == null) {
+            notifyChannelCredentialService.listDefault(message.type).forEach {
+                notifyClients[it.type]?.send(it, message)
+            }
+        } else {
+            notifyClients[credential.type]?.send(credential, message)
+        }
+    }
+
     override fun sendWechat(receivers: List<String>, body: String) {
         val url = "${getServer()}/notify/api/service/notifies/wechat"
         val message = WechatNotifyMessage(
@@ -116,6 +134,7 @@ class DevopsNotify constructor(
     }
 
     private fun getServer(): String {
+        val devopsServer = notifyProperties.devopsServer
         return if (devopsServer.startsWith("http://") || devopsServer.startsWith("https://")) {
             devopsServer.removeSuffix("/")
         } else {

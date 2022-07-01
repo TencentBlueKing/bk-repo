@@ -39,6 +39,14 @@
       "metadata": {
         "key": "value"
       },
+      "nodeMetadata": [
+         {
+           "key": "key",
+           "value": "value",
+           "description": "",
+           "system": false 
+         }
+      ],
       "createdBy" : "admin",
       "createdDate" : "2020-07-27T16:02:31.394",
       "lastModifiedBy" : "admin",
@@ -50,23 +58,24 @@
 
 - data字段说明
 
-  |字段|类型|说明|Description|
-  |---|---|---|---|
-  |projectId|string|节点所属项目|node project id|
-  |repoName|string|节点所属仓库|node repository name|
-  |path|string|节点目录|node path|
-  |name|string|节点名称|node name|
-  |fullPath|string|节点完整路径|node full path|
-  |folder|bool|是否为文件夹|is folder|
-  |size|long|节点大小|file size|
-  |sha256|string|节点sha256|file sha256|
-  |md5|string|节点md5|file md5 checksum|
-  |stageTag|string|晋级状态标签|stage status tag|
-  |metadata|object|节点元数据，key-value键值对|node metadata|
-  |createdBy|string|创建者|create user|
-  |createdDate|string|创建时间|create time|
-  |lastModifiedBy|string|上次修改者|last modify user|
-  |lastModifiedDate|string|上次修改时间|last modify time|
+  |字段|类型| 说明                 |Description|
+  |---|--------------------|---|---|
+  |projectId|string| 节点所属项目             |node project id|
+  |repoName|string| 节点所属仓库             |node repository name|
+  |path|string| 节点目录               |node path|
+  |name|string| 节点名称               |node name|
+  |fullPath|string| 节点完整路径             |node full path|
+  |folder|bool| 是否为文件夹             |is folder|
+  |size|long| 节点大小               |file size|
+  |sha256|string| 节点sha256           |file sha256|
+  |md5|string| 节点md5              |file md5 checksum|
+  |stageTag|string| 晋级状态标签             |stage status tag|
+  |metadata|object| 节点元数据，key-value键值对 |node metadata|
+  |nodeMetadata|object| 节点元数据列表            |node metadata|
+  |createdBy|string| 创建者                |create user|
+  |createdDate|string| 创建时间               |create time|
+  |lastModifiedBy|string| 上次修改者              |last modify user|
+  |lastModifiedDate|string| 上次修改时间             |last modify time|
 
 ## 分页查询节点
 
@@ -118,6 +127,7 @@
           "md5" : "2947b3932900d4534175d73964ec22ef",
           "stageTag": "@release",
           "metadata": {},
+          "nodeMetadata": [],
           "createdBy" : "admin",
           "createdDate" : "2020-07-27T16:02:31.394",
           "lastModifiedBy" : "admin",
@@ -131,23 +141,24 @@
 
 - record字段说明
 
-  |字段|类型|说明|Description|
+  | 字段               |类型|说明|Description|
   |---|---|---|---|
-  |projectId|string|节点所属项目|node project id|
-  |repoName|string|节点所属仓库|node repository name|
-  |path|string|节点目录|node path|
-  |name|string|节点名称|node name|
-  |fullPath|string|节点完整路径|node full path|
-  |folder|bool|是否为文件夹|is folder|
-  |size|long|节点大小|file size|
-  |sha256|string|节点sha256|file sha256|
-  |md5|string|节点md5|file md5 checksum|
-  |stageTag|string|晋级状态标签，includeMetadata=false将返回空|stage status tag|
-  |metadata|object|节点元数据，key-value键值对，includeMetadata=false将返回空|node metadata|
-  |createdBy|string|创建者|create user|
-  |createdDate|string|创建时间|create time|
-  |lastModifiedBy|string|上次修改者|last modify user|
-  |lastModifiedDate|string|上次修改时间|last modify time|
+  | projectId        |string|节点所属项目|node project id|
+  | repoName         |string|节点所属仓库|node repository name|
+  | path             |string|节点目录|node path|
+  | name             |string|节点名称|node name|
+  | fullPath         |string|节点完整路径|node full path|
+  | folder           |bool|是否为文件夹|is folder|
+  | size             |long|节点大小|file size|
+  | sha256           |string|节点sha256|file sha256|
+  | md5              |string|节点md5|file md5 checksum|
+  | stageTag         |string|晋级状态标签，includeMetadata=false将返回空|stage status tag|
+  | metadata         |object|节点元数据，key-value键值对，includeMetadata=false将返回空|node metadata|
+  | nodeMetadata                |object|节点元数据，key-value键值对，includeMetadata=false将返回空|node metadata|
+  | createdBy        |string|创建者|create user|
+  | createdDate      |string|创建时间|create time|
+  | lastModifiedBy   |string|上次修改者|last modify user|
+  | lastModifiedDate |string|上次修改时间|last modify time|
 
 ## 创建目录
 

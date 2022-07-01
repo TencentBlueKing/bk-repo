@@ -99,7 +99,9 @@ class ScanEventConsumer(
         if (!supportFileNameExtension(event.resourceKey)) {
             return false
         }
-        logger.info("receive event resourceKey[${event.resourceKey}]")
+        if (logger.isDebugEnabled) {
+            logger.debug("receive event resourceKey[${event.resourceKey}]")
+        }
 
         var hasScanTask = false
         with(event) {
@@ -111,7 +113,7 @@ class ScanEventConsumer(
                         planId = it.id!!,
                         rule = RuleConverter.convert(projectId, repoName, resourceKey)
                     )
-                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT)
+                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT, it.lastModifiedBy)
                     hasScanTask = true
                 }
         }
@@ -154,7 +156,7 @@ class ScanEventConsumer(
                         planId = it.id!!,
                         rule = RuleConverter.convert(projectId, repoName, packageKey, packageVersion)
                     )
-                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT)
+                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT, it.lastModifiedBy)
                     hasScanTask = true
                 }
         }
@@ -176,8 +178,9 @@ class ScanEventConsumer(
                 val scanner = entry.key
                 val configuration = entry.value
 
-                if (configuration.autoScanRepoNames.isNotEmpty() && repoName !in configuration.autoScanRepoNames
-                    || !match(event, configuration.autoScanMatchRule)) {
+                if (configuration.autoScanRepoNames.isNotEmpty() && repoName !in configuration.autoScanRepoNames ||
+                    !match(event, configuration.autoScanMatchRule)
+                ) {
                     continue
                 }
 

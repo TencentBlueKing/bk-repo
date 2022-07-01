@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.packages
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
@@ -59,6 +60,8 @@ data class PackageVersion(
     val stageTag: List<String>,
     @ApiModelProperty("元数据")
     val metadata: Map<String, Any>,
+    @ApiModelProperty("元数据")
+    val packageMetadata: List<MetadataModel>,
     @ApiModelProperty("标签")
     val tags: List<String>,
     @ApiModelProperty("扩展字段")

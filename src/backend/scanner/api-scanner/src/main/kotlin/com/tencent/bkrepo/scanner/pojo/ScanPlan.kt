@@ -53,6 +53,8 @@ data class ScanPlan(
     var repoNames: List<String>? = null,
     @ApiModelProperty("自动扫描规则")
     var rule: Rule? = null,
+    @ApiModelProperty("质量规则")
+    var scanQuality: Map<String, Any>? = null,
     @ApiModelProperty("创建者")
     var createdBy: String? = null,
     @ApiModelProperty("创建时间")
@@ -60,5 +62,7 @@ data class ScanPlan(
     @ApiModelProperty("修改者")
     var lastModifiedBy: String? = null,
     @ApiModelProperty("修改时间")
-    var lastModifiedDate: String? = null
+    var lastModifiedDate: String? = null,
+    @ApiModelProperty("是否只读")
+    var readOnly: Boolean? = null
 )

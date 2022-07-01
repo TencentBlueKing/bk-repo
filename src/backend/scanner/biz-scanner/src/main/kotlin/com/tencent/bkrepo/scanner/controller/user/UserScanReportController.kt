@@ -42,12 +42,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
-import com.tencent.bkrepo.scanner.service.ScanPlanService
-import com.tencent.bkrepo.scanner.service.ScanService
+import com.tencent.bkrepo.scanner.service.ScanTaskService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -61,10 +60,7 @@ import org.springframework.web.bind.annotation.RestController
 @Api("扫描报告")
 @RestController
 @RequestMapping("/api/scan")
-class UserScanReportController(
-    private val scanService: ScanService,
-    private val scanPlanService: ScanPlanService
-) {
+class UserScanReportController(private val scanTaskService: ScanTaskService) {
 
     @ApiOperation("获取文件扫描报告详情")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
@@ -74,7 +70,18 @@ class UserScanReportController(
         @RequestBody request: FileScanResultDetailRequest
     ): Response<FileScanResultDetail> {
         request.artifactInfo = artifactInfo
-        return ResponseBuilder.success(scanService.resultDetail(request))
+        return ResponseBuilder.success(scanTaskService.resultDetail(request))
+    }
+
+    @ApiOperation("制品详情--漏洞数据")
+    @GetMapping("/reports/{subScanTaskId}")
+    fun artifactReport(
+        @ApiParam(value = "扫描记录id") @PathVariable subScanTaskId: String,
+        request: ArtifactVulnerabilityRequest
+    ): Response<Page<ArtifactVulnerabilityInfo>> {
+        request.subScanTaskId = subScanTaskId
+        request.leakType = request.leakType?.let { normalizedLevel(it) }
+        return ResponseBuilder.success(scanTaskService.archiveSubtaskResultDetail(request))
     }
 
     @ApiOperation("文件扫描结果预览")
@@ -83,12 +90,11 @@ class UserScanReportController(
     fun artifactReports(
         @RequestBody request: FileScanResultOverviewRequest
     ): Response<List<FileScanResultOverview>> {
-        return ResponseBuilder.success(scanService.resultOverview(request))
+        return ResponseBuilder.success(scanTaskService.resultOverview(request))
     }
 
     @ApiOperation("制品详情--漏洞数据")
     @GetMapping("/artifact/leak/{projectId}/{subScanTaskId}")
-    @Deprecated("切换为使用artifactReports接口", ReplaceWith("artifactReport"))
     fun artifactLeak(
         @ApiParam(value = "projectId") @PathVariable projectId: String,
         @ApiParam(value = "扫描记录id") @PathVariable subScanTaskId: String,
@@ -97,16 +103,15 @@ class UserScanReportController(
         request.projectId = projectId
         request.subScanTaskId = subScanTaskId
         request.leakType = request.leakType?.let { normalizedLevel(it) }
-        return ResponseBuilder.success(scanService.resultDetail(request))
+        return ResponseBuilder.success(scanTaskService.resultDetail(request))
     }
 
     @ApiOperation("制品详情--漏洞数据")
     @GetMapping("/artifact/count/{projectId}/{subScanTaskId}")
-    @Deprecated("切换为使用artifactReports接口", ReplaceWith("artifactReport"))
     fun artifactCount(
         @ApiParam(value = "projectId") @PathVariable projectId: String,
         @ApiParam(value = "扫描记录id") @PathVariable subScanTaskId: String
-    ): Response<ArtifactScanResultOverview> {
-        return ResponseBuilder.success(scanPlanService.planArtifact(projectId, subScanTaskId))
+    ): Response<SubtaskResultOverview> {
+        return ResponseBuilder.success(scanTaskService.planArtifactSubtaskOverview(subScanTaskId))
     }
 }

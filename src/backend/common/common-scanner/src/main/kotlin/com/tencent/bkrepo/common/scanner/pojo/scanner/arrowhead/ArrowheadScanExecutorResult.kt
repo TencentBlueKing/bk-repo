@@ -50,10 +50,6 @@ data class ArrowheadScanExecutorResult(
             return "sensitive${type.capitalize()}Count"
         }
 
-        fun overviewKeyOfCve(level: String): String {
-            return "cve${level.capitalize()}Count"
-        }
-
         fun overviewKeyOfLicenseRisk(riskLevel: String): String {
             val level = if (riskLevel.isEmpty()) {
                 // 扫描器尚未支持的证书类型数量KEY

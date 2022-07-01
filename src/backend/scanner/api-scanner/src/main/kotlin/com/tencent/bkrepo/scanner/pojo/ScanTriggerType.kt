@@ -37,6 +37,16 @@ enum class ScanTriggerType {
     MANUAL,
 
     /**
+     * 手动触发单制品扫描
+     */
+    MANUAL_SINGLE,
+
+    /**
+     * 流水线触发扫描
+     */
+    PIPELINE,
+
+    /**
      * 新构件上传时触发扫描
      */
     ON_NEW_ARTIFACT;

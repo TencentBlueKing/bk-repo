@@ -39,15 +39,13 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
+import com.tencent.bkrepo.scanner.component.manager.AbstractScanExecutorResultManager
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
-import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ApplicationItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CheckSecItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CveSecItemDao
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ResultItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.SensitiveItemDao
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCheckSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
@@ -68,7 +66,7 @@ class ArrowheadResultManager @Autowired constructor(
     private val sensitiveItemDao: SensitiveItemDao,
     private val cveSecItemDao: CveSecItemDao,
     private val knowledgeBase: KnowledgeBase
-) : ScanExecutorResultManager {
+) : AbstractScanExecutorResultManager() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun save(
@@ -174,9 +172,9 @@ class ArrowheadResultManager @Autowired constructor(
         arguments: ArrowheadLoadResultArguments
     ): Page<CveSecItem> {
         val page = cveSecItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
-        val cveIds = page.records.map { it.data.cveId }
-        val cveMap = knowledgeBase.findCve(cveIds).associateBy { it.cveId }
-        val records = page.records.map { Converter.convert(it, cveMap[it.data.cveId]) }
+        val pocIds = page.records.map { it.data.pocId }
+        val cveMap = knowledgeBase.findByPocId(pocIds).associateBy { it.pocId }
+        val records = page.records.map { Converter.convert(it, cveMap[it.data.pocId]) }
         return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
     }
 
@@ -208,28 +206,4 @@ class ArrowheadResultManager @Autowired constructor(
         }
         replace(credentialsKey, sha256, scanner, cveSecItemDao, tCveItems)
     }
-
-    private inline fun <T, reified R : ResultItem<T>> convert(
-        credentialsKey: String?,
-        sha256: String,
-        scanner: String,
-        data: T
-    ): R {
-        return R::class.java.constructors[0].newInstance(null, credentialsKey, sha256, scanner, data) as R
-    }
-
-    /**
-     * 替换同一文件使用同一扫描器原有的扫描结果
-     */
-    private fun <T : ResultItem<*>, D : ResultItemDao<T>> replace(
-        credentialsKey: String?,
-        sha256: String,
-        scanner: String,
-        resultItemDao: D,
-        resultItems: List<T>
-    ) {
-        resultItemDao.deleteBy(credentialsKey, sha256, scanner)
-        resultItemDao.insert(resultItems)
-    }
-
 }

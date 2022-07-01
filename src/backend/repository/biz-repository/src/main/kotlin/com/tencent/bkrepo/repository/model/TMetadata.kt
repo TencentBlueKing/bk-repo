@@ -35,6 +35,20 @@ package com.tencent.bkrepo.repository.model
  * 元数据模型
  */
 data class TMetadata(
+    /**
+     * 元数据键
+     */
     val key: String,
-    var value: Any
+    /**
+     * 元数据值
+     */
+    var value: Any,
+    /**
+     * 是否为属于系统创建的元数据
+     */
+    val system: Boolean = false,
+    /**
+     * 元数据描述信息
+     */
+    val description: String? = null
 )

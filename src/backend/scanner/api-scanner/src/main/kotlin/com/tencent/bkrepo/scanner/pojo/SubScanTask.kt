@@ -46,6 +46,18 @@ data class SubScanTask(
      */
     val scanner: Scanner,
     /**
+     * 文件所属项目
+     */
+    val projectId: String,
+    /**
+     * 文件所属仓库
+     */
+    val repoName: String,
+    /**
+     * 文件完整路径
+     */
+    val fullPath: String,
+    /**
      * 文件sha256
      */
     val sha256: String,

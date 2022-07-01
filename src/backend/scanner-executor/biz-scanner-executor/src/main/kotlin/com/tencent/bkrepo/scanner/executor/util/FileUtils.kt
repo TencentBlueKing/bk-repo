@@ -37,9 +37,15 @@ object FileUtils {
     fun deleteRecursively(file: File): Boolean {
         return file.walkBottomUp().fold(true) { res, it ->
             try {
+                if (logger.isDebugEnabled) {
+                    logger.debug("deleting file[${it.absolutePath}]")
+                }
                 Files.deleteIfExists(it.toPath())
             } catch (e: DirectoryNotEmptyException) {
                 logger.warn("directory [${it.absolutePath}] is not empty")
+            } catch (e: FileSystemException) {
+                logger.warn("delete file[${it.absolutePath}] failed: ${e.message}")
+                CommandUtil.exec("rm -rf ${it.absolutePath}")
             } catch (e: Exception) {
                 logger.error("delete file[${it.absolutePath}] failed: ${e.message}")
             }

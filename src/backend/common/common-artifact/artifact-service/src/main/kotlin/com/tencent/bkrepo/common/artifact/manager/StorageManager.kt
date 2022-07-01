@@ -53,6 +53,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
 
 /**
@@ -102,12 +103,14 @@ class StorageManager(
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?
     ): NodeDetail {
-        val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
+        val cancel = AtomicBoolean(false)
+        val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials, cancel)
         try {
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
             // 当文件有创建，则删除文件
             if (affectedCount == 1) try {
+                cancel.set(true)
                 storageService.delete(request.sha256!!, storageCredentials)
             } catch (exception: Exception) {
                 logger.error("Failed to delete new created file[${request.sha256}]", exception)

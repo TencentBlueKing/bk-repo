@@ -3,6 +3,7 @@ package com.tencent.bkrepo.generic.service
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -20,6 +21,7 @@ import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.bksync.ByteArrayBlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
+import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -38,6 +40,7 @@ import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -160,6 +163,11 @@ class DeltaSyncService(
         return redisOperation.get(key)?.toInt() ?: -1
     }
 
+    fun recordMetrics(ip: String, metrics: BkSyncMetrics) {
+        metrics.ip = ip
+        logger.info(metrics.toJsonString().replace("\n", ""))
+    }
+
     /**
      * 根据上下文中的节点信息获取节点的md5
      * */
@@ -279,7 +287,7 @@ class DeltaSyncService(
         file: ArtifactFile,
         expires: Long,
         overwrite: Boolean,
-        metadata: Map<String, Any>
+        metadata: List<MetadataModel>
     ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
@@ -292,7 +300,7 @@ class DeltaSyncService(
             operator = userId,
             expires = expires,
             overwrite = overwrite,
-            metadata = metadata
+            nodeMetadata = metadata
         )
     }
 
@@ -440,7 +448,7 @@ class DeltaSyncService(
         val uploadSha256: String?,
         val uploadMd5: String?,
         val expires: Long,
-        val metadata: Map<String, String>,
+        val metadata: List<MetadataModel>,
         val repositoryDetail: RepositoryDetail,
         val userId: String,
         val artifactInfo: ArtifactInfo,

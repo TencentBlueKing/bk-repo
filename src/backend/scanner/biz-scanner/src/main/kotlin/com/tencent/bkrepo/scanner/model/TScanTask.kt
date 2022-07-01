@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -35,7 +36,12 @@ import java.time.LocalDateTime
 @Document("scan_task")
 @CompoundIndexes(
     CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true),
-    CompoundIndex(name = "planId_idx", def = "{'planId': 1}", background = true)
+    CompoundIndex(name = "planId_idx", def = "{'planId': 1}", background = true),
+    CompoundIndex(
+        name = "projectId_lastModifiedDate_idx",
+        def = "{'projectId': 1, 'lastModifiedDate': -1}",
+        background = true
+    )
 )
 data class TScanTask(
     val id: String? = null,
@@ -46,6 +52,10 @@ data class TScanTask(
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
+    /**
+     * 任务名
+     */
+    val name: String? = null,
     /**
      * 开始扫描时间
      */
@@ -62,6 +72,10 @@ data class TScanTask(
      * 使用的扫描方案id
      */
     val planId: String? = null,
+    /**
+     * 扫描的项目
+     */
+    val projectId: String? = null,
     /**
      * 任务状态
      */
@@ -87,6 +101,10 @@ data class TScanTask(
      */
     val scanned: Long,
     /**
+     * 通过扫描质量红线的文件数
+     */
+    val passed: Long = 0L,
+    /**
      * 使用的扫描器
      */
     val scanner: String,
@@ -101,5 +119,9 @@ data class TScanTask(
     /**
      * 扫描结果统计信息
      */
-    val scanResultOverview: Map<String, Long> = emptyMap()
+    val scanResultOverview: Map<String, Long> = emptyMap(),
+    /**
+     * 扫描任务元数据
+     */
+    val metadata: List<TaskMetadata> = emptyList()
 )

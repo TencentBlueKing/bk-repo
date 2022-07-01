@@ -38,5 +38,10 @@ interface NotifyService {
 
     fun sendWework(receivers: List<String>, title: String, body: String)
 
+    /**
+     * 通过指定渠道[credential]发送消息，[credential]为null时将通过默认渠道发送消息
+     */
+    fun send(message: NotifyMessage, credential: NotifyChannelCredential? = null)
+
     fun sendWechat(receivers: List<String>, body: String)
 }

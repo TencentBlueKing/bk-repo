@@ -3,19 +3,20 @@ package com.tencent.bkrepo.common.bksync.transfer.http
 import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.hash.HashCode
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
 import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
-import com.tencent.bkrepo.common.bksync.BkSync
-import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
-import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.DiffResult
+import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.ReportSpeedException
+import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
 import okhttp3.HttpUrl
-import kotlin.system.measureNanoTime
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +36,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureNanoTime
 
 /**
  * bksync http实现
@@ -53,11 +55,14 @@ class HttpBkSyncCall(
     @Volatile
     private var patchSuccess = true
 
+    private val metrics = BkSyncMetrics()
+
     /**
      * 增量上传
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
+        metrics.setBasicMetrics(request)
         // 异步计算和上传md5,sign数据
         val signFuture = executor.submit<Unit> {
             try {
@@ -72,9 +77,10 @@ class HttpBkSyncCall(
         }
         val context = UploadContext(request, signFuture)
         if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-            if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
+            if (!checkSpeed(request, speedTestSettings)) {
                 logger.info("Faster internet,use common generic upload.")
                 commonUpload(context)
+                reportMetrics(request.metricsUrl)
                 signFuture.get()
                 return
             }
@@ -90,7 +96,22 @@ class HttpBkSyncCall(
             }
             commonUpload(context)
         } finally {
+            reportMetrics(request.metricsUrl)
             signFuture.get()
+        }
+    }
+
+    private fun reportMetrics(url: String) {
+        try {
+            val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), metrics.toJsonString())
+            val request = Request.Builder().url(url).post(requestBody).build()
+            client.newCall(request).execute().use {
+                if (!it.isSuccessful) {
+                    logger.warn("report metrics failed, ${it.body()!!.string()}")
+                }
+            }
+        } catch (ignore: Exception) {
+            logger.warn("report metrics failed, ${ignore.message}")
         }
     }
 
@@ -112,6 +133,7 @@ class HttpBkSyncCall(
             reportSpeed(request.speedReportUrl, avgMb.toInt())
             avgMb.toInt()
         } else speed
+        metrics.networkSpeed = avgMb
         if (avgMb > allowUseMaxBandwidth) {
             return false
         }
@@ -271,6 +293,7 @@ class HttpBkSyncCall(
             deltaFile.outputStream().buffered().use {
                 logger.info("Detecting diff")
                 val result = detecting(file, signStream, it)
+                metrics.hitRate = result.hitRate
                 if (result.hitRate < reuseThreshold) {
                     logger.info(
                         "Current reuse hit rate[${result.hitRate}]" +
@@ -305,6 +328,8 @@ class HttpBkSyncCall(
                     throw PatchRequestException("Delta upload failed: ${errorMsg.orEmpty()}")
                 }
             }
+            metrics.patchTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
+            metrics.patchSpeed = HumanReadable.throughput(metrics.fileSize, nanos)
             logger.info("Delta data upload success,elapsed ${HumanReadable.time(nanos)}.")
         } finally {
             deltaFile.delete()
@@ -325,9 +350,11 @@ class HttpBkSyncCall(
                 BkSync(BLOCK_SIZE).diff(file, signInputStream, deltaOutputStream, reuseThreshold)
             }
             val bytes = file.length()
+            metrics.diffTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
+            metrics.diffSpeed = throughput(bytes, nanos)
             logger.info(
                 "Detecting file[$file] success, " +
-                    "size: ${size(bytes)}, elapse: ${time(nanos)}, average: ${throughput(bytes, nanos)}."
+                    "size: ${size(bytes)}, elapse: ${time(nanos)}, average: ${metrics.diffSpeed}."
             )
             return result
         }
@@ -340,13 +367,9 @@ class HttpBkSyncCall(
         val request = context.request
         with(request) {
             logger.info("Start use generic upload.")
-            genericUrl ?: let {
-                logger.info("Generic url not set,skip upload.")
-                return
-            }
             val body = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), file)
             val commonRequest = Request.Builder()
-                .url(genericUrl!!)
+                .url(genericUrl)
                 .put(body)
                 .headers(headers)
                 .build()
@@ -358,6 +381,7 @@ class HttpBkSyncCall(
                     }
                 }
             }
+            metrics.genericUploadTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
         }
     }

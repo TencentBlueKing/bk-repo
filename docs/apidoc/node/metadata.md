@@ -49,19 +49,29 @@
 
   ```json
   {
-    "key1": "value1",
-    "key2": "value2"
+    "metadata": {
+      "key1": "value1",
+      "key2": "value2"
+    },
+    "nodeMetadata": [
+      {
+        "key": "key3",
+        "value":  "value3",
+        "description": "description"
+      }
+    ]
   }
   ```
 
 - 请求字段说明
 
-  |字段|类型|是否必须|默认值|说明|Description|
-  |---|---|---|---|---|---|
-  |projectId|string|是|无|项目名称|project name|
-  |repoName|string|是|无|仓库名称|repo name|
-  |fullPath|string|是|无|完整路径|full path|
-  |key|string|否|无|元数据键值对|metadata key-value|
+  | 字段        | 类型     |是否必须|默认值| 说明                   |Description|
+  |--------|---|---|----------------------|---|---|
+  | projectId | string |是|无| 项目名称                 |project name|
+  | repoName  | string |是|无| 仓库名称                 |repo name|
+  | fullPath  | string |是|无| 完整路径                 |full path|
+  | metadata  | object |否|无| 元数据键值对，仅用于兼容旧接口      |metadata key-value|
+  | nodeMetadata | object |否|无| 元数据，存在时会忽略metadata字段 |metadata|
 
 - 响应体
 

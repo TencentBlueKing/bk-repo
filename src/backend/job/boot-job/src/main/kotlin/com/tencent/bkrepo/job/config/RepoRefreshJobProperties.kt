@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.config
 
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("job.repo-refresh")
 class RepoRefreshJobProperties(
     override var enabled: Boolean = true,
     /**

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import org.springframework.context.annotation.Primary
@@ -45,7 +46,7 @@ import org.springframework.web.servlet.HandlerMapping
 @Primary
 @Component
 class ScannerPermissionCheckHandler(
-    private val permissionManager: PermissionManager
+    val permissionManager: PermissionManager
 ) : PermissionCheckHandler {
 
     override fun onPermissionCheck(userId: String, permission: Permission) {
@@ -59,8 +60,12 @@ class ScannerPermissionCheckHandler(
         permissionManager.checkPrincipal(userId, principal.type)
     }
 
-    fun checkProjectPermission(projectId: String, action: PermissionAction) {
-        permissionManager.checkProjectPermission(action, projectId)
+    fun checkProjectPermission(
+        projectId: String,
+        action: PermissionAction,
+        userId: String = SecurityUtils.getUserId()
+    ) {
+        permissionManager.checkProjectPermission(action, projectId, userId)
     }
 
     fun checkNodePermission(

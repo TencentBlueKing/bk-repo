@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.scanner.event.listener
 
 import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
+import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -48,11 +50,29 @@ class SubtaskStatusChangedEventListener(private val metadataClient: MetadataClie
             }
 
             // 更新扫描状态元数据
+            val metadata = ArrayList<MetadataModel>(2)
+            metadata.add(
+                MetadataModel(
+                    key = METADATA_KEY_SCAN_STATUS,
+                    value = ScanPlanConverter.convertToScanStatus(status).name,
+                    system = true
+                )
+            )
+            qualityRedLine?.let {
+                metadata.add(
+                    MetadataModel(
+                        key = SubScanTaskDefinition::qualityRedLine.name,
+                        value = it,
+                        system = true
+                    )
+                )
+            }
+
             val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
-                metadata = mapOf(METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name)
+                nodeMetadata = metadata
             )
             metadataClient.saveMetadata(request)
             logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] scanStatus[$status] success")

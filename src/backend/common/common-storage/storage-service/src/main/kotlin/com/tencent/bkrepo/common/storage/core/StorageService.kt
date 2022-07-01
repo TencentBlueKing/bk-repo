@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.storage.core.operation.HealthCheckOperation
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储服务接口
@@ -49,7 +50,12 @@ interface StorageService : FileBlockOperation, HealthCheckOperation, CleanupOper
      * 在存储实例[storageCredentials]上存储摘要为[digest]的构件[artifactFile]
      * 返回文件影响数，如果文件已经存在则返回0，否则返回1
      */
-    fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Int
+    fun store(
+        digest: String,
+        artifactFile: ArtifactFile,
+        storageCredentials: StorageCredentials?,
+        cancel: AtomicBoolean? = null
+    ): Int
 
     /**
      * 在存储实例[storageCredentials]上加载摘要为[digest]的文件

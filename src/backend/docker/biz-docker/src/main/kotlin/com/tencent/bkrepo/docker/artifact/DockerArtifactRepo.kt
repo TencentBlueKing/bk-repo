@@ -61,6 +61,7 @@ import com.tencent.bkrepo.docker.pojo.DockerTag
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -148,7 +149,6 @@ class DockerArtifactRepo @Autowired constructor(
             sha256 = file.sha256,
             md5 = file.md5,
             operator = userId,
-            metadata = emptyMap(),
             overwrite = true
         )
         // save node
@@ -212,7 +212,7 @@ class DockerArtifactRepo @Autowired constructor(
                     sha256 = artifactFile!!.getFileSha256(),
                     md5 = artifactFile!!.getFileMd5(),
                     operator = userId,
-                    metadata = metadata,
+                    nodeMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
                     overwrite = true
                 )
             )

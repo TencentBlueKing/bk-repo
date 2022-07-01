@@ -3,8 +3,9 @@
         :value="uploadDialog.show"
         :title="uploadDialog.title"
         width="620"
-        height-num="267"
+        :height-num="heightNum"
         @cancel="uploadDialog.show = false">
+        <slot></slot>
         <artifactory-upload ref="artifactoryUpload"
             :upload-status="uploadDialog.uploadStatus"
             :upload-progress="uploadDialog.uploadProgress">
@@ -21,9 +22,17 @@
     export default {
         name: 'genericUpload',
         components: { ArtifactoryUpload },
+        props: {
+            heightNum: {
+                type: String,
+                default: '267'
+            }
+        },
         data () {
             return {
                 uploadDialog: {
+                    projectId: '',
+                    repoName: '',
                     show: false,
                     title: '',
                     fullPath: '',
@@ -32,6 +41,14 @@
                     uploadStatus: 'primary',
                     uploadProgress: 0
                 }
+            }
+        },
+        computed: {
+            projectId () {
+                return this.uploadDialog.projectId || this.$route.params.projectId
+            },
+            repoName () {
+                return this.uploadDialog.repoName || this.$route.query.repoName
             }
         },
         methods: {
@@ -59,8 +76,8 @@
                 }
                 this.uploadArtifactory({
                     xhr: this.uploadDialog.uploadXHR,
-                    projectId: this.$route.params.projectId,
-                    repoName: this.$route.query.repoName,
+                    projectId: this.projectId,
+                    repoName: this.repoName,
                     fullPath: `${this.uploadDialog.fullPath}/${file.name}`,
                     body: file.blob,
                     progressHandler: this.progressHandler,
@@ -91,7 +108,7 @@
                 const file = await this.$refs.artifactoryUpload.getFiles()
                 if (!file.overwrite) {
                     this.uploadDialog.loading = true
-                    const url = `/generic/${this.$route.params.projectId}/${this.$route.query.repoName}/${encodeURIComponent(`${this.uploadDialog.fullPath}/${file.name}`)}`
+                    const url = `/generic/${this.projectId}/${this.repoName}/${encodeURIComponent(`${this.uploadDialog.fullPath}/${file.name}`)}`
                     this.$ajax.head(url).then(() => {
                         this.$bkMessage({
                             theme: 'error',

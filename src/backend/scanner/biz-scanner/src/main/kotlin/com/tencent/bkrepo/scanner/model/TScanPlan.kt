@@ -104,5 +104,14 @@ data class TScanPlan(
     /**
      * 扫描结果统计信息
      */
-    val scanResultOverview: Map<String, Long> = emptyMap()
+    val scanResultOverview: Map<String, Long> = emptyMap(),
+
+    /**
+     * 质量规则
+     */
+    val scanQuality: Map<String, Any> = emptyMap(),
+    /**
+     * 扫描方案只读，不可修改
+     */
+    val readOnly: Boolean = false
 )

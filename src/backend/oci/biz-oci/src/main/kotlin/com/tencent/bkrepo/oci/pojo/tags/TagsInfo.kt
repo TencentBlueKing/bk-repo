@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.oci.pojo.tags
 
 class TagsInfo(
-    val name: String,
-    val tags: List<String>
+    var name: String,
+    var tags: List<String>,
+    var left: Int
 )

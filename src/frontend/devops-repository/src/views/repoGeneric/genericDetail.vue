@@ -40,13 +40,16 @@
                     <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
-                            :style="{ height: metadata.show ? '180px' : '0' }">
+                            :style="{ height: metadata.show ? '230px' : '0' }">
                             <bk-form class="p20" :label-width="80" :model="metadata" :rules="rules" ref="metadatForm">
                                 <bk-form-item :label="$t('key')" :required="true" property="key">
                                     <bk-input size="small" v-model="metadata.key" :placeholder="$t('key')"></bk-input>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('value')" :required="true" property="value">
                                     <bk-input size="small" v-model="metadata.value" :placeholder="$t('value')"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('description')">
+                                    <bk-input size="small" v-model="metadata.description" :placeholder="$t('description')"></bk-input>
                                 </bk-form-item>
                                 <bk-form-item>
                                     <bk-button size="small" theme="default" @click.stop="hiddenAddMetadata">{{$t('cancel')}}</bk-button>
@@ -56,15 +59,16 @@
                         </div>
                     </div>
                     <bk-table
-                        :data="Object.entries(detailSlider.data.metadata)"
+                        :data="(detailSlider.data.nodeMetadata || []).filter(m => !m.system)"
                         :outer-border="false"
                         :row-border="false"
                         size="small">
                         <template #empty>
                             <empty-data :is-loading="detailSlider.loading"></empty-data>
                         </template>
-                        <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
-                        <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column :label="$t('key')" prop="key" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column :label="$t('value')" prop="value" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
                         <bk-table-column width="60">
                             <template #default="{ row }">
                                 <Icon class="hover-btn" size="24" name="icon-delete"
@@ -101,7 +105,8 @@
                     show: false,
                     loading: false,
                     key: '',
-                    value: ''
+                    value: '',
+                    description: ''
                 },
                 rules: {
                     key: [
@@ -158,7 +163,6 @@
                     fullPath: this.detailSlider.path
                 }).then(data => {
                     this.detailSlider.data = {
-                        metadata: {},
                         ...data,
                         name: data.name || this.repoName,
                         size: convertFileSize(data.size),
@@ -179,7 +183,8 @@
                     show: true,
                     loading: false,
                     key: '',
-                    value: ''
+                    value: '',
+                    description: ''
                 }
             },
             hiddenAddMetadata () {
@@ -189,14 +194,13 @@
             async addMetadataHandler () {
                 await this.$refs.metadatForm.validate()
                 this.metadata.loading = true
+                const { key, value, description } = this.metadata
                 this.addMetadata({
                     projectId: this.detailSlider.projectId,
                     repoName: this.detailSlider.repoName,
                     fullPath: this.detailSlider.data.fullPath,
                     body: {
-                        metadata: {
-                            [this.metadata.key]: this.metadata.value
-                        }
+                        nodeMetadata: [{ key, value, description }]
                     }
                 }).then(() => {
                     this.$bkMessage({
@@ -215,7 +219,7 @@
                     repoName: this.detailSlider.repoName,
                     fullPath: this.detailSlider.data.fullPath,
                     body: {
-                        keyList: [row[0]]
+                        keyList: [row.key]
                     }
                 }).then(() => {
                     this.$bkMessage({

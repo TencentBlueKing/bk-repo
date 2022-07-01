@@ -18,6 +18,7 @@ import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
 import com.tencent.bkrepo.nuget.pojo.nuspec.Reference
 import com.tencent.bkrepo.nuget.pojo.nuspec.ReferenceGroup
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.Logger
@@ -72,7 +73,7 @@ class NugetPackageHandler {
                     versionName = version,
                     size = size,
                     artifactPath = getArtifactFullPath(),
-                    metadata = metadata,
+                    packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
                     extension = versionExtension,
                     overwrite = true,
                     createdBy = context.userId

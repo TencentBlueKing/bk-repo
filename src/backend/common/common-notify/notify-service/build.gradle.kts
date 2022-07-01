@@ -34,4 +34,5 @@ dependencies {
     implementation(project(":common:common-api"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("org.springframework.boot:spring-boot-starter")
+    implementation(project(":common:common-mongo"))
 }

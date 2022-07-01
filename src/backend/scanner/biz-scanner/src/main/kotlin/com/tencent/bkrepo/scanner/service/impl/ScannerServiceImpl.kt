@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.scanner.model.TScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.service.ScannerService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -71,17 +73,24 @@ class ScannerServiceImpl @Autowired constructor(
         with(scanner) {
             val userId = SecurityUtils.getUserId()
             val savedScanner = scannerDao.findByName(name) ?: throw ScannerNotFoundException(name)
-            return scannerDao.save(savedScanner.copy(
-                lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now(),
-                version = version,
-                config = scanner.toJsonString()
-            )).run { convert(this) }
+            return scannerDao.save(
+                savedScanner.copy(
+                    lastModifiedBy = userId,
+                    lastModifiedDate = LocalDateTime.now(),
+                    version = version,
+                    config = scanner.toJsonString()
+                )
+            ).run { convert(this) }
         }
     }
 
     override fun get(name: String): Scanner {
         return find(name) ?: throw ScannerNotFoundException(name)
+    }
+
+    override fun default(): Scanner {
+        return scannerDao.findOne(Query().limit(1))?.run { convert(this) }
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "default scanner")
     }
 
     override fun find(name: String): Scanner? {

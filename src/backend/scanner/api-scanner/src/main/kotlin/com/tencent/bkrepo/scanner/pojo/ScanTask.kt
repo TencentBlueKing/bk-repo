@@ -33,8 +33,12 @@ import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("扫描任务信息")
 data class ScanTask(
+    @ApiModelProperty("扫描任务名")
+    val name: String? = null,
     @ApiModelProperty("任务id")
     val taskId: String,
+    @ApiModelProperty("项目id")
+    val projectId: String?,
     @ApiModelProperty("触发者")
     val createdBy: String,
     @ApiModelProperty("最后修改时间")
@@ -45,6 +49,8 @@ data class ScanTask(
     val startDateTime: String?,
     @ApiModelProperty("任务执行结束时间")
     val finishedDateTime: String?,
+    @ApiModelProperty("触发方式")
+    val triggerType: String,
     @ApiModelProperty("任务状态")
     val status: String,
     @ApiModelProperty("扫描方案")
@@ -59,6 +65,8 @@ data class ScanTask(
     val failed: Long,
     @ApiModelProperty("已扫描文件总数")
     val scanned: Long,
+    @ApiModelProperty("通过质量规则的文件总数")
+    val passed: Long,
     @ApiModelProperty("使用的扫描器")
     val scanner: String,
     @ApiModelProperty("扫描器类型")
@@ -68,5 +76,7 @@ data class ScanTask(
     @ApiModelProperty("扫描结果统计数据")
     val scanResultOverview: Map<String, Long>?,
     @ApiModelProperty("是否强制扫描")
-    val force: Boolean = false
+    val force: Boolean = false,
+    @ApiModelProperty("扫描任务元数据")
+    val metadata: List<TaskMetadata>
 )

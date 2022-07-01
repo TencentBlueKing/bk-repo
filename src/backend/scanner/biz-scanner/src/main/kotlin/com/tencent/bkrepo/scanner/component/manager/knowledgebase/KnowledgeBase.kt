@@ -39,5 +39,7 @@ interface KnowledgeBase {
     fun saveCve(cve: TCve)
     fun saveCve(cveList: Collection<TCve>)
     fun findCve(cveId: String): TCve?
+    fun findByPocId(pocId: String): TCve?
     fun findCve(cveIds: Collection<String>): List<TCve>
+    fun findByPocId(pocIds: Collection<String>): List<TCve>
 }

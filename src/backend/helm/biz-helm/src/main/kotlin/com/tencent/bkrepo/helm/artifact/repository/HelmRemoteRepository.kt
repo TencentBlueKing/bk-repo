@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.helm.constants.CHART
@@ -59,13 +58,14 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import java.net.MalformedURLException
-import java.net.URL
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.MalformedURLException
+import java.net.URL
 
 @Component
 class HelmRemoteRepository(
@@ -155,13 +155,21 @@ class HelmRemoteRepository(
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
-        val artifactStream = parseAttribute(context, artifactFile)
+        val size = artifactFile.getSize()
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
         helmOperationService.initPackageInfo(context)
-        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
+        return ArtifactResource(
+            inputStream = artifactStream,
+            artifactName = context.artifactInfo.getResponseName(),
+            node = node,
+            channel = ArtifactChannel.PROXY,
+            useDisposition = context.useDisposition
+        )
     }
 
-    private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile): ArtifactInputStream {
+    private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile) {
         val size = artifactFile.getSize()
         context.putAttribute(SIZE, size)
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
@@ -176,7 +184,6 @@ class HelmRemoteRepository(
             }
             PROV -> ChartParserUtil.parseNameAndVersion(context)
         }
-        return artifactStream
     }
 
     /**
@@ -198,7 +205,7 @@ class HelmRemoteRepository(
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
             operator = context.userId,
-            metadata = metadata,
+            nodeMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
             overwrite = true
         )
     }

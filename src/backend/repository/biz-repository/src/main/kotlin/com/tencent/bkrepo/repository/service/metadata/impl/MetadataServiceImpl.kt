@@ -68,16 +68,18 @@ class MetadataServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun saveMetadata(request: MetadataSaveRequest) {
         with(request) {
-            if (metadata.isNullOrEmpty()) {
+            if (metadata.isNullOrEmpty() && nodeMetadata.isNullOrEmpty()) {
                 logger.info("Metadata is empty, skip saving")
                 return
             }
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val originalMetadata = MetadataUtils.toMap(node.metadata).toMutableMap()
-            metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
-            node.metadata = MetadataUtils.fromMap(originalMetadata)
+
+            val oldMetadata = node.metadata ?: ArrayList()
+            val newMetadata = MetadataUtils.compatibleFromAndCheck(metadata, nodeMetadata, operator)
+            node.metadata = MetadataUtils.checkAndMerge(oldMetadata, newMetadata, operator)
+
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
             logger.info("Save metadata[$metadata] on node[/$projectId/$repoName$fullPath] success.")
@@ -87,12 +89,20 @@ class MetadataServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteMetadata(request: MetadataDeleteRequest) {
         with(request) {
-            if (keyList.isNullOrEmpty()) {
+            if (keyList.isEmpty()) {
                 logger.info("Metadata key list is empty, skip deleting")
                 return
             }
             val fullPath = normalizeFullPath(request.fullPath)
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
+
+            // 检查是否有更新权限
+            nodeDao.findOne(query)?.metadata?.forEach {
+                if (it.key in keyList) {
+                    MetadataUtils.checkPermission(it, operator)
+                }
+            }
+
             val update = Update().pull(
                 TNode::metadata.name,
                 Query.query(where(TMetadata::key).inValues(keyList))

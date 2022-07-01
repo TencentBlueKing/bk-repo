@@ -10,7 +10,7 @@ const request = axios.create({
         return status >= 200 && status <= 503
     },
     withCredentials: true,
-    xsrfCookieName: 'backend_csrftoken', // 注入csrfToken
+    xsrfCookieName: MODE_CONFIG === 'ci' ? 'bk_token' : 'bkrepo_ticket', // 注入csrfToken
     xsrfHeaderName: 'X-CSRFToken' // 注入csrfToken
 })
 
@@ -21,8 +21,8 @@ function errorHandler (error) {
 
 request.interceptors.response.use(response => {
     const { data: { data, message }, status } = response
-    if (status === 200) {
-        return response.data instanceof Blob ? response.data : data
+    if (status === 200 || status === 206) {
+        return response.data instanceof Blob ? response.data : (data || response.data)
     } else if (status === 401 || status === 402) {
         if (MODE_CONFIG === 'ci') {
             window.postMessage({

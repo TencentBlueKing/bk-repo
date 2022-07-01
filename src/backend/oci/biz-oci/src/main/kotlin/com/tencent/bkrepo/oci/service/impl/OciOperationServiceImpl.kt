@@ -81,6 +81,7 @@ import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -88,15 +89,15 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
+import org.apache.commons.lang3.StringUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.nio.charset.Charset
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.servlet.http.HttpServletRequest
-import org.apache.commons.lang3.StringUtils
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 
 @Service
 class OciOperationServiceImpl(
@@ -388,7 +389,9 @@ class OciOperationServiceImpl(
                 repoName = repoName,
                 name = name,
                 version = version
-            ) ?: throw OciFileNotFoundException("packageKey [$packageKey] don't found.")
+            ) ?: throw OciFileNotFoundException(
+                "Could not find the packageKey [$packageKey] in repo ${artifactInfo.getRepoIdentify()}"
+            )
             val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data!!
             val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion)
             return PackageVersionInfo(basicInfo, emptyMap())
@@ -470,7 +473,7 @@ class OciOperationServiceImpl(
             repoName = ociArtifactInfo.repoName,
             artifactFile = artifactFile,
             fullPath = ociArtifactInfo.getArtifactFullPath(),
-            metadata = metadata
+            metadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
         )
     }
 
@@ -749,7 +752,7 @@ class OciOperationServiceImpl(
                     packageName = packageName,
                     version = ociArtifactInfo.reference,
                     size = size,
-                    fullPath = manifestPath,
+                    manifestPath = manifestPath,
                     metadata = metadata,
                     repoType = repoType
                 )
@@ -759,7 +762,7 @@ class OciOperationServiceImpl(
                     ociArtifactInfo = this,
                     version = ociArtifactInfo.reference,
                     size = size,
-                    fullPath = manifestPath,
+                    manifestPath = manifestPath,
                     metadata = metadata,
                     packageKey = packageKey
                 )
@@ -962,7 +965,7 @@ class OciOperationServiceImpl(
         val data = mutableListOf<OciTag>()
         result.records.forEach {
             val name = it.name
-            val stageTag = StringUtils.join(it.stageTag.toTypedArray())
+            val stageTag = buildString(it.stageTag)
             val size = it.size
             val lastModifiedBy = it.lastModifiedBy
             val lastModifiedDate = it.lastModifiedDate.toString()
@@ -973,6 +976,11 @@ class OciOperationServiceImpl(
             )
         }
         return OciTagResult(result.totalRecords, data)
+    }
+
+    private fun buildString(stageTag: List<String>): String {
+        if (stageTag.isEmpty()) return StringPool.EMPTY
+        return StringUtils.join(stageTag.toTypedArray()).toString()
     }
 
     companion object {

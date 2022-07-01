@@ -37,25 +37,29 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.FileJobContext
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.MongodbJobProperties
+import com.tencent.bkrepo.job.config.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 清理引用=0的文件
  */
+@Component
+@EnableConfigurationProperties(FileReferenceCleanupJobProperties::class)
 class FileReferenceCleanupJob(
     private val storageService: StorageService,
     private val mongoTemplate: MongoTemplate,
     private val storageCredentialsClient: StorageCredentialsClient,
-    properties: MongodbJobProperties
+    properties: FileReferenceCleanupJobProperties
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData>(properties) {
 
     @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次

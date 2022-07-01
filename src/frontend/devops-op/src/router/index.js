@@ -7,6 +7,7 @@ export const ROUTER_NAME_INSTANCE = 'Instance'
 export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
 export const ROUTER_NAME_EXT_PERMISSION = 'ExtPermission'
 export const ROUTER_NAME_WEBHOOK = 'Webhook'
+export const ROUTER_NAME_NOTIFY_CREDENTIALS = 'NotifyCredentials'
 
 Vue.use(Router)
 
@@ -131,6 +132,21 @@ export const asyncRoutes = [
         name: ROUTER_NAME_WEBHOOK,
         meta: { title: 'WebHook管理', icon: 'file' },
         component: () => import('@/views/webhook/index')
+      }
+    ]
+  },
+  {
+    path: '/notify',
+    alwaysShow: true,
+    redirect: '/notify/credentials',
+    component: Layout,
+    meta: { title: '通知管理', icon: 'notify' },
+    children: [
+      {
+        path: 'credentials',
+        name: ROUTER_NAME_NOTIFY_CREDENTIALS,
+        component: () => import('@/views/notify/Credential'),
+        meta: { title: '凭据', icon: 'credentials' }
       }
     ]
   },

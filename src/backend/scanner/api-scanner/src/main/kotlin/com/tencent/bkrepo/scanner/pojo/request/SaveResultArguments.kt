@@ -30,13 +30,16 @@ package com.tencent.bkrepo.scanner.pojo.request
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencySaveResultArguments
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("存储制品扫描结果时的参数")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = ArrowheadSaveResultArguments::class, name = ArrowheadScanner.TYPE)
+    JsonSubTypes.Type(value = ArrowheadSaveResultArguments::class, name = ArrowheadScanner.TYPE),
+    JsonSubTypes.Type(value = DependencySaveResultArguments::class, name = DependencyScanner.TYPE)
 )
 open class SaveResultArguments(
     @ApiModelProperty("扫描器类型")

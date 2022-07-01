@@ -111,5 +111,15 @@ open class SubScanTaskDefinition(
     /**
      * 扫描结果统计信息
      */
-    val scanResultOverview: Map<String, Number>? = null
+    val scanResultOverview: Map<String, Number>? = null,
+
+    /**
+     * 是否通过质量规则
+     */
+    val qualityRedLine: Boolean? = null,
+
+    /**
+     * 扫描时方案的质量规则
+     */
+    val scanQuality: Map<String, Any>? = null
 )

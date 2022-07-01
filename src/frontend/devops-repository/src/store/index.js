@@ -47,6 +47,10 @@ const storeObject = {
     getters: {
         masterNode (state) {
             return state.clusterList.find(v => v.type === 'CENTER') || { name: '', url: '' }
+        },
+        isEnterprise () {
+            // 独立部署目前不区分版本
+            return true
         }
     },
     mutations: {

@@ -49,7 +49,9 @@ import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTPS
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import java.io.UnsupportedEncodingException
 import java.net.URI
+import java.net.URLDecoder
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import javax.ws.rs.core.UriBuilder
@@ -215,5 +217,35 @@ object OciResponseUtils {
         response: HttpServletResponse = HttpContextHolder.getResponse()
     ) {
         response.status = HttpStatus.ACCEPTED.value
+    }
+
+    /**
+     * Parse a querystring into a map of key/value pairs.
+     *
+     * @param queryString the string to parse (without the '?')
+     * @return key/value pairs mapping to the items in the querystring
+     */
+    fun parseQuerystring(queryString: String?): Map<String, String>? {
+        val map: MutableMap<String, String> = HashMap()
+        if (queryString == null || queryString == "") {
+            return map
+        }
+        val params = queryString.split("&".toRegex()).toTypedArray()
+        for (param in params) {
+            try {
+                val keyValuePair = param.split("=".toRegex(), 2).toTypedArray()
+                val name: String = URLDecoder.decode(keyValuePair[0], "UTF-8")
+                if (name === "") {
+                    continue
+                }
+                val value = if (keyValuePair.size > 1) URLDecoder.decode(
+                    keyValuePair[1], "UTF-8"
+                ) else ""
+                map[name] = value
+            } catch (e: UnsupportedEncodingException) {
+                // ignore this parameter if it can't be decoded
+            }
+        }
+        return map
     }
 }

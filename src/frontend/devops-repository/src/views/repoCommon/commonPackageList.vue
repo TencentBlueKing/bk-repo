@@ -235,8 +235,8 @@
         .sort-tool {
             color: var(--fontSubsidiaryColor);
             .sort-order {
-                width: 32px;
-                height: 32px;
+                width: 30px;
+                height: 30px;
                 border: 1px solid var(--borderWeightColor);
                 border-radius: 2px;
                 cursor: pointer;
@@ -249,7 +249,7 @@
         }
     }
     .common-package-list {
-        height: calc(100% - 152px);
+        height: calc(100% - 150px);
         padding: 0 20px;
         background-color: white;
         .list-count {

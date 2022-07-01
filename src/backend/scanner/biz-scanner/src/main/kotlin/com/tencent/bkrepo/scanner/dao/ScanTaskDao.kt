@@ -28,8 +28,14 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.ofTimestamp
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -105,6 +111,7 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
             .set(TScanTask::scanning.name, 0L)
             .set(TScanTask::failed.name, 0L)
             .set(TScanTask::scanned.name, 0L)
+            .set(TScanTask::passed.name, 0L)
 
         val options = FindAndModifyOptions().returnNew(true)
         return determineMongoTemplate().findAndModify(query, update, options, TScanTask::class.java)
@@ -117,11 +124,12 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
     }
 
     fun updateScanningCount(taskId: String, count: Int): UpdateResult {
-        val query = buildQuery(taskId)
+        val criteria = Criteria.where(ID).isEqualTo(taskId)
+            .and(TScanTask::status.name).isEqualTo(ScanTaskStatus.SCANNING_SUBMITTING)
         val update = buildUpdate()
             .inc(TScanTask::scanning.name, count)
             .inc(TScanTask::total.name, count)
-        return updateFirst(query, update)
+        return updateFirst(Query(criteria), update)
     }
 
     /**
@@ -132,6 +140,7 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
      * @param scanResultOverview 需要更新的预览结果
      * @param success 是否更新扫描成功的任务数量
      * @param reuseResult 是否是重用扫描结果的情况
+     * @param passCount 通过质量红线的数量
      *
      */
     fun updateScanResult(
@@ -139,7 +148,8 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
         count: Int,
         scanResultOverview: Map<String, Any?>,
         success: Boolean = true,
-        reuseResult: Boolean = false
+        reuseResult: Boolean = false,
+        passCount: Long = 0L
     ): UpdateResult {
         val query = buildQuery(taskId)
         val update = buildUpdate()
@@ -154,6 +164,9 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
         } else {
             update.inc(TScanTask::failed.name, count)
         }
+        if (passCount != 0L) {
+            update.inc(TScanTask::passed.name, count)
+        }
         scanResultOverview.forEach { (key, value) ->
             if (value is Number) {
                 update.inc("${TScanTask::scanResultOverview.name}.$key", value)
@@ -166,6 +179,36 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
 
     fun findByIds(ids: List<String>): List<TScanTask> {
         return find(Query(Criteria.where(ID).inValues(ids)))
+    }
+
+    fun findByProjectIdAndId(projectId: String, id: String): TScanTask? {
+        return findOne(
+            Query(
+                TScanTask::projectId.isEqualTo(projectId).and(ID).isEqualTo(id)
+            )
+        )
+    }
+
+    fun find(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<TScanTask> {
+        val criteria = Criteria()
+        with(scanTaskQuery) {
+            criteria.and(TScanTask::projectId.name).isEqualTo(projectId)
+            namePrefix?.let { criteria.and(TScanTask::name.name).regex("^$it") }
+            planId?.let { criteria.and(TScanTask::planId.name).isEqualTo(it) }
+            triggerType?.let { criteria.and(TScanTask::triggerType.name).isEqualTo(it) }
+            after?.let { criteria.and(TScanTask::createdDate.name).gt(ofTimestamp(it)) }
+            before?.let { criteria.and(TScanTask::createdDate.name).lt(ofTimestamp(it)) }
+            scanner?.let { criteria.and(TScanTask::scanner.name).isEqualTo(it) }
+            scannerType?.let { criteria.and(TScanTask::scannerType.name).isEqualTo(it) }
+            status?.let { criteria.and(TScanTask::status.name).isEqualTo(it) }
+        }
+        val query = Query(criteria)
+        val count = count(query)
+        val pageRequest = Pages.ofRequest(pageLimit.pageNumber, pageLimit.pageSize)
+        val sort = Sort.by(Sort.Direction.DESC, TScanTask::lastModifiedDate.name)
+        query.with(pageRequest).with(sort)
+        val tasks = find(query)
+        return Pages.ofResponse(pageRequest, count, tasks)
     }
 
     fun existsByPlanIdAndStatus(planId: String, status: List<String>): Boolean {

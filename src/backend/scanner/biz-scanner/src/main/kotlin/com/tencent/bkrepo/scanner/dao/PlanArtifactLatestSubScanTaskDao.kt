@@ -28,17 +28,12 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
-import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.utils.Converter
-import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.FindAndReplaceOptions
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
@@ -80,42 +75,19 @@ class PlanArtifactLatestSubScanTaskDao(
     }
 
     /**
-     * 分页获取指定扫描方案的制品最新扫描记录
+     * 获取指定扫描方案的制品最新扫描记录
      *
      * @param request 获取制品最新扫描记录请求
-     * @param scannerType 扫描方案使用的扫描器类型，用于转换漏洞等级为对应格式
      *
      * @return 扫描方案最新的制品扫描结果
      */
-    fun pageBy(request: PlanArtifactRequest, scannerType: String): Page<TPlanArtifactLatestSubScanTask> {
+    fun findBy(request: PlanCountRequest): List<TPlanArtifactLatestSubScanTask> {
         with(request) {
             val criteria = Criteria
                 .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
                 .and(SubScanTaskDefinition::planId.name).isEqualTo(id)
-
-            name?.let {
-                criteria.and(SubScanTaskDefinition::artifactName.name).regex(".*$name.*")
-            }
-            highestLeakLevel?.let { addHighestVulnerabilityLevel(scannerType, it, criteria) }
-            repoType?.let { criteria.and(SubScanTaskDefinition::repoType.name).isEqualTo(repoType) }
-            repoName?.let { criteria.and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName) }
-            subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
-            startTime?.let { criteria.and(SubScanTaskDefinition::createdDate.name).gte(it) }
-            endTime?.let { criteria.and(SubScanTaskDefinition::finishedDateTime.name).lte(it) }
-
-            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val query = Query(criteria)
-                .with(
-                    Sort.by(
-                        Sort.Direction.DESC,
-                        SubScanTaskDefinition::lastModifiedDate.name,
-                        SubScanTaskDefinition::repoName.name,
-                        SubScanTaskDefinition::fullPath.name
-                    )
-                )
-            val count = count(query)
-            val records = find(query.with(pageRequest))
-            return Pages.ofResponse(pageRequest, count, records)
+                .and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
+            return find(Query(criteria))
         }
     }
 
@@ -156,7 +128,8 @@ class PlanArtifactLatestSubScanTaskDao(
         subtaskScanStatus: String,
         overview: Map<String, Any?>? = null,
         modifiedBy: String? = null,
-        now: LocalDateTime = LocalDateTime.now()
+        now: LocalDateTime = LocalDateTime.now(),
+        qualityPass: Boolean? = null
     ): UpdateResult {
         val criteria = Criteria
             .where(TPlanArtifactLatestSubScanTask::latestSubScanTaskId.name).isEqualTo(latestSubScanTaskId)
@@ -165,6 +138,7 @@ class PlanArtifactLatestSubScanTaskDao(
             .update(TPlanArtifactLatestSubScanTask::lastModifiedDate.name, now)
             .set(TPlanArtifactLatestSubScanTask::status.name, subtaskScanStatus)
         modifiedBy?.let { update.set(TPlanArtifactLatestSubScanTask::lastModifiedBy.name, it) }
+        qualityPass?.let { update.set(TPlanArtifactLatestSubScanTask::qualityRedLine.name, it) }
 
         // 更新为正在扫描的状态时更新
         if (subtaskScanStatus == SubScanTaskStatus.EXECUTING.name) {
@@ -192,7 +166,7 @@ class PlanArtifactLatestSubScanTaskDao(
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, subtaskScanStatus)
-        return updateFirst(Query(criteria), update)
+        return updateMulti(Query(criteria), update)
     }
 
     /**
@@ -253,7 +227,7 @@ class PlanArtifactLatestSubScanTaskDao(
     }
 
     private fun updateOverview(planOverview: MutableMap<String, Long>, artifactOverview: Map<String, Number>?) {
-        if(artifactOverview == null) {
+        if (artifactOverview == null) {
             return
         }
 
@@ -266,22 +240,6 @@ class PlanArtifactLatestSubScanTaskDao(
     private fun buildCriteria(projectId: String, repoName: String, fullPath: String, planId: String?): Criteria {
         return buildCriteria(projectId, repoName, fullPath)
             .and(TPlanArtifactLatestSubScanTask::planId.name).isEqualTo(planId)
-    }
-
-    private fun addHighestVulnerabilityLevel(scannerType: String, level: String, criteria: Criteria): Criteria {
-        Level.values().forEach {
-            val isHighest = level == it.levelName
-            criteria.and(resultOverviewKey(scannerType, it.levelName)).exists(isHighest)
-            if (isHighest) {
-                return criteria
-            }
-        }
-        return criteria
-    }
-
-    private fun resultOverviewKey(scannerType: String, level: String): String {
-        val overviewKey = ScanPlanConverter.getCveOverviewKey(scannerType, level)
-        return "${SubScanTaskDefinition::scanResultOverview.name}.$overviewKey"
     }
 
     private fun buildCriteria(projectId: String, repoName: String, fullPath: String): Criteria {

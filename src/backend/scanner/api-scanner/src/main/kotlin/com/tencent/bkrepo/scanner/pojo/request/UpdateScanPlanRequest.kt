@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.scanner.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
+import com.tencent.bkrepo.common.query.model.Rule
 import io.swagger.annotations.ApiModelProperty
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -39,14 +39,10 @@ data class UpdateScanPlanRequest(
     val projectId: String? = null,
     @ApiModelProperty("方案名称")
     val name: String? = null,
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String? = null,
     @ApiModelProperty("描述")
     val description: String? = null,
     @ApiModelProperty("是否自动扫描")
-    val autoScan: Boolean? = null,
-    @ApiModelProperty("自动扫描仓库")
-    val repoNameList: List<String>? = null,
-    @ApiModelProperty("自动扫描规则")
-    val artifactRules: List<ArtifactRule>? = null
+    val scanOnNewArtifact: Boolean? = null,
+    @ApiModelProperty("自动扫描规则，包含仓库和制品规则")
+    val rule: Rule? = null
 )

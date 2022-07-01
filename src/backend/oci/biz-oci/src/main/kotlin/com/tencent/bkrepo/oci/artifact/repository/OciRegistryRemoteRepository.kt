@@ -51,25 +51,28 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.oci.constant.BEARER_REALM
+import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
+import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.SCOPE
 import com.tencent.bkrepo.oci.constant.SERVICE
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.auth.BearerToken
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import java.net.URL
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -77,6 +80,10 @@ import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.InputStream
+import java.net.URL
+import java.util.regex.Pattern
+import javax.ws.rs.core.UriBuilder
 
 @Component
 class OciRegistryRemoteRepository(
@@ -101,7 +108,9 @@ class OciRegistryRemoteRepository(
     }
 
     /**
-     * query功能主要用于获取对应tag列表
+     * query功能主要用于
+     * 1.获取对应tag列
+     * 2.获取manifest文件内容
      */
     override fun query(context: ArtifactQueryContext): Any? {
         return doRequest(context)
@@ -200,8 +209,14 @@ class OciRegistryRemoteRepository(
             )
         }
         if (context.artifactInfo is OciTagArtifactInfo) {
-            val (fullPath, params) = createParamsForTagList(context)
-            return createUrl(configuration.url, fullPath, params)
+            val artifactInfo = context.artifactInfo as OciTagArtifactInfo
+            if (artifactInfo.packageName.isBlank()) {
+                val (_, params) = createParamsForTagList(context)
+                return createCatalogUrl(configuration.url, params)
+            } else {
+                val (fullPath, params) = createParamsForTagList(context)
+                return createUrl(configuration.url, fullPath, params)
+            }
         }
         return createUrl(configuration.url)
     }
@@ -213,6 +228,18 @@ class OciRegistryRemoteRepository(
         val baseUrl = URL(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return UrlFormatter.format(v2Url.toString(), fullPath, params)
+    }
+
+    /**
+     * 拼接catalog url
+     */
+    private fun createCatalogUrl(url: String, params: String = StringPool.EMPTY): String {
+        val baseUrl = URL(url)
+        val builder = UriBuilder.fromPath(OCI_API_PREFIX)
+            .host(baseUrl.host).scheme(baseUrl.protocol)
+            .path(DOCKER_CATALOG_SUFFIX)
+            .queryParam(params)
+        return builder.build().toString()
     }
 
     private fun getAuthenticationCode(
@@ -425,10 +452,54 @@ class OciRegistryRemoteRepository(
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         artifactFile.delete()
         return if (context.artifactInfo is OciTagArtifactInfo) {
-            JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
+            val link = response.header(DOCKER_LINK)
+            val left = parseLink(link)
+            if ((context.artifactInfo as OciTagArtifactInfo).packageName.isNotBlank()) {
+                convertTagsInfo(artifactStream, left)
+            } else {
+                convertCatalogInfo(artifactStream, left)
+            }
         } else {
             artifactStream
         }
+    }
+
+    // 获取tag列表
+    private fun convertTagsInfo(artifactStream: InputStream, left: Int): TagsInfo? {
+        val tags = JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
+        tags.left = left
+        return tags
+    }
+
+    // 获取catalog列表
+    private fun convertCatalogInfo(artifactStream: InputStream, left: Int): CatalogResponse? {
+        val catalog = JsonUtils.objectMapper.readValue(artifactStream, CatalogResponse::class.java)
+        catalog.left = left
+        return catalog
+    }
+
+    /**
+     * 针对返回头中link字段进行解析
+     * Link: <<url>?n=<last n value>&last=<last entry from response>>; rel="next"
+     */
+    private fun parseLink(link: String?): Int {
+        if (link.isNullOrBlank()) return 0
+        var n = 0
+        try {
+            val regex = "<(.*)>; *rel=\"(.*)\""
+            val pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CHARACTER_CLASS)
+            val matcher = pattern.matcher(link)
+            val linkUrl = if (matcher.find()) {
+                matcher.group(1)
+            } else null
+            val query = linkUrl?.split("?")?.last()
+            val map = OciResponseUtils.parseQuerystring(query)
+            n = map?.get("n")?.toInt() ?: 0
+            return n
+        } catch (ignore: Exception) {
+            logger.warn("Error occurred while parsing linker, ${ignore.message}")
+        }
+        return n
     }
 
     companion object {

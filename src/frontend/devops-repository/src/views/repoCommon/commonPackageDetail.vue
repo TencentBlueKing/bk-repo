@@ -42,9 +42,15 @@
                             <operation-list
                                 class="version-operation"
                                 :list="[
-                                    permission.edit && { label: '晋级', clickEvent: () => changeStageTagHandler($version), disabled: ($version.stageTag || '').includes('@release') },
-                                    repoType === 'maven' && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) },
-                                    repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
+                                    ...(!$version.metadata.forbidStatus ? [
+                                        permission.edit && {
+                                            label: '晋级', clickEvent: () => changeStageTagHandler($version),
+                                            disabled: ($version.stageTag || '').includes('@release')
+                                        },
+                                        repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
+                                        ['maven'].includes(repoType) && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) }
+                                    ] : []),
+                                    // { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
@@ -56,6 +62,7 @@
                     ref="versionDetail"
                     @tag="changeStageTagHandler()"
                     @scan="scanPackageHandler()"
+                    @forbid="changeForbidStatusHandler()"
                     @download="downloadPackageHandler()"
                     @delete="deleteVersionHandler()">
                 </version-detail>
@@ -144,7 +151,8 @@
                 'getPackageInfo',
                 'getVersionList',
                 'changeStageTag',
-                'deleteVersion'
+                'deleteVersion',
+                'forbidMetadata'
             ]),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, load) {
                 this.pagination.current = current
@@ -239,6 +247,22 @@
                     version: row.name
                 })
             },
+            changeForbidStatusHandler (row = this.currentVersion) {
+                this.forbidMetadata({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    fullPath: row.contentPath,
+                    body: {
+                        nodeMetadata: [{ key: 'forbidStatus', value: !row.metadata.forbidStatus }]
+                    }
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: (row.metadata.forbidStatus ? '解除禁止' : '禁止使用') + this.$t('success')
+                    })
+                    this.refresh(row.name)
+                })
+            },
             downloadPackageHandler (row = this.currentVersion) {
                 if (this.repoType === 'docker') return
                 const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}&download=true`
@@ -321,7 +345,7 @@
                 padding: 20px 20px 10px;
             }
             .version-list {
-                height: calc(100% - 122px);
+                height: calc(100% - 120px);
                 padding: 0 20px 10px;
                 background-color: white;
                 .list-count {

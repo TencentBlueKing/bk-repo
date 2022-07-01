@@ -60,6 +60,13 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return findOne(Query(criteria))
     }
 
+    fun find(projectId: String, type: String, name: String): TScanPlan? {
+        val criteria = projectCriteria(projectId)
+            .and(TScanPlan::type.name).isEqualTo(type)
+            .and(TScanPlan::name.name).isEqualTo(name)
+        return findOne(Query(criteria))
+    }
+
     fun findByProjectIdAndRepoName(
         projectId: String,
         repoName: String,
@@ -89,9 +96,9 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return find(query)
     }
 
-    fun exists(projectId: String, id: String): Boolean {
+    fun findByProjectIdAndId(projectId: String, id: String): TScanPlan? {
         val criteria = projectCriteria(projectId).and(ID).isEqualTo(id)
-        return exists(Query(criteria))
+        return findOne(Query(criteria))
     }
 
     fun delete(projectId: String, id: String): UpdateResult {
@@ -180,6 +187,12 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         updateFirst(Query(criteria), update)
     }
 
+    fun updateScanPlanQuality(scanId: String, quality: Map<String, Any?>) {
+        val query = Query(criteria().and(ID).isEqualTo(scanId))
+        val update = buildQualityUpdate(quality)
+        updateMulti(query, update)
+    }
+
     private fun buildOverviewUpdate(overview: Map<String, Any?>, dec: Boolean = false): Update? {
         val update = Update()
         var hasUpdate = false
@@ -201,6 +214,14 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         } else {
             null
         }
+    }
+
+    private fun buildQualityUpdate(quality: Map<String, Any?>): Update {
+        val update = Update()
+        quality.forEach { entry ->
+            update.set("${TScanPlan::scanQuality.name}.${entry.key}", entry.value)
+        }
+        return update
     }
 
     private fun projectCriteria(projectId: String, includeDeleted: Boolean = false): Criteria {

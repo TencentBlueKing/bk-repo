@@ -308,7 +308,6 @@ class DockerV2LocalRepoService @Autowired constructor(
                     manifestPath = manifestPath,
                     artifactPath = null,
                     stageTag = null,
-                    metadata = null,
                     overwrite = true,
                     createdBy = artifactRepo.userId
                 )

@@ -1,4 +1,5 @@
 # Where component owners are known, add them here.
+/CODEOWNERS             @owenlxu @felixncheng
 /docs                   @owenlxu
 /scripts                @owenlxu
 /support-files          @owenlxu
