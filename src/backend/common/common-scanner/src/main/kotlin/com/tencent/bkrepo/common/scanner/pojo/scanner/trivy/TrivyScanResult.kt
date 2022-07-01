@@ -31,6 +31,13 @@ import com.fasterxml.jackson.annotation.JsonAlias
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
+@ApiModel("扫描结果")
+data class TrivyScanResults(
+    @ApiModelProperty("扫描结果")
+    @JsonAlias("Results")
+    val results: List<TrivyScanResult>
+)
+
 @ApiModel("制品漏洞信息")
 data class TrivyScanResult(
     @ApiModelProperty("目标")

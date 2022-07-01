@@ -37,9 +37,9 @@ import io.swagger.annotations.ApiModelProperty
 class TrivyScanner(
     override val name: String,
     override val version: String,
-    @ApiModelProperty("扫描器缓存目录，存放漏洞数据库文件目录")
+    @ApiModelProperty("扫描器缓存目录，会在rootPath下创建，存放漏洞数据库文件目录")
     val cacheDir: String,
-    @ApiModelProperty("扫描器根目录")
+    @ApiModelProperty("扫描器根目录，会在扫描执行器服务的workDir下创建")
     val rootPath: String,
     @ApiModelProperty("扫描结束后是否清理工作目录")
     val cleanWorkDir: Boolean = true,

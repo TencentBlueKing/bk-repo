@@ -233,6 +233,7 @@ class PackageIterator(
         val packageMap = packages.associateBy { it.fullPath }
         nodes.forEach {
             val pkg = packageMap[it.fullPath]!!
+            it.artifactName = pkg.artifactName
             it.packageKey = pkg.packageKey
             it.packageVersion = pkg.packageVersion
         }

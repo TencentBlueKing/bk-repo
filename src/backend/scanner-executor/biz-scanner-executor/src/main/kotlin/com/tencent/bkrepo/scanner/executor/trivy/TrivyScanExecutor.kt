@@ -32,7 +32,6 @@ import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
-import com.tencent.bkrepo.common.api.constant.CharPool.DASH
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
@@ -49,7 +48,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.DbSource
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanResults
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -99,8 +98,7 @@ class TrivyScanExecutor @Autowired constructor(
         logger.info(logMsg(task, "create work dir success, $workDir"))
         try {
             //  加载待扫描文件
-            val fileName = task.fullPath.replace(SLASH, DASH)
-            val scannerInputFile = File(File(workDir, scanner.container.inputDir), fileName)
+            val scannerInputFile = File(File(workDir, scanner.container.inputDir), "${task.sha256}.tar")
             val outputDir = File(workDir, scanner.container.outputDir)
             outputDir.mkdirs()
             scannerInputFile.parentFile.mkdirs()
@@ -119,16 +117,18 @@ class TrivyScanExecutor @Autowired constructor(
 
     private fun generateScanFile(fileOutputStream: FileOutputStream, task: ScanExecutorTask) {
         val manifest = task.inputStream.readJsonString<ManifestV2>()
-        logger.info(logMsg(task, manifest.toJsonString()))
-
+        if (logger.isDebugEnabled) {
+            logger.debug(logMsg(task, manifest.toJsonString()))
+        }
+        val isFromOci = isFromOciService(task.fullPath)
         TarArchiveOutputStream(fileOutputStream).use { tos ->
             // 打包config文件
-            loadLayerTo(manifest.config, task, tos)
+            loadLayerTo(manifest.config, task, tos, isFromOci)
             val layers = ArrayList<String>()
             // 打包layers文件
             manifest.layers.forEach {
                 layers.add(it.digest.replace(COLON.toString(), "__"))
-                loadLayerTo(it, task, tos)
+                loadLayerTo(it, task, tos, isFromOci)
             }
             // 打包manifest.json文件
             val configFileName = manifest.config.digest.replace(COLON.toString(), "__")
@@ -146,15 +146,35 @@ class TrivyScanExecutor @Autowired constructor(
         return true
     }
 
-    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream) {
+    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream, isFromOci: Boolean) {
         val fileName = layer.digest.replace(COLON.toString(), "__")
-        val fullPath = "${task.fullPath}/$fileName"
+        val fullPath = if (isFromOci) {
+            // manifest路径格式/%s/manifest/%s/manifest.json"
+            // 忽略第一个 /，截取%s/
+            val endIndex = task.fullPath.indexOf(SLASH, 1)
+            "${task.fullPath.substring(0, endIndex)}/blobs/$fileName"
+        } else {
+            // manifest路劲格式为 /%s/%s/manifest.json
+            // blobs在同级目录
+            val endIndex = task.fullPath.lastIndexOf(SLASH)
+            "${task.fullPath.substring(0, endIndex)}/$fileName"
+        }
         logger.info(logMsg(task, "load layer [$fullPath]"))
+
         val node = nodeClient.getNodeDetail(task.projectId, task.repoName, fullPath).data
             ?: throw SystemErrorException(SYSTEM_ERROR, "image layer file [$fullPath] acquire failed")
         storageService.load(node.sha256!!, Range.full(node.size), task.storageCredentials)
             ?.use { putArchiveEntry(fileName, node.size, it, tos) }
             ?: throw SystemErrorException(RESOURCE_NOT_FOUND, "layer not found full path[$fullPath]")
+    }
+
+    /**
+     * 判断是否为通过bkrepo-oci服务推送的镜像
+     */
+    private fun isFromOciService(manifestFullPath: String): Boolean {
+        val splitPath = manifestFullPath.split(SLASH)
+        // OCI路径格式为/%s/manifest/%s/manifest.json，判断路径分片长度和倒数第3段是否为manifest即可确认是否为oci服务上传的镜像
+        return splitPath.size >= OCI_PATH_PARTS_MIN_SIZE && splitPath[splitPath.size - 3] == "manifest"
     }
 
     private fun putArchiveEntry(name: String, size: Long, inputStream: InputStream, tos: TarArchiveOutputStream) {
@@ -208,15 +228,16 @@ class TrivyScanExecutor @Autowired constructor(
         DockerUtils.pullImage(dockerClient, containerConfig.image)
 
         // 从默认仓库下载最新镜像漏洞数据库到cacheDir
+        val cacheDir = File("${scannerExecutorProperties.workDir}/${task.scanner.rootPath}/${task.scanner.cacheDir}")
         if (task.scanner.vulDbConfig.dbSource != DbSource.TRIVY.code) {
-            generateTrivyDB(task)
+            generateTrivyDB(task, cacheDir)
         }
 
         // 容器内工作目录
         val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
 
         // 缓存目录映射
-        val cacheBind = Bind(task.scanner.cacheDir, Volume(CACHE_DIR))
+        val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
 
         val hostConfig = DockerUtils.dockerHostConfig(Binds(bind, cacheBind), maxFileSize, true)
         val containerCmd = dockerClient.createContainerCmd(containerConfig.image)
@@ -254,10 +275,10 @@ class TrivyScanExecutor @Autowired constructor(
         }
     }
 
-    private fun generateTrivyDB(task: ScanExecutorTask) {
+    private fun generateTrivyDB(task: ScanExecutorTask, cacheDir: File) {
         require(task.scanner is TrivyScanner)
         // 创建metadata.json文件，trivy扫描时必须的文件
-        val metadataFile = File(task.scanner.cacheDir, METEDATA_JSON)
+        val metadataFile = File(cacheDir, METEDATA_JSON)
         if (!metadataFile.exists()) {
             logger.info(logMsg(task, "metadata.json file not exists"))
             metadataFile.parentFile.mkdirs()
@@ -269,7 +290,7 @@ class TrivyScanExecutor @Autowired constructor(
 
         // 加载最新漏洞库
         val newestNode = getNewestNode(task.scanner.vulDbConfig.projectId, task.scanner.vulDbConfig.repo)
-        val dbFile = File(task.scanner.cacheDir, TRIVY_DB)
+        val dbFile = File(cacheDir, TRIVY_DB)
         if (!dbFile.parentFile.exists()) {
             dbFile.parentFile.mkdirs()
         }
@@ -336,6 +357,7 @@ class TrivyScanExecutor @Autowired constructor(
         val cmds = ArrayList<String>()
         cmds.add(CACHE_DIR_COMMAND)
         cmds.add(CACHE_DIR)
+        cmds.add("image")
         cmds.add("-f")
         cmds.add("json")
         cmds.add("-o")
@@ -369,12 +391,11 @@ class TrivyScanExecutor @Autowired constructor(
      * 解析扫描结果
      */
     private fun result(outputDir: File, scanStatus: SubScanTaskStatus): TrivyScanExecutorResult {
-
-        val scanResult = readJsonString<List<TrivyScanResult>>(File(outputDir, SCAN_RESULT_FILE_NAME))
+        val scanResult = readJsonString<TrivyScanResults>(File(outputDir, SCAN_RESULT_FILE_NAME))
         val vulnerabilityItems = ArrayList<VulnerabilityItem>()
         val overview = HashMap<String, Long>()
         // cve count
-        scanResult?.forEach { result ->
+        scanResult?.results?.forEach { result ->
             result.vulnerabilities?.let { vulnerabilityItems.addAll(it) }
             result.vulnerabilities?.forEach {
                 val overviewKey = overviewKeyOf(it.severity.toLowerCase())
@@ -462,5 +483,10 @@ class TrivyScanExecutor @Autowired constructor(
          * manifest.json文件名
          */
         private const val MANIFEST = "manifest.json"
+
+        /**
+         * oci路径最小段数
+         */
+        private const val OCI_PATH_PARTS_MIN_SIZE = 5
     }
 }
