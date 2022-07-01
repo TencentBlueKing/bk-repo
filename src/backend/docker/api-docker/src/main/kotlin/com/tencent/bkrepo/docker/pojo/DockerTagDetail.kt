@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.docker.pojo
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -41,7 +42,7 @@ data class DockerTagDetail(
     @ApiModelProperty("history")
     val history: List<Any>,
     @ApiModelProperty("metadata")
-    val metadata: Map<String, Any>,
+    val metadata: List<MetadataModel>,
     @ApiModelProperty("layers")
     val layers: List<Any>
 )

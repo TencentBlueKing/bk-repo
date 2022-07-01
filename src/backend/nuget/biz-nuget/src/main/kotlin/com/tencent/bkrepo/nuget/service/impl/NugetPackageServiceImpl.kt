@@ -47,7 +47,7 @@ class NugetPackageServiceImpl(
                 throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             }
             val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
-            PackageVersionInfo(basicInfo, emptyMap())
+            PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
         }
     }
 

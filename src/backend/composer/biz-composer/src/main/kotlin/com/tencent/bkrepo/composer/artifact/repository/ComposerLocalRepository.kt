@@ -508,7 +508,6 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
-            val rpmArtifactMetadata = jarNode.metadata
             val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
             ).data
@@ -525,7 +524,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
                 stageTag,
                 null
             )
-            return ArtifactVersionDetail(composerArtifactBasic, rpmArtifactMetadata)
+            return ArtifactVersionDetail(composerArtifactBasic, packageVersion?.packageMetadata)
         }
     }
 
