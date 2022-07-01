@@ -71,10 +71,10 @@ build_backend () {
     rm -rf $tmp_dir/*
     cp backend/startup.sh $tmp_dir/
     cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
-#    docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
-#    if [[ $PUSH -eq 1 ]] ; then
-#        docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
-#    fi
+    docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
+    if [[ $PUSH -eq 1 ]] ; then
+        docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
+    fi
 }
 
 # 解析命令行参数，长短混合模式
