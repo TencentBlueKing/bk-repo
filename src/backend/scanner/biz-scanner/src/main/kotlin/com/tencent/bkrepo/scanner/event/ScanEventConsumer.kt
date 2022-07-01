@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
@@ -141,13 +140,11 @@ class ScanEventConsumer(
         var hasScanTask = false
 
         with(event) {
-            if (data[VersionCreatedEvent::packageType.name] != PackageType.MAVEN.name) {
-                return false
-            }
+            val packageType = event.data[VersionCreatedEvent::packageType.name] as String? ?: return false
             logger.info("receive event resourceKey[${event.resourceKey}]")
 
             scanPlanDao
-                .findByProjectIdAndRepoName(projectId, repoName, PackageType.MAVEN.name)
+                .findByProjectIdAndRepoName(projectId, repoName, packageType)
                 .filter { match(event, it.rule.readJsonString()) }
                 .forEach {
                     val packageKey = data[VersionCreatedEvent::packageKey.name] as String
