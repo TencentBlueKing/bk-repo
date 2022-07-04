@@ -71,8 +71,6 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
      */
     val minimumPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
 
-    val downloadWorkers: Int = credentials.downloadWorkers
-
     /**
      * cos访问域名构造器
      */
@@ -83,13 +81,38 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
      */
     val endpointResolver = createEndpointResolver()
 
+    /**
+     * 记录慢日志的网络速度阈值，即网络速度低于这个速度，则记录慢日志。
+     * */
     val slowLogSpeed = credentials.slowLogSpeed
 
-    val slowLogTime: Long = credentials.slowLogTimeInMillis.toMillis()
+    /**
+     * 记录慢日志的时间阈值，即执行时间超过这个时间，则记录慢日志。
+     * */
+    val slowLogTime: Long = credentials.slowLogTimeInMillis
 
-    var downloadTimeHighWaterMark: Long = credentials.downloadTimeHighWaterMark.toMillis()
-    var downloadTimeLowWaterMark: Long = credentials.downloadTimeLowWaterMark.toMillis()
-    var downloadTaskInterval: Long = credentials.downloadTaskInterval.toMillis()
+    /**
+     * 下载并发数。增加并发以增加带宽利用率（因为可能存在单连接限速的情况），
+     * 但是数值不是越大越好，当下行带宽打满，再增加并发数，反而导致单连接的速度下降。
+     * */
+    val downloadWorkers: Int = credentials.download.workers
+
+    /**
+     * 下载时间高水位线。超过该值，则降级为单连接下载
+     * */
+    var downloadTimeHighWaterMark: Long = credentials.download.downloadTimeHighWaterMark
+
+    /**
+     * 下载时间低水位线。低于该值时，则恢复多连接下载
+     * */
+    var downloadTimeLowWaterMark: Long = credentials.download.downloadTimeLowWaterMark
+
+    /**
+     * 分块下载任务间隔时间。
+     * 为保证大文件分块下载不占满工作线程，以保证新进来的连接也能开始下载，
+     * 所以采取了一个间隔时间配置。即一定时间的连接允许插入（即可以开始下载）。
+     * */
+    var downloadTaskInterval: Long = credentials.download.taskInterval
 
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
