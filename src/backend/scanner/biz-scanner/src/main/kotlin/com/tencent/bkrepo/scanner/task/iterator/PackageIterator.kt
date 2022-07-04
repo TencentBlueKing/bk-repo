@@ -29,9 +29,8 @@ package com.tencent.bkrepo.scanner.task.iterator
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -42,7 +41,6 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.utils.Request
-import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -217,8 +215,8 @@ class PackageIterator(
             }
             val packageVersion = Request.request {
                 packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
-            } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey, packageVersion!!)
-            pkg.fullPath = packageVersion.contentPath
+            }
+            pkg.fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
         }
         return pkg
     }
@@ -235,6 +233,7 @@ class PackageIterator(
         val packageMap = packages.associateBy { it.fullPath }
         nodes.forEach {
             val pkg = packageMap[it.fullPath]!!
+            it.artifactName = pkg.artifactName
             it.packageKey = pkg.packageKey
             it.packageVersion = pkg.packageVersion
         }

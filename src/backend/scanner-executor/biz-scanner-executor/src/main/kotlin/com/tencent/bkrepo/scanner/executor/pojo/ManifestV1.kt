@@ -25,9 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.scanner.executor.pojo
+
+import com.fasterxml.jackson.annotation.JsonProperty
+
+/**
+ * ManifestV1
+ */
+data class ManifestV1(
+    /**
+     * manifests
+     */
+    val manifests: List<Manifest>,
+)
+
+data class Manifest(
+    @JsonProperty("Config")
+    val config: String,
+    @JsonProperty("RepoTags")
+    val repoTags: List<String>,
+    @JsonProperty("Layers")
+    val layers: List<String>
+)

@@ -25,9 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.common.scanner.pojo.scanner.trivy
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("trivy扫描器扫描结果")
+data class TrivyScanExecutorResult(
+    override val scanStatus: String,
+    override val overview: Map<String, Any?>,
+    @ApiModelProperty("cve审计结果")
+    val vulnerabilityItems: List<VulnerabilityItem>
+) : ScanExecutorResult(scanStatus, overview, TrivyScanner.TYPE)

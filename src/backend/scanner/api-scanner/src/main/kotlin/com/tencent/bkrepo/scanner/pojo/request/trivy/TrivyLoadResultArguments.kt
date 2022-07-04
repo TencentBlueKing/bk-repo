@@ -25,9 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.scanner.pojo.request.trivy
+
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("trivy扫描结果拉取参数")
+data class TrivyLoadResultArguments(
+    @ApiModelProperty("需要的cve列表")
+    val vulIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的漏洞严重性等级列表")
+    val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("分页参数")
+    val pageLimit: PageLimit = PageLimit()
+) : LoadResultArguments(TrivyScanner.TYPE)

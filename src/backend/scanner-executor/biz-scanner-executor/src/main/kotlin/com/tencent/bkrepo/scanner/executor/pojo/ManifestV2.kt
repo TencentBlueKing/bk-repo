@@ -25,9 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.scanner.executor.pojo
+
+/**
+ * ManifestV2
+ */
+data class ManifestV2(
+    /**
+     * 版本
+     */
+    val schemaVersion: String,
+    /**
+     * 数据类型
+     */
+    val mediaType: String,
+    /**
+     * 配置信息
+     */
+    val config: Layer,
+    /**
+     * 层
+     */
+    val layers: List<Layer>
+)
+
+data class Layer(
+    val mediaType: String,
+    val size: Long,
+    val digest: String
+)

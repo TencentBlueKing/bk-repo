@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.scanner.api.ScanClient
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
@@ -124,7 +125,7 @@ class ExecutorScheduler @Autowired constructor(
             // 2. 执行扫描任务
             val result = try {
                 logger.info("start to scan file[$sha256]")
-                val executorTask = convert(subScanTask, artifactInputStream)
+                val executorTask = convert(subScanTask, artifactInputStream, storageCredentials)
                 val executor = scanExecutorFactory.get(subScanTask.scanner.type)
                 executor.scan(executorTask)
             } catch (e: Exception) {
@@ -147,7 +148,11 @@ class ExecutorScheduler @Autowired constructor(
         }
     }
 
-    private fun convert(subScanTask: SubScanTask, artifactInputStream: ArtifactInputStream): ScanExecutorTask {
+    private fun convert(
+        subScanTask: SubScanTask,
+        artifactInputStream: ArtifactInputStream,
+        storageCredentials: StorageCredentials?
+    ): ScanExecutorTask {
         with(subScanTask) {
             return ScanExecutorTask(
                 taskId = taskId,
@@ -157,7 +162,8 @@ class ExecutorScheduler @Autowired constructor(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
-                sha256 = sha256
+                sha256 = sha256,
+                storageCredentials = storageCredentials
             )
         }
     }

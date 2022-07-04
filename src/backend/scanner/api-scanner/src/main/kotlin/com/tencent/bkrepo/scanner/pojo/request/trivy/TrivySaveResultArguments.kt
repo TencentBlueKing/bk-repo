@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.scanner.pojo.request.trivy
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
+
+class TrivySaveResultArguments : SaveResultArguments(TrivyScanner.TYPE)
