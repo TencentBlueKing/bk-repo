@@ -29,9 +29,8 @@ package com.tencent.bkrepo.scanner.task.iterator
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -42,7 +41,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.utils.Request
-import com.tencent.bkrepo.common.query.matcher.RuleMatcher
+import org.slf4j.LoggerFactory
 import kotlin.math.min
 
 /**
@@ -54,6 +53,10 @@ class PackageIterator(
     override val position: PackageIteratePosition
 ) : PageableIterator<Node>() {
     override fun nextPageData(page: Int, pageSize: Int): List<Node> {
+        if (logger.isDebugEnabled) {
+            logger.debug("requesting package position[$position]")
+        }
+
         if (position.packages.isEmpty() || position.packageIndex >= position.packages.size - 1) {
             position.packages = requestPackage(page, pageSize)
             position.packageIndex = INITIAL_INDEX
@@ -61,6 +64,10 @@ class PackageIterator(
 
         if (position.packages.isEmpty()) {
             return emptyList()
+        }
+
+        if (logger.isDebugEnabled) {
+            logger.debug("populating packages[${position.packages}]")
         }
 
         // packages填充版本后列表大小会超过pageSize，需要拆分列表，剩余的packages留在下次遍历
@@ -73,6 +80,11 @@ class PackageIterator(
             .filter { it.fullPath != null }
             .toList()
         position.packageIndex = position.packageIndex + (toIndex - fromIndex)
+
+        if (logger.isDebugEnabled) {
+            logger.debug("success get current page[${position.page}] packages[$populatedPackages]")
+        }
+
         return requestNode(populatedPackages)
     }
 
@@ -198,10 +210,13 @@ class PackageIterator(
     private fun populatePackage(pkg: Package): Package {
         require(pkg.packageVersion != null)
         with(pkg) {
+            if (logger.isDebugEnabled) {
+                logger.debug("populating package[$pkg]")
+            }
             val packageVersion = Request.request {
                 packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
-            } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey, packageVersion!!)
-            pkg.fullPath = packageVersion.contentPath
+            }
+            pkg.fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
         }
         return pkg
     }
@@ -218,6 +233,7 @@ class PackageIterator(
         val packageMap = packages.associateBy { it.fullPath }
         nodes.forEach {
             val pkg = packageMap[it.fullPath]!!
+            it.artifactName = pkg.artifactName
             it.packageKey = pkg.packageKey
             it.packageVersion = pkg.packageVersion
         }
@@ -247,6 +263,8 @@ class PackageIterator(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(PackageIterator::class.java)
+
         private val packageSelect = listOf(
             PackageSummary::projectId.name,
             PackageSummary::repoName.name,

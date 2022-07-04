@@ -31,9 +31,6 @@
 
 package com.tencent.bkrepo.common.notify.api
 
-import com.tencent.bkrepo.common.notify.api.message.weworkbot.MessageBody
-import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
-
 interface NotifyService {
     fun sendMail(receivers: List<String>, ccs: List<String>, title: String, body: String)
 
@@ -42,12 +39,9 @@ interface NotifyService {
     fun sendWework(receivers: List<String>, title: String, body: String)
 
     /**
-     * 通过企业微信机器人发消息
-     *
-     * @param bot 用于发消息的企业微信机器人
-     * @param message 消息
+     * 通过指定渠道[credential]发送消息，[credential]为null时将通过默认渠道发送消息
      */
-    fun sendWeworkBot(bot: WeworkBot, message: MessageBody)
+    fun send(message: NotifyMessage, credential: NotifyChannelCredential? = null)
 
     fun sendWechat(receivers: List<String>, body: String)
 }

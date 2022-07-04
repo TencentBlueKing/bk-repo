@@ -34,6 +34,8 @@ import io.swagger.annotations.ApiModelProperty
 data class ScanTaskQuery(
     @ApiModelProperty("任务所属项目")
     val projectId: String,
+    @ApiModelProperty("任务名前缀")
+    val namePrefix: String? = null,
     @ApiModelProperty("扫描方案id")
     val planId: String? = null,
     @ApiModelProperty("任务触发方式")

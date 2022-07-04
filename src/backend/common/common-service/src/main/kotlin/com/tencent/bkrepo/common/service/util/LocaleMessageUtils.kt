@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.context.NoSuchMessageException
 import org.springframework.context.i18n.LocaleContextHolder
+import java.util.Locale
 
 object LocaleMessageUtils {
 
@@ -48,8 +49,11 @@ object LocaleMessageUtils {
      * @param messageCode messageCode
      * @param params 替换描述信息占位符的参数数组
      */
-    fun getLocalizedMessage(messageCode: MessageCode, params: Array<out Any>? = null): String {
-        val locale = LocaleContextHolder.getLocale()
+    fun getLocalizedMessage(
+        messageCode: MessageCode,
+        params: Array<out Any>? = null,
+        locale: Locale = LocaleContextHolder.getLocale()
+    ): String {
         return try {
             messageSource.getMessage(messageCode.getKey(), params, locale)
         } catch (exception: NoSuchMessageException) {

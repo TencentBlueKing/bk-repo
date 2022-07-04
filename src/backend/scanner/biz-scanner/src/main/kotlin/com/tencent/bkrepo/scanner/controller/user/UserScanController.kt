@@ -92,6 +92,18 @@ class UserScanController @Autowired constructor(
         return ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
     }
 
+    @ApiOperation("中止制品扫描")
+    @PostMapping("/{projectId}/tasks/{taskId}/stop")
+    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
+    fun stopTask(
+        @ApiParam(value = "projectId")
+        @PathVariable projectId: String,
+        @ApiParam(value = "任务id")
+        @PathVariable("taskId") taskId: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(scanService.stopTask(projectId, taskId))
+    }
+
     @ApiOperation("获取扫描任务信息")
     @GetMapping("/tasks/{taskId}")
     fun task(@PathVariable("taskId") taskId: String): Response<ScanTask> {

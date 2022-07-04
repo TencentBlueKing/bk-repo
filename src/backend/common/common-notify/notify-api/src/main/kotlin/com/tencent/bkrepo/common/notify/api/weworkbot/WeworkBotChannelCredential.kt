@@ -25,15 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.common.notify.api.weworkbot
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-data class MarkdownMessage(@JsonProperty("content") val content: String) : MessageBody {
-
-    override fun type() = type
-
+@ApiModel("企业微信机器人")
+data class WeworkBotChannelCredential(
+    override var name: String = "",
+    override var default: Boolean = false,
+    @ApiModelProperty("企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
+    var key: String
+) : NotifyChannelCredential(name, type, default) {
     companion object {
-        const val type = "markdown"
+        const val type = "wework-bot"
     }
 }

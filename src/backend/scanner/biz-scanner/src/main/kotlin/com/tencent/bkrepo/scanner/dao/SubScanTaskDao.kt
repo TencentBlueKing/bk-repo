@@ -74,6 +74,13 @@ class SubScanTaskDao(
         return findOne(query)
     }
 
+    fun findByParentId(parentTaskId: String): List<TSubScanTask> {
+        val query = Query(
+            TSubScanTask::parentScanTaskId.isEqualTo(parentTaskId)
+        )
+        return find(query)
+    }
+
     fun deleteById(subTaskId: String): DeleteResult {
         val query = Query(Criteria.where(ID).isEqualTo(subTaskId))
         return remove(query)

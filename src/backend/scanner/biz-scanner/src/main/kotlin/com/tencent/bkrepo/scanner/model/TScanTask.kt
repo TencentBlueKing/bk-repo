@@ -53,6 +53,10 @@ data class TScanTask(
     val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
     /**
+     * 任务名
+     */
+    val name: String? = null,
+    /**
      * 开始扫描时间
      */
     val startDateTime: LocalDateTime? = null,

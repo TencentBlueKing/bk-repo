@@ -25,8 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.scanner.pojo.request.trivy
 
-interface MessageBody {
-    fun type(): String
-}
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("trivy扫描结果拉取参数")
+data class TrivyLoadResultArguments(
+    @ApiModelProperty("需要的cve列表")
+    val vulIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的漏洞严重性等级列表")
+    val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("分页参数")
+    val pageLimit: PageLimit = PageLimit()
+) : LoadResultArguments(TrivyScanner.TYPE)

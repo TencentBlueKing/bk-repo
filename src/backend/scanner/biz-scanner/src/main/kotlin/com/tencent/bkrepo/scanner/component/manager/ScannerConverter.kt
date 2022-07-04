@@ -40,6 +40,6 @@ interface ScannerConverter {
     fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments
 
     companion object {
-        fun name(scannerType: String) =  "${scannerType}Converter"
+        fun name(scannerType: String) = "${scannerType}Converter"
     }
 }

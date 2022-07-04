@@ -25,15 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.message.weworkbot
+package com.tencent.bkrepo.common.scanner.pojo.scanner.trivy
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("企业微信你机器人")
-data class WeworkBot(
-    @ApiModelProperty("用于发消息的webhook地址")
-    val webhookUrl: String,
-    @ApiModelProperty("需要发消息的会话id，多个id用|分隔")
-    val chatIds: String? = null
+@ApiModel("扫描结果")
+data class TrivyScanResults(
+    @ApiModelProperty("扫描结果")
+    @JsonAlias("Results")
+    val results: List<TrivyScanResult>
+)
+
+@ApiModel("制品漏洞信息")
+data class TrivyScanResult(
+    @ApiModelProperty("目标")
+    @JsonAlias("Target")
+    val target: String,
+    @ApiModelProperty("类")
+    @JsonAlias("Class")
+    val clazz: String,
+    @ApiModelProperty("类型")
+    @JsonAlias("Type")
+    val type: String,
+    @ApiModelProperty("Results")
+    @JsonAlias("Vulnerabilities")
+    val vulnerabilities: List<VulnerabilityItem>? = emptyList()
 )

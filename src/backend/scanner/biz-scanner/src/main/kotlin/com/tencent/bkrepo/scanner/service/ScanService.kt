@@ -73,6 +73,16 @@ interface ScanService {
     fun stopSubtask(projectId: String, subtaskId: String): Boolean
 
     /**
+     * 停止任务
+     *
+     * @param projectId 项目id
+     * @param taskId 子任务id
+     *
+     * @return true 停止成功，false 停止失败
+     */
+    fun stopTask(projectId: String, taskId: String): Boolean
+
+    /**
      * 扫描结果上报
      *
      * @param reportResultRequest 扫描结果上报请求

@@ -47,7 +47,8 @@ data class InnerCosCredentials(
     var timeout: Float = 0.5F,
     var public: Boolean = false,
     var slowLogSpeed: Int = MB,
-    var slowLogTimeInMillis: Long = 30 * 1000,
+    var slowLogTimeInMillis: Long = 30_000,
+    var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()
@@ -57,4 +58,11 @@ data class InnerCosCredentials(
         const val type = "innercos"
         const val MB = 1024 * 1024
     }
+
+    class DownloadProperties(
+        var workers: Int = 0,
+        var downloadTimeHighWaterMark: Long = 25_000,
+        var downloadTimeLowWaterMark: Long = 5_000,
+        var taskInterval: Long = 10,
+    )
 }

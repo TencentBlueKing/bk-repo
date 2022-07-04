@@ -231,23 +231,96 @@
           "lastModifiedBy" : "admin",
           "lastModifiedDate" : "2020-07-27T16:02:31.394",
           "metadata": {
-                  "apiVersion": "v1",
-                  "appVersion": "7.0",
-                  "description": "Deploy a basic tomcat application server with sidecar as web archive container",
-                  "home": "https://github.com/yahavb",
-                  "icon": "http://tomcat.apache.org/res/images/tomcat.png",
-                  "keywords": [],
-                  "maintainers": [
-                      {
-                          "name": "yahavb",
-                          "email": "ybiran@ananware.systems"
-                      }
-                  ],
-                  "name": "tomcat",
-                  "sources": [],
-                  "urls": [],
-                  "version": "0.4.2"
-              },
+            "apiVersion": "v1",
+            "appVersion": "7.0",
+            "description": "Deploy a basic tomcat application server with sidecar as web archive container",
+            "home": "https://github.com/yahavb",
+            "icon": "http://tomcat.apache.org/res/images/tomcat.png",
+            "keywords": [],
+            "maintainers": [
+                {
+                    "name": "yahavb",
+                    "email": "ybiran@ananware.systems"
+                }
+            ],
+            "name": "tomcat",
+            "sources": [],
+            "urls": [],
+            "version": "0.4.2"
+          },
+          "nodeMetadata": [
+             {
+               "key": "apiVersion",
+               "value": "v1",
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "appVersion",
+               "value": "7.0",
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "description",
+               "value": "Deploy a basic tomcat application server with sidecar as web archive container",
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "home",
+               "value": "https://github.com/yahavb",
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "icon",
+               "value": "http://tomcat.apache.org/res/images/tomcat.png",
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "keywords",
+               "value": [],
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "maintainers",
+               "value": [
+                  {
+                    "name": "yahavb",
+                    "email": "ybiran@ananware.systems"
+                  }
+               ],
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "name",
+               "value": "tomcat",
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "sources",
+               "value": [],
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "urls",
+               "value": [],
+               "description": "",
+               "system": false
+             },
+             {
+               "key": "version",
+               "value": "0.4.2",
+               "description": "",
+               "system": false
+             }
+          ]
         }
       ]
     },
@@ -257,17 +330,18 @@
 
 - records字段说明
 
-  |字段|类型|说明|Description|
+  | 字段               |类型|说明|Description|
   |---|---|---|---|
-  |name|string|版本名称|version name|
-  |size|long|版本大小|version size|
-  |downloads|long|版本下载次数|download times|
-  |stageTag|list[string]|晋级阶段标签列表|stage tag list|
-  |metadata|object|元数据，key-value键值对|metadata|
-  |createdBy|string|创建者|create user|
-  |createdDate|string|创建时间|create time|
-  |lastModifiedBy|string|上次修改者|last modify user|
-  |lastModifiedDate|string|上次修改时间|last modify time|
+  | name             |string|版本名称|version name|
+  | size             |long|版本大小|version size|
+  | downloads        |long|版本下载次数|download times|
+  | stageTag         |list[string]|晋级阶段标签列表|stage tag list|
+  | metadata         |object|元数据，key-value键值对|metadata|
+  | nodeMetadata        |object|元数据，key-value键值对|metadata|
+  | createdBy        |string|创建者|create user|
+  | createdDate      |string|创建时间|create time|
+  | lastModifiedBy   |string|上次修改者|last modify user|
+  | lastModifiedDate |string|上次修改时间|last modify time|
 
 ## 删除版本
 

@@ -31,7 +31,7 @@
         </div>
         <bk-table
             class="mt10 plan-table"
-            height="calc(100% - 102px)"
+            height="calc(100% - 100px)"
             :data="planList"
             :outer-border="false"
             :row-border="false"

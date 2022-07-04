@@ -60,6 +60,7 @@ object Converter {
 
     fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null, force: Boolean = false): ScanTask = with(scanTask) {
         ScanTask(
+            name = scanTask.name,
             taskId = id!!,
             projectId = projectId,
             createdBy = createdBy,
