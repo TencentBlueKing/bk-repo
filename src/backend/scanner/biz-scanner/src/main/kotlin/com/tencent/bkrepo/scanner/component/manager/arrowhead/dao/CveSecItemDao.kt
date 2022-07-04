@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
+import com.tencent.bkrepo.common.api.constant.CharPool.DASH
 import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
 import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
@@ -55,8 +56,14 @@ class CveSecItemDao : ResultItemDao<TCveSecItem>() {
         val cnvdIds = HashSet<String>()
         val pocIds = HashSet<String>()
 
-        vulIds.forEach { vulId ->
-            val prefix = vulId.substring(0, vulId.indexOf('-')).toLowerCase()
+        for (vulId in vulIds) {
+            val indexOfDash = vulId.indexOf(DASH)
+            if (indexOfDash == -1) {
+                pocIds.add(vulId)
+                continue
+            }
+
+            val prefix = vulId.substring(0, indexOfDash).toLowerCase()
             when (prefix) {
                 "cve" -> cveIds.add(vulId)
                 "cnnvd" -> cnnvdIds.add(vulId)
