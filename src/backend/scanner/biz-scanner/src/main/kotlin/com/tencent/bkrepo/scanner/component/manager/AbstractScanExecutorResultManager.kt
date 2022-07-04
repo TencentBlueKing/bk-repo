@@ -27,7 +27,11 @@
 
 package com.tencent.bkrepo.scanner.component.manager
 
-abstract class AbstractScanExecutorResultManager : ScanExecutorResultManager{
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
+
+abstract class AbstractScanExecutorResultManager<S : SaveResultArguments, L : LoadResultArguments>
+    : ScanExecutorResultManager<S, L> {
     protected inline fun <T, reified R : ResultItem<T>> convert(
         credentialsKey: String?,
         sha256: String,

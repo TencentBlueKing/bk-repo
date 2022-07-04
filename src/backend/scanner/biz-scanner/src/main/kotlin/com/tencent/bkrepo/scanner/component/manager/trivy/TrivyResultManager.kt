@@ -39,9 +39,8 @@ import com.tencent.bkrepo.scanner.component.manager.knowledgebase.KnowledgeBase
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
 import com.tencent.bkrepo.scanner.component.manager.trivy.dao.VulnerabilityItemDao
 import com.tencent.bkrepo.scanner.component.manager.trivy.model.TVulnerabilityItem
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivyLoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivySaveResultArguments
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -51,7 +50,7 @@ import org.springframework.transaction.annotation.Transactional
 class TrivyResultManager @Autowired constructor(
     private val vulnerabilityItemDao: VulnerabilityItemDao,
     private val knowledgeBase: KnowledgeBase
-) : AbstractScanExecutorResultManager() {
+) : AbstractScanExecutorResultManager<TrivySaveResultArguments, TrivyLoadResultArguments>() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun save(
@@ -59,7 +58,7 @@ class TrivyResultManager @Autowired constructor(
         sha256: String,
         scanner: Scanner,
         result: ScanExecutorResult,
-        arguments: SaveResultArguments?
+        arguments: TrivySaveResultArguments?
     ) {
         logger.info("save TrivyScanExecutorResult detail")
         result as TrivyScanExecutorResult
@@ -72,11 +71,11 @@ class TrivyResultManager @Autowired constructor(
         credentialsKey: String?,
         sha256: String,
         scanner: Scanner,
-        arguments: LoadResultArguments?
+        arguments: TrivyLoadResultArguments?
     ): Any? {
         logger.debug("trivy load, arguments:${arguments?.toJsonString()}")
         scanner as TrivyScanner
-        arguments as TrivyLoadResultArguments
+        require(arguments != null)
         val page = vulnerabilityItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records)
     }
