@@ -36,3 +36,6 @@
   - [扫描器](/apidoc/scanner/scanner.md)
   - [扫描](/apidoc/scanner/scan.md)
   - [扫描报告](/apidoc/scanner/scan-report.md)
+- **WebHook**
+  - [webhook接口](/apidoc/webhook/webhook.md)
+  - [webhook消息](/apidoc/webhook/payload.md)
