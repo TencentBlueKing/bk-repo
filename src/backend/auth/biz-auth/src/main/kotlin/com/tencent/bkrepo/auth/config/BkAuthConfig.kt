@@ -38,13 +38,13 @@ import org.springframework.stereotype.Component
 class BkAuthConfig {
 
     /**
-     * auth 服务器地址
+     * ci auth 服务器地址
      */
     @Value("\${auth.devops.ciAuthServer:}")
     private var ciAuthServer: String = ""
 
     /**
-     * auth 服务器地址
+     * ci auth token
      */
     @Value("\${auth.devops.ciAuthToken:}")
     private var ciAuthToken: String = ""
@@ -54,6 +54,12 @@ class BkAuthConfig {
      */
     @Value("\${auth.devops.appIdSet:}")
     var devopsAppIdSet: String = ""
+
+    /**
+     * 用户set
+     */
+    @Value("\${auth.devops.userIdSet:}")
+    var userIdSet: String = ""
 
     /**
      * 蓝盾CI平台appId

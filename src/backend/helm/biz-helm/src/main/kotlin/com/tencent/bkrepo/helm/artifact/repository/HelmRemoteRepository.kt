@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
+import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -39,13 +41,16 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.META_DETAIL
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.PROV
@@ -53,6 +58,7 @@ import com.tencent.bkrepo.helm.constants.PROXY_URL
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmForbiddenRequestException
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
@@ -65,12 +71,11 @@ import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.net.MalformedURLException
-import java.net.URL
 
 @Component
 class HelmRemoteRepository(
-    private val helmOperationService: HelmOperationService
+    private val helmOperationService: HelmOperationService,
+    private val helmProperties: HelmProperties
 ) : RemoteRepository() {
 
     override fun upload(context: ArtifactUploadContext) {
@@ -87,7 +92,8 @@ class HelmRemoteRepository(
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): Any? {
         logger.info("on remote query response...")
         val body = response.body()!!
-        val artifactFile = createTempFile(body)
+        val tempFile = createTempFile(body)
+        val artifactFile = buildNewIndex(context, tempFile)
         val size = artifactFile.getSize()
         val result = checkNode(context, artifactFile)
         if (result == null) {
@@ -98,6 +104,25 @@ class HelmRemoteRepository(
             return stream
         }
         return result
+    }
+
+    /**
+     * 针对remote类型的仓库，index.yaml每次都是去远程拉取，所以需要修改其urls
+     */
+    private fun buildNewIndex(context: ArtifactContext, artifactFile: ArtifactFile): ArtifactFile {
+        val fullPath = context.getStringAttribute(FULL_PATH)!!
+        if (fullPath != HelmUtils.getIndexCacheYamlFullPath()) return artifactFile
+        val size = artifactFile.getSize()
+        val helmIndexYamlMetadata = artifactFile.getInputStream().artifactStream(Range.full(size)).use {
+            it.readYamlString() as HelmIndexYamlMetadata
+        }
+        helmOperationService.buildChartUrl(
+            domain = helmProperties.domain,
+            projectId = context.projectId,
+            repoName = context.repoName,
+            helmIndexYamlMetadata = helmIndexYamlMetadata
+        )
+        return ArtifactFileFactory.build(helmIndexYamlMetadata.toYamlString().byteInputStream())
     }
 
     /**
@@ -122,32 +147,19 @@ class HelmRemoteRepository(
     }
 
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
-        logger.info("create remote download url...")
-        val fullPath = when (context.artifactInfo.getArtifactFullPath()) {
-            HelmUtils.getIndexCacheYamlFullPath() -> HelmUtils.getIndexYamlFullPath()
-            else -> helmOperationService.findRemoteArtifactFullPath(
-                context.artifactInfo.getArtifactFullPath()
-            )
-        }
-        context.putAttribute(FULL_PATH, fullPath)
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val tempPath = context.getStringAttribute(FULL_PATH)!!.let { HelmUtils.convertIndexYamlPath(it) }
-        return if (checkUrl(tempPath)) {
-            tempPath
+        val fullPath = if (context.getStringAttribute(FULL_PATH).isNullOrBlank()) {
+            val temp = HelmUtils.convertIndexYamlPathToCache(context.artifactInfo.getArtifactFullPath())
+            context.putAttribute(FULL_PATH, temp)
+            temp
         } else {
-            remoteConfiguration.url.trimEnd('/') + "/" + tempPath
+            context.getStringAttribute(FULL_PATH)
         }
-    }
-
-    /**
-     * 如果fullPath已经是完整的url，则直接使用，否则进行拼接
-     */
-    private fun checkUrl(fullPath: String): Boolean {
-        return try {
-            URL(fullPath)
-            true
-        } catch (e: MalformedURLException) {
-            false
+        logger.info("create remote download url with path $fullPath...")
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val remoteDomain = remoteConfiguration.url.trimEnd('/')
+        return when (fullPath) {
+            HelmUtils.getIndexCacheYamlFullPath() -> INDEX_REQUEST_URL.format(remoteDomain, INDEX_YAML)
+            else -> CHART_REQUEST_URL.format(remoteDomain, fullPath)
         }
     }
 
@@ -155,7 +167,8 @@ class HelmRemoteRepository(
      * 远程下载响应回调
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
-        val artifactFile = createTempFile(response.body()!!)
+        val tempFile = createTempFile(response.body()!!)
+        val artifactFile = buildNewIndex(context, tempFile)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         parseAttribute(context, artifactFile)
@@ -229,5 +242,7 @@ class HelmRemoteRepository(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(HelmRemoteRepository::class.java)
+        const val CHART_REQUEST_URL = "%s/charts%s"
+        const val INDEX_REQUEST_URL = "%s/%s"
     }
 }

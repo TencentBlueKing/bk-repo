@@ -80,9 +80,7 @@ object HelmUtils {
     fun convertIndexYamlPathToCache(path: String): String {
         return when (path) {
             "/" -> getIndexCacheYamlFullPath()
-            else -> {
-                path.substring(path.lastIndexOf('/'))
-            }
+            else -> path
         }
     }
 }
