@@ -25,11 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("job.sign-file-cleanup")
-class SignFileCleanupJobProperties(
-    var expireOfDays: Int = 15
+@ConfigurationProperties("job.repo-refresh")
+class RepoRefreshJobProperties(
+    override var enabled: Boolean = true,
+    /**
+     * 需要定时刷新的仓库代理类型
+     * */
+    var categories: List<String> = listOf("REMOTE", "COMPOSITE"),
+    /**
+     * 需要定时刷新的仓库类型
+     * */
+    var types: List<String> = listOf("HELM")
 ) : MongodbJobProperties()

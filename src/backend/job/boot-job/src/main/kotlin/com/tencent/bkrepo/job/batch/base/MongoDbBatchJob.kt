@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.MIN_OBJECT_ID
-import com.tencent.bkrepo.job.config.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
 import java.util.concurrent.CountDownLatch
@@ -47,7 +47,9 @@ import org.springframework.data.mongodb.core.query.Query
 /**
  * MongoDb抽象批处理作业Job
  * */
-abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) : BatchJob(properties) {
+abstract class MongoDbBatchJob<Entity, Context : JobContext>(
+    private val properties: MongodbJobProperties
+) : BatchJob<Context>(properties) {
     /**
      * 需要操作的表名列表
      * */
@@ -63,15 +65,15 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
      * @param row 单个数据
      * @param collectionName 当前数据所在表
      * */
-    abstract fun run(row: T, collectionName: String, context: JobContext)
+    abstract fun run(row: Entity, collectionName: String, context: Context)
 
     /**
      * 将map对象化
      * @param row 查询返回的表单个数据map
      * */
-    abstract fun mapToObject(row: Map<String, Any?>): T
+    abstract fun mapToEntity(row: Map<String, Any?>): Entity
 
-    abstract fun entityClass(): Class<T>
+    abstract fun entityClass(): Class<Entity>
 
     private val batchSize: Int
         get() = properties.batchSize
@@ -94,7 +96,7 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
     @Autowired
     private lateinit var executor: BlockThreadPoolTaskExecutorDecorator
 
-    override fun doStart(jobContext: JobContext) {
+    override fun doStart0(jobContext: Context) {
         try {
             val collectionNames = collectionNames()
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
@@ -120,7 +122,7 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
     /**
      * 处理单个表数据
      * */
-    private fun runCollection(collectionName: String, context: JobContext) {
+    private fun runCollection(collectionName: String, context: Context) {
         if (!isRunning()) {
             logger.info("Job[${getJobName()}] already stop.")
             return
@@ -172,7 +174,7 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
         block: (it: T) -> Unit
     ) {
         tasks.forEach {
-            val task = IdentityTask(taskId, Runnable { block(it) })
+            val task = IdentityTask(taskId) { block(it) }
             executor.executeWithId(task, produce, permitsPerSecond)
         }
     }
@@ -186,12 +188,12 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
     private fun runRow(
         data: Map<String, Any?>,
         collectionName: String,
-        context: JobContext
+        context: Context
     ) {
         try {
             val resultMap = data.toMutableMap()
             resultMap[JAVA_ID] = resultMap[ID].toString()
-            run(mapToObject(resultMap), collectionName, context)
+            run(mapToEntity(resultMap), collectionName, context)
             context.success.incrementAndGet()
         } catch (e: Exception) {
             context.failed.incrementAndGet()

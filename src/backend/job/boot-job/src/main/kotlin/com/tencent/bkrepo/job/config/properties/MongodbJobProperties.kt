@@ -25,19 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.batch.base.JobConcurrentLevel
 
-@ConfigurationProperties("job.repo-refresh")
-class RepoRefreshJobProperties(
+open class MongodbJobProperties(
     override var enabled: Boolean = true,
     /**
-     * 需要定时刷新的仓库代理类型
+     * 并发级别
+     * 默认序列化，即顺序执行
      * */
-    var categories: List<String> = listOf("REMOTE", "COMPOSITE"),
+    var concurrentLevel: JobConcurrentLevel = JobConcurrentLevel.SERIALIZE,
     /**
-     * 需要定时刷新的仓库类型
+     * 每秒任务执行数
      * */
-    var types: List<String> = listOf("HELM")
-) : MongodbJobProperties()
+    var permitsPerSecond: Double = 0.0,
+    /**
+     * 每次批处理作业大小
+     * */
+    var batchSize: Int = BATCH_SIZE
+) : BatchJobProperties()

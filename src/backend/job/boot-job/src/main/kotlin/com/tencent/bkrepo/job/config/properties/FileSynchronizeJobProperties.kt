@@ -25,24 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.batch.base.JobConcurrentLevel
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-open class MongodbJobProperties(
-    override var enabled: Boolean = true,
-    /**
-     * 并发级别
-     * 默认序列化，即顺序执行
-     * */
-    var concurrentLevel: JobConcurrentLevel = JobConcurrentLevel.SERIALIZE,
-    /**
-     * 每秒任务执行数
-     * */
-    var permitsPerSecond: Double = 0.0,
-    /**
-     * 每次批处理作业大小
-     * */
-    var batchSize: Int = BATCH_SIZE
+@ConfigurationProperties("job.file-synchronize")
+class FileSynchronizeJobProperties(
+    var region: String? = null
 ) : BatchJobProperties()

@@ -35,7 +35,7 @@ import com.tencent.bkrepo.job.CATEGORY
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.TYPE
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.RepoRefreshJobProperties
+import com.tencent.bkrepo.job.config.properties.RepoRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.time.LocalDateTime
