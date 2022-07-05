@@ -81,7 +81,7 @@ class ScanTaskServiceImpl(
     private val fileScanResultDao: FileScanResultDao,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
-    private val resultManagers: Map<String, ScanExecutorResultManager<SaveResultArguments, LoadResultArguments>>,
+    private val resultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>
 ) : ScanTaskService {
     override fun task(taskId: String): ScanTask {

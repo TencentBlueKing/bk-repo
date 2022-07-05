@@ -25,29 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager
+package com.tencent.bkrepo.scanner.executor.util
 
-abstract class AbstractScanExecutorResultManager : ScanExecutorResultManager {
-    protected inline fun <T, reified R : ResultItem<T>> convert(
-        credentialsKey: String?,
-        sha256: String,
-        scanner: String,
-        data: T
-    ): R {
-        return R::class.java.constructors[0].newInstance(null, credentialsKey, sha256, scanner, data) as R
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import org.slf4j.LoggerFactory
+import java.io.File
+
+object CommonUtils {
+    private val logger = LoggerFactory.getLogger(CommonUtils::class.java)
+
+    fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
     }
 
-    /**
-     * 替换同一文件使用同一扫描器原有的扫描结果
-     */
-    protected fun <T : ResultItem<*>, D : ResultItemDao<T>> replace(
-        credentialsKey: String?,
-        sha256: String,
-        scanner: String,
-        resultItemDao: D,
-        resultItems: List<T>
-    ) {
-        resultItemDao.deleteBy(credentialsKey, sha256, scanner)
-        resultItemDao.insert(resultItems)
+    inline fun <reified T> readJsonString(file: File): T? {
+        return if (file.exists()) {
+            file.inputStream().use { it.readJsonString<T>() }
+        } else {
+            null
+        }
+    }
+
+    fun ignoreExceptionExecute(failedMsg: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: Exception) {
+            logger.warn("$failedMsg, ${e.message}")
+        }
     }
 }

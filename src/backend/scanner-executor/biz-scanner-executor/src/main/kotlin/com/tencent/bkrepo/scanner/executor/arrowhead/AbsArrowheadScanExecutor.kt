@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
@@ -43,6 +42,8 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.FileUtils
 import org.apache.commons.io.input.ReversedLinesFileReader
 import org.slf4j.LoggerFactory
@@ -128,10 +129,6 @@ abstract class AbsArrowheadScanExecutor : ScanExecutor {
         }
 
         return status
-    }
-
-    protected fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
     }
 
     /**
@@ -239,15 +236,6 @@ abstract class AbsArrowheadScanExecutor : ScanExecutor {
 
         return overview
     }
-
-    private inline fun <reified T> readJsonString(file: File): T? {
-        return if (file.exists()) {
-            file.inputStream().use { it.readJsonString<T>() }
-        } else {
-            null
-        }
-    }
-
 
     private fun loadFile(taskWorkDir: File, task: ScanExecutorTask): File {
         val scanner = task.scanner as ArrowheadScanner

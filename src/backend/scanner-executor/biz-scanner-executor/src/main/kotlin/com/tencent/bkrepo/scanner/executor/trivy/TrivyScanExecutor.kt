@@ -63,7 +63,13 @@ import com.tencent.bkrepo.scanner.executor.pojo.Manifest
 import com.tencent.bkrepo.scanner.executor.pojo.ManifestV1
 import com.tencent.bkrepo.scanner.executor.pojo.ManifestV2
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.DockerUtils
+import com.tencent.bkrepo.scanner.executor.util.DockerUtils.startContainer
+import com.tencent.bkrepo.scanner.executor.util.DockerUtils.createContainer
+import com.tencent.bkrepo.scanner.executor.util.DockerUtils.pullImage
+import com.tencent.bkrepo.scanner.executor.util.DockerUtils.removeContainer
 import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
@@ -220,12 +226,12 @@ class TrivyScanExecutor @Autowired constructor(
         require(task.scanner is TrivyScanner)
         val fileSize = scannerInputFile.length()
         val maxScanDuration = task.scanner.maxScanDuration(fileSize)
-        // 容器内单文件大小限制为待扫描文件大小的3倍
+        // 容器内单文件大小限制
         val maxFileSize = maxFileSize(fileSize)
         val containerConfig = task.scanner.container
 
         // 拉取镜像
-        DockerUtils.pullImage(dockerClient, containerConfig.image)
+        dockerClient.pullImage(containerConfig.image)
 
         // 从默认仓库下载最新镜像漏洞数据库到cacheDir
         val cacheDir = File("${scannerExecutorProperties.workDir}/${task.scanner.rootPath}/${task.scanner.cacheDir}")
@@ -240,22 +246,13 @@ class TrivyScanExecutor @Autowired constructor(
         val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
 
         val hostConfig = DockerUtils.dockerHostConfig(Binds(bind, cacheBind), maxFileSize, true)
-        val containerCmd = dockerClient.createContainerCmd(containerConfig.image)
-            .withHostConfig(hostConfig)
-            .withCmd(buildScanCmds(task, scannerInputFile))
-            .withTty(true)
-            .withStdinOpen(true)
-
-        if (logger.isDebugEnabled) {
-            logger.debug(logMsg(task, "run container cmd [${containerCmd.cmd.contentToString()}]"))
-        }
-
-        val containerId = containerCmd.exec().id
+        val cmd = buildScanCmds(task, scannerInputFile)
+        val containerId = dockerClient.createContainer(containerConfig.image, hostConfig, cmd)
         taskContainerIdMap[task.taskId] = containerId
 
         logger.info(logMsg(task, "run container instance Id [$workDir, $containerId]"))
         try {
-            val result = DockerUtils.containerRun(dockerClient, containerId, maxScanDuration)
+            val result = dockerClient.startContainer(containerId, maxScanDuration)
 
             logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
             if (!result) {
@@ -264,14 +261,7 @@ class TrivyScanExecutor @Autowired constructor(
             return scanStatus(task, workDir)
         } finally {
             taskContainerIdMap.remove(task.taskId)
-            DockerUtils.ignoreExceptionExecute(logMsg(task, "stop container failed")) {
-                dockerClient.stopContainerCmd(containerId)
-                    .withTimeout(DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS).exec()
-                dockerClient.killContainerCmd(containerId).withSignal(SIGNAL_KILL).exec()
-            }
-            DockerUtils.ignoreExceptionExecute(logMsg(task, "remove container failed")) {
-                dockerClient.removeContainerCmd(containerId).withForce(true).exec()
-            }
+            dockerClient.removeContainer(containerId, logMsg(task, "remove container failed"))
         }
     }
 
@@ -283,8 +273,7 @@ class TrivyScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "metadata.json file not exists"))
             metadataFile.parentFile.mkdirs()
             metadataFile.createNewFile()
-            val fileOutputStream = FileOutputStream(metadataFile)
-            fileOutputStream.use { it.write(METADATA_JSON_FILE_CONTENT.toByteArray()) }
+            FileOutputStream(metadataFile).use { it.write(METADATA_JSON_FILE_CONTENT.toByteArray()) }
             logger.info(logMsg(task, "create metadata.json file success"))
         }
 
@@ -410,18 +399,6 @@ class TrivyScanExecutor @Autowired constructor(
         )
     }
 
-    private inline fun <reified T> readJsonString(file: File): T? {
-        return if (file.exists()) {
-            file.inputStream().use { it.readJsonString<T>() }
-        } else {
-            null
-        }
-    }
-
-    private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
-    }
-
     /**
      * 扫描结果文件相对路径
      */
@@ -432,10 +409,6 @@ class TrivyScanExecutor @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(TrivyScanExecutor::class.java)
-
-        private const val DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS = 30
-
-        private const val SIGNAL_KILL = "KILL"
 
         /**
          * 指定容器内缓存目录命令

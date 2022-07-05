@@ -99,7 +99,7 @@ class ScanServiceImpl @Autowired constructor(
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
-    private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager<*, *>>,
+    private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val publisher: ApplicationEventPublisher,
