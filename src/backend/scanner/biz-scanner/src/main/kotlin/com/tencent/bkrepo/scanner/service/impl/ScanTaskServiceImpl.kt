@@ -54,15 +54,13 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
-import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Converter
@@ -81,7 +79,7 @@ class ScanTaskServiceImpl(
     private val fileScanResultDao: FileScanResultDao,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
-    private val resultManagers: Map<String, ScanExecutorResultManager<SaveResultArguments, LoadResultArguments>>,
+    private val resultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>
 ) : ScanTaskService {
     override fun task(taskId: String): ScanTask {

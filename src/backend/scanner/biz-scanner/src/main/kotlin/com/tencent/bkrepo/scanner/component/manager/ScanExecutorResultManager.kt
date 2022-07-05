@@ -8,7 +8,7 @@ import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 /**
  * 详细扫描结果管理
  */
-interface ScanExecutorResultManager<S : SaveResultArguments, L : LoadResultArguments> {
+interface ScanExecutorResultManager {
     /**
      * 保存扫描结果详情
      *
@@ -24,7 +24,7 @@ interface ScanExecutorResultManager<S : SaveResultArguments, L : LoadResultArgum
         sha256: String,
         scanner: Scanner,
         result: ScanExecutorResult,
-        arguments: S? = null
+        arguments: SaveResultArguments? = null
     )
 
     /**
@@ -41,6 +41,6 @@ interface ScanExecutorResultManager<S : SaveResultArguments, L : LoadResultArgum
         credentialsKey: String?,
         sha256: String,
         scanner: Scanner,
-        arguments: L?
+        arguments: LoadResultArguments?
     ): Any?
 }
