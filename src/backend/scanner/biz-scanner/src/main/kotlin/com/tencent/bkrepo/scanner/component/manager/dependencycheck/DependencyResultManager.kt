@@ -39,6 +39,7 @@ import com.tencent.bkrepo.scanner.component.manager.dependencycheck.dao.Dependen
 import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItem
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.KnowledgeBase
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
 import org.slf4j.LoggerFactory
@@ -50,7 +51,7 @@ import org.springframework.transaction.annotation.Transactional
 class DependencyResultManager @Autowired constructor(
     private val dependencyItemDao: DependencyItemDao,
     private val knowledgeBase: KnowledgeBase
-) : AbstractScanExecutorResultManager<SaveResultArguments, DependencyLoadResultArguments>() {
+) : AbstractScanExecutorResultManager() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun save(
@@ -70,13 +71,13 @@ class DependencyResultManager @Autowired constructor(
         credentialsKey: String?,
         sha256: String,
         scanner: Scanner,
-        arguments: DependencyLoadResultArguments?
+        arguments: LoadResultArguments?
     ): Any? {
         if (logger.isDebugEnabled) {
             logger.debug("DependencyCheck load, arguments:${arguments?.toJsonString()}")
         }
         scanner as DependencyScanner
-        require(arguments != null)
+        arguments as DependencyLoadResultArguments
         val page = dependencyItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
         val pocIds = page.records.map { Converter.pocIdOf(it.data.cveId) }
         val cveMap = knowledgeBase.findByPocId(pocIds).associateBy { it.pocId }
