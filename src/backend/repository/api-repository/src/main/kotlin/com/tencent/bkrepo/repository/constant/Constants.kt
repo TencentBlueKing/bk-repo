@@ -37,5 +37,3 @@ const val METADATA_PREFIX = "metadata."
 const val DEFAULT_STORAGE_CREDENTIALS_KEY = "default"
 
 const val NODE_DETAIL_LIST_KEY = "nodeDetailList"
-
-const val EXTERNAL_REPO_CONFIG = "external"

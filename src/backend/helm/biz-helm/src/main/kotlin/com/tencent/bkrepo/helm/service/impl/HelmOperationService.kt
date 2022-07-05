@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
@@ -141,7 +142,8 @@ class HelmOperationService : AbstractChartService() {
                     userId = userId,
                     projectId = projectId,
                     repoName = repoName,
-                    chartInfo = it
+                    chartInfo = it,
+                    sourceType = ArtifactChannel.PROXY
                 )
             }
         }
@@ -223,7 +225,8 @@ class HelmOperationService : AbstractChartService() {
                     userId = userId,
                     projectId = projectId,
                     repoName = name,
-                    chartInfo = it
+                    chartInfo = it,
+                    sourceType = ArtifactChannel.PROXY
                 )
             }
         }

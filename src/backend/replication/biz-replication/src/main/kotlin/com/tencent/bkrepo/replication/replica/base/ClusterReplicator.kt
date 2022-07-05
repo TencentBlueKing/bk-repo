@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.base
 
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
@@ -34,6 +36,7 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.mapping.PackageNodeMappings
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -145,6 +148,8 @@ class ClusterReplicator(
                 )
                 replicaFile(context, node.nodeInfo)
             }
+            val packageMetadata = packageVersion.packageMetadata as MutableList<MetadataModel>
+            packageMetadata.add(MetadataModel(SOURCE_TYPE, ArtifactChannel.REPLICATION))
             // 包数据
             val request = PackageVersionCreateRequest(
                 projectId = remoteProjectId,
@@ -158,7 +163,7 @@ class ClusterReplicator(
                 manifestPath = null,
                 artifactPath = packageVersion.contentPath,
                 stageTag = packageVersion.stageTag,
-                packageMetadata = packageVersion.packageMetadata,
+                packageMetadata = packageMetadata,
                 extension = packageVersion.extension,
                 overwrite = true,
                 createdBy = packageVersion.createdBy

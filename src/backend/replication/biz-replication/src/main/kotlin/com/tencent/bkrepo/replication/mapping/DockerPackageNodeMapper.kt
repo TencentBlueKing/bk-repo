@@ -52,8 +52,8 @@ class DockerPackageNodeMapper(
                 Range.full(nodeDetail.size),
                 repository.storageCredentials
             )!!
-            val layersList = FileParser.parseManifest(inputStream)
-            layersList.forEach {
+            val manifestInfo = FileParser.parseManifest(inputStream) ?: return result
+            manifestInfo.descriptors?.forEach {
                 val replace = it.replace(":", "__")
                 if (isOci) {
                     result.add(OCI_LAYER_FULL_PATH.format(name, replace))

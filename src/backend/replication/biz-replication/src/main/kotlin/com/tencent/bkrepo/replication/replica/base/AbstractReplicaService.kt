@@ -105,7 +105,7 @@ abstract class AbstractReplicaService(
             val packageSummary = localDataManager.findPackageByKey(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.taskObject.localRepoName,
-                packageKey = constraint.packageKey
+                packageKey = constraint.packageKey!!
             )
             replicaByPackage(context, packageSummary, constraint.versions)
         } catch (throwable: Throwable) {
@@ -124,7 +124,7 @@ abstract class AbstractReplicaService(
             val nodeInfo = localDataManager.findNodeDetail(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.localRepoName,
-                fullPath = constraint.path
+                fullPath = constraint.path!!
             ).nodeInfo
             replicaByPath(context, nodeInfo)
         } catch (throwable: Throwable) {
@@ -194,7 +194,7 @@ abstract class AbstractReplicaService(
                     version = it
                 )
             } ?: run {
-                if (replicaContext.remoteCluster.type == ClusterNodeType.EXTERNAL) {
+                if (replicaContext.remoteCluster.type == ClusterNodeType.THIRD_PARTY) {
                     emptyList()
                 } else {
                     localDataManager.listAllVersion(

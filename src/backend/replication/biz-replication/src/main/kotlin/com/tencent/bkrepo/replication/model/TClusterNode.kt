@@ -73,11 +73,6 @@ data class TClusterNode(
      */
     var certificate: String?,
     /**
-     * 额外信息，
-     * 针对external集群，将用于存储对应的限制规则
-     */
-    var extension: Map<String, Any>? = null,
-    /**
      * 审计信息
      */
     var createdBy: String,

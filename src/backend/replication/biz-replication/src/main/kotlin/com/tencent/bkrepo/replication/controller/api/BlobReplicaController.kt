@@ -43,8 +43,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
-import com.tencent.bkrepo.replication.replica.external.rest.helm.HelmDeployClient
-import com.tencent.bkrepo.replication.replica.external.rest.oci.OciDeployClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
@@ -66,9 +64,7 @@ import java.util.concurrent.TimeUnit
 class BlobReplicaController(
     storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val ociDeployClient: OciDeployClient,
-    private val helmDeployClient: HelmDeployClient
+    private val storageCredentialsClient: StorageCredentialsClient
 ) {
 
     private val defaultCredentials = storageProperties.defaultStorageCredentials()

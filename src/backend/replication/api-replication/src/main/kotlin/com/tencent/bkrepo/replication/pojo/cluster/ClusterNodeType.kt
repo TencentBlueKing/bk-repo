@@ -40,6 +40,6 @@ enum class ClusterNodeType {
     // 独立集群
     STANDALONE,
 
-    // 外部集群
-    EXTERNAL
+    // 第三方集群
+    THIRD_PARTY
 }

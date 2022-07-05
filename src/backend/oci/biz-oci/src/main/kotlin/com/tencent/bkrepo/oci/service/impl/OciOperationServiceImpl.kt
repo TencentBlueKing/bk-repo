@@ -30,10 +30,12 @@ package com.tencent.bkrepo.oci.service.impl
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -528,7 +530,8 @@ class OciOperationServiceImpl(
         digest: OciDigest,
         artifactFile: ArtifactFile,
         fullPath: String,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        sourceType: ArtifactChannel?
     ) {
         logger.info(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
@@ -562,7 +565,8 @@ class OciOperationServiceImpl(
                 syncBlobInfoV1(
                     ociArtifactInfo = ociArtifactInfo,
                     manifestDigest = digest,
-                    manifestPath = fullPath
+                    manifestPath = fullPath,
+                    sourceType = sourceType
                 )
             } else {
                 syncBlobInfo(
@@ -570,7 +574,8 @@ class OciOperationServiceImpl(
                     manifest = manifest!!,
                     manifestDigest = digest,
                     storageCredentials = storageCredentials,
-                    manifestPath = fullPath
+                    manifestPath = fullPath,
+                    sourceType = sourceType
                 )
             }
         }
@@ -607,7 +612,8 @@ class OciOperationServiceImpl(
     private fun syncBlobInfoV1(
         ociArtifactInfo: OciManifestArtifactInfo,
         manifestDigest: OciDigest,
-        manifestPath: String
+        manifestPath: String,
+        sourceType: ArtifactChannel? = null
     ) {
         logger.info(
             "Will start to sync fsLayers' blob info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
@@ -618,7 +624,8 @@ class OciOperationServiceImpl(
             manifestPath = manifestPath,
             ociArtifactInfo = ociArtifactInfo,
             manifestDigest = manifestDigest,
-            size = 0
+            size = 0,
+            sourceType = sourceType
         )
     }
 
@@ -630,7 +637,8 @@ class OciOperationServiceImpl(
         manifest: ManifestSchema2,
         manifestDigest: OciDigest,
         storageCredentials: StorageCredentials?,
-        manifestPath: String
+        manifestPath: String,
+        sourceType: ArtifactChannel? = null
     ) {
         logger.info(
             "Will start to sync blobs and config info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
@@ -666,7 +674,8 @@ class OciOperationServiceImpl(
             ociArtifactInfo = ociArtifactInfo,
             manifestDigest = manifestDigest,
             size = size,
-            chartYaml = chartYaml
+            chartYaml = chartYaml,
+            sourceType = sourceType
         )
     }
 
@@ -731,7 +740,8 @@ class OciOperationServiceImpl(
         ociArtifactInfo: OciManifestArtifactInfo,
         manifestDigest: OciDigest,
         size: Long,
-        chartYaml: Map<String, Any>? = null
+        chartYaml: Map<String, Any>? = null,
+        sourceType: ArtifactChannel? = null
     ) {
         with(ociArtifactInfo) {
             logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
@@ -745,7 +755,10 @@ class OciOperationServiceImpl(
                 version = ociArtifactInfo.reference
             ).data
             val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
-                .apply { chartYaml?.let { this.putAll(chartYaml) } }
+                .apply {
+                    chartYaml?.let { this.putAll(chartYaml) }
+                    sourceType?.let { this[SOURCE_TYPE] = sourceType }
+                }
             if (packageVersion == null) {
                 val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
                     ociArtifactInfo = this,

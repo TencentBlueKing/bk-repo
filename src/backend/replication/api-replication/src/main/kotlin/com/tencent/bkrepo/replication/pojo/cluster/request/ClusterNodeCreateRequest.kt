@@ -47,7 +47,5 @@ data class ClusterNodeCreateRequest(
     @ApiModelProperty("集群认证密码", required = false)
     override var password: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
-    override var type: ClusterNodeType,
-    @ApiModelProperty("集群额外信息", required = false)
-    var extension: Map<String, Any>? = null
+    override var type: ClusterNodeType
 ) : ClusterRequest

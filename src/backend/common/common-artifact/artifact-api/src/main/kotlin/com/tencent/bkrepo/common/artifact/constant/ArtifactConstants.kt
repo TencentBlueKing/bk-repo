@@ -124,4 +124,4 @@ const val SOURCE_IN_REMOTE = "remote"
  * ArtifactChannel.LOCAL
  * ArtifactChannel.PROXY
  */
-const val SOURCE_TYPE = "source"
+const val SOURCE_TYPE = "sourceType"

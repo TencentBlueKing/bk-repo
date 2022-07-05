@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,26 +29,11 @@ package com.tencent.bkrepo.replication.constant
 
 const val DEFAULT_VERSION = "1.0.0"
 
-/**
- * external集群仓库名生成规则, <projectId>-<repoName>-<name>
- */
-const val EXTERNAL_CLUSTER_NAME = "%s-%s-%s"
 const val BEARER_REALM = "Bearer realm"
 const val SERVICE = "service"
 const val SCOPE = "scope"
 const val REPOSITORY = "repository"
 const val URL = "url"
-const val HEADERS = "headers"
-const val METHOD = "method"
-const val HEAD_METHOD = "head"
-const val GET_METHOD = "get"
-const val POST_METHOD = "post"
-const val PATCH_METHOD = "patch"
-const val PUT_METHOD = "put"
-const val BODY = "body"
-const val PARAMS = "params"
-const val LOCATION = "Location"
-const val TOKEN = "token"
 
 const val USERNAME = "username"
 const val PASSWORD = "password"

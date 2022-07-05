@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,24 +30,21 @@ package com.tencent.bkrepo.replication.pojo.cluster.request
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-
 /**
  * 更新集群节点请求
  */
 @ApiModel("更新集群节点请求")
 data class ClusterNodeUpdateRequest(
     @ApiModelProperty("添加的集群名称", required = true)
-    override var name: String,
-    @ApiModelProperty("集群地址", required = true)
-    override var url: String,
+    var name: String,
+    @ApiModelProperty("集群地址", required = false)
+    var url: String? = null,
     @ApiModelProperty("集群的证书", required = false)
-    override var certificate: String? = null,
+    var certificate: String? = null,
     @ApiModelProperty("集群认证用户名", required = false)
-    override var username: String? = null,
+    var username: String? = null,
     @ApiModelProperty("集群认证密码", required = false)
-    override var password: String? = null,
+    var password: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
-    override var type: ClusterNodeType,
-    @ApiModelProperty("集群额外信息", required = false)
-    var extension: Map<String, Any>? = null
-) : ClusterRequest
+    var type: ClusterNodeType
+)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,23 +27,14 @@
 
 package com.tencent.bkrepo.replication.util
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.replication.constant.BODY
-import com.tencent.bkrepo.replication.constant.GET_METHOD
-import com.tencent.bkrepo.replication.constant.HEADERS
-import com.tencent.bkrepo.replication.constant.HEAD_METHOD
-import com.tencent.bkrepo.replication.constant.METHOD
-import com.tencent.bkrepo.replication.constant.PARAMS
-import com.tencent.bkrepo.replication.constant.PATCH_METHOD
-import com.tencent.bkrepo.replication.constant.POST_METHOD
-import com.tencent.bkrepo.replication.constant.PUT_METHOD
-import com.tencent.bkrepo.replication.constant.URL
-import com.tencent.bkrepo.replication.replica.external.exception.RepoDeployException
-import okhttp3.Headers
+import com.tencent.bkrepo.replication.pojo.thirdparty.RequestProperty
+import com.tencent.bkrepo.replication.replica.thirdparty.exception.ArtifactPushException
 import okhttp3.Request
-import okhttp3.RequestBody
+import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -54,36 +45,27 @@ object HttpUtils {
      * 封装请求
      */
     fun wrapperRequest(
-        token: String? = null,
-        extraMap: Map<String, Any>? = null,
-        originalMap: Map<String, Any?> = emptyMap(),
+        requestProperty: RequestProperty
     ): Request {
-        val map = mutableMapOf<String, Any?>()
-        map.putAll(originalMap)
-        if (extraMap != null) {
-            map.putAll(extraMap)
+        with(requestProperty) {
+            val url = params?.let {
+                builderUrl(url = requestUrl!!, params = params!!)
+            } ?: requestUrl!!
+            var builder = Request.Builder()
+                .url(url)
+            headers?.let { builder = builder.headers(headers!!) }
+            authorizationCode?.let {
+                builder = builder.header(HttpHeaders.AUTHORIZATION, authorizationCode!!)
+            }
+            return when (requestMethod) {
+                RequestMethod.POST -> builder.post(requestBody!!)
+                RequestMethod.HEAD -> builder.head()
+                RequestMethod.PATCH -> builder.patch(requestBody!!)
+                RequestMethod.PUT -> builder.put(requestBody!!)
+                RequestMethod.GET -> builder.get()
+                else -> throw ArtifactPushException("Unknown http request method")
+            }.build()
         }
-        val url = if (map[PARAMS] != null) {
-            builderUrl(url = map[URL].toString(), params = map[PARAMS].toString())
-        } else {
-            map[URL].toString()
-        }
-        var builder = Request.Builder()
-            .url(url)
-        map[HEADERS]?.let {
-            builder = builder.headers(map[HEADERS] as Headers)
-        }
-        token?.let {
-            builder = builder.header(HttpHeaders.AUTHORIZATION, token)
-        }
-        return when (map[METHOD]) {
-            POST_METHOD -> builder.post(map[BODY] as RequestBody)
-            HEAD_METHOD -> builder.head()
-            PATCH_METHOD -> builder.patch(map[BODY] as RequestBody)
-            PUT_METHOD -> builder.put(map[BODY] as RequestBody)
-            GET_METHOD -> builder.get()
-            else -> throw RepoDeployException("Unknown http request method")
-        }.build()
     }
 
     /**
@@ -94,7 +76,18 @@ object HttpUtils {
         path: String = StringPool.EMPTY,
         params: String = StringPool.EMPTY,
     ): String {
-        return UrlFormatter.format(url, path, params)
+        val builder = StringBuilder(UrlFormatter.formatHost(url))
+        if (path.isNotBlank()) {
+            builder.append(CharPool.SLASH).append(path)
+        }
+        if (params.isNotBlank()) {
+            if (builder.contains(CharPool.QUESTION)) {
+                builder.append(CharPool.AND).append(params)
+            } else {
+                builder.append(CharPool.QUESTION).append(params)
+            }
+        }
+        return builder.toString()
     }
 
     /**
@@ -107,11 +100,11 @@ object HttpUtils {
      * given timeout, otherwise `false`.
      */
     fun pingURL(url: String, timeout: Int): Boolean {
-        var url = url
+        var targetUrl = url
         // Otherwise an exception may be thrown on invalid SSL certificates.
-        url = url.replaceFirst("^https".toRegex(), "http")
+        targetUrl = targetUrl.replaceFirst("^https".toRegex(), "http")
         return try {
-            val connection = URL(url).openConnection() as HttpURLConnection
+            val connection = URL(targetUrl).openConnection() as HttpURLConnection
             connection.connectTimeout = timeout
             connection.readTimeout = timeout
             connection.requestMethod = "HEAD"

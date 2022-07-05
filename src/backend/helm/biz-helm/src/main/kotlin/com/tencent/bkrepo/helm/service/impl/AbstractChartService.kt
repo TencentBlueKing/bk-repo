@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -50,6 +51,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.FileNameParser
@@ -253,13 +255,15 @@ open class AbstractChartService : ArtifactService() {
             helmChartMetadataMap?.let {
                 val helmChartMetadata = HelmMetadataUtils.convertToObject(helmChartMetadataMap)
                 val overWrite = getBooleanAttribute(OVERWRITE) ?: false
+                val sourceType = getAttribute<ArtifactChannel>(SOURCE_TYPE)
                 createVersion(
                     userId = userId,
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     chartInfo = helmChartMetadata,
                     size = size!!,
-                    isOverwrite = overWrite
+                    isOverwrite = overWrite,
+                    sourceType = sourceType
                 )
             }
         }
@@ -350,27 +354,48 @@ open class AbstractChartService : ArtifactService() {
         repoName: String,
         chartInfo: HelmChartMetadata,
         size: Long = 0,
-        isOverwrite: Boolean = false
+        isOverwrite: Boolean = false,
+        sourceType: ArtifactChannel? = null
     ) {
         val contentPath = HelmUtils.getChartFileFullPath(chartInfo.name, chartInfo.version)
-        val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
-            userId = userId,
-            projectId = projectId,
-            repoName = repoName,
-            chartInfo = chartInfo,
-            size = size,
-            isOverwrite = isOverwrite
-        )
-        val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
-            projectId = projectId,
-            repoName = repoName,
-            chartInfo = chartInfo
-        )
         try {
-            packageClient.createVersion(packageVersionCreateRequest).apply {
-                logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
+            val packageVersion = packageClient.findVersionByName(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = PackageKeys.ofHelm(chartInfo.name),
+                version = chartInfo.version
+            ).data
+            if (packageVersion == null) {
+                val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
+                    userId = userId,
+                    projectId = projectId,
+                    repoName = repoName,
+                    chartInfo = chartInfo,
+                    size = size,
+                    isOverwrite = isOverwrite,
+                    sourceType = sourceType
+                )
+                val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    chartInfo = chartInfo
+                )
+                packageClient.createVersion(packageVersionCreateRequest).apply {
+                    logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
+                }
+                packageClient.updatePackage(packageUpdateRequest)
+            } else {
+                val packageVersionUpdateRequest = ObjectBuilderUtil.buildPackageVersionUpdateRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    chartInfo = chartInfo,
+                    size = size,
+                    sourceType = sourceType
+                )
+                packageClient.updateVersion(packageVersionUpdateRequest).apply {
+                    logger.info("user: [$userId] update package version [$packageVersionUpdateRequest] success!")
+                }
             }
-            packageClient.updatePackage(packageUpdateRequest)
         } catch (exception: NoFallbackAvailableException) {
             val e = exception.cause
             if (e !is RemoteErrorCodeException || e.errorCode != ArtifactMessageCode.VERSION_EXISTED.getCode()) {

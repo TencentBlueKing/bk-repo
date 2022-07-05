@@ -127,8 +127,7 @@ class ClusterNodeServiceImpl(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now(),
-                extension = extension
+                lastModifiedDate = LocalDateTime.now()
             )
             // 检测远程集群网络连接是否可用
             tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
@@ -143,51 +142,33 @@ class ClusterNodeServiceImpl(
         }
     }
 
-    private fun checkCenterNodeExist(): Boolean {
-        val clusterNodeList = clusterNodeDao.listByNameAndType(type = ClusterNodeType.CENTER)
-        return clusterNodeList.isNotEmpty() && clusterNodeList.size == 1
-    }
-
-    /**
-     * 更新cluster节点，当前只针对external节点进行更新
-     */
-    override fun update(userId: String, request: ClusterNodeUpdateRequest): ClusterNodeInfo {
+    override fun update(request: ClusterNodeUpdateRequest): ClusterNodeInfo {
         with(request) {
-            validateParameter(this)
-            val clusterNode = checkExternalNodeExist(name)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-            clusterNode.apply {
-                this.url = UrlFormatter.formatUrl(request.url)
-                this.name = request.name
-                this.username = request.username
-                this.password = crypto(request.password, false)
-                this.certificate = request.certificate
-                this.lastModifiedBy = userId
-                this.lastModifiedDate = LocalDateTime.now()
+            val tClusterNode = clusterNodeDao.findByName(name)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
+            url?.let {
+                Preconditions.checkNotBlank(it, this::url.name)
+                if (!Pattern.matches(CLUSTER_NODE_URL_PATTERN, it)) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::url.name)
+                }
+                tClusterNode.url = it
+            }
+            tClusterNode.apply {
+                username = request.username
+                password = crypto(request.password, false)
+                certificate = request.certificate
             }
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
+            tryConnect(convertRemoteInfo(tClusterNode)!!, tClusterNode.type)
             return try {
-                clusterNodeDao.save(clusterNode)
+                clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
                     .let { convert(it)!! }
             } catch (exception: DuplicateKeyException) {
-                logger.warn("Update cluster node [$name] error: [${exception.message}]")
+                logger.warn("update cluster node [$name] error: [${exception.message}]")
                 getByClusterName(name)!!
             }
         }
-    }
-
-    /**
-     * 查询external仓库
-     */
-    private fun checkExternalNodeExist(name: String): TClusterNode? {
-        val clusterNodeList = clusterNodeDao.listByNameAndType(
-            name = name,
-            type = ClusterNodeType.EXTERNAL
-        )
-        if (clusterNodeList.isEmpty()) return null
-        return clusterNodeList[0]
     }
 
     override fun deleteById(id: String) {
@@ -222,18 +203,18 @@ class ClusterNodeServiceImpl(
     @Suppress("TooGenericExceptionCaught")
     fun tryConnect(remoteClusterInfo: RemoteClusterInfo, type: ClusterNodeType) {
         with(remoteClusterInfo) {
-            if (ClusterNodeType.EXTERNAL == type) {
-                tryConnectExternalCluster(this)
+            if (ClusterNodeType.THIRD_PARTY == type) {
+                tryConnectThirdPartyCluster(this)
             } else {
-                tryConnectNonExternalCluster(this)
+                tryConnectNonThirdPartyCluster(this)
             }
         }
     }
 
     /**
-     * 针对非external集群做连接判断
+     * 针对非third party集群做连接判断
      */
-    fun tryConnectNonExternalCluster(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnectNonThirdPartyCluster(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
@@ -248,9 +229,9 @@ class ClusterNodeServiceImpl(
     }
 
     /**
-     * 针对external集群做额外的判断
+     * 针对third party集群做额外的判断
      */
-    fun tryConnectExternalCluster(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnectThirdPartyCluster(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 HttpUtils.pingURL(remoteClusterInfo.url, 60000)
@@ -260,6 +241,11 @@ class ClusterNodeServiceImpl(
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
             }
         }
+    }
+
+    private fun checkCenterNodeExist(): Boolean {
+        val clusterNodeList = clusterNodeDao.listByNameAndType(type = ClusterNodeType.CENTER)
+        return clusterNodeList.isNotEmpty() && clusterNodeList.size == 1
     }
 
     private fun validateParameter(request: ClusterRequest) {
@@ -296,7 +282,6 @@ class ClusterNodeServiceImpl(
                     username = it.username,
                     password = crypto(it.password, true),
                     certificate = it.certificate,
-                    extension = it.extension,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,

@@ -85,6 +85,10 @@ class ReplicaTaskServiceImpl(
         return replicaTaskDao.findById(taskId)?.let { convert(it) }
     }
 
+    override fun getByTaskName(name: String): ReplicaTaskInfo? {
+        return replicaTaskDao.findByName(name)?.let { convert(it) }
+    }
+
     override fun getByTaskKey(key: String): ReplicaTaskInfo {
         return replicaTaskDao.findByKey(key)?.let { convert(it) }
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
@@ -256,7 +260,7 @@ class ReplicaTaskServiceImpl(
                 val pathConstraints = request.replicaTaskObjects.first().pathConstraints
                 Preconditions.checkNotBlank(pathConstraints, "pathConstraints")
                 pathConstraints?.forEach { pathConstraint ->
-                    PathUtils.normalizeFullPath(pathConstraint.path)
+                    PathUtils.normalizeFullPath(pathConstraint.path!!)
                 }
             }
         }

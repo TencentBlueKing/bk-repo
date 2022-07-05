@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
-import com.tencent.bkrepo.common.artifact.pojo.configuration.external.ExternalClusterConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
@@ -55,7 +54,6 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.constant.EXTERNAL_REPO_CONFIG
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
@@ -276,7 +274,6 @@ class RepositoryServiceImpl(
             repository.lastModifiedBy = operator
             repository.lastModifiedDate = LocalDateTime.now()
             configuration?.let {
-                // TODO 需要更新配置的集群信息
                 updateRepoConfiguration(it, cryptoConfigurationPwd(oldConfiguration), repository, operator)
                 repository.configuration = cryptoConfigurationPwd(it, false).toJsonString()
             }
@@ -313,7 +310,6 @@ class RepositoryServiceImpl(
                     deleteProxyRepo(repository, it)
                 }
             }
-            // TODO 删除关联的集群
         }
         publishEvent(buildDeletedEvent(repoDeleteRequest))
         logger.info("Delete repository [$repoDeleteRequest] success.")
@@ -618,15 +614,6 @@ class RepositoryServiceImpl(
                     repoConfiguration.credentials.password = crypto(it, decrypt)
                 }
             }
-            // 对external集群的配置信息进行加解密处理
-            val externalResult = repoConfiguration.settings[EXTERNAL_REPO_CONFIG] ?: return repoConfiguration
-            val externalConfig = externalResult.toJsonString().readJsonString<List<ExternalClusterConfiguration>>()
-            externalConfig.forEach {
-                if (!it.password.isNullOrBlank()) {
-                    it.password = crypto(it.password!!, decrypt)
-                }
-            }
-            repoConfiguration.settings[EXTERNAL_REPO_CONFIG] = externalConfig.toJsonString()
             return repoConfiguration
         }
 

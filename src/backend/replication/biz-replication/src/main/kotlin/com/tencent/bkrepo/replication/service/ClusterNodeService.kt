@@ -94,7 +94,7 @@ interface ClusterNodeService {
     /**
      * 根据[request]更新集群节点，更新成功后返回集群节点信息
      */
-    fun update(userId: String, request: ClusterNodeUpdateRequest): ClusterNodeInfo
+    fun update(request: ClusterNodeUpdateRequest): ClusterNodeInfo
 
     /**
      * 根据集群[id]删除集群节点

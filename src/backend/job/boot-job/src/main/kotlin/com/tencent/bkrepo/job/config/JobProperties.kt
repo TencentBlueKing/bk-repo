@@ -43,7 +43,5 @@ data class JobProperties(
     @NestedConfigurationProperty
     var fileSynchronizeJobProperties: FileSynchronizeJobProperties = FileSynchronizeJobProperties(),
     @NestedConfigurationProperty
-    var packageDeployJobProperties: PackageDeployJobProperties = PackageDeployJobProperties(),
-    @NestedConfigurationProperty
-    var externalClusterJobProperties: PackageDeployJobProperties = PackageDeployJobProperties()
+    var artifactPushJobProperties: ArtifactPushJobProperties = ArtifactPushJobProperties()
 )

@@ -93,19 +93,19 @@ class ReplicaContext(
             certificate = remoteCluster.certificate
         )
 
-        // 外部集群仓库特殊处理, 外部集群走对应制品类型协议传输
-        if (remoteCluster.type != ClusterNodeType.EXTERNAL) {
+        // 第三方集群仓库特殊处理, 第三方集群走对应制品类型协议传输
+        if (remoteCluster.type != ClusterNodeType.THIRD_PARTY) {
             artifactReplicaClient = FeignClientFactory.create(cluster)
             blobReplicaClient = FeignClientFactory.create(cluster)
         }
         replicator = when (remoteCluster.type) {
             ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
             ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
-            ClusterNodeType.EXTERNAL -> SpringContextUtils.getBean<ExternalReplicator>()
+            ClusterNodeType.THIRD_PARTY -> SpringContextUtils.getBean<ThirdPartyReplicator>()
             else -> throw UnsupportedOperationException()
         }
-        // 外部集群仓库特殊处理, 外部集群请求鉴权特殊处理
-        httpClient = if (remoteCluster.type != ClusterNodeType.EXTERNAL) {
+        // 第三方集群仓库特殊处理, 第三方集群请求鉴权特殊处理
+        httpClient = if (remoteCluster.type != ClusterNodeType.THIRD_PARTY) {
             HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
                 BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
             ).build()
