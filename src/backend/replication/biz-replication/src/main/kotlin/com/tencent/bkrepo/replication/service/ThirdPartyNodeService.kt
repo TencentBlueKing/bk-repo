@@ -36,7 +36,7 @@ interface ThirdPartyNodeService {
     /**
      * 根据[requests]创建第三方集群节点，创建成功后返回集群节点信息
      */
-    fun thirdPartyCreate(requests: ThirdPartyCreateRequest): List<ClusterNodeInfo>
+    fun thirdPartyCreate(projectId: String, repoName: String, requests: ThirdPartyCreateRequest): List<ClusterNodeInfo>
 
     /**
      * 根据[request]更新第三方集群节点

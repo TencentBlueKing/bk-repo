@@ -39,10 +39,6 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("添加第三方集群以及相关信息请求")
 data class ThirdPartyConfigCreateRequest(
-    @ApiModelProperty("关联项目名", required = true)
-    var projectId: String,
-    @ApiModelProperty("关联仓库名", required = true)
-    var repoName: String,
     @ApiModelProperty("名称", required = true)
     var name: String,
     @ApiModelProperty("集群地址", required = true)

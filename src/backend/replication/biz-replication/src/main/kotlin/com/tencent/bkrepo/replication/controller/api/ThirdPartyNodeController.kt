@@ -64,7 +64,7 @@ class ThirdPartyNodeController(
         @PathVariable repoName: String,
         @RequestBody requests: ThirdPartyCreateRequest
     ): Response<List<ClusterNodeInfo>> {
-        thirdPartyNodeService.thirdPartyCreate(requests)
+        thirdPartyNodeService.thirdPartyCreate(projectId, repoName, requests)
         return ResponseBuilder.success()
     }
 

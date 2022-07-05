@@ -58,10 +58,19 @@ class ThirdPartyNodeServiceImpl(
     private val replicaTaskService: ReplicaTaskService
 ) : ThirdPartyNodeService {
 
-    override fun thirdPartyCreate(requests: ThirdPartyCreateRequest): List<ClusterNodeInfo> {
+    override fun thirdPartyCreate(
+        projectId: String,
+        repoName: String,
+        requests: ThirdPartyCreateRequest
+    ): List<ClusterNodeInfo> {
         return requests.configs.map {
             val clusterInfo = clusterNodeService.create(SecurityUtils.getUserId(), buildClusterNodeCreateRequest(it))
-            createTask(it, clusterInfo)
+            createTask(
+                projectId = projectId,
+                repoName = repoName,
+                request = it,
+                clusterInfo = clusterInfo
+            )
             clusterInfo
         }
     }
@@ -126,7 +135,12 @@ class ThirdPartyNodeServiceImpl(
     /**
      * 当第三方集群创建后，创建对应的任务
      */
-    private fun createTask(request: ThirdPartyConfigCreateRequest, clusterInfo: ClusterNodeInfo): ReplicaTaskInfo {
+    private fun createTask(
+        projectId: String,
+        repoName: String,
+        request: ThirdPartyConfigCreateRequest,
+        clusterInfo: ClusterNodeInfo
+    ): ReplicaTaskInfo {
         with(request) {
             val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
             val replicaTaskObjects = listOf(
