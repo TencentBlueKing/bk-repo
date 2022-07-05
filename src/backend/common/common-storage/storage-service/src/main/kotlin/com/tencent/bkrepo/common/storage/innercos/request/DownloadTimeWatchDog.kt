@@ -14,7 +14,6 @@ class DownloadTimeWatchDog(
 ) {
     var healthyFlag: Boolean = true
     private val sessions: MutableList<DownloadSession> = LinkedList()
-    private var coolingCycleTime = 0L
     private val lock = Any()
 
     init {
@@ -62,7 +61,6 @@ class DownloadTimeWatchDog(
         )
         if (healthyFlag && maxSessionLatencyTime > highWaterMark) {
             healthyFlag = false
-            coolingCycleTime = System.currentTimeMillis() + COLLING_CYCLE
             logger.warn("key[$name] change to unhealthy")
         }
         if (!healthyFlag && queueSize < threadPool.corePoolSize && maxSessionLatencyTime < lowWaterMark) {
@@ -75,6 +73,5 @@ class DownloadTimeWatchDog(
         private val logger = LogFactory.getLog(DownloadTimeWatchDog::class.java)
         private val timer = Executors.newSingleThreadScheduledExecutor()
         private const val CHECK_INTERVAL = 3000L
-        private const val COLLING_CYCLE = 60_000L
     }
 }

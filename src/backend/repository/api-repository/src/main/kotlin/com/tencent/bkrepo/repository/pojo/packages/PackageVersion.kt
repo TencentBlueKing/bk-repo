@@ -67,5 +67,7 @@ data class PackageVersion(
     @ApiModelProperty("扩展字段")
     val extension: Map<String, Any>,
     @ApiModelProperty("包内容文件路径")
-    val contentPath: String? = null
+    val contentPath: String? = null,
+    @ApiModelProperty("清单文件路径")
+    val manifestPath: String? = null
 )

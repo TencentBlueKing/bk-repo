@@ -54,6 +54,8 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
@@ -79,7 +81,7 @@ class ScanTaskServiceImpl(
     private val fileScanResultDao: FileScanResultDao,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
-    private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
+    private val resultManagers: Map<String, ScanExecutorResultManager<SaveResultArguments, LoadResultArguments>>,
     private val scannerConverters: Map<String, ScannerConverter>
 ) : ScanTaskService {
     override fun task(taskId: String): ScanTask {
@@ -152,7 +154,7 @@ class ScanTaskServiceImpl(
             val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
 
             val scanner = scannerService.get(scanner)
-            val scanResultDetail = scanExecutorResultManagers[scanner.type]?.load(
+            val scanResultDetail = resultManagers[scanner.type]?.load(
                 repo.storageCredentialsKey, node.sha256!!, scanner, arguments
             )
             val status = if (scanResultDetail == null) {
@@ -204,7 +206,7 @@ class ScanTaskServiceImpl(
             val scanner = scannerService.get(subtask.scanner)
             val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)]
             val arguments = scannerConverter?.convertToLoadArguments(request)
-            val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
+            val scanResultManager = resultManagers[subtask.scannerType]
             val detailReport = scanResultManager?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
 
             return detailReport

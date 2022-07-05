@@ -618,7 +618,8 @@ class PackageServiceImpl(
                     packageMetadata = MetadataUtils.toList(it.metadata),
                     tags = it.tags.orEmpty(),
                     extension = it.extension.orEmpty(),
-                    contentPath = it.artifactPath
+                    contentPath = it.artifactPath,
+                    manifestPath = it.manifestPath,
                 )
             }
         }

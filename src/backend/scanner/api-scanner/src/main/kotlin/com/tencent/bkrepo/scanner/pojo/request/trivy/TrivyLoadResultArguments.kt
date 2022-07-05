@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.scanner.pojo.request.trivy
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@ConfigurationProperties("job")
-data class JobProperties(
-    @NestedConfigurationProperty
-    var fileReferenceCleanupJobProperties: MongodbJobProperties = MongodbJobProperties(),
-    @NestedConfigurationProperty
-    var repoRefreshJobProperties: RepoRefreshJobProperties = RepoRefreshJobProperties(),
-    @NestedConfigurationProperty
-    var repoInitJobProperties: RepoRefreshJobProperties = RepoRefreshJobProperties(),
-    @NestedConfigurationProperty
-    var signFileCleanupJobProperties: SignFileCleanupJobProperties = SignFileCleanupJobProperties(),
-    @NestedConfigurationProperty
-    var fileSynchronizeJobProperties: FileSynchronizeJobProperties = FileSynchronizeJobProperties(),
-    @NestedConfigurationProperty
-    var artifactPushJobProperties: ArtifactPushJobProperties = ArtifactPushJobProperties()
-)
+@ApiModel("trivy扫描结果拉取参数")
+data class TrivyLoadResultArguments(
+    @ApiModelProperty("需要的cve列表")
+    val vulIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的漏洞严重性等级列表")
+    val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("分页参数")
+    val pageLimit: PageLimit = PageLimit()
+) : LoadResultArguments(TrivyScanner.TYPE)

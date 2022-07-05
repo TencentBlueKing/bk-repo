@@ -25,9 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
+package com.tencent.bkrepo.scanner.component.manager.trivy
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.VulnerabilityItem
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
+import java.time.LocalDateTime
+
+object Converter {
+    /**
+     * 未计算cvss评分
+     */
+    private const val NO_CVSS_SCORE = 0.0
+
+    fun convertToCve(vulnerabilityItem: VulnerabilityItem): TCve {
+        return with(vulnerabilityItem) {
+            val now = LocalDateTime.now()
+            TCve(
+                createdBy = SYSTEM_USER,
+                createdDate = now,
+                lastModifiedBy = SYSTEM_USER,
+                lastModifiedDate = now,
+                component = pkgName,
+                versionEffected = installedVersion,
+                versionFixed = fixedVersion,
+                name = title,
+                description = description,
+                references = references ?: emptyList(),
+                pocId = pocIdOf(vulnerabilityId),
+                cveId = vulnerabilityId,
+                cvssRank = severity,
+                cvss = NO_CVSS_SCORE,
+                cvssV3 = null,
+                cvssV2 = null
+            )
+        }
+    }
+
+    private fun pocIdOf(vulnerabilityId: String) = "${TrivyScanner.TYPE.toLowerCase()}-$vulnerabilityId"
 }

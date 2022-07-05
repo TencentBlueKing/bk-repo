@@ -46,7 +46,7 @@ data class Node(
     /**
      * 制品名
      */
-    val artifactName: String,
+    var artifactName: String,
     /**
      * 依赖包唯一标识，制品为依赖包时候存在
      */

@@ -35,21 +35,26 @@ import com.tencent.bkrepo.job.config.SignFileCleanupJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 
+@Component
+@EnableConfigurationProperties(SignFileCleanupJobProperties::class)
 class SignFileCleanupJob(
     private val nodeClient: NodeClient,
     private val mongoTemplate: MongoTemplate,
-    properties: SignFileCleanupJobProperties
+    val properties: SignFileCleanupJobProperties
 ) : MongoDbBatchJob<SignFileCleanupJob.SignFileData>(properties) {
 
-    private val expiredOfDays = properties.expireOfDays.toLong()
+    private val expiredOfDays: Long
+        get() = properties.expireOfDays.toLong()
 
     @Scheduled(cron = "0 0 0 * * ?") // 每天零点执行一次
     override fun start(): Boolean {

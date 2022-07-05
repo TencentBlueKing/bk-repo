@@ -25,9 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.common.scanner.pojo.scanner.trivy
+
+import com.fasterxml.jackson.annotation.JsonAlias
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("扫描结果")
+data class TrivyScanResults(
+    @ApiModelProperty("扫描结果")
+    @JsonAlias("Results")
+    val results: List<TrivyScanResult>
+)
+
+@ApiModel("制品漏洞信息")
+data class TrivyScanResult(
+    @ApiModelProperty("目标")
+    @JsonAlias("Target")
+    val target: String,
+    @ApiModelProperty("类")
+    @JsonAlias("Class")
+    val clazz: String,
+    @ApiModelProperty("类型")
+    @JsonAlias("Type")
+    val type: String,
+    @ApiModelProperty("Results")
+    @JsonAlias("Vulnerabilities")
+    val vulnerabilities: List<VulnerabilityItem>? = emptyList()
+)

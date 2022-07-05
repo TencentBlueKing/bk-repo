@@ -25,32 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.dependencycheck
+package com.tencent.bkrepo.scanner.component.manager.trivy
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.scanner.component.manager.AbstractScanExecutorResultManager
-import com.tencent.bkrepo.scanner.component.manager.dependencycheck.dao.DependencyItemDao
-import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItem
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.KnowledgeBase
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
-import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
+import com.tencent.bkrepo.scanner.component.manager.trivy.dao.VulnerabilityItemDao
+import com.tencent.bkrepo.scanner.component.manager.trivy.model.TVulnerabilityItem
+import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivyLoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.trivy.TrivySaveResultArguments
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
-@Component(DependencyScanner.TYPE)
-class DependencyResultManager @Autowired constructor(
-    private val dependencyItemDao: DependencyItemDao,
+@Component(TrivyScanner.TYPE)
+class TrivyResultManager @Autowired constructor(
+    private val vulnerabilityItemDao: VulnerabilityItemDao,
     private val knowledgeBase: KnowledgeBase
-) : AbstractScanExecutorResultManager<SaveResultArguments, DependencyLoadResultArguments>() {
+) : AbstractScanExecutorResultManager<TrivySaveResultArguments, TrivyLoadResultArguments>() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun save(
@@ -58,51 +58,47 @@ class DependencyResultManager @Autowired constructor(
         sha256: String,
         scanner: Scanner,
         result: ScanExecutorResult,
-        arguments: SaveResultArguments?
+        arguments: TrivySaveResultArguments?
     ) {
-        result as DependencyScanExecutorResult
-        scanner as DependencyScanner
+        logger.info("save TrivyScanExecutorResult detail")
+        result as TrivyScanExecutorResult
+        scanner as TrivyScanner
         val scannerName = scanner.name
-        replace(credentialsKey, sha256, scannerName, result.dependencyItems)
+        replace(credentialsKey, sha256, scannerName, result.vulnerabilityItems)
     }
 
     override fun load(
         credentialsKey: String?,
         sha256: String,
         scanner: Scanner,
-        arguments: DependencyLoadResultArguments?
+        arguments: TrivyLoadResultArguments?
     ): Any? {
-        if (logger.isDebugEnabled) {
-            logger.debug("DependencyCheck load, arguments:${arguments?.toJsonString()}")
-        }
-        scanner as DependencyScanner
+        logger.debug("trivy load, arguments:${arguments?.toJsonString()}")
+        scanner as TrivyScanner
         require(arguments != null)
-        val page = dependencyItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
-        val pocIds = page.records.map { Converter.pocIdOf(it.data.cveId) }
-        val cveMap = knowledgeBase.findByPocId(pocIds).associateBy { it.pocId }
-        val records = page.records.map { Converter.convert(it, cveMap[Converter.pocIdOf(it.data.cveId)]!!) }
-        return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
+        val page = vulnerabilityItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records)
     }
 
     private fun replace(
         credentialsKey: String?,
         sha256: String,
         scanner: String,
-        dependencyItems: List<DependencyItem>
+        vulnerabilityItems: List<VulnerabilityItem>
     ) {
-        val cveSet = HashSet<TCve>(dependencyItems.size)
-        val tDependencyItems = ArrayList<TDependencyItem>(dependencyItems.size)
+        val cveSet = HashSet<TCve>(vulnerabilityItems.size)
+        val tVulnerabilityItems = ArrayList<TVulnerabilityItem>(vulnerabilityItems.size)
 
-        dependencyItems
+        vulnerabilityItems
             .asSequence()
             .forEach {
                 cveSet.add(Converter.convertToCve(it))
-                tDependencyItems.add(
-                    TDependencyItem(
+                tVulnerabilityItems.add(
+                    TVulnerabilityItem(
                         credentialsKey = credentialsKey,
                         sha256 = sha256,
                         scanner = scanner,
-                        data = Converter.convert(it)
+                        data = it
                     )
                 )
             }
@@ -110,10 +106,10 @@ class DependencyResultManager @Autowired constructor(
         if (cveSet.isNotEmpty()) {
             knowledgeBase.saveCve(cveSet)
         }
-        replace(credentialsKey, sha256, scanner, dependencyItemDao, tDependencyItems)
+        replace(credentialsKey, sha256, scanner, vulnerabilityItemDao, tVulnerabilityItems)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DependencyResultManager::class.java)
+        private val logger = LoggerFactory.getLogger(TrivyResultManager::class.java)
     }
 }
