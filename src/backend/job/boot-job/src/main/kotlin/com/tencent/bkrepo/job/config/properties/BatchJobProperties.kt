@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties("job.file-synchronize")
-class FileSynchronizeJobProperties(
-    var region: String? = null
-) : BatchJobProperties()
+open class BatchJobProperties(
+    /**
+     * 是否开启任务
+     * */
+    open var enabled: Boolean = true
+)

@@ -29,9 +29,9 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.ID
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
-import com.tencent.bkrepo.job.config.SignFileCleanupJobProperties
+import com.tencent.bkrepo.job.config.properties.SignFileCleanupJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -51,7 +51,7 @@ class SignFileCleanupJob(
     private val nodeClient: NodeClient,
     private val mongoTemplate: MongoTemplate,
     val properties: SignFileCleanupJobProperties
-) : MongoDbBatchJob<SignFileCleanupJob.SignFileData>(properties) {
+) : DefaultContextMongoDbJob<SignFileCleanupJob.SignFileData>(properties) {
 
     private val expiredOfDays: Long
         get() = properties.expireOfDays.toLong()
@@ -83,7 +83,7 @@ class SignFileCleanupJob(
         }
     }
 
-    override fun mapToObject(row: Map<String, Any?>): SignFileData {
+    override fun mapToEntity(row: Map<String, Any?>): SignFileData {
         return SignFileData(row)
     }
 

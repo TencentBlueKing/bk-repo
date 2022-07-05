@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.config.JobProperties
+import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
@@ -68,7 +68,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     lateinit var fileReferenceCleanupJob: FileReferenceCleanupJob
 
     @Autowired
-    lateinit var jobProperties: JobProperties
+    lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
 
     @Autowired
     lateinit var applicationContext: ApplicationContext
@@ -88,7 +88,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         fileReferenceCleanupJob.collectionNames().forEach {
             mongoTemplate.remove(Query(), it)
         }
-        jobProperties.fileReferenceCleanupJobProperties.permitsPerSecond = 0.0
+        fileReferenceCleanupJobProperties.permitsPerSecond = 0.0
     }
 
     @DisplayName("测试正常运行")
@@ -127,7 +127,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @DisplayName("限速测试")
     @Test
     fun rateLimitTest() {
-        jobProperties.fileReferenceCleanupJobProperties.permitsPerSecond = 100.0
+        fileReferenceCleanupJobProperties.permitsPerSecond = 100.0
         fileReferenceCleanupJob.collectionNames().forEach { name ->
             insertMany(1, name)
         }
