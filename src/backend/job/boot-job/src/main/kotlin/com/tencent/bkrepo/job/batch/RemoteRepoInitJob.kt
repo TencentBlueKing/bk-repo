@@ -35,20 +35,21 @@ import com.tencent.bkrepo.job.CATEGORY
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.TYPE
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.RepoInitJobProperties
 import com.tencent.bkrepo.job.config.RepoRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 用于remote类型或者composite类型仓库定时从远程代理刷新信息
  */
 @Component
-@EnableConfigurationProperties(RepoRefreshJobProperties::class)
+@EnableConfigurationProperties(RepoInitJobProperties::class)
 class RemoteRepoInitJob(
     private val properties: RepoRefreshJobProperties,
     private val helmClient: HelmClient
