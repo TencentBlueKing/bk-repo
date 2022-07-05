@@ -109,7 +109,9 @@
           effect="dark"
           content="分片下载时，单片下载时间最大限制，超过后将切换为使用单连接下载，单位ms"
           placement="top-start"
-        />
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
       </el-form-item>
       <el-form-item
         v-if="credential.type === STORAGE_TYPE_INNER_COS"
@@ -127,7 +129,9 @@
           effect="dark"
           content="切换为单连接下载后，如果单片下载时间小于该值，将恢复多线程分片下载，单位ms"
           placement="top-start"
-        />
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
         <el-input v-model="credential.endpoint" :disabled="!createMode" />
@@ -336,7 +340,7 @@ export default {
             credential.secretId = ''
             credential.public = false
             credential.slowLogSpeed = 1024 * 1024
-            credential.slowLogTime = 30 * 1000
+            credential.slowLogTimeInMillis = 30 * 1000
             credential.download = {}
             credential.download.workers = 0
             credential.download.downloadTimeHighWaterMark = 25 * 1000
