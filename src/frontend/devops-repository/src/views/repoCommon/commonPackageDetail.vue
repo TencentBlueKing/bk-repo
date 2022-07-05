@@ -48,9 +48,9 @@
                                             disabled: ($version.stageTag || '').includes('@release')
                                         },
                                         repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
-                                        ['maven', 'npm', 'pypi', 'docker'].includes(repoType) && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) }
+                                        showRepoScan && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    ['maven', 'npm', 'pypi', 'docker'].includes(repoType) && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
+                                    showRepoScan && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
@@ -77,6 +77,7 @@
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
+    import { scanTypeEnum } from '@repository/store/publicEnum'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
@@ -140,6 +141,9 @@
             },
             currentVersion () {
                 return this.versionList.find(version => version.name === this.version)
+            },
+            showRepoScan () {
+                return Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {

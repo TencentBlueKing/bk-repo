@@ -65,7 +65,8 @@
         },
         methods: {
             ...mapActions(['getQualityRule', 'saveQualityRule']),
-            save () {
+            async save () {
+                await this.$refs.ruleForm.validate()
                 this.saveQualityRule({
                     id: this.planId,
                     body: Object.keys(this.rule).reduce((target, key) => {

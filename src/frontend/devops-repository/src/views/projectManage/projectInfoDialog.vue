@@ -8,9 +8,9 @@
         <bk-form class="ml10 mr10" :label-width="75" :model="editProjectDialog" :rules="rules" ref="projectInfoForm">
             <bk-form-item label="项目标识" :required="true" property="id" error-display-type="normal">
                 <bk-input v-model.trim="editProjectDialog.id"
-                    :disabled="!editProjectDialog.add" maxlength="32"
+                    :disabled="!editProjectDialog.add" maxlength="100"
                     show-word-limit
-                    placeholder="请输入2-32字符的小写字母、数字、-、_组合，以字母开头">
+                    placeholder="请输入2-100字符的小写字母、数字、-、_组合，以字母开头">
                 </bk-input>
             </bk-form-item>
             <bk-form-item label="项目名称" :required="true" property="name" error-display-type="normal">
@@ -48,8 +48,8 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-z][a-z0-9_-]{1,31}$/,
-                            message: '请输入2-32字符的小写字母、数字、-、_组合，以字母开头',
+                            regex: /^[a-z][a-z0-9_-]{1,99}$/,
+                            message: '请输入2-100字符的小写字母、数字、-、_组合，以字母开头',
                             trigger: 'blur'
                         },
                         {
