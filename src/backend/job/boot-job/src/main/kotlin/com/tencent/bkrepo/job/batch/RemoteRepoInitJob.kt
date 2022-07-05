@@ -34,9 +34,9 @@ import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.job.CATEGORY
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.TYPE
+import com.tencent.bkrepo.job.batch.base.DefaultRepoJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.RepoInitJobProperties
-import com.tencent.bkrepo.job.config.RepoRefreshJobProperties
+import com.tencent.bkrepo.job.config.properties.RepoInitJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -51,9 +51,9 @@ import java.time.LocalDateTime
 @Component
 @EnableConfigurationProperties(RepoInitJobProperties::class)
 class RemoteRepoInitJob(
-    private val properties: RepoRefreshJobProperties,
+    private val properties: RepoInitJobProperties,
     private val helmClient: HelmClient
-) : RemoteRepoRefreshJob(properties, helmClient) {
+) : DefaultRepoJob(properties) {
 
     private val types: List<String>
         get() = properties.types
@@ -91,6 +91,5 @@ class RemoteRepoInitJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val COLLECTION_NAME = "repository"
     }
 }

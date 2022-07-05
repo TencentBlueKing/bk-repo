@@ -25,19 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties("job.repo-init")
-class RepoInitJobProperties(
+open class RepoJobProperties(
     override var enabled: Boolean = true,
     /**
-     * 需要进行仓库初始化的仓库代理类型
+     * 需要特殊处理的仓库代理类型
      * */
     var categories: List<String> = listOf("REMOTE", "COMPOSITE"),
     /**
-     * 需要进行仓库初始化的仓库类型
+     * 需要特殊处理的仓库类型
      * */
     var types: List<String> = listOf("HELM")
 ) : MongodbJobProperties()

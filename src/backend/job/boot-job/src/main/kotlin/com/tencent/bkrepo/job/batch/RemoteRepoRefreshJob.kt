@@ -29,13 +29,11 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.job.CATEGORY
 import com.tencent.bkrepo.job.TYPE
-import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
+import com.tencent.bkrepo.job.batch.base.DefaultRepoJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.RepoRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
@@ -44,7 +42,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.Duration
 
 /**
  * 用于remote类型或者composite类型仓库定时从远程代理刷新信息
@@ -54,7 +51,7 @@ import java.time.Duration
 class RemoteRepoRefreshJob(
     private val properties: RepoRefreshJobProperties,
     private val helmClient: HelmClient
-) : DefaultContextMongoDbJob<RemoteRepoRefreshJob.ProxyRepoData>(properties) {
+) : DefaultRepoJob(properties) {
 
     private val types: List<String>
         get() = properties.types
@@ -65,14 +62,6 @@ class RemoteRepoRefreshJob(
     @Scheduled(fixedDelay = 3600 * 1000L, initialDelay = 90 * 1000L)
     override fun start(): Boolean {
         return super.start()
-    }
-
-    override fun entityClass(): Class<ProxyRepoData> {
-        return ProxyRepoData::class.java
-    }
-
-    override fun collectionNames(): List<String> {
-        return listOf(COLLECTION_NAME)
     }
 
     override fun buildQuery(): Query {
@@ -96,31 +85,7 @@ class RemoteRepoRefreshJob(
         }
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
-
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val COLLECTION_NAME = "repository"
-    }
-
-    override fun mapToEntity(row: Map<String, Any?>): ProxyRepoData {
-        return ProxyRepoData(row)
-    }
-
-    /**
-     * 只针对remote仓库或者composite代理仓库进行刷新
-     */
-    fun checkConfigType(configuration: RepositoryConfiguration): Boolean {
-        if (configuration is CompositeConfiguration) {
-            if (configuration.proxy.channelList.isNotEmpty()) return true
-        }
-        if (configuration is RemoteConfiguration) return true
-        return false
-    }
-
-    data class ProxyRepoData(private val map: Map<String, Any?>) {
-        val name: String by map
-        val projectId: String by map
-        val configuration: String by map
     }
 }

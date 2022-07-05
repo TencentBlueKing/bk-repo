@@ -31,9 +31,9 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.TYPE
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
-import com.tencent.bkrepo.job.config.ArtifactPushJobProperties
+import com.tencent.bkrepo.job.config.properties.ArtifactPushJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
 import com.tencent.bkrepo.replication.pojo.thirdparty.request.ArtifactPushRequest
@@ -56,8 +56,7 @@ class ArtifactPushJob(
     private val properties: ArtifactPushJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val artifactPushClient: ArtifactPushClient
-) : MongoDbBatchJob<ArtifactPushJob.PackageVersionData>(properties) {
-
+) : DefaultContextMongoDbJob<ArtifactPushJob.PackageVersionData>(properties) {
     private val types: List<String>
         get() = properties.types
 
@@ -118,10 +117,6 @@ class ArtifactPushJob(
         )
     }
 
-    override fun mapToObject(row: Map<String, Any?>): PackageVersionData {
-        return PackageVersionData(row)
-    }
-
     private fun mapToPackage(row: Map<String, Any?>): PackageData {
         return PackageData(row)
     }
@@ -143,5 +138,9 @@ class ArtifactPushJob(
         private val logger = LoggerHolder.jobLogger
         const val COLLECTION_NAME = "package_version"
         private const val PACKAGE_NAME = "package"
+    }
+
+    override fun mapToEntity(row: Map<String, Any?>): PackageVersionData {
+        return PackageVersionData(row)
     }
 }
