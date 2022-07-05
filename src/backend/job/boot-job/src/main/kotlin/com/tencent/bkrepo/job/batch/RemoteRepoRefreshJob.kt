@@ -40,18 +40,18 @@ import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.config.RepoRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import java.time.Duration
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 /**
  * 用于remote类型或者composite类型仓库定时从远程代理刷新信息
  */
 @Component
 @EnableConfigurationProperties(RepoRefreshJobProperties::class)
-open class RemoteRepoRefreshJob(
+class RemoteRepoRefreshJob(
     private val properties: RepoRefreshJobProperties,
     private val helmClient: HelmClient
 ) : MongoDbBatchJob<RemoteRepoRefreshJob.ProxyRepoData>(properties) {
@@ -121,7 +121,6 @@ open class RemoteRepoRefreshJob(
     data class ProxyRepoData(private val map: Map<String, Any?>) {
         val name: String by map
         val projectId: String by map
-        val createdBy: String by map
         val configuration: String by map
     }
 }
