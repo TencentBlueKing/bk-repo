@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
@@ -79,6 +80,9 @@ class UserServiceImpl constructor(
 
     @Autowired
     lateinit var projectClient: ProjectClient
+
+    @Autowired
+    lateinit var bkAuthConfig: BkAuthConfig
 
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
@@ -324,6 +328,10 @@ class UserServiceImpl constructor(
         logger.debug("find user userId : [$userId]")
         if (pwd == DEFAULT_PASSWORD) {
             logger.warn("login with default password [$userId]")
+            if (!bkAuthConfig.userIdSet.split(",").contains(userId)) {
+                logger.warn("login with default password not in list[$userId]")
+                return null
+            }
         }
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val query = UserQueryHelper.buildPermissionCheck(userId, pwd, hashPwd)
