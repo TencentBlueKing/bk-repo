@@ -87,10 +87,9 @@ class ArtifactPushJob(
                     Query(Criteria(ID).isEqualTo(row.packageId).and(TYPE).`in`(properties.types)),
                     PACKAGE_NAME
                 )
-                // TODO 需对packageversion进行过滤，只针对sourceType为LOCAL的才进行推送
                 if (result.isEmpty()) return
                 val packageInfo = mapToPackage(result[0])
-                val event = buildArtifactPushRequest(row, packageInfo)?
+                val event = buildArtifactPushRequest(row, packageInfo)
                 logger.info(
                     "Preparing to send artifact ${event.packageName}|${event.packageVersion} push event" +
                         " in repo ${event.projectId}|${event.repoName}."
