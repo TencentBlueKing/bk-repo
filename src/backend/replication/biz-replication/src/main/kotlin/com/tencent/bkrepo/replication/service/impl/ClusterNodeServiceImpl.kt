@@ -145,14 +145,12 @@ class ClusterNodeServiceImpl(
     override fun update(request: ClusterNodeUpdateRequest): ClusterNodeInfo {
         with(request) {
             val tClusterNode = clusterNodeDao.findByName(name)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
-            url?.let {
-                Preconditions.checkNotBlank(it, this::url.name)
-                if (!Pattern.matches(CLUSTER_NODE_URL_PATTERN, it)) {
-                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::url.name)
-                }
-                tClusterNode.url = it
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+            Preconditions.checkNotBlank(url, this::url.name)
+            if (!Pattern.matches(CLUSTER_NODE_URL_PATTERN, url)) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::url.name)
             }
+            tClusterNode.url = url!!
             tClusterNode.apply {
                 username = request.username
                 password = crypto(request.password, false)

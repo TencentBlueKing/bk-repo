@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
@@ -82,6 +83,11 @@ interface ReplicaTaskService {
      * 根据项目id和仓库名称查询相关联的任务
      */
     fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskDetail>
+
+    /**
+     * 根据项目id和仓库名称查询相关联的任务
+     */
+    fun listTasks(projectId: String, repoName: String, type: ReplicaType? = null): List<ReplicaTaskDetail>
 
     /**
      * 创建同步任务

@@ -46,7 +46,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("第三方集群用户接口")
@@ -71,28 +70,34 @@ class ThirdPartyNodeController(
 
     @ApiOperation("创建第三方集群节点")
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    @PostMapping("/update/{projectId}/{repoName}")
+    @PostMapping("/update/{projectId}/{repoName}/{name}")
     fun thirdPartyUpdate(
         @ApiParam(value = "仓库ID")
         @PathVariable projectId: String,
         @ApiParam(value = "项目ID")
         @PathVariable repoName: String,
+        @PathVariable name: String,
         @RequestBody request: ThirdPartyConfigUpdateRequest
     ): Response<Void> {
-        thirdPartyNodeService.thirdPartyUpdate(request)
+        thirdPartyNodeService.thirdPartyUpdate(
+            projectId = projectId,
+            repoName = repoName,
+            name = name,
+            request = request
+        )
         return ResponseBuilder.success()
     }
 
     @ApiOperation("根据name以及关联项目仓库信息查询第三方集群详情")
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    @GetMapping("/info/{projectId}/{repoName}")
+    @GetMapping("/info/{projectId}/{repoName}/{name}", "/info/{projectId}/{repoName}")
     fun getByName(
         @ApiParam(value = "仓库ID")
         @PathVariable projectId: String,
         @ApiParam(value = "项目ID")
         @PathVariable repoName: String,
-        @RequestParam name: String
-    ): Response<ThirdPartyInfo?> {
+        @PathVariable(required = false) name: String? = null
+    ): Response<List<ThirdPartyInfo>> {
         return ResponseBuilder.success(thirdPartyNodeService.getByName(projectId, repoName, name))
     }
 

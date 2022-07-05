@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
 import com.tencent.bkrepo.replication.pojo.thirdparty.request.ArtifactPushRequest
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
-import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.RestController
@@ -48,7 +47,6 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class ArtifactPushController(
-    private val clusterNodeService: ClusterNodeService,
     private val replicaTaskService: ReplicaTaskService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
 ) : ArtifactPushClient {

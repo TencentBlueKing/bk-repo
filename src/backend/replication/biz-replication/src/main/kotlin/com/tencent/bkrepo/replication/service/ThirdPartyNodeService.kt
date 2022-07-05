@@ -41,12 +41,12 @@ interface ThirdPartyNodeService {
     /**
      * 根据[request]更新第三方集群节点
      */
-    fun thirdPartyUpdate(request: ThirdPartyConfigUpdateRequest)
+    fun thirdPartyUpdate(projectId: String, repoName: String, name: String, request: ThirdPartyConfigUpdateRequest)
 
     /**
      * 根据[projectId] [repoName] [name]根据name以及关联项目仓库信息查询第三方集群详情
      */
-    fun getByName(projectId: String, repoName: String, name: String): ThirdPartyInfo?
+    fun getByName(projectId: String, repoName: String, name: String? = null): List<ThirdPartyInfo>
 
     /**
      * 根据[projectId] [repoName] [name]切换任务状态

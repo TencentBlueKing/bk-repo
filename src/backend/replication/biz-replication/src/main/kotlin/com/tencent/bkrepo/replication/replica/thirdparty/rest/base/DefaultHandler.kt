@@ -134,7 +134,8 @@ class DefaultHandler(
             HttpStatus.BAD_REQUEST.value,
             HttpStatus.UNAUTHORIZED.value,
             HttpStatus.METHOD_NOT_ALLOWED.value,
-            HttpStatus.FORBIDDEN.value
+            HttpStatus.FORBIDDEN.value,
+            HttpStatus.CONFLICT.value
         )
     }
 }

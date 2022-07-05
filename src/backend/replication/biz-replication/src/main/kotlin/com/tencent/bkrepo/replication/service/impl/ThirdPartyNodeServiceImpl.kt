@@ -66,26 +66,44 @@ class ThirdPartyNodeServiceImpl(
         }
     }
 
-    override fun thirdPartyUpdate(request: ThirdPartyConfigUpdateRequest) {
-        with(request) {
-            val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(request))
-            val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
-                ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
-            updateTask(request, task, clusterInfo)
-        }
+    override fun thirdPartyUpdate(
+        projectId: String,
+        repoName: String,
+        name: String,
+        request: ThirdPartyConfigUpdateRequest
+    ) {
+        val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(request, name))
+        val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
+        updateTask(
+            request = request,
+            task = task,
+            clusterInfo = clusterInfo,
+            projectId = projectId,
+            repoName = repoName
+        )
     }
 
-    override fun getByName(projectId: String, repoName: String, name: String): ThirdPartyInfo? {
+    override fun getByName(projectId: String, repoName: String, name: String?): List<ThirdPartyInfo> {
         localDataManager.findRepoByName(projectId, repoName)
-        val clusterInfo = clusterNodeService.getByClusterName(name) ?: return null
-        val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name)) ?: return null
-        val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-        return buildThirdPartyInfo(
-            projectId = projectId,
-            repoName = repoName,
-            replicaTaskDetail = taskDetail,
-            clusterNodeInfo = clusterInfo
-        )
+        val replicaTaskDetails = if (name.isNullOrBlank()) {
+            replicaTaskService.listTasks(projectId, repoName)
+        } else {
+            val clusterInfo = clusterNodeService.getByClusterName(name) ?: return emptyList()
+            val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name)) ?: return emptyList()
+            listOf(replicaTaskService.getDetailByTaskKey(task.key))
+        }
+        val result = mutableListOf<ThirdPartyInfo>()
+        replicaTaskDetails.forEach { it ->
+            getThirdPartyInfoByName(
+                projectId = projectId,
+                repoName = repoName,
+                taskDetail = it
+            )?.let {
+                result.add(it)
+            }
+        }
+        return result
     }
 
     override fun toggleStatus(projectId: String, repoName: String, name: String) {
@@ -142,7 +160,9 @@ class ThirdPartyNodeServiceImpl(
     private fun updateTask(
         request: ThirdPartyConfigUpdateRequest,
         task: ReplicaTaskInfo,
-        clusterInfo: ClusterNodeInfo
+        clusterInfo: ClusterNodeInfo,
+        projectId: String,
+        repoName: String
     ) {
         with(request) {
             val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
@@ -167,6 +187,23 @@ class ThirdPartyNodeServiceImpl(
                 description = description,
             )
             replicaTaskService.update(taskUpdaterequest)
+        }
+    }
+
+    private fun getThirdPartyInfoByName(
+        projectId: String,
+        repoName: String,
+        taskDetail: ReplicaTaskDetail
+    ): ThirdPartyInfo? {
+        with(taskDetail) {
+            val clusterInfo = clusterNodeService.getByClusterId(task.remoteClusters.first().id) ?: return null
+            if (clusterInfo.type != ClusterNodeType.THIRD_PARTY) return null
+            return buildThirdPartyInfo(
+                projectId = projectId,
+                repoName = repoName,
+                replicaTaskDetail = taskDetail,
+                clusterNodeInfo = clusterInfo
+            )
         }
     }
 
@@ -206,11 +243,14 @@ class ThirdPartyNodeServiceImpl(
         )
     }
 
-    private fun buildClusterNodeUpdateRequest(request: ThirdPartyConfigUpdateRequest): ClusterNodeUpdateRequest {
+    private fun buildClusterNodeUpdateRequest(
+        request: ThirdPartyConfigUpdateRequest,
+        name: String
+    ): ClusterNodeUpdateRequest {
         with(request) {
             return ClusterNodeUpdateRequest(
                 name = name,
-                url = url,
+                url = registry,
                 certificate = certificate,
                 username = username,
                 password = password,

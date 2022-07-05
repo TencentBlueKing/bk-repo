@@ -71,9 +71,16 @@ object TaskQueryHelper {
     }
 
     fun realTimeTaskQuery(taskKeyList: List<String>): Query {
-        val criteria = where(TReplicaTask::replicaType).isEqualTo(ReplicaType.REAL_TIME)
-            .and(TReplicaTask::key).inValues(taskKeyList)
+        return taskQueryByType(taskKeyList, ReplicaType.REAL_TIME)
+    }
+
+    fun taskQueryByType(taskKeyList: List<String>, type: ReplicaType?): Query {
+        var criteria = where(TReplicaTask::key).inValues(taskKeyList)
             .and(TReplicaTask::enabled).isEqualTo(true)
+
+        type?.let {
+            criteria = criteria.and(TReplicaTask::replicaType).isEqualTo(type)
+        }
         return Query(criteria)
     }
 

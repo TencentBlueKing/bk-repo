@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.InputStream
+import java.net.URL
 
 /**
  * helm类型制品推送到第三方集群
@@ -188,7 +189,9 @@ class HelmArtifactPushClient(
         path: String,
         params: String = StringPool.EMPTY
     ): String {
-        return HttpUtils.builderUrl(url, path, params)
+        val baseUrl = URL(url)
+        val v2Url = URL(baseUrl, "/api" + baseUrl.path)
+        return HttpUtils.builderUrl(v2Url.toString(), path, params)
     }
 
     private fun buildAuthRequestProperties(): RequestProperty {
@@ -199,8 +202,8 @@ class HelmArtifactPushClient(
 
     companion object {
         private val logger = LoggerFactory.getLogger(HelmArtifactPushClient::class.java)
-        const val HELM_CHART_PUSH_URL = "/charts"
-        const val HELM_PROV_PUSH_URL = "/prov"
+        const val HELM_CHART_PUSH_URL = "charts"
+        const val HELM_PROV_PUSH_URL = "prov"
         const val PROV_FILE = "prov"
         const val CHART_FILE = "chart"
         const val CHART_FILE_NAME = "/%s-%s.tgz"

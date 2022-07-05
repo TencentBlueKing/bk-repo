@@ -39,19 +39,13 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("更新第三方集群以及相关信息请求")
 data class ThirdPartyConfigUpdateRequest(
-    @ApiModelProperty("关联项目名, 不可变", required = true)
-    var projectId: String,
-    @ApiModelProperty("关联仓库名，不可变", required = true)
-    var repoName: String,
-    @ApiModelProperty("名称, 不可变", required = true)
-    var name: String,
-    @ApiModelProperty("集群地址", required = true)
-    var url: String,
-    @ApiModelProperty("集群的证书", required = true)
+    @ApiModelProperty("集群地址", required = false)
+    var registry: String,
+    @ApiModelProperty("集群的证书", required = false)
     var certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = true)
+    @ApiModelProperty("集群认证用户名", required = false)
     var username: String? = null,
-    @ApiModelProperty("集群认证密码", required = true)
+    @ApiModelProperty("集群认证密码", required = false)
     var password: String? = null,
     @ApiModelProperty("包限制条件", required = false)
     val packageConstraints: List<PackageConstraint>? = null,
