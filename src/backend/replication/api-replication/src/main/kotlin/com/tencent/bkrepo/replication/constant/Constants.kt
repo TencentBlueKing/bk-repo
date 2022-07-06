@@ -43,3 +43,15 @@ const val DOCKER_MANIFEST_JSON_FULL_PATH = "/%s/%s/manifest.json"
 const val DOCKER_LAYER_FULL_PATH = "/%s/%s/%s"
 const val OCI_MANIFEST_JSON_FULL_PATH = "/%s/manifest/%s/manifest.json"
 const val OCI_LAYER_FULL_PATH = "/%s/blobs/%s"
+
+/**
+ * metrics
+ */
+const val REPLICATION_TASK_ACTIVE_COUNT = "replication.task.active.count"
+const val REPLICATION_TASK_ACTIVE_COUNT_DESC = "制品同步任务实时执行数量"
+
+const val REPLICATION_TASK_QUEUE_SIZE = "replication.task.queue.size"
+const val REPLICATION_TASK_QUEUE_SIZE_DESC = "制品同步任务线程池等待队列大小"
+
+const val REPLICATION_TASK_COMPLETED_COUNT = "replication.task.completed.count"
+const val REPLICATION_TASK_COMPLETED_COUNT_DESC = "制品同步已完成的任务数量"
