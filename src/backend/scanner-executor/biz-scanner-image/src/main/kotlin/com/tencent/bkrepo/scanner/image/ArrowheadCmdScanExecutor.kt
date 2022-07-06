@@ -45,18 +45,11 @@ class ArrowheadCmdScanExecutor(
     }
     private val taskIdProcessMap = ConcurrentHashMap<String, Process>()
 
-    /**
-     * 执行扫描
-     * @param taskWorkDir 工作目录,将挂载到容器中
-     * @param task 扫描任务
-     *
-     * @return true 扫描成功， false 扫描失败
-     */
     override fun doScan(
         taskWorkDir: File,
+        scannerInputFile: File,
         configFile: File,
-        task: ScanExecutorTask,
-        fileSize: Long
+        task: ScanExecutorTask
     ): SubScanTaskStatus {
         val scanner = task.scanner
         require(scanner is ArrowheadScanner)
@@ -65,7 +58,7 @@ class ArrowheadCmdScanExecutor(
         try {
             taskIdProcessMap[task.taskId] = process
             logger.info(logMsg(task, "running arrowhead [$taskWorkDir]"))
-            val maxScanDuration = scanner.maxScanDuration(fileSize)
+            val maxScanDuration = scanner.maxScanDuration(scannerInputFile.length())
             val result = process.waitFor(maxScanDuration, TimeUnit.MILLISECONDS)
             logger.info(logMsg(task, "arrowhead run result[$result], [$taskWorkDir]"))
             if (!result) {

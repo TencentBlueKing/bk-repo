@@ -56,6 +56,9 @@ object DockerUtils {
         tty: Boolean = true,
         stdIn: Boolean = true
     ): String {
+        // 拉取镜像
+        pullImage(image)
+        // 创建容器
         val createCmd = createContainerCmd(image)
         hostConfig?.let { createCmd.withHostConfig(it) }
         cmd?.let { createCmd.withCmd(it) }

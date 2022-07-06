@@ -27,10 +27,7 @@
 
 package com.tencent.bkrepo.scanner.executor.arrowhead
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
@@ -40,7 +37,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
-import com.tencent.bkrepo.scanner.executor.ScanExecutor
+import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
@@ -51,48 +48,37 @@ import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import java.io.File
 
-abstract class AbsArrowheadScanExecutor : ScanExecutor {
+abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
-    override fun scan(task: ScanExecutorTask): ScanExecutorResult {
-        require(task.scanner is ArrowheadScanner)
-        val scanner = task.scanner
-        // 创建工作目录
-        val taskWorkDir = createTaskWorkDir(scanner.rootPath, task.taskId)
-        logger.info(logMsg(task, "create work dir success, $taskWorkDir"))
-        try {
-            // 加载待扫描文件
-            val scannerInputFile = loadFile(taskWorkDir, task)
-            // 加载扫描配置文件
-            val configFile = loadConfigFile(task, taskWorkDir, scannerInputFile)
-            // 执行扫描
-            val scanStatus = doScan(taskWorkDir, configFile, task, scannerInputFile.length())
-            return result(File(taskWorkDir, scanner.container.outputDir), scanStatus)
-        } finally {
-            // 清理工作目录
-            if (task.scanner.cleanWorkDir) {
-                FileUtils.deleteRecursively(taskWorkDir)
-            }
-        }
+    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+        // 加载扫描配置文件
+        val configFile = loadConfigFile(task, taskWorkDir, scannerInputFile)
+        return doScan(taskWorkDir, scannerInputFile, configFile, task)
     }
 
-    protected abstract fun workDir(): File
+    override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
+        val scanner = task.scanner
+        require(scanner is ArrowheadScanner)
+        val fileName = FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
+        return File(File(taskWorkDir, scanner.container.inputDir), fileName)
+    }
 
     protected abstract fun configTemplate(): String
 
     /**
-     * 创建容器执行扫描
+     * 执行扫描
      * @param taskWorkDir 工作目录,将挂载到容器中
+     * @param scannerInputFile 待扫描文件
      * @param configFile arrowhead扫描配置文件
      * @param task 扫描任务
-     * @param fileSize 文件大小
      *
-     * @return true 扫描成功， false 扫描失败
+     * @return 扫描结果
      */
     protected abstract fun doScan(
         taskWorkDir: File,
+        scannerInputFile: File,
         configFile: File,
-        task: ScanExecutorTask,
-        fileSize: Long
+        task: ScanExecutorTask
     ): SubScanTaskStatus
 
     /**
@@ -171,14 +157,10 @@ abstract class AbsArrowheadScanExecutor : ScanExecutor {
         return configFile
     }
 
-    /**
-     * 解析扫描结果
-     */
-    private fun result(
-        outputDir: File,
-        scanStatus: SubScanTaskStatus
-    ): ArrowheadScanExecutorResult {
-
+    override fun result(taskWorkDir: File, task: ScanExecutorTask, scanStatus: SubScanTaskStatus): ScanExecutorResult {
+        val scanner = task.scanner
+        require(scanner is ArrowheadScanner)
+        val outputDir = File(taskWorkDir, scanner.container.outputDir)
         val cveMap = HashMap<String, CveSecItem>()
         readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
             ?.forEach {
@@ -235,36 +217,6 @@ abstract class AbsArrowheadScanExecutor : ScanExecutor {
         }
 
         return overview
-    }
-
-    private fun loadFile(taskWorkDir: File, task: ScanExecutorTask): File {
-        val scanner = task.scanner as ArrowheadScanner
-        // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
-        val fileExtension = task.fullPath.substringAfterLast(CharPool.DOT, "")
-        val scannerInputFile = File(File(taskWorkDir, scanner.container.inputDir), "${task.sha256}.$fileExtension")
-        scannerInputFile.parentFile.mkdirs()
-        task.inputStream.use { taskInputStream ->
-            scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
-        }
-        logger.info(logMsg(task, "read file success"))
-        return scannerInputFile
-    }
-
-    /**
-     * 创建工作目录
-     *
-     * @param rootPath 扫描器根目录
-     * @param taskId 任务id
-     *
-     * @return 工作目录
-     */
-    private fun createTaskWorkDir(rootPath: String, taskId: String): File {
-        // 创建工作目录
-        val taskWorkDir = File(File(workDir(), rootPath), taskId)
-        if (!taskWorkDir.deleteRecursively() || !taskWorkDir.mkdirs()) {
-            throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, taskWorkDir.absolutePath)
-        }
-        return taskWorkDir
     }
 
     companion object {

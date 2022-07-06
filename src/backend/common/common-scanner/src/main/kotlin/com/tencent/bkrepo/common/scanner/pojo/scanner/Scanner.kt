@@ -53,6 +53,10 @@ open class Scanner(
     val type: String,
     @ApiModelProperty("扫描器版本")
     open val version: String,
+    @ApiModelProperty("扫描器根目录")
+    val rootPath: String = type,
+    @ApiModelProperty("扫描结束后是否清理工作目录")
+    val cleanWorkDir: Boolean = true,
     @ApiModelProperty("最大允许的1MB文件扫描时间")
     val maxScanDurationPerMb: Long = DEFAULT_MAX_SCAN_DURATION
 ) {
