@@ -44,9 +44,12 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.Interceptor
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 
 class ReplicaContext(
@@ -54,7 +57,7 @@ class ReplicaContext(
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
-    val remoteCluster: ClusterNodeInfo
+    val remoteCluster: ClusterNodeInfo,
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -110,8 +113,38 @@ class ReplicaContext(
                 BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
             ).build()
         } else {
-            HttpClientBuilderFactory.create().build()
+            HttpClientBuilderFactory.create()
+                .addInterceptor {
+                    retryRequest(it)
+                }
+                .build()
         }
+    }
+
+    /**
+     * 当请求结果为200-499以外时进行重试
+     */
+    private fun retryRequest(it: Interceptor.Chain): Response {
+        val request: Request = it.request()
+        var response: Response? = null
+        var responseOK = false
+        var tryCount = 0
+
+        while (!responseOK && tryCount < 3) {
+            try {
+                response = it.proceed(request)
+                responseOK = response.code() in 200..499
+            } catch (e: Exception) {
+                logger.warn(
+                    "Request ${request.url()} is not successful and error is ${e.cause}, will retry it - $tryCount"
+                )
+                // 如果第3次重试还是失败，抛出失败异常
+                if (tryCount == 2) throw e
+            } finally {
+                tryCount++
+            }
+        }
+        return response!!
     }
 
     /**
@@ -131,5 +164,9 @@ class ReplicaContext(
         httpClient.newCall(httpRequest).execute().use {
             check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
     }
 }

@@ -79,7 +79,9 @@ class DefaultHandler(
                     val extraProperty = wrapperFailure(it)
                     this.failHandler?.process(extraProperty) ?: true
                 }
-                else -> throw ArtifactPushException("invalid response  ${it.code()} for request ${it.request().url()}")
+                else -> throw ArtifactPushException(
+                    "invalid response  ${it.code()} for request ${it.request().url()}"
+                )
             }
         }
     }
