@@ -54,13 +54,14 @@ export function deleteWebhook(id) {
   })
 }
 
-export function listWebhookLog(id, startDate = null, endDate = null) {
+export function listWebhookLog(id, startDate = null, endDate = null, status = null) {
   return request({
     url: `${PREFIX_WEBHOOK_LOG}/list/${id}`,
     method: 'get',
     params: {
       startDate,
-      endDate
+      endDate,
+      status
     }
   })
 }

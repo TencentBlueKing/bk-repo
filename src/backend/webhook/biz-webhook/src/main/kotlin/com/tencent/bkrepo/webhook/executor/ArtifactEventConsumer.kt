@@ -117,8 +117,7 @@ class ArtifactEventConsumer(
     private fun checkIfNeedTrigger(event: ArtifactEvent): Boolean {
         val projectRepoKey = "${event.projectId}:${event.repoName}"
         webHookProperties.filterProjectRepoKey.forEach {
-            val regex = Regex(it.replace("*", ".*"))
-            if (projectRepoKey.matches(regex)) {
+            if (projectRepoKey.matches(Regex(it))) {
                 return false
             }
         }
