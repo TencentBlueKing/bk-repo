@@ -31,14 +31,11 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
-import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -56,26 +53,19 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
-import com.tencent.bkrepo.scanner.executor.DockerScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
-import com.tencent.bkrepo.scanner.executor.pojo.Layer
-import com.tencent.bkrepo.scanner.executor.pojo.Manifest
-import com.tencent.bkrepo.scanner.executor.pojo.ManifestV1
-import com.tencent.bkrepo.scanner.executor.pojo.ManifestV2
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
+import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
+import com.tencent.bkrepo.scanner.executor.util.ImageScanHelper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 
 @Component(TrivyScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
@@ -87,7 +77,8 @@ class TrivyScanExecutor @Autowired constructor(
     private val nodeClient: NodeClient
 ) : CommonScanExecutor() {
 
-    private val dockerScanExecutor = DockerScanExecutor(scannerExecutorProperties, dockerClient)
+    private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
+    private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
     override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
         require(task.scanner is TrivyScanner)
@@ -106,7 +97,7 @@ class TrivyScanExecutor @Autowired constructor(
         // 缓存目录映射
         val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
         val cmd = buildScanCmds(task, scannerInputFile)
-        val result = dockerScanExecutor.scan(
+        val result = dockerScanHelper.scan(
             containerConfig.image, Binds(bind, cacheBind), cmd, taskWorkDir, scannerInputFile, task
         )
         if (!result) {
@@ -115,10 +106,9 @@ class TrivyScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): File {
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
         scannerInputFile.parentFile.mkdirs()
-        scannerInputFile.outputStream().use { generateScanFile(it, task) }
-        return scannerInputFile
+        scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
     }
 
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
@@ -136,71 +126,7 @@ class TrivyScanExecutor @Autowired constructor(
     }
 
     override fun stop(taskId: String): Boolean {
-        return dockerScanExecutor.stop(taskId)
-    }
-
-    private fun generateScanFile(fileOutputStream: FileOutputStream, task: ScanExecutorTask) {
-        val manifest = task.inputStream.readJsonString<ManifestV2>()
-        if (logger.isDebugEnabled) {
-            logger.debug(logMsg(task, manifest.toJsonString()))
-        }
-        val isFromOci = isFromOciService(task.fullPath)
-        TarArchiveOutputStream(fileOutputStream).use { tos ->
-            // 打包config文件
-            loadLayerTo(manifest.config, task, tos, isFromOci)
-            val layers = ArrayList<String>()
-            // 打包layers文件
-            manifest.layers.forEach {
-                layers.add(it.digest.replace(COLON.toString(), "__"))
-                loadLayerTo(it, task, tos, isFromOci)
-            }
-            // 打包manifest.json文件
-            val configFileName = manifest.config.digest.replace(COLON.toString(), "__")
-            val manifestV1 = ManifestV1(listOf(Manifest(configFileName, emptyList(), layers)))
-            val manifestV1Bytes = manifestV1.manifests.toJsonString().toByteArray()
-            ByteArrayInputStream(manifestV1Bytes).use {
-                putArchiveEntry(MANIFEST, manifestV1Bytes.size.toLong(), it, tos)
-            }
-        }
-    }
-
-    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream, isFromOci: Boolean) {
-        val fileName = layer.digest.replace(COLON.toString(), "__")
-        val fullPath = if (isFromOci) {
-            // manifest路径格式/%s/manifest/%s/manifest.json"
-            // 忽略第一个 /，截取%s/
-            val endIndex = task.fullPath.indexOf(SLASH, 1)
-            "${task.fullPath.substring(0, endIndex)}/blobs/$fileName"
-        } else {
-            // manifest路劲格式为 /%s/%s/manifest.json
-            // blobs在同级目录
-            val endIndex = task.fullPath.lastIndexOf(SLASH)
-            "${task.fullPath.substring(0, endIndex)}/$fileName"
-        }
-        logger.info(logMsg(task, "load layer [$fullPath]"))
-
-        val node = nodeClient.getNodeDetail(task.projectId, task.repoName, fullPath).data
-            ?: throw SystemErrorException(SYSTEM_ERROR, "image layer file [$fullPath] acquire failed")
-        storageService.load(node.sha256!!, Range.full(node.size), task.storageCredentials)
-            ?.use { putArchiveEntry(fileName, node.size, it, tos) }
-            ?: throw SystemErrorException(RESOURCE_NOT_FOUND, "layer not found full path[$fullPath]")
-    }
-
-    /**
-     * 判断是否为通过bkrepo-oci服务推送的镜像
-     */
-    private fun isFromOciService(manifestFullPath: String): Boolean {
-        val splitPath = manifestFullPath.split(SLASH)
-        // OCI路径格式为/%s/manifest/%s/manifest.json，判断路径分片长度和倒数第3段是否为manifest即可确认是否为oci服务上传的镜像
-        return splitPath.size >= OCI_PATH_PARTS_MIN_SIZE && splitPath[splitPath.size - 3] == "manifest"
-    }
-
-    private fun putArchiveEntry(name: String, size: Long, inputStream: InputStream, tos: TarArchiveOutputStream) {
-        val entry = TarArchiveEntry(name)
-        entry.size = size
-        tos.putArchiveEntry(entry)
-        inputStream.copyTo(tos)
-        tos.closeArchiveEntry()
+        return dockerScanHelper.stop(taskId)
     }
 
     private fun generateTrivyDB(task: ScanExecutorTask, cacheDir: File) {
@@ -389,15 +315,5 @@ class TrivyScanExecutor @Autowired constructor(
         private const val METADATA_JSON_FILE_CONTENT =
             "{\"Version\":1,\"Type\":1,\"NextUpdate\":\"2022-05-31T06:51:38.429826331Z\"," +
                 "\"UpdatedAt\":\"2022-05-31T00:51:38.429826631Z\",\"DownloadedAt\":\"0001-01-01T00:00:00Z\"}"
-
-        /**
-         * manifest.json文件名
-         */
-        private const val MANIFEST = "manifest.json"
-
-        /**
-         * oci路径最小段数
-         */
-        private const val OCI_PATH_PARTS_MIN_SIZE = 5
     }
 }

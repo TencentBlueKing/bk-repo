@@ -60,6 +60,10 @@ data class ScanExecutorTask(
      */
     val repoName: String,
     /**
+     * 仓库类型
+     */
+    val repoType: String,
+    /**
      * 文件完整路径
      */
     val fullPath: String,

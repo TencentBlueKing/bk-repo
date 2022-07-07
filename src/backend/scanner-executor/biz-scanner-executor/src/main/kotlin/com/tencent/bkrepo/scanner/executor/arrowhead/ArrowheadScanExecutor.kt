@@ -31,12 +31,16 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.scanner.executor.DockerScanExecutor
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.ImageScanHelper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -48,6 +52,8 @@ import java.io.File
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class ArrowheadScanExecutor @Autowired constructor(
     dockerClient: DockerClient,
+    nodeClient: NodeClient,
+    storageService: StorageService,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) : AbsArrowheadScanExecutor() {
 
@@ -56,7 +62,8 @@ class ArrowheadScanExecutor @Autowired constructor(
     private val configTemplate by lazy { arrowheadConfigTemplate.inputStream.use { it.reader().readText() } }
 
     private val workDir by lazy { File(scannerExecutorProperties.workDir) }
-    private val dockerScanExecutor = DockerScanExecutor(scannerExecutorProperties, dockerClient)
+    private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
+    private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
     override fun doScan(
         taskWorkDir: File,
@@ -74,7 +81,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         val bind = Bind(taskWorkDir.absolutePath, Volume(containerConfig.workDir))
 
         // 执行扫描
-        val result = dockerScanExecutor.scan(
+        val result = dockerScanHelper.scan(
             containerConfig.image, Binds(tmpBind, bind), listOf(containerConfig.args),
             taskWorkDir, scannerInputFile, task
         )
@@ -84,8 +91,17 @@ class ArrowheadScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
+        if (task.repoType == RepositoryType.DOCKER.name) {
+            scannerInputFile.parentFile.mkdirs()
+            scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
+        } else {
+            super.loadFileTo(scannerInputFile, task)
+        }
+    }
+
     override fun stop(taskId: String): Boolean {
-        return dockerScanExecutor.stop(taskId)
+        return dockerScanHelper.stop(taskId)
     }
 
     override fun workDir() = workDir

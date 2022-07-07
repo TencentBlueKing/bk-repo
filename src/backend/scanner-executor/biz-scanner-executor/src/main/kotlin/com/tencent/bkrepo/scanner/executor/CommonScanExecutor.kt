@@ -85,14 +85,13 @@ abstract class CommonScanExecutor : ScanExecutor {
     /**
      * 将待扫描文件写入[scannerInputFile]
      */
-    protected open fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): File {
+    protected open fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
         // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
         scannerInputFile.parentFile.mkdirs()
         task.inputStream.use { taskInputStream ->
             scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
         }
         logger.info(CommonUtils.logMsg(task, "read file success"))
-        return scannerInputFile
     }
 
     /**

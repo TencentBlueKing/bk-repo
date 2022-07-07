@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.arrowhead
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
@@ -48,11 +49,17 @@ import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import java.io.File
 
-abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
+abstract class AbsArrowheadScanExecutor: CommonScanExecutor() {
 
     override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+        val analysisSubType = if (task.repoType == RepositoryType.DOCKER.name) {
+            ANALYSIS_SUB_TYPE_DOCKER
+        } else {
+            ANALYSIS_SUB_TYPE_BINARY_PACKAGE
+        }
         // 加载扫描配置文件
-        val configFile = loadConfigFile(task, taskWorkDir, scannerInputFile)
+        val configFile = loadConfigFile(task, taskWorkDir, scannerInputFile, analysisSubType)
+
         return doScan(taskWorkDir, scannerInputFile, configFile, task)
     }
 
@@ -129,7 +136,8 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
     private fun loadConfigFile(
         scanTask: ScanExecutorTask,
         taskWorkDir: File,
-        scannerInputFile: File
+        scannerInputFile: File,
+        analysisSubType: String
     ): File {
         require(scanTask.scanner is ArrowheadScanner)
         val scanner = scanTask.scanner
@@ -138,14 +146,20 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
         val template = configTemplate()
         val inputFilePath = "${containerConfig.inputDir.removePrefix(StringPool.SLASH)}/${scannerInputFile.name}"
         val outputDir = containerConfig.outputDir.removePrefix(StringPool.SLASH)
-        val params = mapOf(
-            TEMPLATE_KEY_INPUT_FILE to inputFilePath,
+        val params = mutableMapOf(
+            TEMPLATE_KEY_ANALYSIS_SUB_TYPE to analysisSubType,
             TEMPLATE_KEY_OUTPUT_DIR to outputDir,
             TEMPLATE_KEY_LOG_FILE to RESULT_FILE_NAME_LOG,
             TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID to knowledgeBase.secretId,
             TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY to knowledgeBase.secretKey,
             TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT to knowledgeBase.endpoint
         )
+
+        if (analysisSubType == ANALYSIS_SUB_TYPE_BINARY_PACKAGE) {
+            params[TEMPLATE_KEY_INPUT_FILE] = inputFilePath
+        } else {
+            params[TEMPLATE_KEY_DOCKER_INPUT_FILE] = inputFilePath
+        }
 
         val content = SpelExpressionParser()
             .parseExpression(template, TemplateParserContext())
@@ -223,12 +237,15 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
         private val logger = LoggerFactory.getLogger(AbsArrowheadScanExecutor::class.java)
 
         // arrowhead配置文件模板key
-        protected const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
-        protected const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
-        protected const val TEMPLATE_KEY_LOG_FILE = "logFile"
-        protected const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
-        protected const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
-        protected const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
+        private const val TEMPLATE_KEY_ANALYSIS_SUB_TYPE = "analysisSubType"
+        private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
+        private const val TEMPLATE_KEY_DOCKER_INPUT_FILE = "dockerInputFile"
+        private const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
+        private const val TEMPLATE_KEY_LOG_FILE = "logFile"
+        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
+        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
+        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
+
 
         // arrowhead输出日志路径
         private const val RESULT_FILE_NAME_LOG = "sysauditor.log"
@@ -237,11 +254,13 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
         /**
          * 证书扫描结果文件名
          */
-        protected const val RESULT_FILE_NAME_APPLICATION_ITEMS = "application_items.json"
+        private const val RESULT_FILE_NAME_APPLICATION_ITEMS = "application_items.json"
 
         /**
          * CVE扫描结果文件名
          */
-        protected const val RESULT_FILE_NAME_CVE_SEC_ITEMS = "cvesec_items.json"
+        private const val RESULT_FILE_NAME_CVE_SEC_ITEMS = "cvesec_items.json"
+        const val ANALYSIS_SUB_TYPE_BINARY_PACKAGE = "BinaryPackage"
+        const val ANALYSIS_SUB_TYPE_DOCKER = "Docker"
     }
 }

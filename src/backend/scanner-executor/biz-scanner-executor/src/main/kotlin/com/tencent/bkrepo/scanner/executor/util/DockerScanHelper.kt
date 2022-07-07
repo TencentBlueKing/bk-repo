@@ -25,14 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor
+package com.tencent.bkrepo.scanner.executor.util
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Binds
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils
-import com.tencent.bkrepo.scanner.executor.util.DockerUtils
 import com.tencent.bkrepo.scanner.executor.util.DockerUtils.createContainer
 import com.tencent.bkrepo.scanner.executor.util.DockerUtils.removeContainer
 import com.tencent.bkrepo.scanner.executor.util.DockerUtils.startContainer
@@ -41,7 +39,7 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
-class DockerScanExecutor(
+class DockerScanHelper(
     private val scannerExecutorProperties: ScannerExecutorProperties,
     private val dockerClient: DockerClient
 ) {
@@ -88,6 +86,6 @@ class DockerScanExecutor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DockerScanExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(DockerScanHelper::class.java)
     }
 }

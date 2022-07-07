@@ -54,6 +54,10 @@ data class SubScanTask(
      */
     val repoName: String,
     /**
+     * 仓库类型
+     */
+    val repoType: String,
+    /**
      * 文件完整路径
      */
     val fullPath: String,
@@ -70,7 +74,7 @@ data class SubScanTask(
      */
     val credentialsKey: String?,
     /**
-     * 文件下载链接
+     * 文件下载链接，容器化扫描时使用
      */
     val url: String? = null,
     /**
