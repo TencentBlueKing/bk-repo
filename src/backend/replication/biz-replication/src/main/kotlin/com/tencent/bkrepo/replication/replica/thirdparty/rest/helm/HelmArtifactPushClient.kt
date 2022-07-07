@@ -189,7 +189,7 @@ class HelmArtifactPushClient(
         path: String,
         params: String = StringPool.EMPTY
     ): String {
-        val baseUrl = URL(url)
+        val baseUrl = HttpUtils.addProtocol(url)
         val v2Url = URL(baseUrl, "/api" + baseUrl.path)
         return HttpUtils.builderUrl(v2Url.toString(), path, params)
     }

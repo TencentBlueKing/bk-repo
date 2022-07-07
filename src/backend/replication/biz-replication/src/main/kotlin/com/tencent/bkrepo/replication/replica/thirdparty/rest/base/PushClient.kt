@@ -67,20 +67,29 @@ abstract class PushClient(
         logger.info(
             "Package $name|$version in the local repo $projectId|$repoName will be pushed to the third party repository"
         )
-        val token = getAuthorizationDetails(name)
-        val nodes = querySyncNodeList(
-            name = name,
-            version = version,
-            projectId = projectId,
-            repoName = repoName
-        )
-        if (nodes.isEmpty()) return true
-        return processToUploadArtifact(
-            token = token,
-            name = name,
-            version = version,
-            nodes = nodes
-        )
+        try {
+            val token = getAuthorizationDetails(name)
+            val nodes = querySyncNodeList(
+                name = name,
+                version = version,
+                projectId = projectId,
+                repoName = repoName
+            )
+            if (nodes.isEmpty()) return true
+            return processToUploadArtifact(
+                token = token,
+                name = name,
+                version = version,
+                nodes = nodes
+            )
+        } catch (e: Exception) {
+            logger.error(
+                "Error occurred while pushing artifact $name|$version in the local repo $projectId|$repoName," +
+                    " failed reason: $e",
+                e
+            )
+            throw e
+        }
     }
 
     /**

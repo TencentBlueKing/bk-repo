@@ -29,6 +29,8 @@ package com.tencent.bkrepo.replication.manager
 
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -42,6 +44,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.springframework.stereotype.Component
 import java.io.InputStream
 
@@ -156,7 +159,30 @@ class LocalDataManager(
     fun findNode(projectId: String, repoName: String, fullPath: String): NodeDetail? {
         return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
     }
+
     /**
+     * 根据sha256获取对应节点大小
+     */
+    fun getNodeBySha256(
+        projectId: String,
+        repoName: String,
+        sha256: String
+    ): Long {
+        val queryModel = NodeQueryBuilder()
+            .select(NODE_FULL_PATH, SIZE)
+            .projectId(projectId)
+            .repoName(repoName)
+            .sha256(sha256)
+            .sortByAsc(NODE_FULL_PATH)
+        val result = nodeClient.search(queryModel.build()).data
+        check(result != null) { "Local node path with [$sha256] in repo $projectId|$repoName does not exist" }
+        check(result.records.isNotEmpty()) {
+            "Local node path with [$sha256] in repo $projectId|$repoName does not exist"
+        }
+        return result.records[0][SIZE].toString().toLong()
+    }
+
+/**
      * 分页查询包
      */
     @Throws(IllegalStateException::class)

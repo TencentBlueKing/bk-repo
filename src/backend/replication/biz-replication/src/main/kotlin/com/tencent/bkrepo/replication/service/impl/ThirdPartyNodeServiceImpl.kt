@@ -48,6 +48,7 @@ import com.tencent.bkrepo.replication.pojo.thirdparty.request.ThirdPartyCreateRe
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.service.ThirdPartyNodeService
+import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -98,7 +99,7 @@ class ThirdPartyNodeServiceImpl(
         val replicaTaskDetails = if (name.isNullOrBlank()) {
             replicaTaskService.listTasks(projectId, repoName)
         } else {
-            val clusterInfo = clusterNodeService.getByClusterName(name) ?: return emptyList()
+            clusterNodeService.getByClusterName(name) ?: return emptyList()
             val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name)) ?: return emptyList()
             listOf(replicaTaskService.getDetailByTaskKey(task.key))
         }
@@ -225,7 +226,7 @@ class ThirdPartyNodeServiceImpl(
         with(request) {
             return ClusterNodeCreateRequest(
                 name = name,
-                url = registry,
+                url = addProtocol(registry).toString(),
                 certificate = certificate,
                 username = username,
                 password = password,
@@ -264,7 +265,7 @@ class ThirdPartyNodeServiceImpl(
         with(request) {
             return ClusterNodeUpdateRequest(
                 name = name,
-                url = registry,
+                url = addProtocol(registry).toString(),
                 certificate = certificate,
                 username = username,
                 password = password,

@@ -37,6 +37,7 @@ import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
 
 object HttpUtils {
@@ -88,6 +89,17 @@ object HttpUtils {
             }
         }
         return builder.toString()
+    }
+
+    /**
+     * 针对url如果没穿protocol， 则默认以https请求发送
+     */
+    fun addProtocol(url: String): URL {
+        return try {
+            URL(url)
+        } catch (e: MalformedURLException) {
+            URL("${StringPool.HTTPS}$url")
+        }
     }
 
     /**

@@ -62,10 +62,8 @@ class DefaultHandler(
         this.processBefore(property)
         val request = HttpUtils.wrapperRequest(requestProperty)
         logger.info(
-            "The url of the request is ${request.url()} and method is ${request.method()} " +
-                "and current handler is ${this.javaClass.name}"
+            "The url of the request is ${request.url()} and method is ${request.method()} "
         )
-        // TODO 可以考虑增加重试功能，但是需要限定特定场景
         val response = httpClient.newCall(request).execute()
         response.use {
             return when {

@@ -43,6 +43,8 @@ const val DOCKER_MANIFEST_JSON_FULL_PATH = "/%s/%s/manifest.json"
 const val DOCKER_LAYER_FULL_PATH = "/%s/%s/%s"
 const val OCI_MANIFEST_JSON_FULL_PATH = "/%s/manifest/%s/manifest.json"
 const val OCI_LAYER_FULL_PATH = "/%s/blobs/%s"
+const val NODE_FULL_PATH = "fullPath"
+const val SIZE = "size"
 
 /**
  * metrics

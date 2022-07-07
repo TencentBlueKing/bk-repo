@@ -428,7 +428,7 @@ class ReplicaTaskServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaTaskServiceImpl::class.java)
         private const val TASK_NAME_LENGTH_MIN = 2
-        private const val TASK_NAME_LENGTH_MAX = 32
+        private const val TASK_NAME_LENGTH_MAX = 64
 
         private fun convert(tReplicaTask: TReplicaTask?): ReplicaTaskInfo? {
             return tReplicaTask?.let {

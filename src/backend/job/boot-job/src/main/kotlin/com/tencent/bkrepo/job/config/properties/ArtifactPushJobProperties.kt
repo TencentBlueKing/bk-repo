@@ -35,5 +35,5 @@ class ArtifactPushJobProperties(
     /**
      * 需要进行远端仓库推送的仓库代理类型
      * */
-    var types: List<String> = listOf("HELM", "OCI")
+    var types: List<String> = listOf("HELM", "OCI", "DOCKER")
 ) : MongodbJobProperties()

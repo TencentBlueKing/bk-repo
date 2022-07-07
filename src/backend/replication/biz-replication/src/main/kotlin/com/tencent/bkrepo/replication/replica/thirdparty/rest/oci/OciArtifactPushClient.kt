@@ -34,9 +34,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.constant.DOCKER_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
-import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.thirdparty.RequestProperty
@@ -98,7 +96,6 @@ class OciArtifactPushClient(
                 token = token,
                 digest = it,
                 name = name,
-                version = version,
                 projectId = nodes[0].projectId,
                 repoName = nodes[0].repoName
             )
@@ -149,9 +146,10 @@ class OciArtifactPushClient(
      * auth鉴权属性配置
      */
     private fun buildAuthRequestProperties(name: String): RequestProperty {
-        val baseUrl = URL(clusterInfo.url)
+        val baseUrl = HttpUtils.addProtocol(clusterInfo.url)
         val v2Url = URL(baseUrl, "/v2/").toString()
-        val target = baseUrl.path.removePrefix(StringPool.SLASH) + StringPool.SLASH + name
+        val target = baseUrl.path.removePrefix(StringPool.SLASH)
+            .removeSuffix(StringPool.SLASH) + StringPool.SLASH + name
         val scope = "repository:$target:push,pull"
         val authorizationCode = clusterInfo.username?.let {
             BasicAuthUtils.encode(clusterInfo.username!!, clusterInfo.password!!)
@@ -170,25 +168,18 @@ class OciArtifactPushClient(
      */
     private fun loadInputStream(
         sha256: String,
-        name: String,
-        version: String,
         projectId: String,
         repoName: String,
     ): Pair<InputStream, Long> {
-        var nodePath = OCI_LAYER_FULL_PATH.format(name, "sha256__$sha256")
-        val nodeInfo = localDataManager.findNode(projectId, repoName, nodePath) ?: run {
-            // 需要考虑历史数据兼容问题,旧的docker仓库存储路径不一致
-            nodePath = DOCKER_LAYER_FULL_PATH.format(name, version, "sha256__$sha256")
-            localDataManager.findNodeDetail(projectId, repoName, nodePath)
-        }
+        val size = localDataManager.getNodeBySha256(projectId, repoName, sha256)
         return Pair(
             loadInputStream(
                 sha256 = sha256,
-                size = nodeInfo.size,
+                size = size,
                 projectId = projectId,
                 repoName = repoName
             ),
-            nodeInfo.size
+            size
         )
     }
 
@@ -199,7 +190,6 @@ class OciArtifactPushClient(
         token: String?,
         digest: String,
         name: String,
-        version: String,
         projectId: String,
         repoName: String,
     ): Boolean {
@@ -211,8 +201,6 @@ class OciArtifactPushClient(
         val sha256 = digest.split(":").last()
         val (inputStream, size) = loadInputStream(
             sha256 = sha256,
-            name = name,
-            version = version,
             projectId = projectId,
             repoName = repoName
         )
@@ -223,14 +211,6 @@ class OciArtifactPushClient(
             start = 0,
             input = Pair(inputStream, size)
         )
-
-//            val ociPatchHandler = builderChunkedPatchHandler(
-//                token = token,
-//                ociPutHandler = ociPutHandler,
-//                start = 0,
-//                input = inputStream,
-//                size = size
-//            )
         val sessionIdHandler = buildSessionIdHandler(
             token = token,
             chunksUploadHandler = chunksUploadHandler,
@@ -386,7 +366,7 @@ class OciArtifactPushClient(
         path: String,
         params: String = StringPool.EMPTY
     ): String {
-        val baseUrl = URL(url)
+        val baseUrl = HttpUtils.addProtocol(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return HttpUtils.builderUrl(v2Url.toString(), path, params)
     }
@@ -397,7 +377,5 @@ class OciArtifactPushClient(
         const val OCI_BLOB_URL = "%s/blobs/%s"
         const val OCI_MANIFEST_URL = "%s/manifests/%s"
         const val OCI_BLOBS_UPLOAD_FIRST_STEP_URL = "%s/blobs/uploads/"
-
-        const val CHUNKED_SIZE = 1024 * 1024 * 50
     }
 }
