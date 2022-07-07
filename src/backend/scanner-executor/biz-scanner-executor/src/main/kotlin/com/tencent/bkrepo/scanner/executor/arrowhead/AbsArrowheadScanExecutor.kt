@@ -49,7 +49,7 @@ import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import java.io.File
 
-abstract class AbsArrowheadScanExecutor: CommonScanExecutor() {
+abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
     override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
         val analysisSubType = if (task.repoType == RepositoryType.DOCKER.name) {
@@ -66,7 +66,13 @@ abstract class AbsArrowheadScanExecutor: CommonScanExecutor() {
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
         val scanner = task.scanner
         require(scanner is ArrowheadScanner)
-        val fileName = FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
+
+        val fileName = if (task.repoType == RepositoryType.DOCKER.name) {
+            "${task.sha256}.tar"
+        } else {
+            FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
+        }
+
         return File(File(taskWorkDir, scanner.container.inputDir), fileName)
     }
 
