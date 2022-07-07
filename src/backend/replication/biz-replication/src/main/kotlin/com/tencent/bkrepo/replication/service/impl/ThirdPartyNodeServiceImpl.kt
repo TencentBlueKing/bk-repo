@@ -28,6 +28,9 @@
 package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -45,6 +48,7 @@ import com.tencent.bkrepo.replication.pojo.thirdparty.ThirdPartyInfo
 import com.tencent.bkrepo.replication.pojo.thirdparty.request.ThirdPartyConfigCreateRequest
 import com.tencent.bkrepo.replication.pojo.thirdparty.request.ThirdPartyConfigUpdateRequest
 import com.tencent.bkrepo.replication.pojo.thirdparty.request.ThirdPartyCreateRequest
+import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.service.ThirdPartyNodeService
@@ -56,7 +60,8 @@ import org.springframework.stereotype.Service
 class ThirdPartyNodeServiceImpl(
     private val clusterNodeService: ClusterNodeService,
     private val localDataManager: LocalDataManager,
-    private val replicaTaskService: ReplicaTaskService
+    private val replicaTaskService: ReplicaTaskService,
+    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
 ) : ThirdPartyNodeService {
 
     override fun thirdPartyCreate(
@@ -131,6 +136,36 @@ class ThirdPartyNodeServiceImpl(
         val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
         replicaTaskService.deleteByTaskKey(task.key)
+    }
+
+    override fun pushSpecialArtifact(
+        projectId: String,
+        repoName: String,
+        packageName: String,
+        version: String,
+        name: String
+    ) {
+        val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
+        val clusterInfo = clusterNodeService.getByClusterName(name)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
+        // 现只针对第三方集群进行特殊指定推送
+        if (clusterInfo.type != ClusterNodeType.THIRD_PARTY) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+        val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
+        val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+        val event = VersionCreatedEvent(
+            projectId = projectId,
+            repoName = repoName,
+            packageKey = PackageKeys.ofName(repositoryDetail.type.name.toLowerCase(), packageName),
+            packageVersion = version,
+            userId = SecurityUtils.getUserId(),
+            packageType = repositoryDetail.type.name,
+            packageName = packageName,
+            realIpAddress = null
+        )
+        eventBasedReplicaJobExecutor.execute(taskDetail, event)
     }
 
     /**

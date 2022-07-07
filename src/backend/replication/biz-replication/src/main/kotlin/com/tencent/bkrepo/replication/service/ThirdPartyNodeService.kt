@@ -57,4 +57,9 @@ interface ThirdPartyNodeService {
      * 根据[projectId] [repoName] [name]根据name以及关联项目仓库信息删除第三方集群详情
      */
     fun deleteByName(projectId: String, repoName: String, name: String)
+
+    /**
+     * 推送指定版本制品到对应第三方集群
+     */
+    fun pushSpecialArtifact(projectId: String, repoName: String, packageName: String, version: String, name: String)
 }

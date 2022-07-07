@@ -46,6 +46,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("第三方集群用户接口")
@@ -126,6 +127,24 @@ class ThirdPartyNodeController(
         @PathVariable name: String
     ): Response<Void> {
         thirdPartyNodeService.deleteByName(projectId, repoName, name)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 手动调用同步指定版本的制品(主要用于内部补偿使用，不对外)
+     */
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @PostMapping("/push/{projectId}/{repoName}/{name}")
+    fun pushSpecialArtifact(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String,
+        @RequestParam packageName: String,
+        @RequestParam version: String,
+        @PathVariable name: String,
+    ): Response<Void> {
+        thirdPartyNodeService.pushSpecialArtifact(projectId, repoName, packageName, version, name)
         return ResponseBuilder.success()
     }
 }

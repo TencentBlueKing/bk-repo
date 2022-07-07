@@ -84,8 +84,8 @@ abstract class PushClient(
             )
         } catch (e: Exception) {
             logger.error(
-                "Error occurred while pushing artifact $name|$version in the local repo $projectId|$repoName," +
-                    " failed reason: $e",
+                "Error occurred while pushing artifact $name|$version to cluster[${clusterInfo.name}] " +
+                    "in the local repo $projectId|$repoName, failed reason: $e",
                 e
             )
             throw e
