@@ -221,6 +221,9 @@ open class PermissionServiceImpl constructor(
         if (roles.isNotEmpty() && request.projectId != null) {
             queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
         }
+        if (queryRoles.isEmpty()) {
+            return false
+        }
         val result = roleRepository.findByProjectIdAndTypeAndAdminAndIdIn(
             projectId = request.projectId!!, type = RoleType.PROJECT, admin = true, ids = queryRoles
         )
@@ -236,6 +239,9 @@ open class PermissionServiceImpl constructor(
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
             queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
 
+        }
+        if (queryRoles.isEmpty()) {
+            return false
         }
         val result = roleRepository.findByProjectIdAndTypeAndAdminAndRepoNameAndIdIn(
             projectId = request.projectId!!,
