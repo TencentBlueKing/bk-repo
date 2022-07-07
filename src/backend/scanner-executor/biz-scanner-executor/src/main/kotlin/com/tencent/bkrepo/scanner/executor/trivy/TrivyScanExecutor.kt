@@ -92,6 +92,9 @@ class TrivyScanExecutor @Autowired constructor(
             generateTrivyDB(task, cacheDir)
         }
 
+        // 需要提前创建输出目录，否则trivy报错
+        File(taskWorkDir, containerConfig.outputDir).mkdirs()
+
         // 容器内工作目录
         val bind = Bind(taskWorkDir.absolutePath, Volume(containerConfig.workDir))
         // 缓存目录映射
@@ -207,10 +210,15 @@ class TrivyScanExecutor @Autowired constructor(
     private fun buildScanCmds(task: ScanExecutorTask, scannerInputFile: File): List<String> {
         val scanner = task.scanner
         require(scanner is TrivyScanner)
+        val maxScanDuration = task.scanner.maxScanDuration(scannerInputFile.length())
         val cmds = ArrayList<String>()
         cmds.add(CACHE_DIR_COMMAND)
         cmds.add(CACHE_DIR)
         cmds.add("image")
+        cmds.add("--timeout")
+        cmds.add("${maxScanDuration / 1000L}s")
+        cmds.add("--security-checks")
+        cmds.add("vuln")
         cmds.add("-f")
         cmds.add("json")
         cmds.add("-o")

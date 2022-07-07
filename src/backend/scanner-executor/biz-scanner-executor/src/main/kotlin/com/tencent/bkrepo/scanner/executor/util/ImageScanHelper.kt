@@ -81,7 +81,7 @@ class ImageScanHelper(
         val fullPath = if (isFromOci) {
             // manifest路径格式/%s/manifest/%s/manifest.json"
             // 忽略第一个 /，截取%s/
-            val endIndex = task.fullPath.indexOf(CharPool.SLASH, 1)
+            val endIndex = task.fullPath.indexOf("/manifest", 1)
             "${task.fullPath.substring(0, endIndex)}/blobs/$fileName"
         } else {
             // manifest路劲格式为 /%s/%s/manifest.json
