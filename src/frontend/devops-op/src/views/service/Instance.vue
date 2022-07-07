@@ -41,7 +41,7 @@
       </el-table-column>
       <el-table-column label="已加载插件">
         <template slot-scope="scope">
-          {{ scope.row.detail.loadedPlugins }}
+          <el-tag v-for="plugin in scope.row.detail.loadedPlugins" :key="plugin" style="margin-right:5px;">{{ plugin }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作">
