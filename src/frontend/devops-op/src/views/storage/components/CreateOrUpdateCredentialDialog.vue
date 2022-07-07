@@ -56,6 +56,83 @@
       <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="ModId" prop="modId" required>
         <el-input v-model.number="credential.modId" type="number" :disabled="!createMode" />
       </el-form-item>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="慢日志速度阈值" prop="slowLogSpeed" required>
+        <el-input-number v-model="credential.slowLogSpeed" controls-position="right" :min="0" :max="104857600" />
+        <el-tooltip effect="dark" content="上传速度小于该值将输出慢日志，小于等于0时将关闭日志，单位B/s" placement="top-start">
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="慢日志时间阈值" prop="slowLogTimeInMillis" required>
+        <el-input-number v-model="credential.slowLogTimeInMillis" controls-position="right" :min="0" :max="3600000" />
+        <el-tooltip effect="dark" content="上传时间大于该值将输出慢日志，小于等于0时将关闭日志，单位ms" placement="top-start">
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="线程数" prop="download.workers" required>
+        <el-input-number v-model="credential.download.workers" controls-position="right" :min="0" :max="1024" />
+        <el-tooltip
+          effect="dark"
+          content="分片下载并发数，增加并发以增加带宽利用率（因为可能存在单连接限速的情况），但是数值不是越大越好，当下行带宽打满，再增加并发数，反而导致单连接的速度下降。"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="任务间隔"
+        prop="download.taskInterval"
+        required
+      >
+        <el-input-number v-model="credential.download.taskInterval" controls-position="right" :min="0" :max="1000" />
+        <el-tooltip
+          effect="dark"
+          content="分片下载任务间隔时间，用于保证大文件分块下载不占满工作线程，以保证新进来的连接也能开始下载，适当增大间隔可让不同制品下载任务占用的带宽更均匀，单位ms"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="禁用分片下载时间阈值"
+        prop="download.downloadTimeHighWaterMark"
+        required
+      >
+        <el-input-number
+          v-model="credential.download.downloadTimeHighWaterMark"
+          controls-position="right"
+          :min="1000"
+          :max="60000"
+        />
+        <el-tooltip
+          effect="dark"
+          content="分片下载时，单片下载时间最大限制，超过后将切换为使用单连接下载，单位ms"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="恢复分片下载时间阈值"
+        prop="download.downloadTimeLowWaterMark"
+        required
+      >
+        <el-input-number
+          v-model="credential.download.downloadTimeLowWaterMark"
+          controls-position="right"
+          :min="1000"
+          :max="60000"
+        />
+        <el-tooltip
+          effect="dark"
+          content="切换为单连接下载后，如果单片下载时间小于该值，将恢复多线程分片下载，单位ms"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
         <el-input v-model="credential.endpoint" :disabled="!createMode" />
       </el-form-item>
@@ -262,6 +339,13 @@ export default {
             // INNER-COS类型
             credential.secretId = ''
             credential.public = false
+            credential.slowLogSpeed = 1024 * 1024
+            credential.slowLogTimeInMillis = 30 * 1000
+            credential.download = {}
+            credential.download.workers = 0
+            credential.download.downloadTimeHighWaterMark = 25 * 1000
+            credential.download.downloadTimeLowWaterMark = 5 * 1000
+            credential.download.taskInterval = 10
           }
           credential.secretKey = ''
           credential.bucket = ''
