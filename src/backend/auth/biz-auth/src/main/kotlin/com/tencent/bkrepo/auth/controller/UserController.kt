@@ -269,8 +269,8 @@ class UserController @Autowired constructor(
             bkrepoToken ?: run {
                 throw IllegalArgumentException("ticket can not be null")
             }
-//            val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
-            val result = mapOf("userId" to "bkrepoadmin")
+            val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
+            val result = mapOf("userId" to userId)
             return ResponseBuilder.success(result)
         } catch (ignored: Exception) {
             logger.warn("validate user token false [$bkrepoToken]")

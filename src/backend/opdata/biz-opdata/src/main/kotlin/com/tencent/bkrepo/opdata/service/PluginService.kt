@@ -27,47 +27,27 @@
 
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.opdata.config.OpProperties
+import com.tencent.bkrepo.opdata.client.plugin.PluginClient
 import com.tencent.bkrepo.opdata.model.TPlugin
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginCreateRequest
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginInfo
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginListOption
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginUpdateRequest
 import com.tencent.bkrepo.opdata.repository.PluginRepository
-import okhttp3.Credentials
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.util.concurrent.TimeUnit
 
 @Service
 class PluginService(
     private val pluginRepository: PluginRepository,
-    private val opProperties: OpProperties
+    private val pluginClient: PluginClient
 ) {
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30L, TimeUnit.SECONDS)
-        .readTimeout(30L, TimeUnit.SECONDS)
-        .writeTimeout(30L, TimeUnit.SECONDS)
-        .authenticator { _, response ->
-            val credential: String = Credentials.basic(opProperties.adminUsername, opProperties.adminPassword)
-            response.request().newBuilder().header(HttpHeaders.AUTHORIZATION, credential).build()
-        }
-        .build()
 
     fun create(request: PluginCreateRequest) {
         with(request) {
@@ -126,29 +106,12 @@ class PluginService(
     }
 
     fun load(id: String, host: String) {
-        val url = "http://$host/actuator/plugin/$id"
-        val requestBody = RequestBody.create(
-            MediaType.parse(MediaTypes.APPLICATION_JSON),
-            mapOf("id" to id).toJsonString()
-        )
-        val request = Request.Builder().url(url).method(HttpMethod.POST.name, requestBody).build()
-        okHttpClient.newCall(request).execute().use {
-            if (!it.isSuccessful) {
-                throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
-            }
-        }
+        pluginClient.load(id, host)
     }
 
     fun unload(id: String, host: String) {
-        val url = "http://$host/actuator/plugin/$id?id=$id"
-        val request = Request.Builder().url(url).method(HttpMethod.DELETE.name, null).build()
-        okHttpClient.newCall(request).execute().use {
-            if (!it.isSuccessful) {
-                throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
-            }
-        }
+        pluginClient.unload(id, host)
     }
-
 
     private fun convert(tPlugin: TPlugin): PluginInfo {
         with(tPlugin) {

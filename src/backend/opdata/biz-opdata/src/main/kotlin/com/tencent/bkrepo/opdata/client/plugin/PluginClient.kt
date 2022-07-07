@@ -29,22 +29,28 @@ package com.tencent.bkrepo.opdata.client.plugin
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.opdata.client.actuator.ActuatorArtifactMetricsClient
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
 import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
-import okhttp3.HttpUrl
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 @Component
-class PluginsClient @Autowired constructor(
+class PluginClient @Autowired constructor(
     @Qualifier(OkHttpConfiguration.OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient,
     private val opProperties: OpProperties
 ) {
@@ -55,8 +61,8 @@ class PluginsClient @Autowired constructor(
                 logger.warn("get loaded plugins failed, username or password is empty")
                 return emptyList()
             }
-
-            val req = buildRequest(instanceInfo)
+            val url = "$ACTUATOR_SCHEME://${instanceInfo.host}:${instanceInfo.port}/$ACTUATOR_ENDPOINT_PLUGIN/"
+            val req = buildRequest(url, HttpMethod.GET.name)
             httpClient.newCall(req).execute().use { res ->
                 if (res.isSuccessful) {
                     val plugins = res.body()!!.string().readJsonString<Map<String, Plugin>>()
@@ -65,7 +71,9 @@ class PluginsClient @Autowired constructor(
 
                 val resCode = res.code()
                 val logMsg = "request plugins actuator failed, code: $resCode, message: ${res.message()}"
-                if (resCode == HttpStatus.NOT_FOUND.value || resCode == HttpStatus.UNAUTHORIZED.value || resCode == HttpStatus.FORBIDDEN.value) {
+                if (resCode == HttpStatus.NOT_FOUND.value ||
+                    resCode == HttpStatus.UNAUTHORIZED.value ||
+                    resCode == HttpStatus.FORBIDDEN.value) {
                     logger.warn(logMsg)
                 } else {
                     logger.error(logMsg)
@@ -79,18 +87,35 @@ class PluginsClient @Autowired constructor(
         return emptyList()
     }
 
-    private fun buildRequest(instanceInfo: InstanceInfo): Request {
-        val url = HttpUrl.Builder()
-            .scheme(ACTUATOR_SCHEME)
-            .host(instanceInfo.host)
-            .port(instanceInfo.port)
-            .addPathSegments(ACTUATOR_ENDPOINT_PLUGINS)
-            .build()
+    fun load(id: String, host: String) {
+        val url = "$ACTUATOR_SCHEME://$host/$ACTUATOR_ENDPOINT_PLUGIN/$id"
+        val requestBody = RequestBody.create(
+            MediaType.parse(MediaTypes.APPLICATION_JSON),
+            mapOf("id" to id).toJsonString()
+        )
+        val request = buildRequest(url, HttpMethod.POST.name, requestBody)
+        httpClient.newCall(request).execute().use {
+            if (!it.isSuccessful) {
+                throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
+            }
+        }
+    }
 
+    fun unload(id: String, host: String) {
+        val url = "$ACTUATOR_SCHEME://$host/$ACTUATOR_ENDPOINT_PLUGIN/$id?id=$id"
+        val request = buildRequest(url, HttpMethod.DELETE.name, null)
+        httpClient.newCall(request).execute().use {
+            if (!it.isSuccessful) {
+                throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
+            }
+        }
+    }
+
+    private fun buildRequest(url: String, method: String, requestBody: RequestBody? = null): Request {
         val reqBuilder = Request.Builder()
             .url(url)
             .addHeader(AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
-
+            .method(method, requestBody)
         return reqBuilder.build()
     }
 
@@ -101,6 +126,6 @@ class PluginsClient @Autowired constructor(
     private companion object {
         private val logger = LoggerFactory.getLogger(ActuatorArtifactMetricsClient::class.java)
         private const val ACTUATOR_SCHEME = "http"
-        private const val ACTUATOR_ENDPOINT_PLUGINS = "actuator/plugin"
+        private const val ACTUATOR_ENDPOINT_PLUGIN = "actuator/plugin"
     }
 }
