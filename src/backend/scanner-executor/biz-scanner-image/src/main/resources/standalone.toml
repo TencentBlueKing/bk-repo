@@ -14,7 +14,7 @@ description = "This is a simple reference project configuration."
 # 无需修改
 analysistype = "Artifact"
 # 无需修改
-analysissubtype = "BinaryPackage"
+analysissubtype = "#{[analysisSubType]}"
 
 # 只能同时选择其中一项
 [toparse]
