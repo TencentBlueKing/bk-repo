@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.job.config.JobConfig
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
@@ -45,4 +46,5 @@ import org.springframework.test.context.TestPropertySource
         "classpath:job-ut.properties"
     ]
 )
+@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
 open class JobBaseTest

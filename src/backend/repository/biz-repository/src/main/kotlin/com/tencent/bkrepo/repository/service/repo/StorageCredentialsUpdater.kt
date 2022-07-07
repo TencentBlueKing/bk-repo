@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.repository.service.repo
 
-import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.batch.base.JobConcurrentLevel
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 
-open class MongodbJobProperties(
-    override var enabled: Boolean = true,
+interface StorageCredentialsUpdater {
     /**
-     * 并发级别
-     * 默认序列化，即顺序执行
-     * */
-    var concurrentLevel: JobConcurrentLevel = JobConcurrentLevel.SERIALIZE,
-    /**
-     * 每秒任务执行数
-     * */
-    var permitsPerSecond: Double = 0.0,
-    /**
-     * 每次批处理作业大小
-     * */
-    var batchSize: Int = BATCH_SIZE
-) : BatchJobProperties()
+     * 更新存储凭证
+     *
+     * @param old 旧的存储凭证
+     * @param req 更新请求
+     */
+    fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest)
+
+    companion object {
+        /**
+         * 获取存储凭证更新器名
+         *
+         * @param credentialClazz 存储凭证类型
+         */
+        fun name(credentialClazz: Class<*>): String = "${credentialClazz.simpleName}Updater"
+    }
+}

@@ -25,15 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.base
+package com.tencent.bkrepo.job.config.properties
 
-import java.util.concurrent.atomic.AtomicLong
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class FileJobContext(
-    // 文件丢失数
-    var fileMissing: AtomicLong = AtomicLong()
-) : JobContext() {
-    override fun toString(): String {
-        return "${super.toString()},fileMissing[$fileMissing]"
-    }
-}
+@ConfigurationProperties("job.file-reference-cleanup")
+class FileReferenceCleanupJobProperties : MongodbJobProperties()
