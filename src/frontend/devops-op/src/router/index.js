@@ -8,6 +8,7 @@ export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
 export const ROUTER_NAME_EXT_PERMISSION = 'ExtPermission'
 export const ROUTER_NAME_WEBHOOK = 'Webhook'
 export const ROUTER_NAME_NOTIFY_CREDENTIALS = 'NotifyCredentials'
+export const ROUTER_NAME_SCANNERS = 'Scanners'
 
 Vue.use(Router)
 
@@ -132,6 +133,21 @@ export const asyncRoutes = [
         name: ROUTER_NAME_WEBHOOK,
         meta: { title: 'WebHook管理', icon: 'file' },
         component: () => import('@/views/webhook/index')
+      }
+    ]
+  },
+  {
+    path: '/scan',
+    alwaysShow: true,
+    redirect: '/scan/scanners',
+    component: Layout,
+    meta: { title: '制品扫描管理', icon: 'scan' },
+    children: [
+      {
+        path: 'scanners',
+        name: ROUTER_NAME_SCANNERS,
+        component: () => import('@/views/scan/Scanner'),
+        meta: { title: '扫描器', icon: 'scanner' }
       }
     ]
   },
