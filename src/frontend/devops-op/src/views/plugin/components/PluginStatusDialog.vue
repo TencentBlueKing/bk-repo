@@ -84,7 +84,7 @@ export default {
           message: '加载插件成功',
           type: 'success'
         })
-        this.getInstances(`bkrepo-${this.plugin.scope}`)
+        this.getInstances(this.plugin.scope)
         this.loading = false
       }).catch(() => {
         this.loading = false
@@ -107,7 +107,7 @@ export default {
             message: '卸载插件成功',
             type: 'success'
           })
-          this.getInstances(`bkrepo-${this.plugin.scope}`)
+          this.getInstances(this.plugin.scope)
           this.loading = false
         }).catch(() => {
           this.loading = false

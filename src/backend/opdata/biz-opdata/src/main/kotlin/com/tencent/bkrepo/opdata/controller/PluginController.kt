@@ -29,6 +29,8 @@ package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginCreateRequest
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginDetail
@@ -49,6 +51,7 @@ import org.springframework.web.bind.annotation.RestController
 @Api("插件服务接口")
 @RestController
 @RequestMapping("/api/plugin")
+@Principal(PrincipalType.ADMIN)
 class PluginController(
     private val pluginService: PluginService
 ) {
