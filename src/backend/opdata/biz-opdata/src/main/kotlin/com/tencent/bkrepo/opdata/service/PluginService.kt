@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.opdata.client.plugin.PluginClient
 import com.tencent.bkrepo.opdata.model.TPlugin
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginCreateRequest
-import com.tencent.bkrepo.opdata.pojo.plugin.PluginInfo
+import com.tencent.bkrepo.opdata.pojo.plugin.PluginDetail
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginListOption
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginUpdateRequest
 import com.tencent.bkrepo.opdata.repository.PluginRepository
@@ -72,7 +72,7 @@ class PluginService(
             val plugin = pluginRepository.findByIdOrNull(id)
                 ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
             plugin.version = version ?: plugin.version
-            plugin.scope = scope ?: plugin.scope
+            plugin.scope = if (scope.isNullOrEmpty()) plugin.scope else scope!!
             plugin.description = description ?: plugin.description
             plugin.gitUrl = gitUrl ?: plugin.gitUrl
             plugin.lastModifiedBy = SecurityUtils.getUserId()
@@ -87,7 +87,7 @@ class PluginService(
         pluginRepository.deleteById(plugin.id)
     }
 
-    fun list(option: PluginListOption): Page<PluginInfo> {
+    fun list(option: PluginListOption): Page<PluginDetail> {
         with(option) {
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val queryResult =  if (scope.isNullOrBlank()) {
@@ -99,12 +99,6 @@ class PluginService(
         }
     }
 
-    fun getInfo(id: String): PluginInfo {
-        val plugin = pluginRepository.findByIdOrNull(id)
-            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
-        return convert(plugin)
-    }
-
     fun load(id: String, host: String) {
         pluginClient.load(id, host)
     }
@@ -113,9 +107,9 @@ class PluginService(
         pluginClient.unload(id, host)
     }
 
-    private fun convert(tPlugin: TPlugin): PluginInfo {
+    private fun convert(tPlugin: TPlugin): PluginDetail {
         with(tPlugin) {
-            return PluginInfo(
+            return PluginDetail(
                 id = id,
                 version = version,
                 scope = scope,

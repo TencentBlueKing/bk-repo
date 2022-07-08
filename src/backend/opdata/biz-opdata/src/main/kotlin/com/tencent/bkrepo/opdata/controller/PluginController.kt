@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginCreateRequest
-import com.tencent.bkrepo.opdata.pojo.plugin.PluginInfo
+import com.tencent.bkrepo.opdata.pojo.plugin.PluginDetail
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginListOption
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginUpdateRequest
 import com.tencent.bkrepo.opdata.service.PluginService
@@ -55,7 +55,7 @@ class PluginController(
 
     @ApiOperation("插件列表")
     @GetMapping
-    fun list(option: PluginListOption): Response<Page<PluginInfo>> {
+    fun list(option: PluginListOption): Response<Page<PluginDetail>> {
         return ResponseBuilder.success(pluginService.list(option))
     }
 
@@ -71,12 +71,6 @@ class PluginController(
     fun update(@RequestBody request: PluginUpdateRequest): Response<Void> {
         pluginService.update(request)
         return ResponseBuilder.success()
-    }
-
-    @ApiOperation("查询插件信息")
-    @GetMapping("/{pluginId}")
-    fun info(@PathVariable pluginId: String): Response<PluginInfo> {
-        return ResponseBuilder.success(pluginService.getInfo(pluginId))
     }
 
     @ApiOperation("删除插件")

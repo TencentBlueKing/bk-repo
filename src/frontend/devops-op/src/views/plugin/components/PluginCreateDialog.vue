@@ -82,7 +82,7 @@ export default {
         const promise = createPlugin(
           this.plugin.id,
           this.plugin.version,
-          this.plugin.scope,
+          this.plugin.scope.split(','),
           this.plugin.description,
           this.plugin.gitUrl
         )

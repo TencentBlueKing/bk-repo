@@ -40,6 +40,7 @@ import com.tencent.bkrepo.opdata.client.actuator.ActuatorArtifactMetricsClient
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
 import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.devops.plugin.api.PluginInfo
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -65,7 +66,7 @@ class PluginClient @Autowired constructor(
             val req = buildRequest(url, HttpMethod.GET.name)
             httpClient.newCall(req).execute().use { res ->
                 if (res.isSuccessful) {
-                    val plugins = res.body()!!.string().readJsonString<Map<String, Plugin>>()
+                    val plugins = res.body()!!.string().readJsonString<Map<String, PluginInfo>>()
                     return plugins.keys.toList()
                 }
 

@@ -30,7 +30,7 @@ package com.tencent.bkrepo.opdata.pojo.plugin
 data class PluginUpdateRequest(
     val id: String,
     val version: String? = null,
-    val scope: String? = null,
+    val scope: List<String>? = null,
     val description: String? = null,
     val gitUrl: String? = null
 )

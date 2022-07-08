@@ -34,7 +34,7 @@ import java.time.LocalDateTime
 data class TPlugin(
     val id: String,
     var version: String,
-    var scope: String,
+    var scope: List<String>,
     var description: String,
     var gitUrl: String,
     var createdBy: String,

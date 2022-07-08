@@ -1,5 +1,4 @@
 import request from '@/utils/request'
-import { method } from 'lodash'
 
 const PREFIX_PLUGIN = '/opdata/api/plugin'
 

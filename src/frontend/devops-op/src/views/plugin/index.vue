@@ -16,7 +16,11 @@
     <el-table v-loading="loading" :data="plugins" style="width: 100%">
       <el-table-column prop="id" label="id" min-width="100px" />
       <el-table-column prop="version" label="版本" min-width="80px" />
-      <el-table-column prop="scope" label="生效范围" min-width="100px" />
+      <el-table-column prop="scope" label="生效范围" min-width="100px">
+        <template slot-scope="scope">
+          <el-tag v-for="s in scope.row.scope" :key="s" style="margin-right: 5px">{{ s }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="gitUrl" label="代码库地址" min-width="200px">
         <template slot-scope="scope">
           <el-link :href="scope.row.gitUrl" type="primary" target="blank">{{ scope.row.gitUrl }}</el-link>

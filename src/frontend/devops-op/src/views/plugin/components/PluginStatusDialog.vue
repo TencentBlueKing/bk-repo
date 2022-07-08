@@ -13,8 +13,8 @@
         </el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
-            <el-button size="mini" type="danger" v-if="!isLoaded(scope.row.detail.loadedPlugins)" @click="loadPlugin(scope.row)">加载插件</el-button>
-            <el-button size="mini" type="danger" v-if="isLoaded(scope.row.detail.loadedPlugins)" @click="unloadPlugin(scope.row)">卸载插件</el-button>
+            <el-button v-if="!isLoaded(scope.row.detail.loadedPlugins)" size="mini" type="danger" @click="loadPlugin(scope.row)">加载插件</el-button>
+            <el-button v-if="isLoaded(scope.row.detail.loadedPlugins)" size="mini" type="danger" @click="unloadPlugin(scope.row)">卸载插件</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import { deletePlugin, loadPlugin, unloadPlugin } from '@/api/plugin'
+import { loadPlugin, unloadPlugin } from '@/api/plugin'
 import { instances } from '@/api/service'
 
 export default {
@@ -44,14 +44,13 @@ export default {
       showDialog: this.visible,
       resultIcon: 'success',
       resultTitle: '',
-      instances: [],
-      deleteResult: undefined
+      instances: []
     }
   },
   watch: {
     visible: function(newVal) {
       if (newVal) {
-        this.getInstances(`bkrepo-${this.plugin.scope}`)
+        this.getInstances(this.plugin.scope)
         this.showDialog = true
       } else {
         this.close()
@@ -63,12 +62,15 @@ export default {
       this.showDialog = false
       this.$emit('update:visible', false)
     },
-    getInstances(serviceName) {
-      instances(serviceName).then(res => {
-        this.instances = res.data
-        this.loading = false
-      }).catch(() => {
-        this.loading = false
+    getInstances(scope) {
+      this.instances = []
+      scope.forEach(element => {
+        instances(`bkrepo-${element}`).then(res => {
+          this.instances.push(...res.data)
+          this.loading = false
+        }).catch(() => {
+          this.loading = false
+        })
       })
     },
     isLoaded(plugins) {
@@ -76,12 +78,12 @@ export default {
     },
     loadPlugin(instance) {
       this.loading = true
-      let host = `${instance.host}:${instance.port}`
-      loadPlugin(this.plugin.id, host).then(res => {
+      const host = `${instance.host}:${instance.port}`
+      loadPlugin(this.plugin.id, host).then(() => {
         this.$message({
           message: '加载插件成功',
           type: 'success'
-        });
+        })
         this.getInstances(`bkrepo-${this.plugin.scope}`)
         this.loading = false
       }).catch(() => {
@@ -89,28 +91,28 @@ export default {
       })
     },
     unloadPlugin(instance) {
-      let id = this.plugin.id
+      const id = this.plugin.id
       this.$prompt(`服务运行时卸载插件存在风险,请输入插件id[${id}]确认操作`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        inputValidator: function(input){
-          return input == id
+        inputValidator: function(input) {
+          return input === id
         },
         inputErrorMessage: '插件id不正确'
       }).then(() => {
         this.loading = true
-        let host = `${instance.host}:${instance.port}`
+        const host = `${instance.host}:${instance.port}`
         unloadPlugin(this.plugin.id, host).then(res => {
           this.$message({
             message: '卸载插件成功',
             type: 'success'
-          });
+          })
           this.getInstances(`bkrepo-${this.plugin.scope}`)
           this.loading = false
         }).catch(() => {
           this.loading = false
         })
-      }) 
+      })
     }
   }
 }

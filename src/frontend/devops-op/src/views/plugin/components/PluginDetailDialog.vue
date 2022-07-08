@@ -73,7 +73,7 @@ export default {
       const promise = updatePlugin(
         this.pluginDetail.id,
         this.pluginDetail.version,
-        this.pluginDetail.scope,
+        this.pluginDetail.scope.split(','),
         this.pluginDetail.description,
         this.pluginDetail.gitUrl
       )
