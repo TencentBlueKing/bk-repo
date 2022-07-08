@@ -10,6 +10,7 @@
 | REPO_CREATED     | 仓库创建    |
 | REPO_UPDATED     | 仓库更新    |
 | NODE_CREATED     | 节点创建    |
+| NODE_DOWNLOADED  | 节点下载    |
 | NODE_RENAMED     | 节点重命名  |
 | NODE_MOVED       | 节点移动    |
 | NODE_COPIED      | 节点复制    |

@@ -262,6 +262,49 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
 }
 ```
 
+
+### 下载节点
+
+消息载荷
+
+| 字段      | 类型   | 说明             |
+| --------- | ------ | ---------------- |
+| eventType | String | 触发事件类型     |
+| user      | Object | 触发事件用户信息 |
+| node      | Object | 创建的节点信息   |
+
+示例
+
+```json
+{
+  "user" : {
+    "userId" : "string",
+    "name" : "string",
+    "email" : null,
+    "phone" : null,
+    "createdDate" : "2021-07-05T11:19:31.921",
+    "locked" : false,
+    "admin" : false
+  },
+  "node" : {
+    "createdBy" : "string",
+    "createdDate" : "2021-09-15T14:48:40.73",
+    "lastModifiedBy" : "string",
+    "lastModifiedDate" : "2021-09-15T14:48:40.73",
+    "folder" : false,
+    "path" : "/",
+    "name" : "test.txt",
+    "fullPath" : "/test.txt",
+    "size" : 32,
+    "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
+    "md5" : "156c8805787b870939a80c708b64c946",
+    "metadata" : { },
+    "projectId" : "project",
+    "repoName" : "repo"
+  },
+  "eventType" : "NODE_DOWNLOADED"
+}
+
 ### 移动节点
 
 消息载荷
