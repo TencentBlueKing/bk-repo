@@ -87,6 +87,16 @@ export function updateCredential(key, credential, defaultCredential = false) {
         'key': `${prefix}.${STORAGE_DOWNLOAD_CONFIG_PREFIX}.taskInterval`,
         'value': credential.download.taskInterval
       })
+      const modId = Number.isInteger(credential.modId) ? credential.modId : null
+      const cmdId = Number.isInteger(credential.cmdId) ? credential.cmdId : null
+      values.push({
+        'key': `${prefix}.modId`,
+        'value': modId
+      })
+      values.push({
+        'key': `${prefix}.cmdId`,
+        'value': cmdId
+      })
     }
     return updateConfig(values)
   } else {
@@ -110,6 +120,10 @@ function normalizeCredential(credential) {
     if (isEmpty(credential.upload.localPath)) {
       credential.upload.localPath = undefined
     }
+  }
+  if (credential.type === STORAGE_TYPE_INNER_COS) {
+    credential.modId = Number.isInteger(credential.modId) ? credential.modId : null
+    credential.cmdId = Number.isInteger(credential.cmdId) ? credential.cmdId : null
   }
   return credential
 }
