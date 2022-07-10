@@ -1,6 +1,7 @@
 import request from '@/utils/request'
 
 const PREFIX_WEBHOOK = '/webhook/api/webhook'
+const PREFIX_WEBHOOK_LOG = '/webhook/api/log'
 export const DEFAULT_PAGE_SIZE = 20
 
 export function listWebHook(associationType, associationId) {
@@ -50,5 +51,17 @@ export function deleteWebhook(id) {
   return request({
     url: `${PREFIX_WEBHOOK}/delete/${id}`,
     method: 'delete'
+  })
+}
+
+export function listWebhookLog(id, startDate = null, endDate = null, status = null) {
+  return request({
+    url: `${PREFIX_WEBHOOK_LOG}/list/${id}`,
+    method: 'get',
+    params: {
+      startDate,
+      endDate,
+      status
+    }
   })
 }

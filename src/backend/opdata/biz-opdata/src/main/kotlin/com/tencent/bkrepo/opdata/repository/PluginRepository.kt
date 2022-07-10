@@ -25,27 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.client
+package com.tencent.bkrepo.opdata.repository
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.bkrepo.opdata.model.TPlugin
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-/**
- * 制品服务统计数据客户端
- */
-interface ArtifactMetricsClient {
-    /**
-     * 获取目标服务实例正在上传的请求数量
-     *
-     * @param instanceInfo 目标服务实例信息
-     * @return 返回正在上传的请求数量，获取失败时返回-1
-     */
-    fun uploadingCount(instanceInfo: InstanceInfo): Long
-
-    /**
-     * 获取目标服务实例正在下载的请求数量
-     *
-     * @param instanceInfo 目标服务实例信息
-     * @return 返回正在下载的请求数量，获取失败时返回-1
-     */
-    fun downloadingCount(instanceInfo: InstanceInfo): Long
+@Repository
+interface PluginRepository : MongoRepository<TPlugin, String> {
+    fun findByScope(scope: String, pageable: Pageable): Page<TPlugin>
 }

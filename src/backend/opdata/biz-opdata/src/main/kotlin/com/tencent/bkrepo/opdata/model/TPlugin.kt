@@ -25,27 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.client
+package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 制品服务统计数据客户端
- */
-interface ArtifactMetricsClient {
-    /**
-     * 获取目标服务实例正在上传的请求数量
-     *
-     * @param instanceInfo 目标服务实例信息
-     * @return 返回正在上传的请求数量，获取失败时返回-1
-     */
-    fun uploadingCount(instanceInfo: InstanceInfo): Long
-
-    /**
-     * 获取目标服务实例正在下载的请求数量
-     *
-     * @param instanceInfo 目标服务实例信息
-     * @return 返回正在下载的请求数量，获取失败时返回-1
-     */
-    fun downloadingCount(instanceInfo: InstanceInfo): Long
-}
+@Document("plugin")
+data class TPlugin(
+    val id: String,
+    var version: String,
+    var scope: List<String>,
+    var description: String,
+    var gitUrl: String,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+)

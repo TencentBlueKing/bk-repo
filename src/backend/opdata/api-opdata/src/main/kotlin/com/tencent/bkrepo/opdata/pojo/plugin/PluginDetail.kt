@@ -25,27 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.client
+package com.tencent.bkrepo.opdata.pojo.plugin
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-/**
- * 制品服务统计数据客户端
- */
-interface ArtifactMetricsClient {
-    /**
-     * 获取目标服务实例正在上传的请求数量
-     *
-     * @param instanceInfo 目标服务实例信息
-     * @return 返回正在上传的请求数量，获取失败时返回-1
-     */
-    fun uploadingCount(instanceInfo: InstanceInfo): Long
-
-    /**
-     * 获取目标服务实例正在下载的请求数量
-     *
-     * @param instanceInfo 目标服务实例信息
-     * @return 返回正在下载的请求数量，获取失败时返回-1
-     */
-    fun downloadingCount(instanceInfo: InstanceInfo): Long
-}
+@ApiModel("插件信息")
+data class PluginDetail(
+    @ApiModelProperty("id")
+    val id: String,
+    @ApiModelProperty("版本")
+    val version: String,
+    @ApiModelProperty("生效范围")
+    val scope: List<String>,
+    @ApiModelProperty("描述")
+    val description: String,
+    @ApiModelProperty("代码库地址")
+    val gitUrl: String,
+    @ApiModelProperty("创建人")
+    var createdBy: String,
+    @ApiModelProperty("创建时间")
+    var createdDate: LocalDateTime,
+    @ApiModelProperty("最后修改人")
+    var lastModifiedBy: String,
+    @ApiModelProperty("最后修改时间")
+    var lastModifiedDate: LocalDateTime,
+)
