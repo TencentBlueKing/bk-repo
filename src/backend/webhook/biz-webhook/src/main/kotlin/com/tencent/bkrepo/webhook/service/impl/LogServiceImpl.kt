@@ -49,16 +49,16 @@ class LogServiceImpl(
     override fun listLog(webHookId: String, option: ListWebHookLogOption): Page<WebHookLog> {
         with(option) {
             val startDateTime = LocalDateTime.parse(
-                startDate ?: LocalDateTime.now().minusMonths(1).toString()
+                startDate ?: LocalDateTime.now().minusMonths(3).toString()
             )
-            val endDateTime = LocalDateTime.parse(startDate ?: LocalDateTime.now().toString())
+            val endDateTime = LocalDateTime.parse(endDate ?: LocalDateTime.now().toString())
             val query = Query(
                 Criteria.where(TWebHookLog::webHookId.name).isEqualTo(webHookId)
                     .apply {
                         status?.let { and(TWebHookLog::status.name).isEqualTo(it) }
                         and(TWebHookLog::requestTime.name)
-                            .gte(endDateTime)
-                            .lte(startDateTime)
+                            .gte(startDateTime)
+                            .lte(endDateTime)
                     }
             )
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)

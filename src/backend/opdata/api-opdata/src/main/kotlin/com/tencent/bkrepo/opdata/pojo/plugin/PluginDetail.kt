@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl
+package com.tencent.bkrepo.opdata.pojo.plugin
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialsUpdater
-import org.springframework.stereotype.Component
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@Component("InnerCosCredentialsUpdater")
-class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
-    override fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest) {
-        val new = req.credentials
-        if (old !is InnerCosCredentials || new !is InnerCosCredentials) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-        }
-        old.slowLogSpeed = new.slowLogSpeed
-        old.slowLogTimeInMillis = new.slowLogTimeInMillis
-        old.download = new.download
-        old.modId = new.modId
-        old.cmdId = new.cmdId
-    }
-}
+@ApiModel("插件信息")
+data class PluginDetail(
+    @ApiModelProperty("id")
+    val id: String,
+    @ApiModelProperty("版本")
+    val version: String,
+    @ApiModelProperty("生效范围")
+    val scope: List<String>,
+    @ApiModelProperty("描述")
+    val description: String,
+    @ApiModelProperty("代码库地址")
+    val gitUrl: String,
+    @ApiModelProperty("创建人")
+    var createdBy: String,
+    @ApiModelProperty("创建时间")
+    var createdDate: LocalDateTime,
+    @ApiModelProperty("最后修改人")
+    var lastModifiedBy: String,
+    @ApiModelProperty("最后修改时间")
+    var lastModifiedDate: LocalDateTime,
+)

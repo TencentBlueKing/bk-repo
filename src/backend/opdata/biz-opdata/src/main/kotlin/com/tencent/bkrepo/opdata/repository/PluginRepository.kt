@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl
+package com.tencent.bkrepo.opdata.repository
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialsUpdater
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.opdata.model.TPlugin
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-@Component("InnerCosCredentialsUpdater")
-class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
-    override fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest) {
-        val new = req.credentials
-        if (old !is InnerCosCredentials || new !is InnerCosCredentials) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-        }
-        old.slowLogSpeed = new.slowLogSpeed
-        old.slowLogTimeInMillis = new.slowLogTimeInMillis
-        old.download = new.download
-        old.modId = new.modId
-        old.cmdId = new.cmdId
-    }
+@Repository
+interface PluginRepository : MongoRepository<TPlugin, String> {
+    fun findByScope(scope: String, pageable: Pageable): Page<TPlugin>
 }

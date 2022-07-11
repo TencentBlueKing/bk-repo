@@ -50,11 +50,11 @@
       >
         <el-input v-model="credential.region" :disabled="!createMode" />
       </el-form-item>
-      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="CmdId" prop="cmdId" required>
-        <el-input v-model.number="credential.cmdId" type="number" :disabled="!createMode" />
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="CmdId" prop="cmdId">
+        <el-input v-model.number="credential.cmdId" type="number" />
       </el-form-item>
-      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="ModId" prop="modId" required>
-        <el-input v-model.number="credential.modId" type="number" :disabled="!createMode" />
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="ModId" prop="modId">
+        <el-input v-model.number="credential.modId" type="number" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="慢日志速度阈值" prop="slowLogSpeed" required>
         <el-input-number v-model="credential.slowLogSpeed" controls-position="right" :min="0" :max="104857600" />
