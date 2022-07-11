@@ -49,13 +49,13 @@ import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTPS
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import org.springframework.http.HttpHeaders
 import java.io.UnsupportedEncodingException
 import java.net.URI
 import java.net.URLDecoder
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import javax.ws.rs.core.UriBuilder
-import org.springframework.http.HttpHeaders
 
 /**
  * oci 响应工具
@@ -66,12 +66,19 @@ object OciResponseUtils {
     fun getResponseURI(request: HttpServletRequest, enableHttp: Boolean): URI {
         val hostHeaders = request.getHeaders(HOST)
         var host = LOCAL_HOST
+        var port: Int? = null
         if (hostHeaders != null) {
             val headers = hostHeaders.toList()
             val parts = (headers[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             host = parts[0]
+            if (parts.size > 1) {
+                port = Integer.valueOf(parts[1])
+            }
         }
         val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttp))
+        port?.let {
+            builder.port(port)
+        }
         return builder.build()
     }
 

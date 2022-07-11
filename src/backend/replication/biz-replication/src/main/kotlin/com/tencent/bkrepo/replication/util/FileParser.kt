@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.replication.util
 
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.replication.mapping.DockerPackageNodeMapper
+import com.tencent.bkrepo.replication.pojo.docker.Manifest
 import com.tencent.bkrepo.replication.pojo.thirdparty.ManifestInfo
 import java.io.InputStream
 
@@ -43,7 +43,7 @@ object FileParser {
     fun parseManifest(inputStream: InputStream?): ManifestInfo? {
         if (inputStream == null) return null
         val list = mutableListOf<String>()
-        val manifest = inputStream.use { it.readJsonString<DockerPackageNodeMapper.Manifest>() }
+        val manifest = inputStream.use { it.readJsonString<Manifest>() }
         val configFullPath = manifest.config.digest
         val iterator = manifest.layers.iterator()
         while (iterator.hasNext()) {

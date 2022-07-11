@@ -29,7 +29,6 @@ package com.tencent.bkrepo.replication.replica.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.replication.replica.base.EventConsumer
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.stereotype.Component
 

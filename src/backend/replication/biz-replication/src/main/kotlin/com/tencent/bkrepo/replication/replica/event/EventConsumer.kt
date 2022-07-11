@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,18 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.replica.event
 
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
-
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import java.util.function.Consumer
 /**
- * 同步服务接口
+ * 构件事件消费者，用于实时同步
+ * 对应binding name为artifactEvent-in-0
  */
-interface ReplicaService {
+abstract class EventConsumer : Consumer<ArtifactEvent> {
 
     /**
-     * 执行同步
-     * @param context 同步上下文
+     * 允许接收的事件类型
      */
-    fun replica(context: ReplicaContext)
+    open fun getAcceptTypes(): Set<EventType> = emptySet()
+
+    override fun accept(message: ArtifactEvent) {
+        if (!getAcceptTypes().contains(message.type)) {
+            return
+        }
+        action(message)
+    }
+
+    /**
+     * 执行具体的业务
+     */
+    open fun action(event: ArtifactEvent) {}
 }

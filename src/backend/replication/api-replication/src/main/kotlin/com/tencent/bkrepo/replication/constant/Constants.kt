@@ -57,3 +57,9 @@ const val REPLICATION_TASK_QUEUE_SIZE_DESC = "制品同步任务线程池等待�
 
 const val REPLICATION_TASK_COMPLETED_COUNT = "replication.task.completed.count"
 const val REPLICATION_TASK_COMPLETED_COUNT_DESC = "制品同步已完成的任务数量"
+
+const val OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT = "oci.blob.upload.task.active.count"
+const val OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT_DESC = "blob上传实时执行数量"
+
+const val OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE = "oci.blob.upload.task.queue.size"
+const val OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE_DESC = "blob上传任务线程池等待队列大小"

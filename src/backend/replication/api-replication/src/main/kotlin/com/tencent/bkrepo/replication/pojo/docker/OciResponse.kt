@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,18 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.pojo.docker
 
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+data class OciResponse<T>(
+    val errors: List<T>
+) {
+    companion object {
+        fun errorResponseList(errors: List<OciErrorResponse>) =
+            OciResponse(errors)
 
-/**
- * 同步服务接口
- */
-interface ReplicaService {
-
-    /**
-     * 执行同步
-     * @param context 同步上下文
-     */
-    fun replica(context: ReplicaContext)
+        fun errorResponse(error: OciErrorResponse) =
+            OciResponse(listOf(error))
+    }
 }

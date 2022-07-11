@@ -102,7 +102,11 @@ class ThirdPartyNodeServiceImpl(
     override fun getByName(projectId: String, repoName: String, name: String?): List<ThirdPartyInfo> {
         localDataManager.findRepoByName(projectId, repoName)
         val replicaTaskDetails = if (name.isNullOrBlank()) {
-            replicaTaskService.listTasks(projectId, repoName)
+            replicaTaskService.listTasks(
+                projectId = projectId,
+                repoName = repoName,
+                enable = null
+            )
         } else {
             clusterNodeService.getByClusterName(name) ?: return emptyList()
             val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name)) ?: return emptyList()

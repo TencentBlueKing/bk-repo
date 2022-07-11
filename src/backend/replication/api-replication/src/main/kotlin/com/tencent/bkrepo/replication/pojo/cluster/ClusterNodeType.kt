@@ -42,4 +42,7 @@ enum class ClusterNodeType {
 
     // 第三方集群
     THIRD_PARTY
+//    DISTRIBUTION-BASED
+//    Extended Node
+//    Border Node
 }

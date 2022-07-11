@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,18 +25,60 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.replica.base.context
 
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 
-/**
- * 同步服务接口
- */
-interface ReplicaService {
+class ReplicaExecutionContext(
+    val replicaContext: ReplicaContext,
+    val detail: ReplicaRecordDetail
+) {
+    /**
+     * 同步器
+     */
+    val replicator = replicaContext.replicator
 
     /**
-     * 执行同步
-     * @param context 同步上下文
+     * 执行状态
      */
-    fun replica(context: ReplicaContext)
+    var status = ExecutionStatus.SUCCESS
+
+    /**
+     * 同步进度
+     */
+
+    val progress = ReplicaProgress()
+
+    /**
+     * 错误原因
+     */
+    private var errorReason = StringBuilder()
+
+    /**
+     * 添加错误原因
+     */
+    fun appendErrorReason(reason: String) {
+        errorReason.appendln(reason)
+    }
+
+    /**
+     * 构造错误原因
+     */
+    fun buildErrorReason(): String {
+        return errorReason.toString()
+    }
+
+    /**
+     * 更新进度
+     * @param executed 是否执行了同步
+     */
+    fun updateProgress(executed: Boolean) {
+        if (executed) {
+            progress.success += 1
+        } else {
+            progress.skip += 1
+        }
+    }
 }

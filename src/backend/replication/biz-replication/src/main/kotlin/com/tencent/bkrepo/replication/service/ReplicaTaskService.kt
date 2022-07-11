@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -87,7 +87,12 @@ interface ReplicaTaskService {
     /**
      * 根据项目id和仓库名称查询相关联的任务
      */
-    fun listTasks(projectId: String, repoName: String, type: ReplicaType? = null): List<ReplicaTaskDetail>
+    fun listTasks(
+        projectId: String,
+        repoName: String,
+        type: ReplicaType? = null,
+        enable: Boolean?
+    ): List<ReplicaTaskDetail>
 
     /**
      * 创建同步任务

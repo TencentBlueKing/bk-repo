@@ -27,13 +27,18 @@
 
 package com.tencent.bkrepo.replication.replica.metrics
 
+import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE_DESC
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_ACTIVE_COUNT
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_ACTIVE_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_COMPLETED_COUNT
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_COMPLETED_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_QUEUE_SIZE
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_QUEUE_SIZE_DESC
-import com.tencent.bkrepo.replication.replica.base.ReplicaThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.base.executor.ReplicaThreadPoolExecutor
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -57,6 +62,14 @@ class ReplicationMetrics : MeterBinder {
         Gauge.builder(REPLICATION_TASK_COMPLETED_COUNT, ReplicaThreadPoolExecutor.instance) {
             it.completedTaskCount.toDouble()
         }.description(REPLICATION_TASK_COMPLETED_COUNT_DESC)
+            .register(registry)
+
+        Gauge.builder(OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT, OciThreadPoolExecutor.instance) { it.activeCount.toDouble() }
+            .description(OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT_DESC)
+            .register(registry)
+
+        Gauge.builder(OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE, OciThreadPoolExecutor.instance) { it.queue.size.toDouble() }
+            .description(OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE_DESC)
             .register(registry)
     }
 }

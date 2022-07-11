@@ -25,18 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.replica.base.executor
 
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
- * 同步服务接口
+ * 用于同步任务的线程池
  */
-interface ReplicaService {
+object ReplicaThreadPoolExecutor {
 
     /**
-     * 执行同步
-     * @param context 同步上下文
+     * 线程池实例
      */
-    fun replica(context: ReplicaContext)
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
+        return ThreadPoolExecutor(
+            100, 500, 30, TimeUnit.SECONDS,
+            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
+    }
 }

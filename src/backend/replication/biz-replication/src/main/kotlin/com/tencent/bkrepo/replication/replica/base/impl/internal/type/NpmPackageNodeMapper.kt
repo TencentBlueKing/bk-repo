@@ -25,18 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.replica.base.impl.internal.type
 
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
-/**
- * 同步服务接口
- */
-interface ReplicaService {
+class NpmPackageNodeMapper : PackageNodeMapper {
 
-    /**
-     * 执行同步
-     * @param context 同步上下文
-     */
-    fun replica(context: ReplicaContext)
+    override fun type() = RepositoryType.NPM
+    override fun extraType(): RepositoryType? {
+        return null
+    }
+
+    override fun map(
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
+    ): List<String> {
+        val name = PackageKeys.resolveNpm(packageSummary.key)
+        val version = packageVersion.name
+        return listOf(
+            NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
+            NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version),
+            NPM_PKG_METADATA_FULL_PATH.format(name)
+        )
+    }
+
+    companion object {
+        const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
+        const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
+        const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
+    }
 }

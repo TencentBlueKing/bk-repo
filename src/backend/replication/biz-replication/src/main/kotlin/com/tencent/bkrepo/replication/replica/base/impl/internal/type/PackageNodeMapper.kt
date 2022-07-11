@@ -25,18 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.replica.base.impl.internal.type
 
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
-/**
- * 同步服务接口
- */
-interface ReplicaService {
+interface PackageNodeMapper {
+    /**
+     * 匹配仓库类型
+     */
+    fun type(): RepositoryType
 
     /**
-     * 执行同步
-     * @param context 同步上下文
+     * 额外兼容仓库类型
+     * (现主要是因为使用oci替换docker，需要兼容)
      */
-    fun replica(context: ReplicaContext)
+    fun extraType(): RepositoryType?
+
+    /**
+     * 匹配对应node节点的fullPath
+     */
+    fun map(
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
+    ): List<String>
 }

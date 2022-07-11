@@ -25,45 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.event
+package com.tencent.bkrepo.replication.replica.base.impl.internal.type
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.replica.base.executor.AbstractReplicaJobExecutor
-import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
-/**
- * 基于事件消息的实时同步逻辑实现类
- */
-@Suppress("TooGenericExceptionCaught")
 @Component
-class EventBasedReplicaJobExecutor(
-    clusterNodeService: ClusterNodeService,
-    localDataManager: LocalDataManager,
-    replicaService: EventBasedReplicaService,
-    private val replicaRecordService: ReplicaRecordService
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService) {
+class MavenPackageNodeMapper(
+    private val nodeClient: NodeClient
+) : PackageNodeMapper {
 
-    /**
-     * 执行同步
-     */
-    fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent) {
-        val task = taskDetail.task
-        val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
-        try {
-            task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
-            logger.info("Replica ${event.getFullResourceKey()} completed.")
-        } catch (exception: Exception) {
-            logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
+    override fun type() = RepositoryType.MAVEN
+    override fun extraType(): RepositoryType? {
+        return null
+    }
+
+    override fun map(
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
+    ): List<String> {
+        with(packageSummary) {
+            val artifactPath = packageVersion.contentPath
+            require(artifactPath != null) { "artifactPath for $key is null in [$projectId/$repoName]" }
+            val path = artifactPath.substringBeforeLast('/')
+            val listNodePage = nodeClient.listNode(projectId, repoName, path).data!!
+            val fullPathList = listNodePage.map { it.fullPath }
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "artifact key [$key] corresponding to node fullPath $fullPathList, size: [${fullPathList.size}]."
+                )
+            }
+            return fullPathList
         }
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(EventBasedReplicaJobExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(MavenPackageNodeMapper::class.java)
     }
 }

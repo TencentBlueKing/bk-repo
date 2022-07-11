@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.pojo.thirdparty.RequestProperty
-import com.tencent.bkrepo.replication.replica.thirdparty.exception.ArtifactPushException
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException
@@ -64,7 +63,7 @@ object HttpUtils {
                 RequestMethod.PATCH -> builder.patch(requestBody!!)
                 RequestMethod.PUT -> builder.put(requestBody!!)
                 RequestMethod.GET -> builder.get()
-                else -> throw ArtifactPushException("Unknown http request method")
+                else -> throw RuntimeException("Unknown http request method")
             }.build()
         }
     }

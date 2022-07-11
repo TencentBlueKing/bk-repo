@@ -25,18 +25,57 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base
+package com.tencent.bkrepo.replication.replica.base.replicator
 
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
 /**
- * 同步服务接口
+ * 同步器
  */
-interface ReplicaService {
+interface Replicator {
 
     /**
-     * 执行同步
-     * @param context 同步上下文
+     * 检查版本
      */
-    fun replica(context: ReplicaContext)
+    fun checkVersion(context: ReplicaContext)
+
+    /**
+     * 同步项目
+     */
+    fun replicaProject(context: ReplicaContext)
+
+    /**
+     * 同步仓库
+     */
+    fun replicaRepo(context: ReplicaContext)
+
+    /**
+     * 同步包
+     */
+    fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary)
+
+    /**
+     * 同步包版本具体逻辑
+     * @return 是否执行了同步，如果远程存在相同版本，则返回false
+     */
+    fun replicaPackageVersion(
+        context: ReplicaContext,
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion
+    ): Boolean
+
+    /**
+     * 同步文件
+     * @return 是否执行了同步，如果远程存在相同文件，则返回false
+     */
+    fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean
+
+    /**
+     * 同步目录节点
+     * @return 是否执行了同步，如果远程存在相同目录，则返回false
+     */
+    fun replicaDir(context: ReplicaContext, node: NodeInfo)
 }
