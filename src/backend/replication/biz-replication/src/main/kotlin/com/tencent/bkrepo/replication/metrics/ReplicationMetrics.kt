@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.metrics
+package com.tencent.bkrepo.replication.metrics
 
 import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT
 import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT_DESC
