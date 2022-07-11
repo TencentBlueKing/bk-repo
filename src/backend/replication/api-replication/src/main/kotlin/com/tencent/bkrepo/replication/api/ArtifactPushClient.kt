@@ -33,7 +33,7 @@ package com.tencent.bkrepo.replication.api
 
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.replication.pojo.thirdparty.request.ArtifactPushRequest
+import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
@@ -43,14 +43,14 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 /**
- * 制品同步到第三方仓库
+ * 制品同步到远端仓库
  */
-@Api("制品同步到第三方仓库")
+@Api("制品同步到远端仓库")
 @Primary
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ArtifactPushClient")
 @RequestMapping("/service/push")
 interface ArtifactPushClient {
-    @ApiOperation("推送对应artifact到配置的第三方仓库")
+    @ApiOperation("推送对应artifact到配置的远端仓库")
     @PostMapping("/artifact")
     fun artifactPush(@RequestBody request: ArtifactPushRequest): Response<Void>
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.replica.base.impl.remote.type.helm
+
+import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
+import com.tencent.bkrepo.replication.replica.base.impl.remote.base.AuthorizationService
+import org.slf4j.LoggerFactory
 
 /**
- * 集群类型
+ * 针对helm的Authorization code获取实现
  */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
+class HelmAuthorizationService : AuthorizationService {
 
-    // 边缘节点
-    EDGE,
+    override fun obtainAuthorizationCode(property: RequestProperty?): String? {
+        return property?.authorizationCode
+    }
 
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
+    companion object {
+        private val logger = LoggerFactory.getLogger(HelmAuthorizationService::class.java)
+    }
 }

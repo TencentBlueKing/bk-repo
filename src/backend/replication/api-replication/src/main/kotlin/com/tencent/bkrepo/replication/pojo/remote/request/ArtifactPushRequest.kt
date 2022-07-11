@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.pojo.remote.request
+
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 集群类型
+ * Artifact推送到远端仓库请求
  */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
-
-    // 边缘节点
-    EDGE,
-
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
-}
+@ApiModel("Artifact推送到远端仓库请求")
+data class ArtifactPushRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名")
+    val repoName: String,
+    @ApiModelProperty("Package key")
+    val packageKey: String,
+    @ApiModelProperty("Package版本名")
+    val packageVersion: String,
+    @ApiModelProperty("Package名")
+    var packageName: String,
+    @ApiModelProperty("Package类型")
+    var packageType: String
+)

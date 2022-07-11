@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.pojo.remote
 
-/**
- * 集群类型
- */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
+import com.fasterxml.jackson.annotation.JsonProperty
 
-    // 边缘节点
-    EDGE,
-
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
-}
+data class BearerToken(
+    val token: String?,
+    @JsonProperty("access_token")
+    val accessToken: String?,
+    @JsonProperty("expires_in")
+    val expiresIn: Long?,
+    @JsonProperty("issued_at")
+    val issuedAt: String?
+)

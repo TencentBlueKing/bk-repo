@@ -196,7 +196,7 @@ abstract class AbstractReplicaService(
                     version = it
                 )
             } ?: run {
-                if (replicaContext.remoteCluster.type == ClusterNodeType.THIRD_PARTY) {
+                if (replicaContext.remoteCluster.type == ClusterNodeType.REMOTE) {
                     emptyList()
                 } else {
                     localDataManager.listAllVersion(

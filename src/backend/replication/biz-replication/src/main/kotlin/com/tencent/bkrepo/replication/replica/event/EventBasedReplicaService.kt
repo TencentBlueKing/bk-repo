@@ -53,7 +53,7 @@ class EventBasedReplicaService(
             when (event.type) {
                 EventType.NODE_CREATED -> {
                     // 只有非third party集群支持该消息
-                    if (context.remoteCluster.type == ClusterNodeType.THIRD_PARTY)
+                    if (context.remoteCluster.type == ClusterNodeType.REMOTE)
                         throw UnsupportedOperationException()
                     val pathConstraint = PathConstraint(event.resourceKey)
                     replicaByPathConstraint(this, pathConstraint)
@@ -66,7 +66,7 @@ class EventBasedReplicaService(
                 }
                 EventType.VERSION_UPDATED -> {
                     // 只有third party集群支持该消息
-                    if (context.remoteCluster.type != ClusterNodeType.THIRD_PARTY)
+                    if (context.remoteCluster.type != ClusterNodeType.REMOTE)
                         throw UnsupportedOperationException()
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()

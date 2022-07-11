@@ -36,7 +36,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactPushJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
-import com.tencent.bkrepo.replication.pojo.thirdparty.request.ArtifactPushRequest
+import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 /**
- * 用于将新上传/更新的制品推送到第三方仓库
+ * 用于将新上传/更新的制品推送到远端仓库
  */
 @Component
 @EnableConfigurationProperties(ArtifactPushJobProperties::class)

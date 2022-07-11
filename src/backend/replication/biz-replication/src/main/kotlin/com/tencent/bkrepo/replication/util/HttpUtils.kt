@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.replication.pojo.thirdparty.RequestProperty
+import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException

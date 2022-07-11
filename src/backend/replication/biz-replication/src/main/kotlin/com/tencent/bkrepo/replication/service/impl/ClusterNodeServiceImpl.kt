@@ -201,10 +201,10 @@ class ClusterNodeServiceImpl(
     @Suppress("TooGenericExceptionCaught")
     fun tryConnect(remoteClusterInfo: RemoteClusterInfo, type: ClusterNodeType) {
         with(remoteClusterInfo) {
-            if (ClusterNodeType.THIRD_PARTY == type) {
-                tryConnectThirdPartyCluster(this)
+            if (ClusterNodeType.REMOTE == type) {
+                tryConnectRemoteCluster(this)
             } else {
-                tryConnectNonThirdPartyCluster(this)
+                tryConnectNonRemoteCluster(this)
             }
         }
     }
@@ -212,7 +212,7 @@ class ClusterNodeServiceImpl(
     /**
      * 针对非third party集群做连接判断
      */
-    fun tryConnectNonThirdPartyCluster(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnectNonRemoteCluster(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
@@ -229,7 +229,7 @@ class ClusterNodeServiceImpl(
     /**
      * 针对third party集群做额外的判断
      */
-    fun tryConnectThirdPartyCluster(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnectRemoteCluster(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 HttpUtils.pingURL(remoteClusterInfo.url, 60000)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.pojo.remote
+
+import okhttp3.Headers
+import okhttp3.RequestBody
+import org.springframework.web.bind.annotation.RequestMethod
 
 /**
- * 集群类型
+ * 请求熟悉，包含请求url，请求头，请求体等内容
  */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
-
-    // 边缘节点
-    EDGE,
-
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
-}
+data class RequestProperty(
+    // 请求url
+    var requestUrl: String? = null,
+    // Authorization code
+    var authorizationCode: String? = null,
+    // 请求参数
+    var params: String? = null,
+    // 请求头
+    var headers: Headers? = null,
+    // 请求体
+    var requestBody: RequestBody? = null,
+    // 请求方法
+    var requestMethod: RequestMethod? = null,
+    // 用户名
+    var userName: String? = null,
+    // 申请授权的范围
+    var scope: String? = null
+)

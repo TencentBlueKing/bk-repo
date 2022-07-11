@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.replication.pojo.remote
+
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 
 /**
- * 集群类型
+ * 远端集群相关信息
  */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
-
-    // 边缘节点
-    EDGE,
-
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
-}
+data class RemoteInfo(
+    var projectId: String,
+    var repoName: String,
+    var name: String,
+    var registry: String,
+    var certificate: String? = null,
+    var username: String? = null,
+    var password: String? = null,
+    val packageConstraints: List<PackageConstraint>? = null,
+    val pathConstraints: List<PathConstraint>? = null,
+    val replicaType: ReplicaType = ReplicaType.REAL_TIME,
+    val setting: ReplicaSetting = ReplicaSetting(),
+    val description: String? = null,
+    var enable: Boolean = true
+)

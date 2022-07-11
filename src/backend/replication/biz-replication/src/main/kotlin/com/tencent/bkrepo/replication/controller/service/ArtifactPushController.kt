@@ -36,14 +36,14 @@ import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
-import com.tencent.bkrepo.replication.pojo.thirdparty.request.ArtifactPushRequest
+import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 同步制品到第三方集群
+ * 同步制品到远端集群
  */
 @RestController
 class ArtifactPushController(

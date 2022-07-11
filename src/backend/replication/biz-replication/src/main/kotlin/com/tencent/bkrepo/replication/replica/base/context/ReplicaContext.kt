@@ -44,8 +44,8 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
+import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
-import com.tencent.bkrepo.replication.replica.base.replicator.ThirdPartyReplicator
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.Interceptor
@@ -100,19 +100,19 @@ class ReplicaContext(
             certificate = remoteCluster.certificate
         )
 
-        // 第三方集群仓库特殊处理, 第三方集群走对应制品类型协议传输
-        if (remoteCluster.type != ClusterNodeType.THIRD_PARTY) {
+        // 远端集群仓库特殊处理, 远端集群走对应制品类型协议传输
+        if (remoteCluster.type != ClusterNodeType.REMOTE) {
             artifactReplicaClient = FeignClientFactory.create(cluster)
             blobReplicaClient = FeignClientFactory.create(cluster)
         }
         replicator = when (remoteCluster.type) {
             ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
             ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
-            ClusterNodeType.THIRD_PARTY -> SpringContextUtils.getBean<ThirdPartyReplicator>()
+            ClusterNodeType.REMOTE -> SpringContextUtils.getBean<RemoteReplicator>()
             else -> throw UnsupportedOperationException()
         }
-        // 第三方集群仓库特殊处理, 第三方集群请求鉴权特殊处理
-        httpClient = if (remoteCluster.type != ClusterNodeType.THIRD_PARTY) {
+        // 远端集群仓库特殊处理, 远端集群请求鉴权特殊处理
+        httpClient = if (remoteCluster.type != ClusterNodeType.REMOTE) {
             HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
                 BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
             ).build()

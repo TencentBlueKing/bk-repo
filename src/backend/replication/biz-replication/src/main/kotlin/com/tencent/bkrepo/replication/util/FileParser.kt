@@ -29,7 +29,7 @@ package com.tencent.bkrepo.replication.util
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.replication.pojo.docker.Manifest
-import com.tencent.bkrepo.replication.pojo.thirdparty.ManifestInfo
+import com.tencent.bkrepo.replication.pojo.remote.ManifestInfo
 import java.io.InputStream
 
 /**
