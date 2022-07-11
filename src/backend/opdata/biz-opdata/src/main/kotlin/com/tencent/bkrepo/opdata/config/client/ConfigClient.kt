@@ -38,7 +38,7 @@ interface ConfigClient {
      *
      * @param key 需要更新的key，比如storage.cache.loadCacheFirst
      * @param value 更新后的值
-     * @param appName 目标应用，比如repo-generic，空字符串表示更新全部应用共用的默认配置
+     * @param appName 目标应用，比如generic，空字符串表示更新全部应用共用的默认配置
      * @param targetProfile 要更新的profile，比如dev、prod，空字符串表示更新默认配置
      */
     fun put(key: String, value: Any?, appName: String = "", targetProfile: String = "")
@@ -47,7 +47,7 @@ interface ConfigClient {
      * 批量更新配置
      *
      * @param values 需要更新的键值对
-     * @param appName 目标应用，比如repo-generic，空字符串表示更新全部应用共用的默认配置
+     * @param appName 目标应用，比如generic，空字符串表示更新全部应用共用的默认配置
      * @param targetProfile 要更新的profile，比如dev、prod，空字符串表示更新默认配置
      */
     fun put(values: List<ConfigItem>, appName: String = "", targetProfile: String = "")

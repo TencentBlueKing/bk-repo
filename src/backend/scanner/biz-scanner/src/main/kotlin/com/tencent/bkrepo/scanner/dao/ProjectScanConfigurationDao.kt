@@ -46,6 +46,11 @@ class ProjectScanConfigurationDao : ScannerSimpleMongoDao<TProjectScanConfigurat
         return findOne(Query(criteria))
     }
 
+    fun deleteByProjectId(projectId: String): Boolean {
+        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
+        return remove(Query(criteria)).deletedCount > 0L
+    }
+
     fun page(projectId: String?, pageRequest: PageRequest): Page<TProjectScanConfiguration> {
         val criteria = Criteria()
         projectId?.let { criteria.and(TProjectScanConfiguration::projectId.name).regex("$projectId.*") }

@@ -45,6 +45,13 @@ interface ProjectScanConfigurationService {
     fun create(request: ProjectScanConfiguration): ProjectScanConfiguration
 
     /**
+     * 删除项目扫描配置
+     *
+     * @param projectId 项目id
+     */
+    fun delete(projectId: String)
+
+    /**
      * 更新项目扫描配置
      *
      * @param request 项目扫描配置更新请求

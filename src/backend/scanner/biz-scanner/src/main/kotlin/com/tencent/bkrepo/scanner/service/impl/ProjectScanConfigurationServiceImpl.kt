@@ -77,6 +77,12 @@ class ProjectScanConfigurationServiceImpl(
         }
     }
 
+    override fun delete(projectId: String) {
+        if (!projectScanConfigurationDao.deleteByProjectId(projectId)) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId)
+        }
+    }
+
     override fun update(request: ProjectScanConfiguration): ProjectScanConfiguration {
         with(request) {
             val oldConfiguration = projectScanConfigurationDao.findByProjectId(projectId)
