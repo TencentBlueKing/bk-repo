@@ -70,10 +70,13 @@ export default {
   methods: {
     updatePlugin() {
       this.loading = true
+      if (typeof (this.pluginDetail.scope) === 'string') {
+        this.pluginDetail.scope = this.pluginDetail.scope.split(',')
+      }
       const promise = updatePlugin(
         this.pluginDetail.id,
         this.pluginDetail.version,
-        this.pluginDetail.scope.split(','),
+        this.pluginDetail.scope,
         this.pluginDetail.description,
         this.pluginDetail.gitUrl
       )
