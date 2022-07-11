@@ -50,6 +50,5 @@ interface PackageMetadataService {
      *
      * 如果元数据`key`已经存在则更新，否则创建新的
      */
-    fun forbidMetadata(request: PackageMetadataSaveRequest)
-
+    fun addForbidMetadata(request: PackageMetadataSaveRequest)
 }

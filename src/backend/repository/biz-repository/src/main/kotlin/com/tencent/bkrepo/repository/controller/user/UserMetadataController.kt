@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.FORBID_MAPPING_URI
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -102,7 +101,7 @@ class UserMetadataController(
 
     @ApiOperation("创建/更新禁用元数据")
     @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
-    @PostMapping(FORBID_MAPPING_URI)
+    @PostMapping("/forbid$DEFAULT_MAPPING_URI")
     fun forbidMetadata(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
@@ -115,7 +114,7 @@ class UserMetadataController(
                 fullPath = getArtifactFullPath(),
                 nodeMetadata = metadataSaveRequest.nodeMetadata
             )
-            metadataService.forbidMetadata(request)
+            metadataService.addForbidMetadata(request)
             return ResponseBuilder.success()
         }
     }

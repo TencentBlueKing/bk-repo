@@ -41,6 +41,5 @@ class DefaultArtifactInfo(
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
         const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
     }
 }

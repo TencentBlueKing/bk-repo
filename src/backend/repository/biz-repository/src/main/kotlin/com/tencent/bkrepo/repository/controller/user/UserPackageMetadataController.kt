@@ -76,8 +76,7 @@ class UserPackageMetadataController(
                 versionMetadata = metadataSaveRequest.versionMetadata
             )
         }
-        packageMetadataService.forbidMetadata(request)
+        packageMetadataService.addForbidMetadata(request)
         return ResponseBuilder.success()
     }
-
 }

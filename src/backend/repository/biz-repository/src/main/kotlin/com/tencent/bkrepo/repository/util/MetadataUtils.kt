@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TMetadata
+import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
 /**
@@ -61,12 +62,9 @@ object MetadataUtils {
         operator: String
     ): MutableList<TMetadata> {
         return if (!metadataModels.isNullOrEmpty()) {
-            metadataModels.map { from(it) }.toMutableList()
+            metadataModels.map { convertAndCheck(it, operator) }.toMutableList()
         } else {
-            fromMap(metadataMap)
-        }.onEach {
-            checkReservedKey(it.key, operator)
-            checkPermission(it, operator)
+            convertAndCheck(metadataMap, operator)
         }
     }
 
@@ -104,17 +102,6 @@ object MetadataUtils {
     }
 
     /**
-     * 替换禁用元数据信息
-     */
-    fun replaceForbid(oldMetadata: List<TMetadata>, forbidMetadata: List<TMetadata>): MutableList<TMetadata> {
-        val metadataMap = oldMetadata.associateByTo(
-            HashMap(oldMetadata.size + forbidMetadata.size)
-        ) { it.key }
-        forbidMetadata.forEach { metadataMap[it.key] = it }
-        return metadataMap.values.toMutableList()
-    }
-
-    /**
      * 使用[newMetadata]替换[oldMetadata]
      * [operator]为[SYSTEM_USER]时才能操作system metadata
      */
@@ -140,40 +127,21 @@ object MetadataUtils {
         return result.values.toMutableList()
     }
 
-    fun getForbidData(metadata: List<MetadataModel>): MutableList<TMetadata>? {
-        val forbidMetadata = metadata.filter { it.key == FORBID_STATUS }.map {
-            TMetadata(
-                key = it.key,
-                value = it.value,
-                system = true,
-                description = it.description
-            )
-        }.toMutableList()
-        if (forbidMetadata.isEmpty()) {
-            return null
-        }
-        addForbidUserAndType(forbidMetadata)
-        return forbidMetadata
-    }
+    fun extractForbidMetadata(
+        metadata: List<MetadataModel>,
+        operator: String = SecurityUtils.getUserId()
+    ): MutableList<MetadataModel>? {
+        val forbidMetadata = metadata.firstOrNull {
+            it.key == FORBID_STATUS && it.value is Boolean && it.system
+        } ?: return null
+        val result = ArrayList<MetadataModel>(3)
 
-    /**
-     * 添加禁用操作用户和类型
-     */
-    private fun addForbidUserAndType(forbidMetadata: MutableList<TMetadata>) {
-        forbidMetadata.addAll(
-            listOf(
-                TMetadata(
-                    key = FORBID_USER,
-                    value = SecurityUtils.getUserId(),
-                    system = true
-                ),
-                TMetadata(
-                    key = FORBID_TYPE,
-                    value = "MANUAL",
-                    system = true
-                )
-            )
-        )
+        result.add(forbidMetadata)
+        // 添加禁用操作用户和类型
+        result.add(MetadataModel(key = FORBID_USER, value = operator, system = true))
+        result.add(MetadataModel(key = FORBID_TYPE, value = ForbidType.MANUAL.name, system = true))
+
+        return result
     }
 
     fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
@@ -199,21 +167,30 @@ object MetadataUtils {
         }
     }
 
-    private fun fromMap(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
-        return metadataMap?.filter { it.key.isNotBlank() }.orEmpty()
-            .map { TMetadata(key = it.key, value = it.value) }
-            .toMutableList()
-    }
-
-    private fun from(metadata: MetadataModel): TMetadata {
-        return with(metadata) {
-            TMetadata(
+    fun convertAndCheck(metadata: MetadataModel, operator: String): TMetadata {
+        with(metadata) {
+            val tMetadata = TMetadata(
                 key = key,
                 value = value,
                 system = system,
                 description = description
             )
+            checkReservedKey(key, operator)
+            checkPermission(tMetadata, operator)
+            return tMetadata
         }
+    }
+
+    private fun convertAndCheck(metadataMap: Map<String, Any>?, operator: String): MutableList<TMetadata> {
+        return metadataMap
+            ?.filter { it.key.isNotBlank() }
+            .orEmpty()
+            .map {
+                val tMetadata = TMetadata(key = it.key, value = it.value)
+                checkReservedKey(tMetadata.key, operator)
+                tMetadata
+            }
+            .toMutableList()
     }
 
     private fun checkReservedKey(key: String, operator: String) {

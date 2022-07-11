@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
@@ -55,49 +56,37 @@ class PackageMetadataServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun saveMetadata(request: PackageMetadataSaveRequest) {
-        if (request.metadata.isNullOrEmpty() && request.versionMetadata.isNullOrEmpty()) {
-            logger.info("Metadata key list is empty, skip saving[$this]")
-            return
-        }
-        request.apply {
-            val tPackage = checkPackage(projectId, repoName, packageKey)
-            val tPackageVersion = checkPackageVersion(tPackage.id!!, version)
-            val oldMetadata = tPackageVersion.metadata
-            val newMetadata = MetadataUtils.compatibleFromAndCheck(metadata, versionMetadata, operator)
-            tPackageVersion.metadata = MetadataUtils.checkAndMerge(oldMetadata, newMetadata, operator)
-            packageVersionDao.save(tPackageVersion)
-        }.also {
-            logger.info("Save package metadata [$it] success.")
-        }
-    }
-
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun forbidMetadata(request: PackageMetadataSaveRequest) {
-        request.apply {
+        with(request) {
             if (versionMetadata.isNullOrEmpty()) {
                 logger.info("Metadata key list is empty, skip saving[$this]")
                 return
             }
-            val forbidMetadata = MetadataUtils.getForbidData(versionMetadata!!)
+            val tPackage = getPackage(projectId, repoName, packageKey)
+            val tPackageVersion = getPackageVersion(tPackage.id!!, version)
+            val oldMetadata = tPackageVersion.metadata
+            val newMetadata = versionMetadata!!.map { MetadataUtils.convertAndCheck(it, operator) }
+            tPackageVersion.metadata = MetadataUtils.checkAndMerge(oldMetadata, newMetadata, operator)
+            packageVersionDao.save(tPackageVersion)
+            logger.info("Save package metadata [$this] success.")
+        }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun addForbidMetadata(request: PackageMetadataSaveRequest) {
+        with(request) {
+            val forbidMetadata = MetadataUtils.extractForbidMetadata(versionMetadata!!)
             if (forbidMetadata.isNullOrEmpty()) {
                 logger.info("forbidMetadata is empty, skip saving[$this]")
                 return
             }
-
-            val tPackage = checkPackage(projectId, repoName, packageKey)
-            val tPackageVersion = checkPackageVersion(tPackage.id!!, version)
-            val oldMetadata = tPackageVersion.metadata
-            tPackageVersion.metadata = MetadataUtils.replaceForbid(oldMetadata, forbidMetadata)
-            packageVersionDao.save(tPackageVersion)
-        }.also {
-            logger.info("Save package forbid metadata [$it] success.")
+            saveMetadata(request.copy(versionMetadata = forbidMetadata, operator = SYSTEM_USER))
         }
     }
 
     /**
      * 查找包，不存在则抛异常
      */
-    private fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage {
+    private fun getPackage(projectId: String, repoName: String, packageKey: String): TPackage {
         return packageDao.findByKey(projectId, repoName, packageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey)
     }
@@ -105,7 +94,7 @@ class PackageMetadataServiceImpl(
     /**
      * 查找版本，不存在则抛异常
      */
-    private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
+    private fun getPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, versionName)
     }

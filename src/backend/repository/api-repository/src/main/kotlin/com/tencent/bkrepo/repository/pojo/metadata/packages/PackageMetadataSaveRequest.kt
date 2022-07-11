@@ -51,9 +51,6 @@ data class PackageMetadataSaveRequest(
     override val packageKey: String,
     @ApiModelProperty("包版本", required = true)
     override val version: String,
-    @ApiModelProperty("元数据key-value数据", required = true)
-    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("versionMetadata"))
-    val metadata: Map<String, Any>? = null,
     @ApiModelProperty("需要创建或更新的元数据", required = true)
     val versionMetadata: List<MetadataModel>? = null,
     @ApiModelProperty("操作用户")
