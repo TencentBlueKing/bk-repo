@@ -36,6 +36,8 @@ import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.scanner.pojo.request.ProjectScanConfigurationPageRequest
 import com.tencent.bkrepo.scanner.service.ProjectScanConfigurationService
 import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -52,24 +54,35 @@ class UserProjectScanConfigurationController(
     private val projectScanConfigurationService: ProjectScanConfigurationService
 ) {
 
+    @ApiOperation("创建项目扫描配置")
     @PostMapping
     fun create(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
         val configuration = projectScanConfigurationService.create(request)
         return ResponseBuilder.success(configuration)
     }
 
+    @ApiOperation("删除项目扫描配置")
+    @DeleteMapping("/{projectId}")
+    fun delete(@PathVariable projectId: String): Response<Void> {
+        projectScanConfigurationService.delete(projectId)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("更新项目扫描配置")
     @PutMapping
     fun update(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
         val configuration = projectScanConfigurationService.update(request)
         return ResponseBuilder.success(configuration)
     }
 
+    @ApiOperation("分页获取项目扫描配置")
     @GetMapping
     fun page(request: ProjectScanConfigurationPageRequest): Response<Page<ProjectScanConfiguration>> {
         val page = projectScanConfigurationService.page(request)
         return ResponseBuilder.success(page)
     }
 
+    @ApiOperation("获取项目扫描配置")
     @GetMapping("/{projectId}")
     fun get(@PathVariable projectId: String): Response<ProjectScanConfiguration> {
         return ResponseBuilder.success(projectScanConfigurationService.get(projectId))
