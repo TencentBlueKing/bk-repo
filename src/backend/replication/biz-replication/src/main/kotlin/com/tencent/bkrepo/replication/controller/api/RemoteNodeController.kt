@@ -51,7 +51,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @Api("远端集群用户接口")
 @RestController
-@RequestMapping("/api/remote")
+@RequestMapping("/api/remote/distribution")
 class RemoteNodeController(
     private val remoteNodeService: RemoteNodeService
 ) {

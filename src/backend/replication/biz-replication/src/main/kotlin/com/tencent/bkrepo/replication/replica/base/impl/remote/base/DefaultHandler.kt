@@ -67,7 +67,7 @@ class DefaultHandler(
         response.use {
             return when {
                 isSuccess(it) -> {
-                    logger.info("Result of the request ${it.request().url()} is successful")
+                    logger.info("Result of the request ${it.request().url()} is success")
                     val extraProperty = wrapperSuccess(it)
                     this.successHandler?.process(extraProperty) ?: true
                 }

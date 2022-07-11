@@ -2,13 +2,13 @@
 
 [toc]
 
-## 创建第三方集群分发配置
+## 创建远端集群分发配置
 
-- API: POST  /replication/api/thirdParty/create/{projectId}/{repoName}
-- API 名称: create_third_party
+- API: POST  /replication/api/remote/distribution/create/{projectId}/{repoName}
+- API 名称: remote_distribution_create
 - 功能说明：
-	- 中文：创建第三方集群分发配置
-	- English：create third party
+	- 中文：创建远端集群分发配置
+	- English：remote distribution create
 - 请求体:
 
   ```json
@@ -16,7 +16,7 @@
     "configs":[
     {
     "name": "chartmuseum",
-    "registry":"http://localhost:8080/",
+    "registry":"localhost:8080",
     "username":"***",
     "password":"****",
     "packageConstraints": [
@@ -50,8 +50,8 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目id|the project Id|
   |repoName|string|是|无|仓库名称|the repoName|
-  |name|string|是|无|第三方源名称| name|
-  |registry|string|是|无|第三方源地址| registry|
+  |name|string|是|无|远端源名称| name|
+  |registry|string|是|无|远端源地址| registry|
   |username|string|否|无|用户名| username|
   |password|string|否|无|密码| password|
   |certificate|string|否|无|证书| certificate|
@@ -94,13 +94,13 @@
   ```
 
 
-## 更新第三方集群分发配置
+## 更新远端集群分发配置
 
-- API: POST  /replication/api/thirdParty/update/{projectId}/{repoName}/{name}
-- API 名称: update_third_party
+- API: POST  /replication/api/remote/distribution/update/{projectId}/{repoName}/{name}
+- API 名称: remote_distribution_update
 - 功能说明：
-	- 中文：更新第三方集群分发配置
-	- English：update third party
+	- 中文：更新远端集群分发配置
+	- English：remote distribution update
 - 请求体:
 
   ```json
@@ -137,8 +137,8 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目id|the project Id|
   |repoName|string|是|无|仓库名称|the repoName|
-  |name|string|是|无|第三方源名称| name|
-  |registry|string|是|无|第三方源地址| registry|
+  |name|string|是|无|远端源名称| name|
+  |registry|string|是|无|远端源地址| registry|
   |username|string|否|无|用户名| username|
   |password|string|否|无|密码| password|
   |certificate|string|否|无|证书| certificate|
@@ -180,13 +180,14 @@
   }
   ```
 
-## 查询第三方集群分发配置
+## 查询远端集群分发配置
 
-- API: GET  /replication/api/thirdParty/info/{projectId}/{repoName}/{name}
-- API 名称: search_third_party
+- API: GET  /replication/api/remote/distribution/info/{projectId}/{repoName}/{name}
+          /replication/api/remote/distribution/info/{projectId}/{repoName}
+- API 名称: remote_distribution_search
 - 功能说明：
-	- 中文：查询第三方集群分发配置
-	- English：search third party
+	- 中文：查询远端集群分发配置
+	- English：remote distribution search
 - 请求体:
 
 
@@ -196,7 +197,7 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目id|the project Id|
   |repoName|string|是|无|仓库名称|the repoName|
-  |name|string|否|无|第三方源名称| name|
+  |name|string|否|无|远端源名称| name|
   
 
 - 响应体
@@ -237,13 +238,13 @@
   }
   ```
 
- ## 删除第三方集群分发配置
+ ## 删除远端集群分发配置
 
-- API: DELETE  /replication/api/thirdParty/delete/{projectId}/{repoName}/{name}
-- API 名称: delete_third_party
+- API: DELETE  /replication/api/remote/distribution/delete/{projectId}/{repoName}/{name}
+- API 名称: remote_distribution_delete
 - 功能说明：
-	- 中文：删除第三方集群分发配置
-	- English：delete third party
+	- 中文：删除远端集群分发配置
+	- English：remote distribution delete
 - 请求体:
 
 
@@ -253,7 +254,7 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目id|the project Id|
   |repoName|string|是|无|仓库名称|the repoName|
-  |name|string|是|无|第三方源名称| name|
+  |name|string|是|无|远端源名称| name|
   
 
 - 响应体
@@ -266,13 +267,13 @@
 }
 ```
 
-## 禁用/启用第三方集群分发配置
+## 禁用/启用远端集群分发配置
 
-- API: POST  /replication/api/thirdParty/toggle/status/{projectId}/{repoName}/{name}
-- API 名称:toggle_status_third_party
+- API: POST  /replication/api/remote/distribution/toggle/status/{projectId}/{repoName}/{name}
+- API 名称:toggle_remote_distribution_status
 - 功能说明：
-	- 中文：禁用/启用第三方集群分发配置
-	- English：toggle third party
+	- 中文：禁用/启用远端集群分发配置
+	- English：toggle remote distribution status
 - 请求体:
 
 
@@ -282,7 +283,7 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目id|the project Id|
   |repoName|string|是|无|仓库名称|the repoName|
-  |name|string|是|无|第三方源名称| name|
+  |name|string|是|无|远端源名称| name|
   
 
 - 响应体
