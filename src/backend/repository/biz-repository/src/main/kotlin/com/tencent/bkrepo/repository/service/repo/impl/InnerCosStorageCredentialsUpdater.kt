@@ -45,5 +45,7 @@ class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
         old.slowLogSpeed = new.slowLogSpeed
         old.slowLogTimeInMillis = new.slowLogTimeInMillis
         old.download = new.download
+        old.modId = new.modId
+        old.cmdId = new.cmdId
     }
 }
