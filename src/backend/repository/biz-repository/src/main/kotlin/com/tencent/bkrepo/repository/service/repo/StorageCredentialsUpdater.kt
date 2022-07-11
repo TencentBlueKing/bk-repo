@@ -25,36 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.repository.service.repo
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 
-@Repository
-class ProjectScanConfigurationDao : ScannerSimpleMongoDao<TProjectScanConfiguration>() {
-    fun existsByProjectId(projectId: String): Boolean {
-        return exists(Query(TProjectScanConfiguration::projectId.isEqualTo(projectId)))
-    }
+interface StorageCredentialsUpdater {
+    /**
+     * 更新存储凭证
+     *
+     * @param old 旧的存储凭证
+     * @param req 更新请求
+     */
+    fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest)
 
-    fun findByProjectId(projectId: String): TProjectScanConfiguration? {
-        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
-        return findOne(Query(criteria))
-    }
-
-    fun deleteByProjectId(projectId: String): Boolean {
-        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
-        return remove(Query(criteria)).deletedCount > 0L
-    }
-
-    fun page(projectId: String?, pageRequest: PageRequest): Page<TProjectScanConfiguration> {
-        val criteria = Criteria()
-        projectId?.let { criteria.and(TProjectScanConfiguration::projectId.name).regex("$projectId.*") }
-        val query = Query(criteria)
-        return page(query, pageRequest)
+    companion object {
+        /**
+         * 获取存储凭证更新器名
+         *
+         * @param credentialClazz 存储凭证类型
+         */
+        fun name(credentialClazz: Class<*>): String = "${credentialClazz.simpleName}Updater"
     }
 }

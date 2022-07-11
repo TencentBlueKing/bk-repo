@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,36 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.opdata.repository
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
+import com.tencent.bkrepo.opdata.model.TPlugin
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-class ProjectScanConfigurationDao : ScannerSimpleMongoDao<TProjectScanConfiguration>() {
-    fun existsByProjectId(projectId: String): Boolean {
-        return exists(Query(TProjectScanConfiguration::projectId.isEqualTo(projectId)))
-    }
-
-    fun findByProjectId(projectId: String): TProjectScanConfiguration? {
-        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
-        return findOne(Query(criteria))
-    }
-
-    fun deleteByProjectId(projectId: String): Boolean {
-        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
-        return remove(Query(criteria)).deletedCount > 0L
-    }
-
-    fun page(projectId: String?, pageRequest: PageRequest): Page<TProjectScanConfiguration> {
-        val criteria = Criteria()
-        projectId?.let { criteria.and(TProjectScanConfiguration::projectId.name).regex("$projectId.*") }
-        val query = Query(criteria)
-        return page(query, pageRequest)
-    }
+interface PluginRepository : MongoRepository<TPlugin, String> {
+    fun findByScope(scope: String, pageable: Pageable): Page<TPlugin>
 }

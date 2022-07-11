@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.controller.user
+package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
-import com.tencent.bkrepo.scanner.pojo.request.ProjectScanConfigurationPageRequest
-import com.tencent.bkrepo.scanner.service.ProjectScanConfigurationService
+import com.tencent.bkrepo.opdata.pojo.plugin.PluginCreateRequest
+import com.tencent.bkrepo.opdata.pojo.plugin.PluginDetail
+import com.tencent.bkrepo.opdata.pojo.plugin.PluginListOption
+import com.tencent.bkrepo.opdata.pojo.plugin.PluginUpdateRequest
+import com.tencent.bkrepo.opdata.service.PluginService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -46,45 +48,58 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("项目扫描配置接口")
+@Api("插件服务接口")
 @RestController
-@RequestMapping("/api/scan/configurations")
+@RequestMapping("/api/plugin")
 @Principal(PrincipalType.ADMIN)
-class UserProjectScanConfigurationController(
-    private val projectScanConfigurationService: ProjectScanConfigurationService
+class PluginController(
+    private val pluginService: PluginService
 ) {
 
-    @ApiOperation("创建项目扫描配置")
-    @PostMapping
-    fun create(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
-        val configuration = projectScanConfigurationService.create(request)
-        return ResponseBuilder.success(configuration)
+    @ApiOperation("插件列表")
+    @GetMapping
+    fun list(option: PluginListOption): Response<Page<PluginDetail>> {
+        return ResponseBuilder.success(pluginService.list(option))
     }
 
-    @ApiOperation("删除项目扫描配置")
-    @DeleteMapping("/{projectId}")
-    fun delete(@PathVariable projectId: String): Response<Void> {
-        projectScanConfigurationService.delete(projectId)
+    @ApiOperation("创建插件")
+    @PostMapping
+    fun create(@RequestBody request: PluginCreateRequest): Response<Void> {
+        pluginService.create(request)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新项目扫描配置")
+    @ApiOperation("更新插件")
     @PutMapping
-    fun update(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
-        val configuration = projectScanConfigurationService.update(request)
-        return ResponseBuilder.success(configuration)
+    fun update(@RequestBody request: PluginUpdateRequest): Response<Void> {
+        pluginService.update(request)
+        return ResponseBuilder.success()
     }
 
-    @ApiOperation("分页获取项目扫描配置")
-    @GetMapping
-    fun page(request: ProjectScanConfigurationPageRequest): Response<Page<ProjectScanConfiguration>> {
-        val page = projectScanConfigurationService.page(request)
-        return ResponseBuilder.success(page)
+    @ApiOperation("删除插件")
+    @DeleteMapping("/{pluginId}")
+    fun delete(@PathVariable pluginId: String): Response<Void> {
+        pluginService.delete(pluginId)
+        return ResponseBuilder.success()
     }
 
-    @ApiOperation("获取项目扫描配置")
-    @GetMapping("/{projectId}")
-    fun get(@PathVariable projectId: String): Response<ProjectScanConfiguration> {
-        return ResponseBuilder.success(projectScanConfigurationService.get(projectId))
+    @ApiOperation("加载插件")
+    @PostMapping("/load/{pluginId}")
+    fun load(
+        @PathVariable pluginId: String,
+        host: String
+    ): Response<Void> {
+        pluginService.load(pluginId, host)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("卸载插件")
+    @DeleteMapping("/unload/{pluginId}")
+    fun unload(
+        @PathVariable pluginId: String,
+        host: String
+    ): Response<Void> {
+        pluginService.unload(pluginId, host)
+        return ResponseBuilder.success()
     }
 }

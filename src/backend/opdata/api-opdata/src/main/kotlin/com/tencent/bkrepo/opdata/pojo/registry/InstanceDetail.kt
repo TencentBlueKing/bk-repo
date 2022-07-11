@@ -36,5 +36,7 @@ data class InstanceDetail(
     @ApiModelProperty("正在下载的请求数量", required = true)
     val downloadingCount:Long,
     @ApiModelProperty("正在上传的请求数量", required = true)
-    val uploadingCount: Long
+    val uploadingCount: Long,
+    @ApiModelProperty("已加载的插件", required = true)
+    val loadedPlugins: List<String>? = null
 )

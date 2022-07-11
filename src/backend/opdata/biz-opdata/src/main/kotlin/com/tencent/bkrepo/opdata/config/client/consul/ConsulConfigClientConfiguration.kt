@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.opdata.config.client.consul
 
 import com.ecwid.consul.v1.ConsulClient
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.cloud.consul.config.ConsulConfigProperties
@@ -39,9 +40,11 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnClass(ConsulClient::class)
 class ConsulConfigClientConfiguration {
 
+    @Value("\${service.prefix:}")
+    private val servicePrefix: String = ""
+
     @Bean
     fun consulConfigClient(client: ConsulClient, properties: ConsulConfigProperties): ConsulConfigClient {
-        return ConsulConfigClient(client, properties)
+        return ConsulConfigClient(client, properties, servicePrefix)
     }
-
 }

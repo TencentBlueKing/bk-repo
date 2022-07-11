@@ -42,7 +42,8 @@ import org.yaml.snakeyaml.Yaml
 
 class ConsulConfigClient(
     private val client: ConsulClient,
-    private val properties: ConsulConfigProperties
+    private val properties: ConsulConfigProperties,
+    private val servicePrefix: String = ""
 ) : ConfigClient {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -116,7 +117,7 @@ class ConsulConfigClient(
         if (appName.isEmpty()) {
             contextBuilder.append("$prefix${properties.defaultContext}")
         } else {
-            contextBuilder.append("$prefix$appName")
+            contextBuilder.append("$prefix$servicePrefix$appName")
         }
 
         if (targetProfile.isNotEmpty()) {

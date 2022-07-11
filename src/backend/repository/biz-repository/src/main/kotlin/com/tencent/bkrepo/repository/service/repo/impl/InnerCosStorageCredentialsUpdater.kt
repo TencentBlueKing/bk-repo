@@ -25,36 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.repository.service.repo.impl
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialsUpdater
+import org.springframework.stereotype.Component
 
-@Repository
-class ProjectScanConfigurationDao : ScannerSimpleMongoDao<TProjectScanConfiguration>() {
-    fun existsByProjectId(projectId: String): Boolean {
-        return exists(Query(TProjectScanConfiguration::projectId.isEqualTo(projectId)))
-    }
-
-    fun findByProjectId(projectId: String): TProjectScanConfiguration? {
-        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
-        return findOne(Query(criteria))
-    }
-
-    fun deleteByProjectId(projectId: String): Boolean {
-        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
-        return remove(Query(criteria)).deletedCount > 0L
-    }
-
-    fun page(projectId: String?, pageRequest: PageRequest): Page<TProjectScanConfiguration> {
-        val criteria = Criteria()
-        projectId?.let { criteria.and(TProjectScanConfiguration::projectId.name).regex("$projectId.*") }
-        val query = Query(criteria)
-        return page(query, pageRequest)
+@Component("InnerCosCredentialsUpdater")
+class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
+    override fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest) {
+        val new = req.credentials
+        if (old !is InnerCosCredentials || new !is InnerCosCredentials) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+        }
+        old.slowLogSpeed = new.slowLogSpeed
+        old.slowLogTimeInMillis = new.slowLogTimeInMillis
+        old.download = new.download
+        old.modId = new.modId
+        old.cmdId = new.cmdId
     }
 }

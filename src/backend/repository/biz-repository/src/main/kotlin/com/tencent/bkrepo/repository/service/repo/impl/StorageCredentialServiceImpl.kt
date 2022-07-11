@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialsUpdater
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -58,7 +59,8 @@ import java.time.LocalDateTime
 class StorageCredentialServiceImpl(
     private val repositoryDao: RepositoryDao,
     private val storageCredentialsRepository: StorageCredentialsRepository,
-    private val storageProperties: StorageProperties
+    private val storageProperties: StorageProperties,
+    private val credentialUpdaters: Map<String, StorageCredentialsUpdater>
 ) : StorageCredentialService {
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -97,6 +99,7 @@ class StorageCredentialServiceImpl(
                 expireDays = request.credentials.cache.expireDays
             )
             upload = upload.copy(localPath = request.credentials.upload.localPath)
+            credentialUpdaters[StorageCredentialsUpdater.name(this::class.java)]?.update(this, request)
         }
 
         tStorageCredentials.credentials = storageCredentials.toJsonString()

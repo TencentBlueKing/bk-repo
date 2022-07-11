@@ -30,6 +30,9 @@
             <el-option label="晋级包版本" value="VERSION_STAGED" />
           </el-select>
         </el-form-item>
+        <el-form-item label="资源key正则">
+          <el-input v-model="webhookDetail.resourceKeyPattern" />
+        </el-form-item>
       </el-form>
       <div slot="footer">
         <el-button @click="close">取 消</el-button>

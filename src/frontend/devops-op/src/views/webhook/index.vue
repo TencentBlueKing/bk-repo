@@ -26,13 +26,15 @@
       <el-table-column prop="headers" label="请求头" min-width="200px">
         <template slot-scope="scope">{{ JSON.stringify(scope.row.headers) }}</template>
       </el-table-column>
-      <el-table-column prop="triggers" label="触发事件" :formatter="triggersFormatter" min-width="200px" />
-      <el-table-column prop="associationType" label="关联对象类型" min-width="200px" />
+      <el-table-column prop="triggers" label="触发事件" :formatter="triggersFormatter" min-width="120px" />
+      <el-table-column prop="associationType" label="关联对象类型" min-width="100px" />
       <el-table-column prop="associationId" label="关联对象Id" min-width="100px" />
-      <el-table-column label="操作" min-width="120px">
+      <el-table-column prop="resourceKeyPattern" label="资源key正则" />
+      <el-table-column label="操作" min-width="220px">
         <template slot-scope="scope">
           <el-button size="mini" type="primary" @click="showWebhookDetail(scope.row)">修改</el-button>
           <el-button size="mini" type="danger" @click="showWebhookDelete(scope.row)">删除</el-button>
+          <el-button size="mini" type="primary" @click="showWebhookLog(scope.row)">查看日志</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -57,6 +59,7 @@ import { formatDate } from '@/utils/file'
 import WebhookCreateDialog from '@/views/webhook/components/WebhookCreateDialog'
 import WebhookDetailDialog from '@/views/webhook/components/WebhookDetailDialog'
 import WebhookDeleteDialog from '@/views/webhook/components/WebhookDeleteDialog'
+import moment from 'moment'
 
 export default {
   name: 'WebHook',
@@ -156,6 +159,15 @@ export default {
     },
     onUpdateSuccess() {
       this.queryWebhook(this.webhookQuery)
+    },
+    showWebhookLog(webhook) {
+      const query = {
+        id: webhook.id,
+        startTime: moment(new Date() - 3600 * 1000 * 24 * 7).format('YYYY-MM-DDTHH:mm:ss'),
+        endTime: moment(new Date()).format('YYYY-MM-DDTHH:mm:ss'),
+        pageNumber: 1
+      }
+      this.$router.push({ path: '/webhook/log', query: query })
     }
   }
 }

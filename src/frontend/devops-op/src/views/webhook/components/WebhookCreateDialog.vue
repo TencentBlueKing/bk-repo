@@ -38,7 +38,7 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="webhook.associationType != 'SYSTEM'" label="关联对象id" prop="associatitonId">
-          <el-input v-model="webhook.associatitonId" placeholder="请输入关联对象id" />
+          <el-input v-model="webhook.associationId" placeholder="请输入关联对象id" />
         </el-form-item>
         <el-form-item label="事件资源key正则模式" prop="resourceKeyPattern">
           <el-input v-model="webhook.resourceKeyPattern" placeholder="请输入事件资源key正则模式" />

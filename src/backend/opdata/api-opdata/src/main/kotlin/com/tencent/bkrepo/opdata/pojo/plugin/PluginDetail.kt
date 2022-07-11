@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,52 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.service
+package com.tencent.bkrepo.opdata.pojo.plugin
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
-import com.tencent.bkrepo.scanner.pojo.request.ProjectScanConfigurationPageRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-/**
- * 项目扫描配置
- */
-interface ProjectScanConfigurationService {
-    /**
-     * 创建项目扫描配置
-     *
-     * @param request 项目扫描配置创建请求
-     *
-     * @return 创建后的项目扫描配置
-     */
-    fun create(request: ProjectScanConfiguration): ProjectScanConfiguration
-
-    /**
-     * 删除项目扫描配置
-     *
-     * @param projectId 项目id
-     */
-    fun delete(projectId: String)
-
-    /**
-     * 更新项目扫描配置
-     *
-     * @param request 项目扫描配置更新请求
-     *
-     * @return 更新后的项目扫描配置
-     */
-    fun update(request: ProjectScanConfiguration): ProjectScanConfiguration
-
-    /**
-     * 分页获取项目扫描配置
-     */
-    fun page(request: ProjectScanConfigurationPageRequest): Page<ProjectScanConfiguration>
-
-    /**
-     * 获取项目扫描配置
-     *
-     * @param projectId 要获取的扫描配置所属项目ID
-     *
-     * @return 项目扫描配置
-     */
-    fun get(projectId: String): ProjectScanConfiguration
-}
+@ApiModel("插件信息")
+data class PluginDetail(
+    @ApiModelProperty("id")
+    val id: String,
+    @ApiModelProperty("版本")
+    val version: String,
+    @ApiModelProperty("生效范围")
+    val scope: List<String>,
+    @ApiModelProperty("描述")
+    val description: String,
+    @ApiModelProperty("代码库地址")
+    val gitUrl: String,
+    @ApiModelProperty("创建人")
+    var createdBy: String,
+    @ApiModelProperty("创建时间")
+    var createdDate: LocalDateTime,
+    @ApiModelProperty("最后修改人")
+    var lastModifiedBy: String,
+    @ApiModelProperty("最后修改时间")
+    var lastModifiedDate: LocalDateTime,
+)
