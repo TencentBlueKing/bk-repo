@@ -49,7 +49,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -84,7 +83,7 @@ class PermissionServiceTest {
         }
     }
 
-    @Test
+
     @DisplayName("创建权限测试")
     fun createPermissionTest() {
         // permName+projectId+resourceType unique
@@ -95,7 +94,6 @@ class PermissionServiceTest {
         assertThrows<ErrorCodeException> { permissionService.createPermission(createPermissionRequest) }
     }
 
-    @Test
     @DisplayName("权限列表测试")
     fun listPermissionTest() {
         permissionService.createPermission(createPermissionRequest(permName = "修改用户信息权限测试"))
@@ -150,7 +148,6 @@ class PermissionServiceTest {
         Assertions.assertTrue(permissionList5.isEmpty())
     }
 
-    @Test
     @DisplayName("当用户是管理员时校验权限测试")
     fun checkPermissionWhenUserIsAdminTest() {
         // create user admin
@@ -168,7 +165,6 @@ class PermissionServiceTest {
         Assertions.assertTrue(checkPermission)
     }
 
-    @Test
     @DisplayName("当用户角色为空时校验权限测试")
     fun checkPermissionWhenRolesIsEmpty() {
         // create user admin is false
@@ -194,7 +190,6 @@ class PermissionServiceTest {
         Assertions.assertTrue(isSuccess)
     }
 
-    @Test
     @DisplayName("当用户角色不为空时校验权限测试")
     fun checkPermissionWhenRolesExistAndResourceTypeIsProject() {
         // create user admin is false
@@ -224,7 +219,6 @@ class PermissionServiceTest {
         Assertions.assertTrue(isSuccess)
     }
 
-    @Test
     @DisplayName("当用户角色不为空时校验权限测试")
     fun checkPermissionWhenRolesExistAndResourceTypeIsRepo() {
         // create user admin is false
@@ -255,7 +249,6 @@ class PermissionServiceTest {
         Assertions.assertTrue(isSuccess)
     }
 
-    @Test
     @DisplayName("删除权限测试用例")
     fun deletePermissionTest() {
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
@@ -264,7 +257,6 @@ class PermissionServiceTest {
         }
     }
 
-    @Test
     @DisplayName("修改包含路径测试用例")
     fun updateIncludePathTest() {
         assertThrows<ErrorCodeException> {
@@ -283,7 +275,6 @@ class PermissionServiceTest {
         }
     }
 
-    @Test
     @DisplayName("修改排除路径测试用例")
     fun updateExcludePathTest() {
         assertThrows<ErrorCodeException> {
@@ -302,7 +293,6 @@ class PermissionServiceTest {
         }
     }
 
-    @Test
     @DisplayName("更新权限绑定repo测试")
     fun updateRepoPermissionTest() {
         assertThrows<ErrorCodeException> {
@@ -321,7 +311,6 @@ class PermissionServiceTest {
         }
     }
 
-    @Test
     @DisplayName("更新权限绑定用户测试")
     fun updateUserPermissionTest() {
         userService.createUser(createUserRequest())
@@ -336,7 +325,6 @@ class PermissionServiceTest {
         }
     }
 
-    @Test
     @DisplayName("更新权限绑定角色测试")
     fun updateRolePermissionTest() {
         val rid = roleService.createRole(createRoleRequest())!!

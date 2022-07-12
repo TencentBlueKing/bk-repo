@@ -48,4 +48,3 @@ val npmBuild = task<Exec>("npmBuild") {
     commandLine("npm", "run", "build")
 }.dependsOn(npmInstall)
 
-tasks.compileKotlin { dependsOn(npmBuild) }
