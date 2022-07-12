@@ -25,12 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor
+plugins {
+    application
+}
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+application {
+    mainClass.set("com.tencent.bkrepo.scanner.image.ScanRunner")
+}
 
-interface ScanExecutor {
-    fun scan(task: ScanExecutorTask): ScanExecutorResult
-    fun stop(taskId: String): Boolean
+dependencies {
+    implementation(project(":scanner:api-scanner"))
+    implementation(project(":scanner-executor:biz-scanner-executor"))
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("commons-io:commons-io")
 }

@@ -40,12 +40,8 @@ class ArrowheadScanner(
      */
     @ApiModelProperty("扫描器版本")
     override val version: String,
-    @ApiModelProperty("扫描器根目录")
-    val rootPath: String,
     @ApiModelProperty("扫描器配置文件路径，相对于工作目录")
     val configFilePath: String = DEFAULT_CONFIG_FILE_PATH,
-    @ApiModelProperty("扫描结束后是否清理工作目录")
-    val cleanWorkDir: Boolean = true,
     @ApiModelProperty("漏洞知识库配置")
     val knowledgeBase: KnowledgeBase,
     @ApiModelProperty("使用的容器镜像")

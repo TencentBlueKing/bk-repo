@@ -31,14 +31,11 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
-import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -55,224 +52,84 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.scanner.executor.ScanExecutor
+import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
-import com.tencent.bkrepo.scanner.executor.pojo.Layer
-import com.tencent.bkrepo.scanner.executor.pojo.Manifest
-import com.tencent.bkrepo.scanner.executor.pojo.ManifestV1
-import com.tencent.bkrepo.scanner.executor.pojo.ManifestV2
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.DockerUtils
-import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
+import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
+import com.tencent.bkrepo.scanner.executor.util.ImageScanHelper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.max
 
 @Component(TrivyScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class TrivyScanExecutor @Autowired constructor(
-    private val dockerClient: DockerClient,
+    dockerClient: DockerClient,
     private val scannerExecutorProperties: ScannerExecutorProperties,
     private val repositoryClient: RepositoryClient,
     private val storageService: StorageService,
     private val nodeClient: NodeClient
-) : ScanExecutor {
+) : CommonScanExecutor() {
 
-    private val taskContainerIdMap = ConcurrentHashMap<String, String>()
+    private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
+    private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
-    override fun scan(task: ScanExecutorTask): ScanExecutorResult {
+    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
         require(task.scanner is TrivyScanner)
-        val scanner = task.scanner
-        // 创建工作目录
-        val workDir = createWorkDir(scanner.rootPath, task.taskId)
-        logger.info(logMsg(task, "create work dir success, $workDir"))
-        try {
-            //  加载待扫描文件
-            val scannerInputFile = File(File(workDir, scanner.container.inputDir), "${task.sha256}.tar")
-            val outputDir = File(workDir, scanner.container.outputDir)
-            outputDir.mkdirs()
-            scannerInputFile.parentFile.mkdirs()
-            scannerInputFile.createNewFile()
-            scannerInputFile.outputStream().use { generateScanFile(it, task) }
-            // 执行扫描
-            val scanStatus = doScan(workDir, task, scannerInputFile)
-            return result(outputDir, scanStatus)
-        } finally {
-            // 清理工作目录
-            if (task.scanner.cleanWorkDir) {
-                deleteRecursively(workDir)
-            }
-        }
-    }
-
-    private fun generateScanFile(fileOutputStream: FileOutputStream, task: ScanExecutorTask) {
-        val manifest = task.inputStream.readJsonString<ManifestV2>()
-        if (logger.isDebugEnabled) {
-            logger.debug(logMsg(task, manifest.toJsonString()))
-        }
-        val isFromOci = isFromOciService(task.fullPath)
-        TarArchiveOutputStream(fileOutputStream).use { tos ->
-            // 打包config文件
-            loadLayerTo(manifest.config, task, tos, isFromOci)
-            val layers = ArrayList<String>()
-            // 打包layers文件
-            manifest.layers.forEach {
-                layers.add(it.digest.replace(COLON.toString(), "__"))
-                loadLayerTo(it, task, tos, isFromOci)
-            }
-            // 打包manifest.json文件
-            val configFileName = manifest.config.digest.replace(COLON.toString(), "__")
-            val manifestV1 = ManifestV1(listOf(Manifest(configFileName, emptyList(), layers)))
-            val manifestV1Bytes = manifestV1.manifests.toJsonString().toByteArray()
-            ByteArrayInputStream(manifestV1Bytes).use {
-                putArchiveEntry(MANIFEST, manifestV1Bytes.size.toLong(), it, tos)
-            }
-        }
-    }
-
-    override fun stop(taskId: String): Boolean {
-        val containerId = taskContainerIdMap[taskId] ?: return false
-        dockerClient.removeContainerCmd(containerId).withForce(true).exec()
-        return true
-    }
-
-    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream, isFromOci: Boolean) {
-        val fileName = layer.digest.replace(COLON.toString(), "__")
-        val fullPath = if (isFromOci) {
-            // manifest路径格式/%s/manifest/%s/manifest.json"
-            // 忽略第一个 /，截取%s/
-            val endIndex = task.fullPath.indexOf(SLASH, 1)
-            "${task.fullPath.substring(0, endIndex)}/blobs/$fileName"
-        } else {
-            // manifest路劲格式为 /%s/%s/manifest.json
-            // blobs在同级目录
-            val endIndex = task.fullPath.lastIndexOf(SLASH)
-            "${task.fullPath.substring(0, endIndex)}/$fileName"
-        }
-        logger.info(logMsg(task, "load layer [$fullPath]"))
-
-        val node = nodeClient.getNodeDetail(task.projectId, task.repoName, fullPath).data
-            ?: throw SystemErrorException(SYSTEM_ERROR, "image layer file [$fullPath] acquire failed")
-        storageService.load(node.sha256!!, Range.full(node.size), task.storageCredentials)
-            ?.use { putArchiveEntry(fileName, node.size, it, tos) }
-            ?: throw SystemErrorException(RESOURCE_NOT_FOUND, "layer not found full path[$fullPath]")
-    }
-
-    /**
-     * 判断是否为通过bkrepo-oci服务推送的镜像
-     */
-    private fun isFromOciService(manifestFullPath: String): Boolean {
-        val splitPath = manifestFullPath.split(SLASH)
-        // OCI路径格式为/%s/manifest/%s/manifest.json，判断路径分片长度和倒数第3段是否为manifest即可确认是否为oci服务上传的镜像
-        return splitPath.size >= OCI_PATH_PARTS_MIN_SIZE && splitPath[splitPath.size - 3] == "manifest"
-    }
-
-    private fun putArchiveEntry(name: String, size: Long, inputStream: InputStream, tos: TarArchiveOutputStream) {
-        val entry = TarArchiveEntry(name)
-        entry.size = size
-        tos.putArchiveEntry(entry)
-        inputStream.copyTo(tos)
-        tos.closeArchiveEntry()
-    }
-
-    private fun maxFileSize(fileSize: Long): Long {
-        // 最大允许的单文件大小为待扫描文件大小3倍，先除以3，防止long溢出
-        val maxFileSize = (Long.MAX_VALUE / 3L).coerceAtMost(fileSize) * 3L
-        // 限制单文件大小，避免扫描器文件创建的文件过大
-        return max(scannerExecutorProperties.fileSizeLimit.toBytes(), maxFileSize)
-    }
-
-    /**
-     * 创建工作目录
-     *
-     * @param rootPath 扫描器根目录
-     * @param taskId 任务id
-     *
-     * @return 工作目录
-     */
-    private fun createWorkDir(rootPath: String, taskId: String): File {
-        // 创建工作目录
-        val workDir = File(File(scannerExecutorProperties.workDir, rootPath), taskId)
-        if (!workDir.deleteRecursively() || !workDir.mkdirs()) {
-            throw SystemErrorException(SYSTEM_ERROR, workDir.absolutePath)
-        }
-        return workDir
-    }
-
-    /**
-     * 创建容器执行扫描
-     * @param workDir 工作目录,将挂载到容器中
-     * @param task 扫描任务
-     *
-     * @return true 扫描成功， false 扫描失败
-     */
-    private fun doScan(workDir: File, task: ScanExecutorTask, scannerInputFile: File): SubScanTaskStatus {
-        require(task.scanner is TrivyScanner)
-        val fileSize = scannerInputFile.length()
-        val maxScanDuration = task.scanner.maxScanDuration(fileSize)
-        // 容器内单文件大小限制为待扫描文件大小的3倍
-        val maxFileSize = maxFileSize(fileSize)
         val containerConfig = task.scanner.container
 
-        // 拉取镜像
-        DockerUtils.pullImage(dockerClient, containerConfig.image)
-
         // 从默认仓库下载最新镜像漏洞数据库到cacheDir
-        val cacheDir = File("${scannerExecutorProperties.workDir}/${task.scanner.rootPath}/${task.scanner.cacheDir}")
+        val cacheDir = File(
+            "${scannerExecutorProperties.workDir}/${task.scanner.rootPath}/${task.scanner.cacheDir}"
+        )
         if (task.scanner.vulDbConfig.dbSource != DbSource.TRIVY.code) {
             generateTrivyDB(task, cacheDir)
         }
 
-        // 容器内工作目录
-        val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
+        // 需要提前创建输出目录，否则trivy报错
+        File(taskWorkDir, containerConfig.outputDir).mkdirs()
 
+        // 容器内工作目录
+        val bind = Bind(taskWorkDir.absolutePath, Volume(containerConfig.workDir))
         // 缓存目录映射
         val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
-
-        val hostConfig = DockerUtils.dockerHostConfig(Binds(bind, cacheBind), maxFileSize, true)
-        val containerCmd = dockerClient.createContainerCmd(containerConfig.image)
-            .withHostConfig(hostConfig)
-            .withCmd(buildScanCmds(task, scannerInputFile))
-            .withTty(true)
-            .withStdinOpen(true)
-
-        if (logger.isDebugEnabled) {
-            logger.debug(logMsg(task, "run container cmd [${containerCmd.cmd.contentToString()}]"))
+        val cmd = buildScanCmds(task, scannerInputFile)
+        val result = dockerScanHelper.scan(
+            containerConfig.image, Binds(bind, cacheBind), cmd, taskWorkDir, scannerInputFile, task
+        )
+        if (!result) {
+            return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
         }
+        return scanStatus(task, taskWorkDir)
+    }
 
-        val containerId = containerCmd.exec().id
-        taskContainerIdMap[task.taskId] = containerId
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
+        scannerInputFile.parentFile.mkdirs()
+        scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
+    }
 
-        logger.info(logMsg(task, "run container instance Id [$workDir, $containerId]"))
-        try {
-            val result = DockerUtils.containerRun(dockerClient, containerId, maxScanDuration)
+    override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
+        val scanner = task.scanner
+        require(scanner is TrivyScanner)
+        return File(File(taskWorkDir, scanner.container.inputDir), "${task.sha256}.tar")
+    }
 
-            logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
-            if (!result) {
-                return scanStatus(task, workDir, SubScanTaskStatus.TIMEOUT)
-            }
-            return scanStatus(task, workDir)
-        } finally {
-            taskContainerIdMap.remove(task.taskId)
-            DockerUtils.ignoreExceptionExecute(logMsg(task, "stop container failed")) {
-                dockerClient.stopContainerCmd(containerId)
-                    .withTimeout(DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS).exec()
-                dockerClient.killContainerCmd(containerId).withSignal(SIGNAL_KILL).exec()
-            }
-            DockerUtils.ignoreExceptionExecute(logMsg(task, "remove container failed")) {
-                dockerClient.removeContainerCmd(containerId).withForce(true).exec()
-            }
-        }
+    override fun workDir() = File(scannerExecutorProperties.workDir)
+
+    override fun result(taskWorkDir: File, task: ScanExecutorTask, scanStatus: SubScanTaskStatus): ScanExecutorResult {
+        val scanner = task.scanner
+        require(scanner is TrivyScanner)
+        return result(File(taskWorkDir, scanner.container.outputDir), scanStatus)
+    }
+
+    override fun stop(taskId: String): Boolean {
+        return dockerScanHelper.stop(taskId)
     }
 
     private fun generateTrivyDB(task: ScanExecutorTask, cacheDir: File) {
@@ -283,8 +140,7 @@ class TrivyScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "metadata.json file not exists"))
             metadataFile.parentFile.mkdirs()
             metadataFile.createNewFile()
-            val fileOutputStream = FileOutputStream(metadataFile)
-            fileOutputStream.use { it.write(METADATA_JSON_FILE_CONTENT.toByteArray()) }
+            FileOutputStream(metadataFile).use { it.write(METADATA_JSON_FILE_CONTENT.toByteArray()) }
             logger.info(logMsg(task, "create metadata.json file success"))
         }
 
@@ -354,10 +210,15 @@ class TrivyScanExecutor @Autowired constructor(
     private fun buildScanCmds(task: ScanExecutorTask, scannerInputFile: File): List<String> {
         val scanner = task.scanner
         require(scanner is TrivyScanner)
+        val maxScanDuration = task.scanner.maxScanDuration(scannerInputFile.length())
         val cmds = ArrayList<String>()
         cmds.add(CACHE_DIR_COMMAND)
         cmds.add(CACHE_DIR)
         cmds.add("image")
+        cmds.add("--timeout")
+        cmds.add("${maxScanDuration / 1000L}s")
+        cmds.add("--security-checks")
+        cmds.add("vuln")
         cmds.add("-f")
         cmds.add("json")
         cmds.add("-o")
@@ -410,18 +271,6 @@ class TrivyScanExecutor @Autowired constructor(
         )
     }
 
-    private inline fun <reified T> readJsonString(file: File): T? {
-        return if (file.exists()) {
-            file.inputStream().use { it.readJsonString<T>() }
-        } else {
-            null
-        }
-    }
-
-    private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
-    }
-
     /**
      * 扫描结果文件相对路径
      */
@@ -432,10 +281,6 @@ class TrivyScanExecutor @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(TrivyScanExecutor::class.java)
-
-        private const val DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS = 30
-
-        private const val SIGNAL_KILL = "KILL"
 
         /**
          * 指定容器内缓存目录命令
@@ -478,15 +323,5 @@ class TrivyScanExecutor @Autowired constructor(
         private const val METADATA_JSON_FILE_CONTENT =
             "{\"Version\":1,\"Type\":1,\"NextUpdate\":\"2022-05-31T06:51:38.429826331Z\"," +
                 "\"UpdatedAt\":\"2022-05-31T00:51:38.429826631Z\",\"DownloadedAt\":\"0001-01-01T00:00:00Z\"}"
-
-        /**
-         * manifest.json文件名
-         */
-        private const val MANIFEST = "manifest.json"
-
-        /**
-         * oci路径最小段数
-         */
-        private const val OCI_PATH_PARTS_MIN_SIZE = 5
     }
 }

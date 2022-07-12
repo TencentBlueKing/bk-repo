@@ -25,12 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor
+package com.tencent.bkrepo.scanner.executor.util
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import org.slf4j.LoggerFactory
+import java.io.File
 
-interface ScanExecutor {
-    fun scan(task: ScanExecutorTask): ScanExecutorResult
-    fun stop(taskId: String): Boolean
+object CommonUtils {
+    private val logger = LoggerFactory.getLogger(CommonUtils::class.java)
+
+    fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
+    }
+
+    inline fun <reified T> readJsonString(file: File): T? {
+        return if (file.exists()) {
+            file.inputStream().use { it.readJsonString<T>() }
+        } else {
+            null
+        }
+    }
+
+    fun ignoreExceptionExecute(failedMsg: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: Exception) {
+            logger.warn("$failedMsg, ${e.message}")
+        }
+    }
 }

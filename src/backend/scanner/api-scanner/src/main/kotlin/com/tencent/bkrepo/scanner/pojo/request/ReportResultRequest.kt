@@ -44,5 +44,7 @@ data class ReportResultRequest(
     @ApiModelProperty("扫描执行状态")
     val scanStatus: String,
     @ApiModelProperty("扫描执行器扫描结果")
-    val scanExecutorResult: ScanExecutorResult? = null
+    val scanExecutorResult: ScanExecutorResult? = null,
+    @ApiModelProperty("临时凭据，用于接口鉴权")
+    val token: String? = null
 )
