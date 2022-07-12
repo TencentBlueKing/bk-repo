@@ -129,12 +129,13 @@ open class ServiceBaseTest {
             ResponseBuilder.success()
         )
 
-        whenever(eventSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull())).then{}
+        whenever(eventSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull())).then {}
     }
 
     fun initRepoForUnitTest(
         projectService: ProjectService,
-        repositoryService: RepositoryService
+        repositoryService: RepositoryService,
+        credentialsKey: String? = null
     ) {
         if (!projectService.checkExist(UT_PROJECT_ID)) {
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
@@ -149,7 +150,8 @@ open class ServiceBaseTest {
                 public = false,
                 description = UT_REPO_DESC,
                 configuration = LocalConfiguration(),
-                operator = UT_USER
+                operator = UT_USER,
+                storageCredentialsKey = credentialsKey
             )
             repositoryService.createRepo(repoCreateRequest)
         }
