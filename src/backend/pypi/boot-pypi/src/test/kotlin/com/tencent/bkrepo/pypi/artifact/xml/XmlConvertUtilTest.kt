@@ -33,9 +33,7 @@ package com.tencent.bkrepo.pypi.artifact.xml
 
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 
-@SpringBootTest
 class XmlConvertUtilTest {
 
     // pip search response xml content

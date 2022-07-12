@@ -38,7 +38,7 @@ class TrivyScanner(
     override val name: String,
     override val version: String,
     @ApiModelProperty("扫描器缓存目录，会在rootPath下创建，存放漏洞数据库文件目录，需要以.开头，否则会被定时任务清理")
-    val cacheDir: String,
+    val cacheDir: String = ".cache",
     @ApiModelProperty("使用的容器镜像")
     val container: TrivyDockerImage,
     @ApiModelProperty("漏洞库配置")

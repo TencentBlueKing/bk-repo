@@ -2,6 +2,34 @@ import request from '@/utils/request'
 
 const PREFIX_SCAN = '/scanner/api/scan'
 const PREFIX_SCANNER = '/scanner/api/scanners'
+const PREFIX_PROJECT_SCAN_CONFIGURATION = `${PREFIX_SCAN}/configurations`
+
+export const SCANNER_TYPE_ARROWHEAD = 'arrowhead'
+export const SCANNER_TYPE_TRIVY = 'trivy'
+export const SCANNER_TYPE_DEPENDENCY_CHECK = 'DependencyCheck'
+
+export function createScanner(scanner) {
+  return request({
+    url: `${PREFIX_SCANNER}`,
+    method: 'post',
+    data: scanner
+  })
+}
+
+export function deleteScanner(name) {
+  return request({
+    url: `${PREFIX_SCANNER}/${name}`,
+    method: 'delete'
+  })
+}
+
+export function updateScanner(scanner) {
+  return request({
+    url: `${PREFIX_SCANNER}/${scanner.name}`,
+    method: 'put',
+    data: scanner
+  })
+}
 
 export function scanners() {
   return request({
@@ -36,6 +64,41 @@ export function scan(scanner, projectId, repoName, path) {
           }
         ]
       }
+    }
+  })
+}
+
+export function createProjectScanConfiguration(configuration) {
+  return request({
+    url: `${PREFIX_PROJECT_SCAN_CONFIGURATION}`,
+    method: 'post',
+    data: configuration
+  })
+}
+
+export function deleteProjectScanConfiguration(projectId) {
+  return request({
+    url: `${PREFIX_PROJECT_SCAN_CONFIGURATION}/${projectId}`,
+    method: 'delete'
+  })
+}
+
+export function updateProjectScanConfiguration(configuration) {
+  return request({
+    url: `${PREFIX_PROJECT_SCAN_CONFIGURATION}`,
+    method: 'put',
+    data: configuration
+  })
+}
+
+export function projectScanConfigurations(pageNumber, pageSize, projectId) {
+  return request({
+    url: `${PREFIX_PROJECT_SCAN_CONFIGURATION}`,
+    method: 'get',
+    params: {
+      pageNumber,
+      pageSize,
+      projectId
     }
   })
 }

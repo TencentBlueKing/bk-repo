@@ -104,21 +104,20 @@ class ArtifactEventConsumer(
                 )
             )
         }
-        webHookList.filter {
+        val triggerWebHookList = webHookList.filter {
             it.triggers.contains(event.type) && matchResourceKey(
                 it.resourceKeyPattern,
                 event.resourceKey
             )
         }
-        logger.info("event: $event, webHookList: $webHookList")
-        webHookExecutor.asyncExecutor(event, webHookList)
+        logger.info("event: $event, webHookList: $triggerWebHookList")
+        webHookExecutor.asyncExecutor(event, triggerWebHookList)
     }
 
     private fun checkIfNeedTrigger(event: ArtifactEvent): Boolean {
         val projectRepoKey = "${event.projectId}:${event.repoName}"
         webHookProperties.filterProjectRepoKey.forEach {
-            val regex = Regex(it.replace("*", ".*"))
-            if (projectRepoKey.matches(regex)) {
+            if (projectRepoKey.matches(Regex(it))) {
                 return false
             }
         }

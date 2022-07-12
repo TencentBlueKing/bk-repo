@@ -29,6 +29,7 @@ package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
+import com.tencent.bkrepo.opdata.client.plugin.PluginClient
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
@@ -46,6 +47,7 @@ import org.springframework.stereotype.Service
 class OpServiceService @Autowired constructor(
     private val registryClientProvider: ObjectProvider<RegistryClient>,
     private val artifactMetricsClient: ArtifactMetricsClient,
+    private val pluginClient: PluginClient,
     private val executor: ThreadPoolTaskExecutor
 ) {
     /**
@@ -76,7 +78,8 @@ class OpServiceService @Autowired constructor(
     private fun instanceDetail(instanceInfo: InstanceInfo): InstanceDetail {
         val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo)
         val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo)
-        return InstanceDetail(downloadingCount, uploadingCount)
+        val loadedPlugins = pluginClient.loadedPlugins(instanceInfo)
+        return InstanceDetail(downloadingCount, uploadingCount, loadedPlugins)
     }
 
     /**
