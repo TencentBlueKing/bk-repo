@@ -91,7 +91,7 @@ class NodeCopyJob(
         dstCredentials: StorageCredentials?
     ) {
         val key = "$digest-${srcCredentials?.key}-${dstCredentials?.key}"
-        synchronized(key) {
+        synchronized(key.intern()) {
             storageService.copy(digest, srcCredentials, dstCredentials)
         }
     }
