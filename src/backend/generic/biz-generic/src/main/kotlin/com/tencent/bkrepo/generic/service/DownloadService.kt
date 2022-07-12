@@ -33,7 +33,6 @@ package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.constant.META_DATA
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -84,7 +83,6 @@ class DownloadService(
             if (node.folder && !download) {
                 renderListView(node, this)
             } else {
-                context.putAttribute(META_DATA, node.nodeMetadata)
                 repository.download(context)
             }
         }

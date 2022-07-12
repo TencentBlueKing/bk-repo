@@ -42,11 +42,6 @@ const val REPO_KEY = "repository"
 const val ARTIFACT_INFO_KEY = "artifact"
 
 /**
- * 构件元数据 attributes的key
- */
-const val META_DATA = "metadata"
-
-/**
  * 查询构件配置写入request attributes的key
  */
 const val ARTIFACT_CONFIGURER = "artifact-configurer"
