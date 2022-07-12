@@ -33,12 +33,8 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
-import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
@@ -46,7 +42,6 @@ import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
@@ -119,9 +114,9 @@ class FileReferenceServiceTest @Autowired constructor(
         // 测试获取特定存储中的引用
         createRepoUseSpecificCredential()
         createReference(USED_SPECIFIC_CREDENTIAL_REPO_NAME)
-        fileReferenceService.get(UT_STORAGE_CREDENTIALS_KEY, TEST_SHA_256).apply {
+        fileReferenceService.get(CREDENTIAL_KEY, TEST_SHA_256).apply {
             assertEquals(sha256, TEST_SHA_256)
-            assertEquals(credentialsKey, UT_STORAGE_CREDENTIALS_KEY)
+            assertEquals(credentialsKey, CREDENTIAL_KEY)
             assertEquals(count, 1L)
         }
     }
@@ -144,23 +139,17 @@ class FileReferenceServiceTest @Autowired constructor(
     }
 
     private fun createRepoUseSpecificCredential() {
-        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, FileSystemCredentials(), "")
+        val createRequest = StorageCredentialsCreateRequest(CREDENTIAL_KEY, FileSystemCredentials(), "")
         storageCredentialService.create(UT_USER, createRequest)
-        val repoCreateRequest = RepoCreateRequest(
-            projectId = UT_PROJECT_ID,
-            name = USED_SPECIFIC_CREDENTIAL_REPO_NAME,
-            type = RepositoryType.GENERIC,
-            category = RepositoryCategory.LOCAL,
-            public = false,
-            description = UT_REPO_DESC,
-            configuration = LocalConfiguration(),
-            operator = UT_USER,
-            storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
+        createRepository(
+            repositoryService = repositoryService,
+            repoName = USED_SPECIFIC_CREDENTIAL_REPO_NAME,
+            credentialsKey = CREDENTIAL_KEY
         )
-        repositoryService.createRepo(repoCreateRequest)
     }
 
     companion object {
+        private const val CREDENTIAL_KEY = "$UT_STORAGE_CREDENTIALS_KEY-referece-test"
         private const val USED_SPECIFIC_CREDENTIAL_REPO_NAME = "repoUsedSpecificCredential"
         private const val TEST_SHA_256 = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
     }
