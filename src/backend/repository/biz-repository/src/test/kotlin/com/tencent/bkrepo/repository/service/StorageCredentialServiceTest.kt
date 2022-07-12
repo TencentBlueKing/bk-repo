@@ -49,6 +49,7 @@ import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -72,13 +73,14 @@ import org.springframework.context.annotation.Import
 @DataMongoTest
 internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialService: StorageCredentialService,
+    private val storageCredentialsRepository: StorageCredentialsRepository,
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService
 ) : ServiceBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
-        storageCredentialService.forceDelete(UT_STORAGE_CREDENTIALS_KEY)
+        storageCredentialsRepository.deleteAll()
     }
 
     @Test
@@ -146,6 +148,14 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     @Test
     fun testDelete() {
         val credential = createCredential()
+
+        // 仅存在一个存储凭证时删除失败
+        assertThrows<BadRequestException> {
+            storageCredentialService.delete(credential.key!!)
+        }
+
+        // 存在两个及以上存储凭证时删除成功
+        createCredential(key = "test")
         storageCredentialService.delete(credential.key!!)
         assertEquals(null, storageCredentialService.findByKey(credential.key!!))
     }
@@ -223,11 +233,14 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     }
 
     private fun createRepository(credentialKey: String): RepositoryDetail {
-        val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+        val projectName = "${UT_PROJECT_ID}2"
+        val projectCreateRequest = ProjectCreateRequest(
+            projectName, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER
+        )
         projectService.createProject(projectCreateRequest)
         val repoCreateRequest = RepoCreateRequest(
-            projectId = UT_PROJECT_ID,
-            name = UT_REPO_NAME,
+            projectId = projectName,
+            name = "${UT_REPO_NAME}2",
             type = RepositoryType.GENERIC,
             category = RepositoryCategory.LOCAL,
             public = false,
