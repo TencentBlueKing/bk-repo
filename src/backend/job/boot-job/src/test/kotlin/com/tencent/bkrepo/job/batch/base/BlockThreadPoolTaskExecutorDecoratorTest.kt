@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.job.batch.base
 
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
+import io.mockk.every
+import io.mockk.mockkObject
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
@@ -36,11 +39,17 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.assertThrows
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 class BlockThreadPoolTaskExecutorDecoratorTest {
 
+    @BeforeEach
+    fun beforeEach() {
+        mockkObject(SpringContextUtils)
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
+    }
     @Test
     fun maxAvailableTest() {
         val executor = BlockThreadPoolTaskExecutorDecorator(newSingleThreadExecutor(), 20)
@@ -131,7 +140,7 @@ class BlockThreadPoolTaskExecutorDecoratorTest {
         val id = "id"
         val begin = System.currentTimeMillis()
         repeat(100) {
-            val identityTask = IdentityTask(id = id, runnable = Runnable { TimeUnit.MILLISECONDS.sleep(100) })
+            val identityTask = IdentityTask(id = id, runnable = { TimeUnit.MILLISECONDS.sleep(100) })
             executor.executeWithId(identityTask, permitsPerSecond = 30.0)
         }
         executor.completeAndGet(id, 5000)
