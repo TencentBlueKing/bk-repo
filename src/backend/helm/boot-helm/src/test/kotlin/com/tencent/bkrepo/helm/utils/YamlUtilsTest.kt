@@ -31,35 +31,37 @@
 
 package com.tencent.bkrepo.helm.utils
 
-import com.tencent.bkrepo.common.api.util.toYamlString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 
 @DisplayName("yaml工具类测试")
-@SpringBootTest
 class YamlUtilsTest {
     @Test
     @DisplayName("yaml转换为json测试")
     fun yaml2JsonTest() {
-        val jsonString = yamlStr.byteInputStream().toYamlString()
+        val jsonString = yamlStr.toJsonString()
         println(jsonString)
     }
 
     companion object {
-        const val yamlStr = "apiVersion: v1\n" +
+        const val yamlStr = "apiVersion: \"v1\"\n" +
             "entries:\n" +
-            "  bk-redis:\n" +
-            "  - apiVersion: v1\n" +
-            "    appVersion: '1.0'\n" +
-            "    description: 这是一个测试示例\n" +
-            "    name: bk-redis\n" +
-            "    version: 0.1.1\n" +
+            "  mychart:\n" +
+            "  - apiVersion: \"v2\"\n" +
+            "    appVersion: \"1.16.0\"\n" +
+            "    created: \"2022-05-26T13:33:29.610Z\"\n" +
+            "    description: \"A Helm chart for Kubernetes\"\n" +
+            "    digest: \"e5b9ce565573cf5006d7c2fb35d124e30ead715885e2e1ad9822910e949a37d0\"\n" +
+            "    keywords: []\n" +
+            "    maintainers: []\n" +
+            "    name: \"mychart\"\n" +
+            "    sources: []\n" +
             "    urls:\n" +
-            "    - http://localhost:10021/test/helm-local/charts/bk-redis-0.1.1.tgz\n" +
-            "    created: '2020-06-24T09:24:41.135Z'\n" +
-            "    digest: e755d7482cb0422f9c3f7517764902c94bab7bcf93e79b6277c49572802bfba2\n" +
-            "generated: '2020-06-24T09:26:05.026Z'\n" +
-            "serverInfo: {}"
+            "    - \"test/helm-5/charts/mychart-0.1.6.tgz\"\n" +
+            "    version: \"0.1.6\"\n" +
+            "    type: \"application\"\n" +
+            "generated: \"2022-05-26T12:40:19.296Z\"\n" +
+            "serverInfo: {}\n"
     }
 }

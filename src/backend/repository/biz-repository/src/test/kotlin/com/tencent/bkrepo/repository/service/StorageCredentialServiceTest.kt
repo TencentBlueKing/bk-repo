@@ -34,26 +34,17 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REGION
-import com.tencent.bkrepo.repository.UT_REPO_DESC
-import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
-import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -72,13 +63,14 @@ import org.springframework.context.annotation.Import
 @DataMongoTest
 internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialService: StorageCredentialService,
+    private val storageCredentialsRepository: StorageCredentialsRepository,
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService
 ) : ServiceBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
-        storageCredentialService.forceDelete(UT_STORAGE_CREDENTIALS_KEY)
+        storageCredentialsRepository.deleteAll()
     }
 
     @Test
@@ -145,7 +137,14 @@ internal class StorageCredentialServiceTest @Autowired constructor(
 
     @Test
     fun testDelete() {
-        val credential = createCredential()
+        // 仅存在一个存储凭证时删除失败
+        val credential = createCredential(key = "test")
+        assertThrows<BadRequestException> {
+            storageCredentialService.delete(credential.key!!)
+        }
+
+        // 存在两个及以上存储凭证时删除成功
+        createCredential()
         storageCredentialService.delete(credential.key!!)
         assertEquals(null, storageCredentialService.findByKey(credential.key!!))
     }
@@ -160,7 +159,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     @Test
     fun testDeleteUsedCredential() {
         val credential = createCredential()
-        createRepository(credential.key!!)
+        initRepoForUnitTest(projectService, repositoryService, credential.key!!)
         assertThrows<BadRequestException> {
             storageCredentialService.delete(credential.key!!)
         }
@@ -220,22 +219,5 @@ internal class StorageCredentialServiceTest @Autowired constructor(
             cache.expireDays = 10
             cache.loadCacheFirst = true
         }
-    }
-
-    private fun createRepository(credentialKey: String): RepositoryDetail {
-        val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
-        projectService.createProject(projectCreateRequest)
-        val repoCreateRequest = RepoCreateRequest(
-            projectId = UT_PROJECT_ID,
-            name = UT_REPO_NAME,
-            type = RepositoryType.GENERIC,
-            category = RepositoryCategory.LOCAL,
-            public = false,
-            description = UT_REPO_DESC,
-            configuration = LocalConfiguration(),
-            operator = UT_USER,
-            storageCredentialsKey = credentialKey
-        )
-        return repositoryService.createRepo(repoCreateRequest)
     }
 }

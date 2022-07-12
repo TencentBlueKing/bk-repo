@@ -8,6 +8,7 @@ import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Ulimit
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.ignoreExceptionExecute
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
@@ -28,8 +29,8 @@ object DockerUtils {
     /**
      * 拉取镜像
      */
-    fun pullImage(dockerClient: DockerClient, tag: String) {
-        val images = dockerClient.listImagesCmd().exec()
+    fun DockerClient.pullImage(tag: String) {
+        val images = listImagesCmd().exec()
         val exists = images.any { image ->
             image.repoTags.any { it == tag }
         }
@@ -38,8 +39,7 @@ object DockerUtils {
         }
         logger.info("pulling image: $tag")
         val elapsedTime = measureTimeMillis {
-            val result = dockerClient
-                .pullImageCmd(tag)
+            val result = pullImageCmd(tag)
                 .exec(PullImageResultCallback())
                 .awaitCompletion(DEFAULT_PULL_IMAGE_DURATION, TimeUnit.MILLISECONDS)
             if (!result) {
@@ -49,15 +49,31 @@ object DockerUtils {
         logger.info("image $tag pulled, elapse: $elapsedTime")
     }
 
-    fun containerRun(
-        dockerClient: DockerClient,
-        containerId: String,
-        timeout: Long
-    ): Boolean {
-        dockerClient.startContainerCmd(containerId).exec()
+    fun DockerClient.createContainer(
+        image: String,
+        hostConfig: HostConfig? = null,
+        cmd: List<String>? = null,
+        tty: Boolean = true,
+        stdIn: Boolean = true
+    ): String {
+        // 拉取镜像
+        pullImage(image)
+        // 创建容器
+        val createCmd = createContainerCmd(image)
+        hostConfig?.let { createCmd.withHostConfig(it) }
+        cmd?.let { createCmd.withCmd(it) }
+        return createCmd.withTty(tty).withStdinOpen(stdIn).exec().id
+    }
+
+    fun DockerClient.startContainer(containerId: String, timeout: Long): Boolean {
+        startContainerCmd(containerId).exec()
         val resultCallback = WaitContainerResultCallback()
-        dockerClient.waitContainerCmd(containerId).exec(resultCallback)
+        waitContainerCmd(containerId).exec(resultCallback)
         return resultCallback.awaitCompletion(timeout, TimeUnit.MILLISECONDS)
+    }
+
+    fun DockerClient.removeContainer(containerId: String, msg: String = "", force: Boolean = true) {
+        ignoreExceptionExecute(msg) { removeContainerCmd(containerId).withForce(force).exec() }
     }
 
     fun dockerHostConfig(
@@ -77,14 +93,6 @@ object DockerUtils {
             } else if (processorCount == 2) {
                 withCpusetCpus("0")
             }
-        }
-    }
-
-    fun ignoreExceptionExecute(failedMsg: String, block: () -> Unit) {
-        try {
-            block()
-        } catch (e: Exception) {
-            logger.warn("$failedMsg, ${e.message}")
         }
     }
 }

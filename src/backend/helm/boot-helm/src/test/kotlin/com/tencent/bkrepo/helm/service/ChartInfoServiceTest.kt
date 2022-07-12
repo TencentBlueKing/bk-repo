@@ -31,47 +31,14 @@
 
 package com.tencent.bkrepo.helm.service
 
-import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import org.springframework.web.context.WebApplicationContext
 
 @DisplayName("chart info 信息列表测试")
-@SpringBootTest
 class ChartInfoServiceTest {
-    @Autowired
-    private lateinit var wac: WebApplicationContext
-
-    private lateinit var mockMvc: MockMvc
-
-    @BeforeEach
-    fun setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
-    }
-
-    @Test
-    @DisplayName("chart列表展示")
-    fun allChartsListTest() {
-        val perform =
-            mockMvc.perform(
-                MockMvcRequestBuilders.get("/test/test/api/charts")
-                    .header("Authorization", "Basic XXXXX=")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-        perform.andExpect { MockMvcResultMatchers.status().is4xxClientError }
-        perform.andExpect { MockMvcResultMatchers.status().isOk }
-        println(perform.andReturn().response.contentAsString)
-    }
 
     @Test
     @DisplayName("json转换查询测试")
@@ -101,23 +68,8 @@ class ChartInfoServiceTest {
             "    digest: 8dedfa1d0e7ff20dfb3ef3c9b621f43f2e89f3e7361005639510ab10329d1ec8\n" +
             "generated: '2020-06-24T09:26:05.026Z'\n" +
             "serverInfo: {}"
-        val indexYamlMetadata = str.readJsonString<HelmIndexYamlMetadata>()
+        val indexYamlMetadata = str.readYamlString<HelmIndexYamlMetadata>()
         Assertions.assertEquals(indexYamlMetadata.entries.size, 2)
-        Assertions.assertEquals(indexYamlMetadata.entries["/mychart"]?.size, 1)
-    }
-
-    @Test
-    @DisplayName("获取chart返回状态测试")
-    fun chartExistsTest() {
-        val perform =
-            mockMvc.perform(
-                MockMvcRequestBuilders.head("/test/test/api/charts/mongodb/7.8.10")
-                    .header("Authorization", "Basic XXXXX=")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-        println(perform.andReturn().response.contentAsString)
-        perform.andExpect { MockMvcResultMatchers.status().isOk }
-        val status = perform.andReturn().response.status
-        Assertions.assertEquals(status, 200)
+        Assertions.assertEquals(indexYamlMetadata.entries["mychart"]?.size, 1)
     }
 }

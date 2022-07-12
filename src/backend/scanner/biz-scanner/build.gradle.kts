@@ -35,5 +35,4 @@ dependencies {
     implementation(project(":common:common-security"))
     implementation(project(":common:common-mongo"))
     implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
 }

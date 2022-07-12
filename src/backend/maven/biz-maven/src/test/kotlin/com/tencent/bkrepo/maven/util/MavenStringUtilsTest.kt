@@ -21,7 +21,7 @@ internal class MavenStringUtilsTest {
             { Assertions.assertEquals("my-app", mavenVersion.artifactId) },
             { Assertions.assertEquals("4.0-SNAPSHOT", mavenVersion.version) },
             { Assertions.assertEquals("20220110.065755", mavenVersion.timestamp) },
-            { Assertions.assertEquals("5", mavenVersion.buildNo) },
+            { Assertions.assertEquals(5, mavenVersion.buildNo) },
             { Assertions.assertEquals("jar-with-dependencies", mavenVersion.classifier) },
             { Assertions.assertEquals("jar", mavenVersion.packaging) }
         )
@@ -81,7 +81,7 @@ internal class MavenStringUtilsTest {
             { Assertions.assertEquals("my-app", mavenVersion.artifactId) },
             { Assertions.assertEquals("4.0-SNAPSHOT", mavenVersion.version) },
             { Assertions.assertEquals("20220110.065755", mavenVersion.timestamp) },
-            { Assertions.assertEquals("5", mavenVersion.buildNo) },
+            { Assertions.assertEquals(5, mavenVersion.buildNo) },
             { Assertions.assertEquals(null, mavenVersion.classifier) },
             { Assertions.assertEquals("jar", mavenVersion.packaging) }
         )

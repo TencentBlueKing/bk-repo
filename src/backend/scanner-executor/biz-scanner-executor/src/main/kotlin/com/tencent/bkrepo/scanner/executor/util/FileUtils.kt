@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.executor.util
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.DirectoryNotEmptyException
@@ -51,5 +52,10 @@ object FileUtils {
             }
             !it.exists() && res
         }
+    }
+
+    fun sha256NameWithExt(fullPath: String, sha256: String): String {
+        val fileExtension = fullPath.substringAfterLast(CharPool.DOT, "")
+        return "${sha256}.$fileExtension"
     }
 }

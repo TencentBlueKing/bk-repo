@@ -28,15 +28,23 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.api.constant.StringPool.randomString
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.micrometer.core.instrument.Timer
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.mockk.every
+import io.mockk.mockkObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -44,6 +52,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.concurrent.thread
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class ArtifactDataReceiverTest {
 
     private val primaryPath = "temp".toPath()
@@ -51,6 +60,14 @@ internal class ArtifactDataReceiverTest {
     private val filename = "testfile"
     private val shortContent = randomString(DEFAULT_BUFFER_SIZE)
     private val longContent = randomString(DEFAULT_BUFFER_SIZE * 20)
+
+    @BeforeAll
+    fun mock() {
+        mockkObject(ArtifactMetrics)
+        every { ArtifactMetrics.getUploadingCounters(any()) } returns emptyList()
+        every { ArtifactMetrics.getUploadingTimer(any()) } returns Timer.builder(ARTIFACT_UPLOADING_TIME)
+            .register(SimpleMeterRegistry())
+    }
 
     @BeforeEach
     fun initAndClean() {
@@ -128,6 +145,7 @@ internal class ArtifactDataReceiverTest {
         val inputStream = createRateLimitInputStream(longContent)
         simulateIODelay(receiver, inputStream, 15 * 1000)
         assertFallbackResult(receiver, true)
+        receiver.finish()
     }
 
     /**

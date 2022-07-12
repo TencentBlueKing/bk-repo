@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.packages.VersionDownloadEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -54,6 +56,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
@@ -101,6 +104,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
+
+    @Autowired
+    lateinit var eventSupplier: EventSupplier
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -214,13 +220,38 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
-                publishDownloadEvent(context, it)
+                publishPackageDownloadEvent(context, it)
             }
         }
         if (throughput != Throughput.EMPTY) {
             publisher.publishEvent(ArtifactResponseEvent(artifactResource, throughput, context.storageCredentials))
-            publisher.publishEvent(ArtifactDownloadedEvent(context))
+            publishNodeDownloadEvent(context)
             logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
+        }
+    }
+
+    private fun publishNodeDownloadEvent(context: ArtifactDownloadContext) {
+        publisher.publishEvent(ArtifactDownloadedEvent(context))
+        if (context.artifacts.isNullOrEmpty()) {
+            val event = ArtifactEvent(
+                type = EventType.NODE_DOWNLOADED,
+                projectId = context.projectId,
+                repoName = context.repoName,
+                resourceKey = context.artifactInfo.getArtifactFullPath(),
+                userId = context.userId
+            )
+            eventSupplier.delegateToSupplier(event = event, topic = BINDING_OUT_NAME)
+        } else {
+            context.artifacts.forEach {
+                val event = ArtifactEvent(
+                    type = EventType.NODE_DOWNLOADED,
+                    projectId = context.projectId,
+                    repoName = context.repoName,
+                    resourceKey = it.getArtifactFullPath(),
+                    userId = context.userId
+                )
+                eventSupplier.delegateToSupplier(event = event, topic = BINDING_OUT_NAME)
+            }
         }
     }
 
@@ -260,7 +291,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         artifactMetrics.downloadingCount.decrementAndGet()
     }
 
-    private fun publishDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
+    private fun publishPackageDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
         if (context.repositoryDetail.type != RepositoryType.GENERIC) {
             val packageType = context.repositoryDetail.type.name
             val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
@@ -279,5 +310,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractArtifactRepository::class.java)
+        private const val BINDING_OUT_NAME = "nodeDownloadedEvent-out-0"
     }
 }

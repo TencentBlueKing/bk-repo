@@ -34,6 +34,8 @@ serviceAccount:
 serviceMonitor:
   enabled: false
 
+## bkDomainScheme配置
+bkDomainScheme: http
 
 ## 日志采集配置
 bkLogConfig:

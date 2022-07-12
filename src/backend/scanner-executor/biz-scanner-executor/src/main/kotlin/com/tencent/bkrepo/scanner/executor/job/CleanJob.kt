@@ -29,6 +29,7 @@ package com.tencent.bkrepo.scanner.executor.job
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.PruneType
+import com.tencent.bkrepo.common.api.constant.CharPool.DOT
 import com.tencent.bkrepo.scanner.executor.ExecutorScheduler
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.util.FileUtils
@@ -61,7 +62,7 @@ class CleanJob(
         val finishedTaskDirs = ArrayList<File>()
         workDir.listFiles()!!.forEach { scannerDir ->
             val files = scannerDir.listFiles { file ->
-                file.isDirectory && !executorScheduler.scanning(file.name)
+                file.isDirectory && !executorScheduler.scanning(file.name) && !file.name.startsWith(DOT)
             }!!
             finishedTaskDirs.addAll(files)
         }

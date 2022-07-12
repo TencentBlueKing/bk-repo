@@ -31,16 +31,15 @@
 
 package com.tencent.bkrepo.rpm.util
 
-import org.junit.jupiter.api.Test
-
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import java.util.regex.Pattern
 
 internal class RpmStringUtilsTest {
 
     @Test
     fun formatTest() {
-        assertEquals("7.os.x86_64", "7/os/x86_64".format("/", "."))
+        assertEquals("7.os.x86_64", "7/os/x86_64".replace("/", "."))
     }
 
     @Test
