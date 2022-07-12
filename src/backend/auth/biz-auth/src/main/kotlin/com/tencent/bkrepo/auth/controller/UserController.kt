@@ -95,7 +95,7 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("创建仓库用户")
+    @ApiOperation("创建项目用户")
     @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
         checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
@@ -106,7 +106,7 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("创建项目用户")
+    @ApiOperation("创建仓库用户")
     @PostMapping("/create/repo")
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
         checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)

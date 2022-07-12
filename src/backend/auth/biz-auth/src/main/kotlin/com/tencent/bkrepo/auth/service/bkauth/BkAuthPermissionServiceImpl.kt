@@ -170,7 +170,7 @@ class BkAuthPermissionServiceImpl constructor(
             val request = buildProjectCheckRequest(projectId, userId, appId)
 
             // devops 体系
-            if (matchDevopsCond(appId)) {
+            if (matchDevopsCond(appId) || matchBcsOrRepoCond(appId)) {
                 if (checkDevopsPermission(request)) {
                     return getAllRepoByProjectId(projectId)
                 }

@@ -42,22 +42,12 @@ object ScanParamUtil {
         version: String?,
         fullPath: String?
     ) {
-        when (repoType) {
-            RepositoryType.MAVEN -> {
-                if (packageKey.isNullOrEmpty() || version.isNullOrEmpty()) {
-                    throw ErrorCodeException(
-                        CommonMessageCode.PARAMETER_INVALID,
-                        "packageKey[$packageKey], version[$version]"
-                    )
-                }
-            }
+        if (repoType == RepositoryType.GENERIC && fullPath.isNullOrEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "fullPath[$fullPath]")
+        }
 
-            RepositoryType.GENERIC -> {
-                if (fullPath.isNullOrEmpty()) {
-                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "fullPath[$fullPath]")
-                }
-            }
-            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "repoType[${repoType.name}]")
+        if (repoType != RepositoryType.GENERIC && (packageKey.isNullOrEmpty() || version.isNullOrEmpty())) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "packageKey[$packageKey], version[$version]")
         }
     }
 }
