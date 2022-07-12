@@ -34,10 +34,8 @@ package com.tencent.bkrepo.helm.utils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 
 @DisplayName("yaml工具类测试")
-@SpringBootTest
 class YamlUtilsTest {
     @Test
     @DisplayName("yaml转换为json测试")

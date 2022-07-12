@@ -30,10 +30,8 @@ package com.tencent.bkrepo.rds.utils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 
 @DisplayName("rds工具类测试")
-@SpringBootTest
 class RdsUtilsTest {
     @Test
     @DisplayName("yaml转换为json测试")

@@ -34,7 +34,6 @@ package com.tencent.bkrepo.helm.service
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.MockMvc
@@ -45,7 +44,6 @@ import org.springframework.web.context.WebApplicationContext
 import java.io.File
 
 @DisplayName("chart上传/删除操作测试")
-@SpringBootTest
 class ChartManipulationServiceTest {
     @Autowired
     private lateinit var wac: WebApplicationContext
