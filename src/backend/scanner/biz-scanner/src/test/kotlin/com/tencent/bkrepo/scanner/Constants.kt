@@ -25,38 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.util
+package com.tencent.bkrepo.scanner
 
-import org.apache.commons.lang3.SystemUtils
-import org.slf4j.LoggerFactory
-
-object CommandUtil {
-    private val logger = LoggerFactory.getLogger(CommandUtil::class.java)
-
-    /**
-     * 命令执行成功
-     */
-    const val EXEC_SUCCESS = 0
-
-    /**
-     * 命令执行失败
-     */
-    const val EXEC_FAILED = -1
-
-    fun exec(command: String): Int {
-        if (!SystemUtils.IS_OS_UNIX) {
-            return EXEC_FAILED
-        }
-        try {
-            val process = Runtime.getRuntime().exec(arrayOf("/bin/bash", "-c", command))
-            if (process.waitFor() != EXEC_SUCCESS) {
-                val msg = process.errorStream.use { it.reader().readText() }
-                logger.error("exec command[$command] failed: $msg")
-            }
-            return process.exitValue()
-        } catch (e: Exception) {
-            logger.error("exec command[$command] error", e)
-        }
-        return EXEC_FAILED
-    }
-}
+const val PROJECT_ID = "projectId"
+const val REPO = "repo"
+const val NODE_FULL_PATH = "/path/to"
+const val NODE_NAME = "name"
+const val NODE_SHA256 = "da87281c9f9ab6cef8f9362935f4fc864db94606d52212614894f1253461a762"
+const val NODE_SIZE = 123
+const val PACKAGE_KEY = "gav://com.test:test"
+const val PACKAGE_VERSION = "1.2.3"

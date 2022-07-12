@@ -76,8 +76,10 @@ class DeltaSyncService(
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
-    private val blockSize = deltaProperties.blockSize.toBytes().toInt()
-    private val patchTimeout = deltaProperties.patchTimeout.toMillis()
+    private val blockSize: Int
+        get() = deltaProperties.blockSize.toBytes().toInt()
+    private val patchTimeout: Long
+        get() = deltaProperties.patchTimeout.toMillis()
     val signFileProjectId = deltaProperties.projectId
     val signFileRepoName = deltaProperties.repoName
     val signRepo: RepositoryDetail by lazy {

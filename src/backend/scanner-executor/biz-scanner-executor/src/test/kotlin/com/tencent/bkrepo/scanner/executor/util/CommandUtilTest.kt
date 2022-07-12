@@ -27,36 +27,18 @@
 
 package com.tencent.bkrepo.scanner.executor.util
 
+import com.tencent.bkrepo.scanner.executor.util.CommandUtil.EXEC_SUCCESS
 import org.apache.commons.lang3.SystemUtils
-import org.slf4j.LoggerFactory
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-object CommandUtil {
-    private val logger = LoggerFactory.getLogger(CommandUtil::class.java)
-
-    /**
-     * 命令执行成功
-     */
-    const val EXEC_SUCCESS = 0
-
-    /**
-     * 命令执行失败
-     */
-    const val EXEC_FAILED = -1
-
-    fun exec(command: String): Int {
+class CommandUtilTest {
+    @Test
+    fun testExec() {
         if (!SystemUtils.IS_OS_UNIX) {
-            return EXEC_FAILED
+            return
         }
-        try {
-            val process = Runtime.getRuntime().exec(arrayOf("/bin/bash", "-c", command))
-            if (process.waitFor() != EXEC_SUCCESS) {
-                val msg = process.errorStream.use { it.reader().readText() }
-                logger.error("exec command[$command] failed: $msg")
-            }
-            return process.exitValue()
-        } catch (e: Exception) {
-            logger.error("exec command[$command] error", e)
-        }
-        return EXEC_FAILED
+
+        Assertions.assertEquals(CommandUtil.exec("ls"), EXEC_SUCCESS)
     }
 }

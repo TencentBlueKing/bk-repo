@@ -25,38 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.util
+package com.tencent.bkrepo.scanner.utils
 
-import org.apache.commons.lang3.SystemUtils
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.scanner.NODE_FULL_PATH
+import com.tencent.bkrepo.scanner.PACKAGE_KEY
+import com.tencent.bkrepo.scanner.PACKAGE_VERSION
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-object CommandUtil {
-    private val logger = LoggerFactory.getLogger(CommandUtil::class.java)
+class ScanParamUtilTest {
+    @Test
+    fun testCheckParam() {
+        ScanParamUtil.checkParam(RepositoryType.GENERIC, null, null, NODE_FULL_PATH)
+        ScanParamUtil.checkParam(RepositoryType.MAVEN, PACKAGE_KEY, PACKAGE_VERSION, null)
 
-    /**
-     * 命令执行成功
-     */
-    const val EXEC_SUCCESS = 0
-
-    /**
-     * 命令执行失败
-     */
-    const val EXEC_FAILED = -1
-
-    fun exec(command: String): Int {
-        if (!SystemUtils.IS_OS_UNIX) {
-            return EXEC_FAILED
+        Assertions.assertThrows(ErrorCodeException::class.java) {
+            ScanParamUtil.checkParam(RepositoryType.GENERIC, null, null, "")
         }
-        try {
-            val process = Runtime.getRuntime().exec(arrayOf("/bin/bash", "-c", command))
-            if (process.waitFor() != EXEC_SUCCESS) {
-                val msg = process.errorStream.use { it.reader().readText() }
-                logger.error("exec command[$command] failed: $msg")
-            }
-            return process.exitValue()
-        } catch (e: Exception) {
-            logger.error("exec command[$command] error", e)
+
+        Assertions.assertThrows(ErrorCodeException::class.java) {
+            ScanParamUtil.checkParam(RepositoryType.MAVEN, "", null, null)
         }
-        return EXEC_FAILED
     }
 }

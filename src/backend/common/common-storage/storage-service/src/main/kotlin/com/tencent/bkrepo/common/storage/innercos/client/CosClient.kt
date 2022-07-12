@@ -445,13 +445,17 @@ class CosClient(val credentials: InnerCosCredentials) {
             // 但是通常是由于调用方异常而提前终止相关任务，所以这里产生的中断异常大部分情况下无影响。
             retry(RETRY_COUNT) {
                 session.activeCount.incrementAndGet()
+                // 为防止重试导致文件名重复
+                val fileName = "$DOWNLOADING_CHUNkED_PREFIX${seq}_${priority}_${it}$DOWNLOADING_CHUNkED_SUFFIX"
+                val filePath = rootPath.resolve(fileName)
                 try {
                     val response = getObject(downloadPartRequest)
                     response.inputStream ?: throw IOException("not found object chunk")
-                    // 为防止重试导致文件名重复
-                    val fileName = "$DOWNLOADING_CHUNkED_PREFIX${seq}_${priority}_${it}$DOWNLOADING_CHUNkED_SUFFIX"
-                    val filePath = rootPath.resolve(fileName)
                     return write2File(filePath, response.inputStream)
+                } catch (e: Exception) {
+                    // 记录下错误日志，错误仍要抛出，触发重试
+                    logger.warn("Download chunk file[$filePath] failed", e)
+                    throw e
                 } finally {
                     session.activeCount.decrementAndGet()
                 }
