@@ -50,7 +50,7 @@ class XmlStrUtilsTest {
         val uri = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
         val depth = 3
         val repodataUri = XmlStrUtils.resolveRepodataUri(uri, depth)
-        Assertions.assertEquals("7/os/x86_64/", repodataUri.repoDataPath)
+        Assertions.assertEquals("/7/os/x86_64/", repodataUri.repoDataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
 
         val uri2 = "/7/hello-world-1-1.x86_64.rpm"
@@ -66,7 +66,7 @@ class XmlStrUtilsTest {
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri3.artifactRelativePath)
     }
 
-    @Test
+//    @Test
     fun updatePackageCountTest() {
         val start = System.currentTimeMillis()
         val file = File("/Downloads/60M.xml")
@@ -87,7 +87,7 @@ class XmlStrUtilsTest {
         }
     }
 
-    @Test
+//    @Test
     fun indexOfTest() {
         val file = File("/Users/weaving/Downloads/filelist/21e8c7280184d7428e4fa259c669fa4b2cfef05f-filelists.xml")
         val randomAccessFile = RandomAccessFile(file, "r")
@@ -99,7 +99,7 @@ class XmlStrUtilsTest {
         Assertions.assertEquals(287, index)
     }
 
-    @Test
+//    @Test
     fun indexPackageTest() {
         val file = File("others.xml")
         val randomAccessFile = RandomAccessFile(file, "r")
@@ -117,13 +117,13 @@ class XmlStrUtilsTest {
         }
     }
 
-    @Test
+//    @Test
     fun updateFileTest() {
         val file = File("others.xml")
         XmlStrUtils.updatePackageXml(RandomAccessFile(file, "rw"), 3, 1, "a".toByteArray())
     }
 
-    @Test
+//    @Test
     fun resolvePackageCountTest() {
         val file = File("${System.getenv("HOME")}/Downloads/63da8904a2791e4965dcda350b26ffa3d1eda27b-primary")
         val randomAccessFile = RandomAccessFile(file, "r")
@@ -131,7 +131,7 @@ class XmlStrUtilsTest {
         print("count: $count")
     }
 
-    @Test
+//    @Test
     fun test() {
         val file = File(
             "${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master" +
