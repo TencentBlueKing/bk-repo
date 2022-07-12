@@ -132,11 +132,11 @@ object MetadataUtils {
         operator: String = SecurityUtils.getUserId()
     ): MutableList<MetadataModel>? {
         val forbidMetadata = metadata.firstOrNull {
-            it.key == FORBID_STATUS && it.value is Boolean && it.system
+            it.key == FORBID_STATUS && it.value is Boolean
         } ?: return null
         val result = ArrayList<MetadataModel>(3)
 
-        result.add(forbidMetadata)
+        result.add(forbidMetadata.copy(system = true))
         // 添加禁用操作用户和类型
         result.add(MetadataModel(key = FORBID_USER, value = operator, system = true))
         result.add(MetadataModel(key = FORBID_TYPE, value = ForbidType.MANUAL.name, system = true))
