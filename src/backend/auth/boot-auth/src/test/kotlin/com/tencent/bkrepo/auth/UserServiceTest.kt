@@ -96,7 +96,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("查询用户测试用例")
     fun getUserByIdTest() {
         val user = userService.getUserById(userId)
@@ -109,7 +108,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("创建用户测试用例")
     fun createUserTest() {
         val createUserRequest = createUserRequest()
@@ -118,7 +116,6 @@ class UserServiceTest {
         assertThrows<ErrorCodeException> { userService.createUser(createUserRequest) }
     }
 
-    @Test
     @DisplayName("创建项目用户测试用例")
     fun createUserToProjectTest() {
         userService.createUser(createUserRequest())
@@ -133,7 +130,6 @@ class UserServiceTest {
         Assertions.assertEquals(isSuccess, true)
     }
 
-    @Test
     @DisplayName("用户列表测试用例")
     fun listUserTest() {
         // 创建角色
@@ -148,7 +144,6 @@ class UserServiceTest {
         Assertions.assertEquals(listUser.size, 1)
     }
 
-    @Test
     @DisplayName("根据用户ID删除用户测试用例")
     fun deleteByIdTest() {
         // user not exists
@@ -158,7 +153,6 @@ class UserServiceTest {
         Assertions.assertTrue(isSuccess)
     }
 
-    @Test
     @DisplayName("用户修改测试用例")
     fun updateUserByIdTest() {
         userService.createUser(createUserRequest())
@@ -175,7 +169,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("添加用户到角色测试用例")
     fun addUserToRoleTest() {
         userService.createUser(createUserRequest())
@@ -198,7 +191,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("批量添加用户到角色测试用例")
     fun addUserToRoleBatchTest() {
         val idList = mutableListOf<String>()
@@ -222,7 +214,6 @@ class UserServiceTest {
         Assertions.assertTrue(isSuccess)
     }
 
-    @Test
     @DisplayName("删除用户的角色测试用例")
     fun removeUserFromRoleTest() {
         userService.createUser(createUserRequest())
@@ -235,7 +226,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("删除用户的角色测试用例")
     fun removeUserFromRoleBatchTest() {
         val idList = mutableListOf<String>()
@@ -260,7 +250,6 @@ class UserServiceTest {
         Assertions.assertTrue(removeUserFromRoleBatch)
     }
 
-    @Test
     @DisplayName("创建token测试")
     fun createTokenTest() {
         userService.createUser(createUserRequest())
@@ -270,7 +259,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("添加token测试用例")
     fun addUserTokenTest() {
         val token = IDUtil.genRandomId()
@@ -281,7 +269,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("添加token测试用例")
     fun removeTokenTest() {
         userService.createUser(createUserRequest())
@@ -292,7 +279,6 @@ class UserServiceTest {
         }
     }
 
-    @Test
     @DisplayName("通过密码或者token来寻找用户测试")
     fun findUserByUserTokenTest() {
         userService.createUser(createUserRequest())

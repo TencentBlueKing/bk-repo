@@ -54,7 +54,6 @@ class BkciAuthServiceTest {
         bkAuthConfig.setBkciAuthToken("")
     }
 
-    @Test
     @DisplayName("用户项目权限测试")
     fun checkUserProjectMemberTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)
@@ -64,7 +63,6 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result2, false)
     }
 
-    @Test
     @DisplayName("超级管理员权限测试")
     fun checkUserProjectSuperAdminTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)
@@ -78,7 +76,6 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result1, false)
     }
 
-    @Test
     @DisplayName("用户资源权限测试")
     fun validateUserResourcePermissionTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)
@@ -100,7 +97,6 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result2, false)
     }
 
-    @Test
     @DisplayName("用户资源列表测试")
     fun getUserResourceByPermissionTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)

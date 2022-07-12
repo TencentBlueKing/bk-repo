@@ -70,20 +70,17 @@ class KeyServiceTest {
         }
     }
 
-    @Test
     fun createKeyTest() {
         keyService.createKey(name, key)
         assertThrows<ErrorCodeException> { keyService.createKey(name, key) }
     }
 
-    @Test
     fun getKeyTest() {
         keyService.createKey(name, key)
         val keys = keyService.listKey()
         Assertions.assertTrue(keys.find { it.name == name } != null)
     }
 
-    @Test
     fun deleteKeyTest() {
         assertThrows<ErrorCodeException> { keyService.deleteKey("test-id") }
         keyService.createKey(name, key)

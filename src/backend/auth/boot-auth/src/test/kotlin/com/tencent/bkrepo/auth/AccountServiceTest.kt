@@ -86,7 +86,6 @@ class AccountServiceTest {
         }
     }
 
-    @Test
     @DisplayName("创建账户测试")
     fun createAccountTest() {
         val account = accountService.createAccount(buildCreateAccountRequest())
@@ -96,7 +95,6 @@ class AccountServiceTest {
         Assertions.assertTrue(account.credentials.size == account.authorizationGrantTypes.size)
     }
 
-    @Test
     @DisplayName("查询账户测试")
     fun listAccountTest() {
         accountService.createAccount(buildCreateAccountRequest())
@@ -107,7 +105,6 @@ class AccountServiceTest {
         accountService.deleteAccount("test2")
     }
 
-    @Test
     @DisplayName("删除账户测试")
     fun deleteAccountTest() {
         accountService.createAccount(buildCreateAccountRequest())
@@ -115,7 +112,6 @@ class AccountServiceTest {
         assertThrows<ErrorCodeException> { accountService.deleteAccount(appId) }
     }
 
-    @Test
     @DisplayName("修改账户测试")
     fun updateAccountTest() {
         assertThrows<ErrorCodeException> { accountService.updateAccount(buildUpdateAccountRequest()) }
@@ -130,7 +126,6 @@ class AccountServiceTest {
         Assertions.assertTrue(account.credentials.size == 2)
     }
 
-    @Test
     @DisplayName("创建ak/sk对测试")
     fun createCredentialTest() {
         assertThrows<ErrorCodeException> {
@@ -147,7 +142,6 @@ class AccountServiceTest {
         }
     }
 
-    @Test
     @DisplayName("获取as/sk对测试")
     fun listCredentialsTest() {
         accountService.createAccount(buildCreateAccountRequest())
@@ -155,7 +149,6 @@ class AccountServiceTest {
         Assertions.assertTrue(credentialsList.size == 2)
     }
 
-    @Test
     @DisplayName("删除as/sk对测试")
     fun deleteCredentialTest() {
         val account = accountService.createAccount(buildCreateAccountRequest())
@@ -167,7 +160,6 @@ class AccountServiceTest {
         Assertions.assertTrue(result)
     }
 
-    @Test
     @DisplayName("更新ak/sk对状态测试")
     fun updateCredentialStatusTest() {
         val account = accountService.createAccount(buildCreateAccountRequest())
@@ -178,7 +170,6 @@ class AccountServiceTest {
         Assertions.assertTrue(status)
     }
 
-    @Test
     @DisplayName("校验ak/sk")
     fun checkCredentialTest() {
         val account = accountService.createAccount(buildCreateAccountRequest())

@@ -83,7 +83,6 @@ class OauthAuthorizationServiceTest {
         accountService.deleteAccount(appId)
     }
 
-    @Test
     fun createTokenTest() {
         val clientId = account.id
         val clientSecret = account.credentials.first().secretKey
