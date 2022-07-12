@@ -33,7 +33,6 @@ dependencies {
     api(project(":helm:api-helm"))
     api(project(":common:common-job"))
     api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-stream"))
     api(project(":common:common-lock"))
     implementation("org.yaml:snakeyaml")
     implementation("com.github.zafarkhaja:java-semver")
