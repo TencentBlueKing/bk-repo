@@ -33,7 +33,6 @@ package com.tencent.bkrepo.helm.service
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
@@ -60,7 +59,7 @@ class HelmFixToolServiceTest {
     val projectId = "test"
     val repoName = "test"
 
-    @Test
+//    @Test
     @DisplayName("元属性修复")
     fun metaDataRegenerateTest() {
         val perform =
