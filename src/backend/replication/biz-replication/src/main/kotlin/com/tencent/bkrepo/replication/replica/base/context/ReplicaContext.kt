@@ -137,10 +137,17 @@ class ReplicaContext(
         while (!responseOK && tryCount < 3) {
             try {
                 response = it.proceed(request)
-                responseOK = response.code() in 200..499
+                // 针对429返回需要做延时重试
+                responseOK = if (response.code() == 429) {
+                    Thread.sleep(500)
+                    false
+                } else {
+                    response.code() in 200..499
+                }
             } catch (e: Exception) {
                 logger.warn(
-                    "Request ${request.url()} is not successful and error is ${e.cause}, will retry it - $tryCount"
+                    "The result of request ${request.url()} is failure and error is ${e.cause?.message}" +
+                        ", will retry it - $tryCount"
                 )
                 // 如果第3次重试还是失败，抛出失败异常
                 if (tryCount == 2) throw e
