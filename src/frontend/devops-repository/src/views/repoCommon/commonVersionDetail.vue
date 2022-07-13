@@ -65,7 +65,7 @@
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
             <div class="version-metadata display-block" :data-title="$t('metaData')">
                 <bk-table
-                    :data="detail.metadata"
+                    :data="(detail.metadata || []).filter(m => !m.system)"
                     :outer-border="false"
                     :row-border="false"
                     size="small">

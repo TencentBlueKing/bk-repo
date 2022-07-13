@@ -156,7 +156,7 @@
                 'getVersionList',
                 'changeStageTag',
                 'deleteVersion',
-                'forbidMetadata'
+                'forbidPackageMetadata'
             ]),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, load) {
                 this.pagination.current = current
@@ -252,12 +252,13 @@
                 })
             },
             changeForbidStatusHandler (row = this.currentVersion) {
-                this.forbidMetadata({
+                this.forbidPackageMetadata({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    fullPath: row.contentPath,
                     body: {
-                        nodeMetadata: [{ key: 'forbidStatus', value: !row.metadata.forbidStatus }]
+                        packageKey: this.packageKey,
+                        version: row.name,
+                        versionMetadata: [{ key: 'forbidStatus', value: !row.metadata.forbidStatus }]
                     }
                 }).then(() => {
                     this.$bkMessage({

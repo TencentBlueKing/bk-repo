@@ -104,7 +104,7 @@
                 repoEnum,
                 isLoading: false,
                 property: this.$route.query.property || 'lastModifiedDate',
-                direction: this.$route.query.direction || 'ASC',
+                direction: this.$route.query.direction || 'DESC',
                 projectId: this.$route.query.projectId || '',
                 packageName: this.$route.query.packageName || '',
                 repoType: this.$route.query.repoType || 'docker',
