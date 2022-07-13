@@ -210,9 +210,9 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         reuseThreshold: Float
     ): Checksum? {
         // 达到重复使用阈值需要的数据字节数
-        val detectingDataCount = ceil(index.total * reuseThreshold - reuse) * slidingWindow.windowSize
+        val detectingDataCount = ceil(index.total * reuseThreshold - reuse) * slidingWindow.windowSize.toLong()
         // 剩余的数据字节数
-        var remainingDataCount = slidingWindow.windowSize * index.total - slidingWindow.headPos()
+        var remainingDataCount = slidingWindow.windowSize.toLong() * index.total - slidingWindow.headPos()
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
             adler32RollingHash.rotate(remove, enter)
