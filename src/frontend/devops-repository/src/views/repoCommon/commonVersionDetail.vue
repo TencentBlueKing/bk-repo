@@ -233,7 +233,7 @@
                             this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: '安全扫描' }
                         ]
                         : []),
-                    this.showRepoScan && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },
+                    // this.showRepoScan && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }
