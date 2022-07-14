@@ -310,6 +310,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractArtifactRepository::class.java)
-        private const val BINDING_OUT_NAME = "nodeDownloadedEvent-out-0"
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 }
