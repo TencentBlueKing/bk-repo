@@ -4,6 +4,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.apache.commons.logging.LogFactory
 import java.util.LinkedList
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Future
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ThreadPoolExecutor
 
 class DownloadTimeWatchDog(
@@ -15,16 +18,16 @@ class DownloadTimeWatchDog(
     var healthyFlag: Boolean = true
     private val sessions: MutableList<DownloadSession> = LinkedList()
     private val lock = Any()
+    var taskFuture: ScheduledFuture<*>? = null
 
     init {
-        val runnable = Runnable {
+        startWatchTask {
             try {
                 checkHealthy()
             } catch (e: Exception) {
                 logger.error("Check failed", e)
             }
         }
-        timer.scheduleWithFixedDelay(runnable, CHECK_INTERVAL, CHECK_INTERVAL, TimeUnit.MILLISECONDS)
     }
 
     fun isHealthy(): Boolean {
@@ -69,9 +72,25 @@ class DownloadTimeWatchDog(
         }
     }
 
+    private fun startWatchTask(task: Runnable) {
+        taskFutureMap[name]?.let {
+            it.cancel(false)
+            taskFutureMap.remove(name)
+        }
+        taskFutureMap.computeIfAbsent(name) {
+            timer.scheduleWithFixedDelay(
+                task,
+                CHECK_INTERVAL,
+                CHECK_INTERVAL,
+                TimeUnit.MILLISECONDS
+            ).apply { taskFuture = this }
+        }
+    }
+
     companion object {
         private val logger = LogFactory.getLog(DownloadTimeWatchDog::class.java)
         private val timer = Executors.newSingleThreadScheduledExecutor()
+        val taskFutureMap = ConcurrentHashMap<String, Future<*>>()
         private const val CHECK_INTERVAL = 3000L
     }
 }
