@@ -28,10 +28,12 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.type.oci
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
@@ -97,13 +99,13 @@ class OciArtifactPushClient(
             ?: throw ArtifactNotFoundException("Can not read manifest info from content")
         logger.info("$name|$version's artifact will be pushed to the third party cluster")
         // 上传layer, 每次并发执行5个
-        val semaphore = Semaphore(5)
+        val semaphore = Semaphore(replicationProperties.threadNum)
         var result = true
         val futureList = mutableListOf<Future<Boolean>>()
         manifestInfo.descriptors?.forEach {
+            semaphore.acquire()
             futureList.add(
                 submit {
-                    semaphore.acquire()
                     try {
                         uploadBlobInChunks(
                             token = token,
@@ -130,7 +132,7 @@ class OciArtifactPushClient(
                 version = version,
                 input = Pair(input, nodes[0].size),
                 mediaType = manifestInfo.mediaType
-            ).process()
+            ).process().isSuccess
         }
         return result
     }
@@ -194,21 +196,12 @@ class OciArtifactPushClient(
     /**
      * 读取节点数据流
      */
-    private fun loadInputStream(
+    private fun getBlobSize(
         sha256: String,
         projectId: String,
         repoName: String,
-    ): Pair<InputStream, Long> {
-        val size = localDataManager.getNodeBySha256(projectId, repoName, sha256)
-        return Pair(
-            loadInputStream(
-                sha256 = sha256,
-                size = size,
-                projectId = projectId,
-                repoName = repoName
-            ),
-            size
-        )
+    ): Long {
+        return localDataManager.getNodeBySha256(projectId, repoName, sha256)
     }
 
     /**
@@ -221,35 +214,48 @@ class OciArtifactPushClient(
         projectId: String,
         repoName: String,
     ): Boolean {
-        val sessionCloseHandler = buildSessionCloseHandler(
+        logger.info("Will try to upload $name's blob $digest in repo $projectId|$repoName ")
+        val checkHandler = buildBlobExistCheckHandler(
             token = token,
+            name = name,
             digest = digest
         )
+        if (checkHandler.process().isSuccess) {
+            return true
+        }
+        val sessionIdHandler = buildSessionIdHandler(
+            token = token,
+            name = name
+        )
+        val sessionIdHandlerResult = sessionIdHandler.process()
+        if (!sessionIdHandlerResult.isSuccess) {
+            return false
+        }
+
         // 加载blob流数据
         val sha256 = digest.split(":").last()
-        val (inputStream, size) = loadInputStream(
+        val size = getBlobSize(
             sha256 = sha256,
             projectId = projectId,
             repoName = repoName
         )
         // 需要将大文件进行分块上传
-        val chunksUploadHandler = buildChunksUploadHandler(
+        val chunkedUploadResult = blobChunkUploadProcess(
             token = token,
-            sessionCloseHandler = sessionCloseHandler,
-            start = 0,
-            input = Pair(inputStream, size)
+            size = size,
+            repoName = repoName,
+            projectId = projectId,
+            sha256 = sha256,
+            location = sessionIdHandlerResult.location
         )
-        val sessionIdHandler = buildSessionIdHandler(
+        if (!chunkedUploadResult) return false
+
+        val sessionCloseHandler = buildSessionCloseHandler(
             token = token,
-            chunksUploadHandler = chunksUploadHandler,
-            name = name
+            digest = digest,
+            location = sessionIdHandlerResult.location
         )
-        return buildBlobExistCheckHandler(
-            token = token,
-            sessionIdHandler = sessionIdHandler,
-            name = name,
-            digest = digest
-        ).process()
+        return sessionCloseHandler.process().isSuccess
     }
 
     /**
@@ -258,14 +264,16 @@ class OciArtifactPushClient(
      */
     private fun buildBlobExistCheckHandler(
         token: String?,
-        sessionIdHandler: DefaultHandler,
         name: String,
         digest: String,
     ): DefaultHandler {
-        val blobExistCheckHandler = DefaultHandler(httpClient)
+        val blobExistCheckHandler = DefaultHandler(
+            httpClient = httpClient,
+            ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
+            extraSuccessCode = listOf(HttpStatus.TEMPORARY_REDIRECT.value)
+        )
         val headPath = OCI_BLOB_URL.format(name, digest)
         val headUrl = builderRequestUrl(clusterInfo.url, headPath)
-        blobExistCheckHandler.setHandler(failHandler = sessionIdHandler)
         val property = RequestProperty(
             authorizationCode = token,
             requestMethod = RequestMethod.HEAD,
@@ -281,7 +289,6 @@ class OciArtifactPushClient(
      */
     private fun buildSessionIdHandler(
         token: String?,
-        chunksUploadHandler: DefaultHandler,
         name: String,
     ): DefaultHandler {
         val sessionIdHandler = DefaultHandler(httpClient)
@@ -290,7 +297,6 @@ class OciArtifactPushClient(
         val postBody: RequestBody = RequestBody.create(
             MediaType.parse("application/json"), StringPool.EMPTY
         )
-        sessionIdHandler.setHandler(successHandler = chunksUploadHandler)
         val property = RequestProperty(
             requestBody = postBody,
             authorizationCode = token,
@@ -305,36 +311,64 @@ class OciArtifactPushClient(
      * 构件blob上传处理器
      * 上传blob文件step2: patch分块上传
      */
-    private fun buildChunksUploadHandler(
+    private fun blobChunkUploadProcess(
         token: String?,
-        sessionCloseHandler: DefaultHandler,
-        start: Long,
-        input: Pair<InputStream, Long>,
-    ): DefaultHandler {
-        val chunksUploadHandler = DefaultHandler(httpClient)
-        val patchBody: RequestBody = RequestBody.create(
-            MediaType.parse("application/octet-stream"), input.first.readBytes()
-        )
-        val patchHeader = Headers.Builder()
-            .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
-            .add(HttpHeaders.CONTENT_RANGE, "$start-${start + input.second - 1}")
-            .build()
-        chunksUploadHandler.setHandler(successHandler = sessionCloseHandler)
-        val property = RequestProperty(
-            requestBody = patchBody,
-            authorizationCode = token,
-            requestMethod = RequestMethod.PATCH,
-            headers = patchHeader
-        )
-        chunksUploadHandler.requestProperty = property
-        return chunksUploadHandler
+        size: Long,
+        sha256: String,
+        projectId: String,
+        repoName: String,
+        location: String?
+    ): Boolean {
+        var startPosition: Long = 0
+        while (startPosition < size) {
+            val offset = size - startPosition - replicationProperties.chunkedSize
+            val byteCount: Long = if (offset < 0) {
+                (size - startPosition)
+            } else {
+                replicationProperties.chunkedSize
+            }
+            val contentRange = "$startPosition-${startPosition + byteCount - 1}"
+            logger.info(
+                "${Thread.currentThread().name} start is $startPosition, " +
+                    "size is $size, byteCount is $byteCount contentRange is $contentRange"
+            )
+            val blobChunkUploadHandler = DefaultHandler(httpClient)
+            val range = Range(startPosition, startPosition + byteCount - 1, size)
+            val input = loadInputStreamByRange(sha256, range, projectId, repoName)
+            val patchBody: RequestBody = RequestBody.create(
+                MediaType.parse("application/octet-stream"), input.readBytes()
+            )
+            val patchHeader = Headers.Builder()
+                .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
+                .add(HttpHeaders.CONTENT_RANGE, contentRange)
+                .add(HttpHeaders.CONTENT_LENGTH, "$byteCount")
+                .build()
+            val property = RequestProperty(
+                requestBody = patchBody,
+                authorizationCode = token,
+                requestMethod = RequestMethod.PATCH,
+                headers = patchHeader,
+                requestUrl = location
+            )
+            blobChunkUploadHandler.requestProperty = property
+            val chunkedHandlerResult = blobChunkUploadHandler.process()
+            if (!chunkedHandlerResult.isSuccess) {
+                return false
+            }
+            startPosition += byteCount
+        }
+        return true
     }
 
     /**
      * 构件blob上传处理器
      * 上传blob文件最后一步: put上传
      */
-    private fun buildSessionCloseHandler(token: String?, digest: String): DefaultHandler {
+    private fun buildSessionCloseHandler(
+        token: String?,
+        digest: String,
+        location: String?
+    ): DefaultHandler {
         val sessionCloseHandler = DefaultHandler(httpClient)
         val putBody: RequestBody = RequestBody.create(
             MediaType.parse("application/json"), StringPool.EMPTY
@@ -348,7 +382,8 @@ class OciArtifactPushClient(
             params = params,
             authorizationCode = token,
             requestMethod = RequestMethod.PUT,
-            headers = putHeader
+            headers = putHeader,
+            requestUrl = location
         )
         sessionCloseHandler.requestProperty = property
         return sessionCloseHandler
@@ -401,7 +436,6 @@ class OciArtifactPushClient(
 
     companion object {
         private val logger = LoggerFactory.getLogger(OciArtifactPushClient::class.java)
-        const val OCI_LOGIN_URL = "/v2/"
         const val OCI_BLOB_URL = "%s/blobs/%s"
         const val OCI_MANIFEST_URL = "%s/manifests/%s"
         const val OCI_BLOBS_UPLOAD_FIRST_STEP_URL = "%s/blobs/uploads/"

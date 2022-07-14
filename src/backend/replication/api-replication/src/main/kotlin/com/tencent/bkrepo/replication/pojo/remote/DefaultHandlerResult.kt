@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,25 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.replication.pojo.remote
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-
-@ConfigurationProperties("replication")
-data class ReplicationProperties(
-
-    /**
-     * 文件发送限速
-     */
-    var rateLimit: DataSize = DataSize.ofBytes(-1),
-
-    /**
-     * oci blob文件上传分块大小
-     */
-    var chunkedSize: Long = 1024 * 1024 * 20,
-    /**
-     * oci blob文件上传并发数
-     */
-    var threadNum: Int = 4
+/**
+ * 请求返回信息
+ */
+data class DefaultHandlerResult(
+    val isSuccess: Boolean = false,
+    // 对于有些请求，可能需要对部分400以上的code的failure请求做其他逻辑
+    val isFailure: Boolean = false,
+    val location: String? = null
 )

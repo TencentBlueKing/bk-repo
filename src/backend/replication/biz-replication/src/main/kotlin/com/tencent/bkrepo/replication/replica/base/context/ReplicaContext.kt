@@ -55,6 +55,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 
 class ReplicaContext(
     taskDetail: ReplicaTaskDetail,
@@ -118,6 +119,9 @@ class ReplicaContext(
             ).build()
         } else {
             HttpClientBuilderFactory.create()
+                .readTimeout(1, TimeUnit.MINUTES)
+                .connectTimeout(1, TimeUnit.MINUTES)
+                .writeTimeout(1, TimeUnit.MINUTES)
                 .addInterceptor {
                     retryRequest(it)
                 }

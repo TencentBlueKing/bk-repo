@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
@@ -42,7 +42,7 @@ import java.io.InputStream
  */
 abstract class PushClient(
     private val localDataManager: LocalDataManager,
-    private val replicationProperties: ReplicationProperties
+    val replicationProperties: ReplicationProperties
 ) {
     lateinit var httpClient: OkHttpClient
 
@@ -132,8 +132,15 @@ abstract class PushClient(
      */
     fun loadInputStream(sha256: String, size: Long, projectId: String, repoName: String): InputStream {
         val repo = localDataManager.findRepoByName(projectId, repoName)
-        val artifactInputStream = localDataManager.getBlobData(sha256, size, repo)
-        return artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
+        return localDataManager.getBlobData(sha256, size, repo)
+    }
+
+    /**
+     * 读取节点数据流
+     */
+    fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
+        val repo = localDataManager.findRepoByName(projectId, repoName)
+        return localDataManager.getBlobDataByRange(sha256, range, repo)
     }
 
     companion object {

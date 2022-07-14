@@ -36,9 +36,10 @@ import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
 import com.tencent.bkrepo.replication.util.HttpUtils
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import okhttp3.MediaType
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
@@ -138,9 +139,8 @@ class HelmArtifactPushClient(
             name = name,
             version = version,
             fileType = fileType,
-            input = input,
-            size = node.size
-        ).process()
+            input = input
+        ).process().isSuccess
     }
 
     /**
@@ -151,8 +151,7 @@ class HelmArtifactPushClient(
         name: String,
         version: String,
         fileType: String,
-        input: InputStream,
-        size: Long
+        input: InputStream
     ): DefaultHandler {
         val artifactUploadHandler = DefaultHandler(httpClient)
         val postPath: String
@@ -165,10 +164,14 @@ class HelmArtifactPushClient(
             fileName = PROV_FILE_NAME.format(name, version)
         }
         val postUrl = builderRequestUrl(clusterInfo.url, postPath)
-        // TODO 这里强制同步是否合理，是否增加可配置
         val postBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("chart", fileName, StreamRequestBody(input, size))
+            .addFormDataPart(
+                "chart", fileName,
+                RequestBody.create(
+                    MediaType.parse("application/octet-stream"), input.readBytes()
+                )
+            )
             .addFormDataPart("force", true.toString())
             .build()
         val property = RequestProperty(
@@ -208,7 +211,6 @@ class HelmArtifactPushClient(
         const val CHART_FILE = "chart"
         const val CHART_FILE_NAME = "/%s-%s.tgz"
         const val PROV_FILE_NAME = "/%s-%s.tgz.prov"
-        const val PROV_FILE_SUFFIX = ".prov"
         const val CHART_FILE_SUFFIX = ".tgz"
     }
 }

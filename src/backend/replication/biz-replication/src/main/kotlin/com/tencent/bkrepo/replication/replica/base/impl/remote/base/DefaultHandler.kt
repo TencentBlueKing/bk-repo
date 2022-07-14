@@ -28,9 +28,10 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.replication.pojo.docker.OciErrorResponse
+import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.util.HttpUtils
@@ -42,39 +43,28 @@ import org.slf4j.LoggerFactory
  * 默认请求处理类
  */
 class DefaultHandler(
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    private val ignoredFailureCode: List<Int> = emptyList(),
+    private val extraSuccessCode: List<Int> = emptyList()
 ) {
-    private var successHandler: DefaultHandler? = null
-    private var failHandler: DefaultHandler? = null
     // 请求各种参数属性
     lateinit var requestProperty: RequestProperty
 
     /**
-     * 请求前置处理：
-     */
-    fun processBefore(property: RequestProperty? = null) {
-        property?.authorizationCode?.let { requestProperty.authorizationCode = property.authorizationCode }
-        property?.requestUrl?.let { requestProperty.requestUrl = property.requestUrl }
-    }
-
-    /**
      * 对传入请求进行处理判断
      */
-    fun process(property: RequestProperty? = null): Boolean {
-        this.processBefore(property)
+    fun process(): DefaultHandlerResult {
         val request = HttpUtils.wrapperRequest(requestProperty)
         val response = httpClient.newCall(request).execute()
         response.use {
             return when {
                 isSuccess(it) -> {
-                    logger.info("Result of the request ${it.request().url()} is success")
-                    val extraProperty = wrapperSuccess(it)
-                    this.successHandler?.process(extraProperty) ?: true
+                    logger.info("${Thread.currentThread().name} Result of the request ${request.url()} is success")
+                    wrapperSuccess(it)
                 }
                 isFailure(it) -> {
-                    logger.info("Result of the request ${it.request().url()} is failure")
-                    val extraProperty = wrapperFailure(it)
-                    this.failHandler?.process(extraProperty) ?: true
+                    logger.info("${Thread.currentThread().name} Result of the request ${request.url()} is failure")
+                    wrapperFailure(it)
                 }
                 else -> {
                     val error = JsonUtils.objectMapper.readValue(
@@ -92,60 +82,47 @@ class DefaultHandler(
      * 判断请求是否成功
      */
     private fun isSuccess(response: Response): Boolean {
-        return response.isSuccessful
+        return response.isSuccessful || extraSuccessCode.contains(response.code())
     }
 
     /**
      * 针对特殊code做判断
      */
     private fun isFailure(response: Response): Boolean {
-        if (BAD_RESPONSE_CODE.contains(response.code())) {
-            val error = JsonUtils.objectMapper.readValue(
-                response.body()!!.byteStream(), Map::class.java
-            )?.toJsonString()
-            throw ArtifactPushException(
-                "Response error for request ${response.request().url()}: " +
-                    "code is ${response.code()} and response is $error"
-            )
-        }
-        return true
+        if (ignoredFailureCode.contains(response.code()))
+            return true
+        val repMsg = JsonUtils.objectMapper.readValue(
+            response.body()!!.byteStream(), OciErrorResponse::class.java
+        )?.toJsonString()
+        throw ArtifactPushException(
+            "Response error for request ${response.request().url()}: " +
+                "code is ${response.code()} and response is $repMsg"
+        )
     }
 
     /**
      * 根据返回封装成功之后的请求数据
      */
-    private fun wrapperSuccess(response: Response?): RequestProperty? {
-        return response?.let {
-            val location = response.header(HttpHeaders.LOCATION)
-            RequestProperty(
-                requestUrl = location
-            )
-        }
+    private fun wrapperSuccess(response: Response?): DefaultHandlerResult {
+        return DefaultHandlerResult(
+            isSuccess = true,
+            isFailure = false,
+            location = response?.header(HttpHeaders.LOCATION)
+        )
     }
 
     /**
      * 根据返回封装失败之后的请求数据
      */
-    private fun wrapperFailure(response: Response?): RequestProperty? {
-        return null
-    }
-
-    /**
-     * 设置Handler
-     */
-    fun setHandler(successHandler: DefaultHandler? = null, failHandler: DefaultHandler? = null) {
-        this.successHandler = successHandler
-        this.failHandler = failHandler
+    private fun wrapperFailure(response: Response?): DefaultHandlerResult {
+        return DefaultHandlerResult(
+            isSuccess = false,
+            isFailure = true,
+            location = response?.header(HttpHeaders.LOCATION)
+        )
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(DefaultHandler::class.java)
-        private val BAD_RESPONSE_CODE = mutableListOf(
-            HttpStatus.BAD_REQUEST.value,
-            HttpStatus.UNAUTHORIZED.value,
-            HttpStatus.METHOD_NOT_ALLOWED.value,
-            HttpStatus.FORBIDDEN.value,
-            HttpStatus.CONFLICT.value
-        )
     }
 }

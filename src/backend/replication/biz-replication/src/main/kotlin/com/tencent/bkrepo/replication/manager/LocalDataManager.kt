@@ -73,6 +73,16 @@ class LocalDataManager(
     }
 
     /**
+     * 获取blob文件数据
+     */
+    @Throws(IllegalStateException::class)
+    fun getBlobDataByRange(sha256: String, range: Range, repoInfo: RepositoryDetail): InputStream {
+        val blob = storageService.load(sha256, range, repoInfo.storageCredentials)
+        check(blob != null) { "File data[sha256] does not exist" }
+        return blob
+    }
+
+    /**
      * 查找项目
      * 项目不存在抛异常
      */
