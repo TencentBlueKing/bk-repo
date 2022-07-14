@@ -27,12 +27,20 @@
 
 package com.tencent.bkrepo.job.config
 
+import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
+/**
+ * 流水线构件清理任务配置项
+ * @param enabled 是否启用任务
+ * @param batchSize 每次清理Node表数量
+ * @param reservedFrequency 保留最近构建产物的次数
+ * @param concurrency 清理任务表级并发数
+ */
 @ConfigurationProperties("job.pipeline-artifact-cleanup")
 data class PipelineArtifactCleanupJobProperties(
     override var enabled: Boolean = true,
-    var intervalDays: Int = 8,
-    var reservedFrequency: Long = 100,
+    var batchSize: Int = 8,
+    var reservedFrequency: Long = 1000,
     var concurrency: Int = 4
 ): BatchJobProperties(enabled)
