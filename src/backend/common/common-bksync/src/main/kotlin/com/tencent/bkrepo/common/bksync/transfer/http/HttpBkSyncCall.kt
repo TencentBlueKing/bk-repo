@@ -328,6 +328,7 @@ class HttpBkSyncCall(
                     throw PatchRequestException("Delta upload failed: ${errorMsg.orEmpty()}")
                 }
             }
+            metrics.deltaFileSize = deltaFile.length()
             metrics.patchTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
             metrics.patchSpeed = HumanReadable.throughput(metrics.fileSize, nanos)
             logger.info("Delta data upload success,elapsed ${HumanReadable.time(nanos)}.")
