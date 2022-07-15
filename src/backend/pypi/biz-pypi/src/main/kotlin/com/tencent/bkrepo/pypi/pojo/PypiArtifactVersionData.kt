@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.pypi.pojo
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+
 data class PypiArtifactVersionData(
     val basic: Basic,
-    val metadata: Map<String, Any>
+    val metadata: List<MetadataModel>?
 )
