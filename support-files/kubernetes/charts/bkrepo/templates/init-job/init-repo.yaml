@@ -39,7 +39,7 @@ spec:
                 "type" : "composite",
                 "proxy" : {
                   "channelList" : [
-                      {"public": true, "name":"bk-cr", "url": "{{ .Values.init.bcs.publicImageUrl | default "https://hub.bktencent.com/blueking" }}" }
+                      {"public": true, "name":"bk-cr", "url": "{{ .Values.init.bcs.publicImageUrl }}" }
                   ]
                 }
               },
@@ -57,7 +57,7 @@ spec:
                 "type" : "composite",
                 "proxy" : {
                   "channelList" : [
-                      {"public": true, "name":"bk-charts", "url": "{{ .Values.init.bcs.publicChartUrl | default "https://hub.bktencent.com/chartrepo/blueking"}}" }
+                      {"public": true, "name":"bk-charts", "url": "{{ .Values.init.bcs.publicChartUrl }}" }
                   ]
                 }
               },
