@@ -71,6 +71,7 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_INVALID_TYPE(34, "auth.invalid.type"),
     AUTH_LOGIN_FAILED(35, "auth.login.failed"),
     AUTH_EXT_PERMISSION_NOT_EXIST(35, "auth.ext.permission.notexist"),
+    AUTH_USER_FORAUTH_NOT_EXIST(36, "auth.user.forauth.notexist"),
     ;
 
     override fun getBusinessCode() = businessCode

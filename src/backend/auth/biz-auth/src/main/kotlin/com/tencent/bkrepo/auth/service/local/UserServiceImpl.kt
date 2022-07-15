@@ -76,7 +76,7 @@ class UserServiceImpl constructor(
 ) : UserService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
     @Autowired
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var repoClient: RepositoryClient
 
     @Autowired
     lateinit var projectClient: ProjectClient
@@ -126,7 +126,7 @@ class UserServiceImpl constructor(
 
     override fun createUserToRepo(request: CreateUserToRepoRequest): Boolean {
         logger.info("create user to repo request : [${DesensitizedUtils.toString(request)}]")
-        repositoryClient.getRepoInfo(request.projectId, request.repoName).data ?: run {
+        repoClient.getRepoInfo(request.projectId, request.repoName).data ?: run {
             logger.warn("repo [${request.projectId}/${request.repoName}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_REPO_NOT_EXIST)
         }

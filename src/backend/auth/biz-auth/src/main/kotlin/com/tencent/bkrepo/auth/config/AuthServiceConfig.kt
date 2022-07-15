@@ -79,18 +79,13 @@ class AuthServiceConfig {
         userRepository: UserRepository,
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
-        mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient,
-        projectClient: ProjectClient
+        mongoTemplate: MongoTemplate
     ): PermissionService {
-        logger.debug("init PermissionServiceImpl")
         return PermissionServiceImpl(
             userRepository,
             roleRepository,
             permissionRepository,
-            mongoTemplate,
-            repositoryClient,
-            projectClient
+            mongoTemplate
         )
     }
 
@@ -101,18 +96,13 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient,
-        projectClient: ProjectClient,
         bkiamService: BkiamService
     ): PermissionService {
-        logger.debug("init BkiamPermissionServiceImpl")
         return BkiamPermissionServiceImpl(
             userRepository,
             roleRepository,
             permissionRepository,
             mongoTemplate,
-            repositoryClient,
-            projectClient,
             bkiamService
         )
     }
@@ -124,8 +114,6 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient,
-        projectClient: ProjectClient,
         bkAuthConfig: BkAuthConfig,
         bkAuthPipelineService: BkAuthPipelineService,
         bkAuthProjectService: BkAuthProjectService
@@ -136,8 +124,6 @@ class AuthServiceConfig {
             roleRepository,
             permissionRepository,
             mongoTemplate,
-            repositoryClient,
-            projectClient,
             bkAuthConfig,
             bkAuthPipelineService,
             bkAuthProjectService

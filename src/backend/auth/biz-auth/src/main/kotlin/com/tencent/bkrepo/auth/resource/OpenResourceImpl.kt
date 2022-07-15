@@ -48,8 +48,8 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
     fun checkUserId(pathUid: String) {
         val userId = SecurityUtils.getUserId()
         if (userId.isNotEmpty() && userId != pathUid) {
-            logger.warn("use not match [$userId, $pathUid]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            logger.warn("user not match [$userId, $pathUid]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_EXIST)
         }
     }
 

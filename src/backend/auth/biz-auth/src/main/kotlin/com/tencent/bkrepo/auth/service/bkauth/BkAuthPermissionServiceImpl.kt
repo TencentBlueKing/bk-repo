@@ -40,8 +40,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 
@@ -53,8 +51,6 @@ class BkAuthPermissionServiceImpl constructor(
     roleRepository: RoleRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
-    repositoryClient: RepositoryClient,
-    projectClient: ProjectClient,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService
@@ -62,9 +58,7 @@ class BkAuthPermissionServiceImpl constructor(
     userRepository,
     roleRepository,
     permissionRepository,
-    mongoTemplate,
-    repositoryClient,
-    projectClient
+    mongoTemplate
 ) {
     private fun parsePipelineId(path: String): String? {
         val roads = PathUtils.normalizeFullPath(path).split("/")

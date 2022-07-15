@@ -54,16 +54,12 @@ class BkiamPermissionServiceImpl constructor(
     roleRepository: RoleRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
-    repositoryClient: RepositoryClient,
-    projectClient: ProjectClient,
     private val bkiamService: BkiamService
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
     permissionRepository,
-    mongoTemplate,
-    repositoryClient,
-    projectClient
+    mongoTemplate
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.info("checkPermission, request: $request")

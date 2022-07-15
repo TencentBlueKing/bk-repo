@@ -60,6 +60,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import java.time.LocalDateTime
 
@@ -67,11 +68,14 @@ open class PermissionServiceImpl constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate,
-    private val repositoryClient: RepositoryClient,
-    private val projectClient: ProjectClient
+    private val mongoTemplate: MongoTemplate
 ) : PermissionService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
+    @Autowired
+    lateinit var repoClient: RepositoryClient
+
+    @Autowired
+    lateinit var projectClient: ProjectClient
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
         permissionRepository.deleteById(id)
@@ -356,7 +360,7 @@ open class PermissionServiceImpl constructor(
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
-        return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+        return repoClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
     }
 
     fun isUserLocalAdmin(userId: String): Boolean {
