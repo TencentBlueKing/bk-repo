@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey.Companion.overviewKeyOf
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.DbSource
@@ -260,6 +261,9 @@ class TrivyScanExecutor @Autowired constructor(
         scanResult?.results?.forEach { result ->
             result.vulnerabilities?.let { vulnerabilityItems.addAll(it) }
             result.vulnerabilities?.forEach {
+                if (it.severity == "UNKNOWN") {
+                    it.severity = Level.CRITICAL.levelName.toUpperCase()
+                }
                 val overviewKey = overviewKeyOf(it.severity.toLowerCase())
                 overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
             }
