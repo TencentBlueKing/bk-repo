@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -70,20 +69,17 @@ class KeyServiceTest {
         }
     }
 
-    @Test
     fun createKeyTest() {
         keyService.createKey(name, key)
         assertThrows<ErrorCodeException> { keyService.createKey(name, key) }
     }
 
-    @Test
     fun getKeyTest() {
         keyService.createKey(name, key)
         val keys = keyService.listKey()
         Assertions.assertTrue(keys.find { it.name == name } != null)
     }
 
-    @Test
     fun deleteKeyTest() {
         assertThrows<ErrorCodeException> { keyService.deleteKey("test-id") }
         keyService.createKey(name, key)

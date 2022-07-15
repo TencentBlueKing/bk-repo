@@ -7,7 +7,7 @@
         @cancel="cancel">
         <div class="confirm-body">
             <div class="confirm-main">
-                <i :class="`devops-icon icon-${getIcon()}`"></i>
+                <i :class="`bk-icon icon-${getIcon()}`"></i>
                 <span class="ml10">{{ message }}</span>
             </div>
             <span class="confirm-tip">{{ subMessage }}</span>
@@ -39,11 +39,11 @@
             getIcon () {
                 switch (this.theme) {
                     case 'success':
-                        return 'check-1'
+                        return 'check-circle-shape'
                     case 'warning':
-                        return 'exclamation'
+                        return 'exclamation-circle-shape'
                     case 'danger':
-                        return 'close'
+                        return 'close-circle-shape'
                 }
             },
             showConfiirmDialog ({ theme = 'warning', message = '', subMessage = '', confirmFn = () => {} }) {
@@ -75,27 +75,23 @@
 <style lang="scss" scoped>
 .confirm-body {
     min-height: 60px;
-    padding-left: 26px;
+    padding-left: 16px;
     .confirm-main {
         display: flex;
         font-size: 14px;
         font-weight: bold;
     }
-    .devops-icon {
-        width: 26px;
-        height: 26px;
+    .bk-icon {
+        font-size: 26px;
         margin-top: -2px;
-        color:white;
-        border-radius: 50%;
-        &.icon-exclamation {
-            padding: 6px;
-            font-size: 14px;
-            background-color: var(--warningColor);
+        &.icon-check-circle-shape {
+            color: var(--successColor);
         }
-        &.icon-close {
-            padding: 7px;
-            font-size: 12px;
-            background-color: var(--dangerColor);
+        &.icon-exclamation-circle-shape {
+            color:var(--warningColor);
+        }
+        &.icon-close-circle-shape {
+            color: var(--dangerColor);
         }
     }
     .confirm-tip {

@@ -396,7 +396,7 @@ class OciOperationServiceImpl(
             )
             val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data!!
             val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion)
-            return PackageVersionInfo(basicInfo, emptyMap())
+            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
         }
     }
 

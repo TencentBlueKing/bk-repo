@@ -5,15 +5,16 @@
         placement="bottom-end"
         theme="light"
         ext-cls="operation-container"
+        :tippy-options="{ trigger: 'click' }"
         v-bind="$attrs">
         <slot>
-            <i @click.stop="() => {}" class="devops-icon icon-more flex-center hover-btn"></i>
+            <i class="devops-icon icon-more flex-center hover-btn"></i>
         </slot>
         <template #content><ul class="operation-list">
             <li v-for="li in filterList" :key="li.label"
                 class="operation-item"
                 :class="{ 'disabled': li.disabled }"
-                @click.stop="li.clickEvent()">
+                @click.stop="() => !li.disabled && li.clickEvent()">
                 {{ li.label }}
             </li>
         </ul></template>

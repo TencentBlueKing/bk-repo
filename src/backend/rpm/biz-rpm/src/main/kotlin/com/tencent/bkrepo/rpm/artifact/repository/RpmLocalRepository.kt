@@ -655,7 +655,6 @@ class RpmLocalRepository(
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
-            val rpmArtifactMetadata = jarNode.metadata
             val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
             ).data
@@ -673,7 +672,7 @@ class RpmLocalRepository(
                 stageTag,
                 null
             )
-            return RpmArtifactVersionData(rpmArtifactBasic, rpmArtifactMetadata)
+            return RpmArtifactVersionData(rpmArtifactBasic, packageVersion?.packageMetadata)
         }
     }
 

@@ -59,7 +59,7 @@ data class InnerCosCredentials(
         const val MB = 1024 * 1024
     }
 
-    class DownloadProperties(
+    data class DownloadProperties(
         var workers: Int = 0,
         var downloadTimeHighWaterMark: Long = 25_000,
         var downloadTimeLowWaterMark: Long = 5_000,

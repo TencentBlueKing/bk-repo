@@ -43,9 +43,8 @@ object CommandUtil {
      */
     const val EXEC_FAILED = -1
 
-
     fun exec(command: String): Int {
-        if (!SystemUtils.IS_OS_LINUX) {
+        if (!SystemUtils.IS_OS_UNIX) {
             return EXEC_FAILED
         }
         try {

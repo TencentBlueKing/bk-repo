@@ -39,7 +39,6 @@ import com.tencent.bkrepo.auth.service.bkauth.BkciAuthService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
@@ -54,7 +53,6 @@ class BkciAuthServiceTest {
         bkAuthConfig.setBkciAuthToken("")
     }
 
-    @Test
     @DisplayName("用户项目权限测试")
     fun checkUserProjectMemberTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)
@@ -64,7 +62,6 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result2, false)
     }
 
-    @Test
     @DisplayName("超级管理员权限测试")
     fun checkUserProjectSuperAdminTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)
@@ -78,7 +75,6 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result1, false)
     }
 
-    @Test
     @DisplayName("用户资源权限测试")
     fun validateUserResourcePermissionTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)
@@ -100,7 +96,6 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result2, false)
     }
 
-    @Test
     @DisplayName("用户资源列表测试")
     fun getUserResourceByPermissionTest() {
         val bkciAuthService = BkciAuthService(bkAuthConfig)

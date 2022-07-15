@@ -39,7 +39,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -69,7 +68,6 @@ class RoleServiceTest {
         }
     }
 
-    @Test
     @DisplayName("创建角色测试")
     fun createRoleTest() {
         // type -> project
@@ -80,7 +78,6 @@ class RoleServiceTest {
         Assertions.assertNotNull(createRoleId)
     }
 
-    @Test
     @DisplayName("根据主键id删除角色测试")
     fun deleteRoleByidTest() {
         assertThrows<ErrorCodeException> { roleService.deleteRoleByid(roleId) }
@@ -89,7 +86,6 @@ class RoleServiceTest {
         Assertions.assertTrue(deleteRoleByid)
     }
 
-    @Test
     @DisplayName("通过项目和仓库查找角色测试")
     fun listRoleByProjectTest() {
         roleService.createRole(buildRoleRequest())
@@ -112,7 +108,6 @@ class RoleServiceTest {
         roleService.deleteRoleByid(id2!!)
     }
 
-    @Test
     @DisplayName("角色详情测试")
     fun detailTest() {
         val id = roleService.createRole(buildRoleRequest())
@@ -122,7 +117,6 @@ class RoleServiceTest {
         }
     }
 
-    @Test
     @DisplayName("角色详情测试")
     fun detailWithProjectIdTest() {
         val id = roleService.createRole(buildRoleRequest())
@@ -132,7 +126,6 @@ class RoleServiceTest {
         }
     }
 
-    @Test
     @DisplayName("角色详情测试")
     fun detailWithProjectIdAndRepoNameTest() {
         val id = roleService.createRole(buildRoleRequest(repoName = repoName))

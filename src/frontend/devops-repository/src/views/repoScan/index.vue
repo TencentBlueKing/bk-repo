@@ -3,7 +3,6 @@
         <div class="ml20 mr20 mt10 flex-between-center">
             <div class="flex-align-center">
                 <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('create') }}</bk-button>
-                <!-- <bk-button class="ml10" @click="() => $router.push({ name: 'securityConfig' })">安全设置</bk-button> -->
             </div>
             <div class="flex-align-center">
                 <bk-input
@@ -54,7 +53,7 @@
                         :list="[
                             { label: '详情', clickEvent: () => showScanReport(row) },
                             !row.readOnly && { label: '设置', clickEvent: () => showScanConfig(row) },
-                            // { label: '中止', clickEvent: () => stopScanHandler(row) },
+                            { label: '中止', clickEvent: () => stopScanHandler(row) },
                             !row.readOnly && { label: '扫描', clickEvent: () => startScanHandler(row) },
                             !row.readOnly && { label: '删除', clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>

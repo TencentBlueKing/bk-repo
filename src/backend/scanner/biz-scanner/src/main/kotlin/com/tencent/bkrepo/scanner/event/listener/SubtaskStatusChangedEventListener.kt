@@ -27,11 +27,19 @@
 
 package com.tencent.bkrepo.scanner.event.listener
 
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
+import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.api.PackageMetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
+import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -39,7 +47,10 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class SubtaskStatusChangedEventListener(private val metadataClient: MetadataClient) {
+class SubtaskStatusChangedEventListener(
+    private val metadataClient: MetadataClient,
+    private val packageMetadataClient: PackageMetadataClient
+) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
     fun listen(event: SubtaskStatusChangedEvent) {
@@ -50,37 +61,75 @@ class SubtaskStatusChangedEventListener(private val metadataClient: MetadataClie
             }
 
             // 更新扫描状态元数据
-            val metadata = ArrayList<MetadataModel>(2)
+            val metadata = ArrayList<MetadataModel>(4)
             metadata.add(
                 MetadataModel(
-                    key = METADATA_KEY_SCAN_STATUS,
+                    key = SCAN_STATUS,
                     value = ScanPlanConverter.convertToScanStatus(status).name,
                     system = true
                 )
             )
+            // 更新质量规则元数据
             qualityRedLine?.let {
+                // 未通过质量规则，判断是否触发禁用
+                if (!qualityRedLine) {
+                    addForbidMetadata(this, metadata)
+                }
+                metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
+            }
+            if (repoType == RepositoryType.GENERIC.name) {
+                val request = MetadataSaveRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    nodeMetadata = metadata
+                )
+                metadataClient.saveMetadata(request)
+            } else {
+                val request = PackageMetadataSaveRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey!!,
+                    version = version!!,
+                    versionMetadata = metadata
+                )
+                packageMetadataClient.saveMetadata(request)
+            }
+            logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
+        }
+    }
+
+    /**
+     * 如果方案设置forbidQualityUnPass=true，保存禁用信息
+     * 保存metadata(forbidStatus禁用状态(true)、forbidType禁用类型(qualityUnPass))
+     */
+    fun addForbidMetadata(subTask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
+        with(subTask) {
+            // 方案禁用触发设置
+            val forbidQualityUnPass = scanQuality?.get(FORBID_QUALITY_UNPASS) as Boolean?
+            if (forbidQualityUnPass == true) {
                 metadata.add(
                     MetadataModel(
-                        key = SubScanTaskDefinition::qualityRedLine.name,
-                        value = it,
+                        key = FORBID_STATUS,
+                        value = true,
+                        system = true
+                    )
+                )
+                metadata.add(
+                    MetadataModel(
+                        key = FORBID_TYPE,
+                        value = ForbidType.QUALITY_UNPASS.name,
                         system = true
                     )
                 )
             }
-
-            val request = MetadataSaveRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                nodeMetadata = metadata
-            )
-            metadataClient.saveMetadata(request)
-            logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] scanStatus[$status] success")
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(SubtaskStatusChangedEventListener::class.java)
-        const val METADATA_KEY_SCAN_STATUS = "scanStatus"
+
+        // 禁用质量规则未通过的制品
+        const val FORBID_QUALITY_UNPASS = "forbidQualityUnPass"
     }
 }

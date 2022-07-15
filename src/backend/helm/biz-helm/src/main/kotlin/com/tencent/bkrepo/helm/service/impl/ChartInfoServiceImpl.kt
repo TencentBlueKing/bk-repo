@@ -147,7 +147,7 @@ class ChartInfoServiceImpl(
                 throw HelmFileNotFoundException("packageKey [$packageKey] don't found.")
             }
             val basicInfo = ObjectBuilderUtil.buildBasicInfo(nodeDetail, packageVersion)
-            return PackageVersionInfo(basicInfo, emptyMap())
+            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
         }
     }
 

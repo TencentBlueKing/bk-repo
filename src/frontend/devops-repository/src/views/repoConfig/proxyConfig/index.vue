@@ -13,20 +13,18 @@
         </div>
         <draggable v-if="proxyList.length" v-model="proxyList" :options="{ animation: 200 }" @update="debounceSaveProxy">
             <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.name + Math.random()">
-                <div class="proxy-index flex-center">
-                    <Icon name="drag" size="16" />
-                </div>
+                <div class="proxy-index flex-center"><Icon name="drag" size="16" /></div>
                 <div class="proxy-origin">{{proxy.name}}</div>
                 <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
                 <div class="proxy-address">{{proxy.url}}</div>
                 <div class="flex-align-center proxy-operation">
-                    <Icon v-if="!proxy.public" class="mr10 hover-btn" size="24" name="icon-edit" @click.native.stop="editProxy(proxy)" />
+                    <Icon class="mr10 hover-btn" size="24" name="icon-edit" @click.native.stop="editProxy(proxy)" />
                     <Icon class="hover-btn" size="24" name="icon-delete" @click.native.stop="deleteProxy(proxy)" />
                 </div>
             </div>
         </draggable>
         <empty-data v-else ex-style="margin-top:130px;" title="暂无代理源配置" sub-title="请尝试添加公有代理源或配置私有代理源"></empty-data>
-        <proxy-origin-dialog :show="showProxyDialog" :public-proxy="filterPublicProxy" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
+        <proxy-origin-dialog :show="showProxyDialog" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
     </div>
 </template>
 <script>
@@ -47,7 +45,6 @@
                 // 当前仓库的代理源
                 proxyList: [],
                 proxyData: {},
-                publicProxy: [],
                 debounceSaveProxy: null
             }
         },
@@ -60,11 +57,6 @@
             },
             repoType () {
                 return this.$route.params.repoType
-            },
-            filterPublicProxy () {
-                return this.publicProxy.filter(v => {
-                    return !this.proxyList.find(w => w.channelId === v.channelId)
-                })
             }
         },
         watch: {
@@ -73,20 +65,10 @@
             }
         },
         created () {
-            this.getPublicProxy({
-                repoType: this.repoType
-            }).then(res => {
-                this.publicProxy = res.map(v => {
-                    return {
-                        ...v,
-                        channelId: v.id
-                    }
-                })
-            })
             this.debounceSaveProxy = debounce(this.saveProxy)
         },
         methods: {
-            ...mapActions(['updateRepoInfo', 'getPublicProxy']),
+            ...mapActions(['updateRepoInfo']),
             addProxy () {
                 this.showProxyDialog = true
                 this.proxyData = {
@@ -96,9 +78,8 @@
             editProxy (row) {
                 this.showProxyDialog = true
                 this.proxyData = {
-                    ...row,
                     type: 'edit',
-                    ticket: Boolean(row.username && row.username.length)
+                    ...row
                 }
             },
             deleteProxy (row) {
@@ -106,29 +87,26 @@
                 this.debounceSaveProxy()
             },
             confirmProxyData ({ name, data }) {
-                // 添加公有源
-                if (data.type === 'add' && data.proxyType === 'publicProxy') {
-                    this.proxyList.push(this.publicProxy.find(v => v.channelId === data.channelId))
-                // 添加私有源
-                } else if (data.type === 'add' && data.proxyType === 'privateProxy') {
+                // 添加
+                if (data.type === 'add') {
                     this.proxyList.push({
-                        public: false,
+                        public: data.proxyType === 'publicProxy',
                         name: data.name,
                         url: data.url,
-                        ...(data.ticket
+                        ...(data.username
                             ? {
                                 username: data.username,
                                 password: data.password
                             }
                             : {})
                     })
-                // 编辑私有源
-                } else if (data.type === 'edit' && data.proxyType === 'privateProxy') {
+                // 编辑
+                } else if (data.type === 'edit') {
                     this.proxyList.splice(this.proxyList.findIndex(v => v.name === name), 1, {
-                        public: false,
+                        public: data.proxyType === 'publicProxy',
                         name: data.name,
                         url: data.url,
-                        ...(data.ticket
+                        ...(data.username
                             ? {
                                 username: data.username,
                                 password: data.password

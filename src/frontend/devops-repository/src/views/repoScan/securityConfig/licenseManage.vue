@@ -28,7 +28,6 @@
             :data="licenseList"
             :outer-border="false"
             :row-border="false"
-            row-key="userId"
             size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(name || isTrust)"></empty-data>
@@ -79,15 +78,15 @@
         <canway-dialog
             v-model="licenseInfo.show"
             title="证书详细信息"
-            :height-num="292"
+            :height-num="400"
             @cancel="licenseInfo.show = false">
             <bk-form class="mr10" :label-width="90">
                 <bk-form-item label="证书信息">
-                    <a :href="licenseInfo.reference" target="_blank">{{ licenseInfo.reference }}</a>
+                    <a style="word-break:break-all;" :href="licenseInfo.reference" target="_blank">{{ licenseInfo.reference }}</a>
                 </bk-form-item>
                 <bk-form-item label="参考文档">
                     <div v-for="url in licenseInfo.seeAlso" :key="url">
-                        <a :href="url" target="_blank">{{ url }}</a>
+                        <a style="word-break:break-all;" :href="url" target="_blank">{{ url }}</a>
                     </div>
                 </bk-form-item>
             </bk-form>

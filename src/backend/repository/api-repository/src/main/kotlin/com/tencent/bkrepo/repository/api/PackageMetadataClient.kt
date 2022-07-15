@@ -29,33 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.docker.helper
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.docker.helpers.DockerCatalogTagsSlicer
-import com.tencent.bkrepo.docker.helpers.DockerPaginationElementsHolder
-import com.tencent.bkrepo.docker.response.CatalogResponse
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-class DockerCatalogTagsSlicerTest {
+/**
+ * 节点元数据服务接口
+ */
+@Api("节点元数据服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageMetadataClient")
+@RequestMapping("/service/metadata/package")
+interface PackageMetadataClient {
 
-    @Test
-    @DisplayName("测试分页索引")
-    fun testSliceCatalog() {
-        val maxEntries = 3
-        val lastEntry = "apache"
-        val manifests = mapOf("nginx" to "v1", "linux" to "latest", "apache" to "v1", "java" to "v1")
-        val elementsHolder = DockerPaginationElementsHolder()
+    @ApiOperation("创建/更新元数据列表")
+    @PostMapping("/save")
+    fun saveMetadata(@RequestBody request: PackageMetadataSaveRequest): Response<Void>
 
-        manifests.forEach {
-            if (it.key.isNotBlank()) {
-                elementsHolder.addElement(it.key)
-            }
-            DockerCatalogTagsSlicer.sliceCatalog(elementsHolder, maxEntries, lastEntry)
-        }
-
-        val catalogResponse = CatalogResponse(elementsHolder)
-        Assertions.assertEquals(catalogResponse.repositories.size, 1)
-    }
 }

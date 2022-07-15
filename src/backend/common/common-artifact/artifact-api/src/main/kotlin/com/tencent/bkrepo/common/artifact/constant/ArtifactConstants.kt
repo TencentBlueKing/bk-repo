@@ -125,3 +125,11 @@ const val SOURCE_IN_REMOTE = "remote"
  * ArtifactChannel.PROXY
  */
 const val SOURCE_TYPE = "sourceType"
+
+// 制品禁用信息
+const val FORBID_STATUS = "forbidStatus"
+const val FORBID_USER = "forbidUser"
+const val FORBID_TYPE = "forbidType"
+
+// 制品扫描状态
+const val SCAN_STATUS = "scanStatus"
