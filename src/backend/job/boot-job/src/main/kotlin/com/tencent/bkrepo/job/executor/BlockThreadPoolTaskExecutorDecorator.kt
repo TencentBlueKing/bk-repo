@@ -139,13 +139,11 @@ class BlockThreadPoolTaskExecutorDecorator(
                 // 等待超时后，已做任务数没有变化
                 if (!result && done == doneCount.get()) {
                     taskInfos.remove(id)
-                    afterGet(taskInfo)
                     throw TimeoutException("Task[$id] was timeout,info: $this")
                 }
                 done = doneCount.get()
             }
         }
-        afterGet(taskInfo)
         logger.info("Task[$id] has complete,info: $taskInfo")
         taskInfos.remove(id)
     }
@@ -170,17 +168,6 @@ class BlockThreadPoolTaskExecutorDecorator(
         val taskInfo = taskInfos[id] ?: throw IllegalArgumentException("no task $id")
         taskInfo.complete = true
         get(id, timeout)
-    }
-
-    private fun afterGet(taskInfo: IdentityTaskInfo) {
-        with(taskInfo) {
-            val taskExecutedEvent = TaskExecutedEvent(
-                doneCount.get(),
-                Duration.ofMillis(avgWaitTime().toLong()),
-                Duration.ofMillis(avgExecuteTime().toLong())
-            )
-            SpringContextUtils.publishEvent(taskExecutedEvent)
-        }
     }
 
     /**
