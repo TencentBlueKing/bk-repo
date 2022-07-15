@@ -113,6 +113,7 @@ class ReplicaContext(
             else -> throw UnsupportedOperationException()
         }
         // 远端集群仓库特殊处理, 远端集群请求鉴权特殊处理
+        // TODO 待优化为单例
         httpClient = if (remoteCluster.type != ClusterNodeType.REMOTE) {
             HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
                 BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())

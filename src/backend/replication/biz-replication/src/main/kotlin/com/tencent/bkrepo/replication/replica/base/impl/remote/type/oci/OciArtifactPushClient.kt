@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -54,6 +55,7 @@ import okio.ByteString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
+import java.io.IOException
 import java.io.InputStream
 import java.net.SocketException
 import java.net.URL
@@ -415,9 +417,9 @@ class OciArtifactPushClient(
     ): DefaultHandlerResult {
         logger.info("Will upload blob $sha256 in a single patch request")
         val blobChunkUploadHandler = DefaultHandler(httpClient)
-        val input = loadInputStream(sha256, size, projectId, repoName)
+        val blob = ArtifactFileFactory.build(loadInputStream(sha256, size, projectId, repoName))
         val patchBody: RequestBody = RequestBody.create(
-            MediaType.parse("application/octet-stream"), input.readBytes()
+            MediaType.parse("application/octet-stream"), blob.getFile()
         )
         val patchHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
@@ -431,7 +433,13 @@ class OciArtifactPushClient(
             requestUrl = location
         )
         blobChunkUploadHandler.requestProperty = property
-        return blobChunkUploadHandler.process()
+        val blobUploadResult = blobChunkUploadHandler.process()
+        try {
+            blob.delete()
+        } catch (exception: IOException) {
+            logger.warn("Failed to clean temp blob file, error is $exception")
+        }
+        return blobUploadResult
     }
 
     /**
