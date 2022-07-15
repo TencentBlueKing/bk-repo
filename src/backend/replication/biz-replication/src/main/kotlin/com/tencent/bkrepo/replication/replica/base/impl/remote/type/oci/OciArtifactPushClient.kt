@@ -39,6 +39,7 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
@@ -49,10 +50,12 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import okio.ByteString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.InputStream
+import java.net.SocketException
 import java.net.URL
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
@@ -212,7 +215,7 @@ class OciArtifactPushClient(
         digest: String,
         name: String,
         projectId: String,
-        repoName: String,
+        repoName: String
     ): Boolean {
         logger.info("Will try to upload $name's blob $digest in repo $projectId|$repoName ")
         val checkHandler = buildBlobExistCheckHandler(
@@ -227,7 +230,7 @@ class OciArtifactPushClient(
             token = token,
             name = name
         )
-        val sessionIdHandlerResult = sessionIdHandler.process()
+        var sessionIdHandlerResult = sessionIdHandler.process()
         if (!sessionIdHandlerResult.isSuccess) {
             return false
         }
@@ -239,21 +242,54 @@ class OciArtifactPushClient(
             projectId = projectId,
             repoName = repoName
         )
+
         // 需要将大文件进行分块上传
-        val chunkedUploadResult = blobChunkUploadProcess(
-            token = token,
-            size = size,
-            repoName = repoName,
-            projectId = projectId,
-            sha256 = sha256,
-            location = sessionIdHandlerResult.location
-        )
-        if (!chunkedUploadResult) return false
+        var chunkedUploadResult = try {
+            blobChunkUploadProcess(
+                token = token,
+                size = size,
+                repoName = repoName,
+                projectId = projectId,
+                sha256 = sha256,
+                location = sessionIdHandlerResult.location
+            )
+        } catch (e: SocketException) {
+            // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
+            sessionIdHandlerResult = sessionIdHandler.process()
+            if (!sessionIdHandlerResult.isSuccess) {
+                return false
+            }
+            blobUploadWithSingleChunkProcess(
+                token = token,
+                size = size,
+                sha256 = sha256,
+                projectId = projectId,
+                repoName = repoName,
+                location = sessionIdHandlerResult.location
+            )
+        } ?: return false
+        // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
+        if (chunkedUploadResult.isFailure) {
+            sessionIdHandlerResult = sessionIdHandler.process()
+            if (!sessionIdHandlerResult.isSuccess) {
+                return false
+            }
+            chunkedUploadResult = blobUploadWithSingleChunkProcess(
+                token = token,
+                size = size,
+                sha256 = sha256,
+                projectId = projectId,
+                repoName = repoName,
+                location = sessionIdHandlerResult.location
+            )
+        }
+
+        if (!chunkedUploadResult.isSuccess) return false
 
         val sessionCloseHandler = buildSessionCloseHandler(
             token = token,
             digest = digest,
-            location = sessionIdHandlerResult.location
+            location = chunkedUploadResult.location
         )
         return sessionCloseHandler.process().isSuccess
     }
@@ -318,8 +354,9 @@ class OciArtifactPushClient(
         projectId: String,
         repoName: String,
         location: String?
-    ): Boolean {
+    ): DefaultHandlerResult? {
         var startPosition: Long = 0
+        var chunkedHandlerResult: DefaultHandlerResult? = null
         while (startPosition < size) {
             val offset = size - startPosition - replicationProperties.chunkedSize
             val byteCount: Long = if (offset < 0) {
@@ -332,7 +369,10 @@ class OciArtifactPushClient(
                 "${Thread.currentThread().name} start is $startPosition, " +
                     "size is $size, byteCount is $byteCount contentRange is $contentRange"
             )
-            val blobChunkUploadHandler = DefaultHandler(httpClient)
+            val blobChunkUploadHandler = DefaultHandler(
+                httpClient = httpClient,
+                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value)
+            )
             val range = Range(startPosition, startPosition + byteCount - 1, size)
             val input = loadInputStreamByRange(sha256, range, projectId, repoName)
             val patchBody: RequestBody = RequestBody.create(
@@ -351,13 +391,47 @@ class OciArtifactPushClient(
                 requestUrl = location
             )
             blobChunkUploadHandler.requestProperty = property
-            val chunkedHandlerResult = blobChunkUploadHandler.process()
+            chunkedHandlerResult = blobChunkUploadHandler.process()
             if (!chunkedHandlerResult.isSuccess) {
-                return false
+                return chunkedHandlerResult
             }
             startPosition += byteCount
         }
-        return true
+        return chunkedHandlerResult
+    }
+
+    /**
+     * 构件blob上传处理器
+     * 上传blob文件step2: patch分块上传
+     * 针对部分registry不支持将blob分成多块上传，将blob文件整块上传
+     */
+    private fun blobUploadWithSingleChunkProcess(
+        token: String?,
+        size: Long,
+        sha256: String,
+        projectId: String,
+        repoName: String,
+        location: String?
+    ): DefaultHandlerResult {
+        logger.info("Will upload blob $sha256 in a single patch request")
+        val blobChunkUploadHandler = DefaultHandler(httpClient)
+        val input = loadInputStream(sha256, size, projectId, repoName)
+        val patchBody: RequestBody = RequestBody.create(
+            MediaType.parse("application/octet-stream"), input.readBytes()
+        )
+        val patchHeader = Headers.Builder()
+            .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
+            .add(HttpHeaders.CONTENT_RANGE, "0-${0 + size - 1}")
+            .build()
+        val property = RequestProperty(
+            requestBody = patchBody,
+            authorizationCode = token,
+            requestMethod = RequestMethod.PATCH,
+            headers = patchHeader,
+            requestUrl = location
+        )
+        blobChunkUploadHandler.requestProperty = property
+        return blobChunkUploadHandler.process()
     }
 
     /**
@@ -371,10 +445,11 @@ class OciArtifactPushClient(
     ): DefaultHandler {
         val sessionCloseHandler = DefaultHandler(httpClient)
         val putBody: RequestBody = RequestBody.create(
-            MediaType.parse("application/json"), StringPool.EMPTY
+            null, ByteString.EMPTY
         )
         val putHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
+            .add(HttpHeaders.CONTENT_LENGTH, "0")
             .build()
         val params = "digest=$digest"
         val property = RequestProperty(
