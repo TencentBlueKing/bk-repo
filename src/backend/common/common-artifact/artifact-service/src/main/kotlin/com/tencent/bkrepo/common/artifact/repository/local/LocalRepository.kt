@@ -50,6 +50,10 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         }
     }
 
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+    }
+
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data

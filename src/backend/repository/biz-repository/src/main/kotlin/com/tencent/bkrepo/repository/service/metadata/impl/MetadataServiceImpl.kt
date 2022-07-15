@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
@@ -83,6 +84,18 @@ class MetadataServiceImpl(
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
             logger.info("Save metadata[$metadata] on node[/$projectId/$repoName$fullPath] success.")
+        }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun addForbidMetadata(request: MetadataSaveRequest) {
+        with(request) {
+            val forbidMetadata = MetadataUtils.extractForbidMetadata(nodeMetadata!!)
+            if (forbidMetadata.isNullOrEmpty()) {
+                logger.info("forbidMetadata is empty, skip saving[$request]")
+                return
+            }
+            saveMetadata(request.copy(metadata = null, nodeMetadata = forbidMetadata, operator = SYSTEM_USER))
         }
     }
 

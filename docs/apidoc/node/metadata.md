@@ -84,6 +84,53 @@
   }
   ```
 
+### 保存（更新）禁用元数据
+
+- API: POST /repository/api/metadata/forbid/{projectId}/{repoName}/{fullPath}
+
+- API 名称: forbidMetadata
+
+- 功能说明：
+
+  - 中文：保存（更新）禁用元数据信息，元数据不存在则保存，存在则更新
+  - English：save metadata info
+
+- 请求体
+
+  ```json
+  {
+    "nodeMetadata": [
+      {
+        "key": "forbidStatus",
+        "value":  true,
+        "description": "description"
+      }
+    ]
+  }
+  ```
+  
+- 请求字段说明
+
+  | 字段         | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+  | ------------ | ------ | -------- | ------ | -------- | ------------ |
+  | projectId    | string | 是       | 无     | 项目名称 | project name |
+  | repoName     | string | 是       | 无     | 仓库名称 | repo name    |
+  | fullPath     | string | 是       | 无     | 完整路径 | full path    |
+  | nodeMetadata | object | 否       | 无     | 元数据   | nodeMetadata |
+
+- 响应体
+
+  ``` json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```
+
+
+
 ### 删除元数据
 
 - API: DELETE /repository/api/metadata/{projectId}/{repoName}/{fullPath}

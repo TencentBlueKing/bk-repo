@@ -99,6 +99,26 @@ class UserMetadataController(
         }
     }
 
+    @ApiOperation("创建/更新禁用元数据")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
+    @PostMapping("/forbid$DEFAULT_MAPPING_URI")
+    fun forbidMetadata(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestBody metadataSaveRequest: UserMetadataSaveRequest
+    ): Response<Void> {
+        artifactInfo.run {
+            val request = MetadataSaveRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = getArtifactFullPath(),
+                nodeMetadata = metadataSaveRequest.nodeMetadata
+            )
+            metadataService.addForbidMetadata(request)
+            return ResponseBuilder.success()
+        }
+    }
+
     @ApiOperation("删除元数据")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping(DEFAULT_MAPPING_URI)

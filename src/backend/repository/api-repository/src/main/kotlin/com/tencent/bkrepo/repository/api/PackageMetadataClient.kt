@@ -29,40 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
 /**
- * 元数据服务接口
+ * 节点元数据服务接口
  */
-interface MetadataService {
+@Api("节点元数据服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageMetadataClient")
+@RequestMapping("/service/metadata/package")
+interface PackageMetadataClient {
 
-    /**
-     * 查询节点的元数据
-     *
-     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
-     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
-     */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
+    @ApiOperation("创建/更新元数据列表")
+    @PostMapping("/save")
+    fun saveMetadata(@RequestBody request: PackageMetadataSaveRequest): Response<Void>
 
-    /**
-     * 根据请求[request]保存或者更新元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun saveMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]保存或者更新禁用元数据，只更新禁用相关元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun addForbidMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]删除元数据
-     */
-    fun deleteMetadata(request: MetadataDeleteRequest)
 }

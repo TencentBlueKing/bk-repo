@@ -118,3 +118,11 @@ const val PARAM_PREVIEW = "preview"
 // 内存文件
 const val SOURCE_IN_MEMORY = "memory"
 const val SOURCE_IN_REMOTE = "remote"
+
+// 制品禁用信息
+const val FORBID_STATUS = "forbidStatus"
+const val FORBID_USER = "forbidUser"
+const val FORBID_TYPE = "forbidType"
+
+// 制品扫描状态
+const val SCAN_STATUS = "scanStatus"

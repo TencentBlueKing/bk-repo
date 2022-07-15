@@ -29,40 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.PackageMetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import com.tencent.bkrepo.repository.service.metadata.PackageMetadataService
+import org.springframework.web.bind.annotation.RestController
 
 /**
- * 元数据服务接口
+ * 元数据服务接口实现类
  */
-interface MetadataService {
+@RestController
+class PackageMetadataController(
+    private val packageMetadataService: PackageMetadataService
+) : PackageMetadataClient {
 
-    /**
-     * 查询节点的元数据
-     *
-     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
-     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
-     */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
+    override fun saveMetadata(request: PackageMetadataSaveRequest): Response<Void> {
+        packageMetadataService.saveMetadata(request)
+        return ResponseBuilder.success()
+    }
 
-    /**
-     * 根据请求[request]保存或者更新元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun saveMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]保存或者更新禁用元数据，只更新禁用相关元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun addForbidMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]删除元数据
-     */
-    fun deleteMetadata(request: MetadataDeleteRequest)
 }

@@ -29,40 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.repository.pojo.metadata.packages
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersionRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 元数据服务接口
+ * 包创建/更新元数据请求
  */
-interface MetadataService {
-
-    /**
-     * 查询节点的元数据
-     *
-     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
-     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
-     */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
-
-    /**
-     * 根据请求[request]保存或者更新元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun saveMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]保存或者更新禁用元数据，只更新禁用相关元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun addForbidMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]删除元数据
-     */
-    fun deleteMetadata(request: MetadataDeleteRequest)
-}
+@ApiModel("依赖源包创建或更新元数据请求")
+data class PackageMetadataSaveRequest(
+    @ApiModelProperty("项目id", required = true)
+    override val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    override val repoName: String,
+    @ApiModelProperty("包唯一key", required = true)
+    override val packageKey: String,
+    @ApiModelProperty("包版本", required = true)
+    override val version: String,
+    @ApiModelProperty("需要创建或更新的元数据", required = true)
+    val versionMetadata: List<MetadataModel>? = null,
+    @ApiModelProperty("操作用户")
+    override val operator: String = SYSTEM_USER
+) : PackageVersionRequest, ServiceRequest
