@@ -55,7 +55,14 @@
             ...mapActions([
                 'uploadArtifactory'
             ]),
-            setData (data) {
+            setData (data, refresh = false) {
+                if (refresh) {
+                    this.uploadDialog = {
+                        ...this.uploadDialog,
+                        ...data
+                    }
+                    return
+                }
                 this.uploadDialog = {
                     ...this.uploadDialog,
                     loading: false,

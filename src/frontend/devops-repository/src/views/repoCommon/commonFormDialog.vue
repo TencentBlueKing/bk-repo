@@ -32,6 +32,7 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
+    import { scanTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'commonForm',
         data () {
@@ -92,11 +93,12 @@
                     ...data
                 }
                 if (data.type === 'scan') {
-                    this.getScanAll({
-                        projectId: this.projectId,
-                        type: this.repoType.toUpperCase()
-                    }).then(res => {
-                        this.scanList = res
+                    Promise.all(
+                        Object.keys(scanTypeEnum)
+                            .filter(key => key.includes(this.repoType.toUpperCase()))
+                            .map(type => this.getScanAll({ projectId: this.projectId, type }))
+                    ).then(res => {
+                        this.scanList = res.flat(1)
                     })
                 }
             },

@@ -12,7 +12,7 @@
                     placeholder="请选择日期范围"
                     @change="changeFilterTime">
                 </bk-date-picker>
-                <!-- <bk-button class="mr10" theme="default" @click="stopScanHandler">中止扫描</bk-button> -->
+                <bk-button class="mr10" theme="default" @click="stopScanHandler">中止扫描</bk-button>
                 <bk-button v-if="!baseInfo.readOnly" class="mr10" theme="default" @click="startScanHandler">立即扫描</bk-button>
                 <bk-button v-if="!baseInfo.readOnly" theme="default" @click="scanSettingHandler">设置</bk-button>
             </div>

@@ -111,13 +111,6 @@ export default {
                 },
                 rule: {
                     rules: [
-                        ...(MODE_CONFIG === 'ci' && isGeneric
-                            ? [{
-                                field: 'repoName',
-                                value: ['report', 'log'],
-                                operation: 'NIN'
-                            }]
-                            : []),
                         ...(projectId
                             ? [{
                                 field: 'projectId',
@@ -138,7 +131,15 @@ export default {
                                 value: repoName,
                                 operation: 'EQ'
                             }]
-                            : []),
+                            : [
+                                ...(MODE_CONFIG === 'ci' && isGeneric
+                                    ? [{
+                                        field: 'repoName',
+                                        value: ['report', 'log'],
+                                        operation: 'NIN'
+                                    }]
+                                    : [])
+                            ]),
                         ...(packageName
                             ? [{
                                 field: 'name',
@@ -170,10 +171,10 @@ export default {
         if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(
             urlMap[repoType]
-        ).then(domain => {
+        ).then(res => {
             commit('SET_DOMAIN', {
                 type: repoType,
-                domain: domain || `${location.origin}/${repoType}`
+                domain: res.domain || res || `${location.origin}/${repoType}`
             })
         })
     },

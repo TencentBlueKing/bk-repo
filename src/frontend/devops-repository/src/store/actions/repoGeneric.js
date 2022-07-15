@@ -256,10 +256,17 @@ export default {
             body
         )
     },
-    // 禁止使用/解除禁止
+    // generic禁止使用/解除禁止
     forbidMetadata (_, { projectId, repoName, fullPath, body }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/metadata/forbid/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
+    // package禁止使用/解除禁止
+    forbidPackageMetadata (_, { projectId, repoName, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/metadata/package/forbid/${projectId}/${repoName}`,
             body
         )
     },

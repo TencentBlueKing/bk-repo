@@ -196,7 +196,7 @@
                     ? confirmFn()
                     : this.$confirm({
                         theme: 'danger',
-                        message: `确定移除 ${deleteName} ?`,
+                        message: `确认移除 ${deleteName} ?`,
                         confirmFn
                     })
             },

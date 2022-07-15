@@ -280,7 +280,6 @@ const routes = [
                 component: securityConfig,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoScan', label: '制品扫描' },
                         { name: 'securityConfig', label: '安全设置' }
                     ]
                 }

@@ -12,19 +12,14 @@
                     <span class="ml20">{{ baseInfo[item.key] }}</span>
                 </div>
             </div>
-            <!-- <div v-if="baseInfo.qualityRedLine !== null" class="arti-quality">
+            <div v-if="baseInfo.qualityRedLine !== null" class="arti-quality">
                 <div class="flex-align-center">
                     <span class="mr20" style="color:var(--fontSubsidiaryColor);">质量规则</span>
                     <span v-if="baseInfo.qualityRedLine" class="repo-tag SUCCESS">通过</span>
                     <span v-else class="repo-tag FAILED">不通过</span>
                 </div>
-                <div class="status-sign"
-                    :class="item.id"
-                    v-for="item in qualityList"
-                    :key="item.id"
-                    :data-name="item.label">
-                </div>
-            </div> -->
+                <div v-for="item in qualityList" :key="item">{{ item }}</div>
+            </div>
             <div class="arti-leak">
                 <div style="color:var(--fontSubsidiaryColor);">漏洞数量统计</div><div></div>
                 <div class="status-sign"
@@ -160,10 +155,7 @@
                 const data = this.baseInfo.scanQuality || {}
                 return Object.keys(leakLevelEnum).map(k => {
                     if (k.toLowerCase() in data && data[k.toLowerCase()] !== null) {
-                        return {
-                            id: k,
-                            label: `${leakLevelEnum[k]}漏洞总数 ≦ ${data[k.toLowerCase()]}`
-                        }
+                        return `${leakLevelEnum[k]}漏洞总数 ≦ ${data[k.toLowerCase()]}`
                     }
                     return undefined
                 }).filter(Boolean)

@@ -118,7 +118,7 @@
                             <operation-list
                                 :list="[
                                     { label: '详情', clickEvent: () => showArtiReport(row), disabled: row.status !== 'SUCCESS' },
-                                    { label: '中止', clickEvent: () => stopScanHandler(row), disabled: row.status !== 'INIT' && row.status !== 'RUNNING' },
+                                    viewType === 'OVERVIEW' && { label: '中止', clickEvent: () => stopScanHandler(row), disabled: row.status !== 'INIT' && row.status !== 'RUNNING' },
                                     viewType === 'OVERVIEW' && !baseInfo.readOnly && {
                                         label: '扫描',
                                         clickEvent: () => startScanSingleHandler(row),
@@ -206,8 +206,9 @@
             }
         },
         watch: {
-            viewType () {
+            viewType (val) {
                 this.handlerPaginationChange()
+                if (val === 'TASKVIEW') this.handlerTaskPaginationChange()
             }
         },
         created () {
@@ -220,7 +221,8 @@
                 'scanReportList',
                 'scanTaskReportList',
                 'startScanSingle',
-                'stopScanTask'
+                'stopScanTask',
+                'stopScan'
             ]),
             refreshData (key, value) {
                 this[key] = value
@@ -349,6 +351,7 @@
                                 theme: 'success',
                                 message: '中止任务' + this.$t('success')
                             })
+                            this.$set(task, 'status', 'STOPPED')
                             this.handlerPaginationChange()
                         })
                     }

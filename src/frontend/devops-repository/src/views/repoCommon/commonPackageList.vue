@@ -106,7 +106,7 @@
                 isLoading: false,
                 packageNameVal: this.$route.query.packageName,
                 property: this.$route.query.property || 'lastModifiedDate',
-                direction: this.$route.query.direction || 'ASC',
+                direction: this.$route.query.direction || 'DESC',
                 packageList: [],
                 pagination: {
                     current: 1,
