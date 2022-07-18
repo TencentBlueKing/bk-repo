@@ -378,7 +378,7 @@ class OciArtifactPushClient(
             )
             val blobChunkUploadHandler = DefaultHandler(
                 httpClient = httpClient,
-//                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
+                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
                 responseType = OciResponse::class.java
             )
             val range = Range(startPosition, startPosition + byteCount - 1, size)
