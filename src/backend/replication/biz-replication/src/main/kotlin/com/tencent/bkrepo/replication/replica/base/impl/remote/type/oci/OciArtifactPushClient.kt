@@ -258,18 +258,7 @@ class OciArtifactPushClient(
             )
         } catch (e: SocketException) {
             // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
-            sessionIdHandlerResult = sessionIdHandler.process()
-            if (!sessionIdHandlerResult.isSuccess) {
-                return false
-            }
-            blobUploadWithSingleChunkProcess(
-                token = token,
-                size = size,
-                sha256 = sha256,
-                projectId = projectId,
-                repoName = repoName,
-                location = sessionIdHandlerResult.location
-            )
+            DefaultHandlerResult(isFailure = true)
         } ?: return false
         // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
         if (chunkedUploadResult.isFailure) {
