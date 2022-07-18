@@ -122,7 +122,7 @@ object HttpUtils {
             val responseCode = connection.responseCode
             responseCode in 200..399
         } catch (exception: IOException) {
-            false
+            throw exception
         }
     }
 }

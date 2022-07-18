@@ -135,7 +135,7 @@ class RemoteNodeServiceImpl(
     override fun deleteByName(projectId: String, repoName: String, name: String) {
         localDataManager.findRepoByName(projectId, repoName)
         val clusterInfo = clusterNodeService.getByClusterName(name)
-            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
         clusterNodeService.deleteById(clusterInfo.id)
         val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)

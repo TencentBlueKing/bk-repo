@@ -30,7 +30,6 @@ package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.replication.pojo.docker.OciErrorResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
@@ -45,7 +44,8 @@ import org.slf4j.LoggerFactory
 class DefaultHandler(
     private val httpClient: OkHttpClient,
     private val ignoredFailureCode: List<Int> = emptyList(),
-    private val extraSuccessCode: List<Int> = emptyList()
+    private val extraSuccessCode: List<Int> = emptyList(),
+    private val responseType: Class<*>
 ) {
     // 请求各种参数属性
     lateinit var requestProperty: RequestProperty
@@ -67,9 +67,7 @@ class DefaultHandler(
                     wrapperFailure(it)
                 }
                 else -> {
-                    val error = JsonUtils.objectMapper.readValue(
-                        response.body()!!.byteStream(), Map::class.java
-                    )?.toJsonString()
+                    val error = convertErrorMsg(it)
                     throw ArtifactPushException(
                         "invalid response  ${it.code()} for request ${it.request().url()}, error is $error"
                     )
@@ -91,9 +89,7 @@ class DefaultHandler(
     private fun isFailure(response: Response): Boolean {
         if (ignoredFailureCode.contains(response.code()))
             return true
-        val repMsg = JsonUtils.objectMapper.readValue(
-            response.body()!!.byteStream(), OciErrorResponse::class.java
-        )?.toJsonString()
+        val repMsg = convertErrorMsg(response)
         throw ArtifactPushException(
             "Response error for request ${response.request().url()}: " +
                 "code is ${response.code()} and response is $repMsg"
@@ -120,6 +116,18 @@ class DefaultHandler(
             isFailure = true,
             location = response?.header(HttpHeaders.LOCATION)
         )
+    }
+
+    private fun convertErrorMsg(response: Response): String? {
+        return try {
+            response.body()?.let {
+                JsonUtils.objectMapper.readValue(
+                    response.body()!!.byteStream(), responseType
+                )?.toJsonString()
+            }
+        } catch (e: Exception) {
+            return null
+        }
     }
 
     companion object {

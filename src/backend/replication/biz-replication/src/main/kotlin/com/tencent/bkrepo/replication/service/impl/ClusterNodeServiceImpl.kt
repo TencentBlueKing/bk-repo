@@ -235,7 +235,7 @@ class ClusterNodeServiceImpl(
                 HttpUtils.pingURL(remoteClusterInfo.url, 60000)
             } catch (exception: Exception) {
                 val message = exception.message ?: UNKNOWN
-                logger.error("ping cluster [$name] failed, reason: $message")
+                logger.warn("ping cluster [$name] failed, reason: $message")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
             }
         }

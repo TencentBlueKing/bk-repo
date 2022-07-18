@@ -40,6 +40,7 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
@@ -308,7 +309,8 @@ class OciArtifactPushClient(
         val blobExistCheckHandler = DefaultHandler(
             httpClient = httpClient,
             ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
-            extraSuccessCode = listOf(HttpStatus.TEMPORARY_REDIRECT.value)
+            extraSuccessCode = listOf(HttpStatus.TEMPORARY_REDIRECT.value),
+            responseType = OciResponse::class.java
         )
         val headPath = OCI_BLOB_URL.format(name, digest)
         val headUrl = builderRequestUrl(clusterInfo.url, headPath)
@@ -329,7 +331,10 @@ class OciArtifactPushClient(
         token: String?,
         name: String,
     ): DefaultHandler {
-        val sessionIdHandler = DefaultHandler(httpClient)
+        val sessionIdHandler = DefaultHandler(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java
+        )
         val postPath = OCI_BLOBS_UPLOAD_FIRST_STEP_URL.format(name)
         val postUrl = builderRequestUrl(clusterInfo.url, postPath)
         val postBody: RequestBody = RequestBody.create(
@@ -373,7 +378,8 @@ class OciArtifactPushClient(
             )
             val blobChunkUploadHandler = DefaultHandler(
                 httpClient = httpClient,
-                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value)
+//                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
+                responseType = OciResponse::class.java
             )
             val range = Range(startPosition, startPosition + byteCount - 1, size)
             val input = loadInputStreamByRange(sha256, range, projectId, repoName)
@@ -416,7 +422,10 @@ class OciArtifactPushClient(
         location: String?
     ): DefaultHandlerResult {
         logger.info("Will upload blob $sha256 in a single patch request")
-        val blobChunkUploadHandler = DefaultHandler(httpClient)
+        val blobChunkUploadHandler = DefaultHandler(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java
+        )
         val blob = ArtifactFileFactory.build(loadInputStream(sha256, size, projectId, repoName))
         val patchBody: RequestBody = RequestBody.create(
             MediaType.parse("application/octet-stream"), blob.getFile()
@@ -451,7 +460,10 @@ class OciArtifactPushClient(
         digest: String,
         location: String?
     ): DefaultHandler {
-        val sessionCloseHandler = DefaultHandler(httpClient)
+        val sessionCloseHandler = DefaultHandler(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java
+        )
         val putBody: RequestBody = RequestBody.create(
             null, ByteString.EMPTY
         )
@@ -483,7 +495,10 @@ class OciArtifactPushClient(
         mediaType: String?
     ): DefaultHandler {
         logger.info("$name|$version's manifest will be pushed to the remote cluster")
-        val manifestUploadHandler = DefaultHandler(httpClient)
+        val manifestUploadHandler = DefaultHandler(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java
+        )
         val path = OCI_MANIFEST_URL.format(name, version)
         val putUrl = builderRequestUrl(clusterInfo.url, path)
         val type = mediaType ?: "application/vnd.oci.image.manifest.v1+json"

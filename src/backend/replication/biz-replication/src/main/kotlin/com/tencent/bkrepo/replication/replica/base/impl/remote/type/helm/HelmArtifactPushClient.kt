@@ -153,7 +153,10 @@ class HelmArtifactPushClient(
         fileType: String,
         input: InputStream
     ): DefaultHandler {
-        val artifactUploadHandler = DefaultHandler(httpClient)
+        val artifactUploadHandler = DefaultHandler(
+            httpClient = httpClient,
+            responseType = String::class.java
+        )
         val postPath: String
         val fileName: String
         if (fileType == CHART_FILE) {
