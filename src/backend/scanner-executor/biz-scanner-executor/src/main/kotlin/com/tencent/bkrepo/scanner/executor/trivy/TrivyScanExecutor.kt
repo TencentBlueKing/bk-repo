@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey.Companion.overviewKeyOf
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.DbSource
@@ -225,6 +226,7 @@ class TrivyScanExecutor @Autowired constructor(
         cmds.add(scanner.container.workDir + scanResultFilePath(task))
         if (scanner.vulDbConfig.dbSource != DbSource.TRIVY.code) {
             cmds.add(SKIP_DB_UPDATE_COMMAND)
+            cmds.add(OFFLINE_SCAN_COMMAND)
         }
         cmds.add(SCAN_FILE_PATH_COMMAND)
         cmds.add(scanner.container.workDir + scanner.container.inputDir + SLASH + scannerInputFile.name)
@@ -259,6 +261,9 @@ class TrivyScanExecutor @Autowired constructor(
         scanResult?.results?.forEach { result ->
             result.vulnerabilities?.let { vulnerabilityItems.addAll(it) }
             result.vulnerabilities?.forEach {
+                if (it.severity == "UNKNOWN") {
+                    it.severity = Level.CRITICAL.levelName.toUpperCase()
+                }
                 val overviewKey = overviewKeyOf(it.severity.toLowerCase())
                 overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
             }
@@ -303,6 +308,11 @@ class TrivyScanExecutor @Autowired constructor(
         private const val SKIP_DB_UPDATE_COMMAND = "--skip-db-update"
 
         /**
+         * 离线扫描，trivy扫描jar时默认会发送网络请求获取jar相关信息，需要开启离线模式
+         */
+        private const val OFFLINE_SCAN_COMMAND = "--offline-scan"
+
+        /**
          * 指定扫描镜像文件
          */
         private const val SCAN_FILE_PATH_COMMAND = "--input"
@@ -321,7 +331,7 @@ class TrivyScanExecutor @Autowired constructor(
          * metadata.json文件内容，确保trivy必须需要metadata.json文件
          */
         private const val METADATA_JSON_FILE_CONTENT =
-            "{\"Version\":1,\"Type\":1,\"NextUpdate\":\"2022-05-31T06:51:38.429826331Z\"," +
-                "\"UpdatedAt\":\"2022-05-31T00:51:38.429826631Z\",\"DownloadedAt\":\"0001-01-01T00:00:00Z\"}"
+            "{\"Version\":2,\"NextUpdate\":\"2022-07-15T12:06:50.078024068Z\"," +
+                "\"UpdatedAt\":\"2022-07-15T06:06:50.078024668Z\",\"DownloadedAt\":\"0001-01-01T00:00:00Z\"}"
     }
 }
