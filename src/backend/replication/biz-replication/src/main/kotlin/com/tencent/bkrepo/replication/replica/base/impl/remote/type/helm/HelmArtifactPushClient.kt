@@ -53,7 +53,7 @@ import java.net.URL
 class HelmArtifactPushClient(
     private val localDataManager: LocalDataManager,
     replicationProperties: ReplicationProperties,
-) : PushClient(localDataManager, replicationProperties) {
+) : PushClient(replicationProperties) {
 
     override fun type(): RepositoryType {
         return RepositoryType.HELM
@@ -123,7 +123,7 @@ class HelmArtifactPushClient(
         node: NodeDetail,
         version: String
     ): Boolean {
-        val input = loadInputStream(
+        val input = localDataManager.loadInputStream(
             sha256 = node.sha256!!,
             size = node.size,
             projectId = node.projectId,

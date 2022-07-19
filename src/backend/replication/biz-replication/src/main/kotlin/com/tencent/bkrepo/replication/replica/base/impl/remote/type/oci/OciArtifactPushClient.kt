@@ -33,12 +33,13 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
+import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
+import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
@@ -49,15 +50,16 @@ import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
 import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.util.FileParser
 import com.tencent.bkrepo.replication.util.HttpUtils
+import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
 import okhttp3.MediaType
+import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.ByteString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
-import java.io.IOException
 import java.io.InputStream
 import java.net.SocketException
 import java.net.URL
@@ -73,7 +75,7 @@ import java.util.concurrent.ThreadPoolExecutor
 class OciArtifactPushClient(
     private val localDataManager: LocalDataManager,
     replicationProperties: ReplicationProperties,
-) : PushClient(localDataManager, replicationProperties) {
+) : PushClient(replicationProperties) {
 
     private val blobUploadExecutor: ThreadPoolExecutor = OciThreadPoolExecutor.instance
 
@@ -101,7 +103,7 @@ class OciArtifactPushClient(
         version: String,
         token: String?,
     ): Boolean {
-        val manifestInput = loadInputStream(nodes[0])
+        val manifestInput = localDataManager.loadInputStream(nodes[0])
         val manifestInfo = FileParser.parseManifest(manifestInput)
             ?: throw ArtifactNotFoundException("Can not read manifest info from content")
         logger.info("$name|$version's artifact will be pushed to the third party cluster")
@@ -138,7 +140,7 @@ class OciArtifactPushClient(
         }
         // 同步manifest
         if (result) {
-            val input = loadInputStream(nodes[0])
+            val input = localDataManager.loadInputStream(nodes[0])
             result = buildManifestUploadHandler(
                 token = token,
                 name = name,
@@ -378,7 +380,7 @@ class OciArtifactPushClient(
                 responseType = OciResponse::class.java
             )
             val range = Range(startPosition, startPosition + byteCount - 1, size)
-            val input = loadInputStreamByRange(sha256, range, projectId, repoName)
+            val input = localDataManager.loadInputStreamByRange(sha256, range, projectId, repoName)
             val patchBody: RequestBody = RequestBody.create(
                 MediaType.parse("application/octet-stream"), input.readBytes()
             )
@@ -422,13 +424,21 @@ class OciArtifactPushClient(
             httpClient = httpClient,
             responseType = OciResponse::class.java
         )
-        val blob = ArtifactFileFactory.build(loadInputStream(sha256, size, projectId, repoName))
-        val patchBody: RequestBody = RequestBody.create(
-            MediaType.parse("application/octet-stream"), blob.getFile()
-        )
+        val patchBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "file",
+                sha256,
+                StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
+            )
+            .addFormDataPart("sha256", sha256).apply {
+            }.build()
         val patchHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
             .add(HttpHeaders.CONTENT_RANGE, "0-${0 + size - 1}")
+            .add(REPOSITORY_INFO, "$projectId|$repoName")
+            .add(SHA256, sha256)
+            .add(HttpHeaders.CONTENT_LENGTH, "$size")
             .build()
         val property = RequestProperty(
             requestBody = patchBody,
@@ -438,13 +448,7 @@ class OciArtifactPushClient(
             requestUrl = location
         )
         blobChunkUploadHandler.requestProperty = property
-        val blobUploadResult = blobChunkUploadHandler.process()
-        try {
-            blob.delete()
-        } catch (exception: IOException) {
-            logger.warn("Failed to clean temp blob file, error is $exception")
-        }
-        return blobUploadResult
+        return blobChunkUploadHandler.process()
     }
 
     /**

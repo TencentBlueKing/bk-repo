@@ -28,20 +28,16 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 
 /**
  * 制品推送到远端仓库
  */
 abstract class PushClient(
-    private val localDataManager: LocalDataManager,
     val replicationProperties: ReplicationProperties
 ) {
     lateinit var httpClient: OkHttpClient
@@ -85,8 +81,7 @@ abstract class PushClient(
         } catch (e: Exception) {
             logger.error(
                 "Error occurred while pushing artifact $name|$version to cluster[${clusterInfo.name}] " +
-                    "in the local repo $projectId|$repoName, failed reason: $e",
-                e
+                    "in the local repo $projectId|$repoName, failed reason: ${e.message}"
             )
             throw e
         }
@@ -116,31 +111,6 @@ abstract class PushClient(
      */
     open fun querySyncNodeList(name: String, version: String, projectId: String, repoName: String): List<NodeDetail> {
         return emptyList()
-    }
-
-    /**
-     * 读取节点数据流
-     */
-    fun loadInputStream(nodeInfo: NodeDetail): InputStream {
-        with(nodeInfo) {
-            return loadInputStream(sha256!!, size, projectId, repoName)
-        }
-    }
-
-    /**
-     * 读取节点数据流
-     */
-    fun loadInputStream(sha256: String, size: Long, projectId: String, repoName: String): InputStream {
-        val repo = localDataManager.findRepoByName(projectId, repoName)
-        return localDataManager.getBlobData(sha256, size, repo)
-    }
-
-    /**
-     * 读取节点数据流
-     */
-    fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
-        val repo = localDataManager.findRepoByName(projectId, repoName)
-        return localDataManager.getBlobDataByRange(sha256, range, repo)
     }
 
     companion object {
