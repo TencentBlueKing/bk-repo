@@ -46,6 +46,7 @@ import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
+import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.util.FileParser
 import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -126,8 +127,14 @@ class OciArtifactPushClient(
                 }
             )
         }
-        futureList.forEach {
-            result = it.get()
+        try {
+            futureList.forEach {
+                result = it.get()
+            }
+        } catch (e: ArtifactPushException) {
+            // 当出现异常时取消所有任务
+            futureList.forEach { it.cancel(true) }
+            throw e
         }
         // 同步manifest
         if (result) {
