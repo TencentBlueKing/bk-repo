@@ -220,4 +220,29 @@ class LocalDataManager(
         check(nodes != null) { "Local packages not found" }
         return nodes
     }
+
+    /**
+     * 读取节点数据流
+     */
+    fun loadInputStream(nodeInfo: NodeDetail): InputStream {
+        with(nodeInfo) {
+            return loadInputStream(sha256!!, size, projectId, repoName)
+        }
+    }
+
+    /**
+     * 读取节点数据流
+     */
+    fun loadInputStream(sha256: String, size: Long, projectId: String, repoName: String): InputStream {
+        val repo = findRepoByName(projectId, repoName)
+        return getBlobData(sha256, size, repo)
+    }
+
+    /**
+     * 读取节点数据流
+     */
+    fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
+        val repo = findRepoByName(projectId, repoName)
+        return getBlobDataByRange(sha256, range, repo)
+    }
 }

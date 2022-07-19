@@ -45,6 +45,8 @@ const val OCI_MANIFEST_JSON_FULL_PATH = "/%s/manifest/%s/manifest.json"
 const val OCI_LAYER_FULL_PATH = "/%s/blobs/%s"
 const val NODE_FULL_PATH = "fullPath"
 const val SIZE = "size"
+const val REPOSITORY_INFO = "repo"
+const val SHA256 = "sha256"
 
 /**
  * metrics

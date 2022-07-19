@@ -42,20 +42,17 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.replica.base.okhttp.RemoteHttpClientBuilderFactory
 import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import okhttp3.Interceptor
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
-import org.slf4j.LoggerFactory
 import java.io.InputStream
-import java.util.concurrent.TimeUnit
 
 class ReplicaContext(
     taskDetail: ReplicaTaskDetail,
@@ -113,54 +110,13 @@ class ReplicaContext(
             else -> throw UnsupportedOperationException()
         }
         // 远端集群仓库特殊处理, 远端集群请求鉴权特殊处理
-        // TODO 待优化为单例
         httpClient = if (remoteCluster.type != ClusterNodeType.REMOTE) {
             HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
                 BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
             ).build()
         } else {
-            HttpClientBuilderFactory.create()
-                .readTimeout(1, TimeUnit.MINUTES)
-                .connectTimeout(1, TimeUnit.MINUTES)
-                .writeTimeout(1, TimeUnit.MINUTES)
-                .addInterceptor {
-                    retryRequest(it)
-                }
-                .build()
+            RemoteHttpClientBuilderFactory.httpClient
         }
-    }
-
-    /**
-     * 当请求结果为200-499以外时进行重试
-     */
-    private fun retryRequest(it: Interceptor.Chain): Response {
-        val request: Request = it.request()
-        var response: Response? = null
-        var responseOK = false
-        var tryCount = 0
-
-        while (!responseOK && tryCount < 3) {
-            try {
-                response = it.proceed(request)
-                // 针对429返回需要做延时重试
-                responseOK = if (response.code() == 429) {
-                    Thread.sleep(500)
-                    false
-                } else {
-                    response.code() in 200..499
-                }
-            } catch (e: Exception) {
-                logger.warn(
-                    "The result of request ${request.url()} is failure and error is ${e.cause?.message}" +
-                        ", will retry it - $tryCount"
-                )
-                // 如果第3次重试还是失败，抛出失败异常
-                if (tryCount == 2) throw e
-            } finally {
-                tryCount++
-            }
-        }
-        return response!!
     }
 
     /**
@@ -180,9 +136,5 @@ class ReplicaContext(
         httpClient.newCall(httpRequest).execute().use {
             check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
     }
 }
