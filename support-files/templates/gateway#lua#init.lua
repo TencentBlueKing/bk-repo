@@ -49,6 +49,7 @@ config = {
     authorization = "__BK_REPO_AUTHORIZATION__"
   },
   mode = "__BK_REPO_DEPLOY_MODE__",
+  auth_mode = "__BK_REPO_AUTH_MODE__",
   router = {
     project = {
       {
