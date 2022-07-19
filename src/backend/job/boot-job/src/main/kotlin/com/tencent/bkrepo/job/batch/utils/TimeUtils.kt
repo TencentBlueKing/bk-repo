@@ -25,19 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.batch.utils
 
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/**
- * 流水线构件清理任务配置项
- * @param enabled 是否启用任务
- * @param reservedFrequency 保留最近构建产物的次数
- */
-@ConfigurationProperties("job.pipeline-artifact-cleanup")
-data class PipelineArtifactCleanupJobProperties(
-    override var cron: String = "0 0 0 1 1/1 ?",
-    override var enabled: Boolean = true,
-    var reservedFrequency: Long = 10000,
-): MongodbJobProperties(enabled)
+object TimeUtils {
+
+    fun parseMongoDateTimeStr(dateTimeStr: String): LocalDateTime {
+        return LocalDateTime.parse(
+            dateTimeStr,
+            DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH)
+        )
+    }
+}

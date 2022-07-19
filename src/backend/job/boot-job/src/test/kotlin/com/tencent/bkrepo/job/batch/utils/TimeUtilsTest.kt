@@ -25,19 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.batch.utils
 
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-/**
- * 流水线构件清理任务配置项
- * @param enabled 是否启用任务
- * @param reservedFrequency 保留最近构建产物的次数
- */
-@ConfigurationProperties("job.pipeline-artifact-cleanup")
-data class PipelineArtifactCleanupJobProperties(
-    override var cron: String = "0 0 0 1 1/1 ?",
-    override var enabled: Boolean = true,
-    var reservedFrequency: Long = 10000,
-): MongodbJobProperties(enabled)
+
+class TimeUtilsTest {
+
+    @Test
+    fun parseMongoDateTimeStr() {
+        val dateTimeStr = "Thu Jul 29 11:57:28 CST 2021"
+        val dateTime = TimeUtils.parseMongoDateTimeStr(dateTimeStr)
+        Assertions.assertEquals(dateTime.dayOfWeek.value, 4)
+        Assertions.assertEquals(dateTime.monthValue, 7)
+        Assertions.assertEquals(dateTime.dayOfMonth, 29)
+        Assertions.assertEquals(dateTime.hour, 11)
+        Assertions.assertEquals(dateTime.minute, 57)
+        Assertions.assertEquals(dateTime.second, 28)
+        Assertions.assertEquals(dateTime.year, 2021)
+    }
+}
