@@ -28,8 +28,6 @@
 package com.tencent.bkrepo.job.executor
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
