@@ -125,6 +125,8 @@ init:
   ## bcs repo配置
   bcs:
     enabled: false
+    publicImageUrl: https://hub.bktencent.com/blueking
+    publicChartUrl: https://hub.bktencent.com/chartrepo/blueking
 ## bkrepo公共配置
 common:
   # bkrepo镜像仓库全局配置, 具有最高优先级
