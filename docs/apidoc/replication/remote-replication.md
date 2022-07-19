@@ -15,16 +15,11 @@
   {
     "configs":[
     {
-    "name": "chartmuseum",
-    "registry":"localhost:8080",
+    "name": "mirrors",
+    "registry":"{registry-host}/{repository}",
     "username":"***",
     "password":"****",
-    "packageConstraints": [
-          {
-            "packageKey": "gav://com.alibaba:fastjson",
-            "versions": ["1.2.47","1.2.48"]
-          }
-        ],
+    "packageConstraints": [],
     "pathConstraints": [],
     "replicaType": "REAL_TIME",
     "setting": {
@@ -105,15 +100,10 @@
 
   ```json
     {
-    "registry":"http://localhost:8080/",
+    "registry":"{registry-host}/{repository}",
     "username":"***",
     "password":"****",
-    "packageConstraints": [
-          {
-            "packageKey": "gav://com.alibaba:fastjson",
-            "versions": ["1.2.47","1.2.48"]
-          }
-        ],
+    "packageConstraints": [],
     "pathConstraints": [],
     "replicaType": "REAL_TIME",
     "setting": {
@@ -208,10 +198,10 @@
     "message": null,
     "data": [
         {
-            "projectId": "test",
-            "repoName": "test",
-            "name": "chartmuseum",
-            "registry": "http://localhost:8080",
+            "projectId": "{projectId}",
+            "repoName": "{repoName}",
+            "name": "mirrors",
+            "registry":"{registry-host}/{repository}",
             "certificate": null,
             "username": null,
             "password": null,
