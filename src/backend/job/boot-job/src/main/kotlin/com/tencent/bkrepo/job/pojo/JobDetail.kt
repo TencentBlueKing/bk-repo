@@ -25,32 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
-import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
-import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.time.LocalDateTime
 
-/**
- * Job配置
- * */
-@Configuration
-class JobConfig {
-    @Bean
-    fun blockThreadPoolTaskExecutorDecorator(
-        threadPoolTaskExecutor: ThreadPoolTaskExecutor,
-        properties: TaskExecutionProperties
-    ): BlockThreadPoolTaskExecutorDecorator {
-        return BlockThreadPoolTaskExecutorDecorator(
-            threadPoolTaskExecutor,
-            properties.pool.queueCapacity,
-            Runtime.getRuntime().availableProcessors()
-        )
-    }
-
-    @Bean
-    fun httpAuthSecurity(): HttpAuthSecurity = HttpAuthSecurity().withPrefix("/job")
-}
+data class JobDetail(
+    val name: String,
+    val enabled: Boolean,
+    val cron: String,
+    val fixedDelay: Long,
+    val fixedRate: Long,
+    val initialDelay: Long,
+    val running: Boolean,
+    val lastBeginTime: LocalDateTime?,
+    val lastEndTime: LocalDateTime?,
+    val lastExecuteTime: Long?
+)
