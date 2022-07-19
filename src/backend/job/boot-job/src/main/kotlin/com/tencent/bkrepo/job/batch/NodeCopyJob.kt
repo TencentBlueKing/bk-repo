@@ -31,7 +31,6 @@ class NodeCopyJob(
     properties: NodeCopyJobProperties
 ) : MongoDbBatchJob<NodeCopyJob.NodeCopyData, NodeCopyJobContext>(properties) {
 
-    @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次
     override fun start(): Boolean {
         return super.start()
     }

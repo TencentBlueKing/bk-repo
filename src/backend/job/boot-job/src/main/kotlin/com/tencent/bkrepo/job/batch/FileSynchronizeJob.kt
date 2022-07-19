@@ -50,7 +50,6 @@ class FileSynchronizeJob(
     private val storageService: StorageService
 ) : DefaultContextJob(properties) {
 
-    @Scheduled(cron = "0 0 */1 * * ?") // 每小时同步一次文件
     override fun start(): Boolean {
         return super.start()
     }

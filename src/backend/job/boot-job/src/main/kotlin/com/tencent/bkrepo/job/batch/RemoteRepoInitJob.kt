@@ -34,25 +34,25 @@ import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.job.CATEGORY
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.TYPE
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.RepoRefreshJobProperties
+import com.tencent.bkrepo.job.config.properties.RepoInitProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 /**
  * 用于remote类型或者composite类型仓库定时从远程代理刷新信息
  */
 @Component
-@EnableConfigurationProperties(RepoRefreshJobProperties::class)
+@EnableConfigurationProperties(RepoInitProperties::class)
 class RemoteRepoInitJob(
-    private val properties: RepoRefreshJobProperties,
+    private val properties: RepoInitProperties,
     private val helmClient: HelmClient
-) : RemoteRepoRefreshJob(properties, helmClient) {
+) : DefaultContextMongoDbJob<RemoteRepoRefreshJob.ProxyRepoData>(properties) {
 
     private val types: List<String>
         get() = properties.types
@@ -60,7 +60,6 @@ class RemoteRepoInitJob(
     private val categories: List<String>
         get() = properties.categories
 
-    @Scheduled(fixedDelay = 60 * 1000L, initialDelay = 60 * 1000L)
     override fun start(): Boolean {
         return super.start()
     }
@@ -74,11 +73,11 @@ class RemoteRepoInitJob(
         )
     }
 
-    override fun run(row: ProxyRepoData, collectionName: String, context: JobContext) {
+    override fun run(row: RemoteRepoRefreshJob.ProxyRepoData, collectionName: String, context: JobContext) {
         with(row) {
             try {
                 val config = configuration.readJsonString<RepositoryConfiguration>()
-                if (checkConfigType(config)) {
+                if (RemoteRepoRefreshJob.checkConfigType(config)) {
                     logger.info("Init request will be sent in repo $projectId|$name")
                     helmClient.initIndexAndPackage(projectId, name)
                 }
@@ -91,5 +90,17 @@ class RemoteRepoInitJob(
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NAME = "repository"
+    }
+
+    override fun entityClass(): Class<RemoteRepoRefreshJob.ProxyRepoData> {
+        return RemoteRepoRefreshJob.ProxyRepoData::class.java
+    }
+
+    override fun collectionNames(): List<String> {
+        return listOf(COLLECTION_NAME)
+    }
+
+    override fun mapToEntity(row: Map<String, Any?>): RemoteRepoRefreshJob.ProxyRepoData {
+        return RemoteRepoRefreshJob.ProxyRepoData(row)
     }
 }

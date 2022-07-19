@@ -39,5 +39,7 @@ class RepoRefreshJobProperties(
     /**
      * 需要定时刷新的仓库类型
      * */
-    var types: List<String> = listOf("HELM")
+    var types: List<String> = listOf("HELM"),
+    override var fixedDelay: Long = 60 * 1000L,
+    override var initialDelay: Long = 60 * 1000L
 ) : MongodbJobProperties()

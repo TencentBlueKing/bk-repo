@@ -56,7 +56,6 @@ class SignFileCleanupJob(
     private val expiredOfDays: Long
         get() = properties.expireOfDays.toLong()
 
-    @Scheduled(cron = "0 0 0 * * ?") // 每天零点执行一次
     override fun start(): Boolean {
         return super.start()
     }

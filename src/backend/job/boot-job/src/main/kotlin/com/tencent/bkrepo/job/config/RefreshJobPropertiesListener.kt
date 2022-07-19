@@ -25,11 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.config
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.cloud.context.environment.EnvironmentChangeEvent
+import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent
+import org.springframework.context.ApplicationEvent
+import org.springframework.context.event.SmartApplicationListener
+import org.springframework.stereotype.Component
 
-@ConfigurationProperties("job.file-reference-cleanup")
-class FileReferenceCleanupJobProperties(
-    override var cron: String = "0 0 4/6 * * ?"
-) : MongodbJobProperties()
+@Component
+class RefreshJobPropertiesListener : SmartApplicationListener {
+
+    private var refresh = false
+    override fun onApplicationEvent(event: ApplicationEvent) {
+        if (event is EnvironmentChangeEvent) {
+            val size = event.keys.filter { JOB_PROP_KEY_REGEX.find(it)?.value != null }.size
+            refresh = size > 0
+            return
+        }
+        if (event is RefreshScopeRefreshedEvent && refresh) {
+            ScheduledTaskConfigurer.reloadScheduledTask()
+            refresh = false
+            return
+        }
+    }
+
+    override fun supportsEventType(eventType: Class<out ApplicationEvent>): Boolean {
+        return RefreshScopeRefreshedEvent::class.java.isAssignableFrom(eventType) ||
+            EnvironmentChangeEvent::class.java.isAssignableFrom(eventType)
+    }
+
+    companion object {
+        private val JOB_PROP_KEY_REGEX = Regex("job.[\\w-]+.(cron$|fixedDelay$|fixedRate$)")
+    }
+}

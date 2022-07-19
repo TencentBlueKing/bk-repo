@@ -39,7 +39,7 @@ import java.time.Duration
 /**
  * 抽象批处理作业Job
  * */
-abstract class BatchJob<C : JobContext>(private val batchJobProperties: BatchJobProperties) {
+abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobProperties) {
     /**
      * 锁名称
      */
