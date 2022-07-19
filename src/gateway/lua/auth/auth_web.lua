@@ -38,7 +38,7 @@ if config.mode == "standalone" or config.mode == "" or config.mode == nil then
     end
     ticket = oauthUtil:verify_bkrepo_token(bkrepo_token)
     username = ticket.user_id
-elseif bk_token ~= nil then
+elseif config.auth_mode == "" or config.auth_mode == "token" then
     ticket = oauthUtil:get_ticket(bk_token, "token")
     token = bk_token
     username = ticket.identity.username

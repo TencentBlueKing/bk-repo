@@ -168,10 +168,13 @@ $ helm uninstall bkrepo
 
 ### 数据初始化job配置
 
-|参数|描述|默认值 |
-|---|---|---|
-| `init.mongodb.enabled` | 是否初始化mongodb数据，支持幂等执行 | `true` |
-| `init.mongodb.image` | mongodb job镜像拉取相关配置 | Check `values.yaml` |
+|参数| 描述             | 默认值                                 |
+|---|----------------|-------------------------------------|
+| `init.mongodb.enabled` | 是否初始化mongodb数据，支持幂等执行 | `true`                              |
+| `init.mongodb.image` | mongodb job镜像拉取相关配置 | Check `values.yaml`                 |
+| `init.bcs.enabled` | 是否初始化bcs仓库     | false                               |
+| `init.bcs.publicImageUrl` | bcs代理image仓库地址 | https://hub.bktencent.com/blueking  |
+| `init.bcs.publicChartUrl` | bcs代理chart仓库地址 | https://hub.bktencent.com/chartrepo/blueking                                    |
 
 
 ### 网关配置
