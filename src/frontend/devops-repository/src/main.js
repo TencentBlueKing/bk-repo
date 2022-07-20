@@ -23,15 +23,17 @@ Vue.mixin({
     methods: {
         // 特殊仓库名称替换
         replaceRepoName (name) {
-            if (MODE_CONFIG !== 'ci') return name
-            switch (name) {
-                case 'custom':
-                    return '自定义仓库'
-                case 'pipeline':
-                    return '流水线仓库'
-                default:
-                    return name
+            if (MODE_CONFIG === 'ci') {
+                switch (name) {
+                    case 'custom':
+                        return '自定义仓库'
+                    case 'pipeline':
+                        return '流水线仓库'
+                    default:
+                        return name
+                }
             }
+            return name
         }
     }
 })

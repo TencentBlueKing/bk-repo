@@ -32,12 +32,13 @@ body {
 .hover-btn {
     user-select: none;
     cursor: pointer;
+    color: var(--fontPrimaryColor);
     &.disabled {
         color: var(--fontDisableColor);
         cursor: not-allowed;
     }
     &:not(.disabled):hover {
-        color: var(--primaryWeightColor);
+        color: var(--primaryColor);
     }
     &:not(.disabled).hover-danger:hover {
         color: var(--dangerColor);
@@ -52,7 +53,7 @@ body {
     &.hover-btn {
         padding: 5px;
         border-radius: 2px;
-        color: var(--fontSubsidiaryColor);
+        color: var(--fontPrimaryColor);
         &:not(.disabled):hover {
             background-color: var(--bgHoverColor);
         }

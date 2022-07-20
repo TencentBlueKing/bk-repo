@@ -1,9 +1,9 @@
 <template>
     <div class="bkrepo-main flex-column">
-        <Header v-if="!iframeMode" />
+        <Header v-if="!ciMode" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
-        <Login v-if="!iframeMode" />
+        <Login v-if="!ciMode" />
     </div>
 </template>
 
@@ -18,14 +18,14 @@
         mixins: [mixin],
         data () {
             return {
-                iframeMode: MODE_CONFIG === 'ci'
+                ciMode: MODE_CONFIG === 'ci'
             }
         },
         created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
 
-            if (this.iframeMode) {
+            if (this.ciMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
                 this.ajaxUserInfo().then((userInfo) => {
@@ -35,7 +35,7 @@
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
-                    if (!this.iframeMode && !this.projectList.length) {
+                    if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
                             // TODO: 管理员创建项目引导页
                             this.$bkMessage({

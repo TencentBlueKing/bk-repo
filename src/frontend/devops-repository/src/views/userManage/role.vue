@@ -20,7 +20,11 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(role)"></empty-data>
             </template>
-            <bk-table-column label="用户组名称" prop="name" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="用户组名称" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn" @click="showUsers(row)">{{row.name}}</span>
+                </template>
+            </bk-table-column>
             <bk-table-column label="关联用户数" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.users.length }}</template>
             </bk-table-column>
@@ -31,7 +35,6 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: '详情', clickEvent: () => showUsers(row) },
                             { label: '编辑', clickEvent: () => editRoleHandler(row) },
                             { label: '删除', clickEvent: () => deleteRoleHandler(row) }
                         ]"></operation-list>

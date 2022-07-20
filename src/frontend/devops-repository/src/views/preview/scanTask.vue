@@ -16,7 +16,7 @@
             <bk-table-column label="制品名称" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
-                    <span>{{ row.name }}</span>
+                    <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column label="制品版本/存储路径" show-overflow-tooltip>
@@ -51,14 +51,6 @@
             <bk-table-column label="扫描完成时间" width="150">
                 <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
-                <template #default="{ row }">
-                    <operation-list
-                        :list="[
-                            { label: '详情', clickEvent: () => showArtiReport(row), disabled: row.status !== 'SUCCESS' }
-                        ]"></operation-list>
-                </template>
-            </bk-table-column>
         </bk-table>
         <bk-pagination
             class="pt10"
@@ -76,14 +68,15 @@
     </div>
 </template>
 <script>
-    import OperationList from '@repository/components/OperationList'
     import filterSideslider from '@repository/views/repoScan/scanReport/filterSideslider'
     import { mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { scanStatusEnum, leakLevelEnum } from '@repository/store/publicEnum'
     export default {
         name: 'scanTask',
-        components: { OperationList, filterSideslider },
+        components: {
+            filterSideslider
+        },
         data () {
             return {
                 scanStatusEnum,
@@ -162,7 +155,8 @@
                 this.filter = filter
                 this.handlerPaginationChange()
             },
-            showArtiReport ({ recordId, name }) {
+            showArtiReport ({ recordId, name, status }) {
+                if (status !== 'SUCCESS') return
                 this.$router.push({
                     name: 'artiReport',
                     params: {
