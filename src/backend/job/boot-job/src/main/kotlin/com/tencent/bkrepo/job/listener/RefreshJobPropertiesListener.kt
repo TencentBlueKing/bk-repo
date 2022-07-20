@@ -25,8 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.listener
 
+import com.tencent.bkrepo.job.config.ScheduledTaskConfigurer
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent
 import org.springframework.context.ApplicationEvent
