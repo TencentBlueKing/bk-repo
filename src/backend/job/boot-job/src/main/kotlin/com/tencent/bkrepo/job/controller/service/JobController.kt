@@ -24,17 +24,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":repository:api-repository"))
-    implementation(project(":helm:api-helm"))
-    implementation(project(":job:api-job"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+
+package com.tencent.bkrepo.job.controller.service
+
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.job.api.JobClient
+import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.service.JobService
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class JobController(val jobService: JobService) : JobClient {
+    override fun detail(): Response<List<JobDetail>> {
+        return ResponseBuilder.success(jobService.detail())
+    }
 }

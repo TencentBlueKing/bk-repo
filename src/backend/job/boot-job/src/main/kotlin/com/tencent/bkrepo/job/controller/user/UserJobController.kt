@@ -25,14 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.controller
+package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.job.batch.base.BatchJob
 import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.service.JobService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -40,28 +40,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/job")
 @Principal(type = PrincipalType.ADMIN)
-class JobController(val jobs: List<BatchJob<*>>) {
+class UserJobController(val jobService: JobService) {
 
     @GetMapping("/detail")
     fun detail(): Response<List<JobDetail>> {
-        val jobDetails = mutableListOf<JobDetail>()
-        jobs.forEach {
-            with(it.batchJobProperties) {
-                val jobDetail = JobDetail(
-                    name = it.getJobName(),
-                    enabled = enabled,
-                    cron = cron,
-                    fixedDelay = fixedDelay,
-                    fixedRate = fixedRate,
-                    initialDelay = initialDelay,
-                    running = it.isRunning(),
-                    lastBeginTime = it.lastBeginTime,
-                    lastEndTime = it.lastEndTime,
-                    lastExecuteTime = it.lastExecuteTime
-                )
-                jobDetails.add(jobDetail)
-            }
-        }
-        return ResponseBuilder.success(jobDetails)
+        return ResponseBuilder.success(jobService.detail())
     }
 }

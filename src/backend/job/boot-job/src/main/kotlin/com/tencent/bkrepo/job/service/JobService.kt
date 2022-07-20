@@ -24,17 +24,34 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":repository:api-repository"))
-    implementation(project(":helm:api-helm"))
-    implementation(project(":job:api-job"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+
+package com.tencent.bkrepo.job.service
+
+import com.tencent.bkrepo.job.batch.base.BatchJob
+import com.tencent.bkrepo.job.pojo.JobDetail
+import org.springframework.stereotype.Service
+
+@Service
+class JobService(val jobs: List<BatchJob<*>>) {
+    fun detail() :List<JobDetail>{
+        val jobDetails = mutableListOf<JobDetail>()
+        jobs.forEach {
+            with(it.batchJobProperties) {
+                val jobDetail = JobDetail(
+                    name = it.getJobName(),
+                    enabled = enabled,
+                    cron = cron,
+                    fixedDelay = fixedDelay,
+                    fixedRate = fixedRate,
+                    initialDelay = initialDelay,
+                    running = it.isRunning(),
+                    lastBeginTime = it.lastBeginTime,
+                    lastEndTime = it.lastEndTime,
+                    lastExecuteTime = it.lastExecuteTime
+                )
+                jobDetails.add(jobDetail)
+            }
+        }
+        return jobDetails
+    }
 }

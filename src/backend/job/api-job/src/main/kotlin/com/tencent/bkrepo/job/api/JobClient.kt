@@ -24,17 +24,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":repository:api-repository"))
-    implementation(project(":helm:api-helm"))
-    implementation(project(":job:api-job"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+
+package com.tencent.bkrepo.job.api
+
+import com.tencent.bkrepo.common.api.constant.JOB_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.job.pojo.JobDetail
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+
+@FeignClient(JOB_SERVICE_NAME)
+@RequestMapping("/service/job")
+interface JobClient {
+
+    @GetMapping("/detail")
+    fun detail(): Response<List<JobDetail>>
 }
