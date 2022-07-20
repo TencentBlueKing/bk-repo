@@ -145,6 +145,7 @@ class ArtifactDownloadListener(
         accessDate: LocalDateTime
     ) {
         if (!artifactEventProperties.updateAccessDate) {
+            logger.info("mock update node access time [$projectId/$repoName/$fullPath]")
             return
         }
         val updateRequest = NodeUpdateAccessDateRequest(projectId, repoName, fullPath, SYSTEM_USER, accessDate)

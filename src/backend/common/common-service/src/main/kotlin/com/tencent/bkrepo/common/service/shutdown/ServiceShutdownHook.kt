@@ -50,7 +50,7 @@ class ServiceShutdownHook(
     }
 
     override fun stop() {
-        deregister()
+//        deregister()
         logger.info("start to ensure task finish, total task count: ${hookList.size}")
         val latestTimestampToWait =
             System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(shutdownProperties.maxWaitMinute)
