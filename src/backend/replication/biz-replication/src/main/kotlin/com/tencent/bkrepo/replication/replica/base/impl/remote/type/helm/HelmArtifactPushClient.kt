@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.base.impl.remote.type.helm
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -34,6 +36,7 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
+import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -41,7 +44,7 @@ import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
-import java.io.InputStream
+import java.net.URL
 
 /**
  * helm类型制品推送到远端集群
@@ -112,34 +115,53 @@ class HelmArtifactPushClient(
         node: NodeDetail,
         version: String
     ): Boolean {
+        var chartUpload = buildUploadHandler(
+            token = token,
+            name = name,
+            version = version,
+            node = node,
+            chartMuseum = false
+        ).process()
+        if (!chartUpload.isSuccess) {
+            chartUpload = buildUploadHandler(
+                token = token,
+                name = name,
+                version = version,
+                node = node,
+                chartMuseum = true
+            ).process()
+        }
+        return chartUpload.isSuccess
+    }
+
+    /**
+     * 上传chart包
+     * 针对存在chartMuseum和其他jfrog的上传请求不一致，使用chartMuseum区别
+     */
+    private fun buildUploadHandler(
+        token: String?,
+        name: String,
+        version: String,
+        chartMuseum: Boolean,
+        node: NodeDetail
+    ): DefaultHandler {
         val input = localDataManager.loadInputStream(
             sha256 = node.sha256!!,
             size = node.size,
             projectId = node.projectId,
             repoName = node.repoName
         )
-        return buildUploadHandler(
-            token = token,
-            name = name,
-            version = version,
-            input = input
-        ).process().isSuccess
-    }
-
-    /**
-     * 上传chart包或者prov文件
-     */
-    private fun buildUploadHandler(
-        token: String?,
-        name: String,
-        version: String,
-        input: InputStream
-    ): DefaultHandler {
         val artifactUploadHandler = DefaultHandler(
             httpClient = httpClient,
-            responseType = String::class.java
+            responseType = String::class.java,
+            ignoredFailureCode = listOf(HttpStatus.METHOD_NOT_ALLOWED.value, HttpStatus.NOT_FOUND.value),
         )
         val fileName = CHART_FILE_NAME.format(name, version)
+        val requestUrl = if (chartMuseum) {
+            clusterInfo.url
+        } else {
+            builderRequestUrl(clusterInfo.url, fileName)
+        }
         val postBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
@@ -150,14 +172,32 @@ class HelmArtifactPushClient(
             )
             .addFormDataPart("force", true.toString())
             .build()
+        val method = if (chartMuseum) {
+            RequestMethod.POST
+        } else {
+            RequestMethod.PUT
+        }
         val property = RequestProperty(
             requestBody = postBody,
-            requestUrl = clusterInfo.url,
+            requestUrl = requestUrl,
             authorizationCode = token,
-            requestMethod = RequestMethod.POST
+            requestMethod = method
         )
         artifactUploadHandler.requestProperty = property
         return artifactUploadHandler
+    }
+
+    /**
+     * 拼接url
+     */
+    private fun builderRequestUrl(
+        url: String,
+        path: String,
+        params: String = StringPool.EMPTY
+    ): String {
+        val baseUrl = HttpUtils.addProtocol(url)
+        val v2Url = URL(baseUrl, baseUrl.path)
+        return HttpUtils.builderUrl(v2Url.toString(), path, params)
     }
 
     private fun buildAuthRequestProperties(): RequestProperty {
@@ -169,6 +209,6 @@ class HelmArtifactPushClient(
     companion object {
         private val logger = LoggerFactory.getLogger(HelmArtifactPushClient::class.java)
         const val CHART_FILE = "chart"
-        const val CHART_FILE_NAME = "/%s-%s.tgz"
+        const val CHART_FILE_NAME = "%s-%s.tgz"
     }
 }
