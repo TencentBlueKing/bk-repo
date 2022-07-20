@@ -29,22 +29,22 @@ package com.tencent.bkrepo.webhook.payload.builder.metedata
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.metadata.MetadataSavedEvent
+import com.tencent.bkrepo.common.artifact.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.webhook.payload.builder.node.NodePayloadBuilder
-import com.tencent.bkrepo.webhook.pojo.payload.metadata.MetedataSavedEventPayload
+import com.tencent.bkrepo.webhook.pojo.payload.metadata.MetedataDeletedEventPayload
 import org.springframework.stereotype.Component
 
 @Component
-class MetedataSavedPayloadBuilder : NodePayloadBuilder(
-    eventType = EventType.METADATA_SAVED
+class MetadataDeletedPayloadBuilder : NodePayloadBuilder(
+    eventType = EventType.METADATA_DELETED
 ) {
 
-    override fun build(event: ArtifactEvent): MetedataSavedEventPayload {
-        require(event is MetadataSavedEvent)
-        return MetedataSavedEventPayload(
+    override fun build(event: ArtifactEvent): MetedataDeletedEventPayload {
+        require(event is MetadataDeletedEvent)
+        return MetedataDeletedEventPayload(
             user = getUser(event.userId),
             node = getNode(event.projectId, event.repoName, event.resourceKey),
-            metedata = event.metadata
+            deletedMetedataKeys = event.data["keys"] as Set<String>
         )
     }
 }

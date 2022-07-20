@@ -39,10 +39,9 @@ class NodeRenamedPayloadBuilder : NodePayloadBuilder(
 ) {
 
     override fun build(event: ArtifactEvent): NodeRenamedEventPayload {
-        require(event is NodeRenamedEvent)
         return NodeRenamedEventPayload(
             user = getUser(event.userId),
-            node = getNode(event.projectId, event.repoName, event.newFullPath),
+            node = getNode(event.projectId, event.repoName, event.data["newFullPath"].toString()),
             oldFullPath = event.resourceKey
         )
     }

@@ -39,10 +39,13 @@ class NodeCopiedPayloadBuilder : NodePayloadBuilder(
 ) {
 
     override fun build(event: ArtifactEvent): NodeCopiedEventPayload {
-        require(event is NodeCopiedEvent)
         return NodeCopiedEventPayload(
             user = getUser(event.userId),
-            node = getNode(event.dstProjectId, event.dstRepoName, event.dstFullPath),
+            node = getNode(
+                event.data["dstProjectId"].toString(),
+                event.data["dstRepoName"].toString(),
+                event.data["dstFullPath"].toString()
+            ),
             srcProjectId = event.projectId,
             srcRepoName = event.repoName,
             srcFullPath = event.resourceKey
