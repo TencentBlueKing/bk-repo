@@ -54,9 +54,9 @@ class RemoteHttpClientBuilderFactory(
     }
 
     companion object {
-        private const val DEFAULT_READ_TIMEOUT_MINUTES = 10 * 1000L
-        private const val DEFAULT_CONNECT_TIMEOUT_MINUTES = 10 * 1000L
-        private const val DEFAULT_WRITE_TIMEOUT_MINUTES = 10 * 1000L
+        private const val DEFAULT_READ_TIMEOUT_MINUTES = 1L
+        private const val DEFAULT_CONNECT_TIMEOUT_MINUTES = 1L
+        private const val DEFAULT_WRITE_TIMEOUT_MINUTES = 1L
         lateinit var httpClient: OkHttpClient
     }
 }
