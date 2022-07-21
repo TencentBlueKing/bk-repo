@@ -33,12 +33,14 @@ package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
@@ -60,6 +62,7 @@ class ArtifactMetrics(
         Companion.meterRegistry = meterRegistry
         lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, meterRegistry, properties.maxMeters)
         meterRegistry.config().meterFilter(lruMeterFilter)
+        ServiceShutdownHook.add { ensureDownloadAndUploadFinish() }
     }
 
     override fun bindTo(meterRegistry: MeterRegistry) {
@@ -80,7 +83,17 @@ class ArtifactMetrics(
             .register(meterRegistry)
     }
 
+    private fun ensureDownloadAndUploadFinish() {
+        logger.info("start to wait download and upload finish")
+        while (downloadingCount.get() > 0 || uploadingCount.get() > 0) {
+            logger.info("downloading count: ${downloadingCount.get()}, uploading count: ${uploadingCount.get()}")
+            Thread.sleep(60 * 1000)
+        }
+        logger.info("all download and upload task is finish")
+    }
+
     companion object {
+        private val logger = LoggerFactory.getLogger(ArtifactMetrics::class.java)
         private lateinit var tagProvider: ArtifactTransferTagProvider
         private lateinit var meterRegistry: MeterRegistry
         private lateinit var lruMeterFilter: LruMeterFilter

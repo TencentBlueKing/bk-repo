@@ -134,6 +134,7 @@ class DownloadInterceptorTest {
             createdDate = LocalDateTime.now().toString(),
             lastModifiedBy = UT_USER,
             lastModifiedDate = LocalDateTime.now().toString(),
+            lastAccessDate = LocalDateTime.now().toString(),
             folder = false,
             path = path,
             name = name,
