@@ -93,12 +93,14 @@ object HttpUtils {
     /**
      * 针对url如果没穿protocol， 则默认以https请求发送
      */
-    fun addProtocol(url: String): URL {
-        return try {
-            URL(url)
+    fun addProtocol(registry: String): URL {
+        val url = try {
+            URL(registry)
         } catch (e: MalformedURLException) {
-            URL("${StringPool.HTTPS}$url")
+            URL("${StringPool.HTTPS}$registry")
         }
+        if (validateHttpsProtocol(url)) return url
+        return URL(url.toString().replaceFirst("^https".toRegex(), "http"))
     }
 
     /**
@@ -123,6 +125,19 @@ object HttpUtils {
             responseCode in 200..399
         } catch (exception: IOException) {
             throw exception
+        }
+    }
+
+    /**
+     * 验证registry是否支持https
+     */
+    private fun validateHttpsProtocol(url: URL): Boolean {
+        return try {
+            val http: HttpURLConnection = url.openConnection() as HttpURLConnection
+            http.disconnect()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 }

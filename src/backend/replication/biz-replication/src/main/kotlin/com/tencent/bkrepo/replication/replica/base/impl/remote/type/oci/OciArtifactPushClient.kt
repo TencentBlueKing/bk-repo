@@ -191,7 +191,7 @@ class OciArtifactPushClient(
      * auth鉴权属性配置
      */
     private fun buildAuthRequestProperties(name: String): RequestProperty {
-        val baseUrl = HttpUtils.addProtocol(clusterInfo.url)
+        val baseUrl = URL(clusterInfo.url)
         val v2Url = URL(baseUrl, "/v2/").toString()
         val target = baseUrl.path.removePrefix(StringPool.SLASH)
             .removeSuffix(StringPool.SLASH) + StringPool.SLASH + name
@@ -527,7 +527,7 @@ class OciArtifactPushClient(
         path: String,
         params: String = StringPool.EMPTY
     ): String {
-        val baseUrl = HttpUtils.addProtocol(url)
+        val baseUrl = URL(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return HttpUtils.builderUrl(v2Url.toString(), path, params)
     }
