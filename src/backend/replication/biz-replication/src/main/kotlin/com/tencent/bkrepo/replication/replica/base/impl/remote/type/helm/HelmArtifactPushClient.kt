@@ -162,16 +162,22 @@ class HelmArtifactPushClient(
         } else {
             builderRequestUrl(clusterInfo.url, fileName)
         }
-        val postBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart(
-                "chart", fileName,
-                RequestBody.create(
-                    MediaType.parse("application/octet-stream"), input.readBytes()
-                )
+        val postBody = if (!chartMuseum) {
+            RequestBody.create(
+                MediaType.parse("application/octet-stream"), input.readBytes()
             )
-            .addFormDataPart("force", true.toString())
-            .build()
+        } else {
+            MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(
+                    "chart", fileName,
+                    RequestBody.create(
+                        MediaType.parse("application/octet-stream"), input.readBytes()
+                    )
+                )
+                .addFormDataPart("force", true.toString())
+                .build()
+        }
         val method = if (chartMuseum) {
             RequestMethod.POST
         } else {
