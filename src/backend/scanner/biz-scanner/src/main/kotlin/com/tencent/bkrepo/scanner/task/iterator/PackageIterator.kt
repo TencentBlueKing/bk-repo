@@ -217,6 +217,7 @@ class PackageIterator(
                 packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
             }
             pkg.fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
+            pkg.size = packageVersion?.size
         }
         return pkg
     }
@@ -236,6 +237,7 @@ class PackageIterator(
             it.artifactName = pkg.artifactName
             it.packageKey = pkg.packageKey
             it.packageVersion = pkg.packageVersion
+            it.size = pkg.size ?: it.size
         }
         return nodes
     }
@@ -285,7 +287,8 @@ class PackageIterator(
         val latestVersion: String,
         val historyVersion: List<String> = emptyList(),
         var packageVersion: String? = null,
-        var fullPath: String? = null
+        var fullPath: String? = null,
+        var size: Long? = null
     )
 
     /**
