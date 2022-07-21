@@ -28,10 +28,7 @@
 package com.tencent.bkrepo.common.service.shutdown
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.slf4j.LoggerFactory
-import org.springframework.beans.BeansException
-import org.springframework.cloud.consul.serviceregistry.ConsulAutoServiceRegistration
 import org.springframework.context.SmartLifecycle
 import org.springframework.stereotype.Component
 import java.util.concurrent.Callable
@@ -50,7 +47,6 @@ class ServiceShutdownHook(
     }
 
     override fun stop() {
-//        deregister()
         logger.info("start to ensure task finish, total task count: ${hookList.size}")
         val latestTimestampToWait =
             System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(shutdownProperties.maxWaitMinute)
@@ -60,23 +56,14 @@ class ServiceShutdownHook(
                 it.get(getTimeout(latestTimestampToWait), TimeUnit.MILLISECONDS)
             } catch (e: TimeoutException) {
                 logger.warn("wait task finish timeout")
+            } catch (e: Exception) {
+                logger.error("task execute failed", e)
             }
         }
     }
 
     override fun isRunning(): Boolean {
         return true
-    }
-
-    private fun deregister() {
-        try {
-            val consulAutoServiceRegistrationBean = SpringContextUtils.getBean<ConsulAutoServiceRegistration>()
-            consulAutoServiceRegistrationBean.stop()
-            // 等待网关dns缓存过期
-            Thread.sleep(TimeUnit.SECONDS.toMillis(shutdownProperties.dnsTTL))
-        } catch (e: BeansException) {
-            return
-        }
     }
 
     private fun getTimeout(latestTimestampToWait: Long): Long {
