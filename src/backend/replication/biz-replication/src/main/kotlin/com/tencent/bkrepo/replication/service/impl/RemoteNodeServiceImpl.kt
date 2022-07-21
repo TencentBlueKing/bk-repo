@@ -53,7 +53,6 @@ import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -70,14 +69,43 @@ class RemoteNodeServiceImpl(
         requests: RemoteCreateRequest
     ): List<ClusterNodeInfo> {
         return requests.configs.map {
-            val clusterInfo = clusterNodeService.create(SecurityUtils.getUserId(), buildClusterNodeCreateRequest(it))
-            createTask(
-                projectId = projectId,
-                repoName = repoName,
-                request = it,
-                clusterInfo = clusterInfo
-            )
-            clusterInfo
+            val tClusterNode = clusterNodeService.getByClusterName(it.name)
+            if (tClusterNode == null) {
+                val clusterInfo = clusterNodeService.create(
+                    SecurityUtils.getUserId(), buildClusterNodeCreateRequest(it)
+                )
+                createTask(
+                    projectId = projectId,
+                    repoName = repoName,
+                    request = it,
+                    clusterInfo = clusterInfo
+                )
+                clusterInfo
+            } else {
+                val updateRequest = convertCreateToUpdate(it)
+                val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(updateRequest, it.name))
+                val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, it.name))
+                if (task == null) {
+                    createTask(
+                        projectId = projectId,
+                        repoName = repoName,
+                        request = it,
+                        clusterInfo = clusterInfo
+                    )
+                } else {
+                    updateTask(
+                        request = updateRequest,
+                        task = task,
+                        clusterInfo = clusterInfo,
+                        projectId = projectId,
+                        repoName = repoName
+                    )
+                    if (task.enabled != it.enable) {
+                        replicaTaskService.toggleStatus(task.key)
+                    }
+                }
+                tClusterNode
+            }
         }
     }
 
@@ -313,8 +341,24 @@ class RemoteNodeServiceImpl(
         }
     }
 
+    private fun convertCreateToUpdate(request: RemoteConfigCreateRequest): RemoteConfigUpdateRequest {
+        with(request) {
+            return RemoteConfigUpdateRequest(
+                registry = registry,
+                certificate = certificate,
+                username = username,
+                password = password,
+                packageConstraints = packageConstraints,
+                pathConstraints = pathConstraints,
+                replicaType = replicaType,
+                setting = setting,
+                description = description,
+                enable = enable
+            )
+        }
+    }
+
     companion object {
-        private val logger = LoggerFactory.getLogger(RemoteNodeServiceImpl::class.java)
         const val NAME = "%s-%s-%s"
     }
 }

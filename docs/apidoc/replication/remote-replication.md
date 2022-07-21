@@ -32,7 +32,7 @@
         "executeImmediately": true
       }
     },
-    "enabled": true,
+    "enable": true,
     "description": "test replica task"
    }
   ]
@@ -54,7 +54,7 @@
   |pathConstraints|list|否|无|路径限制|path constraints|
   |replicaType|enum|是|REAL_TIME|[SCHEDULED,REAL_TIME]|replication type|
   |setting|object|是|无|计划相关设置|task setting|
-  |enabled|bool|是|true|计划是否启动|do task enabled|
+  |enable|bool|是|true|计划是否启动|do task enable|
   |description|sting|否|无|描述|description|
   
 - setting对象说明
@@ -116,7 +116,7 @@
         "executeImmediately": true
       }
     },
-    "enabled": true,
+    "enable": true,
     "description": "test replica task"
    }
   ```
@@ -136,7 +136,7 @@
   |pathConstraints|list|否|无|路径限制|path constraints|
   |replicaType|enum|是|REAL_TIME|[SCHEDULED,REAL_TIME]|replication type|
   |setting|object|是|无|计划相关设置|task setting|
-  |enabled|bool|是|true|计划是否启动|do task enabled|
+  |enable|bool|是|true|计划是否启动|do task enable|
   |description|sting|否|无|描述|description|
   
 - setting对象说明
