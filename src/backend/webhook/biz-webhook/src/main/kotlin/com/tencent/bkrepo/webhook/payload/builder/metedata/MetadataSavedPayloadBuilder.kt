@@ -29,7 +29,6 @@ package com.tencent.bkrepo.webhook.payload.builder.metedata
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.metadata.MetadataSavedEvent
 import com.tencent.bkrepo.webhook.payload.builder.node.NodePayloadBuilder
 import com.tencent.bkrepo.webhook.pojo.payload.metadata.MetedataSavedEventPayload
 import org.springframework.stereotype.Component

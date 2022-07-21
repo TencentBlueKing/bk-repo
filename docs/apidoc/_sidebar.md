@@ -28,3 +28,6 @@
   - [docker扩展接口](/apidoc/registry/docker.md)
   - [npm扩展接口](/apidoc/registry/npm.md)
   - [rpm扩展接口](/apidoc/registry/rpm.md)
+- **WebHook**
+  - [webhook接口](/apidoc/webhook/webhook.md)
+  - [webhook消息](/apidoc/webhook/payload.md)

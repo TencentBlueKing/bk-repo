@@ -29,7 +29,6 @@ package com.tencent.bkrepo.webhook.payload.builder.node
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.webhook.pojo.payload.node.NodeCopiedEventPayload
 import org.springframework.stereotype.Component
 
