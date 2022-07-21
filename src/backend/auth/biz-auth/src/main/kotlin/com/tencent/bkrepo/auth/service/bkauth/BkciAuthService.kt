@@ -40,6 +40,7 @@ import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.util.HttpUtils
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -81,7 +82,12 @@ class BkciAuthService @Autowired constructor(
             val request =
                 Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(401, 403))
+            val apiResponse = HttpUtils.doRequest(
+                okHttpClient, request, 2, setOf(
+                    HttpStatus.UNAUTHORIZED.value,
+                    HttpStatus.FORBIDDEN.value
+                )
+            )
             logger.debug("validateProjectUsers url[$url], result[${apiResponse.content}]")
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             if (responseObject.status == 0 && responseObject.data) {
