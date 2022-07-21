@@ -62,13 +62,16 @@ class RetryInterceptor(
                 }
             } catch (e: Exception) {
                 logger.warn(
-                    "The result of request ${request.url()} is failure and error is ${e.cause?.message}" +
-                        ", will retry it - $tryCount"
+                    "The result of request ${request.url()} is failure and error is ${e.cause?.message}"
                 )
                 // 如果第2次重试还是失败，抛出失败异常
                 if (tryCount == 2) throw e
             } finally {
                 if (!responseOK && tryCount < 2) {
+                    logger.warn(
+                        "The result of request ${request.url()} is failure and code is ${response?.code()}" +
+                            ", will retry it - $tryCount"
+                    )
                     response?.close()
                     request = buildRetryRequestBody(request)
                 }
