@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
+import com.tencent.bkrepo.replication.util.HttpUtils.validateHttpsProtocol
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException
@@ -134,6 +135,7 @@ object HttpUtils {
     private fun validateHttpsProtocol(url: URL): Boolean {
         return try {
             val http: HttpURLConnection = url.openConnection() as HttpURLConnection
+            http.responseCode
             http.disconnect()
             true
         } catch (e: Exception) {
