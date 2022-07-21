@@ -34,8 +34,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  */
 @ConfigurationProperties(prefix = "shutdown")
 data class ShutdownProperties(
-    // 网关dns缓存过期时间，单位秒
-    var dnsTTL: Long = 30L,
     // 最大等待时间，单位分钟
     var maxWaitMinute: Long = 30L
 )
