@@ -11,7 +11,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_MAPPING_URI
-import com.tencent.bkrepo.generic.config.DeltaProperties
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.service.DeltaSyncService
@@ -60,9 +59,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     @GetMapping("delta/permit")
     fun permit(): Response<Boolean> {
         val clientIp = HttpContextHolder.getClientAddress()
-        val whiteList = deltaSyncService.whiteList()
-        val hasPermit = whiteList.contains(clientIp) || whiteList.contains(DeltaProperties.ALL)
-        return ResponseBuilder.success(hasPermit)
+        return ResponseBuilder.success(deltaSyncService.isInWhiteList(clientIp))
     }
 
     @PutMapping("delta/speed")
