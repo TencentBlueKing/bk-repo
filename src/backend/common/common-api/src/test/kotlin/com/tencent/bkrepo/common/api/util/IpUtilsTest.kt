@@ -41,4 +41,10 @@ class IpUtilsTest {
         Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.isInRange("196.168.2.256", cidr) }
     }
 
+    @Test
+    fun parseCidrTest() {
+        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/32") }
+        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/0") }
+        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/24") }
+    }
 }

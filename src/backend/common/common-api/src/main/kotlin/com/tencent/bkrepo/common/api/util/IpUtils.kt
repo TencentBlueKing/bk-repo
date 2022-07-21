@@ -31,15 +31,16 @@ import sun.net.util.IPAddressUtil
 
 object IpUtils {
 
-    private val cidrIpRegex = Regex(".*/")
-    private val cidrMaskRegex = Regex("/.*")
+    private val cidrParseRegex = Regex("(.*)/(.*)")
+    private val cidrRegex = Regex(
+        "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+            "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([1-9]|[1-2]\\d|3[0-1])?"
+    )
 
     fun isInRange(ip: String, cidr: String): Boolean {
         val ip1 = ipv4ToLong(ip)
-        val cidrIp = cidr.replace(cidrMaskRegex, "")
+        val (cidrIp, mask) = parseCidr(cidr)
         val ip2 = ipv4ToLong(cidrIp)
-        val maskStr = cidr.replace(cidrIpRegex, "")
-        val mask = 0xFFFFFFFF shl (32 - maskStr.toInt())
         return (ip1 and mask) == (ip2 and mask)
     }
 
@@ -50,5 +51,16 @@ object IpUtils {
             ret = ret shl 8 or (it.toInt() and 0xFF).toLong()
         }
         return ret
+    }
+
+    fun parseCidr(cidr: String): Pair<String, Long> {
+        if (!cidrRegex.matches(cidr)) {
+            throw IllegalArgumentException("$cidr is invalid")
+        }
+        val (cidrIp, maskStr) = cidrParseRegex.matchEntire(cidr)?.destructured
+            ?: throw IllegalArgumentException("$cidr is invalid")
+        val mastInt = maskStr.toInt()
+        val mask = 0xFFFFFFFF shl (32 - mastInt)
+        return cidrIp to mask
     }
 }
