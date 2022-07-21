@@ -85,7 +85,7 @@ object HttpContextHolder {
         return address
     }
 
-    fun getXForwardedFor(): String {
+    fun getXForwardedFor(): String? {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
         return if (requestAttributes is ServletRequestAttributes) {
             val request = requestAttributes.request
