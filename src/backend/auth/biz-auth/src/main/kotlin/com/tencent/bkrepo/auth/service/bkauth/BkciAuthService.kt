@@ -73,18 +73,22 @@ class BkciAuthService @Autowired constructor(
             logger.debug("match in cache: $cacheKey|$cacheResult")
             return cacheResult
         }
+        var hasPermission = false
 
         val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode" +
-            "/users/$user/isProjectUsers"
+                "/users/$user/isProjectUsers"
         return try {
             val request =
                 Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
-            val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(401, 403))
             logger.debug("validateProjectUsers url[$url], result[${apiResponse.content}]")
-            resourcePermissionCache.put(cacheKey, responseObject.data)
-            responseObject.data
+            val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
+            if (responseObject.status == 0 && responseObject.data) {
+                hasPermission = true
+            }
+            resourcePermissionCache.put(cacheKey, hasPermission)
+            hasPermission
         } catch (exception: Exception) {
             logger.error("validateProjectUsers url is $url, error: ", exception)
             false
@@ -100,7 +104,7 @@ class BkciAuthService @Autowired constructor(
         }
 
         val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode" +
-            "/users/$user/checkProjectManager"
+                "/users/$user/checkProjectManager"
         return try {
             val request =
                 Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
@@ -135,7 +139,7 @@ class BkciAuthService @Autowired constructor(
             return cacheResult
         }
         val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/local/manager/" +
-            "projects/$projectCode?resourceType=${resourceType.value}&action=${action.value}"
+                "projects/$projectCode?resourceType=${resourceType.value}&action=${action.value}"
         return try {
             val request =
                 Request.Builder().url(url).header(DEVOPS_UID, user)
@@ -145,7 +149,7 @@ class BkciAuthService @Autowired constructor(
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug(
                 "validateProjectSuperAdmin , requestUrl: [$url]," +
-                    " result : [${apiResponse.content.replace("\n", "")}]"
+                        " result : [${apiResponse.content.replace("\n", "")}]"
             )
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
@@ -171,8 +175,8 @@ class BkciAuthService @Autowired constructor(
 
         val url =
             "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/permission" +
-                "/projects/$projectCode/relation/validate?" +
-                "action=${action.value}&resourceCode=$resourceCode&resourceType=${resourceType.value}"
+                    "/projects/$projectCode/relation/validate?" +
+                    "action=${action.value}&resourceCode=$resourceCode&resourceType=${resourceType.value}"
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
@@ -196,8 +200,8 @@ class BkciAuthService @Autowired constructor(
         return try {
             val url =
                 "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/permission/" +
-                    "projects/$projectCode/action/instance?" +
-                    "action=${action.value}&resourceType=${resourceType.value}"
+                        "projects/$projectCode/action/instance?" +
+                        "action=${action.value}&resourceType=${resourceType.value}"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
