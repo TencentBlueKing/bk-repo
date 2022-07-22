@@ -95,7 +95,7 @@ class UserServiceImpl constructor(
         val user = userRepository.findFirstByUserId(request.userId)
         user?.let {
             logger.warn("create user [${request.userId}]  is exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
+            return true
         }
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
