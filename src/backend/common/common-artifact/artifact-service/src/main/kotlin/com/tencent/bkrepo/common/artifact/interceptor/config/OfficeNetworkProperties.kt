@@ -25,27 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.util
+package com.tencent.bkrepo.common.artifact.interceptor.config
 
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
-
-class IpUtilsTest {
-
-    @Test
-    fun isInRangeTest() {
-        val cidr = "196.168.1.0/24"
-        Assertions.assertTrue(IpUtils.isInRange("192.168.1.1", "0.0.0.0/0"))
-        Assertions.assertTrue(IpUtils.isInRange("196.168.1.1", cidr))
-        Assertions.assertFalse(IpUtils.isInRange("196.168.2.1", cidr))
-        // invalid ip
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.isInRange("196.168.2.256", cidr) }
-    }
-
-    @Test
-    fun parseCidrTest() {
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/33") }
-        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/0") }
-        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/24") }
-    }
-}
+/**
+ * 办公网下载拦截配置项
+ */
+data class OfficeNetworkProperties(
+    /**
+     * IP白名单
+     */
+    var whiteList: List<String> = listOf("0.0.0.0/0")
+)

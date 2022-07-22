@@ -25,27 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.util
+package com.tencent.bkrepo.common.artifact.interceptor.impl
 
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
+import com.tencent.bkrepo.common.api.util.IpUtils
+import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
-class IpUtilsTest {
+/**
+ * 办公网下载拦截器，只允许白名单IP下载
+ */
+class OfficeNetworkInterceptor(
+    rules: Map<String, Any>,
+    private val properties: DownloadInterceptorProperties
+) : DownloadInterceptor<Map<String, Boolean>>(rules) {
 
-    @Test
-    fun isInRangeTest() {
-        val cidr = "196.168.1.0/24"
-        Assertions.assertTrue(IpUtils.isInRange("192.168.1.1", "0.0.0.0/0"))
-        Assertions.assertTrue(IpUtils.isInRange("196.168.1.1", cidr))
-        Assertions.assertFalse(IpUtils.isInRange("196.168.2.1", cidr))
-        // invalid ip
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.isInRange("196.168.2.256", cidr) }
+    /**
+     * 示例；
+     * "rules": {
+     *   "enabled": true
+     * }
+     */
+    override fun parseRule(): Map<String, Boolean> {
+        return rules.mapValues { it.value.toString().toBoolean() }
     }
 
-    @Test
-    fun parseCidrTest() {
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/33") }
-        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/0") }
-        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/24") }
+
+    override fun matcher(node: NodeDetail, rule: Map<String, Boolean>): Boolean {
+        if (rule[ENABLED] == false) {
+            return true
+        }
+
+        val cidrList = properties.officeNetwork.whiteList
+        val clientIp = HttpContextHolder.getClientAddress()
+        cidrList.forEach {
+            if (IpUtils.isInRange(clientIp, it)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    companion object {
+        private const val ENABLED = "enabled"
     }
 }

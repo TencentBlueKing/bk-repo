@@ -25,27 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.util
+package com.tencent.bkrepo.common.artifact.interceptor
 
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
+import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-class IpUtilsTest {
+@Configuration
+@EnableConfigurationProperties(DownloadInterceptorProperties::class)
+class ArtifactDownloadInterceptorConfiguration {
 
-    @Test
-    fun isInRangeTest() {
-        val cidr = "196.168.1.0/24"
-        Assertions.assertTrue(IpUtils.isInRange("192.168.1.1", "0.0.0.0/0"))
-        Assertions.assertTrue(IpUtils.isInRange("196.168.1.1", cidr))
-        Assertions.assertFalse(IpUtils.isInRange("196.168.2.1", cidr))
-        // invalid ip
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.isInRange("196.168.2.256", cidr) }
-    }
-
-    @Test
-    fun parseCidrTest() {
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/33") }
-        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/0") }
-        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/24") }
+    @Bean
+    fun downloadInterceptorFactory(properties: DownloadInterceptorProperties): DownloadInterceptorFactory {
+        return DownloadInterceptorFactory(properties)
     }
 }
