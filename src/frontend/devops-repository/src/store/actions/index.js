@@ -98,7 +98,7 @@ export default {
         })
     },
     logout ({ commit }) {
-        if (MODE_CONFIG === 'ci') {
+        if (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')

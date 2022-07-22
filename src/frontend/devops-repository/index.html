@@ -54,7 +54,8 @@
             ? PAAS_SERVICE_URL + '/login/'
             : '__BK_REPO_PAAS_LOGIN_URL__'
         // standalone: 独立部署模式
-        // ci: ci模式
+        // ci: ci模式接入devops平台
+        // saas: saas模式接入蓝鲸底座
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
     </script>
     <script>
@@ -98,7 +99,7 @@
                         window.open(redirectUrl.href, '_self')
                         mountApp()
                     } else if (status === 401) {
-                        if (MODE_CONFIG === 'ci') {
+                        if (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') {
                             // ci登录逻辑
                             location.href = window.getLoginUrl()
                         } else {
