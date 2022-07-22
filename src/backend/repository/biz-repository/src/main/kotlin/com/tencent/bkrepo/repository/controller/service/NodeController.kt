@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -93,6 +94,11 @@ class NodeController(
 
     override fun updateNode(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
         nodeService.updateNode(nodeUpdateRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun updateNodeAccessDate(nodeUpdateAccessDateRequest: NodeUpdateAccessDateRequest): Response<Void> {
+        nodeService.updateNodeAccessDate(nodeUpdateAccessDateRequest)
         return ResponseBuilder.success()
     }
 

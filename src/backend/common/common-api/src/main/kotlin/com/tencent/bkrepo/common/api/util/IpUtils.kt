@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,42 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.common.api.util
 
-/**
- * 文件节点
- */
-data class Node(
-    /**
-     * 文件所属项目
-     */
-    val projectId: String,
-    /**
-     * 文件所属仓库
-     */
-    val repoName: String,
-    /**
-     * 文件完整路径
-     */
-    val fullPath: String,
-    /**
-     * 制品名
-     */
-    var artifactName: String,
-    /**
-     * 依赖包唯一标识，制品为依赖包时候存在
-     */
-    var packageKey: String? = null,
-    /**
-     * 依赖包版本
-     */
-    var packageVersion: String? = null,
-    /**
-     * 文件sha256
-     */
-    val sha256: String,
-    /**
-     * 文件大小或package大小
-     */
-    var size: Long
-)
+import sun.net.util.IPAddressUtil
+
+object IpUtils {
+
+    private val cidrParseRegex = Regex("(.*)/(.*)")
+    private val cidrRegex = Regex(
+        "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+            "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/([1-9]|[1-2]\\d|3[0-1])?"
+    )
+
+    fun isInRange(ip: String, cidr: String): Boolean {
+        val ip1 = ipv4ToLong(ip)
+        val (cidrIp, mask) = parseCidr(cidr)
+        val ip2 = ipv4ToLong(cidrIp)
+        return (ip1 and mask) == (ip2 and mask)
+    }
+
+    fun ipv4ToLong(ip: String): Long {
+        val bytes = IPAddressUtil.textToNumericFormatV4(ip) ?: throw IllegalArgumentException("$ip is invalid")
+        var ret = 0L
+        bytes.forEach {
+            ret = ret shl 8 or (it.toInt() and 0xFF).toLong()
+        }
+        return ret
+    }
+
+    fun parseCidr(cidr: String): Pair<String, Long> {
+        if (!cidrRegex.matches(cidr)) {
+            throw IllegalArgumentException("$cidr is invalid")
+        }
+        val (cidrIp, maskStr) = cidrParseRegex.matchEntire(cidr)?.destructured
+            ?: throw IllegalArgumentException("$cidr is invalid")
+        val mastInt = maskStr.toInt()
+        val mask = 0xFFFFFFFF shl (32 - mastInt)
+        return cidrIp to mask
+    }
+}

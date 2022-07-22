@@ -3,6 +3,7 @@ package com.tencent.bkrepo.generic.service
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -29,6 +30,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
+import com.tencent.bkrepo.generic.config.DeltaProperties
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -150,8 +152,16 @@ class DeltaSyncService(
         }
     }
 
-    fun whiteList(): List<String> {
-        return deltaProperties.whiteList
+    fun isInWhiteList(clientIp: String): Boolean {
+        deltaProperties.whiteList.forEach {
+            if (it == DeltaProperties.ALL) {
+                return true
+            }
+            if (IpUtils.isInRange(clientIp, it)) {
+                return true
+            }
+        }
+        return false
     }
 
     fun recordSpeed(ip: String, action: GenericAction, speed: Int) {

@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
@@ -58,6 +59,7 @@ import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -157,7 +159,8 @@ abstract class NodeBaseService(
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
-                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now()
+                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
+                lastAccessDate = LocalDateTime.now()
             )
             doCreate(node)
             if (isGenericRepo(repo)) {
@@ -194,6 +197,18 @@ abstract class NodeBaseService(
             val selfUpdate = NodeQueryHelper.nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
             logger.info("Update node [$this] success.")
+        }
+    }
+
+    override fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest) {
+        with(updateAccessDateRequest) {
+            val fullPath = PathUtils.normalizeFullPath(fullPath)
+            val node = nodeDao.findNode(projectId, repoName, fullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            val query = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
+            val update = Update().set(TNode::lastAccessDate.name, accessDate)
+            nodeDao.updateFirst(query, update)
+            logger.info("Update node access time [$this] success.")
         }
     }
 
@@ -298,7 +313,8 @@ abstract class NodeBaseService(
                     nodeMetadata = MetadataUtils.toList(it.metadata),
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
-                    deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)
+                    deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
+                    lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }

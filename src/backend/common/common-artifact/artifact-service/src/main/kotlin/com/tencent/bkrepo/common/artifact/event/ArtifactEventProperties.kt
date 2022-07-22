@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,42 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.common.artifact.event
 
-/**
- * 文件节点
- */
-data class Node(
-    /**
-     * 文件所属项目
-     */
-    val projectId: String,
-    /**
-     * 文件所属仓库
-     */
-    val repoName: String,
-    /**
-     * 文件完整路径
-     */
-    val fullPath: String,
-    /**
-     * 制品名
-     */
-    var artifactName: String,
-    /**
-     * 依赖包唯一标识，制品为依赖包时候存在
-     */
-    var packageKey: String? = null,
-    /**
-     * 依赖包版本
-     */
-    var packageVersion: String? = null,
-    /**
-     * 文件sha256
-     */
-    val sha256: String,
-    /**
-     * 文件大小或package大小
-     */
-    var size: Long
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("artifact.event")
+data class ArtifactEventProperties(
+    // 是否更新节点访问时间
+    var updateAccessDate: Boolean = false
 )
