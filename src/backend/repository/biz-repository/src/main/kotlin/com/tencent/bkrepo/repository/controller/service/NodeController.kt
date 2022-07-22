@@ -146,7 +146,7 @@ class NodeController(
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
         val nodeListOption = NodeListOption(
             includeFolder = includeFolder,
-            includeMetadata = false,
+            includeMetadata = true,
             deep = deep
         )
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
