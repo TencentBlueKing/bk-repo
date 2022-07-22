@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.util
 
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -35,6 +36,8 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.scanner.executor.pojo.Layer
 import com.tencent.bkrepo.scanner.executor.pojo.Manifest
 import com.tencent.bkrepo.scanner.executor.pojo.ManifestV1
@@ -56,15 +59,14 @@ class ImageScanHelper(
         if (logger.isDebugEnabled) {
             logger.debug(CommonUtils.logMsg(task, manifest.toJsonString()))
         }
-        val isFromOci = isFromOciService(task.fullPath)
         TarArchiveOutputStream(fileOutputStream).use { tos ->
             // 打包config文件
-            loadLayerTo(manifest.config, task, tos, isFromOci)
+            loadLayerTo(manifest.config, task, tos)
             val layers = ArrayList<String>()
             // 打包layers文件
             manifest.layers.forEach {
                 layers.add(it.digest.replace(CharPool.COLON.toString(), "__"))
-                loadLayerTo(it, task, tos, isFromOci)
+                loadLayerTo(it, task, tos)
             }
             // 打包manifest.json文件
             val configFileName = manifest.config.digest.replace(CharPool.COLON.toString(), "__")
@@ -76,35 +78,34 @@ class ImageScanHelper(
         }
     }
 
-    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream, isFromOci: Boolean) {
-        val fileName = layer.digest.replace(CharPool.COLON.toString(), "__")
-        val fullPath = if (isFromOci) {
-            // manifest路径格式/%s/manifest/%s/manifest.json"
-            // 忽略第一个 /，截取%s/
-            val endIndex = task.fullPath.indexOf("/manifest", 1)
-            "${task.fullPath.substring(0, endIndex)}/blobs/$fileName"
-        } else {
-            // manifest路劲格式为 /%s/%s/manifest.json
-            // blobs在同级目录
-            val endIndex = task.fullPath.lastIndexOf(CharPool.SLASH)
-            "${task.fullPath.substring(0, endIndex)}/$fileName"
+    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream) {
+        // 获取sha256和fileName
+        val digestSplits = layer.digest.split(CharPool.COLON)
+        if (digestSplits.size != 2 || digestSplits[0] != "sha256") {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, layer.digest)
         }
-        logger.info(CommonUtils.logMsg(task, "load layer [$fullPath]"))
+        val sha256 = digestSplits[1]
+        val fileName = "${digestSplits[0]}__${digestSplits[1]}"
+        logger.info(CommonUtils.logMsg(task, "load layer [$fileName]"))
 
-        val node = nodeClient.getNodeDetail(task.projectId, task.repoName, fullPath).data
-            ?: throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, "image layer file [$fullPath] acquire failed")
-        storageService.load(node.sha256!!, Range.full(node.size), task.storageCredentials)
-            ?.use { putArchiveEntry(fileName, node.size, it, tos) }
-            ?: throw SystemErrorException(CommonMessageCode.RESOURCE_NOT_FOUND, "layer not found full path[$fullPath]")
-    }
+        // 获取layer大小
+        val nodes = nodeClient.search(
+            NodeQueryBuilder()
+                .projectId(task.projectId)
+                .repoName(task.repoName)
+                .sha256(sha256)
+                .select(NodeDetail::size.name)
+                .build()
+        )
+        if (nodes.isNotOk() || nodes.data!!.records.isEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, sha256)
+        }
+        val size = (nodes.data!!.records[0][NodeDetail::size.name] as Number).toLong()
 
-    /**
-     * 判断是否为通过bkrepo-oci服务推送的镜像
-     */
-    private fun isFromOciService(manifestFullPath: String): Boolean {
-        val splitPath = manifestFullPath.split(CharPool.SLASH)
-        // OCI路径格式为/%s/manifest/%s/manifest.json，判断路径分片长度和倒数第3段是否为manifest即可确认是否为oci服务上传的镜像
-        return splitPath.size >= OCI_PATH_PARTS_MIN_SIZE && splitPath[splitPath.size - 3] == "manifest"
+        // 加载layer
+        storageService.load(sha256, Range.full(size), task.storageCredentials)
+            ?.use { putArchiveEntry(fileName, size, it, tos) }
+            ?: throw SystemErrorException(CommonMessageCode.RESOURCE_NOT_FOUND, "layer not found sha256[$sha256]")
     }
 
     private fun putArchiveEntry(name: String, size: Long, inputStream: InputStream, tos: TarArchiveOutputStream) {
@@ -122,10 +123,5 @@ class ImageScanHelper(
          * manifest.json文件名
          */
         private const val MANIFEST = "manifest.json"
-
-        /**
-         * oci路径最小段数
-         */
-        private const val OCI_PATH_PARTS_MIN_SIZE = 5
     }
 }
