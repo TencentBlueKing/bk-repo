@@ -32,10 +32,16 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
+import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
+import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TMetadata
+import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
 /**
@@ -45,7 +51,7 @@ object MetadataUtils {
     /**
      * 元数据KEY保留字，仅允许系统使用
      */
-    private val RESERVED_KEY = setOf("scanStatus")
+    private val RESERVED_KEY = setOf(SCAN_STATUS, FORBID_STATUS, FORBID_USER, FORBID_TYPE)
 
     /**
      * 用于兼容旧逻辑，优先从[metadataModels]取数据，[metadataModels]不存在时从[metadataMap]取
@@ -56,12 +62,9 @@ object MetadataUtils {
         operator: String
     ): MutableList<TMetadata> {
         return if (!metadataModels.isNullOrEmpty()) {
-            metadataModels.map { from(it) }.toMutableList()
+            metadataModels.map { convertAndCheck(it, operator) }.toMutableList()
         } else {
-            fromMap(metadataMap)
-        }.onEach {
-            checkReservedKey(it.key, operator)
-            checkPermission(it, operator)
+            convertAndCheck(metadataMap, operator)
         }
     }
 
@@ -124,6 +127,23 @@ object MetadataUtils {
         return result.values.toMutableList()
     }
 
+    fun extractForbidMetadata(
+        metadata: List<MetadataModel>,
+        operator: String = SecurityUtils.getUserId()
+    ): MutableList<MetadataModel>? {
+        val forbidMetadata = metadata.firstOrNull {
+            it.key == FORBID_STATUS && it.value is Boolean
+        } ?: return null
+        val result = ArrayList<MetadataModel>(3)
+
+        result.add(forbidMetadata.copy(system = true))
+        // 添加禁用操作用户和类型
+        result.add(MetadataModel(key = FORBID_USER, value = operator, system = true))
+        result.add(MetadataModel(key = FORBID_TYPE, value = ForbidType.MANUAL.name, system = true))
+
+        return result
+    }
+
     fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
         return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
             .map { it.getValue("key").toString() to it.getValue("value") }
@@ -147,21 +167,30 @@ object MetadataUtils {
         }
     }
 
-    private fun fromMap(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
-        return metadataMap?.filter { it.key.isNotBlank() }.orEmpty()
-            .map { TMetadata(key = it.key, value = it.value) }
-            .toMutableList()
-    }
-
-    private fun from(metadata: MetadataModel): TMetadata {
-        return with(metadata) {
-            TMetadata(
+    fun convertAndCheck(metadata: MetadataModel, operator: String): TMetadata {
+        with(metadata) {
+            val tMetadata = TMetadata(
                 key = key,
                 value = value,
                 system = system,
                 description = description
             )
+            checkReservedKey(key, operator)
+            checkPermission(tMetadata, operator)
+            return tMetadata
         }
+    }
+
+    private fun convertAndCheck(metadataMap: Map<String, Any>?, operator: String): MutableList<TMetadata> {
+        return metadataMap
+            ?.filter { it.key.isNotBlank() }
+            .orEmpty()
+            .map {
+                val tMetadata = TMetadata(key = it.key, value = it.value)
+                checkReservedKey(tMetadata.key, operator)
+                tMetadata
+            }
+            .toMutableList()
     }
 
     private fun checkReservedKey(key: String, operator: String) {

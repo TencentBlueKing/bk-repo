@@ -1,9 +1,9 @@
 <template>
     <div class="bkrepo-main flex-column">
-        <Header v-if="!iframeMode" />
+        <Header v-if="!ciMode" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
-        <Login v-if="!iframeMode" />
+        <Login v-if="!ciMode" />
     </div>
 </template>
 
@@ -18,14 +18,14 @@
         mixins: [mixin],
         data () {
             return {
-                iframeMode: MODE_CONFIG === 'ci'
+                ciMode: MODE_CONFIG === 'ci'
             }
         },
         created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
 
-            if (this.iframeMode) {
+            if (this.ciMode) {
                 const url = /^https?/.test(DEVOPS_SITE_URL)
                     ? DEVOPS_SITE_URL + '/console/static/devops-utils.js'
                     : '/ui/devops-utils.js'

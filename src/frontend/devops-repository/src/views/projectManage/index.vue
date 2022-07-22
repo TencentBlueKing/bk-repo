@@ -21,8 +21,12 @@
             <template #empty>
                 <empty-data :search="Boolean(projectInput)"></empty-data>
             </template>
+            <bk-table-column label="项目名称" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn" @click="showProjectDetailHandler(row)">{{row.name}}</span>
+                </template>
+            </bk-table-column>
             <bk-table-column label="项目标识" prop="id" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="项目名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="项目描述" show-overflow-tooltip>
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
@@ -32,14 +36,6 @@
             <bk-table-column :label="$t('createdBy')">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
-                </template>
-            </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
-                <template #default="{ row }">
-                    <operation-list
-                        :list="[
-                            { label: '详情', clickEvent: () => showProjectDetailHandler(row) }
-                        ]"></operation-list>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -59,13 +55,14 @@
     </div>
 </template>
 <script>
-    import OperationList from '@repository/components/OperationList'
     import projectInfoDialog from './projectInfoDialog'
     import { mapState } from 'vuex'
     import { formatDate } from '@repository/utils'
     export default {
         name: 'projectManage',
-        components: { OperationList, projectInfoDialog },
+        components: {
+            projectInfoDialog
+        },
         data () {
             return {
                 projectInput: '',

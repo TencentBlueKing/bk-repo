@@ -89,12 +89,6 @@ export default {
             `${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`
         )
     },
-    // 查询公有源列表
-    getPublicProxy (_, { repoType }) {
-        return Vue.prototype.$ajax.get(
-            `${prefix}/proxy-channel/list/public/${repoType.toUpperCase()}`
-        )
-    },
     // 查询项目列表
     getProjectList ({ commit }) {
         return Vue.prototype.$ajax.get(
@@ -104,7 +98,7 @@ export default {
         })
     },
     logout ({ commit }) {
-        if (MODE_CONFIG === 'ci') {
+        if (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')

@@ -239,12 +239,12 @@ export default {
         return Vue.prototype.$ajax.get('/scanner/api/scanners/base')
     },
     // 获取质量规则
-    getQualityRule (_, { id }) {
-        return Vue.prototype.$ajax.get(`/scanner/api/scan/quality/${id}`)
+    getQualityRule (_, { type, id }) {
+        return Vue.prototype.$ajax.get(`/scanner/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`)
     },
     // 更新质量规则
-    saveQualityRule (_, { id, body }) {
-        return Vue.prototype.$ajax.post(`/scanner/api/scan/quality/${id}`, body)
+    saveQualityRule (_, { type, id, body }) {
+        return Vue.prototype.$ajax.post(`/scanner/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`, body)
     },
     // 查询任务列表
     getScanTaskList (_, { projectId, planId, triggerType, namePrefix, current = 1, limit = 20 }) {

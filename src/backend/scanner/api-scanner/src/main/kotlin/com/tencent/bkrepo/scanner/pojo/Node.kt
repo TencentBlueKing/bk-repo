@@ -60,7 +60,7 @@ data class Node(
      */
     val sha256: String,
     /**
-     * 文件大小
+     * 文件大小或package大小
      */
-    val size: Long
+    var size: Long
 )

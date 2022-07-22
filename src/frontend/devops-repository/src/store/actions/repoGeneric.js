@@ -209,7 +209,7 @@ export default {
             xhr.setRequestHeader('Content-Type', headers['Content-Type'])
             xhr.setRequestHeader('X-BKREPO-OVERWRITE', headers['X-BKREPO-OVERWRITE'])
             xhr.setRequestHeader('X-BKREPO-EXPIRES', headers['X-BKREPO-EXPIRES'])
-            xhr.setRequestHeader('X-CSRFToken', cookies.get(MODE_CONFIG === 'ci' ? 'bk_token' : 'bkrepo_ticket'))
+            xhr.setRequestHeader('X-CSRFToken', cookies.get((MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket'))
             xhr.addEventListener('error', e => reject(e.target.response))
             xhr.send(body)
         })
@@ -256,10 +256,17 @@ export default {
             body
         )
     },
-    // 禁止使用/解除禁止
+    // generic禁止使用/解除禁止
     forbidMetadata (_, { projectId, repoName, fullPath, body }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/metadata/forbid/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
+    // package禁止使用/解除禁止
+    forbidPackageMetadata (_, { projectId, repoName, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/metadata/package/forbid/${projectId}/${repoName}`,
             body
         )
     },

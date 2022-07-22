@@ -1089,7 +1089,6 @@ class MavenLocalRepository(
                 projectId, repoName, trueVersion.contentPath!!
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
-            val mavenArtifactMetadata = jarNode.metadata
             val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
             ).data
@@ -1107,7 +1106,7 @@ class MavenLocalRepository(
                 stageTag,
                 null
             )
-            return MavenArtifactVersionData(mavenArtifactBasic, mavenArtifactMetadata)
+            return MavenArtifactVersionData(mavenArtifactBasic, packageVersion?.packageMetadata)
         }
     }
 

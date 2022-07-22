@@ -3,7 +3,6 @@
         <div class="ml20 mr20 mt10 flex-between-center">
             <div class="flex-align-center">
                 <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('create') }}</bk-button>
-                <!-- <bk-button class="ml10" @click="() => $router.push({ name: 'securityConfig' })">安全设置</bk-button> -->
             </div>
             <div class="flex-align-center">
                 <bk-input
@@ -35,7 +34,11 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(scanName)"></empty-data>
             </template>
-            <bk-table-column label="方案名称" prop="name" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="方案名称" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn" @click="showScanReport(row)">{{row.name}}</span>
+                </template>
+            </bk-table-column>
             <bk-table-column label="方案类型">
                 <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
             </bk-table-column>
@@ -52,9 +55,8 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: '详情', clickEvent: () => showScanReport(row) },
                             !row.readOnly && { label: '设置', clickEvent: () => showScanConfig(row) },
-                            // { label: '中止', clickEvent: () => stopScanHandler(row) },
+                            { label: '中止', clickEvent: () => stopScanHandler(row) },
                             !row.readOnly && { label: '扫描', clickEvent: () => startScanHandler(row) },
                             !row.readOnly && { label: '删除', clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>

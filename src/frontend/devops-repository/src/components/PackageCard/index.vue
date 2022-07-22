@@ -70,12 +70,10 @@
             formatDate,
             getIconName,
             deleteCard () {
-                debugger
-                // this.$emit('delete-card')
+                this.$emit('delete-card')
             },
             detail () {
-                debugger
-                // this.$emit('show-detail', this.cardData)
+                this.$emit('show-detail', this.cardData)
             },
             download () {
                 const url = `/generic/${this.cardData.projectId}/${this.cardData.repoName}/${this.cardData.fullPath}?download=true`

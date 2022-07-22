@@ -104,7 +104,7 @@
                 repoEnum,
                 isLoading: false,
                 property: this.$route.query.property || 'lastModifiedDate',
-                direction: this.$route.query.direction || 'ASC',
+                direction: this.$route.query.direction || 'DESC',
                 packageName: this.$route.query.packageName || '',
                 repoType: this.$route.query.repoType || 'generic',
                 repoList: [{

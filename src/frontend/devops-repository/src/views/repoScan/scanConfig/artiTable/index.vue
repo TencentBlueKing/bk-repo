@@ -8,7 +8,7 @@
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn" class="rule-list">
-            <component :is="`${scanType.replace(/^([A-Z]+).*$/, '$1').toLowerCase()}-rule`"
+            <component :is="scanType.includes('GENERIC') ? `generic-rule` : 'package-rule'"
                 class="mt10"
                 v-for="(rule, ind) in defaultRules"
                 :key="ind"
@@ -26,7 +26,7 @@
     export default {
         name: 'artiTable',
         components: {
-            mavenRule: packageRule,
+            packageRule,
             genericRule
         },
         props: {

@@ -95,7 +95,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
             val versionDependenciesInfo =
                 queryVersionDependenciesInfo(artifactInfo, packageKey, packageMetadata.versions.map[version]!!)
-            return PackageVersionInfo(basicInfo, emptyMap(), versionDependenciesInfo)
+            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata, versionDependenciesInfo)
         }
     }
 

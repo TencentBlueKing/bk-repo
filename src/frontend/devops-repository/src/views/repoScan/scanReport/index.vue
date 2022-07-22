@@ -78,7 +78,7 @@
                     <bk-table-column label="制品名称" show-overflow-tooltip>
                         <template #default="{ row }">
                             <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
-                            <span>{{ row.name }}</span>
+                            <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column label="制品版本/存储路径" show-overflow-tooltip>
@@ -117,8 +117,7 @@
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
-                                    { label: '详情', clickEvent: () => showArtiReport(row), disabled: row.status !== 'SUCCESS' },
-                                    { label: '中止', clickEvent: () => stopScanHandler(row), disabled: row.status !== 'INIT' && row.status !== 'RUNNING' },
+                                    viewType === 'OVERVIEW' && { label: '中止', clickEvent: () => stopScanHandler(row), disabled: row.status !== 'INIT' && row.status !== 'RUNNING' },
                                     viewType === 'OVERVIEW' && !baseInfo.readOnly && {
                                         label: '扫描',
                                         clickEvent: () => startScanSingleHandler(row),
@@ -206,8 +205,9 @@
             }
         },
         watch: {
-            viewType () {
+            viewType (val) {
                 this.handlerPaginationChange()
+                if (val === 'TASKVIEW') this.handlerTaskPaginationChange()
             }
         },
         created () {
@@ -220,7 +220,8 @@
                 'scanReportList',
                 'scanTaskReportList',
                 'startScanSingle',
-                'stopScanTask'
+                'stopScanTask',
+                'stopScan'
             ]),
             refreshData (key, value) {
                 this[key] = value
@@ -272,7 +273,8 @@
                     this.getReportListHandler()
                 })
             },
-            showArtiReport ({ recordId, name }) {
+            showArtiReport ({ recordId, name, status }) {
+                if (status !== 'SUCCESS') return
                 this.$router.push({
                     name: 'artiReport',
                     params: {
@@ -349,6 +351,7 @@
                                 theme: 'success',
                                 message: '中止任务' + this.$t('success')
                             })
+                            this.$set(task, 'status', 'STOPPED')
                             this.handlerPaginationChange()
                         })
                     }

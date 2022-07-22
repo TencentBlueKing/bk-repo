@@ -43,8 +43,7 @@
             height="calc(100% - 100px)"
             :outer-border="false"
             :row-border="false"
-            size="small"
-            @row-click="toPackageList">
+            size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
             </template>
@@ -58,7 +57,7 @@
                     <span v-if="row.public"
                         class="mr5 repo-tag WARNING" data-name="公开"></span>
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
-                    <span class="hover-btn">{{replaceRepoName(row.name)}}</span>
+                    <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('createdDate')" width="250">

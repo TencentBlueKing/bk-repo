@@ -15,7 +15,6 @@
             :data="dataList"
             :outer-border="false"
             :row-border="false"
-            row-key="userId"
             size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading"></empty-data>
@@ -77,10 +76,17 @@
                 }
             }
         },
+        watch: {
+            scannerType (val) {
+                this.$refs.genericUploadDialog.setData({
+                    fullPath: `/${val}`
+                }, true)
+            }
+        },
         created () {
             this.getScannerList().then(res => {
-                this.scannerList = res
-                this.scannerType = res[0]?.type || ''
+                this.scannerList = res.filter(v => v.type !== 'scancodeToolkit')
+                this.scannerType = this.scannerList[0]?.type || ''
             })
             this.handlerPaginationChange()
         },
@@ -137,7 +143,7 @@
             getScannerName ({ fullPath }) {
                 const scannerType = fullPath.replace(/^\/([^/]+)\/[^/]+$/, '$1')
                 const scanner = this.scannerList.find(s => s.type === scannerType)
-                return scanner.name
+                return scanner?.name
             }
         }
     }

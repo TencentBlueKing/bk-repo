@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.oci.pojo.user
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 
@@ -39,6 +40,6 @@ data class PackageVersionInfo(
     @ApiModelProperty("基础信息")
     val basic: BasicInfo,
     @ApiModelProperty("元数据信息")
-    val metadata: Map<String, String>
+    val metadata: List<MetadataModel>
 )
 

@@ -305,7 +305,6 @@ class PypiLocalRepository(
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
-            val pypiArtifactMetadata = jarNode.metadata
             val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
             ).data
@@ -322,7 +321,7 @@ class PypiLocalRepository(
                 stageTag,
                 null
             )
-            return PypiArtifactVersionData(pypiArtifactBasic, pypiArtifactMetadata)
+            return PypiArtifactVersionData(pypiArtifactBasic, packageVersion?.packageMetadata)
         }
     }
 
