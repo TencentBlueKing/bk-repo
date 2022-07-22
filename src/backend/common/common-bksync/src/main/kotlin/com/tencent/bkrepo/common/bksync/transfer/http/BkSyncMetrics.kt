@@ -40,19 +40,15 @@ class BkSyncMetrics(
     var fileType: String = "",
     // 文件大小，单位字节
     var fileSize: Long = 0,
-    // 检测差异时间，单位秒
+    // 检测差异时间，单位毫秒
     var diffTime: Long = 0,
-    // 检测差异速度
-    var diffSpeed: String = "",
     // 重复块命中率
     var hitRate: Float = 0f,
     // 增量文件大小，单位字节
     var deltaFileSize: Long = 0,
-    // 合并时间，单位秒
+    // 合并时间，单位毫秒
     var patchTime: Long = 0,
-    // 合并速度
-    var patchSpeed: String = "",
-    // 普通上传时间，单位秒
+    // 普通上传时间，单位毫秒
     var genericUploadTime: Long = 0,
     var projectId: String = "",
     var repoName: String = "",
