@@ -27,17 +27,18 @@
 
 package com.tencent.bkrepo.job.metrics
 
-import com.tencent.bkrepo.job.ASYNC_TASK_ACTIVE_COUNT
-import com.tencent.bkrepo.job.ASYNC_TASK_ACTIVE_COUNT_DESC
-import com.tencent.bkrepo.job.ASYNC_TASK_QUEUE_SIZE
-import com.tencent.bkrepo.job.ASYNC_TASK_QUEUE_SIZE_DESC
-import com.tencent.bkrepo.job.JOB_AVG_EXECUTE_TIME_CONSUME_DESC
-import com.tencent.bkrepo.job.JOB_AVG_TIME_CONSUME
-import com.tencent.bkrepo.job.JOB_AVG_WAIT_TIME_CONSUME_DESC
+import com.tencent.bkrepo.job.JOB_ASYNC_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.job.JOB_ASYNC_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.job.JOB_ASYNC_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.job.JOB_ASYNC_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.job.JOB_BATCH_JOB_ACTIVE_COUNT
+import com.tencent.bkrepo.job.JOB_BATCH_JOB_ACTIVE_DESC
 import com.tencent.bkrepo.job.JOB_TASK_COUNT
 import com.tencent.bkrepo.job.JOB_TASK_COUNT_DESC
-import com.tencent.bkrepo.job.RUNNING_TASK_JOB_COUNT
-import com.tencent.bkrepo.job.RUNNING_TASK_JOB_DESC
+import com.tencent.bkrepo.job.JOB_TIME_CONSUME
+import com.tencent.bkrepo.job.JOB_TIME_CONSUME_DESC
+import com.tencent.bkrepo.job.TAG_NAME
+import com.tencent.bkrepo.job.TAG_STATUS
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
@@ -51,35 +52,36 @@ import org.springframework.stereotype.Component
  * */
 @Component
 class JobMetrics(
-    val threadPoolTaskExecutor: BlockThreadPoolTaskExecutorDecorator
+    val threadPoolTaskExecutor: BlockThreadPoolTaskExecutorDecorator,
+    private val registry: MeterRegistry
 ) : MeterBinder {
 
-    lateinit var jobTasksCounter: Counter
-    lateinit var jobAvgWaitTimeConsumeTimer: Timer
-    lateinit var jobAvgExecuteTimeConsumeTimer: Timer
-
     override fun bindTo(registry: MeterRegistry) {
-        Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor) { it.activeCount().toDouble() }
-            .description(ASYNC_TASK_ACTIVE_COUNT_DESC)
+        Gauge.builder(JOB_ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor) { it.activeCount().toDouble() }
+            .description(JOB_ASYNC_TASK_ACTIVE_COUNT_DESC)
             .register(registry)
 
-        Gauge.builder(ASYNC_TASK_QUEUE_SIZE, threadPoolTaskExecutor) { it.queueSize().toDouble() }
-            .description(ASYNC_TASK_QUEUE_SIZE_DESC)
+        Gauge.builder(JOB_ASYNC_TASK_QUEUE_SIZE, threadPoolTaskExecutor) { it.queueSize().toDouble() }
+            .description(JOB_ASYNC_TASK_QUEUE_SIZE_DESC)
             .register(registry)
 
-        Gauge.builder(RUNNING_TASK_JOB_COUNT, threadPoolTaskExecutor) { it.activeTaskCount().toDouble() }
-            .description(RUNNING_TASK_JOB_DESC)
+        Gauge.builder(JOB_BATCH_JOB_ACTIVE_COUNT, threadPoolTaskExecutor) { it.activeTaskCount().toDouble() }
+            .description(JOB_BATCH_JOB_ACTIVE_DESC)
             .register(registry)
-        jobTasksCounter = Counter.builder(JOB_TASK_COUNT)
+    }
+
+    fun getCounter(status: String, jobName: String): Counter {
+        return Counter.builder(JOB_TASK_COUNT)
             .description(JOB_TASK_COUNT_DESC)
+            .tag(TAG_STATUS, status)
+            .tag(TAG_NAME, jobName)
             .register(registry)
-        jobAvgWaitTimeConsumeTimer = Timer.builder(JOB_AVG_TIME_CONSUME)
-            .description(JOB_AVG_WAIT_TIME_CONSUME_DESC)
-            .tag("type", "waitTime")
-            .register(registry)
-        jobAvgExecuteTimeConsumeTimer = Timer.builder(JOB_AVG_TIME_CONSUME)
-            .description(JOB_AVG_EXECUTE_TIME_CONSUME_DESC)
-            .tag("type", "executeTime")
+    }
+
+    fun getTimer(jobName: String): Timer {
+        return Timer.builder(JOB_TIME_CONSUME)
+            .description(JOB_TIME_CONSUME_DESC)
+            .tag(TAG_NAME, jobName)
             .register(registry)
     }
 }
