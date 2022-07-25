@@ -33,7 +33,6 @@ import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Interceptor
-import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
@@ -89,15 +88,7 @@ class RetryInterceptor(
         if (repoName.isNullOrEmpty()) return request
         if (sha256.isNullOrEmpty()) return request
         if (size == null) return request
-        val retryBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart(
-                "file",
-                sha256,
-                StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
-            )
-            .addFormDataPart("sha256", sha256).apply {
-            }.build()
+        val retryBody = StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
         return request.newBuilder().method(request.method(), retryBody).build()
     }
 

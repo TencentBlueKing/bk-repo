@@ -54,7 +54,6 @@ import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
 import okhttp3.MediaType
-import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.ByteString
 import org.slf4j.LoggerFactory
@@ -424,15 +423,7 @@ class OciArtifactPushClient(
             httpClient = httpClient,
             responseType = OciResponse::class.java
         )
-        val patchBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart(
-                "file",
-                sha256,
-                StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
-            )
-            .addFormDataPart("sha256", sha256).apply {
-            }.build()
+        val patchBody = StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
         val patchHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
             .add(HttpHeaders.CONTENT_RANGE, "0-${0 + size - 1}")
