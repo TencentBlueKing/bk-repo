@@ -30,7 +30,7 @@ package com.tencent.bkrepo.job.config.properties
 open class RepoJobProperties(
     override var enabled: Boolean = true,
     /**
-     * 需要特殊处理的仓库理类型
+     * 需要特殊处理的仓库类别
      * */
     var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
     /**

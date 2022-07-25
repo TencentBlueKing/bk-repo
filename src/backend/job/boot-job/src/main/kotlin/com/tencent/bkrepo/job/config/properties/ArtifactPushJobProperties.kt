@@ -33,7 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class ArtifactPushJobProperties(
     override var enabled: Boolean = true,
     /**
-     * 需要进行远端仓库推送的仓库代理类型
+     * 需要进行远端分发集群推送的仓库类型
      * */
     var repositoryTypes: List<String> = listOf("HELM", "OCI", "DOCKER"),
     override var fixedDelay: Long = 60 * 1000L,
