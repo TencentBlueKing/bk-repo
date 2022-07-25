@@ -352,17 +352,11 @@ class PypiLocalRepository(
             if (getArtifactFullPath() == "/") {
                 if (node.folder) {
                     val nodeList = nodeClient.listNode(
-                        projectId, repoName, getArtifactFullPath(), includeFolder = true,
-                        deep =
-                            true
+                        projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
                     ).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                     // 过滤掉'根节点',
-                    return buildPackageListContent(
-                        artifactInfo.projectId,
-                        artifactInfo.repoName,
-                        nodeList.filter { it.folder }.filter { it.path == "/" }
-                    )
+                    return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
                 }
             }
             // 请求中带包名，返回对应包的文件列表。
@@ -372,7 +366,9 @@ class PypiLocalRepository(
                         projectId, repoName, getArtifactFullPath(), includeFolder = false,
                         deep = true
                     ).data
-                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    if (packageNode.isNullOrEmpty()) {
+                        throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    }
                     return buildPypiPageContent(
                         buildPackageFileNodeListContent(packageNode)
                     )
@@ -403,9 +399,6 @@ class PypiLocalRepository(
      */
     private fun buildPackageFileNodeListContent(nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
-        if (nodeList.isEmpty()) {
-            builder.append("The directory is empty.")
-        }
         for (node in nodeList) {
             val md5 = node.md5
             // 查询的对应的文件节点的metadata
@@ -426,7 +419,7 @@ class PypiLocalRepository(
      * @param repoName
      * @param nodeList
      */
-    private fun buildPackageListContent(projectId: String, repoName: String, nodeList: List<NodeInfo>): String {
+    private fun buildPackageListContent(nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
         if (nodeList.isEmpty()) {
             builder.append("The directory is empty.")
