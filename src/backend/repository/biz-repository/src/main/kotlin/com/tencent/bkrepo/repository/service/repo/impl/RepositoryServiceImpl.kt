@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -238,7 +240,8 @@ class RepositoryServiceImpl(
             )
             return try {
                 if (repoConfiguration is CompositeConfiguration) {
-                    updateCompositeConfiguration(repoConfiguration, null, repository, operator)
+                    val old = queryCompositeConfiguration(projectId, name, type)
+                    updateCompositeConfiguration(repoConfiguration, old, repository, operator)
                 }
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
                 repositoryDao.insert(repository)
@@ -322,6 +325,20 @@ class RepositoryServiceImpl(
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         val result = repositoryDao.find(Query(criteria))
         return result.map { convertToInfo(it) }
+    }
+
+    /**
+     * 获取仓库下的代理地址信息
+     */
+    private fun queryCompositeConfiguration(
+        projectId: String,
+        repoName: String,
+        repoType: RepositoryType
+    ): CompositeConfiguration? {
+        val proxyList = proxyChannelService.listProxyChannel(projectId, repoName, repoType)
+        if (proxyList.isEmpty()) return null
+        val proxy = ProxyConfiguration(proxyList.map { convertProxyToProxyChannelSetting(it) })
+        return CompositeConfiguration(proxy)
     }
 
     /**
@@ -591,6 +608,19 @@ class RepositoryServiceImpl(
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
                     used = it.used
+                )
+            }
+        }
+
+        private fun convertProxyToProxyChannelSetting(proxy: ProxyChannelInfo): ProxyChannelSetting {
+            with(proxy) {
+                return ProxyChannelSetting(
+                    public = public,
+                    name = name,
+                    url = url,
+                    credentialKey = credentialKey,
+                    username = username,
+                    password = password
                 )
             }
         }

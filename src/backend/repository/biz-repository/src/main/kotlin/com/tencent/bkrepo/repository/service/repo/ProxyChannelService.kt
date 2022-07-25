@@ -69,4 +69,9 @@ interface ProxyChannelService {
      * 列表查询公有源
      */
     fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
+
+    /**
+     * 根据项目仓库信息获取列表
+     */
+    fun listProxyChannel(projectId: String, repoName: String, repoType: RepositoryType,): List<ProxyChannelInfo>
 }
