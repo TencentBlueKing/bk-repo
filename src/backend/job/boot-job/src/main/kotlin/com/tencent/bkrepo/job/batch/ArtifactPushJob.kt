@@ -43,7 +43,6 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
@@ -58,9 +57,8 @@ class ArtifactPushJob(
     private val artifactPushClient: ArtifactPushClient
 ) : DefaultContextMongoDbJob<ArtifactPushJob.PackageVersionData>(properties) {
     private val types: List<String>
-        get() = properties.types
+        get() = properties.repositoryTypes
 
-    @Scheduled(fixedDelay = 60 * 1000L, initialDelay = 60 * 1000L)
     override fun start(): Boolean {
         return super.start()
     }
@@ -84,7 +82,7 @@ class ArtifactPushJob(
         with(row) {
             try {
                 val result = mongoTemplate.find<Map<String, Any?>>(
-                    Query(Criteria(ID).isEqualTo(row.packageId).and(TYPE).`in`(properties.types)),
+                    Query(Criteria(ID).isEqualTo(row.packageId).and(TYPE).`in`(properties.repositoryTypes)),
                     PACKAGE_NAME
                 )
                 if (result.isEmpty()) return

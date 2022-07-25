@@ -35,5 +35,7 @@ class ArtifactPushJobProperties(
     /**
      * 需要进行远端仓库推送的仓库代理类型
      * */
-    var types: List<String> = listOf("HELM", "OCI", "DOCKER")
+    var repositoryTypes: List<String> = listOf("HELM", "OCI", "DOCKER"),
+    override var fixedDelay: Long = 60 * 1000L,
+    override var initialDelay: Long = 60 * 1000L
 ) : MongodbJobProperties()

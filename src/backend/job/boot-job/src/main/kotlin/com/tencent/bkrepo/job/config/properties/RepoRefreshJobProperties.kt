@@ -30,4 +30,6 @@ package com.tencent.bkrepo.job.config.properties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.repo-refresh")
-class RepoRefreshJobProperties : RepoJobProperties()
+class RepoRefreshJobProperties(
+    override var cron: String = "0 0 4/24 * * ?"
+) : RepoJobProperties()
