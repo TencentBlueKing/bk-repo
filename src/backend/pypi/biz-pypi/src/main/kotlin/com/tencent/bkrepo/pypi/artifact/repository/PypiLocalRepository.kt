@@ -31,7 +31,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -347,14 +347,14 @@ class PypiLocalRepository(
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
             // 请求不带包名，返回包名列表.
             if (getArtifactFullPath() == "/") {
                 if (node.folder) {
                     val nodeList = nodeClient.listNode(
                         projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
                     ).data
-                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                        ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                     // 过滤掉'根节点',
                     return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
                 }
@@ -367,7 +367,7 @@ class PypiLocalRepository(
                         deep = true
                     ).data
                     if (packageNode.isNullOrEmpty()) {
-                        throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                        throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                     }
                     return buildPypiPageContent(
                         buildPackageFileNodeListContent(packageNode)
@@ -415,8 +415,6 @@ class PypiLocalRepository(
 
     /**
      * 所有包列表
-     * @param projectId
-     * @param repoName
      * @param nodeList
      */
     private fun buildPackageListContent(nodeList: List<NodeInfo>): String {
