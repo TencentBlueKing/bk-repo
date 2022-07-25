@@ -28,8 +28,13 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
+import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.job.config.JobConfig
+import com.tencent.bkrepo.repository.api.FileReferenceClient
+import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
+import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
@@ -37,7 +42,8 @@ import org.springframework.test.context.TestPropertySource
 @Import(
     JobAutoConfiguration::class,
     TaskExecutionAutoConfiguration::class,
-    JobConfig::class
+    JobConfig::class,
+    TaskSchedulingAutoConfiguration::class
 )
 @TestPropertySource(
     locations = [
@@ -47,4 +53,13 @@ import org.springframework.test.context.TestPropertySource
     ]
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-open class JobBaseTest
+open class JobBaseTest {
+    @MockBean
+    lateinit var fileReferenceClient: FileReferenceClient
+
+    @MockBean
+    lateinit var helmClient: HelmClient
+
+    @MockBean
+    lateinit var nodeClient: NodeClient
+}

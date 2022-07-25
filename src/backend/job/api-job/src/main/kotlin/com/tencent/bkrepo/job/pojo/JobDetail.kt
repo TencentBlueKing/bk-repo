@@ -25,11 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.pojo
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.LocalDateTime
 
-@ConfigurationProperties("job.file-reference-cleanup")
-class FileReferenceCleanupJobProperties(
-    override var cron: String = "0 0 4/6 * * ?"
-) : MongodbJobProperties()
+data class JobDetail(
+    val name: String,
+    val enabled: Boolean,
+    val cron: String,
+    val fixedDelay: Long,
+    val fixedRate: Long,
+    val initialDelay: Long,
+    val running: Boolean,
+    val lastBeginTime: LocalDateTime?,
+    val lastEndTime: LocalDateTime?,
+    val lastExecuteTime: Long?
+)

@@ -40,7 +40,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
@@ -56,7 +55,6 @@ class SignFileCleanupJob(
     private val expiredOfDays: Long
         get() = properties.expireOfDays.toLong()
 
-    @Scheduled(cron = "0 0 0 * * ?") // 每天零点执行一次
     override fun start(): Boolean {
         return super.start()
     }

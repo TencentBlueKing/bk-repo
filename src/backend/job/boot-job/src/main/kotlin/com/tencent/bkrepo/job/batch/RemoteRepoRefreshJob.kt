@@ -43,7 +43,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.time.Duration
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 /**
@@ -62,7 +61,6 @@ open class RemoteRepoRefreshJob(
     private val categories: List<String>
         get() = properties.categories
 
-    @Scheduled(fixedDelay = 3600 * 1000L, initialDelay = 90 * 1000L)
     override fun start(): Boolean {
         return super.start()
     }
@@ -100,22 +98,21 @@ open class RemoteRepoRefreshJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val COLLECTION_NAME = "repository"
+        const val COLLECTION_NAME = "repository"
+        /**
+         * 只针对remote仓库或者composite代理仓库进行刷新
+         */
+        fun checkConfigType(configuration: RepositoryConfiguration): Boolean {
+            if (configuration is CompositeConfiguration) {
+                if (configuration.proxy.channelList.isNotEmpty()) return true
+            }
+            if (configuration is RemoteConfiguration) return true
+            return false
+        }
     }
 
     override fun mapToEntity(row: Map<String, Any?>): ProxyRepoData {
         return ProxyRepoData(row)
-    }
-
-    /**
-     * 只针对remote仓库或者composite代理仓库进行刷新
-     */
-    fun checkConfigType(configuration: RepositoryConfiguration): Boolean {
-        if (configuration is CompositeConfiguration) {
-            if (configuration.proxy.channelList.isNotEmpty()) return true
-        }
-        if (configuration is RemoteConfiguration) return true
-        return false
     }
 
     data class ProxyRepoData(private val map: Map<String, Any?>) {

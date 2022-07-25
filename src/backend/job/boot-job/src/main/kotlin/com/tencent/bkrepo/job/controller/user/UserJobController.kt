@@ -25,11 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.controller.user
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.service.JobService
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@ConfigurationProperties("job.file-reference-cleanup")
-class FileReferenceCleanupJobProperties(
-    override var cron: String = "0 0 4/6 * * ?"
-) : MongodbJobProperties()
+@RestController
+@RequestMapping("/api/job")
+@Principal(type = PrincipalType.ADMIN)
+class UserJobController(val jobService: JobService) {
+
+    @GetMapping("/detail")
+    fun detail(): Response<List<JobDetail>> {
+        return ResponseBuilder.success(jobService.detail())
+    }
+}

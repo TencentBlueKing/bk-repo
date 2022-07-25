@@ -25,11 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.service
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.job.batch.base.BatchJob
+import com.tencent.bkrepo.job.pojo.JobDetail
+import org.springframework.stereotype.Service
 
-@ConfigurationProperties("job.file-reference-cleanup")
-class FileReferenceCleanupJobProperties(
-    override var cron: String = "0 0 4/6 * * ?"
-) : MongodbJobProperties()
+@Service
+class JobService(val jobs: List<BatchJob<*>>) {
+    fun detail() :List<JobDetail>{
+        val jobDetails = mutableListOf<JobDetail>()
+        jobs.forEach {
+            with(it.batchJobProperties) {
+                val jobDetail = JobDetail(
+                    name = it.getJobName(),
+                    enabled = enabled,
+                    cron = cron,
+                    fixedDelay = fixedDelay,
+                    fixedRate = fixedRate,
+                    initialDelay = initialDelay,
+                    running = it.isRunning(),
+                    lastBeginTime = it.lastBeginTime,
+                    lastEndTime = it.lastEndTime,
+                    lastExecuteTime = it.lastExecuteTime
+                )
+                jobDetails.add(jobDetail)
+            }
+        }
+        return jobDetails
+    }
+}

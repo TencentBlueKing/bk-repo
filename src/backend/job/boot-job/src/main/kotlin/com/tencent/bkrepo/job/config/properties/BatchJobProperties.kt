@@ -27,9 +27,19 @@
 
 package com.tencent.bkrepo.job.config.properties
 
+import org.springframework.scheduling.annotation.Scheduled
+
 open class BatchJobProperties(
     /**
      * 是否开启任务
      * */
-    open var enabled: Boolean = true
+    open var enabled: Boolean = true,
+
+    /**
+     * cron表达式
+     * */
+    open var cron: String = Scheduled.CRON_DISABLED,
+    open var fixedDelay: Long = 0,
+    open var fixedRate: Long = 0,
+    open var initialDelay: Long = 0
 )
