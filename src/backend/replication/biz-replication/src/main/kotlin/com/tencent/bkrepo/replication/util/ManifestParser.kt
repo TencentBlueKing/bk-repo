@@ -25,17 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster.request
+package com.tencent.bkrepo.replication.util
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.replication.pojo.docker.Manifest
+import com.tencent.bkrepo.replication.pojo.remote.ManifestInfo
+import java.io.InputStream
+
 /**
- * cluster请求抽象类
+ * 流转换为manifest对象，并获取对应属性
  */
-interface ClusterRequest {
-    var name: String
-    var url: String
-    var certificate: String?
-    var username: String?
-    var password: String?
-    var type: ClusterNodeType
+object ManifestParser {
+
+    /**
+     * 解析manifest文件，获取所有digest列表
+     */
+    fun parseManifest(inputStream: InputStream?): ManifestInfo? {
+        if (inputStream == null) return null
+        val list = mutableListOf<String>()
+        val manifest = inputStream.use { it.readJsonString<Manifest>() }
+        val configFullPath = manifest.config.digest
+        val iterator = manifest.layers.iterator()
+        while (iterator.hasNext()) {
+            val next = iterator.next()
+            list.add(next.digest)
+        }
+        list.add(configFullPath)
+        return ManifestInfo(list, manifest.mediaType)
+    }
 }

@@ -222,7 +222,7 @@ class LocalDataManager(
     }
 
     /**
-     * 读取节点数据流
+     * 根据节点信息读取节点的数据流
      */
     fun loadInputStream(nodeInfo: NodeDetail): InputStream {
         with(nodeInfo) {
@@ -231,7 +231,7 @@ class LocalDataManager(
     }
 
     /**
-     * 读取节点数据流
+     * 根据项目、仓库、sha256、size读取对应节点的数据流
      */
     fun loadInputStream(sha256: String, size: Long, projectId: String, repoName: String): InputStream {
         val repo = findRepoByName(projectId, repoName)
@@ -239,7 +239,7 @@ class LocalDataManager(
     }
 
     /**
-     * 读取节点数据流
+     * 根据项目、仓库、sha256、range读取对应节点的数据流
      */
     fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
         val repo = findRepoByName(projectId, repoName)

@@ -54,11 +54,11 @@ data class TReplicaObject(
      */
     val localRepoName: String,
     /**
-     * 远程项目（对于外部集群没有项目这个概念，可以为空）
+     * 远程项目（对于远端分发集群没有项目这个概念，可以为空）
      */
     val remoteProjectId: String?,
     /**
-     * 远程仓库（对于外部集群没有仓库这个概念，可以为空）
+     * 远程仓库（对于远端分发集群没有仓库这个概念，可以为空）
      */
     val remoteRepoName: String?,
     /**

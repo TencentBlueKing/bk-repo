@@ -7,7 +7,7 @@ import com.tencent.bkrepo.replication.constant.DOCKER_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
-import com.tencent.bkrepo.replication.util.FileParser
+import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -52,7 +52,7 @@ class DockerPackageNodeMapper(
                 Range.full(nodeDetail.size),
                 repository.storageCredentials
             )!!
-            val manifestInfo = FileParser.parseManifest(inputStream) ?: return result
+            val manifestInfo = ManifestParser.parseManifest(inputStream) ?: return result
             manifestInfo.descriptors?.forEach {
                 val replace = it.replace(":", "__")
                 if (isOci) {

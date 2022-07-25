@@ -50,7 +50,6 @@ import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
 import com.tencent.bkrepo.replication.util.HttpUtils
@@ -246,7 +245,7 @@ class ClusterNodeServiceImpl(
         return clusterNodeList.isNotEmpty() && clusterNodeList.size == 1
     }
 
-    private fun validateParameter(request: ClusterRequest) {
+    private fun validateParameter(request: ClusterNodeCreateRequest) {
         with(request) {
             Preconditions.checkNotBlank(name, this::name.name)
             Preconditions.checkNotBlank(url, this::url.name)

@@ -48,8 +48,8 @@ import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecuto
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
 import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
-import com.tencent.bkrepo.replication.util.FileParser
 import com.tencent.bkrepo.replication.util.HttpUtils
+import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
@@ -104,7 +104,7 @@ class OciArtifactPushClient(
         token: String?,
     ): Boolean {
         val manifestInput = localDataManager.loadInputStream(nodes[0])
-        val manifestInfo = FileParser.parseManifest(manifestInput)
+        val manifestInfo = ManifestParser.parseManifest(manifestInput)
             ?: throw ArtifactNotFoundException("Can not read manifest info from content")
         logger.info("$name|$version's artifact will be pushed to the third party cluster")
         // 上传layer, 每次并发执行5个

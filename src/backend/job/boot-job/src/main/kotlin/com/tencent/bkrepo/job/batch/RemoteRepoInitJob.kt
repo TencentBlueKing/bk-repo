@@ -56,10 +56,10 @@ class RemoteRepoInitJob(
 ) : DefaultRepoJob(properties) {
 
     private val types: List<String>
-        get() = properties.types
+        get() = properties.repositorytypes
 
     private val categories: List<String>
-        get() = properties.categories
+        get() = properties.repositoryCategories
 
     @Scheduled(fixedDelay = 60 * 1000L, initialDelay = 60 * 1000L)
     override fun start(): Boolean {
@@ -69,8 +69,8 @@ class RemoteRepoInitJob(
     override fun buildQuery(): Query {
         val fromDate = LocalDateTime.now().minusMinutes(1)
         return Query(
-            Criteria.where(TYPE).`in`(properties.types)
-                .and(CATEGORY).`in`(properties.categories)
+            Criteria.where(TYPE).`in`(properties.repositorytypes)
+                .and(CATEGORY).`in`(properties.repositoryCategories)
                 .and(CREATED_DATE).gt(fromDate)
         )
     }

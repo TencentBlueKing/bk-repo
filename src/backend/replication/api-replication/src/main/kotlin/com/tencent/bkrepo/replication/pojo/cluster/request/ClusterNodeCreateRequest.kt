@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,17 +35,17 @@ import io.swagger.annotations.ApiModelProperty
  * 添加集群节点请求
  */
 @ApiModel("添加集群节点请求")
-data class ClusterNodeCreateRequest(
+class ClusterNodeCreateRequest(
     @ApiModelProperty("添加的集群名称", required = true)
-    override var name: String,
+    var name: String,
     @ApiModelProperty("集群地址", required = true)
-    override var url: String,
+    var url: String,
     @ApiModelProperty("集群的证书", required = false)
-    override var certificate: String? = null,
+    var certificate: String? = null,
     @ApiModelProperty("集群认证用户名", required = false)
-    override var username: String? = null,
+    var username: String? = null,
     @ApiModelProperty("集群认证密码", required = false)
-    override var password: String? = null,
+    var password: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
-    override var type: ClusterNodeType
-) : ClusterRequest
+    var type: ClusterNodeType
+)

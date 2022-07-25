@@ -30,11 +30,11 @@ package com.tencent.bkrepo.job.config.properties
 open class RepoJobProperties(
     override var enabled: Boolean = true,
     /**
-     * 需要特殊处理的仓库代理类型
+     * 需要特殊处理的仓库理类型
      * */
-    var categories: List<String> = listOf("REMOTE", "COMPOSITE"),
+    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
     /**
      * 需要特殊处理的仓库类型
      * */
-    var types: List<String> = listOf("HELM")
+    var repositorytypes: List<String> = listOf("HELM")
 ) : MongodbJobProperties()

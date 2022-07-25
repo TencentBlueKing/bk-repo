@@ -49,10 +49,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("远端集群用户接口")
+@Api("远端分发集群用户配置接口")
 @RestController
 @RequestMapping("/api/remote/distribution")
-class RemoteNodeController(
+class RemoteDistributionController(
     private val remoteNodeService: RemoteNodeService
 ) {
     @ApiOperation("创建远端集群节点")
