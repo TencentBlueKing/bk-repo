@@ -430,9 +430,7 @@ class OciArtifactPushClient(
                 "file",
                 sha256,
                 StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
-            )
-            .addFormDataPart("sha256", sha256).apply {
-            }.build()
+            ).build()
         val patchHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
             .add(HttpHeaders.CONTENT_RANGE, "0-${0 + size - 1}")

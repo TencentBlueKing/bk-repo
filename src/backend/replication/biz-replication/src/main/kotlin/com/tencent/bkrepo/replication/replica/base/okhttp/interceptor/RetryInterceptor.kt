@@ -95,9 +95,7 @@ class RetryInterceptor(
                 "file",
                 sha256,
                 StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
-            )
-            .addFormDataPart("sha256", sha256).apply {
-            }.build()
+            ).build()
         return request.newBuilder().method(request.method(), retryBody).build()
     }
 
