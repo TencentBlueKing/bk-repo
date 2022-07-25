@@ -29,22 +29,20 @@ package com.tencent.bkrepo.webhook.payload.builder.metedata
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.metadata.MetadataSavedEvent
 import com.tencent.bkrepo.webhook.payload.builder.node.NodePayloadBuilder
 import com.tencent.bkrepo.webhook.pojo.payload.metadata.MetedataSavedEventPayload
 import org.springframework.stereotype.Component
 
 @Component
-class MetedataSavedPayloadBuilder : NodePayloadBuilder(
+class MetadataSavedPayloadBuilder : NodePayloadBuilder(
     eventType = EventType.METADATA_SAVED
 ) {
 
     override fun build(event: ArtifactEvent): MetedataSavedEventPayload {
-        require(event is MetadataSavedEvent)
         return MetedataSavedEventPayload(
             user = getUser(event.userId),
             node = getNode(event.projectId, event.repoName, event.resourceKey),
-            metedata = event.metadata
+            metedata = event.data["metadata"] as Map<String, Any>
         )
     }
 }

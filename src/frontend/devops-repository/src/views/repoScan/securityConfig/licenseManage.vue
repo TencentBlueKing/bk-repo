@@ -34,7 +34,10 @@
             </template>
             <bk-table-column label="名称">
                 <template #default="{ row }">
-                    <span v-bk-tooltips="{ content: row.name, placements: ['top'] }">{{ row.licenseId }}</span>
+                    <span class="hover-btn"
+                        v-bk-tooltips="{ content: row.name, placements: ['top'] }"
+                        @click="showLicenseUrl(row)"
+                    >{{ row.licenseId }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column label="OSI认证" width="120">
@@ -46,19 +49,10 @@
             <bk-table-column label="推荐使用" width="120">
                 <template #default="{ row }">{{ `${row.isDeprecatedLicenseId ? '不' : ''}推荐` }}</template>
             </bk-table-column>
-            <bk-table-column label="合规性" width="120">
+            <bk-table-column label="合规性" width="150">
                 <template #default="{ row }">
                     <span class="repo-tag" :class="row.isTrust ? 'SUCCESS' : 'FAILED'">{{ `${row.isTrust ? '' : '不'}合规` }}</span>
-                </template>
-            </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
-                <template #default="{ row }">
-                    <operation-list
-                        :list="[
-                            row.isTrust && { label: '设置不合规', clickEvent: () => changeTrust(row) },
-                            !row.isTrust && { label: '设置合规', clickEvent: () => changeTrust(row) },
-                            { label: '详细信息', clickEvent: () => showLicenseUrl(row) }
-                        ]"></operation-list>
+                    <bk-button class="hover-visible ml5" text theme="primary" @click="changeTrust(row)">切换</bk-button>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -97,12 +91,11 @@
     </div>
 </template>
 <script>
-    import OperationList from '@repository/components/OperationList'
     import genericUploadDialog from '@repository/views/repoGeneric/genericUploadDialog'
     import { mapActions } from 'vuex'
     export default {
         name: 'user',
-        components: { OperationList, genericUploadDialog },
+        components: { genericUploadDialog },
         data () {
             return {
                 isLoading: false,
@@ -184,5 +177,11 @@
 .license-manage-container {
     height: 100%;
     overflow: hidden;
+    .hover-visible {
+        visibility: hidden;
+    }
+    .hover-row .hover-visible {
+        visibility: visible;
+    }
 }
 </style>

@@ -3,9 +3,11 @@ package com.tencent.bkrepo.generic.service
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.bksync.ArtifactBlockChannel
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
@@ -19,7 +21,6 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.bksync.BlockChannel
-import com.tencent.bkrepo.common.bksync.ByteArrayBlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
 import com.tencent.bkrepo.common.redis.RedisOperation
@@ -29,6 +30,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
+import com.tencent.bkrepo.generic.config.DeltaProperties
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -50,11 +52,11 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -128,15 +130,35 @@ class DeltaSyncService(
                 }
             }
             val counterInputStream = CounterInputStream(deltaFile.getInputStream())
-            val blockChannel = getBlockChannel(node, storageCredentials)
             val emitter = SseEmitter(patchTimeout)
-            val patchContext = buildPatchContext(counterInputStream, emitter, this, blockChannel)
-            emitter.onCompletion { patchContext.hasCompleted.set(true) }
-            val reportAction = Runnable { reportProcess(patchContext) }
-            val ackFuture = heartBeatExecutor.scheduleWithFixedDelay(
-                reportAction, 0,
-                HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS
-            )
+            val blockChannel = getBlockChannel(node, storageCredentials)
+            try {
+                val patchContext = buildPatchContext(counterInputStream, emitter, this, blockChannel)
+                emitter.onCompletion { patchContext.hasCompleted.set(true) }
+                val reportAction = Runnable { reportProcess(patchContext) }
+                val ackFuture = heartBeatExecutor.scheduleWithFixedDelay(
+                    reportAction, 0,
+                    HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS
+                )
+                asyncExecutePatchTask(patchContext, ackFuture)
+            } catch (e: Exception) {
+                // 由于是异步使用，所以是在异步中进行关闭。但是如果出现异常，未进入到异步流程，则需要手动关闭。
+                counterInputStream.close()
+                blockChannel.close()
+                throw e
+            }
+            return emitter
+        }
+    }
+
+    /**
+     * 异步执行合并任务
+     * */
+    private fun asyncExecutePatchTask(
+        patchContext: PatchContext,
+        ackFuture: ScheduledFuture<*>
+    ) {
+        with(patchContext) {
             patchExecutor.execute {
                 try {
                     doPatch(patchContext)
@@ -146,12 +168,19 @@ class DeltaSyncService(
                     ackFuture.cancel(true)
                 }
             }
-            return emitter
         }
     }
 
-    fun whiteList(): List<String> {
-        return deltaProperties.whiteList
+    fun isInWhiteList(clientIp: String): Boolean {
+        deltaProperties.whiteList.forEach {
+            if (it == DeltaProperties.ALL) {
+                return true
+            }
+            if (IpUtils.isInRange(clientIp, it)) {
+                return true
+            }
+        }
+        return false
     }
 
     fun recordSpeed(ip: String, action: GenericAction, speed: Int) {
@@ -395,24 +424,18 @@ class DeltaSyncService(
     }
 
     private fun getBlockChannel(node: NodeDetail, storageCredentials: StorageCredentials?): BlockChannel {
+        // Cos分片下载可能会造成超时
         val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
             ?: throw ArtifactNotFoundException("file[${node.sha256}] not found in ${storageCredentials?.key}")
-        artifactInputStream.use {
-            // 小于文件内存大小，则使用内存
-            val name = node.sha256!!
-            if (node.size <= fileSizeThreshold) {
-                val dataOutput = ByteArrayOutputStream()
-                artifactInputStream.copyTo(dataOutput)
-                return ByteArrayBlockChannel(dataOutput.toByteArray(), name)
-            }
-            // 本地cache
-            if (artifactInputStream is FileArtifactInputStream) {
-                return FileBlockChannel(artifactInputStream.file, name)
-            }
-            // 远端网络流
-            val file = ArtifactFileFactory.build(artifactInputStream, node.size).getFile()!!
-            return FileBlockChannel(file, name)
+        val name = node.sha256!!
+        // 本地cache
+        if (artifactInputStream is FileArtifactInputStream) {
+            artifactInputStream.close()
+            return FileBlockChannel(artifactInputStream.file, name)
         }
+        // 远端网络流
+        val artifactFile = ArtifactFileFactory.build(artifactInputStream, node.size)
+        return ArtifactBlockChannel(artifactFile, name)
     }
 
     private class CounterInputStream(

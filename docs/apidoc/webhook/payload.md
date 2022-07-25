@@ -254,7 +254,14 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "size" : 32,
     "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
     "md5" : "156c8805787b870939a80c708b64c946",
-    "metadata" : { },
+    "nodeMetadata": [
+      {
+          "key": "key",
+          "value": "value",
+          "system": false,
+          "description": null
+      }
+    ],
     "projectId" : "project",
     "repoName" : "repo"
   },
@@ -298,7 +305,14 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "size" : 32,
     "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
     "md5" : "156c8805787b870939a80c708b64c946",
-    "metadata" : { },
+    "nodeMetadata": [
+      {
+          "key": "key",
+          "value": "value",
+          "system": false,
+          "description": null
+      }
+    ],
     "projectId" : "project",
     "repoName" : "repo"
   },
@@ -343,7 +357,14 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "size" : 32,
     "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
     "md5" : "156c8805787b870939a80c708b64c946",
-    "metadata" : { },
+    "nodeMetadata": [
+      {
+          "key": "key",
+          "value": "value",
+          "system": false,
+          "description": null
+      }
+    ],
     "projectId" : "project",
     "repoName" : "repo"
   },
@@ -390,7 +411,14 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "size" : 32,
     "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
     "md5" : "156c8805787b870939a80c708b64c946",
-    "metadata" : { },
+    "nodeMetadata": [
+      {
+          "key": "key",
+          "value": "value",
+          "system": false,
+          "description": null
+      }
+    ],
     "projectId" : "project",
     "repoName" : "repo"
   },
@@ -437,7 +465,14 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "size" : 32,
     "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
     "md5" : "156c8805787b870939a80c708b64c946",
-    "metadata" : { },
+    "nodeMetadata": [
+      {
+          "key": "key",
+          "value": "value",
+          "system": false,
+          "description": null
+      }
+    ],
     "projectId" : "project",
     "repoName" : "repo"
   },
@@ -561,7 +596,14 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "size" : 32,
     "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
     "md5" : "156c8805787b870939a80c708b64c946",
-    "metadata" : { },
+    "nodeMetadata": [
+      {
+          "key": "key",
+          "value": "value",
+          "system": false,
+          "description": null
+      }
+    ],
     "projectId" : "project",
     "repoName" : "repo"
   },

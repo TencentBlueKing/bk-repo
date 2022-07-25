@@ -40,7 +40,6 @@ import com.tencent.bkrepo.job.exception.JobExecuteException
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 /**
@@ -59,7 +58,6 @@ class RemoteRepoRefreshJob(
     private val categories: List<String>
         get() = properties.repositoryCategories
 
-    @Scheduled(fixedDelay = 3600 * 1000L, initialDelay = 90 * 1000L)
     override fun start(): Boolean {
         return super.start()
     }

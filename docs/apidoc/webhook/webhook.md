@@ -63,7 +63,7 @@ association_type为REPO时，association_id为{projectId}:{repoName}
   | url              | 是       | webhook请求地址   | http://bkrepo.example.com |
   | headers                | 否       | 自定义请求头        | {"key" : "value"}     |
   | triggers         | 是       | 触发事件          | ["NODE_CREATED"]          |
-  | resourceKeyPattern | 否 | 事件资源key正则匹配模型 | (.*).apk                   |
+  | resourceKeyPattern | 否 | 事件资源key正则匹配模型, 不填写则所有资源key都会触发 | (.*).apk                   |
   | association_type | 是       | 关联对象类型        | REPO                      |
   | association_id   | 否       | 关联对象id        | projectId:repoName        |
 

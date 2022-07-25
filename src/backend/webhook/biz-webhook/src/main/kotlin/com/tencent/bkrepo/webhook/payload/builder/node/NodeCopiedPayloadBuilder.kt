@@ -29,7 +29,6 @@ package com.tencent.bkrepo.webhook.payload.builder.node
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.webhook.pojo.payload.node.NodeCopiedEventPayload
 import org.springframework.stereotype.Component
 
@@ -39,10 +38,13 @@ class NodeCopiedPayloadBuilder : NodePayloadBuilder(
 ) {
 
     override fun build(event: ArtifactEvent): NodeCopiedEventPayload {
-        require(event is NodeCopiedEvent)
         return NodeCopiedEventPayload(
             user = getUser(event.userId),
-            node = getNode(event.dstProjectId, event.dstRepoName, event.dstFullPath),
+            node = getNode(
+                event.data["dstProjectId"].toString(),
+                event.data["dstRepoName"].toString(),
+                event.data["dstFullPath"].toString()
+            ),
             srcProjectId = event.projectId,
             srcRepoName = event.repoName,
             srcFullPath = event.resourceKey

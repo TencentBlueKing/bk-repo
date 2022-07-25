@@ -31,5 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.file-synchronize")
 class FileSynchronizeJobProperties(
-    var region: String? = null
+    var region: String? = null,
+    override var cron: String = "0 0 */1 * * ?"
 ) : BatchJobProperties()
