@@ -348,34 +348,32 @@ class PypiLocalRepository(
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+            if (!node.folder) {
+                return null
+            }
             // 请求不带包名，返回包名列表.
             if (getArtifactFullPath() == "/") {
-                if (node.folder) {
-                    val nodeList = nodeClient.listNode(
-                        projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
-                    ).data
-                        ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
-                    // 过滤掉'根节点',
-                    return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
-                }
+                val nodeList = nodeClient.listNode(
+                    projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
+                ).data
+                    ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                // 过滤掉'根节点',
+                return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
             }
             // 请求中带包名，返回对应包的文件列表。
             else {
-                if (node.folder) {
-                    val packageNode = nodeClient.listNode(
-                        projectId, repoName, getArtifactFullPath(), includeFolder = false,
-                        deep = true
-                    ).data
-                    if (packageNode.isNullOrEmpty()) {
-                        throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
-                    }
-                    return buildPypiPageContent(
-                        buildPackageFileNodeListContent(packageNode)
-                    )
+                val packageNode = nodeClient.listNode(
+                    projectId, repoName, getArtifactFullPath(), includeFolder = false,
+                    deep = true
+                ).data
+                if (packageNode.isNullOrEmpty()) {
+                    throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                 }
+                return buildPypiPageContent(
+                    buildPackageFileNodeListContent(packageNode)
+                )
             }
         }
-        return null
     }
 
     /**
