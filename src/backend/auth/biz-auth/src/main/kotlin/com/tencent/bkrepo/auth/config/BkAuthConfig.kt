@@ -67,7 +67,7 @@ class BkAuthConfig {
     /**
      * 允许默认密码校验
      */
-    @Value("\${auth.devops.allowDefaultPwd:}")
+    @Value("\${auth.devops.allowDefaultPwd: true}")
     var allowDefaultPwd: Boolean = true
 
     /**
