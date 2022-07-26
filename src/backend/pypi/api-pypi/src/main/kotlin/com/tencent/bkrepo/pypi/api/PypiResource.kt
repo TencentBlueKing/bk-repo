@@ -62,7 +62,7 @@ interface PypiResource {
     /**
      * pypi simple/{package} 页面接口，
      */
-    @GetMapping(PYPI_SIMPLE_MAPPING_INSTALL_URI)
+    @GetMapping(PYPI_SIMPLE_MAPPING_INSTALL_URI, produces = [MediaType.TEXT_HTML_VALUE])
     fun simple(@ArtifactPathVariable artifactInfo: PypiArtifactInfo): Any?
 
     /**
