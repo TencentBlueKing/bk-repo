@@ -39,13 +39,18 @@ import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
+import java.util.concurrent.LinkedBlockingQueue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
-import java.time.Instant
-import java.util.concurrent.LinkedBlockingQueue
 
 /**
  * 构件传输事件监听器
@@ -100,8 +105,28 @@ class ArtifactTransferListener(
                 clientIp = clientIp
             )
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
+            recordAccessTimeDistribution(artifactResource)
             queue.offer(record)
         }
+    }
+
+    /**
+     * 记录访问时间分布
+     * */
+    private fun recordAccessTimeDistribution(resource: ArtifactResource) {
+        val accessTimeDs = ArtifactMetrics.getAccessTimeDistributionSummary()
+        resource.artifactMap.filter { it.value is FileArtifactInputStream }
+            .map { it.value as FileArtifactInputStream }
+            .forEach {
+                val attr = Files.readAttributes(
+                    it.file.toPath(),
+                    BasicFileAttributes::class.java,
+                    LinkOption.NOFOLLOW_LINKS
+                )
+                val intervalOfMillis = attr.lastAccessTime().toMillis() - attr.lastModifiedTime().toMillis()
+                val intervalOfDays = intervalOfMillis / MILLIS_OF_DAY + 1
+                accessTimeDs.record(intervalOfDays.toDouble())
+            }
     }
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
@@ -123,5 +148,7 @@ class ArtifactTransferListener(
          * 30s
          */
         private const val FIXED_DELAY = 30 * 1000L
+
+        private const val MILLIS_OF_DAY = 24 * 3600 * 1000L
     }
 }

@@ -97,7 +97,9 @@ class ArtifactMetrics(
         private lateinit var tagProvider: ArtifactTransferTagProvider
         private lateinit var meterRegistry: MeterRegistry
         private lateinit var lruMeterFilter: LruMeterFilter
+        private const val MAX_ATIME = 30.0
         private const val BYTES = "bytes"
+        private const val DAY = "day"
 
         /**
          * 获取已上传文件大小摘要
@@ -120,6 +122,19 @@ class ArtifactMetrics(
                 .description(ARTIFACT_DOWNLOADED_SIZE_DESC)
                 .baseUnit(BYTES)
                 .publishPercentileHistogram()
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取访问时间metric
+         * 用于计算文件系统的文件访问时间分布
+         * */
+        fun getAccessTimeDistributionSummary(): DistributionSummary {
+            return DistributionSummary.builder(ARTIFACT_ACCESS_TIME)
+                .description(ARTIFACT_ACCESS_TIME_DESC)
+                .baseUnit(DAY)
+                .publishPercentileHistogram()
+                .maximumExpectedValue(MAX_ATIME)
                 .register(meterRegistry)
         }
 
