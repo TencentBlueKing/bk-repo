@@ -256,7 +256,7 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("获取用户信息")
+    @ApiOperation("独立部署模式下，获取用户信息")
     @GetMapping("/info")
     fun userInfo(
         @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?,
