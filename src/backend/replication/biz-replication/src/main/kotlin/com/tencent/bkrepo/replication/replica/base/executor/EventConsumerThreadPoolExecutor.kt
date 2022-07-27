@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,41 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.event
+package com.tencent.bkrepo.replication.replica.base.executor
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.replication.replica.base.executor.EventConsumerThreadPoolExecutor
-import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import org.springframework.stereotype.Component
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
- * 构件事件消费者，用于实时同步
- * 对应binding name为artifactEvent-in-0
+ * 用于分发event到对应的同步任务的线程池
  */
-@Component("artifactEvent")
-class ArtifactEventConsumer(
-    private val replicaTaskService: ReplicaTaskService,
-    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
-) : EventConsumer() {
-
-    private val executors = EventConsumerThreadPoolExecutor.instance
+object EventConsumerThreadPoolExecutor {
     /**
-     * 允许接收的事件类型
+     * 线程池实例
      */
-    override fun getAcceptTypes(): Set<EventType> {
-        return setOf(
-            EventType.NODE_CREATED,
-            EventType.VERSION_CREATED,
-            EventType.VERSION_UPDATED
-        )
-    }
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
 
-    override fun action(event: ArtifactEvent) {
-        executors.execute {
-            replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
-                eventBasedReplicaJobExecutor.execute(it, event)
-            }
-        }
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
+        return ThreadPoolExecutor(
+            100, 200, 60, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
     }
 }
