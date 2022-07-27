@@ -65,3 +65,9 @@ const val OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT_DESC = "blob上传实时执行数量
 
 const val OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE = "oci.blob.upload.task.queue.size"
 const val OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE_DESC = "blob上传任务线程池等待队列大小"
+
+const val EVENT_CONSUMER_TASK_ACTIVE_COUNT = "event.consumer.task.active.count"
+const val EVENT_CONSUMER_TASK_ACTIVE_COUNT_DESC = "事件处理任务实时执行数量"
+
+const val EVENT_CONSUMER_TASK_QUEUE_SIZE = "event.consumer.task.queue.size"
+const val EVENT_CONSUMER_TASK_QUEUE_SIZE_DESC = "事件处理任务线程池等待队列大小"
