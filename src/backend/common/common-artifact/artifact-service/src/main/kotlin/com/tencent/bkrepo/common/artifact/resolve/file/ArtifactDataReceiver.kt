@@ -94,12 +94,12 @@ class ArtifactDataReceiver(
     /**
      * 内存缓存数组
      */
-    private val contentBytes = ByteArrayOutputStream(bufferSize)
+    private var contentBytes: ByteArrayOutputStream? = ByteArrayOutputStream(bufferSize)
 
     /**
      * outputStream，初始化指向内存缓存数组
      */
-    private var outputStream: OutputStream = contentBytes
+    private var outputStream: OutputStream = contentBytes!!
 
     /**
      * 数据是否转移到本地磁盘
@@ -110,12 +110,6 @@ class ArtifactDataReceiver(
      * 降级存储路径，通常是本地磁盘路径
      */
     private var fallBackPath: Path? = null
-
-    /**
-     * 缓存数组
-     */
-    val cachedByteArray: ByteArray
-        get() = contentBytes.toByteArray()
 
     /**
      * 接收文件路径
@@ -260,13 +254,15 @@ class ArtifactDataReceiver(
         if (inMemory) {
             val filePath = this.filePath.apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
-            val millis = measureTimeMillis { contentBytes.writeTo(fileOutputStream) }
+            val millis = measureTimeMillis { contentBytes!!.writeTo(fileOutputStream) }
             outputStream = fileOutputStream
             inMemory = false
-            recordQuiet(contentBytes.size(), Duration.ofMillis(millis), true)
+            recordQuiet(contentBytes!!.size(), Duration.ofMillis(millis), true)
             if (closeStream) {
                 cleanOriginalOutputStream()
             }
+            // help gc
+            contentBytes = null
         }
     }
 
@@ -278,7 +274,7 @@ class ArtifactDataReceiver(
         return if (!inMemory) {
             Files.newInputStream(filePath)
         } else {
-            ByteArrayInputStream(contentBytes.toByteArray())
+            ByteArrayInputStream(contentBytes!!.toByteArray())
         }
     }
 
@@ -381,7 +377,7 @@ class ArtifactDataReceiver(
      */
     private fun checkSize() {
         if (inMemory) {
-            val actualSize = contentBytes.size().toLong()
+            val actualSize = contentBytes!!.size().toLong()
             require(received == actualSize) {
                 "$received bytes received, but $actualSize bytes saved in memory."
             }
