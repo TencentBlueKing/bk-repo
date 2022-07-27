@@ -37,8 +37,6 @@ import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
@@ -62,8 +60,6 @@ import java.util.function.Consumer
  */
 @Component("artifactEvent")
 class ScanEventConsumer(
-    private val nodeClient: NodeClient,
-    private val storageProperties: StorageProperties,
     private val spdxLicenseService: SpdxLicenseService,
     private val scanService: ScanService,
     private val scanPlanDao: ScanPlanDao,
@@ -103,25 +99,17 @@ class ScanEventConsumer(
      * 触发导入license数据
      */
     private fun importLicenseEvent(event: ArtifactEvent) {
-        require(event.projectId == PUBLIC_GLOBAL_PROJECT && event.repoName == PUBLIC_VULDB_REPO) { return }
-        require(
-            event.resourceKey.endsWith(".json") && event.resourceKey.startsWith("/spdx-license/")
-        ) { return }
-        nodeClient.getNodeDetail(event.projectId, event.repoName, event.resourceKey).data?.let {
-            val sha256 = it.sha256!!
-            val first = sha256.substring(0, 2)
-            val second = sha256.substring(2, 4)
-            val path = storageProperties.filesystem.path
-            val storePath = if (!path.startsWith("/")) {
-                "${System.getProperties()["user.dir"]}/$path".removeSuffix("/")
-            } else {
-                path.removeSuffix("/")
-            }
-            val filePath = "$storePath/$first/$second/$sha256"
-            if (spdxLicenseService.importLicense(filePath)) {
-                logger.info("import license json file success")
-            }
-        } ?: logger.warn("node detail is null in license event [$event]")
+        if (event.projectId != PUBLIC_GLOBAL_PROJECT ||
+            event.repoName != PUBLIC_VULDB_REPO ||
+            !event.resourceKey.endsWith(".json") ||
+            !event.resourceKey.startsWith("/spdx-license/")) {
+            return
+        }
+        if (spdxLicenseService.importLicense(event.projectId, event.repoName, event.resourceKey)) {
+            logger.info("import license json file success")
+        } else {
+            logger.warn("import license json file failed[$event]")
+        }
     }
 
     /**
