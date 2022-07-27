@@ -66,13 +66,12 @@ object ArtifactPushMappings {
         with(context) {
             val client = clients[localRepoType]
             check(client != null) { "client[$localRepoType] not found" }
-            client.httpClient = httpClient
-            client.clusterInfo = cluster
             return client.pushArtifact(
                 name = packageSummary.name,
                 version = packageVersion.name,
                 projectId = packageSummary.projectId,
-                repoName = packageSummary.repoName
+                repoName = packageSummary.repoName,
+                clusterInfo = cluster
             )
         }
     }

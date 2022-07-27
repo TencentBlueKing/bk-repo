@@ -41,6 +41,7 @@ import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
@@ -72,9 +73,10 @@ import java.util.concurrent.ThreadPoolExecutor
  */
 @Component
 class OciArtifactPushClient(
-    private val localDataManager: LocalDataManager,
+    private val authService: OciAuthorizationService,
     replicationProperties: ReplicationProperties,
-) : PushClient(replicationProperties) {
+    localDataManager: LocalDataManager
+) : PushClient(replicationProperties, localDataManager) {
 
     private val blobUploadExecutor: ThreadPoolExecutor = OciThreadPoolExecutor.instance
 
@@ -101,11 +103,12 @@ class OciArtifactPushClient(
         name: String,
         version: String,
         token: String?,
+        clusterInfo: RemoteClusterInfo
     ): Boolean {
         val manifestInput = localDataManager.loadInputStream(nodes[0])
         val manifestInfo = ManifestParser.parseManifest(manifestInput)
             ?: throw ArtifactNotFoundException("Can not read manifest info from content")
-        logger.info("$name|$version's artifact will be pushed to the third party cluster")
+        logger.info("$name|$version's artifact will be pushed to the third party cluster ${clusterInfo.name}")
         // 上传layer, 每次并发执行5个
         val semaphore = Semaphore(replicationProperties.threadNum)
         var result = true
@@ -120,7 +123,9 @@ class OciArtifactPushClient(
                             digest = it,
                             name = name,
                             projectId = nodes[0].projectId,
-                            repoName = nodes[0].repoName
+                            repoName = nodes[0].repoName,
+                            clusterUrl = clusterInfo.url,
+                            clusterName = clusterInfo.name
                         )
                     } finally {
                         semaphore.release()
@@ -130,7 +135,7 @@ class OciArtifactPushClient(
         }
         try {
             futureList.forEach {
-                result = it.get()
+                result = result && it.get()
             }
         } catch (e: ArtifactPushException) {
             // 当出现异常时取消所有任务
@@ -140,14 +145,19 @@ class OciArtifactPushClient(
         // 同步manifest
         if (result) {
             val input = localDataManager.loadInputStream(nodes[0])
-            result = buildManifestUploadHandler(
+            result = result && processManifestUploadHandler(
                 token = token,
                 name = name,
                 version = version,
                 input = Pair(input, nodes[0].size),
-                mediaType = manifestInfo.mediaType
-            ).process().isSuccess
+                mediaType = manifestInfo.mediaType,
+                clusterUrl = clusterInfo.url
+            ).isSuccess
         }
+        logger.info(
+            "The result of uploading $name|$version's artifact " +
+                "to remote cluster ${clusterInfo.name} is $result"
+        )
         return result
     }
 
@@ -161,9 +171,8 @@ class OciArtifactPushClient(
     /**
      * 获取auth处理器
      */
-    override fun getAuthorizationDetails(name: String): String? {
-        val ociAuthService = OciAuthorizationService(httpClient)
-        return ociAuthService.obtainAuthorizationCode(buildAuthRequestProperties(name))
+    override fun getAuthorizationDetails(name: String, clusterInfo: RemoteClusterInfo): String? {
+        return authService.obtainAuthorizationCode(buildAuthRequestProperties(name, clusterInfo), httpClient)
     }
 
     /**
@@ -189,7 +198,7 @@ class OciArtifactPushClient(
     /**
      * auth鉴权属性配置
      */
-    private fun buildAuthRequestProperties(name: String): RequestProperty {
+    private fun buildAuthRequestProperties(name: String, clusterInfo: RemoteClusterInfo): RequestProperty {
         val baseUrl = URL(clusterInfo.url)
         val v2Url = URL(baseUrl, "/v2/").toString()
         val target = baseUrl.path.removePrefix(StringPool.SLASH)
@@ -226,37 +235,47 @@ class OciArtifactPushClient(
         digest: String,
         name: String,
         projectId: String,
-        repoName: String
+        repoName: String,
+        clusterUrl: String,
+        clusterName: String
     ): Boolean {
-        logger.info("Will try to upload $name's blob $digest in repo $projectId|$repoName ")
-        val checkHandler = buildBlobExistCheckHandler(
+        logger.info(
+            "Will try to upload $name's blob $digest " +
+                "in repo $projectId|$repoName to remote cluster $clusterName."
+        )
+        val checkHandlerResult = processBlobExistCheckHandler(
             token = token,
             name = name,
-            digest = digest
+            digest = digest,
+            clusterUrl = clusterUrl
         )
-        if (checkHandler.process().isSuccess) {
+        if (checkHandlerResult.isSuccess) {
+            logger.info("The blob $name|$digest is already exist in the remote cluster $clusterName!")
             return true
         }
-        val sessionIdHandler = buildSessionIdHandler(
+        logger.info("Will try to obtain uuid from remote cluster $clusterName for blob $name|$digest")
+        var sessionIdHandlerResult = processSessionIdHandler(
             token = token,
-            name = name
+            name = name,
+            clusterUrl = clusterUrl
         )
-        var sessionIdHandlerResult = sessionIdHandler.process()
         if (!sessionIdHandlerResult.isSuccess) {
             return false
         }
-
-        // 加载blob流数据
         val sha256 = digest.split(":").last()
+        // 获取对应blob文件大小
         val size = getBlobSize(
             sha256 = sha256,
             projectId = projectId,
             repoName = repoName
         )
-
+        logger.info(
+            "Will try to upload blob with ${sessionIdHandlerResult.location} " +
+                "in chunked upload way to remote cluster $clusterName for blob $name|$digest"
+        )
         // 需要将大文件进行分块上传
         var chunkedUploadResult = try {
-            blobChunkUploadProcess(
+            processBlobChunkUpload(
                 token = token,
                 size = size,
                 repoName = repoName,
@@ -270,11 +289,15 @@ class OciArtifactPushClient(
         } ?: return false
         // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
         if (chunkedUploadResult.isFailure) {
-            sessionIdHandlerResult = sessionIdHandler.process()
+            sessionIdHandlerResult = processSessionIdHandler(
+                token = token,
+                name = name,
+                clusterUrl = clusterUrl
+            )
             if (!sessionIdHandlerResult.isSuccess) {
                 return false
             }
-            chunkedUploadResult = blobUploadWithSingleChunkProcess(
+            chunkedUploadResult = processBlobUploadWithSingleChunk(
                 token = token,
                 size = size,
                 sha256 = sha256,
@@ -285,55 +308,55 @@ class OciArtifactPushClient(
         }
 
         if (!chunkedUploadResult.isSuccess) return false
-
-        val sessionCloseHandler = buildSessionCloseHandler(
+        logger.info(
+            "The blob $name|$digest is uploaded " +
+                "and will try to send a completed request with ${chunkedUploadResult.location}."
+        )
+        val sessionCloseHandlerResult = processSessionCloseHandler(
             token = token,
             digest = digest,
             location = chunkedUploadResult.location
         )
-        return sessionCloseHandler.process().isSuccess
+        return sessionCloseHandlerResult.isSuccess
     }
 
     /**
      * 根据blob的sha256值判断是否存在，
      * 如不存在则上传
      */
-    private fun buildBlobExistCheckHandler(
+    private fun processBlobExistCheckHandler(
         token: String?,
         name: String,
         digest: String,
-    ): DefaultHandler {
-        val blobExistCheckHandler = DefaultHandler(
-            httpClient = httpClient,
-            ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
-            extraSuccessCode = listOf(HttpStatus.TEMPORARY_REDIRECT.value),
-            responseType = OciResponse::class.java
-        )
+        clusterUrl: String
+    ): DefaultHandlerResult {
         val headPath = OCI_BLOB_URL.format(name, digest)
-        val headUrl = builderRequestUrl(clusterInfo.url, headPath)
+        val headUrl = buildUrl(clusterUrl, headPath)
         val property = RequestProperty(
             authorizationCode = token,
             requestMethod = RequestMethod.HEAD,
             requestUrl = headUrl
         )
-        blobExistCheckHandler.requestProperty = property
-        return blobExistCheckHandler
+        return DefaultHandler.process(
+            httpClient = httpClient,
+            ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
+            extraSuccessCode = listOf(HttpStatus.TEMPORARY_REDIRECT.value),
+            responseType = OciResponse::class.java,
+            requestProperty = property
+        )
     }
 
     /**
      * 构件blob上传处理器
      * 上传blob文件step1: post获取sessionID
      */
-    private fun buildSessionIdHandler(
+    private fun processSessionIdHandler(
         token: String?,
         name: String,
-    ): DefaultHandler {
-        val sessionIdHandler = DefaultHandler(
-            httpClient = httpClient,
-            responseType = OciResponse::class.java
-        )
+        clusterUrl: String
+    ): DefaultHandlerResult {
         val postPath = OCI_BLOBS_UPLOAD_FIRST_STEP_URL.format(name)
-        val postUrl = builderRequestUrl(clusterInfo.url, postPath)
+        val postUrl = buildUrl(clusterUrl, postPath)
         val postBody: RequestBody = RequestBody.create(
             MediaType.parse("application/json"), StringPool.EMPTY
         )
@@ -343,15 +366,18 @@ class OciArtifactPushClient(
             requestMethod = RequestMethod.POST,
             requestUrl = postUrl
         )
-        sessionIdHandler.requestProperty = property
-        return sessionIdHandler
+        return DefaultHandler.process(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java,
+            requestProperty = property
+        )
     }
 
     /**
      * 构件blob上传处理器
      * 上传blob文件step2: patch分块上传
      */
-    private fun blobChunkUploadProcess(
+    private fun processBlobChunkUpload(
         token: String?,
         size: Long,
         sha256: String,
@@ -373,15 +399,10 @@ class OciArtifactPushClient(
                 "${Thread.currentThread().name} start is $startPosition, " +
                     "size is $size, byteCount is $byteCount contentRange is $contentRange"
             )
-            val blobChunkUploadHandler = DefaultHandler(
-                httpClient = httpClient,
-                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
-                responseType = OciResponse::class.java
-            )
             val range = Range(startPosition, startPosition + byteCount - 1, size)
             val input = localDataManager.loadInputStreamByRange(sha256, range, projectId, repoName)
             val patchBody: RequestBody = RequestBody.create(
-                MediaType.parse("application/octet-stream"), input.readBytes()
+                MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM), input.readBytes()
             )
             val patchHeader = Headers.Builder()
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
@@ -395,8 +416,12 @@ class OciArtifactPushClient(
                 headers = patchHeader,
                 requestUrl = location
             )
-            blobChunkUploadHandler.requestProperty = property
-            chunkedHandlerResult = blobChunkUploadHandler.process()
+            chunkedHandlerResult = DefaultHandler.process(
+                httpClient = httpClient,
+                ignoredFailureCode = listOf(HttpStatus.NOT_FOUND.value),
+                responseType = OciResponse::class.java,
+                requestProperty = property
+            )
             if (!chunkedHandlerResult.isSuccess) {
                 return chunkedHandlerResult
             }
@@ -410,7 +435,7 @@ class OciArtifactPushClient(
      * 上传blob文件step2: patch分块上传
      * 针对部分registry不支持将blob分成多块上传，将blob文件整块上传
      */
-    private fun blobUploadWithSingleChunkProcess(
+    private fun processBlobUploadWithSingleChunk(
         token: String?,
         size: Long,
         sha256: String,
@@ -419,10 +444,6 @@ class OciArtifactPushClient(
         location: String?
     ): DefaultHandlerResult {
         logger.info("Will upload blob $sha256 in a single patch request")
-        val blobChunkUploadHandler = DefaultHandler(
-            httpClient = httpClient,
-            responseType = OciResponse::class.java
-        )
         val patchBody = StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
         val patchHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
@@ -438,23 +459,22 @@ class OciArtifactPushClient(
             headers = patchHeader,
             requestUrl = location
         )
-        blobChunkUploadHandler.requestProperty = property
-        return blobChunkUploadHandler.process()
+        return DefaultHandler.process(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java,
+            requestProperty = property
+        )
     }
 
     /**
      * 构件blob上传处理器
      * 上传blob文件最后一步: put上传
      */
-    private fun buildSessionCloseHandler(
+    private fun processSessionCloseHandler(
         token: String?,
         digest: String,
         location: String?
-    ): DefaultHandler {
-        val sessionCloseHandler = DefaultHandler(
-            httpClient = httpClient,
-            responseType = OciResponse::class.java
-        )
+    ): DefaultHandlerResult {
         val putBody: RequestBody = RequestBody.create(
             null, ByteString.EMPTY
         )
@@ -471,27 +491,27 @@ class OciArtifactPushClient(
             headers = putHeader,
             requestUrl = location
         )
-        sessionCloseHandler.requestProperty = property
-        return sessionCloseHandler
+        return DefaultHandler.process(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java,
+            requestProperty = property
+        )
     }
 
     /**
      * 生成manifest上传处理方法
      */
-    private fun buildManifestUploadHandler(
+    private fun processManifestUploadHandler(
         token: String?,
         name: String,
         version: String,
         input: Pair<InputStream, Long>,
-        mediaType: String?
-    ): DefaultHandler {
+        mediaType: String?,
+        clusterUrl: String
+    ): DefaultHandlerResult {
         logger.info("$name|$version's manifest will be pushed to the remote cluster")
-        val manifestUploadHandler = DefaultHandler(
-            httpClient = httpClient,
-            responseType = OciResponse::class.java
-        )
         val path = OCI_MANIFEST_URL.format(name, version)
-        val putUrl = builderRequestUrl(clusterInfo.url, path)
+        val putUrl = buildUrl(clusterUrl, path)
         val type = mediaType ?: "application/vnd.oci.image.manifest.v1+json"
         val manifestBody: RequestBody = RequestBody.create(
             MediaType.parse(type), input.first.readBytes()
@@ -506,21 +526,24 @@ class OciArtifactPushClient(
             requestMethod = RequestMethod.PUT,
             headers = manifestHeader
         )
-        manifestUploadHandler.requestProperty = property
-        return manifestUploadHandler
+        return DefaultHandler.process(
+            httpClient = httpClient,
+            responseType = OciResponse::class.java,
+            requestProperty = property
+        )
     }
 
     /**
      * 拼接url
      */
-    private fun builderRequestUrl(
+    private fun buildUrl(
         url: String,
         path: String,
         params: String = StringPool.EMPTY
     ): String {
         val baseUrl = URL(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
-        return HttpUtils.builderUrl(v2Url.toString(), path, params)
+        return HttpUtils.buildUrl(v2Url.toString(), path, params)
     }
 
     companion object {

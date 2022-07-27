@@ -29,18 +29,16 @@ package com.tencent.bkrepo.replication.replica.base.impl.remote.type.helm
 
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.AuthorizationService
-import org.slf4j.LoggerFactory
+import okhttp3.OkHttpClient
+import org.springframework.stereotype.Component
 
 /**
  * 针对helm的Authorization code获取实现
  */
+@Component
 class HelmAuthorizationService : AuthorizationService {
 
-    override fun obtainAuthorizationCode(property: RequestProperty?): String? {
+    override fun obtainAuthorizationCode(property: RequestProperty?, httpClient: OkHttpClient): String? {
         return property?.authorizationCode
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(HelmAuthorizationService::class.java)
     }
 }

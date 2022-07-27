@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
+import okhttp3.OkHttpClient
 
 /**
  * Authorization code获取接口
@@ -36,5 +37,5 @@ interface AuthorizationService {
     /**
      * 获取Authorization code
      */
-    fun obtainAuthorizationCode(property: RequestProperty?): String?
+    fun obtainAuthorizationCode(property: RequestProperty?, httpClient: OkHttpClient): String?
 }

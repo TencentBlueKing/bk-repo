@@ -46,28 +46,29 @@ import com.tencent.bkrepo.replication.util.HttpUtils
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
 
 /**
  * 针对oci的Authorization code获取实现
  */
-class OciAuthorizationService(
-    private val httpClient: OkHttpClient
-) : AuthorizationService {
-
-    override fun obtainAuthorizationCode(property: RequestProperty?): String? {
+@Component
+class OciAuthorizationService : AuthorizationService {
+    override fun obtainAuthorizationCode(property: RequestProperty?, httpClient: OkHttpClient): String? {
         if (property == null) return null
         val authorizationCode = property.authorizationCode
-        property.authorizationCode = null
-        val httpRequest = HttpUtils.wrapperRequest(property)
+        val authProperty = property.copy(authorizationCode = null)
+        val httpRequest = HttpUtils.wrapperRequest(authProperty)
         httpClient.newCall(httpRequest).execute().use {
             return if (it.code() == HttpStatus.UNAUTHORIZED.value) {
                 getAuthenticationCode(
                     response = it,
                     authorizationCode = authorizationCode,
                     userName = property.userName,
-                    scope = property.scope
+                    scope = property.scope,
+                    httpClient = httpClient
                 )
+                // 当无需鉴权时返回""
             } else if (it.code() == HttpStatus.OK.value) {
                 StringPool.EMPTY
             } else throw ArtifactPushException("Can not get authorization detail ${it.code()}")
@@ -81,7 +82,8 @@ class OciAuthorizationService(
         response: Response,
         scope: String? = null,
         userName: String? = null,
-        authorizationCode: String? = null
+        authorizationCode: String? = null,
+        httpClient: OkHttpClient
     ): String {
         val wwwAuthenticate = response.header(HttpHeaders.WWW_AUTHENTICATE)
         if (wwwAuthenticate.isNullOrBlank() || !wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX)) {

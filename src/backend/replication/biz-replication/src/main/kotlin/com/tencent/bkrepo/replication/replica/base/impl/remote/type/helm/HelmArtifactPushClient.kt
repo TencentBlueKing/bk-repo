@@ -28,11 +28,14 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.type.helm
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
@@ -44,6 +47,7 @@ import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
+import java.io.InputStream
 import java.net.URL
 
 /**
@@ -51,9 +55,10 @@ import java.net.URL
  */
 @Component
 class HelmArtifactPushClient(
-    private val localDataManager: LocalDataManager,
+    private val authService: HelmAuthorizationService,
     replicationProperties: ReplicationProperties,
-) : PushClient(replicationProperties) {
+    localDataManager: LocalDataManager
+) : PushClient(replicationProperties, localDataManager) {
 
     override fun type(): RepositoryType {
         return RepositoryType.HELM
@@ -67,23 +72,28 @@ class HelmArtifactPushClient(
         name: String,
         version: String,
         token: String?,
+        clusterInfo: RemoteClusterInfo
     ): Boolean {
-        var result = false
+        var result = true
         nodes.forEach {
-            result = uploadChart(
+            result = result && uploadChart(
                 node = it,
                 name = name,
                 version = version,
-                token = token
+                token = token,
+                clusterInfo = clusterInfo
+            )
+            logger.info(
+                "The result of uploading chart $name|$version " +
+                    "with path ${it.fullPath} to remote cluster ${clusterInfo.name} is $result"
             )
         }
         return result
     }
 
-    override fun getAuthorizationDetails(name: String): String? {
+    override fun getAuthorizationDetails(name: String, clusterInfo: RemoteClusterInfo): String? {
         return clusterInfo.username?.let {
-            val helmAuthorizationService = HelmAuthorizationService()
-            helmAuthorizationService.obtainAuthorizationCode(buildAuthRequestProperties())
+            authService.obtainAuthorizationCode(buildAuthRequestProperties(clusterInfo), httpClient)
         }
     }
 
@@ -113,23 +123,28 @@ class HelmArtifactPushClient(
         token: String?,
         name: String,
         node: NodeDetail,
-        version: String
+        version: String,
+        clusterInfo: RemoteClusterInfo
     ): Boolean {
-        var chartUpload = buildUploadHandler(
+        // 先按照非chartmuseum协议进行上传
+        var chartUpload = processChartUpload(
             token = token,
             name = name,
             version = version,
             node = node,
-            chartMuseum = false
-        ).process()
+            chartMuseum = false,
+            clusterInfo = clusterInfo
+        )
+        // 不成功则按照chartmuseum协议进行上传
         if (!chartUpload.isSuccess) {
-            chartUpload = buildUploadHandler(
+            chartUpload = processChartUpload(
                 token = token,
                 name = name,
                 version = version,
                 node = node,
-                chartMuseum = true
-            ).process()
+                chartMuseum = true,
+                clusterInfo = clusterInfo
+            )
         }
         return chartUpload.isSuccess
     }
@@ -138,75 +153,106 @@ class HelmArtifactPushClient(
      * 上传chart包
      * 针对存在chartMuseum和其他jfrog的上传请求不一致，使用chartMuseum区别
      */
-    private fun buildUploadHandler(
+    private fun processChartUpload(
         token: String?,
         name: String,
         version: String,
         chartMuseum: Boolean,
-        node: NodeDetail
-    ): DefaultHandler {
+        node: NodeDetail,
+        clusterInfo: RemoteClusterInfo
+    ): DefaultHandlerResult {
         val input = localDataManager.loadInputStream(
             sha256 = node.sha256!!,
             size = node.size,
             projectId = node.projectId,
             repoName = node.repoName
         )
-        val artifactUploadHandler = DefaultHandler(
+        val fileName = CHART_FILE_NAME.format(name, version)
+        val requestProperty = if (chartMuseum) {
+            buildChartMuseumRequest(
+                url = clusterInfo.url,
+                input = input,
+                fileName = fileName,
+                token = token
+            )
+        } else {
+            buildNonChartMuseumRequest(
+                url = clusterInfo.url,
+                input = input,
+                fileName = fileName,
+                token = token
+            )
+        }
+        return DefaultHandler.process(
             httpClient = httpClient,
             responseType = String::class.java,
             ignoredFailureCode = listOf(HttpStatus.METHOD_NOT_ALLOWED.value, HttpStatus.NOT_FOUND.value),
+            requestProperty = requestProperty
         )
-        val fileName = CHART_FILE_NAME.format(name, version)
-        val requestUrl = if (chartMuseum) {
-            clusterInfo.url
-        } else {
-            builderRequestUrl(clusterInfo.url, fileName)
-        }
-        val postBody = if (!chartMuseum) {
-            RequestBody.create(
-                MediaType.parse("application/octet-stream"), input.readBytes()
-            )
-        } else {
-            MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    "chart", fileName,
-                    RequestBody.create(
-                        MediaType.parse("application/octet-stream"), input.readBytes()
-                    )
-                )
-                .addFormDataPart("force", true.toString())
-                .build()
-        }
-        val method = if (chartMuseum) {
-            RequestMethod.POST
-        } else {
-            RequestMethod.PUT
-        }
-        val property = RequestProperty(
+    }
+
+    /**
+     * 生成非chart museum协议的访问请求数据
+     */
+    private fun buildNonChartMuseumRequest(
+        url: String,
+        fileName: String,
+        input: InputStream,
+        token: String?,
+    ): RequestProperty {
+        val requestUrl = buildUrl(url, fileName)
+        val postBody = RequestBody.create(
+            MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM), input.readBytes()
+        )
+        return RequestProperty(
             requestBody = postBody,
             requestUrl = requestUrl,
             authorizationCode = token,
-            requestMethod = method
+            requestMethod = RequestMethod.PUT
         )
-        artifactUploadHandler.requestProperty = property
-        return artifactUploadHandler
+    }
+
+    /**
+     * 生成chart museum协议的访问请求数据
+     */
+    private fun buildChartMuseumRequest(
+        url: String,
+        fileName: String,
+        input: InputStream,
+        token: String?,
+    ): RequestProperty {
+        val postBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                CHART_FILE, fileName,
+                RequestBody.create(
+                    MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM), input.readBytes()
+                )
+            )
+            .addFormDataPart("force", "true")
+            .build()
+        return RequestProperty(
+            requestBody = postBody,
+            requestUrl = url,
+            authorizationCode = token,
+            requestMethod = RequestMethod.POST
+        )
     }
 
     /**
      * 拼接url
      */
-    private fun builderRequestUrl(
+    private fun buildUrl(
         url: String,
         path: String,
         params: String = StringPool.EMPTY
     ): String {
         val baseUrl = URL(url)
         val v2Url = URL(baseUrl, baseUrl.path)
-        return HttpUtils.builderUrl(v2Url.toString(), path, params)
+        return HttpUtils.buildUrl(v2Url.toString(), path, params)
     }
 
-    private fun buildAuthRequestProperties(): RequestProperty {
+    private fun buildAuthRequestProperties(clusterInfo: RemoteClusterInfo): RequestProperty {
         return RequestProperty(
             authorizationCode = BasicAuthUtils.encode(clusterInfo.username!!, clusterInfo.password!!)
         )

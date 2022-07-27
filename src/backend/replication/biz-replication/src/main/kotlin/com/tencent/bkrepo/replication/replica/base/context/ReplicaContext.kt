@@ -42,7 +42,6 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import com.tencent.bkrepo.replication.replica.base.okhttp.RemoteHttpClientBuilderFactory
 import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
@@ -86,7 +85,7 @@ class ReplicaContext(
 
     // TODO: Feign暂时不支持Stream上传，11+之后支持，升级后可以移除HttpClient上传
     private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
-    val httpClient: OkHttpClient
+    val httpClient: OkHttpClient?
     var cluster: RemoteClusterInfo
 
     init {
@@ -115,7 +114,7 @@ class ReplicaContext(
                 BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
             ).build()
         } else {
-            RemoteHttpClientBuilderFactory.httpClient
+            null
         }
     }
 
@@ -133,8 +132,8 @@ class ReplicaContext(
             .url(pushBlobUrl)
             .post(requestBody)
             .build()
-        httpClient.newCall(httpRequest).execute().use {
-            check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
+        httpClient?.newCall(httpRequest)?.execute().use {
+            it?.let { it1 -> check(it1?.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
         }
     }
 }

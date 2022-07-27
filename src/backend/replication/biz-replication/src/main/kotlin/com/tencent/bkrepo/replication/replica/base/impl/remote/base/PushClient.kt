@@ -28,21 +28,24 @@
 package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.config.ReplicationProperties
+import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
+import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
 
 /**
  * 制品推送到远端仓库
  */
 abstract class PushClient(
-    val replicationProperties: ReplicationProperties
+    val replicationProperties: ReplicationProperties,
+    val localDataManager: LocalDataManager
 ) {
-    lateinit var httpClient: OkHttpClient
-
-    lateinit var clusterInfo: RemoteClusterInfo
+    val httpClient: OkHttpClient = buildClient()
 
     /**
      * 匹配仓库类型
@@ -59,12 +62,18 @@ abstract class PushClient(
     /**
      * 推送制品
      */
-    fun pushArtifact(name: String, version: String, projectId: String, repoName: String): Boolean {
+    fun pushArtifact(
+        name: String,
+        version: String,
+        projectId: String,
+        repoName: String,
+        clusterInfo: RemoteClusterInfo
+    ): Boolean {
         logger.info(
             "Package $name|$version in the local repo $projectId|$repoName will be pushed to the third party repository"
         )
         try {
-            val token = getAuthorizationDetails(name)
+            val token = getAuthorizationDetails(name, clusterInfo)
             val nodes = querySyncNodeList(
                 name = name,
                 version = version,
@@ -76,7 +85,8 @@ abstract class PushClient(
                 token = token,
                 name = name,
                 version = version,
-                nodes = nodes
+                nodes = nodes,
+                clusterInfo = clusterInfo
             )
         } catch (e: Exception) {
             logger.error(
@@ -94,7 +104,8 @@ abstract class PushClient(
         nodes: List<NodeDetail>,
         name: String,
         version: String,
-        token: String?
+        token: String?,
+        clusterInfo: RemoteClusterInfo
     ): Boolean {
         return true
     }
@@ -102,7 +113,7 @@ abstract class PushClient(
     /**
      * 获取授权详情-Authorization token
      */
-    open fun getAuthorizationDetails(name: String): String? {
+    open fun getAuthorizationDetails(name: String, clusterInfo: RemoteClusterInfo): String? {
         return null
     }
 
@@ -113,7 +124,19 @@ abstract class PushClient(
         return emptyList()
     }
 
+    private fun buildClient(): OkHttpClient {
+        return HttpClientBuilderFactory.create()
+            .readTimeout(DEFAULT_READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .connectTimeout(DEFAULT_CONNECT_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .writeTimeout(DEFAULT_WRITE_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .addInterceptor(RetryInterceptor(localDataManager))
+            .build()
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(PushClient::class.java)
+        private const val DEFAULT_READ_TIMEOUT_MINUTES = 1L
+        private const val DEFAULT_CONNECT_TIMEOUT_MINUTES = 1L
+        private const val DEFAULT_WRITE_TIMEOUT_MINUTES = 1L
     }
 }

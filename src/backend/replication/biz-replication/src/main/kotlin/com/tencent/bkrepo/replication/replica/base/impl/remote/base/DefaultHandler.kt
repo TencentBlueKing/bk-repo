@@ -36,38 +36,34 @@ import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.Artifac
 import com.tencent.bkrepo.replication.util.HttpUtils
 import okhttp3.OkHttpClient
 import okhttp3.Response
-import org.slf4j.LoggerFactory
 
 /**
- * 默认请求处理类
+ * 请求处理类
  */
-class DefaultHandler(
-    private val httpClient: OkHttpClient,
-    private val ignoredFailureCode: List<Int> = emptyList(),
-    private val extraSuccessCode: List<Int> = emptyList(),
-    private val responseType: Class<*>
-) {
-    // 请求各种参数属性
-    lateinit var requestProperty: RequestProperty
+object DefaultHandler {
 
     /**
      * 对传入请求进行处理判断
      */
-    fun process(): DefaultHandlerResult {
+    fun process(
+        requestProperty: RequestProperty,
+        httpClient: OkHttpClient,
+        responseType: Class<*>,
+        ignoredFailureCode: List<Int> = emptyList(),
+        extraSuccessCode: List<Int> = emptyList()
+    ): DefaultHandlerResult {
         val request = HttpUtils.wrapperRequest(requestProperty)
         val response = httpClient.newCall(request).execute()
         response.use {
             return when {
-                isSuccess(it) -> {
-                    logger.info("${Thread.currentThread().name} Result of the request ${request.url()} is success")
+                isSuccess(it, extraSuccessCode) -> {
                     wrapperSuccess(it)
                 }
-                isFailure(it) -> {
-                    logger.info("${Thread.currentThread().name} Result of the request ${request.url()} is failure")
+                isFailure(it, ignoredFailureCode, responseType) -> {
                     wrapperFailure(it)
                 }
                 else -> {
-                    val error = convertErrorMsg(it)
+                    val error = convertErrorMsg(it, responseType)
                     throw ArtifactPushException(
                         "invalid response  ${it.code()} for request ${it.request().url()}, error is $error"
                     )
@@ -79,17 +75,17 @@ class DefaultHandler(
     /**
      * 判断请求是否成功
      */
-    private fun isSuccess(response: Response): Boolean {
+    private fun isSuccess(response: Response, extraSuccessCode: List<Int>): Boolean {
         return response.isSuccessful || extraSuccessCode.contains(response.code())
     }
 
     /**
      * 针对特殊code做判断
      */
-    private fun isFailure(response: Response): Boolean {
+    private fun isFailure(response: Response, ignoredFailureCode: List<Int>, responseType: Class<*>): Boolean {
         if (ignoredFailureCode.contains(response.code()))
             return true
-        val repMsg = convertErrorMsg(response)
+        val repMsg = convertErrorMsg(response, responseType)
         throw ArtifactPushException(
             "Response error for request ${response.request().url()}: " +
                 "code is ${response.code()} and response is $repMsg"
@@ -118,7 +114,7 @@ class DefaultHandler(
         )
     }
 
-    private fun convertErrorMsg(response: Response): String? {
+    private fun convertErrorMsg(response: Response, responseType: Class<*>): String? {
         return try {
             response.body()?.let {
                 JsonUtils.objectMapper.readValue(
@@ -128,9 +124,5 @@ class DefaultHandler(
         } catch (e: Exception) {
             return null
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(DefaultHandler::class.java)
     }
 }

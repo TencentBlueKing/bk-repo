@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.okhttp.interceptor
+package com.tencent.bkrepo.replication.replica.base.interceptor
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
@@ -113,9 +113,7 @@ class RetryInterceptor(
      * 从请求头中获取对于文件大小信息
      */
     private fun getSizeFromHeader(request: Request): Long? {
-        return request.header(CONTENT_LENGTH)?.let {
-            it.toLong()
-        }
+        return request.header(CONTENT_LENGTH)?.toLong()
     }
 
     companion object {

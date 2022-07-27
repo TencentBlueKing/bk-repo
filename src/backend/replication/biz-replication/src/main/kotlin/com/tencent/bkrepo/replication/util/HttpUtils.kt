@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
-import com.tencent.bkrepo.replication.util.HttpUtils.validateHttpsProtocol
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException
@@ -50,7 +49,7 @@ object HttpUtils {
     ): Request {
         with(requestProperty) {
             val url = params?.let {
-                builderUrl(url = requestUrl!!, params = params!!)
+                buildUrl(url = requestUrl!!, params = params!!)
             } ?: requestUrl!!
             var builder = Request.Builder()
                 .url(url)
@@ -72,7 +71,7 @@ object HttpUtils {
     /**
      * 拼接url
      */
-    fun builderUrl(
+    fun buildUrl(
         url: String,
         path: String = StringPool.EMPTY,
         params: String = StringPool.EMPTY,
@@ -123,7 +122,9 @@ object HttpUtils {
             connection.readTimeout = timeout
             connection.requestMethod = "HEAD"
             val responseCode = connection.responseCode
-            responseCode in 200..399
+            val result = responseCode in 200..399
+            connection.disconnect()
+            result
         } catch (exception: IOException) {
             throw exception
         }
