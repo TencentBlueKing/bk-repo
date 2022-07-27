@@ -99,10 +99,10 @@ class ScanEventConsumer(
      * 触发导入license数据
      */
     private fun importLicenseEvent(event: ArtifactEvent) {
-        if (event.projectId != PUBLIC_GLOBAL_PROJECT ||
-            event.repoName != PUBLIC_VULDB_REPO ||
-            !event.resourceKey.endsWith(".json") ||
-            !event.resourceKey.startsWith("/spdx-license/")) {
+        if (event.projectId != PUBLIC_GLOBAL_PROJECT || event.repoName != PUBLIC_VULDB_REPO) {
+            return
+        }
+        if (!event.resourceKey.endsWith(".json") || !event.resourceKey.startsWith("/spdx-license/")) {
             return
         }
         if (spdxLicenseService.importLicense(event.projectId, event.repoName, event.resourceKey)) {
