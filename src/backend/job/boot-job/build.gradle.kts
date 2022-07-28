@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
+    implementation(project(":replication:api-replication"))
     implementation(project(":job:api-job"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("io.micrometer:micrometer-registry-prometheus")

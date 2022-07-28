@@ -67,11 +67,11 @@ data class TClusterNode(
     /**
      * 集群访问密码, 独立集群需要此字段
      */
-    val password: String?,
+    var password: String?,
     /**
      * 集群访问证书, 独立集群需要此字段
      */
-    val certificate: String?,
+    var certificate: String?,
     /**
      * 审计信息
      */

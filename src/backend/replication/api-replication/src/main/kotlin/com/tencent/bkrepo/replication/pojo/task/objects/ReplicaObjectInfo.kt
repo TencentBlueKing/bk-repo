@@ -36,9 +36,9 @@ data class ReplicaObjectInfo(
     @ApiModelProperty("本地仓库")
     val localRepoName: String,
     @ApiModelProperty("远程项目")
-    val remoteProjectId: String,
+    val remoteProjectId: String?,
     @ApiModelProperty("远程仓库")
-    val remoteRepoName: String,
+    val remoteRepoName: String?,
     @ApiModelProperty("仓库类型")
     val repoType: RepositoryType,
     @ApiModelProperty("包限制条件")

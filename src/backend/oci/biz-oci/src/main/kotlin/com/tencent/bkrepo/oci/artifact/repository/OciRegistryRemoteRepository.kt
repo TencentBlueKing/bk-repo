@@ -437,7 +437,8 @@ class OciRegistryRemoteRepository(
                 digest = digest,
                 artifactFile = artifactFile,
                 fullPath = context.artifactInfo.getArtifactFullPath(),
-                storageCredentials = context.storageCredentials
+                storageCredentials = context.storageCredentials,
+                sourceType = ArtifactChannel.PROXY
             )
         }
     }

@@ -29,10 +29,11 @@ package com.tencent.bkrepo.replication.replica.event
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.base.AbstractReplicaService
-import com.tencent.bkrepo.replication.replica.base.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.stereotype.Component
 
@@ -51,10 +52,22 @@ class EventBasedReplicaService(
             replicator.replicaRepo(this)
             when (event.type) {
                 EventType.NODE_CREATED -> {
+                    // 只有非third party集群支持该消息
+                    if (context.remoteCluster.type == ClusterNodeType.REMOTE)
+                        throw UnsupportedOperationException()
                     val pathConstraint = PathConstraint(event.resourceKey)
                     replicaByPathConstraint(this, pathConstraint)
                 }
                 EventType.VERSION_CREATED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageVersion = event.data["packageVersion"].toString()
+                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+                    replicaByPackageConstraint(this, packageConstraint)
+                }
+                EventType.VERSION_UPDATED -> {
+                    // 只有third party集群支持该消息
+                    if (context.remoteCluster.type != ClusterNodeType.REMOTE)
+                        throw UnsupportedOperationException()
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()
                     val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))

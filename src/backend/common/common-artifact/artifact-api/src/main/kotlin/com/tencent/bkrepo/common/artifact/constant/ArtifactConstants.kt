@@ -119,6 +119,13 @@ const val PARAM_PREVIEW = "preview"
 const val SOURCE_IN_MEMORY = "memory"
 const val SOURCE_IN_REMOTE = "remote"
 
+/**
+ * 用于标识制品来源
+ * ArtifactChannel.LOCAL
+ * ArtifactChannel.PROXY
+ */
+const val SOURCE_TYPE = "sourceType"
+
 // 制品禁用信息
 const val FORBID_STATUS = "forbidStatus"
 const val FORBID_USER = "forbidUser"
