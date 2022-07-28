@@ -36,12 +36,14 @@ data class ScannerProperties(
      */
     var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
     var supportFileNameExt: Set<String> = DEFAULT_SUPPORT_FILE_NAME_EXTENSION,
+    var licenseSupportNameExt: Set<String> = LICENSE_SUPPORT_FILE_NAME_EXTENSION,
     var detailReportUrl: String = "http://localhost"
 ) {
     companion object {
         val DEFAULT_SUPPORT_FILE_NAME_EXTENSION = setOf(
             "apk", "apks", "aab", "exe", "so", "ipa", "dmg", "jar", "gz", "tar", "zip"
         )
+        val LICENSE_SUPPORT_FILE_NAME_EXTENSION = setOf("apk", "ipa", "jar")
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
         const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
         const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20

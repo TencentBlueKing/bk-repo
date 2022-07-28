@@ -31,8 +31,10 @@ import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.license.SpdxLicenseInfo
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -77,4 +79,15 @@ interface ScanClient {
         @PathVariable("subScanTaskId")subScanTaskId: String,
         @RequestParam status: String
     ): Response<Boolean>
+
+    /**
+     * 根据许可id列表查询许可详细信息
+     *
+     * @return 许可id:许可详细信息
+     */
+    @PostMapping("/licenseIds")
+    fun licenseInfoByIds(
+        @ApiParam(value = "许可证唯一标识集合")
+        @RequestBody licenseIds: List<String>
+    ): Response<Map<String, SpdxLicenseInfo>>
 }
