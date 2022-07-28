@@ -64,6 +64,7 @@ import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Converter
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
 
@@ -82,6 +83,9 @@ class ScanTaskServiceImpl(
     private val resultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>
 ) : ScanTaskService {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     override fun task(taskId: String): ScanTask {
         return scanTaskDao.findById(taskId)?.let { task ->
             if (task.projectId == null) {
@@ -176,7 +180,13 @@ class ScanTaskServiceImpl(
     private fun subtaskOverview(subtaskId: String, subtaskDao: AbsSubScanTaskDao<*>): SubtaskResultOverview {
         val subtask = subtaskDao.findById(subtaskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
-        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        try {
+            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        } catch (e: Exception) {
+            logger.info("Failed to checkSubtaskPermission: ", e)
+            permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
+        }
+        permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
         return Converter.convert(subtask)
     }
 
@@ -199,7 +209,12 @@ class ScanTaskServiceImpl(
             val subtask = subScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
 
-            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+            try {
+                permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+            } catch (e: Exception) {
+                logger.info("Failed to checkSubtaskPermission: ", e)
+                permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
+            }
 
             val scanner = scannerService.get(subtask.scanner)
             val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)]
