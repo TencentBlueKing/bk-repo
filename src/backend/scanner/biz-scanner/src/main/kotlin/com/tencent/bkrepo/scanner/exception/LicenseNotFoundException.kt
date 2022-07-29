@@ -25,18 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.response
+package com.tencent.bkrepo.scanner.exception
 
-data class ScanQualityCheckedDetail(
-    val criticalStatus: ScanQualityCheckedStatus? = null,
-    val highStatus: ScanQualityCheckedStatus? = null,
-    val mediumStatus: ScanQualityCheckedStatus? = null,
-    val lowStatus: ScanQualityCheckedStatus? = null,
-    val qualityStatus: Boolean
-) {
-    data class ScanQualityCheckedStatus(
-        val status: Boolean,
-        val require: Long,
-        val actual: Long
-    )
-}
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode
+
+class LicenseNotFoundException (
+    licenseId:String
+): NotFoundException(ScannerMessageCode.LICENSE_NOT_FOUND, licenseId)

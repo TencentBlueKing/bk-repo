@@ -25,18 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.response
+package com.tencent.bkrepo.scanner.dao
 
-data class ScanQualityCheckedDetail(
-    val criticalStatus: ScanQualityCheckedStatus? = null,
-    val highStatus: ScanQualityCheckedStatus? = null,
-    val mediumStatus: ScanQualityCheckedStatus? = null,
-    val lowStatus: ScanQualityCheckedStatus? = null,
-    val qualityStatus: Boolean
-) {
-    data class ScanQualityCheckedStatus(
-        val status: Boolean,
-        val require: Long,
-        val actual: Long
-    )
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.scanner.model.TSpdxLicense
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
+
+@Repository
+class SpdxLicenseDao : SimpleMongoDao<TSpdxLicense>() {
+    fun findByLicenseId(licenseId: String): TSpdxLicense? {
+        return this.findOne(Query(TSpdxLicense::licenseId.isEqualTo(licenseId)))
+    }
 }

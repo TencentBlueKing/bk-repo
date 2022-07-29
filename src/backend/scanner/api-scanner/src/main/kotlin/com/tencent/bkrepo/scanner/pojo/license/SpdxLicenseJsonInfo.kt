@@ -25,18 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.response
+package com.tencent.bkrepo.scanner.pojo.license
 
-data class ScanQualityCheckedDetail(
-    val criticalStatus: ScanQualityCheckedStatus? = null,
-    val highStatus: ScanQualityCheckedStatus? = null,
-    val mediumStatus: ScanQualityCheckedStatus? = null,
-    val lowStatus: ScanQualityCheckedStatus? = null,
-    val qualityStatus: Boolean
-) {
-    data class ScanQualityCheckedStatus(
-        val status: Boolean,
-        val require: Long,
-        val actual: Long
-    )
-}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
+
+/**
+ * SPDX license json file
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SpdxLicenseJsonInfo(
+    val licenseListVersion: String,
+    val licenses: MutableList<SpdxLicenseObject>,
+    val releaseDate: String
+)

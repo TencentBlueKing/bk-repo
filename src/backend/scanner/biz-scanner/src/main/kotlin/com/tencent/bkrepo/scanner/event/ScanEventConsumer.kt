@@ -29,6 +29,8 @@ package com.tencent.bkrepo.scanner.event
 
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.constant.PUBLIC_GLOBAL_PROJECT
+import com.tencent.bkrepo.common.artifact.constant.PUBLIC_VULDB_REPO
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
@@ -44,6 +46,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.service.ScanService
+import com.tencent.bkrepo.scanner.service.SpdxLicenseService
 import com.tencent.bkrepo.scanner.utils.RuleConverter
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -57,6 +60,7 @@ import java.util.function.Consumer
  */
 @Component("artifactEvent")
 class ScanEventConsumer(
+    private val spdxLicenseService: SpdxLicenseService,
     private val scanService: ScanService,
     private val scanPlanDao: ScanPlanDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
@@ -80,10 +84,31 @@ class ScanEventConsumer(
 
         executor.execute {
             when (event.type) {
-                EventType.NODE_CREATED -> scanOnNodeCreatedEvent(event)
+                EventType.NODE_CREATED -> {
+                    scanOnNodeCreatedEvent(event)
+                    importLicenseEvent(event)
+                }
                 EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> scanOnVersionCreated(event)
                 else -> throw UnsupportedOperationException()
             }
+        }
+    }
+
+    /**
+     * 当【public-global】项目下的【vuldb-repo】仓库中的【/spdx-license/】文件夹下上传license.json文件时
+     * 触发导入license数据
+     */
+    private fun importLicenseEvent(event: ArtifactEvent) {
+        if (event.projectId != PUBLIC_GLOBAL_PROJECT || event.repoName != PUBLIC_VULDB_REPO) {
+            return
+        }
+        if (!event.resourceKey.endsWith(".json") || !event.resourceKey.startsWith("/spdx-license/")) {
+            return
+        }
+        if (spdxLicenseService.importLicense(event.projectId, event.repoName, event.resourceKey)) {
+            logger.info("import license json file success")
+        } else {
+            logger.warn("import license json file failed[$event]")
         }
     }
 

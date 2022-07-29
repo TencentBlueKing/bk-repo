@@ -25,18 +25,57 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.response
+package com.tencent.bkrepo.scanner.service
 
-data class ScanQualityCheckedDetail(
-    val criticalStatus: ScanQualityCheckedStatus? = null,
-    val highStatus: ScanQualityCheckedStatus? = null,
-    val mediumStatus: ScanQualityCheckedStatus? = null,
-    val lowStatus: ScanQualityCheckedStatus? = null,
-    val qualityStatus: Boolean
-) {
-    data class ScanQualityCheckedStatus(
-        val status: Boolean,
-        val require: Long,
-        val actual: Long
-    )
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.scanner.pojo.license.SpdxLicenseInfo
+
+/**
+ * 许可证服务
+ */
+interface SpdxLicenseService {
+    /**
+     * 导入 SPDX 许可证列表
+     * @param path SPDX 许可证列表 JSON 文件
+     */
+    fun importLicense(path: String): Boolean
+
+    /**
+     * 导入SPDX许可证列表
+     *
+     * @param projectId 许可证列表文件所在项目
+     * @param repoName 许可证列表文件所在仓库
+     * @param fullPath 许可证列表文件路径
+     */
+    fun importLicense(projectId: String, repoName: String, fullPath: String): Boolean
+
+    /**
+     * 分页查询许可证信息
+     */
+    fun listLicensePage(
+        name: String?,
+        isTrust: Boolean?,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<SpdxLicenseInfo>
+
+    /**
+     * 查询所有许可证信息
+     */
+    fun listLicense(): List<SpdxLicenseInfo>
+
+    /**
+     * 查询许可证详细信息
+     */
+    fun getLicenseInfo(licenseId: String): SpdxLicenseInfo?
+
+    /**
+     * 根据许可证唯一标识切换合规状态
+     */
+    fun toggleStatus(licenseId: String)
+
+    /**
+     * 根据唯一标识集合查询许可证信息（scancode使用）
+     */
+    fun listLicenseByIds(licenseIds: List<String>): Map<String, SpdxLicenseInfo>
 }
