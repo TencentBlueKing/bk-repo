@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.task.iterator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.scanner.pojo.scanner.constant.SCANCODE_TOOLKIT
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -39,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
+import com.tencent.bkrepo.scanner.pojo.ScanSchemeType
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.utils.Request
@@ -64,6 +66,9 @@ class IteratorManager(
     fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
         val rule = if (scanTask.scanPlan != null && scanTask.rule is Rule.NestedRule) {
             // 存在扫描方案时才修改制品遍历规则
+            if (scanTask.scanner == SCANCODE_TOOLKIT) {
+                modifyLicenseRule(scanTask.scanPlan!!, scanTask.rule as Rule.NestedRule)
+            }
             modifyRule(scanTask.scanPlan!!, scanTask.rule as Rule.NestedRule)
         } else {
             scanTask.rule
@@ -74,7 +79,8 @@ class IteratorManager(
         val projectIds = RuleUtil.getProjectIds(rule)
         val projectIdIterator = projectIds.iterator()
 
-        val isPackageScanPlanType = scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name
+        val isPackageScanPlanType =
+            scanTask.scanPlan != null && ScanSchemeType.ofRepositoryType(scanTask.scanPlan!!.type) != RepositoryType.GENERIC
         return if (isPackageScanPlanType || packageRule(rule)) {
             PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))
         } else {
@@ -94,6 +100,18 @@ class IteratorManager(
         return rule
     }
 
+    private fun modifyLicenseRule(scanPlan: ScanPlan, rule: Rule.NestedRule): Rule {
+        if (scanPlan.type == ScanSchemeType.GENERIC_LICENSE.name) {
+            if (RuleUtil.getRepoNames(rule).isEmpty()) {
+                // 未指定要扫描的仓库时限制只扫描GENERIC类型仓库
+                addRepoNames(rule, scanPlan.projectId!!)
+            }
+            // 限制待扫描文件后缀
+            return addLicenseRule(rule)
+        }
+        return rule
+    }
+
     /**
      * 添加ipa和apk文件过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
      */
@@ -103,6 +121,26 @@ class IteratorManager(
         }
 
         val fileNameExtensionRules = scannerProperties.supportFileNameExt
+            .map { Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX) }
+            .toMutableList<Rule>()
+        val mobilePackageRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)
+
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            rule.rules.add(mobilePackageRule)
+            return rule
+        }
+        return Rule.NestedRule(mutableListOf(rule, mobilePackageRule), Rule.NestedRule.RelationType.AND)
+    }
+
+    /**
+     * 添加 license 扫描过滤规则，只扫 apk、ipa、jar 文件
+     */
+    private fun addLicenseRule(rule: Rule): Rule {
+        if (scannerProperties.licenseSupportNameExt.isEmpty()) {
+            return rule
+        }
+
+        val fileNameExtensionRules = scannerProperties.licenseSupportNameExt
             .map { Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX) }
             .toMutableList<Rule>()
         val mobilePackageRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)

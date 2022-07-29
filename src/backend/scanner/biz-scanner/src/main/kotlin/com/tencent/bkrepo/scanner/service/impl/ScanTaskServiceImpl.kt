@@ -56,7 +56,10 @@ import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
@@ -64,6 +67,7 @@ import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.ScanLicenseConverter
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
 
@@ -191,6 +195,10 @@ class ScanTaskServiceImpl(
         }
     }
 
+    override fun resultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail> {
+        return resultDetail(request, planArtifactLatestSubScanTaskDao)
+    }
+
     private fun resultDetail(
         request: ArtifactVulnerabilityRequest,
         subScanTaskDao: AbsSubScanTaskDao<*>
@@ -211,5 +219,49 @@ class ScanTaskServiceImpl(
                 ?.let { scannerConverter?.convertCveResult(it) }
                 ?: Pages.buildPage(emptyList(), pageSize, pageNumber)
         }
+    }
+
+
+    override fun planLicensesArtifact(projectId: String, subScanTaskId: String): FileLicensesResultOverview {
+        return planLicensesArtifact(subScanTaskId, planArtifactLatestSubScanTaskDao)
+    }
+
+    override fun archiveSubtaskResultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail> {
+        return resultDetail(request, archiveSubScanTaskDao)
+    }
+
+    override fun subtaskLicenseOverview(subtaskId: String): FileLicensesResultOverview {
+        return planLicensesArtifact(subtaskId, archiveSubScanTaskDao)
+    }
+
+    private fun resultDetail(
+        request: ArtifactLicensesDetailRequest,
+        subScanTaskDao: AbsSubScanTaskDao<*>
+    ): Page<FileLicensesResultDetail> {
+        with(request) {
+            val subtask = subScanTaskDao.findById(subScanTaskId!!)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+            val scanner = scannerService.get(subtask.scanner)
+            val arguments = ScanLicenseConverter.convertToLoadArguments(request, scanner.type)
+            val scanResultManager = resultManagers[subtask.scannerType]
+            val detailReport = scanResultManager?.load(
+                subtask.credentialsKey,
+                subtask.sha256,
+                scannerService.get(subtask.scanner),
+                arguments
+            )
+            return ScanLicenseConverter.convert(detailReport, subtask.scannerType, reportType, pageNumber, pageSize)
+        }
+    }
+
+    private fun planLicensesArtifact(
+        subScanTaskId: String,
+        subtaskDao: AbsSubScanTaskDao<*>
+    ): FileLicensesResultOverview {
+        val subtask = subtaskDao.findById(subScanTaskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
+        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        return ScanLicenseConverter.convert(subtask)
     }
 }

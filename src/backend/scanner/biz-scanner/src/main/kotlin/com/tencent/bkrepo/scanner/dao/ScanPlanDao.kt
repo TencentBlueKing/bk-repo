@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
+import com.tencent.bkrepo.scanner.utils.LicenseUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.query.Criteria
@@ -77,7 +78,8 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         val criteria = Criteria
             .where(TScanPlan::projectId.name).isEqualTo(projectId)
             .and(TScanPlan::scanOnNewArtifact.name).isEqualTo(scanOnNewArtifact)
-            .and(TScanPlan::type.name).isEqualTo(planType)
+            .and(TScanPlan::type.name).`in`(planType, LicenseUtils.convertLicenseScanType(planType))
+            .and(TScanPlan::deleted.name).isEqualTo(null)
         if (!includeEmptyRepoNames) {
             criteria.and(TScanPlan::repoNames.name).isEqualTo(repoName)
         } else {

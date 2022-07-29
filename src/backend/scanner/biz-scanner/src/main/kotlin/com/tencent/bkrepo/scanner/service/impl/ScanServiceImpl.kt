@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
@@ -67,6 +68,8 @@ import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_PLUG
 import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
 import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScanService
@@ -75,6 +78,7 @@ import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
 import com.tencent.bkrepo.scanner.utils.Converter
 import com.tencent.bkrepo.scanner.utils.RuleConverter
 import com.tencent.bkrepo.scanner.utils.RuleUtil
+import com.tencent.bkrepo.scanner.utils.ScanLicenseConverter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -220,6 +224,23 @@ class ScanServiceImpl @Autowired constructor(
             // 保存详细扫描结果
             val resultManager = scanExecutorResultManagers[scanner.type]
             resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner, scanExecutorResult!!)
+        }
+    }
+
+    override fun resultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail> {
+        with(request) {
+            val subtask = planArtifactLatestSubScanTaskDao.findById(subScanTaskId!!)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+            val scanner = scannerService.get(subtask.scanner)
+            val arguments = ScanLicenseConverter.convertToLoadArguments(request, scanner.type)
+            val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
+            val detailReport = scanResultManager?.load(
+                subtask.credentialsKey,
+                subtask.sha256,
+                scannerService.get(subtask.scanner),
+                arguments)
+            return ScanLicenseConverter.convert(detailReport, subtask.scannerType, reportType, pageNumber, pageSize)
         }
     }
 
