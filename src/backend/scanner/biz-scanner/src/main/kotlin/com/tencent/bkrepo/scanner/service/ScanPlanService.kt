@@ -54,10 +54,11 @@ interface ScanPlanService {
      *
      * @param projectId 扫描方案所属项目
      * @param type 扫描方案类型
+     * @param fileNameExt 文件名后缀，仅在type为GENERIC时有效
      *
      * @return 扫描方案列表
      */
-    fun list(projectId: String, type: String? = null): List<ScanPlan>
+    fun list(projectId: String, type: String? = null, fileNameExt: String? = null): List<ScanPlan>
 
     /**
      * 分页获取扫描方案列表

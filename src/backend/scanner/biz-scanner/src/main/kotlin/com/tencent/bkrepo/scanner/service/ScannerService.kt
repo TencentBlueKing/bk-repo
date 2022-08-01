@@ -60,6 +60,25 @@ interface ScannerService {
     fun find(name: String): Scanner?
 
     /**
+     * 获取扫描器列表
+     * @param names 扫描器名称
+     */
+    fun find(names: List<String>): List<Scanner>
+
+    /**
+     * 获取支持扫描指定包类型和扫描类型的扫描器
+     *
+     * @param packageType 包类型
+     * @param scanType 扫描类型
+     */
+    fun find(packageType: String, scanType: String): List<Scanner>
+
+    /**
+     * 获取支持扫描的文件名后缀
+     */
+    fun supportFileNameExt(): Set<String>
+
+    /**
      * 获取所有扫描器
      */
     fun list(): List<Scanner>

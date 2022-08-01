@@ -113,8 +113,18 @@ class ScanPlanServiceImpl(
         }
     }
 
-    override fun list(projectId: String, type: String?): List<ScanPlan> {
-        return scanPlanDao.list(projectId, type).map { ScanPlanConverter.convert(it) }
+    override fun list(projectId: String, type: String?, fileNameExt: String?): List<ScanPlan> {
+        var scanPlans = scanPlanDao.list(projectId, type)
+        if (type == RepositoryType.GENERIC.name && fileNameExt != null) {
+            // 筛选支持指定文件名后缀的扫描方案
+            val scannerNames = scanPlans.map { it.scanner }
+            val scanners = scannerService.find(scannerNames).associateBy { it.name }
+            scanPlans = scanPlans.filter {
+                val scanner = scanners[it.scanner]!!
+                scanner.supportFileNameExt.isEmpty() || fileNameExt in scanner.supportFileNameExt
+            }
+        }
+        return scanPlans.map { ScanPlanConverter.convert(it) }
     }
 
     override fun page(

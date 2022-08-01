@@ -147,9 +147,12 @@ class UserScanPlanController(
         projectId: String,
         @ApiParam(value = "方案类型")
         @RequestParam
-        type: String?
-    ): Response<List<ScanPlan>> {
-        val planList = scanPlanService.list(projectId, type)
+        type: String?,
+        @ApiParam(value = "待扫描文件名后缀，该参数尽在type为GENERIC时有效")
+        @RequestParam(required = false)
+        fileNameExt: String? = null
+        ): Response<List<ScanPlan>> {
+        val planList = scanPlanService.list(projectId, type, fileNameExt)
         planList.forEach { ScanPlanConverter.keepProps(it, KEEP_PROPS) }
         return ResponseBuilder.success(planList)
     }

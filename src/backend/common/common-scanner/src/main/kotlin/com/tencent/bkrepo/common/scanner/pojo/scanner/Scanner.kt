@@ -60,7 +60,13 @@ open class Scanner(
     @ApiModelProperty("扫描结束后是否清理工作目录")
     val cleanWorkDir: Boolean = true,
     @ApiModelProperty("最大允许的1MB文件扫描时间")
-    val maxScanDurationPerMb: Long = DEFAULT_MAX_SCAN_DURATION
+    val maxScanDurationPerMb: Long = DEFAULT_MAX_SCAN_DURATION,
+    @ApiModelProperty("支持扫描的文件类型")
+    val supportFileNameExt: List<String> = DEFAULT_SUPPORT_FILE_NAME_EXTENSION,
+    @ApiModelProperty("支持扫描的包类型")
+    val supportPackageType: List<String> = emptyList(),
+    @ApiModelProperty("支持扫描的类型")
+    val supportScanType: List<String> = emptyList()
 ) {
     /**
      * 获取待扫描文件最大允许扫描时长
@@ -82,6 +88,9 @@ open class Scanner(
     }
 
     companion object {
+        val DEFAULT_SUPPORT_FILE_NAME_EXTENSION = listOf(
+            "apk", "apks", "aab", "exe", "so", "ipa", "dmg", "jar", "gz", "tar", "zip"
+        )
         private val logger = LoggerFactory.getLogger(Scanner::class.java)
         private const val DEFAULT_MAX_SCAN_DURATION = 6 * 1000L
         /**

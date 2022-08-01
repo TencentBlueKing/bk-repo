@@ -25,51 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.model
+package com.tencent.bkrepo.common.scanner.pojo.scanner
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
-
-@Document("scanner")
-@CompoundIndexes(
-    CompoundIndex(name = "name_idx", def = "{'name': 1, 'deleted': 1}", unique = true)
-)
-data class TScanner(
-    val id: String? = null,
-    val createdBy: String,
-    val createdDate: LocalDateTime,
-    val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime,
-    val deleted: LocalDateTime? = null,
+/**
+ * 扫描类型
+ */
+enum class ScanType {
+    /**
+     * 安全问题扫描
+     */
+    SCAN_TYPE_SECURITY,
 
     /**
-     * 扫描器名
+     * License扫描
      */
-    val name: String,
+    SCAN_TYPE_LICENSE,
+
     /**
-     * 扫描器类型
+     * 敏感信息扫描
      */
-    val type: String,
-    /**
-     * 扫描器版本
-     */
-    val version: String,
-    /**
-     * 扫描器配置
-     */
-    val config: String,
-    /**
-     * 支持扫描的文件的文件名后缀
-     */
-    val supportFileNameExt: List<String> = emptyList(),
-    /**
-     * 支持扫描的包类型[com.tencent.bkrepo.common.artifact.pojo.RepositoryType]
-     */
-    val supportPackageTypes: List<String> = emptyList(),
-    /**
-     * 支持扫描的类型[com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType]
-     */
-    val supportScanTypes: List<String> = emptyList(),
-)
+    SCAN_TYPE_SENSITIVE
+}

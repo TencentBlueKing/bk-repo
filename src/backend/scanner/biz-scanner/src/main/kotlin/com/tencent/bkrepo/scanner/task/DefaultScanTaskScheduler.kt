@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.constant.SCANCODE_TOOLKIT
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
@@ -149,7 +148,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
-    @Suppress("BlockingMethodInNonBlockingContext")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
@@ -217,7 +215,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
         val finishedSubScanTasks = ArrayList<TArchiveSubScanTask>()
-        val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
+        val nodeIterator = iteratorManager.createNodeIterator(scanTask, scanner, false)
         val qualityRule = scanTask.scanPlan?.scanQuality
         for (node in nodeIterator) {
             // 未使用扫描方案的情况直接取node的projectId
