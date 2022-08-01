@@ -29,7 +29,9 @@ package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
+import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.springframework.beans.factory.annotation.Autowired
@@ -132,6 +134,12 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.Execute result: $jobContext")
             lastExecuteTime = Duration.ofNanos(elapseNano).toMillis()
             lastEndTime = LocalDateTime.now()
+            val event = TaskExecutedEvent(
+                name = getJobName(),
+                context = jobContext,
+                time = Duration.ofNanos(elapseNano)
+            )
+            SpringContextUtils.publishEvent(event)
         } catch (e: Exception) {
             logger.info("Job[${getJobName()}] execution failed.", e)
         }
