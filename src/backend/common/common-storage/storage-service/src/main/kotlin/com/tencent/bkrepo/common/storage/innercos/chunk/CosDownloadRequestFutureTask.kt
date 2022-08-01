@@ -25,17 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.concurrent
+package com.tencent.bkrepo.common.storage.innercos.chunk
 
-import java.util.concurrent.FutureTask
+import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
+import com.tencent.bkrepo.common.storage.innercos.client.CosClient
+import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
+import java.io.File
+import java.io.InputStream
 
-/**
- * 支持优先级的FutureTask
- * */
-open class ComparableFutureTask<T, E>(val runnable: PriorityCallable<T, E>) :
-    FutureTask<T>(runnable),
-    Comparable<ComparableFutureTask<T, E>> {
-    override fun compareTo(other: ComparableFutureTask<T, E>): Int {
-        return runnable.compareTo(other.runnable)
+class CosDownloadRequestFutureTask(private val task: CosClient.DownloadTask, private val cosClient: CosClient) :
+    FallbackAbleFutureTask<InputStream>,
+    ComparableFutureTask<File, CosClient.DownloadTask>(task) {
+    override fun fallback(): InputStream {
+        val getRequest = task.getComparable().downloadPartRequest
+        return cosClient.getObject(getRequest).inputStream ?: throw InnerCosException("not found $getRequest")
     }
 }

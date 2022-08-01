@@ -35,7 +35,11 @@ import java.util.concurrent.Future
 class SessionChunkedFutureListener(private val session: DownloadSession) : ChunkedFutureListener<File> {
     override fun done(future: Future<File>?, getInputStreamTime: Long) {
         session.latencyTime = getInputStreamTime
-        logger.info("Session[${session.id}] finish read file[${future?.get()}], current latency $getInputStreamTime ms")
+        if (future == null || future.isCancelled) {
+            logger.info("Session[${session.id}] current latency $getInputStreamTime ms")
+            return
+        }
+        logger.info("Session[${session.id}] finish read file[${future.get()}], current latency $getInputStreamTime ms")
     }
 
     companion object {
