@@ -28,18 +28,21 @@
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
-import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
+import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.springframework.beans.factory.annotation.Autowired
 import java.time.Duration
+import java.time.LocalDateTime
+import kotlin.system.measureNanoTime
 
 /**
  * 抽象批处理作业Job
  * */
-abstract class BatchJob<C : JobContext>(private val batchJobProperties: BatchJobProperties) {
+abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobProperties) {
     /**
      * 锁名称
      */
@@ -87,6 +90,10 @@ abstract class BatchJob<C : JobContext>(private val batchJobProperties: BatchJob
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
+    var lastBeginTime: LocalDateTime? = null
+    var lastEndTime: LocalDateTime? = null
+    var lastExecuteTime: Long? = null
+
     open fun start(): Boolean {
         if (!batchJobProperties.enabled) {
             logger.info("Job[${getJobName()}] not enabled,exit job.")
@@ -95,38 +102,44 @@ abstract class BatchJob<C : JobContext>(private val batchJobProperties: BatchJob
         logger.info("Start to execute async job[${getJobName()}]")
         stop = false
         val jobContext = createJobContext()
-        executeAndMeasureTime {
-            if (isExclusive) {
-                val task = LockingTaskExecutor.TaskWithResult { doStart(jobContext) }
-                val result = lockingTaskExecutor.executeWithLock(task, getLockConfiguration())
-                result.wasExecuted()
-            } else {
-                doStart(jobContext)
-                true
-            }
-        }.apply {
-            val (wasExecuted, elapseNano) = this
-            if (stop) {
-                logger.info("Job[${getJobName()}] stop execution.Execute result: $jobContext")
-                return true
-            }
-            if (wasExecuted) {
-                val elapsedTime = HumanReadable.time(elapseNano.toNanos())
-                logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.Execute result: $jobContext")
-            } else {
-                logger.info("Job[${getJobName()}] already execution.")
-            }
-            stop = true
-            return first
+        val wasExecuted = if (isExclusive) {
+            val task = LockingTaskExecutor.TaskWithResult { doStart(jobContext) }
+            val result = lockingTaskExecutor.executeWithLock(task, getLockConfiguration())
+            result.wasExecuted()
+        } else {
+            doStart(jobContext)
+            true
         }
+        if (stop) {
+            logger.info("Job[${getJobName()}] stop execution.Execute result: $jobContext")
+            return true
+        }
+        if (!wasExecuted) {
+            logger.info("Job[${getJobName()}] already execution.")
+        }
+        stop = true
+        return wasExecuted
     }
 
     /**
      * 启动任务的具体实现
      * */
-    fun doStart(jobContext: C) {
+    private fun doStart(jobContext: C) {
         try {
-            doStart0(jobContext)
+            lastBeginTime = LocalDateTime.now()
+            val elapseNano = measureNanoTime {
+                doStart0(jobContext)
+            }
+            val elapsedTime = HumanReadable.time(elapseNano)
+            logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.Execute result: $jobContext")
+            lastExecuteTime = Duration.ofNanos(elapseNano).toMillis()
+            lastEndTime = LocalDateTime.now()
+            val event = TaskExecutedEvent(
+                name = getJobName(),
+                context = jobContext,
+                time = Duration.ofNanos(elapseNano)
+            )
+            SpringContextUtils.publishEvent(event)
         } catch (e: Exception) {
             logger.info("Job[${getJobName()}] execution failed.", e)
         }

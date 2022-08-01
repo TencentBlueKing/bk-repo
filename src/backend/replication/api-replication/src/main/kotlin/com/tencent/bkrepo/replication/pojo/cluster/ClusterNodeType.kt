@@ -37,6 +37,9 @@ enum class ClusterNodeType {
     // 边缘节点
     EDGE,
 
-    // 独立集群
-    STANDALONE
+    // 独立节点
+    STANDALONE,
+
+    // 远端节点
+    REMOTE
 }

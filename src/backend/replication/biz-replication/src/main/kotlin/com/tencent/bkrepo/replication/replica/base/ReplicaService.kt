@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.base
 
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+
 /**
  * 同步服务接口
  */

@@ -34,6 +34,7 @@ package com.tencent.bkrepo.helm.artifact.repository
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -172,6 +173,8 @@ class HelmRemoteRepository(
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
+        // 代理下载的制品需要在创建packageversion时标注来源
+        context.putAttribute(SOURCE_TYPE, ArtifactChannel.PROXY)
         helmOperationService.initPackageInfo(context)
         return ArtifactResource(
             inputStream = artifactStream,

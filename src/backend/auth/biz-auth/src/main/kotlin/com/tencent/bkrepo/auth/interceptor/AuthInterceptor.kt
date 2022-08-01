@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -67,7 +68,7 @@ class AuthInterceptor : HandlerInterceptor {
         val basicAuthHeader = request.getHeader(AUTHORIZATION).orEmpty()
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, basicAuthHeader)
         try {
-            val urlMatch = basicAuthApiList.filter { request.requestURI.contains(it) }.size
+            val urlMatch = basicAuthApiSet.filter { request.requestURI.contains(it) }.size
 
             // basic认证
             if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
@@ -79,7 +80,6 @@ class AuthInterceptor : HandlerInterceptor {
                     logger.warn("find no user [${parts[0]}]")
                     throw IllegalArgumentException("check credential fail")
                 }
-
                 request.setAttribute(USER_KEY, parts[0])
 
                 // 非项目内认证账号
@@ -100,6 +100,10 @@ class AuthInterceptor : HandlerInterceptor {
                 throw IllegalArgumentException("check auth credential fail")
             }
             val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
+            if (userId.isNotEmpty() && userService.getUserInfoById(userId) == null) {
+                val request = CreateUserRequest(userId = userId, name = userId)
+                userService.createUser(request)
+            }
             logger.debug("auth userId [$userId], platId [$appId]")
             request.setAttribute(USER_KEY, userId)
             request.setAttribute(PLATFORM_KEY, appId)
@@ -116,7 +120,7 @@ class AuthInterceptor : HandlerInterceptor {
 
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
 
-        private val basicAuthApiList = setOf(
+        private val basicAuthApiSet = setOf(
             AUTH_REPO_SUFFIX,
             AUTH_PROJECT_SUFFIX,
             AUTH_API_ACCOUNT_PREFIX,

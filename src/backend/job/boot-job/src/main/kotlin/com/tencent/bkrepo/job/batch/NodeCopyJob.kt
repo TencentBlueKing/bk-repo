@@ -19,7 +19,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
@@ -31,7 +30,6 @@ class NodeCopyJob(
     properties: NodeCopyJobProperties
 ) : MongoDbBatchJob<NodeCopyJob.NodeCopyData, NodeCopyJobContext>(properties) {
 
-    @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次
     override fun start(): Boolean {
         return super.start()
     }

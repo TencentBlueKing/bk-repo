@@ -75,6 +75,8 @@ spec:
               value: {{ .Values.gateway.authorization }}
             - name: BK_REPO_DEPLOY_MODE
               value: {{ .Values.gateway.deployMode }}
+            - name: BK_REPO_AUTH_MODE
+              value: {{ .Values.gateway.authMode }}
             - name: BK_REPO_DOCKER_HTTP_PORT
               value: "80"
             - name: BK_REPO_DOCKER_HOST

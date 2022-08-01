@@ -31,13 +31,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.repo-refresh")
 class RepoRefreshJobProperties(
-    override var enabled: Boolean = true,
-    /**
-     * 需要定时刷新的仓库代理类型
-     * */
-    var categories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要定时刷新的仓库类型
-     * */
-    var types: List<String> = listOf("HELM")
-) : MongodbJobProperties()
+    override var cron: String = "0 0 4/24 * * ?"
+) : RepoJobProperties()

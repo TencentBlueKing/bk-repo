@@ -36,7 +36,6 @@ import com.tencent.bkrepo.job.config.properties.FileSynchronizeJobProperties
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 /**
@@ -50,7 +49,6 @@ class FileSynchronizeJob(
     private val storageService: StorageService
 ) : DefaultContextJob(properties) {
 
-    @Scheduled(cron = "0 0 */1 * * ?") // 每小时同步一次文件
     override fun start(): Boolean {
         return super.start()
     }

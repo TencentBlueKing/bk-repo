@@ -65,7 +65,7 @@
                             !(MODE_CONFIG === 'ci') && 'projectManage',
                             'userManage',
                             'nodeManage',
-                            'securityConfig',
+                            // 'securityConfig',
                             this.isMasterNode && 'planManage',
                             'repoAudit'
                         ].filter(Boolean)

@@ -183,6 +183,7 @@
     },
     "mobileDownload": "移动端下载限制",
     "webDownload": "Web端下载限制",
+    "office_networkDownload": "办公网出口IP下载限制",
     "open": "开启",
     "close": "关闭",
     "pleaseFileName": "请输入文件名",

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.oci.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
@@ -107,7 +108,8 @@ interface OciOperationService {
         digest: OciDigest,
         artifactFile: ArtifactFile,
         fullPath: String,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        sourceType: ArtifactChannel? = null
     )
 
     /**

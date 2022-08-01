@@ -30,4 +30,6 @@ package com.tencent.bkrepo.job.config.properties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.node-copy")
-class NodeCopyJobProperties : MongodbJobProperties()
+class NodeCopyJobProperties(
+    override var cron: String = "0 0 4/6 * * ?"
+) : MongodbJobProperties()

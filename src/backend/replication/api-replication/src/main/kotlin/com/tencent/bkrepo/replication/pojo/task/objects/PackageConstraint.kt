@@ -36,7 +36,11 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("包/版本限制")
 data class PackageConstraint(
     @ApiModelProperty("包唯一key")
-    val packageKey: String,
+    val packageKey: String? = null,
     @ApiModelProperty("包版本列表")
-    val versions: List<String>? = null
+    val versions: List<String>? = null,
+    @ApiModelProperty("包正则匹配规则")
+    val packageRegex: List<String>? = null,
+    @ApiModelProperty("包版本正则匹配规则")
+    val versionRegex: List<String>? = null,
 )

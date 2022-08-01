@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.config
 
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
 import org.springframework.context.annotation.Bean
@@ -49,4 +50,7 @@ class JobConfig {
             Runtime.getRuntime().availableProcessors()
         )
     }
+
+    @Bean
+    fun httpAuthSecurity(): HttpAuthSecurity = HttpAuthSecurity().withPrefix("/job")
 }

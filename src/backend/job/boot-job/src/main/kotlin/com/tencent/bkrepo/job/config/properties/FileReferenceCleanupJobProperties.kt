@@ -30,4 +30,6 @@ package com.tencent.bkrepo.job.config.properties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.file-reference-cleanup")
-class FileReferenceCleanupJobProperties : MongodbJobProperties()
+class FileReferenceCleanupJobProperties(
+    override var cron: String = "0 0 4/6 * * ?"
+) : MongodbJobProperties()

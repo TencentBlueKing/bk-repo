@@ -2,7 +2,7 @@
     <div class="repo-config-container" v-bkloading="{ isLoading }">
         <bk-tab class="repo-config-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
-                <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="120" :model="repoBaseInfo" :rules="rules">
+                <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules">
                     <bk-form-item :label="$t('repoName')">
                         <div class="flex-align-center">
                             <icon size="20" :name="repoBaseInfo.repoType || repoType" />
@@ -19,13 +19,13 @@
                         </card-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'generic'">
-                        <bk-form-item v-for="type in ['mobile', 'web']" :key="type"
+                        <bk-form-item v-for="type in ['mobile', 'web', 'office_network']" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
                             <bk-radio-group v-model="repoBaseInfo[type].enable">
                                 <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                                 <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                             </bk-radio-group>
-                            <template v-if="repoBaseInfo[type].enable">
+                            <template v-if="repoBaseInfo[type].enable && type !== 'office_network'">
                                 <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
                                     :property="`${type}.filename`" required error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
@@ -144,6 +144,9 @@
                         enable: false,
                         filename: '',
                         metadata: ''
+                    },
+                    office_network: {
+                        enable: false
                     }
                 },
                 rules: {
@@ -265,12 +268,19 @@
                 ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
                 const interceptors = []
                 if (this.repoType === 'generic') {
-                    ['mobile', 'web'].forEach(type => {
+                    ['mobile', 'web', 'office_network'].forEach(type => {
                         const { enable, filename, metadata } = this.repoBaseInfo[type]
-                        enable && interceptors.push({
-                            type: type.toUpperCase(),
-                            rules: { filename, metadata }
-                        })
+                        if (type === 'office_network') {
+                            enable && interceptors.push({
+                                type: type.toUpperCase(),
+                                rules: { enable }
+                            })
+                        } else {
+                            enable && interceptors.push({
+                                type: type.toUpperCase(),
+                                rules: { filename, metadata }
+                            })
+                        }
                     })
                 }
                 const body = {

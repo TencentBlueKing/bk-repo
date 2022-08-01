@@ -65,6 +65,12 @@ class BkAuthConfig {
     var userIdSet: String = ""
 
     /**
+     * 允许默认密码校验
+     */
+    @Value("\${auth.devops.allowDefaultPwd: true}")
+    var allowDefaultPwd: Boolean = true
+
+    /**
      * 蓝盾CI平台appId
      */
     @Value("\${auth.devops.appId:}")

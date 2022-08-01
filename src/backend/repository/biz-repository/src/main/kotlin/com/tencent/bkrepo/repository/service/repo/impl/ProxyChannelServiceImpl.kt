@@ -43,8 +43,8 @@ import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
-import java.time.LocalDateTime
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 /**
  * 代理源服务实现类
@@ -133,6 +133,18 @@ class ProxyChannelServiceImpl(
 
     override fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo> {
         return proxyChannelDao.findByRepoType(repoType).map { convert(it)!! }
+    }
+
+    override fun listProxyChannel(
+        projectId: String,
+        repoName: String,
+        repoType: RepositoryType
+    ): List<ProxyChannelInfo> {
+        return proxyChannelDao.findByProjectIdAndRepo(
+            projectId = projectId,
+            repoName = repoName,
+            repoType = repoType
+        ).map { convert(it)!! }
     }
 
     private fun formatUrl(url: String): String {

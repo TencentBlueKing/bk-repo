@@ -33,6 +33,8 @@ package com.tencent.bkrepo.helm.utils
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
@@ -43,8 +45,15 @@ object HelmMetadataUtils {
         return chartInfo.toJsonString().readJsonString<Map<String, Any>>().minus(keys)
     }
 
-    fun convertToMetadata(chartInfo: HelmChartMetadata): List<MetadataModel> {
-        return convertToMap(chartInfo).map { MetadataModel(key = it.key, value = it.value) }
+    // 增加sourceType字段，用于区分该制品来源，是从代理源下载还是用户上传
+    fun convertToMetadata(chartInfo: HelmChartMetadata, sourceType: ArtifactChannel? = null): List<MetadataModel> {
+        val mutableMap: MutableList<MetadataModel> = convertToMap(chartInfo).map {
+            MetadataModel(key = it.key, value = it.value)
+        } as MutableList<MetadataModel>
+        sourceType?.let {
+            mutableMap.add(MetadataModel(SOURCE_TYPE, sourceType))
+        }
+        return mutableMap
     }
 
     fun convertToObject(map: Map<String, Any>): HelmChartMetadata {

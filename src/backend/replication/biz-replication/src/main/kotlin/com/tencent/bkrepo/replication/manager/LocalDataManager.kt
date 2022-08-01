@@ -29,6 +29,8 @@ package com.tencent.bkrepo.replication.manager
 
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -42,6 +44,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.springframework.stereotype.Component
 import java.io.InputStream
 
@@ -65,6 +68,16 @@ class LocalDataManager(
     @Throws(IllegalStateException::class)
     fun getBlobData(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {
         val blob = storageService.load(sha256, Range.full(length), repoInfo.storageCredentials)
+        check(blob != null) { "File data[sha256] does not exist" }
+        return blob
+    }
+
+    /**
+     * 获取blob文件数据
+     */
+    @Throws(IllegalStateException::class)
+    fun getBlobDataByRange(sha256: String, range: Range, repoInfo: RepositoryDetail): InputStream {
+        val blob = storageService.load(sha256, range, repoInfo.storageCredentials)
         check(blob != null) { "File data[sha256] does not exist" }
         return blob
     }
@@ -145,12 +158,41 @@ class LocalDataManager(
      */
     @Throws(IllegalStateException::class)
     fun findNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val nodeDetail = findNode(projectId, repoName, fullPath)
         check(nodeDetail != null) { "Local node path [$fullPath] does not exist" }
         return nodeDetail
     }
 
     /**
+     * 查找节点
+     */
+    fun findNode(projectId: String, repoName: String, fullPath: String): NodeDetail? {
+        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+    }
+
+    /**
+     * 根据sha256获取对应节点大小
+     */
+    fun getNodeBySha256(
+        projectId: String,
+        repoName: String,
+        sha256: String
+    ): Long {
+        val queryModel = NodeQueryBuilder()
+            .select(NODE_FULL_PATH, SIZE)
+            .projectId(projectId)
+            .repoName(repoName)
+            .sha256(sha256)
+            .sortByAsc(NODE_FULL_PATH)
+        val result = nodeClient.search(queryModel.build()).data
+        check(result != null) { "Local node path with [$sha256] in repo $projectId|$repoName does not exist" }
+        check(result.records.isNotEmpty()) {
+            "Local node path with [$sha256] in repo $projectId|$repoName does not exist"
+        }
+        return result.records[0][SIZE].toString().toLong()
+    }
+
+/**
      * 分页查询包
      */
     @Throws(IllegalStateException::class)
@@ -177,5 +219,30 @@ class LocalDataManager(
         ).data
         check(nodes != null) { "Local packages not found" }
         return nodes
+    }
+
+    /**
+     * 根据节点信息读取节点的数据流
+     */
+    fun loadInputStream(nodeInfo: NodeDetail): InputStream {
+        with(nodeInfo) {
+            return loadInputStream(sha256!!, size, projectId, repoName)
+        }
+    }
+
+    /**
+     * 根据项目、仓库、sha256、size读取对应节点的数据流
+     */
+    fun loadInputStream(sha256: String, size: Long, projectId: String, repoName: String): InputStream {
+        val repo = findRepoByName(projectId, repoName)
+        return getBlobData(sha256, size, repo)
+    }
+
+    /**
+     * 根据项目、仓库、sha256、range读取对应节点的数据流
+     */
+    fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
+        val repo = findRepoByName(projectId, repoName)
+        return getBlobDataByRange(sha256, range, repo)
     }
 }

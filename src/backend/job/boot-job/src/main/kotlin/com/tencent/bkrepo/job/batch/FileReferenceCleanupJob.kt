@@ -44,7 +44,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -61,7 +60,6 @@ class FileReferenceCleanupJob(
     properties: FileReferenceCleanupJobProperties
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
-    @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次
     override fun start(): Boolean {
         return super.start()
     }

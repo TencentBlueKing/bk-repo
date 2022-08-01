@@ -33,5 +33,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("路径限制")
 data class PathConstraint(
     @ApiModelProperty("路径")
-    val path: String
+    val path: String? = null,
+    @ApiModelProperty("路径正则匹配规则")
+    val pathRegex: List<String>? = null
 )

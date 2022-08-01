@@ -60,6 +60,7 @@ import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -95,7 +96,7 @@ class UserServiceImpl constructor(
         val user = userRepository.findFirstByUserId(request.userId)
         user?.let {
             logger.warn("create user [${request.userId}]  is exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
+            return true
         }
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
@@ -104,23 +105,26 @@ class UserServiceImpl constructor(
         request.pwd?.let {
             hashPwd = DataDigestUtils.md5FromStr(request.pwd!!)
         }
-        userRepository.insert(
-            TUser(
-                userId = request.userId,
-                name = request.name,
-                pwd = hashPwd,
-                admin = request.admin,
-                locked = false,
-                tokens = emptyList(),
-                roles = emptyList(),
-                asstUsers = request.asstUsers,
-                group = request.group,
-                email = request.email,
-                phone = request.phone,
-                createdDate = LocalDateTime.now(),
-                lastModifiedDate = LocalDateTime.now()
-            )
+        val userRequest = TUser(
+            userId = request.userId,
+            name = request.name,
+            pwd = hashPwd,
+            admin = request.admin,
+            locked = false,
+            tokens = emptyList(),
+            roles = emptyList(),
+            asstUsers = request.asstUsers,
+            group = request.group,
+            email = request.email,
+            phone = request.phone,
+            createdDate = LocalDateTime.now(),
+            lastModifiedDate = LocalDateTime.now()
         )
+        try {
+            userRepository.insert(userRequest)
+        } catch (ignore: DuplicateKeyException) {
+        }
+
         return true
     }
 
@@ -134,7 +138,7 @@ class UserServiceImpl constructor(
         try {
             val userResult = createUser(transferCreateRepoUserRequest(request))
             if (!userResult) {
-                logger.warn("create user fail [$userResult]")
+                logger.warn("create user fail [$request]")
                 return false
             }
         } catch (exception: ErrorCodeException) {
@@ -156,7 +160,7 @@ class UserServiceImpl constructor(
         try {
             val userResult = createUser(transferCreateProjectUserRequest(request))
             if (!userResult) {
-                logger.warn("create user fail [$userResult]")
+                logger.warn("create user fail [$request]")
                 return false
             }
         } catch (exception: ErrorCodeException) {
@@ -326,7 +330,7 @@ class UserServiceImpl constructor(
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         logger.debug("find user userId : [$userId]")
-        if (pwd == DEFAULT_PASSWORD) {
+        if (pwd == DEFAULT_PASSWORD && !bkAuthConfig.allowDefaultPwd) {
             logger.warn("login with default password [$userId]")
             if (!bkAuthConfig.userIdSet.split(",").contains(userId)) {
                 logger.warn("login with default password not in list[$userId]")
@@ -357,11 +361,7 @@ class UserServiceImpl constructor(
     }
 
     override fun userPage(
-        pageNumber: Int,
-        pageSize: Int,
-        userName: String?,
-        admin: Boolean?,
-        locked: Boolean?
+        pageNumber: Int, pageSize: Int, userName: String?, admin: Boolean?, locked: Boolean?
     ): Page<UserInfo> {
         val query = UserQueryHelper.getUserByName(userName, admin, locked)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
