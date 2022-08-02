@@ -62,7 +62,5 @@ data class OpLogListOption(
     @ApiModelProperty("查询截至时间")
     val endTime: LocalDateTime = LocalDateTime.now(),
     @ApiModelProperty("时间排序方向")
-    val direction: Sort.Direction = Sort.Direction.DESC,
-    @ApiModelProperty("前缀查询")
-    val prefixSearch: Boolean = false
+    val direction: Sort.Direction = Sort.Direction.DESC
 )

@@ -2,6 +2,7 @@
 - **接口公共说明**
   - [通用接口协议](/apidoc/common/common.md)
   - [自定义搜索协议](/apidoc/common/search.md)
+  - [事件类型](/apidoc/common/event.md)
 - **项目/仓库**
   - [项目接口](/apidoc/repo/project.md)
   - [仓库接口](/apidoc/repo/repository.md)
@@ -39,3 +40,5 @@
 - **WebHook**
   - [webhook接口](/apidoc/webhook/webhook.md)
   - [webhook消息](/apidoc/webhook/payload.md)
+- **审计日志**
+  - [审计日志接口](/apidoc/log/log.md)
