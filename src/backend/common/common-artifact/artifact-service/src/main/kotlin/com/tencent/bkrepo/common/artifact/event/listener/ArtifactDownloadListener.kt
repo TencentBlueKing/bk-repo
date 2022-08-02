@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -53,10 +52,6 @@ class ArtifactDownloadListener(
     private val artifactEventProperties: ArtifactEventProperties
 ) {
 
-    init {
-        ServiceShutdownHook.add { ensureCacheNodeUpdateFinish() }
-    }
-
     // 更新节点访问时间任务线程池
     private val updateAccessDateExecutor = ThreadPoolExecutor(
         4,
@@ -72,7 +67,7 @@ class ArtifactDownloadListener(
     private val cache: Cache<Triple<String, String, String>, LocalDateTime> = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .concurrencyLevel(1)
-        .expireAfterWrite(30, TimeUnit.MINUTES)
+        .expireAfterAccess(30, TimeUnit.MINUTES)
         .removalListener<Triple<String, String, String>, LocalDateTime> {
             updateAccessDateExecutor.execute {
                 updateNodeLastAccessDate(
@@ -88,7 +83,7 @@ class ArtifactDownloadListener(
     private fun ensureCacheNodeUpdateFinish() {
         val keys = cache.asMap().keys
         logger.info("${keys.size} node will updating access date")
-        val subKeysList = keys.chunked(keys.size/10 + 1)
+        val subKeysList = keys.chunked(keys.size / 10 + 1)
         subKeysList.forEach {
             cache.invalidateAll(it)
             while (updateAccessDateExecutor.activeCount > 0) {
@@ -125,16 +120,28 @@ class ArtifactDownloadListener(
             operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
         } else if (node.folder) {
             val nodeList =
-                nodeClient.listNode(projectId, repoName, node.path, includeFolder = false, deep = true).data!!
-            nodeList.forEach {
-                cache.put(Triple(projectId, repoName, it.fullPath), LocalDateTime.now())
-            }
+                nodeClient.listNode(projectId, repoName, node.fullPath, includeFolder = false, deep = true).data!!
+            addToCache(projectId, repoName, node.fullPath)
             val eventList = nodeList.map { buildDownloadEvent(NodeDetail(it), userId) }
             operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
         } else {
-            cache.put(Triple(projectId, repoName, node.fullPath), LocalDateTime.now())
+            addToCache(projectId, repoName, node.fullPath)
             val downloadedEvent = buildDownloadEvent(node, userId)
             operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
+        }
+    }
+
+    private fun addToCache(projectId: String, repoName: String, fullPath: String) {
+        val projectRepoKey = "$projectId/$repoName"
+        artifactEventProperties.filterProjectRepoKey.forEach {
+            val regex = Regex(it.replace("*", ".*"))
+            if (regex.matches(projectRepoKey)) {
+                return
+            }
+        }
+        val key = Triple(projectId, repoName, fullPath)
+        if (cache.getIfPresent(key) == null) {
+            cache.put(key, LocalDateTime.now())
         }
     }
 
@@ -145,7 +152,7 @@ class ArtifactDownloadListener(
         accessDate: LocalDateTime
     ) {
         if (!artifactEventProperties.updateAccessDate) {
-            logger.info("mock update node access time [$projectId/$repoName/$fullPath]")
+            logger.info("mock update node access time [$projectId/$repoName$fullPath]")
             return
         }
         val updateRequest = NodeUpdateAccessDateRequest(projectId, repoName, fullPath, SYSTEM_USER, accessDate)
@@ -169,7 +176,7 @@ class ArtifactDownloadListener(
         }
         operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
         event.context.artifacts.forEach {
-            cache.put(Triple(it.projectId, it.repoName, it.getArtifactFullPath()), LocalDateTime.now())
+            addToCache(it.projectId, it.repoName, it.getArtifactFullPath())
         }
     }
 

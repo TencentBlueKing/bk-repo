@@ -32,5 +32,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("artifact.event")
 data class ArtifactEventProperties(
     // 是否更新节点访问时间
-    var updateAccessDate: Boolean = false
+    var updateAccessDate: Boolean = false,
+    // 不更新节点访问时间的项目仓库
+    var filterProjectRepoKey: List<String> = emptyList()
 )
