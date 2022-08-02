@@ -54,6 +54,7 @@ import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
 import org.springframework.stereotype.Service
+import java.util.regex.Pattern
 
 @Service
 class RemoteNodeServiceImpl(
@@ -69,10 +70,12 @@ class RemoteNodeServiceImpl(
         requests: RemoteCreateRequest
     ): List<ClusterNodeInfo> {
         return requests.configs.map {
-            val tClusterNode = clusterNodeService.getByClusterName(it.name)
+            validateParameter(it.name)
+            val realName = NAME.format(projectId, repoName, it.name)
+            val tClusterNode = clusterNodeService.getByClusterName(realName)
             if (tClusterNode == null) {
                 val clusterInfo = clusterNodeService.create(
-                    SecurityUtils.getUserId(), buildClusterNodeCreateRequest(it)
+                    SecurityUtils.getUserId(), buildClusterNodeCreateRequest(projectId, repoName, it)
                 )
                 createTask(
                     projectId = projectId,
@@ -83,8 +86,10 @@ class RemoteNodeServiceImpl(
                 clusterInfo
             } else {
                 val updateRequest = convertCreateToUpdate(it)
-                val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(updateRequest, it.name))
-                val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, it.name))
+                val clusterInfo = clusterNodeService.update(
+                    buildClusterNodeUpdateRequest(projectId, repoName, it.name, updateRequest)
+                )
+                val task = replicaTaskService.getByTaskName(realName)
                 if (task == null) {
                     createTask(
                         projectId = projectId,
@@ -115,7 +120,7 @@ class RemoteNodeServiceImpl(
         name: String,
         request: RemoteConfigUpdateRequest
     ) {
-        val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(request, name))
+        val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(projectId, repoName, name, request))
         val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
         updateTask(
@@ -136,8 +141,9 @@ class RemoteNodeServiceImpl(
                 enable = null
             )
         } else {
-            clusterNodeService.getByClusterName(name) ?: return emptyList()
-            val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name)) ?: return emptyList()
+            val realName = NAME.format(projectId, repoName, name)
+            clusterNodeService.getByClusterName(realName) ?: return emptyList()
+            val task = replicaTaskService.getByTaskName(realName) ?: return emptyList()
             listOf(replicaTaskService.getDetailByTaskKey(task.key))
         }
         val result = mutableListOf<RemoteInfo>()
@@ -162,10 +168,11 @@ class RemoteNodeServiceImpl(
 
     override fun deleteByName(projectId: String, repoName: String, name: String) {
         localDataManager.findRepoByName(projectId, repoName)
-        val clusterInfo = clusterNodeService.getByClusterName(name)
+        val realName = NAME.format(projectId, repoName, name)
+        val clusterInfo = clusterNodeService.getByClusterName(realName)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
         clusterNodeService.deleteById(clusterInfo.id)
-        val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+        val task = replicaTaskService.getByTaskName(realName)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
         replicaTaskService.deleteByTaskKey(task.key)
     }
@@ -178,13 +185,14 @@ class RemoteNodeServiceImpl(
         name: String
     ) {
         val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-        val clusterInfo = clusterNodeService.getByClusterName(name)
+        val realName = NAME.format(projectId, repoName, name)
+        val clusterInfo = clusterNodeService.getByClusterName(realName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
         // 现只针对远端集群进行特殊指定推送
         if (clusterInfo.type != ClusterNodeType.REMOTE) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
         }
-        val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+        val task = replicaTaskService.getByTaskName(realName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
         val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
         val event = VersionCreatedEvent(
@@ -258,7 +266,7 @@ class RemoteNodeServiceImpl(
                     pathConstraints = pathConstraints
                 )
             )
-            val taskUpdaterequest = ReplicaTaskUpdateRequest(
+            val taskUpdateRequest = ReplicaTaskUpdateRequest(
                 key = task.key,
                 name = task.name,
                 localProjectId = projectId,
@@ -268,7 +276,7 @@ class RemoteNodeServiceImpl(
                 remoteClusterIds = setOf(clusterInfo.id),
                 description = description,
             )
-            replicaTaskService.update(taskUpdaterequest)
+            replicaTaskService.update(taskUpdateRequest)
         }
     }
 
@@ -289,10 +297,14 @@ class RemoteNodeServiceImpl(
         }
     }
 
-    private fun buildClusterNodeCreateRequest(request: RemoteConfigCreateRequest): ClusterNodeCreateRequest {
+    private fun buildClusterNodeCreateRequest(
+        projectId: String,
+        repoName: String,
+        request: RemoteConfigCreateRequest
+    ): ClusterNodeCreateRequest {
         with(request) {
             return ClusterNodeCreateRequest(
-                name = name,
+                name = NAME.format(projectId, repoName, name),
                 url = addProtocol(registry).toString(),
                 certificate = certificate,
                 username = username,
@@ -308,10 +320,11 @@ class RemoteNodeServiceImpl(
         clusterNodeInfo: ClusterNodeInfo,
         replicaTaskDetail: ReplicaTaskDetail
     ): RemoteInfo {
+        val name = clusterNodeInfo.name.split("/").last()
         return RemoteInfo(
             projectId = projectId,
             repoName = repoName,
-            name = clusterNodeInfo.name,
+            name = name,
             registry = clusterNodeInfo.url,
             certificate = clusterNodeInfo.certificate,
             username = clusterNodeInfo.username,
@@ -326,12 +339,14 @@ class RemoteNodeServiceImpl(
     }
 
     private fun buildClusterNodeUpdateRequest(
-        request: RemoteConfigUpdateRequest,
-        name: String
+        projectId: String,
+        repoName: String,
+        name: String,
+        request: RemoteConfigUpdateRequest
     ): ClusterNodeUpdateRequest {
         with(request) {
             return ClusterNodeUpdateRequest(
-                name = name,
+                name = NAME.format(projectId, repoName, name),
                 url = addProtocol(registry).toString(),
                 certificate = certificate,
                 username = username,
@@ -358,7 +373,22 @@ class RemoteNodeServiceImpl(
         }
     }
 
+    private fun validateParameter(name: String) {
+        if (!Pattern.matches(REMOTE_NAME_PATTERN, name)) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+        if (name.isBlank() ||
+            name.length < REMOTE_NAME_LENGTH_MIN ||
+            name.length > REMOTE_NAME_LENGTH_MAX
+        ) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+    }
+
     companion object {
-        const val NAME = "%s-%s-%s"
+        const val NAME = "%s/%s/%s"
+        private const val REMOTE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
+        private const val REMOTE_NAME_LENGTH_MIN = 2
+        private const val REMOTE_NAME_LENGTH_MAX = 32
     }
 }
