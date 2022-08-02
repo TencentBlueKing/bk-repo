@@ -141,12 +141,13 @@ class NodeController(
         repoName: String,
         path: String,
         includeFolder: Boolean,
-        deep: Boolean
+        deep: Boolean,
+        includeMetadata: Boolean
     ): Response<List<NodeInfo>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
         val nodeListOption = NodeListOption(
             includeFolder = includeFolder,
-            includeMetadata = false,
+            includeMetadata = includeMetadata,
             deep = deep
         )
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
