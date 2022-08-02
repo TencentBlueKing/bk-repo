@@ -84,7 +84,8 @@ class ReplicaContext(
     val replicator: Replicator
 
     // TODO: Feign暂时不支持Stream上传，11+之后支持，升级后可以移除HttpClient上传
-    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
+    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push/" +
+        "${taskObject.remoteProjectId}/${taskObject.remoteRepoName}"
     val httpClient: OkHttpClient?
     var cluster: RemoteClusterInfo
 
@@ -133,7 +134,7 @@ class ReplicaContext(
             .post(requestBody)
             .build()
         httpClient?.newCall(httpRequest)?.execute().use {
-            it?.let { it1 -> check(it1?.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
+            it?.let { it1 -> check(it1.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
         }
     }
 }

@@ -34,6 +34,7 @@ import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
@@ -62,7 +63,9 @@ interface BlobReplicaClient {
     fun push(
         @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null
+        @RequestParam storageKey: String? = null,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
     ): Response<Void>
 
     /**
@@ -78,7 +81,7 @@ interface BlobReplicaClient {
 
     companion object {
         const val BLOB_PULL_URI = "/replica/blob/pull"
-        const val BLOB_PUSH_URI = "/replica/blob/push"
+        const val BLOB_PUSH_URI = "/replica/blob/push/{projectId}/{repoName}"
         const val BLOB_CHECK_URI = "/replica/blob/check"
     }
 }
