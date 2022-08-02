@@ -63,8 +63,8 @@ class MavenDeleteArtifactInfoResolver : ArtifactInfoResolver {
             // 页面删除包版本请求
             requestURL.contains(PACKAGE_VERSION_DELETE_PREFIX) -> {
                 val packageKey = request.getParameter(PACKAGE_KEY)
+                val url = MavenUtil.extractPath(packageKey) + "/$MAVEN_METADATA_FILE_NAME"
                 val version = request.getParameter(VERSION)
-                val url = MavenUtil.extractPath(packageKey) + "/$version/$MAVEN_METADATA_FILE_NAME"
                 MavenDeleteArtifactInfo(projectId, repoName, url, packageKey, version)
             }
             else -> MavenDeleteArtifactInfo(projectId, repoName, artifactUri, StringPool.EMPTY, StringPool.EMPTY)

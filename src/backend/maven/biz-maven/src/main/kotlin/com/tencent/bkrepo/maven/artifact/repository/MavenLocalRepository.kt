@@ -110,6 +110,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.lang.IndexOutOfBoundsException
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -246,7 +247,7 @@ class MavenLocalRepository(
         super.onUploadBefore(context)
         val noOverwrite = HeaderUtils.getBooleanHeader("X-BKREPO-NO-OVERWRITE")
         val path = context.artifactInfo.getArtifactFullPath()
-        logger.info("The File $path does not want to overwrite: $noOverwrite")
+        logger.info("The File $path does not want to be overwritten: $noOverwrite")
         if (noOverwrite) {
             // -SNAPSHOT/** 路径下的metadata.xml 文件不做判断
             if (!path.endsWith(MAVEN_METADATA_FILE_NAME)) {
@@ -945,10 +946,12 @@ class MavenLocalRepository(
                     removeVersion(artifactInfo, it, userId)
                 }
                 // 删除artifactId目录
+                val url = MavenUtil.extractPath(packageName)
+                logger.info("$url will be deleted in repo ${getRepoIdentify()}")
                 val request = NodeDeleteRequest(
                     projectId = projectId,
                     repoName = repoName,
-                    fullPath = getArtifactFullPath(),
+                    fullPath = url,
                     operator = userId
                 )
                 nodeClient.deleteNode(request)
@@ -971,7 +974,8 @@ class MavenLocalRepository(
      * 删除目录以及目录下的文件
      */
     private fun folderRemoveHandler(context: ArtifactRemoveContext, node: NodeDetail) {
-        val option = NodeListOption(pageNumber = 0, pageSize = 10, includeFolder = true)
+        logger.info("Will try to delete folder ${node.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}")
+        val option = NodeListOption(pageNumber = 0, pageSize = 10, includeFolder = true, sort = true)
         val nodes = nodeClient.listNodePage(context.projectId, context.repoName, node.fullPath, option).data!!
         if (nodes.records.isEmpty()) {
             // 如果目录下没有任何节点，则删除当前目录并返回
@@ -987,13 +991,7 @@ class MavenLocalRepository(
         // 如果当前目录下级节点包含目录，当前目录可能是artifactId所在目录
         val artifactInfo = if (nodes.records.first().folder) {
             // 判断当前目录是否是artifactId所在目录
-            val pathList = node.fullPath.split("/")
-            if (pathList.size <= 1) throw MavenBadRequestException(
-                "Only artifactId folder or it's sub-folders can be deleted, check your path ${node.fullPath}!"
-            )
-            val artifactId = pathList.last()
-            val groupId = StringUtils.join(pathList.subList(0, pathList.size - 1), ".")
-            val packageKey = PackageKeys.ofGav(groupId, artifactId)
+            val packageKey = extractPackageKey(node.fullPath)
             packageClient.findPackageByKey(context.projectId, context.repoName, packageKey).data
                 ?: throw MavenBadRequestException(
                     "Only artifactId folder or it's sub-folders can be deleted, check your path ${node.fullPath}!"
@@ -1007,15 +1005,27 @@ class MavenLocalRepository(
                 artifactUri = url
             )
         } else {
-            // 下一级没有目录，当前目录就是版本
-            val mavenGAVC = node.fullPath.mavenGAVC()
-            val packageKey = PackageKeys.ofGav(mavenGAVC.groupId, mavenGAVC.artifactId)
-            val url = MavenUtil.extractPath(packageKey) + "/${mavenGAVC.version}/$MAVEN_METADATA_FILE_NAME"
+            // 下一级没有目录，当前目录就是版本或者当前目录是artifactId目录（没有实际版本）
+            val fullPath = node.fullPath.trimEnd('/') + "/$MAVEN_METADATA_FILE_NAME"
+            val mavenGAVC = fullPath.mavenGAVC()
+            var packageKey = PackageKeys.ofGav(mavenGAVC.groupId, mavenGAVC.artifactId)
+            val url = MavenUtil.extractPath(packageKey) + "/$MAVEN_METADATA_FILE_NAME"
+            var version = mavenGAVC.version
+            packageClient.findVersionByName(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                packageKey = packageKey,
+                version = mavenGAVC.version
+            ).data ?: run {
+                // 当前目录是artifactId目录（没有实际版本）
+                packageKey = extractPackageKey(node.fullPath)
+                version = StringPool.EMPTY
+            }
             MavenDeleteArtifactInfo(
                 projectId = context.projectId,
                 repoName = context.repoName,
                 packageName = packageKey,
-                version = mavenGAVC.version,
+                version = version,
                 artifactUri = url
             )
         }
@@ -1027,22 +1037,40 @@ class MavenLocalRepository(
     }
 
     /**
+     * 从路径中提取出packageKey
+     */
+    private fun extractPackageKey(fullPath: String): String {
+        val pathList = fullPath.trim('/').split("/")
+        if (pathList.size <= 1) throw MavenBadRequestException(
+            "Only artifactId folder or it's sub-folders can be deleted, check your path $fullPath!"
+        )
+        val artifactId = pathList.last()
+        val groupId = StringUtils.join(pathList.subList(0, pathList.size - 1), ".")
+        return PackageKeys.ofGav(groupId, artifactId)
+    }
+
+    /**
      * 删除节点以及更新对应maven-metadata.xml文件
      */
     private fun nodeRemoveHandler(context: ArtifactRemoveContext, node: NodeDetail) {
+        logger.info("Will try to delete node ${node.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}")
         deleteNode(
             artifactInfo = context.artifactInfo,
             userId = context.userId
         )
-        // 更新对应的metadata文件
-        verifyMetadataContent(context, node.fullPath)
-        // 更新`/groupId/artifactId/maven-metadata.xml`文件
-        updatePackageMetadata(
-            artifactInfo = context.artifactInfo,
-            version = node.name,
-            storageCredentials = context.storageCredentials,
-            userId = context.userId
-        )
+        try {
+            node.fullPath.mavenGAVC()
+            // 更新对应的metadata文件
+            verifyMetadataContent(context, node.fullPath)
+            // 更新`/groupId/artifactId/maven-metadata.xml`文件
+            updatePackageMetadata(
+                artifactInfo = context.artifactInfo,
+                version = node.name,
+                storageCredentials = context.storageCredentials,
+                userId = context.userId
+            )
+        } catch (ignore: IndexOutOfBoundsException) {
+        }
     }
 
     /**
@@ -1145,6 +1173,12 @@ class MavenLocalRepository(
                 mavenMetadata.versioning.versions.remove(version)
                 if (mavenMetadata.versioning.versions.size == 0) {
                     nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, node.fullPath, userId))
+                    deleteArtifactCheckSums(
+                        projectId = projectId,
+                        repoName = repoName,
+                        userId = userId,
+                        node = node
+                    )
                     return
                 }
                 mavenMetadata.deleteVersioning()
