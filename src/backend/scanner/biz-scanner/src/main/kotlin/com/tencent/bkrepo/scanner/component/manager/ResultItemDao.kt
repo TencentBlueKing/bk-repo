@@ -64,7 +64,7 @@ abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
         return criteria
     }
 
-    fun buildCriteria(credentialsKey: String?, sha256: String, scanner: String): Criteria {
+    private fun buildCriteria(credentialsKey: String?, sha256: String, scanner: String): Criteria {
         return Criteria
             .where(ResultItem<*>::credentialsKey.name).isEqualTo(credentialsKey)
             .and(ResultItem<*>::sha256.name).isEqualTo(sha256)

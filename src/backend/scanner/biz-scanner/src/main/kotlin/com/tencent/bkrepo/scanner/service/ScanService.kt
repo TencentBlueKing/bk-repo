@@ -27,15 +27,12 @@
 
 package com.tencent.bkrepo.scanner.service
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
-import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
 
 /**
  * 扫描服务
@@ -108,9 +105,4 @@ interface ScanService {
      * @return 没有可执行的任务时返回null，否则返回一个待执行的任务
      */
     fun pull(): SubScanTask?
-
-    /**
-     * 获取文件扫描报告详情
-     */
-    fun resultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail>
 }

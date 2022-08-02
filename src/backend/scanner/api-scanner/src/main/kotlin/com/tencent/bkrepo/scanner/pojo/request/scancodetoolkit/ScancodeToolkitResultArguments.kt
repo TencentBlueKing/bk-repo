@@ -10,8 +10,6 @@ class ScancodeToolkitResultArguments(
     val licenseIds: List<String>? = emptyList(),
     @ApiModelProperty("需要的许可风险等级列表")
     val riskLevels: List<String>? = emptyList(),
-    @ApiModelProperty("扫描结果类型")
-    val reportType: String,
     @ApiModelProperty("分页参数")
     val pageLimit: PageLimit = PageLimit()
 ) : LoadResultArguments(ScancodeToolkitScanner.TYPE)

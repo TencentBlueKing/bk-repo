@@ -2,7 +2,6 @@ package com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -16,8 +15,6 @@ data class ArtifactLicensesDetailRequest(
     val licenseId: String? = null,
     @ApiModelProperty("风险等级")
     val riskLevel: String? = null,
-    @ApiModelProperty("报告类型")
-    val reportType: String = ScancodeItem.TYPE,
     @ApiModelProperty("页数")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     @ApiModelProperty("每页数量")

@@ -30,14 +30,27 @@ package com.tencent.bkrepo.scanner.component.manager
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import java.lang.UnsupportedOperationException
 
 /**
  * 接口数据格式转换
  */
 interface ScannerConverter {
-    fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo>
-    fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments
+    fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
+        throw UnsupportedOperationException()
+    }
+    fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments {
+        throw UnsupportedOperationException()
+    }
+    fun convertLicenseResult(result: Any): Page<FileLicensesResultDetail> {
+        throw UnsupportedOperationException()
+    }
+    fun convertToLoadArguments(request: ArtifactLicensesDetailRequest): LoadResultArguments {
+        throw UnsupportedOperationException()
+    }
 
     companion object {
         fun name(scannerType: String) = "${scannerType}Converter"

@@ -29,7 +29,8 @@ package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.constant.SCANCODE_TOOLKIT
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.pojo.request.ScanQualityUpdateRequest
@@ -38,12 +39,14 @@ import com.tencent.bkrepo.scanner.pojo.response.ScanQualityCheckedDetail.ScanQua
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
 import com.tencent.bkrepo.scanner.service.LicenseScanQualityService
 import com.tencent.bkrepo.scanner.service.ScanQualityService
+import com.tencent.bkrepo.scanner.service.ScannerService
 import org.springframework.stereotype.Service
 
 @Service
 class ScanQualityServiceImpl(
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scanPlanDao: ScanPlanDao,
+    private val scannerService: ScannerService,
     private val licenseScanQualityService: LicenseScanQualityService
 ) : ScanQualityService {
     override fun getScanQuality(planId: String): ScanQualityResponse {
@@ -62,23 +65,25 @@ class ScanQualityServiceImpl(
 
     override fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean {
         val tScanPlan = scanPlanDao.get(planId)
+        val scanner = scannerService.get(tScanPlan.scanner)
         // 获取方案质量规则
         val scanQuality = scanPlanDao.get(planId).scanQuality
-        if (tScanPlan.scanner == SCANCODE_TOOLKIT){
-            return licenseScanQualityService.checkLicenseScanQualityRedLine(scanQuality, scanResultOverview)
-        }
-        return checkScanQualityRedLine(scanQuality, scanResultOverview)
+        return checkScanQualityRedLine(scanQuality, scanResultOverview, scanner)
     }
 
     override fun checkScanQualityRedLine(
         scanQuality: Map<String, Any>,
-        scanResultOverview: Map<String, Number>
+        scanResultOverview: Map<String, Number>,
+        scanner: Scanner
     ): Boolean {
         // 检查质量规则是否通过
         CveOverviewKey.values().forEach { overviewKey ->
             if (checkRedLine(overviewKey, scanResultOverview, scanQuality)) {
                 return false
             }
+        }
+        if (scanner.supportScanTypes.contains(ScanType.LICENSE.name)) {
+            return licenseScanQualityService.checkLicenseScanQualityRedLine(scanQuality, scanResultOverview)
         }
         return true
     }

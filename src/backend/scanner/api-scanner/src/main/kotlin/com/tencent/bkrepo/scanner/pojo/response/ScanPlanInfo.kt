@@ -38,6 +38,8 @@ data class ScanPlanInfo(
     val name: String?,
     @ApiModelProperty("方案类型")
     val planType: String,
+    @ApiModelProperty("扫描类型")
+    val scanTypes: List<String>,
     @ApiModelProperty("projectId")
     val projectId: String,
     @ApiModelProperty("方案状态")

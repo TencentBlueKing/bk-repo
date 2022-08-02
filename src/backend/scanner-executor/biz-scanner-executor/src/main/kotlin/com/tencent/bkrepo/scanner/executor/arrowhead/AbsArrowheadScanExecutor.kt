@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.executor.arrowhead
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
@@ -219,7 +220,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
         // license risk
         applicationItems.forEach {
             it.license?.let { license ->
-                val overviewKey = ArrowheadScanExecutorResult.overviewKeyOfLicenseRisk(license.risk)
+                val overviewKey = LicenseOverviewKey.overviewKeyOfLicenseRisk(license.risk)
                 overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
             }
         }

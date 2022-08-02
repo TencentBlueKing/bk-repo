@@ -34,15 +34,15 @@ enum class ScanType {
     /**
      * 安全问题扫描
      */
-    SCAN_TYPE_SECURITY,
+    SECURITY,
 
     /**
      * License扫描
      */
-    SCAN_TYPE_LICENSE,
+    LICENSE,
 
     /**
      * 敏感信息扫描
      */
-    SCAN_TYPE_SENSITIVE
+    SENSITIVE
 }

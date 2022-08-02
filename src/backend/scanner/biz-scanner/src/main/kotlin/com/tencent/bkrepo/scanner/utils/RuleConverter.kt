@@ -35,15 +35,13 @@ import com.tencent.bkrepo.common.query.model.Rule.NestedRule.RelationType.AND
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.scanner.pojo.ScanSchemeType
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 
 object RuleConverter {
 
     fun convert(sourceRule: Rule?, planType: String?, projectId: String): Rule {
         // 兼容许可证扫描的planType:MAVEN_LICENSE
-        val type = ScanSchemeType.ofRepositoryType(planType).name
-        val targetRule = createProjectIdAdnRepoRule(projectId, emptyList(), type)
+        val targetRule = createProjectIdAdnRepoRule(projectId, emptyList(), planType)
         // 将sourceRule中除projectId相关外的rule都合并到targetRule中
         sourceRule?.let { mergeInto(it, targetRule, listOf(NodeInfo::projectId.name)) }
         return targetRule
@@ -78,7 +76,7 @@ object RuleConverter {
             Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
         )
 
-        if (repoType != null && ScanSchemeType.ofRepositoryType(repoType) != RepositoryType.GENERIC) {
+        if (repoType != null && repoType != RepositoryType.GENERIC.name) {
             rules.add(Rule.QueryRule(PackageSummary::type.name, repoType, OperationType.EQ))
         }
 

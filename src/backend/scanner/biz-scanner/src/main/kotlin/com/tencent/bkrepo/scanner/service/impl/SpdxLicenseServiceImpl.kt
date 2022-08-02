@@ -68,10 +68,10 @@ class SpdxLicenseServiceImpl(
         val licenseJsonInfo = try {
             JsonUtils.objectMapper.readValue(File(path), SpdxLicenseJsonInfo::class.java)
         } catch (e: FileNotFoundException) {
-            logger.error("import license data exception:[$e], file path [$path] not found ")
+            logger.error("import license data failed, file path [$path] not found ", e)
             return false
-        } catch (ex: IOException) {
-            logger.error("import license data exception:[${ex}]")
+        } catch (e: IOException) {
+            logger.error("import license data failed", e)
             return false
         }
         importLicense(licenseJsonInfo)
@@ -129,17 +129,8 @@ class SpdxLicenseServiceImpl(
     }
 
     override fun listLicenseByIds(licenseIds: List<String>): Map<String, SpdxLicenseInfo> {
-        val licenseMap = mutableMapOf<String, SpdxLicenseInfo>()
-        val licenseList = licenseDao.find(
-            Query.query(
-                Criteria.where(TSpdxLicense::licenseId.name)
-                    .`in`(licenseIds)
-            )
-        ).map { convert(it) }
-        licenseList.forEach {
-            licenseMap[it.licenseId] = it
-        }
-        return licenseMap
+        val query = Query.query(Criteria.where(TSpdxLicense::licenseId.name).`in`(licenseIds))
+        return licenseDao.find(query).associate { Pair(it.licenseId, convert(it)) }
     }
 
     private fun importLicense(licenseInfo: SpdxLicenseJsonInfo) {
@@ -179,12 +170,7 @@ class SpdxLicenseServiceImpl(
     }
 
     private fun checkLicenseExist(licenseId: String): TSpdxLicense {
-        val license = licenseDao.findByLicenseId(licenseId)
-        license ?: run {
-            logger.warn("license [$licenseId] not exist")
-            throw LicenseNotFoundException(licenseId)
-        }
-        return license
+        return licenseDao.findByLicenseId(licenseId) ?: throw LicenseNotFoundException(licenseId)
     }
 
     private fun convert(tSpdxLicense: TSpdxLicense): SpdxLicenseInfo {

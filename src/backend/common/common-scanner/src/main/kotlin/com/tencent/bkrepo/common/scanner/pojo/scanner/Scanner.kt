@@ -64,9 +64,9 @@ open class Scanner(
     @ApiModelProperty("支持扫描的文件类型")
     val supportFileNameExt: List<String> = DEFAULT_SUPPORT_FILE_NAME_EXTENSION,
     @ApiModelProperty("支持扫描的包类型")
-    val supportPackageType: List<String> = emptyList(),
+    val supportPackageTypes: List<String> = emptyList(),
     @ApiModelProperty("支持扫描的类型")
-    val supportScanType: List<String> = emptyList()
+    val supportScanTypes: List<String> = emptyList()
 ) {
     /**
      * 获取待扫描文件最大允许扫描时长

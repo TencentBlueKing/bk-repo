@@ -25,37 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.service
+package com.tencent.bkrepo.common.scanner.pojo.scanner
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.scanner.pojo.request.ScanQualityUpdateRequest
-import com.tencent.bkrepo.scanner.pojo.response.ScanQualityCheckedDetail
-import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
+object LicenseOverviewKey {
+    fun overviewKeyOf(level: String): String {
+        if (isRiskLevel(level)) {
+            return overviewKeyOfLicenseRisk(level)
+        }
+        return "license${level.capitalize()}Count"
+    }
 
-interface ScanQualityService {
+    fun overviewKeyOfLicenseRisk(riskLevel: String?): String {
+        val level = if (riskLevel.isNullOrEmpty()) {
+            LEVEL_NOT_AVAILABLE
+        } else {
+            riskLevel
+        }
+        return "licenseRisk${level.capitalize()}Count"
+    }
+
+    private fun isRiskLevel(level: String): Boolean {
+        val upperCaseLevel = level.toUpperCase()
+        return Level.values().firstOrNull { it.levelName == upperCaseLevel } != null
+            || upperCaseLevel == LEVEL_NOT_AVAILABLE.toUpperCase()
+    }
+
     /**
-     * 获取方案质量规则
+     * 扫描器尚未支持的证书类型数量KEY
      */
-    fun getScanQuality(planId: String): ScanQualityResponse
-
-    /**
-     * 更新方案质量规则
-     */
-    fun updateScanQuality(planId: String, request: ScanQualityUpdateRequest): Boolean
-
-    /**
-     * 检查是否通过质量规则
-     */
-    fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean
-
-    /**
-     * 检查是否通过质量规则
-     */
-    fun checkScanQualityRedLine(
-        scanQuality: Map<String, Any>,
-        scanResultOverview: Map<String, Number>,
-        scanner: Scanner
-    ): Boolean
-
-    fun checkScanQualityRedLineDetail(planId: String, scanResultOverview: Map<String, Number>): ScanQualityCheckedDetail
+    private const val LEVEL_NOT_AVAILABLE = "notAvailable"
 }

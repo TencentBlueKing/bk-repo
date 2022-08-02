@@ -50,14 +50,5 @@ data class ArrowheadScanExecutorResult(
             return "sensitive${type.capitalize()}Count"
         }
 
-        fun overviewKeyOfLicenseRisk(riskLevel: String): String {
-            val level = if (riskLevel.isEmpty()) {
-                // 扫描器尚未支持的证书类型数量KEY
-                "notAvailable"
-            } else {
-                riskLevel
-            }
-            return "licenseRisk${level.capitalize()}Count"
-        }
     }
 }

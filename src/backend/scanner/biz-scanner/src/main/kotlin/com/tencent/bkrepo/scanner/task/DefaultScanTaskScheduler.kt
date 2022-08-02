@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.constant.SCANCODE_TOOLKIT
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
@@ -62,7 +61,6 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.FINISHED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.service.LicenseScanQualityService
 import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
@@ -98,8 +96,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val publisher: ApplicationEventPublisher,
     private val scannerProperties: ScannerProperties,
-    private val scanQualityService: ScanQualityService,
-    private val licenseScanQualityService: LicenseScanQualityService
+    private val scanQualityService: ScanQualityService
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -233,7 +230,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             if (existsFileScanResult != null && !scanTask.force) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
                 val finishedSubtask = createFinishedSubTask(
-                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule
+                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule, scanner
                 )
                 finishedSubScanTasks.add(finishedSubtask)
             } else {
@@ -358,7 +355,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
         fileScanResult: TFileScanResult,
         node: Node,
         credentialKey: String? = null,
-        qualityRule: Map<String, Any>? = null
+        qualityRule: Map<String, Any>? = null,
+        scanner: Scanner
     ): TArchiveSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
@@ -369,11 +367,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?.let { Converter.convert(it) }
             // 质量检查结果
             val qualityPass = if (!qualityRule.isNullOrEmpty() && overview != null) {
-                if (scanTask.scanner == SCANCODE_TOOLKIT) {
-                    licenseScanQualityService.checkLicenseScanQualityRedLine(qualityRule, overview)
-                } else {
-                    scanQualityService.checkScanQualityRedLine(qualityRule, overview)
-                }
+                scanQualityService.checkScanQualityRedLine(qualityRule, overview, scanner)
             } else {
                 null
             }

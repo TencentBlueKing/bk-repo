@@ -8,14 +8,16 @@ data class SubLicenseItem(
     val key: String,
     val score: Float,
     val name: String,
-    val short_name: String,
+    @JsonProperty("short_name")
+    val shortName: String,
     val category: String,
     @JsonProperty("is_exception")
     val exception: Boolean,
     @JsonProperty("is_unknown")
     val unknown: Boolean,
     val owner: String,
-    val homepage_url: String?,
+    @JsonProperty("homepage_url")
+    val homepageUrl: String?,
     @JsonProperty("text_url")
     val textUrl: String,
     @JsonProperty("reference_url")

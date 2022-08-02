@@ -65,8 +65,8 @@ class ScannerServiceImpl @Autowired constructor(
                     version = scanner.version,
                     config = scanner.toJsonString(),
                     supportFileNameExt = scanner.supportFileNameExt,
-                    supportPackageTypes = scanner.supportPackageType,
-                    supportScanTypes = scanner.supportScanType
+                    supportPackageTypes = scanner.supportPackageTypes,
+                    supportScanTypes = scanner.supportScanTypes
                 )
             ).run { convert(this) }
         }
@@ -83,8 +83,8 @@ class ScannerServiceImpl @Autowired constructor(
                     version = version,
                     config = scanner.toJsonString(),
                     supportFileNameExt = supportFileNameExt,
-                    supportPackageTypes = supportPackageType,
-                    supportScanTypes = supportScanType
+                    supportPackageTypes = supportPackageTypes,
+                    supportScanTypes = supportScanTypes
                 )
             ).run { convert(this) }
         }
