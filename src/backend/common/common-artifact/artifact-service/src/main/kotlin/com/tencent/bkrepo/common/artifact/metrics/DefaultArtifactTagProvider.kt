@@ -49,7 +49,7 @@ class DefaultArtifactTagProvider(
     private val artifactMetricsProperties: ArtifactMetricsProperties
 ) : ArtifactTransferTagProvider {
     override fun getTags(): Iterable<Tag> {
-        val repositoryDetail = ArtifactContextHolder.getRepoDetail() ?: return TagUtils.tagOfProjectAndRepo(
+        val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull() ?: return TagUtils.tagOfProjectAndRepo(
             StringPool.UNKNOWN,
             StringPool.UNKNOWN
         )
@@ -61,13 +61,13 @@ class DefaultArtifactTagProvider(
     }
 
     override fun getTags(inputStream: ArtifactInputStream, includeRepoInfo: Boolean): Iterable<Tag> {
-        val repositoryDetail = ArtifactContextHolder.getRepoDetail()
+        val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
         val path = if (inputStream is FileArtifactInputStream) inputStream.file.path else SOURCE_IN_REMOTE
         return getTags(repositoryDetail, includeRepoInfo, path)
     }
 
     override fun getTags(receiver: ArtifactDataReceiver, includeRepoInfo: Boolean): Iterable<Tag> {
-        val repositoryDetail = ArtifactContextHolder.getRepoDetail()
+        val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
         val path = getPath(receiver)
         return getTags(repositoryDetail, includeRepoInfo, path)
     }

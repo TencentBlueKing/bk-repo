@@ -47,7 +47,6 @@ import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
@@ -88,9 +87,7 @@ class BlobReplicaController(
     fun push(
         @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null,
-        @PathVariable projectId: String,
-        @PathVariable repoName: String
+        @RequestParam storageKey: String? = null
     ): Response<Void> {
         val credentials = credentialsCache.get(storageKey.orEmpty())
         if (storageService.exist(sha256, credentials)) {
