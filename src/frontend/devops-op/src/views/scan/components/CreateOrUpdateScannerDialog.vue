@@ -23,6 +23,43 @@
           <template slot="append">ms</template>
         </el-input>
       </el-form-item>
+      <el-form-item label="支持的文件类型" prop="supportFileNameExt" required>
+        <el-tooltip effect="dark" content="仅扫描GENERIC包时生效" placement="top-start">
+          <svg-icon icon-class="question" />
+        </el-tooltip>
+        <br>
+        <el-tag
+          v-for="(ext,index) in scanner.supportFileNameExt"
+          :key="ext"
+          :disable-transitions="true"
+          style="margin-right: 10px"
+          size="small"
+          closable
+          @close="handleClose(index)"
+        >
+          {{ ext }}
+        </el-tag>
+        <el-input
+          v-if="extInputVisible"
+          ref="extInput"
+          v-model="extInputValue"
+          class="input-new-ext"
+          size="small"
+          @keyup.enter.native="handleInputConfirm"
+          @blur="handleInputConfirm"
+        />
+        <el-button v-else class="button-new-ext" size="small" @click="showInput">新增</el-button>
+      </el-form-item>
+      <el-form-item label="支持的包类型" prop="supportPackageTypes" required>
+        <el-select v-model="scanner.supportPackageTypes" multiple placeholder="请选择" style="width: 100%">
+          <el-option v-for="item in repoTypes" :key="item" :label="item" :value="item" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="支持的扫描类型" prop="supportScanTypes" required>
+        <el-select v-model="scanner.supportScanTypes" multiple placeholder="请选择" style="width: 100%">
+          <el-option v-for="item in scanTypes" :key="item" :label="item" :value="item" />
+        </el-select>
+      </el-form-item>
       <!-- arrowhead -->
       <el-form-item v-if="scanner.type === SCANNER_TYPE_ARROWHEAD || scanner.type === SCANNER_TYPE_TRIVY" label="镜像" prop="container.image" required>
         <el-input v-model="scanner.container.image" placeholder="镜像，IMAGE:TAG" />
@@ -58,7 +95,12 @@
 <script>
 import { IMAGE_REGEX, URL_REGEX } from '@/utils/validate'
 import _ from 'lodash'
-import { createScanner, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_TRIVY, updateScanner } from '@/api/scan'
+import {
+  createScanner, SCANNER_TYPE_ARROWHEAD,
+  SCANNER_TYPE_TRIVY, scanTypes,
+  updateScanner
+} from '@/api/scan'
+import { repoTypes } from '@/api/repository'
 export default {
   name: 'CreateOrUpdateScannerDialog',
   props: {
@@ -79,6 +121,8 @@ export default {
     return {
       SCANNER_TYPE_ARROWHEAD: SCANNER_TYPE_ARROWHEAD,
       SCANNER_TYPE_TRIVY: SCANNER_TYPE_TRIVY,
+      scanTypes: scanTypes,
+      repoTypes: repoTypes,
       rules: {
         'knowledgeBase.endpoint': [
           { validator: this.validateUrl, trigger: 'change' }
@@ -98,11 +142,15 @@ export default {
         }
       ],
       showDialog: this.visible,
+      extInputVisible: false,
+      extInputValue: '',
       scanner: this.newScanner()
     }
   },
   watch: {
     visible: function(newVal) {
+      this.extInputVisible = false
+      this.extInputValue = ''
       if (newVal) {
         this.resetScanner()
         this.showDialog = true
@@ -138,6 +186,23 @@ export default {
     close() {
       this.showDialog = false
       this.$emit('update:visible', false)
+    },
+    handleClose(index) {
+      this.scanner.supportFileNameExt.splice(index, 1)
+    },
+    showInput() {
+      this.extInputVisible = true
+      this.$nextTick(_ => {
+        this.$refs.extInput.$refs.input.focus()
+      })
+    },
+    handleInputConfirm() {
+      const ext = this.extInputValue
+      if (ext && this.scanner.supportFileNameExt.indexOf(ext) === -1) {
+        this.scanner.supportFileNameExt.push(ext)
+      }
+      this.extInputVisible = false
+      this.extInputValue = ''
     },
     handleCreateOrUpdate(scanner) {
       this.$refs['form'].validate((valid) => {
@@ -182,7 +247,10 @@ export default {
         type: type,
         rootPath: type,
         cleanWorkDir: true,
-        maxScanDurationPerMb: 6000
+        maxScanDurationPerMb: 6000,
+        supportFileNameExt: [],
+        supportPackageTypes: [],
+        supportScanTypes: []
       }
       if (type === SCANNER_TYPE_ARROWHEAD) {
         scanner.knowledgeBase = {}
@@ -200,5 +268,14 @@ export default {
 </script>
 
 <style scoped>
-
+.button-new-ext {
+  height: 32px;
+  line-height: 30px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.input-new-ext {
+  width: 90px;
+  vertical-align: bottom;
+}
 </style>

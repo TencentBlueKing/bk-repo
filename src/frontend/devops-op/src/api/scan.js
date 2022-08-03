@@ -8,6 +8,15 @@ export const SCANNER_TYPE_ARROWHEAD = 'arrowhead'
 export const SCANNER_TYPE_TRIVY = 'trivy'
 export const SCANNER_TYPE_DEPENDENCY_CHECK = 'DependencyCheck'
 
+export const SCAN_TYPE_SECURITY = 'SECURITY'
+export const SCAN_TYPE_LICENSE = 'LICENSE'
+export const SCAN_TYPE_SENSITIVE = 'SENSITIVE'
+export const scanTypes = [
+  SCAN_TYPE_SECURITY,
+  SCAN_TYPE_LICENSE,
+  SCAN_TYPE_SENSITIVE
+]
+
 export function createScanner(scanner) {
   return request({
     url: `${PREFIX_SCANNER}`,
