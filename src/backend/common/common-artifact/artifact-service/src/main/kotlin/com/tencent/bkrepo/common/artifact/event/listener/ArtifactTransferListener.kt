@@ -61,7 +61,7 @@ class ArtifactTransferListener(
         with(event) {
             logger.info("Receive artifact file, $throughput.")
 
-            val repositoryDetail = ArtifactContextHolder.getRepoDetail()
+            val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
@@ -85,7 +85,7 @@ class ArtifactTransferListener(
         with(event) {
             logger.info("Response artifact file, $throughput.")
 
-            val repositoryDetail = ArtifactContextHolder.getRepoDetail()
+            val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
