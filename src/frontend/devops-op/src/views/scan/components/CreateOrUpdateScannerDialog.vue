@@ -61,7 +61,7 @@
         </el-select>
       </el-form-item>
       <!-- arrowhead -->
-      <el-form-item v-if="scanner.type === SCANNER_TYPE_ARROWHEAD || scanner.type === SCANNER_TYPE_TRIVY" label="镜像" prop="container.image" required>
+      <el-form-item v-if="scanner.type === SCANNER_TYPE_ARROWHEAD || scanner.type === SCANNER_TYPE_TRIVY || scanner.type === SCANNER_TYPE_SCANCODE" label="镜像" prop="container.image" required>
         <el-input v-model="scanner.container.image" placeholder="镜像，IMAGE:TAG" />
       </el-form-item>
       <el-form-item v-if="scanner.type === SCANNER_TYPE_ARROWHEAD" label="知识库URL" prop="knowledgeBase.endpoint" required>
@@ -96,7 +96,7 @@
 import { IMAGE_REGEX, URL_REGEX } from '@/utils/validate'
 import _ from 'lodash'
 import {
-  createScanner, SCANNER_TYPE_ARROWHEAD,
+  createScanner, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE,
   SCANNER_TYPE_TRIVY, scanTypes,
   updateScanner
 } from '@/api/scan'
@@ -121,6 +121,7 @@ export default {
     return {
       SCANNER_TYPE_ARROWHEAD: SCANNER_TYPE_ARROWHEAD,
       SCANNER_TYPE_TRIVY: SCANNER_TYPE_TRIVY,
+      SCANNER_TYPE_SCANCODE: SCANNER_TYPE_SCANCODE,
       scanTypes: scanTypes,
       repoTypes: repoTypes,
       rules: {
@@ -139,6 +140,10 @@ export default {
         {
           'value': SCANNER_TYPE_TRIVY,
           'label': 'Trivy'
+        },
+        {
+          'value': SCANNER_TYPE_SCANCODE,
+          'label': 'Scancode'
         }
       ],
       showDialog: this.visible,
@@ -260,6 +265,9 @@ export default {
         scanner.container = {}
         scanner.vulDbConfig = {}
         scanner.vulDbConfig.dbSource = 1
+      }
+      if (type === SCANNER_TYPE_SCANCODE) {
+        scanner.container = {}
       }
       return scanner
     }

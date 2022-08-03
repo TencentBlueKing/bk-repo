@@ -7,6 +7,7 @@ const PREFIX_PROJECT_SCAN_CONFIGURATION = `${PREFIX_SCAN}/configurations`
 export const SCANNER_TYPE_ARROWHEAD = 'arrowhead'
 export const SCANNER_TYPE_TRIVY = 'trivy'
 export const SCANNER_TYPE_DEPENDENCY_CHECK = 'DependencyCheck'
+export const SCANNER_TYPE_SCANCODE = 'scancodeToolkit'
 
 export const SCAN_TYPE_SECURITY = 'SECURITY'
 export const SCAN_TYPE_LICENSE = 'LICENSE'
