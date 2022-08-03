@@ -64,6 +64,22 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
     }
 
     /**
+     * 查找代理
+     */
+    fun findByProjectIdAndRepo(
+        projectId: String,
+        repoName: String,
+        repoType: RepositoryType
+    ): List<TProxyChannel> {
+        val query = buildSingleQuery(
+            projectId = projectId,
+            repoName = repoName,
+            repoType = repoType.name
+        )
+        return this.find(query)
+    }
+
+    /**
      * 根据类型查找项目
      */
     fun findByRepoType(repoType: RepositoryType): List<TProxyChannel> {
@@ -96,12 +112,16 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
         projectId: String,
         repoName: String,
         repoType: String,
-        name: String
+        name: String? = null
     ): Query {
         val criteria = where(TProxyChannel::projectId).isEqualTo(projectId)
             .and(TProxyChannel::repoName).isEqualTo(repoName)
-            .and(TProxyChannel::name).isEqualTo(name)
             .and(TProxyChannel::repoType).isEqualTo(repoType)
+            .apply {
+                name?.let {
+                    this.and(TProxyChannel::name).isEqualTo(name)
+                }
+            }
         return Query(criteria)
     }
 }

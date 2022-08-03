@@ -328,8 +328,8 @@ class HttpBkSyncCall(
                     throw PatchRequestException("Delta upload failed: ${errorMsg.orEmpty()}")
                 }
             }
-            metrics.patchTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
-            metrics.patchSpeed = HumanReadable.throughput(metrics.fileSize, nanos)
+            metrics.deltaFileSize = deltaFile.length()
+            metrics.patchTime = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS)
             logger.info("Delta data upload success,elapsed ${HumanReadable.time(nanos)}.")
         } finally {
             deltaFile.delete()
@@ -350,11 +350,10 @@ class HttpBkSyncCall(
                 BkSync(BLOCK_SIZE).diff(file, signInputStream, deltaOutputStream, reuseThreshold)
             }
             val bytes = file.length()
-            metrics.diffTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
-            metrics.diffSpeed = throughput(bytes, nanos)
+            metrics.diffTime = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS)
             logger.info(
                 "Detecting file[$file] success, " +
-                    "size: ${size(bytes)}, elapse: ${time(nanos)}, average: ${metrics.diffSpeed}."
+                    "size: ${size(bytes)}, elapse: ${time(nanos)}, average: ${throughput(bytes, nanos)}."
             )
             return result
         }
@@ -381,7 +380,7 @@ class HttpBkSyncCall(
                     }
                 }
             }
-            metrics.genericUploadTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
+            metrics.genericUploadTime = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS)
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
         }
     }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
@@ -45,6 +46,12 @@ interface ReplicaTaskService {
      * @param taskId 任务id
      */
     fun getByTaskId(taskId: String): ReplicaTaskInfo?
+
+    /**
+     * 根据任务name查询任务信息
+     * @param name 任务name
+     */
+    fun getByTaskName(name: String): ReplicaTaskInfo?
 
     /**
      * 根据任务key查询任务信息
@@ -76,6 +83,16 @@ interface ReplicaTaskService {
      * 根据项目id和仓库名称查询相关联的任务
      */
     fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskDetail>
+
+    /**
+     * 根据项目id和仓库名称查询相关联的任务
+     */
+    fun listTasks(
+        projectId: String,
+        repoName: String,
+        type: ReplicaType? = null,
+        enable: Boolean?
+    ): List<ReplicaTaskDetail>
 
     /**
      * 创建同步任务

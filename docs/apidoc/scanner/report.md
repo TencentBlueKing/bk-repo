@@ -187,13 +187,8 @@
 | detail.pageSize        | number | 页大小      | page size               |
 | detail.totalRecords    | number | 总记录数量    | total records           |
 | detail.totalPage       | number | 总页数      | total page              |
-| detail.records.path    | string | 制品用的库的路径 | lib path                |
-| detail.records.type    | string | 敏感信息类型   | sensitive item class    |
-| detail.records.subtype | string | 敏感信息子类型  | sensitive item subclass |
-| detail.records.content | string | 敏感信息内容   | sensitive content       |
-| detail.records.attr    | string | 敏感信息属性   | sensitive item attr     |
 
-扫描结果详情字段参考[支持的扫描器](./supported-scanner.md)
+扫描结果详情detail字段参考[支持的扫描器](./supported-scanner.md)
 
 ## 获取子任务扫描报告详情
 

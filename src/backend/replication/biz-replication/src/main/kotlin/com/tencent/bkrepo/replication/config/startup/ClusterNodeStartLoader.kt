@@ -29,8 +29,8 @@ package com.tencent.bkrepo.replication.config.startup
 
 import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory

@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -106,6 +107,10 @@ interface NodeClient {
     @PostMapping("/update")
     fun updateNode(@RequestBody nodeUpdateRequest: NodeUpdateRequest): Response<Void>
 
+    @ApiOperation("更新节点访问时间")
+    @PostMapping("/update/access/")
+    fun updateNodeAccessDate(@RequestBody nodeUpdateAccessDateRequest: NodeUpdateAccessDateRequest): Response<Void>
+
     @ApiOperation("重命名节点")
     @PostMapping("/rename")
     fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Response<Void>
@@ -161,6 +166,8 @@ interface NodeClient {
         @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
         @RequestParam includeFolder: Boolean = true,
         @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false
+        @RequestParam deep: Boolean = false,
+        @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
+        @RequestParam includeMetadata: Boolean = false,
     ): Response<List<NodeInfo>>
 }

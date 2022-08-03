@@ -244,7 +244,8 @@ class GenericLocalRepository : LocalRepository() {
             repoName = node.repoName,
             path = node.fullPath,
             includeFolder = false,
-            deep = true
+            deep = true,
+            includeMetadata = true
         ).data.orEmpty()
         // 检查目录大小
         checkFolderSize(nodes)

@@ -49,6 +49,9 @@ class BkAuthConfig {
     @Value("\${auth.devops.ciAuthToken:}")
     private var ciAuthToken: String = ""
 
+    @Value("\${auth.devops.enableSuperAdmin: false}")
+    var enableSuperAdmin: Boolean = false
+
     /**
      * 蓝盾平台appId集合
      */
@@ -60,6 +63,12 @@ class BkAuthConfig {
      */
     @Value("\${auth.devops.userIdSet:}")
     var userIdSet: String = ""
+
+    /**
+     * 允许默认密码校验
+     */
+    @Value("\${auth.devops.allowDefaultPwd: true}")
+    var allowDefaultPwd: Boolean = true
 
     /**
      * 蓝盾CI平台appId

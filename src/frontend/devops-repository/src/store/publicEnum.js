@@ -91,7 +91,8 @@ export const scannerTypeEnum = {
     // 科恩
     arrowhead: {
         GENERIC: '支持apk、ipa、aab、jar格式的文件',
-        MAVEN: ''
+        MAVEN: '',
+        DOCKER: ''
     },
     // DependencyCheck
     DependencyCheck: {

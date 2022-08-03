@@ -29,7 +29,6 @@ package com.tencent.bkrepo.webhook.payload.builder.node
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.webhook.pojo.payload.node.NodeRenamedEventPayload
 import org.springframework.stereotype.Component
 
@@ -39,10 +38,9 @@ class NodeRenamedPayloadBuilder : NodePayloadBuilder(
 ) {
 
     override fun build(event: ArtifactEvent): NodeRenamedEventPayload {
-        require(event is NodeRenamedEvent)
         return NodeRenamedEventPayload(
             user = getUser(event.userId),
-            node = getNode(event.projectId, event.repoName, event.newFullPath),
+            node = getNode(event.projectId, event.repoName, event.data["newFullPath"].toString()),
             oldFullPath = event.resourceKey
         )
     }

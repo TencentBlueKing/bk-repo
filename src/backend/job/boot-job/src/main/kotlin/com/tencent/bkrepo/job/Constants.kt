@@ -55,21 +55,23 @@ const val COUNT = "count"
 const val TYPE = "type"
 const val CATEGORY = "category"
 const val CREATED_DATE = "createdDate"
+const val LAST_MODIFIED_DATE = "lastModifiedDate"
 
 /**
  * metrics
  */
-const val ASYNC_TASK_ACTIVE_COUNT = "async.task.active.count"
-const val ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"
+const val TAG_STATUS = "status"
+const val TAG_NAME = "name"
+const val JOB_ASYNC_TASK_ACTIVE_COUNT = "job.async.task.active.count"
+const val JOB_ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"
 
-const val ASYNC_TASK_QUEUE_SIZE = "async.task.queue.size"
-const val ASYNC_TASK_QUEUE_SIZE_DESC = "异步任务队列大小"
+const val JOB_ASYNC_TASK_QUEUE_SIZE = "job.async.task.queue.size"
+const val JOB_ASYNC_TASK_QUEUE_SIZE_DESC = "异步任务队列大小"
 
-const val RUNNING_TASK_JOB_COUNT = "running.job.count"
-const val RUNNING_TASK_JOB_DESC = "运行中的任务数量"
+const val JOB_BATCH_JOB_ACTIVE_COUNT = "job.batch-job.active.count"
+const val JOB_BATCH_JOB_ACTIVE_DESC = "运行中的跑批任务数量"
 
 const val JOB_TASK_COUNT = "job.task.count"
 const val JOB_TASK_COUNT_DESC = "任务执行统计"
-const val JOB_AVG_TIME_CONSUME = "job.avg.time.consume"
-const val JOB_AVG_WAIT_TIME_CONSUME_DESC = "任务平均等待时长统计"
-const val JOB_AVG_EXECUTE_TIME_CONSUME_DESC = "任务平均执行时长统计"
+const val JOB_TIME_CONSUME = "job.task.time"
+const val JOB_TIME_CONSUME_DESC = "任务执行时长统计"

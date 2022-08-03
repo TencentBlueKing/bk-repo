@@ -40,22 +40,21 @@ class BkSyncMetrics(
     var fileType: String = "",
     // 文件大小，单位字节
     var fileSize: Long = 0,
-    // 检测差异时间，单位秒
+    // 检测差异时间，单位毫秒
     var diffTime: Long = 0,
-    // 检测差异速度
-    var diffSpeed: String = "",
     // 重复块命中率
     var hitRate: Float = 0f,
-    // 合并时间，单位秒
+    // 增量文件大小，单位字节
+    var deltaFileSize: Long = 0,
+    // 合并时间，单位毫秒
     var patchTime: Long = 0,
-    // 合并速度
-    var patchSpeed: String = "",
-    // 普通上传时间，单位秒
+    // 普通上传时间，单位毫秒
     var genericUploadTime: Long = 0,
     var projectId: String = "",
     var repoName: String = "",
     var pipelineId: String = "",
     var buildId: String = "",
+    var taskId: String = "",
     var ip: String = ""
 ) {
     fun setBasicMetrics(request: UploadRequest) {
@@ -63,15 +62,11 @@ class BkSyncMetrics(
         fileSize = request.file.length()
         projectId = request.projectId
         repoName = request.repoName
-        val (pId, bId) = getPipelineIdAndBuildId(request.headers)
-        pipelineId = pId
-        buildId = bId
+        parseMetadata(request.headers)
     }
 
-    private fun getPipelineIdAndBuildId(headers: Map<String, String>): Pair<String, String> {
+    private fun parseMetadata(headers: Map<String, String>) {
         val header = headers[BKREPO_META]
-        var pipelineId = ""
-        var buildId = ""
         try {
             val metadataUrl = String(Base64.getDecoder().decode(header))
             metadataUrl.split(CharPool.AND).forEach { part ->
@@ -84,12 +79,12 @@ class BkSyncMetrics(
                 when (key) {
                     PIPELINE_ID -> pipelineId = value
                     BUILD_ID -> buildId = value
+                    TASK_ID -> taskId = value
                 }
             }
         } catch (exception: IllegalArgumentException) {
             logger.warn("$header is not in valid Base64 scheme.")
         }
-        return Pair(pipelineId, buildId)
     }
 
     companion object {
@@ -97,5 +92,6 @@ class BkSyncMetrics(
         private const val BKREPO_META = "X-BKREPO-META"
         private const val PIPELINE_ID = "pipelineId"
         private const val BUILD_ID = "buildId"
+        private const val TASK_ID = "taskId"
     }
 }

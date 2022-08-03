@@ -36,5 +36,14 @@ data class ReplicationProperties(
     /**
      * 文件发送限速
      */
-    var rateLimit: DataSize = DataSize.ofBytes(-1)
+    var rateLimit: DataSize = DataSize.ofBytes(-1),
+
+    /**
+     * oci blob文件上传分块大小
+     */
+    var chunkedSize: Long = 1024 * 1024 * 20,
+    /**
+     * oci blob文件上传并发数
+     */
+    var threadNum: Int = 4
 )

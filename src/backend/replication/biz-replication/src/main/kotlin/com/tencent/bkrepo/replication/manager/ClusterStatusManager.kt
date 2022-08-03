@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatusUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.scheduling.annotation.Scheduled

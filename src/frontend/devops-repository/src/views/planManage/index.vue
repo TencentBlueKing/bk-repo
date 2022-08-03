@@ -40,7 +40,11 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(planInput || lastExecutionStatus || showEnabled)"></empty-data>
             </template>
-            <bk-table-column label="计划名称" prop="name" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="计划名称" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn" @click="showPlanDetailHandler(row)">{{row.name}}</span>
+                </template>
+            </bk-table-column>
             <bk-table-column label="同步类型" width="80">
                 <template #default="{ row }">
                     {{ { 'REPOSITORY': '同步仓库', 'PACKAGE': '同步制品', 'PATH': '同步文件' }[row.replicaObjectType] }}
@@ -86,7 +90,6 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: '详情', clickEvent: () => showPlanDetailHandler(row) },
                             { label: '编辑', clickEvent: () => editPlanHandler(row), disabled: Boolean(row.lastExecutionStatus) || row.replicaType === 'REAL_TIME' },
                             { label: '复制', clickEvent: () => copyPlanHandler(row) },
                             { label: '删除', clickEvent: () => deletePlanHandler(row) },

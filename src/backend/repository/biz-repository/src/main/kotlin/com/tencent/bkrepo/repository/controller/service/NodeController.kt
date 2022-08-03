@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -96,6 +97,11 @@ class NodeController(
         return ResponseBuilder.success()
     }
 
+    override fun updateNodeAccessDate(nodeUpdateAccessDateRequest: NodeUpdateAccessDateRequest): Response<Void> {
+        nodeService.updateNodeAccessDate(nodeUpdateAccessDateRequest)
+        return ResponseBuilder.success()
+    }
+
     override fun renameNode(nodeRenameRequest: NodeRenameRequest): Response<Void> {
         nodeService.renameNode(nodeRenameRequest)
         return ResponseBuilder.success()
@@ -135,12 +141,13 @@ class NodeController(
         repoName: String,
         path: String,
         includeFolder: Boolean,
-        deep: Boolean
+        deep: Boolean,
+        includeMetadata: Boolean
     ): Response<List<NodeInfo>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
         val nodeListOption = NodeListOption(
             includeFolder = includeFolder,
-            includeMetadata = false,
+            includeMetadata = includeMetadata,
             deep = deep
         )
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))

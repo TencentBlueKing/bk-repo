@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.listener
 
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import com.tencent.bkrepo.job.metrics.JobMetrics
 import org.slf4j.LoggerFactory
@@ -43,9 +44,11 @@ class TaskEventListener(private val jobMetrics: JobMetrics) {
     fun listen(event: TaskExecutedEvent) {
         with(event) {
             logger.info("Receive taskExecutedEvent:$event")
-            jobMetrics.jobTasksCounter.increment(doneCount.toDouble())
-            jobMetrics.jobAvgWaitTimeConsumeTimer.record(avgWaitTime)
-            jobMetrics.jobAvgExecuteTimeConsumeTimer.record(avgExecuteTime)
+            jobMetrics.getCounter(JobContext::success.name, name)
+                .increment(context.success.toDouble())
+            jobMetrics.getCounter(JobContext::failed.name, name)
+                .increment(context.failed.toDouble())
+            jobMetrics.getTimer(name).record(time)
         }
     }
 

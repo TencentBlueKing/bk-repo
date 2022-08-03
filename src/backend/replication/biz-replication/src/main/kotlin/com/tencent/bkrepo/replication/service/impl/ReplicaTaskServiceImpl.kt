@@ -41,6 +41,7 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -62,8 +63,8 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.buildListQuery
-import com.tencent.bkrepo.replication.util.TaskQueryHelper.realTimeTaskQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskObjectQuery
+import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskQueryByType
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoScheduledTaskQuery
 import org.quartz.JobBuilder
 import org.quartz.JobKey
@@ -83,6 +84,10 @@ class ReplicaTaskServiceImpl(
 ) : ReplicaTaskService {
     override fun getByTaskId(taskId: String): ReplicaTaskInfo? {
         return replicaTaskDao.findById(taskId)?.let { convert(it) }
+    }
+
+    override fun getByTaskName(name: String): ReplicaTaskInfo? {
+        return replicaTaskDao.findByName(name)?.let { convert(it) }
     }
 
     override fun getByTaskKey(key: String): ReplicaTaskInfo {
@@ -111,17 +116,26 @@ class ReplicaTaskServiceImpl(
         return replicaTaskDao.find(query).map { convert(it)!! }
     }
 
-    override fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskDetail> {
+    override fun listTasks(
+        projectId: String,
+        repoName: String,
+        type: ReplicaType?,
+        enable: Boolean?
+    ): List<ReplicaTaskDetail> {
         val objectQuery = taskObjectQuery(projectId, repoName)
         val replicaObjectList = replicaObjectDao.find(objectQuery)
         if (replicaObjectList.isEmpty()) return emptyList()
         val taskKeyList = replicaObjectList.map { it.taskKey }
-        val query = realTimeTaskQuery(taskKeyList)
+        val query = taskQueryByType(taskKeyList, type, enable)
         val replicaTaskInfoList = replicaTaskDao.find(query).map { convert(it)!! }
         return replicaTaskInfoList.map { info ->
             val detailList = replicaObjectList.filter { it.taskKey == info.key }.map { convert(it)!! }
             ReplicaTaskDetail(info, detailList)
         }
+    }
+
+    override fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskDetail> {
+        return listTasks(projectId, repoName, ReplicaType.REAL_TIME, true)
     }
 
     override fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo {
@@ -256,7 +270,7 @@ class ReplicaTaskServiceImpl(
                 val pathConstraints = request.replicaTaskObjects.first().pathConstraints
                 Preconditions.checkNotBlank(pathConstraints, "pathConstraints")
                 pathConstraints?.forEach { pathConstraint ->
-                    PathUtils.normalizeFullPath(pathConstraint.path)
+                    PathUtils.normalizeFullPath(pathConstraint.path!!)
                 }
             }
         }
@@ -326,11 +340,15 @@ class ReplicaTaskServiceImpl(
             // 获取任务
             val tReplicaTask = replicaTaskDao.findByKey(key)
                 ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
-            // 检查任务状态，执行过的任务不让修改
-            if (tReplicaTask.status != ReplicaStatus.WAITING ||
-                tReplicaTask.lastExecutionStatus != null
-            ) {
-                throw ErrorCodeException(ReplicationMessageCode.TASK_DISABLE_UPDATE, key)
+            // 针对ClusterNodeType 为THIRD_PARTY的更新，可以绕过下面那个任务状态限制
+            val remoteNode = clusterNodeService.getByClusterId(remoteClusterIds.first())
+            if (remoteNode!!.type != ClusterNodeType.REMOTE) {
+                // 检查任务状态，执行过的任务不让修改
+                if (tReplicaTask.status != ReplicaStatus.WAITING ||
+                    tReplicaTask.lastExecutionStatus != null
+                ) {
+                    throw ErrorCodeException(ReplicationMessageCode.TASK_DISABLE_UPDATE, key)
+                }
             }
             // 更新任务
             val userId = SecurityUtils.getUserId()
@@ -415,7 +433,7 @@ class ReplicaTaskServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaTaskServiceImpl::class.java)
         private const val TASK_NAME_LENGTH_MIN = 2
-        private const val TASK_NAME_LENGTH_MAX = 32
+        private const val TASK_NAME_LENGTH_MAX = 64
 
         private fun convert(tReplicaTask: TReplicaTask?): ReplicaTaskInfo? {
             return tReplicaTask?.let {
