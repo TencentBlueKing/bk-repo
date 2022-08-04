@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
@@ -80,8 +81,9 @@ class AuthInterceptor : HandlerInterceptor {
                     logger.warn("find no user [${parts[0]}]")
                     throw IllegalArgumentException("check credential fail")
                 }
-                request.setAttribute(USER_KEY, parts[0])
 
+                request.setAttribute(USER_KEY, parts[0])
+                request.setAttribute(ADMIN_USER, user.admin)
                 // 非项目内认证账号
                 if (urlMatch == 0 && !user.admin) {
                     logger.warn("user [${parts[0]}] is not admin")
