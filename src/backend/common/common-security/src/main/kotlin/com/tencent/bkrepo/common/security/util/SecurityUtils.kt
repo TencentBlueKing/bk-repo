@@ -56,7 +56,7 @@ object SecurityUtils {
      * 是否系统管理员
      */
     fun isAdmin(): Boolean {
-        return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: true
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
     /**
