@@ -36,6 +36,8 @@ import java.util.Base64
 class BkSyncMetrics(
     // 网络速度，单位MB/s
     var networkSpeed: Int = 0,
+    // 文件名
+    var fileName: String = "",
     // 文件类型
     var fileType: String = "",
     // 文件大小，单位字节
@@ -50,6 +52,10 @@ class BkSyncMetrics(
     var patchTime: Long = 0,
     // 普通上传时间，单位毫秒
     var genericUploadTime: Long = 0,
+    // 历史普通上传速度，单位B/s
+    var historyGenericUploadSpeed: Double = 0.0,
+    // 上报指标时间戳
+    var reportTimeStamp: Long = System.currentTimeMillis(),
     var projectId: String = "",
     var repoName: String = "",
     var pipelineId: String = "",
@@ -58,6 +64,7 @@ class BkSyncMetrics(
     var ip: String = ""
 ) {
     fun setBasicMetrics(request: UploadRequest) {
+        fileName = request.file.name
         fileType = request.file.extension
         fileSize = request.file.length()
         projectId = request.projectId
