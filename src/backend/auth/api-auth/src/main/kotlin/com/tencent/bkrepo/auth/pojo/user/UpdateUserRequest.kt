@@ -42,8 +42,10 @@ data class UpdateUserRequest(
     val asstUsers: List<String> = emptyList(),
     @ApiModelProperty("lock状态")
     val locked: Boolean? = null,
-    @ApiModelProperty("管理员")
+    @ApiModelProperty("email")
     val email: String? = null,
     @ApiModelProperty("联系电话")
-    val phone: String? = null
+    val phone: String? = null,
+    @ApiModelProperty("是否管理员")
+    val admin: String? = null
 )

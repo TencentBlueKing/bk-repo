@@ -48,9 +48,9 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
-import org.springframework.web.servlet.HandlerMapping
 
 @Suppress("LateinitUsage") // 静态成员通过init构造函数初始化
 class ArtifactContextHolder(
@@ -138,6 +138,8 @@ class ArtifactContextHolder(
         /**
          * 根据当前请求获取对应仓库详情
          * 如果请求为空，则返回`null`
+         * 注意：http请求必须带上projectId和repoName，否则会抛出RepoNotFoundException
+         * 如需不抛出异常，使用getRepoDetailOrNull
          */
         fun getRepoDetail(): RepositoryDetail? {
             val request = HttpContextHolder.getRequestOrNull() ?: return null
@@ -152,6 +154,18 @@ class ArtifactContextHolder(
             }
             request.setAttribute(REPO_KEY, repoDetail)
             return repoDetail
+        }
+
+        /**
+         * 根据当前请求获取对应仓库详情
+         * 如果请求为空，则返回`null`
+         */
+        fun getRepoDetailOrNull(): RepositoryDetail? {
+            return try {
+                getRepoDetail()
+            } catch (e: RepoNotFoundException) {
+                null
+            }
         }
 
         /**

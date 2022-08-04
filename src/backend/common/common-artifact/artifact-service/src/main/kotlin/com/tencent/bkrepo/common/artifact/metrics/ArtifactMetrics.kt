@@ -33,7 +33,6 @@ package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
@@ -62,9 +61,7 @@ class ArtifactMetrics(
         Companion.meterRegistry = meterRegistry
         lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, meterRegistry, properties.maxMeters)
         meterRegistry.config().meterFilter(lruMeterFilter)
-        ServiceShutdownHook.add { ensureDownloadAndUploadFinish() }
     }
-
     override fun bindTo(meterRegistry: MeterRegistry) {
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount) { it.get().toDouble() }
             .description(ARTIFACT_UPLOADING_COUNT_DESC)

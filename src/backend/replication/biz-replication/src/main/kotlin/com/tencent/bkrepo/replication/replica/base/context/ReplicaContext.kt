@@ -133,7 +133,7 @@ class ReplicaContext(
             .post(requestBody)
             .build()
         httpClient?.newCall(httpRequest)?.execute().use {
-            it?.let { it1 -> check(it1?.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
+            it?.let { it1 -> check(it1.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
         }
     }
 }
