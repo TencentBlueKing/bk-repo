@@ -37,24 +37,31 @@ import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ScancodeToolkitResultArguments
 import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.scanner.service.SpdxLicenseService
 import org.springframework.stereotype.Component
 
 @Component("${ScancodeToolkitScanner.TYPE}Converter")
-class ScanCodeConverter : ScannerConverter {
+class ScanCodeConverter(
+    private val licenseService: SpdxLicenseService
+) : ScannerConverter {
     @Suppress("UNCHECKED_CAST")
     override fun convertLicenseResult(result: Any): Page<FileLicensesResultDetail> {
         result as Page<ScancodeItem>
+        val licenseIds = result.records.map { it.licenseId }.distinct()
+        val licenses = licenseService.listLicenseByIds(licenseIds)
+
         val reports = result.records.mapTo(HashSet(result.records.size)) {
+            val detail = licenses[it.licenseId]
             FileLicensesResultDetail(
                 licenseId = it.licenseId,
-                fullName = it.fullName,
-                compliance = it.compliance,
+                fullName = detail?.name ?: "",
+                compliance = detail?.isTrust,
                 riskLevel = it.riskLevel,
-                recommended = it.recommended,
-                description = it.description,
-                isOsiApproved = it.isOsiApproved,
+                recommended = detail?.isDeprecatedLicenseId == false,
+                description = detail?.reference ?: "",
+                isOsiApproved = detail?.isOsiApproved,
                 dependentPath = it.dependentPath,
-                isFsfLibre = it.isFsfLibre
+                isFsfLibre = detail?.isFsfLibre
             )
         }.toList()
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)

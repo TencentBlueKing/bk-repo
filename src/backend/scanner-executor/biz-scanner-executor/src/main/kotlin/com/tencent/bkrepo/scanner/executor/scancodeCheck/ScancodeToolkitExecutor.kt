@@ -125,41 +125,18 @@ class ScancodeToolkitExecutor @Autowired constructor(
         val resultFile = File(File(taskWorkDir, scanner.container.outputDir), LICENSE_SCAN_RESULT_FILE_NAME)
 
         val scancodeToolItem = readJsonString<ScancodeToolItem>(resultFile)
-            ?: return ScanCodeToolkitScanExecutorResult(scanStatus.name, emptyMap(), emptyList())
-        // 获取license信息
-        val licenseKeys = scancodeToolItem.files
-            .flatMapTo(HashSet()) { it.licenses }
-            .mapTo(HashSet()) { it.spdxLicenseKey }
-            .ifEmpty { return ScanCodeToolkitScanExecutorResult(scanStatus.name, emptyMap(), emptyList()) }
+            ?: return ScanCodeToolkitScanExecutorResult(scanStatus.name, emptyMap(), emptySet())
 
-        val licensesInfo = scanClient.licenseInfoByIds(licenseKeys.toList()).data
-
-        val scancodeItems = ArrayList<ScancodeItem>()
+        val scancodeItems = HashSet<ScancodeItem>()
         scancodeToolItem.files.forEach { file ->
             file.licenses.forEach { license ->
-                val detail = licensesInfo?.get(license.spdxLicenseKey)
                 val path = file.path.removePrefix("${inputFile.name}$EXT_SUFFIX")
-                val scancodeItem = if (detail == null) {
-                    ScancodeItem(licenseId = license.spdxLicenseKey, dependentPath = path)
-                } else {
-                    ScancodeItem(
-                        licenseId = detail.licenseId,
-                        fullName = detail.name,
-                        description = detail.reference,
-                        recommended = !detail.isDeprecatedLicenseId,
-                        isFsfLibre = detail.isFsfLibre,
-                        isOsiApproved = detail.isOsiApproved,
-                        compliance = detail.isTrust,
-                        riskLevel = detail.risk,
-                        dependentPath = path,
-                        unknown = false
-                    )
-                }
-                scancodeItems.add(scancodeItem)
+                scancodeItems.add(ScancodeItem(license.spdxLicenseKey, path))
             }
         }
+
         return ScanCodeToolkitScanExecutorResult(
-            overview = overview(scancodeItems),
+            overview = updateRiskAndOverview(scancodeItems),
             scanStatus = scanStatus.name,
             scancodeItem = scancodeItems
         )
@@ -236,30 +213,42 @@ class ScancodeToolkitExecutor @Autowired constructor(
     /**
      * 数量统计
      */
-    private fun overview(scancodeItem: MutableList<ScancodeItem>): Map<String, Any?> {
+    private fun updateRiskAndOverview(scancodeItems: Set<ScancodeItem>): Map<String, Any?> {
         val overview = HashMap<String, Long>()
-        LicenseNature.values().forEach {
-            overview[it.natureName] = 0L
-        }
-        var unCompliance = 0L
-        var unRecommend = 0L
-        var unknown = 0L
-        scancodeItem.forEach {
-            // license risk
-            val overviewKey = LicenseOverviewKey.overviewKeyOfLicenseRisk(it.riskLevel)
-            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-            // nature count
-            if (it.recommended != null && !it.recommended!!) unRecommend++
-            if (it.compliance != null && !it.compliance!!) unCompliance++
-            if (it.unknown) unknown++
-        }
-        overview[LicenseOverviewKey.overviewKeyOf(LicenseNature.UN_COMPLIANCE.natureName)] = unCompliance
-        overview[LicenseOverviewKey.overviewKeyOf(LicenseNature.UN_RECOMMEND.natureName)] = unRecommend
-        overview[LicenseOverviewKey.overviewKeyOf(LicenseNature.UNKNOWN.natureName)] = unknown
-
         // 不推荐和不合规可能重合，单独统计总数
-        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = scancodeItem.size.toLong()
+        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = scancodeItems.size.toLong()
+
+        // 获取许可证详情信息
+        val licenseIds = scancodeItems.mapTo(HashSet()) { it.licenseId }.toList()
+        val licensesInfo = scanClient.licenseInfoByIds(licenseIds).data!!
+
+        // 统计各类型许可证数量
+        for (scancodeItem in scancodeItems) {
+            val detail = licensesInfo[scancodeItem.licenseId]
+            if (detail == null) {
+                incOverview(overview, LicenseNature.UNKNOWN.natureName)
+                continue
+            }
+
+            // license risk
+            scancodeItem.riskLevel = detail.risk
+            scancodeItem.riskLevel?.let { incOverview(overview, it) }
+
+            // nature count
+            if (detail.isDeprecatedLicenseId) {
+                incOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
+            }
+
+            if (!detail.isTrust) {
+                incOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
+            }
+        }
         return overview
+    }
+
+    private fun incOverview(overview: MutableMap<String, Long>, level: String) {
+        val overviewKey = LicenseOverviewKey.overviewKeyOf(level)
+        overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
     }
 
     companion object {

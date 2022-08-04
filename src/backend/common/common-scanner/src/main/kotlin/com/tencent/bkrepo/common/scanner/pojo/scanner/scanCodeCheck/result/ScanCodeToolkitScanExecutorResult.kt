@@ -37,5 +37,5 @@ data class ScanCodeToolkitScanExecutorResult(
     override val scanStatus: String,
     override val overview: Map<String, Any?>,
     @ApiModelProperty("结果")
-    val scancodeItem: List<ScancodeItem>
+    val scancodeItem: Set<ScancodeItem>
 ) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
