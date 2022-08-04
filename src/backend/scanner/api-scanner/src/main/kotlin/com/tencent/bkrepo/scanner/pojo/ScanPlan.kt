@@ -29,7 +29,6 @@ package com.tencent.bkrepo.scanner.pojo
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -45,7 +44,7 @@ data class ScanPlan(
     @ApiModelProperty("方案类型")
     var type: String? = null,
     @ApiModelProperty("扫描类型")
-    var scanTypes: List<String> = listOf(ScanType.SECURITY.name),
+    var scanTypes: List<String>? = null,
     @ApiModelProperty("使用的扫描器")
     var scanner: String? = null,
     @ApiModelProperty("方案描述")

@@ -2,12 +2,15 @@
 
 **扫描器配置公共字段**
 
-| 字段                   | 类型     | 是否必须 | 默认值 | 说明             | Description       |
-|----------------------|--------|------|-----|----------------|-------------------|
-| name                 | string | 是    | 无   | 扫描器名           | scanner name      |
-| type                 | string | 是    | 无   | 扫描器类型          | scanner type      |
-| version              | string | 是    | 无   | 扫描器版本          | scanner version   |
-| maxScanDurationPerMb | number | 否    | 6s  | 最大允许的1MB文件扫描时间 | max scan duration |
+| 字段                   | 类型     | 是否必须 | 默认值   | 说明             | Description                  |
+|----------------------|--------|------|-------|----------------|------------------------------|
+| name                 | string | 是    | 无     | 扫描器名           | scanner name                 |
+| type                 | string | 是    | 无     | 扫描器类型          | scanner type                 |
+| version              | string | 是    | 无     | 扫描器版本          | scanner version              |
+| maxScanDurationPerMb | number | 否    | 6s    | 最大允许的1MB文件扫描时间 | max scan duration            |
+| supportFileNameExt   | array  | 否    | empty | 支持扫描的文件名后缀     | support file name extensions |
+| supportPackageTypes  | array  | 否    | empty | 支持扫描的包类型       | support package types        |
+| supportScanTypes     | array  | 否    | empty | 支持扫描的类型        | support scan types           |
 
 # Arrowhead扫描器
 

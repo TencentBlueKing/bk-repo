@@ -20,6 +20,9 @@
   "configFilePath": "/standalone.toml",
   "cleanWorkDir": false,
   "maxScanDurationPerMb": 6000,
+  "supportFileNameExt": ["apk", "ipa", "jar"],
+  "supportPackageTypes": ["GENERIC", "MAVEN", "DOCKER"],
+  "supportScanTypes": ["SECURITY", "LICENSE", "SENSITIVE"],
   "knowledgeBase": {
     "secretId": "username",
     "secretKey": "key",
@@ -44,6 +47,9 @@
 | configFilePath          | string  | 否    | /standalone.toml | 生成的arrowhead扫描器配置文件存放路径         | arrowhead scanner config file path |
 | cleanWorkDir            | boolean | 否    | true             | 扫描结束后是否清理目录                     | clean work dir after scan          |
 | maxScanDurationPerMb    | number  | 否    | 6000             | 每MB文件最大允许的扫描时间                  | max scan duration per mb           |
+| supportFileNameExt      | array   | 否    | empty            | 支持扫描的文件名后缀                      | support file name extensions       |
+| supportPackageTypes     | array   | 否    | empty            | 支持扫描的包类型                        | support package types              |
+| supportScanTypes        | array   | 否    | empty            | 支持扫描的类型                         | support scan types                 |
 | knowledgeBase.secretId  | string  | 否    | 无                | 漏洞库用户名                          | knowledge base username            |
 | knowledgeBase.secretKey | string  | 否    | 无                | 漏洞库认证密钥                         | knowledge base key                 |
 | knowledgeBase.endpoint  | string  | 否    | 无                | 漏洞库地址                           | knowledge base address             |
@@ -78,6 +84,9 @@
       "outputDir": "/output"
     },
     "maxScanDurationPerMb": 6000,
+    "supportFileNameExt": ["apk", "ipa", "jar"],
+    "supportPackageTypes": ["GENERIC", "MAVEN", "DOCKER"],
+    "supportScanTypes": ["SECURITY", "LICENSE", "SENSITIVE"],
     "type": "arrowhead"
   },
   "traceId": ""
@@ -193,6 +202,9 @@
         "outputDir": "/output"
       },
       "maxScanDurationPerMb": 6000,
+      "supportFileNameExt": ["apk", "ipa", "jar"],
+      "supportPackageTypes": ["GENERIC", "MAVEN", "DOCKER"],
+      "supportScanTypes": ["SECURITY", "LICENSE", "SENSITIVE"],
       "type": "arrowhead"
     }
   ],

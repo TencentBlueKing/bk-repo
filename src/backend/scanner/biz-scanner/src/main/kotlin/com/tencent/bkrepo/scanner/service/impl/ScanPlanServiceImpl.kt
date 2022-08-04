@@ -97,7 +97,7 @@ class ScanPlanServiceImpl(
                 projectId = projectId!!,
                 name = name!!,
                 type = type!!,
-                scanTypes = scanTypes,
+                scanTypes = scanTypes ?: listOf(ScanType.SECURITY.name),
                 description = description ?: "",
                 scanner = scanner!!,
                 scanOnNewArtifact = scanOnNewArtifact ?: false,
