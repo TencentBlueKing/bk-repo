@@ -52,7 +52,9 @@ class ScannerPermissionCheckHandler(
     override fun onPermissionCheck(userId: String, permission: Permission) {
         when (permission.type) {
             ResourceType.PROJECT -> checkProjectPermission(permission)
-            else -> {}
+            ResourceType.REPO -> checkRepoPermission(permission)
+            ResourceType.NODE -> checkNodePermission(permission)
+            else -> throw PermissionException()
         }
     }
 
@@ -99,6 +101,32 @@ class ScannerPermissionCheckHandler(
         require(uriAttribute is Map<*, *>)
         val projectId = uriAttribute[PROJECT_ID]?.toString() ?: throw PermissionException()
         checkProjectPermission(projectId, permission.action)
+    }
+
+    private fun checkRepoPermission(permission: Permission) {
+        with(ArtifactContextHolder.getRepoDetail()!!) {
+            permissionManager.checkRepoPermission(
+                action = permission.action,
+                projectId = projectId,
+                repoName = name,
+                public = public,
+                anonymous = permission.anonymous
+            )
+        }
+    }
+
+    private fun checkNodePermission(permission: Permission) {
+        val path = ArtifactContextHolder.getArtifactInfo()!!.getArtifactFullPath()
+        with(ArtifactContextHolder.getRepoDetail()!!) {
+            permissionManager.checkNodePermission(
+                permission.action,
+                projectId,
+                name,
+                path,
+                public = public,
+                anonymous = permission.anonymous
+            )
+        }
     }
 
     private fun repoDetail(projectId: String, repoName: String) =

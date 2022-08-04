@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
@@ -152,8 +153,13 @@ class ScanTaskServiceImpl(
     override fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail {
         with(request) {
             val node = artifactInfo!!.run {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath())
-            }.data!!
+                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                    ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, getArtifactFullPath())
+            }
+            if (node.folder) {
+                throw ParameterInvalidException(node.fullPath)
+            }
+
             val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
 
             val scanner = scannerService.get(scanner)
