@@ -24,6 +24,26 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":job:biz-job"))
+
+package com.tencent.bkrepo.job.controller.user
+
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.service.SystemJobService
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("/api/job")
+@Principal(type = PrincipalType.ADMIN)
+class UserJobController(val systemJobService: SystemJobService) {
+
+    @GetMapping("/detail")
+    fun detail(): Response<List<JobDetail>> {
+        return ResponseBuilder.success(systemJobService.detail())
+    }
 }

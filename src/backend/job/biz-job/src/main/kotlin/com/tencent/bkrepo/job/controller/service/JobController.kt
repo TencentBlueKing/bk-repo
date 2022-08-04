@@ -25,41 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.controller.service
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.helm.api.HelmClient
-import com.tencent.bkrepo.job.config.JobConfig
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.NodeClient
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.job.api.JobClient
+import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.service.SystemJobService
+import org.springframework.web.bind.annotation.RestController
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class,
-    TaskSchedulingAutoConfiguration::class
-)
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:bootstrap.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-open class JobBaseTest {
-    @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
-
-    @MockBean
-    lateinit var helmClient: HelmClient
-
-    @MockBean
-    lateinit var nodeClient: NodeClient
+@RestController
+class JobController(val systemJobService: SystemJobService) : JobClient {
+    override fun detail(): Response<List<JobDetail>> {
+        return ResponseBuilder.success(systemJobService.detail())
+    }
 }
