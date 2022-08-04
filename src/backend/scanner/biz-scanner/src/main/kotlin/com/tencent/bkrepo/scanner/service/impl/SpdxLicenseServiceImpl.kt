@@ -129,8 +129,7 @@ class SpdxLicenseServiceImpl(
     }
 
     override fun listLicenseByIds(licenseIds: List<String>): Map<String, SpdxLicenseInfo> {
-        val query = Query.query(Criteria.where(TSpdxLicense::licenseId.name).`in`(licenseIds))
-        return licenseDao.find(query).associate { Pair(it.licenseId, convert(it)) }
+        return licenseDao.findByLicenseIds(licenseIds, true).associate { Pair(it.licenseId, convert(it)) }
     }
 
     private fun importLicense(licenseInfo: SpdxLicenseJsonInfo) {

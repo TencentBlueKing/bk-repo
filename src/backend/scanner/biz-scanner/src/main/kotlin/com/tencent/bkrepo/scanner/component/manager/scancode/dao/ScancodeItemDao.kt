@@ -40,11 +40,11 @@ import org.springframework.stereotype.Repository
 class ScancodeItemDao : ResultItemDao<TScancodeItem>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
         require(arguments is ScancodeToolkitResultArguments)
-        if (!arguments.riskLevels.isNullOrEmpty()) {
-            criteria.and(dataKey(ScancodeItem::riskLevel.name)).inValues(arguments.riskLevels!!)
+        if (arguments.riskLevels.isNotEmpty()) {
+            criteria.and(dataKey(ScancodeItem::riskLevel.name)).inValues(arguments.riskLevels)
         }
-        if (!arguments.licenseIds.isNullOrEmpty()) {
-            criteria.and(dataKey(ScancodeItem::licenseId.name)).inValues(arguments.licenseIds!!)
+        if (arguments.licenseIds.isNotEmpty()) {
+            criteria.and(dataKey(ScancodeItem::licenseId.name)).inValues(arguments.licenseIds)
         }
         return criteria
     }

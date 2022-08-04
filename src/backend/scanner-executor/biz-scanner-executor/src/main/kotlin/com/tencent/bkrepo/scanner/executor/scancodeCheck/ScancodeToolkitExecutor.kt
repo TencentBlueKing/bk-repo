@@ -33,6 +33,7 @@ import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.TOTAL
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
@@ -43,6 +44,7 @@ import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.incLicenseOverview
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
@@ -226,29 +228,24 @@ class ScancodeToolkitExecutor @Autowired constructor(
         for (scancodeItem in scancodeItems) {
             val detail = licensesInfo[scancodeItem.licenseId]
             if (detail == null) {
-                incOverview(overview, LicenseNature.UNKNOWN.natureName)
+                incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
                 continue
             }
 
             // license risk
             scancodeItem.riskLevel = detail.risk
-            scancodeItem.riskLevel?.let { incOverview(overview, it) }
+            scancodeItem.riskLevel?.let { incLicenseOverview(overview, it) }
 
             // nature count
             if (detail.isDeprecatedLicenseId) {
-                incOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
+                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
             }
 
             if (!detail.isTrust) {
-                incOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
+                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
             }
         }
         return overview
-    }
-
-    private fun incOverview(overview: MutableMap<String, Long>, level: String) {
-        val overviewKey = LicenseOverviewKey.overviewKeyOf(level)
-        overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
     }
 
     companion object {
@@ -279,9 +276,6 @@ class ScancodeToolkitExecutor @Autowired constructor(
         // scanTool 脚本文件模板key
         private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
         private const val TEMPLATE_KEY_RESULT_FILE = "resultFile"
-
-        // 报告许可总数
-        private const val TOTAL = "total"
 
         /**
          * 扫描执行脚本，相对于工作目录

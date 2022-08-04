@@ -30,7 +30,6 @@ package com.tencent.bkrepo.scanner.executor.arrowhead
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
@@ -41,6 +40,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.incLicenseOverview
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.FileUtils
@@ -194,6 +194,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
+                ?.distinct()
                 ?.map { ApplicationItem.normalize(it) }
                 ?: emptyList()
 
@@ -219,10 +220,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
         // license risk
         applicationItems.forEach {
-            it.license?.let { license ->
-                val overviewKey = LicenseOverviewKey.overviewKeyOfLicenseRisk(license.risk)
-                overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-            }
+            it.license?.let { license -> incLicenseOverview(overview, license.risk) }
         }
 
         // sensitive count
@@ -237,7 +235,20 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
             overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
 
+        additionalOverview(overview, applicationItems, sensitiveItems, cveSecItems)
         return overview
+    }
+
+    /**
+     * 添加额外预览数据
+     */
+    protected open fun additionalOverview(
+        overview: MutableMap<String, Long>,
+        applicationItems: List<ApplicationItem>,
+        sensitiveItems: List<SensitiveItem>,
+        cveSecItems: List<CveSecItem>
+    ) {
+        // DO NOTHING
     }
 
     companion object {

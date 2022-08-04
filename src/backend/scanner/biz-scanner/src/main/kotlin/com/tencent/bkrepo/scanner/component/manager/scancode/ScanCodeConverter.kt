@@ -50,7 +50,7 @@ class ScanCodeConverter(
         val licenseIds = result.records.map { it.licenseId }.distinct()
         val licenses = licenseService.listLicenseByIds(licenseIds)
 
-        val reports = result.records.mapTo(HashSet(result.records.size)) {
+        val reports = result.records.map {
             val detail = licenses[it.licenseId]
             FileLicensesResultDetail(
                 licenseId = it.licenseId,
@@ -63,7 +63,7 @@ class ScanCodeConverter(
                 dependentPath = it.dependentPath,
                 isFsfLibre = detail?.isFsfLibre
             )
-        }.toList()
+        }
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)
     }

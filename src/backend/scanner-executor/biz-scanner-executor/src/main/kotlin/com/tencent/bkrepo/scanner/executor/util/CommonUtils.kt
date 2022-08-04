@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.util
 
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -53,5 +54,10 @@ object CommonUtils {
         } catch (e: Exception) {
             logger.warn("$failedMsg, ${e.message}")
         }
+    }
+
+    fun incLicenseOverview(overview: MutableMap<String, Long>, level: String) {
+        val overviewKey = LicenseOverviewKey.overviewKeyOf(level)
+        overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
     }
 }

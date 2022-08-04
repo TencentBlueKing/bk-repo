@@ -34,9 +34,9 @@ import io.swagger.annotations.ApiModelProperty
 
 class ScancodeToolkitResultArguments(
     @ApiModelProperty("需要的许可id列表")
-    val licenseIds: List<String>? = emptyList(),
+    val licenseIds: List<String> = emptyList(),
     @ApiModelProperty("需要的许可风险等级列表")
-    val riskLevels: List<String>? = emptyList(),
+    val riskLevels: List<String> = emptyList(),
     @ApiModelProperty("分页参数")
     val pageLimit: PageLimit = PageLimit()
 ) : LoadResultArguments(ScancodeToolkitScanner.TYPE)

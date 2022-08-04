@@ -35,8 +35,8 @@ object LicenseOverviewKey {
         return "license${level.capitalize()}Count"
     }
 
-    fun overviewKeyOfLicenseRisk(riskLevel: String?): String {
-        val level = if (riskLevel.isNullOrEmpty()) {
+    private fun overviewKeyOfLicenseRisk(riskLevel: String?): String {
+        val level = if (riskLevel.isNullOrEmpty() || riskLevel == LEVEL_NA) {
             LEVEL_NOT_AVAILABLE
         } else {
             riskLevel
@@ -46,7 +46,8 @@ object LicenseOverviewKey {
 
     private fun isRiskLevel(level: String): Boolean {
         val upperCaseLevel = level.toUpperCase()
-        return Level.values().firstOrNull { it.levelName == upperCaseLevel } != null
+        return Level.values().firstOrNull { it.name == upperCaseLevel } != null
+            || upperCaseLevel == LEVEL_NA
             || upperCaseLevel == LEVEL_NOT_AVAILABLE.toUpperCase()
     }
 
@@ -54,4 +55,15 @@ object LicenseOverviewKey {
      * 扫描器尚未支持的证书类型数量KEY
      */
     private const val LEVEL_NOT_AVAILABLE = "notAvailable"
+    private const val LEVEL_NA = "N/A"
+
+    /**
+     * 报告许可证总数
+     */
+    const val TOTAL = "total"
+
+    /**
+     * 无风险许可证数量
+     */
+    const val NIL = "nil"
 }

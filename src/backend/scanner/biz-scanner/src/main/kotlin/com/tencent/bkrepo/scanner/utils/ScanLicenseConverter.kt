@@ -30,6 +30,8 @@ package com.tencent.bkrepo.scanner.utils
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.NIL
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.TOTAL
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanPlan
@@ -52,7 +54,7 @@ object ScanLicenseConverter {
                 unCompliance += getLicenseCount(LicenseNature.UN_COMPLIANCE.natureName, subScanTask)
                 unRecommend += getLicenseCount(LicenseNature.UN_RECOMMEND.natureName, subScanTask)
                 unknown += getLicenseCount(LicenseNature.UNKNOWN.natureName, subScanTask)
-                total += getLicenseCount(LICENSE_TOTAL, subScanTask)
+                total += getLicenseCount(TOTAL, subScanTask)
             }
             return ScanLicensePlanInfo(
                 id = id!!,
@@ -86,7 +88,7 @@ object ScanLicenseConverter {
             unCompliance += getLicenseCount(LicenseNature.UN_COMPLIANCE.natureName, overview)
             unRecommend += getLicenseCount(LicenseNature.UN_RECOMMEND.natureName, overview)
             unknown += getLicenseCount(LicenseNature.UNKNOWN.natureName, overview)
-            total += getLicenseCount(LICENSE_TOTAL, overview)
+            total += getLicenseCount(TOTAL, overview)
 
             val status =
                 latestScanTask?.let { ScanPlanConverter.convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
@@ -116,8 +118,8 @@ object ScanLicenseConverter {
             val high = getLicenseCount(Level.HIGH.levelName, subScanTask)
             val medium = getLicenseCount(Level.MEDIUM.levelName, subScanTask)
             val low = getLicenseCount(Level.LOW.levelName, subScanTask)
-            val nil = getLicenseCount(LICENSE_NIL, subScanTask)
-            val total = getLicenseCount(LICENSE_TOTAL, subScanTask)
+            val nil = getLicenseCount(NIL, subScanTask)
+            val total = getLicenseCount(TOTAL, subScanTask)
 
             FileLicensesResultOverview(
                 subTaskId = subScanTask.id!!,
@@ -148,8 +150,4 @@ object ScanLicenseConverter {
         val key = LicenseOverviewKey.overviewKeyOf(level)
         return overview?.get(key)?.toLong() ?: 0L
     }
-
-    // 报告许可总数
-    private const val LICENSE_TOTAL = "total"
-    private const val LICENSE_NIL = "nil"
 }

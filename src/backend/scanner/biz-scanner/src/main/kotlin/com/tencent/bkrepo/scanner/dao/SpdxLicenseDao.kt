@@ -29,7 +29,9 @@ package com.tencent.bkrepo.scanner.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TSpdxLicense
+import org.bson.BsonRegularExpression
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
@@ -37,5 +39,15 @@ import org.springframework.stereotype.Repository
 class SpdxLicenseDao : SimpleMongoDao<TSpdxLicense>() {
     fun findByLicenseId(licenseId: String): TSpdxLicense? {
         return this.findOne(Query(TSpdxLicense::licenseId.isEqualTo(licenseId)))
+    }
+
+    fun findByLicenseIds(licenseIds: List<String>, ignoreCase: Boolean = false): List<TSpdxLicense> {
+        val licenseIdExpression = if (ignoreCase) {
+            // 忽略licenseId大小写查询，{ licenseId : { $in : [ '/^apache-2.0$/i' ] } }
+            licenseIds.map { BsonRegularExpression("^$it$", "i") }
+        } else {
+            licenseIds
+        }
+        return find(Query(TSpdxLicense::licenseId.inValues(licenseIdExpression)))
     }
 }
