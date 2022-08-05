@@ -25,24 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.request
+package com.tencent.bkrepo.common.api.stream
 
-import com.tencent.bkrepo.common.api.stream.ChunkedFutureListener
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.concurrent.Future
+import java.io.InputStream
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
-class SessionChunkedFutureListener(private val session: DownloadSession) : ChunkedFutureListener<File> {
-    override fun done(future: Future<File>?, getInputStreamTime: Long) {
-        session.latencyTime = getInputStreamTime
-        if (future == null || future.isCancelled) {
-            logger.info("Session[${session.id}] current latency $getInputStreamTime ms with no future")
-            return
+class EnhanceFileChunkedFutureWrapper(
+    private val future: FutureTask<File>,
+    private val fallback: () -> InputStream
+) : FileChunkedFutureWrapper(future) {
+
+    override fun getInputStream(timeout: Long, unit: TimeUnit): InputStream {
+        return try {
+            future.get(timeout, unit).inputStream()
+        } catch (e: TimeoutException) {
+            logger.warn("get inputStream timeout from future,fallback to direct request")
+            future.cancel(false)
+            fallback()
         }
-        logger.info("Session[${session.id}] finish read file[${future.get()}], current latency $getInputStreamTime ms")
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(SessionChunkedFutureListener::class.java)
+        private val logger = LoggerFactory.getLogger(EnhanceFileChunkedFutureWrapper::class.java)
     }
 }

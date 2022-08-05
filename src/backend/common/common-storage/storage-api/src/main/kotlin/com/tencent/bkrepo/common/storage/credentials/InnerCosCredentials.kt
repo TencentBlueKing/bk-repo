@@ -61,8 +61,9 @@ data class InnerCosCredentials(
 
     data class DownloadProperties(
         var workers: Int = 0,
-        var downloadTimeHighWaterMark: Long = 25_000,
-        var downloadTimeLowWaterMark: Long = 5_000,
+        var downloadTimeHighWaterMark: Long = 8_000,
+        var downloadTimeLowWaterMark: Long = 3_000,
         var taskInterval: Long = 10,
+        var timeout: Long = 10_000
     )
 }

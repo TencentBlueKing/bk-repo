@@ -114,6 +114,8 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
      * */
     var downloadTaskInterval: Long = credentials.download.taskInterval
 
+    var timeout: Long = credentials.download.timeout
+
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
             PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)

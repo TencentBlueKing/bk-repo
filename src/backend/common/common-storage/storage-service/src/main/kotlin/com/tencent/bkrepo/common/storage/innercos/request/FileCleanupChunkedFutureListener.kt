@@ -8,7 +8,10 @@ import org.apache.commons.logging.LogFactory
 
 class FileCleanupChunkedFutureListener : ChunkedFutureListener<File> {
     override fun done(future: Future<File>?, getInputStreamTime: Long) {
-        val file = future?.get() ?: return
+        if (future == null || future.isCancelled) {
+            return
+        }
+        val file = future.get()
         try {
             Files.deleteIfExists(file.toPath())
             logger.info("Delete cos downloading temp file[$file] success.")
