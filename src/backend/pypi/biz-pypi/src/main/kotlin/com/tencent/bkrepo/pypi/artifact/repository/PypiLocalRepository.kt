@@ -364,7 +364,7 @@ class PypiLocalRepository(
             else {
                 val packageNode = nodeClient.listNode(
                     projectId, repoName, getArtifactFullPath(), includeFolder = false,
-                    deep = true
+                    deep = true, includeMetadata = true
                 ).data
                 if (packageNode.isNullOrEmpty()) {
                     throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
