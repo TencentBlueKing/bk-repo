@@ -103,6 +103,11 @@ const val X_CHECKSUM_SHA256 = "X-Checksum-Sha256"
 const val PIPELINE = "pipeline"
 
 /**
+ * 报告仓库
+ */
+const val REPORT = "report"
+
+/**
  * 文件访问请求是否为直接下载
  */
 const val PARAM_DOWNLOAD = "download"
