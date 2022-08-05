@@ -48,7 +48,7 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
     fun checkUserId(pathUid: String) {
         val userId = SecurityUtils.getUserId()
         if (!SecurityUtils.isAdmin() && userId.isNotEmpty() && userId != pathUid) {
-            logger.warn("use not match [$userId, $pathUid]")
+            logger.warn("use not match [${SecurityUtils.getPrincipal()}, $pathUid]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
     }

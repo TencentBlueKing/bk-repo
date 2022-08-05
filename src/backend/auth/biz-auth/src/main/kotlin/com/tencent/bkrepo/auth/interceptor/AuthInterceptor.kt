@@ -119,6 +119,7 @@ class AuthInterceptor : HandlerInterceptor {
     }
 
     companion object {
+
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
 
         private val basicAuthApiSet = setOf(
