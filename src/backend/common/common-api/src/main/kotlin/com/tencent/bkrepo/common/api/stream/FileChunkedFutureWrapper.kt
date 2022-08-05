@@ -3,14 +3,15 @@ package com.tencent.bkrepo.common.api.stream
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
 
-class FileChunkedFutureWrapper(private val future: FutureTask<File>) :
-    AbstractChunkedFutureWrapper<File, FutureTask<File>>(future) {
-    override fun getInputStream(v: File): InputStream {
-        return v.inputStream()
+open class FileChunkedFutureWrapper(future: FutureTask<File>) :
+    AbstractChunkedFutureWrapper<File>(future) {
+    override fun getInputStream(): InputStream {
+        return super.get().inputStream()
     }
 
-    override fun getFuture(): FutureTask<File> {
-        return future
+    override fun getInputStream(timeout: Long, unit: TimeUnit): InputStream {
+        return super.get(timeout, unit).inputStream()
     }
 }

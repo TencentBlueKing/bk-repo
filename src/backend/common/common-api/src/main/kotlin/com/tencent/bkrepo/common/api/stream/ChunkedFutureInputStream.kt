@@ -10,14 +10,14 @@ import kotlin.system.measureTimeMillis
  * 分块输入流
  * 将多个文件Future封装成一个流，按文件顺序读取
  * */
-open class ChunkedFutureInputStream<T, F>(
-    futures: List<ChunkedFuture<T, F>>,
+open class ChunkedFutureInputStream<T>(
+    futures: List<ChunkedFuture<T>>,
     val timeout: Long,
     private val chunkedFutureListeners: List<ChunkedFutureListener<T>>? = null
 ) : InputStream() {
 
     private val iterator = futures.iterator()
-    lateinit var currentFuture: ChunkedFuture<T, F>
+    lateinit var currentFuture: ChunkedFuture<T>
     private lateinit var cursor: InputStream
     private var getInputStreamTime: Long = 0
     private var listeners: MutableList<ChunkedFutureListener<T>> = arrayListOf()
@@ -53,12 +53,7 @@ open class ChunkedFutureInputStream<T, F>(
         return read
     }
 
-    open fun getInputStream(future: ChunkedFuture<T, F>): InputStream {
-        val ret = future.get(timeout, TimeUnit.MILLISECONDS)
-        return future.getInputStream(ret)
-    }
-
-    private fun nextFuture(): ChunkedFuture<T, F> {
+    private fun nextFuture(): ChunkedFuture<T> {
         return iterator.next()
     }
 
@@ -66,7 +61,7 @@ open class ChunkedFutureInputStream<T, F>(
         currentFuture = nextFuture()
         measureTimeMillis {
             try {
-                cursor = getInputStream(currentFuture)
+                cursor = currentFuture.getInputStream(timeout, TimeUnit.MILLISECONDS)
             } catch (e: TimeoutException) {
                 getInputStreamTime = timeout
                 // 由于currentFuture已经get超时，所以这里避免listener获取重复超时，所以传null下去

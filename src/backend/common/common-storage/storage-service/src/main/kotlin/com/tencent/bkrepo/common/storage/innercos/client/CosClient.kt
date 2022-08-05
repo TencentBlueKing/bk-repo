@@ -33,14 +33,14 @@
 package com.tencent.bkrepo.common.storage.innercos.client
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
 import com.tencent.bkrepo.common.api.concurrent.PriorityCallable
 import com.tencent.bkrepo.common.api.stream.ChunkedFuture
+import com.tencent.bkrepo.common.api.stream.ChunkedFutureInputStream
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.innercos.chunk.CosDownloadChunkedFutureWrapper
-import com.tencent.bkrepo.common.storage.innercos.chunk.CosDownloadRequestFutureTask
-import com.tencent.bkrepo.common.storage.innercos.chunk.SmartChunkedInputStream
+import com.tencent.bkrepo.common.api.stream.EnhanceFileChunkedFutureWrapper
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
@@ -343,7 +343,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val len = end - start - 1
         val optimalPartSize = calculateOptimalPartSize(len)
         val factory = DownloadPartRequestFactory(key, optimalPartSize, start, end)
-        val futureList = mutableListOf<ChunkedFuture<File, CosDownloadRequestFutureTask>>()
+        val futureList = mutableListOf<ChunkedFuture<File>>()
         val activeCount = AtomicInteger()
         val session = DownloadSession(activeCount = activeCount)
         val tempRootPath = Paths.get(dir.toString(), session.id)
@@ -361,9 +361,13 @@ class CosClient(val credentials: InnerCosCredentials) {
             while (factory.hasMoreRequests()) {
                 val downloadPartRequest = factory.nextDownloadPartRequest()
                 val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority)
-                val futureTask = CosDownloadRequestFutureTask(task, this)
+                val futureTask = ComparableFutureTask(task)
                 executor.execute(futureTask)
-                futureList.add(CosDownloadChunkedFutureWrapper(futureTask))
+                val futureWrapper = EnhanceFileChunkedFutureWrapper(futureTask) {
+                    val getRequest = task.getComparable().downloadPartRequest
+                    this.getObject(getRequest).inputStream ?: throw InnerCosException("not found $getRequest")
+                }
+                futureList.add(futureWrapper)
                 priority += config.downloadTaskInterval
                 if (i == 0) {
                     /*
@@ -380,7 +384,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                 FileCleanupChunkedFutureListener(),
                 SessionChunkedFutureListener(session)
             )
-            val chunkedInput = SmartChunkedInputStream(futureList, config.timeout, chunkedFutureListeners)
+            val chunkedInput = ChunkedFutureInputStream(futureList, config.timeout, chunkedFutureListeners)
             return object : DelegateInputStream(chunkedInput) {
                 override fun close() {
                     super.close()
@@ -399,7 +403,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      * 清理资源
      * */
     private fun cleanup(
-        futureList: MutableList<ChunkedFuture<File, CosDownloadRequestFutureTask>>,
+        futureList: MutableList<ChunkedFuture<File>>,
         activeCount: AtomicInteger,
         tempRootPath: Path
     ) {

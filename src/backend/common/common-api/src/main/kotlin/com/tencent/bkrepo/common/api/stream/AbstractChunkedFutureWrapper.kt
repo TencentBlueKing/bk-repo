@@ -3,7 +3,7 @@ package com.tencent.bkrepo.common.api.stream
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
-abstract class AbstractChunkedFutureWrapper<V, F>(private val future: Future<V>) : ChunkedFuture<V, F> {
+abstract class AbstractChunkedFutureWrapper<V>(private val future: Future<V>) : ChunkedFuture<V> {
     override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
         return future.cancel(mayInterruptIfRunning)
     }

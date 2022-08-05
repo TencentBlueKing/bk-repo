@@ -25,19 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.chunk
+package com.tencent.bkrepo.common.api.stream
 
-import com.tencent.bkrepo.common.api.stream.AbstractChunkedFutureWrapper
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
-class CosDownloadChunkedFutureWrapper(private val future: CosDownloadRequestFutureTask) :
-    AbstractChunkedFutureWrapper<File, CosDownloadRequestFutureTask>(future) {
-    override fun getInputStream(v: File): InputStream {
-        return v.inputStream()
+class EnhanceFileChunkedFutureWrapper(
+    private val future: FutureTask<File>,
+    private val fallback: () -> InputStream
+) : FileChunkedFutureWrapper(future) {
+
+    override fun getInputStream(timeout: Long, unit: TimeUnit): InputStream {
+        return try {
+            future.get(timeout, unit).inputStream()
+        } catch (e: TimeoutException) {
+            logger.warn("get inputStream timeout from future,fallback to direct request")
+            future.cancel(false)
+            fallback()
+        }
     }
 
-    override fun getFuture(): CosDownloadRequestFutureTask {
-        return future
+    companion object {
+        private val logger = LoggerFactory.getLogger(EnhanceFileChunkedFutureWrapper::class.java)
     }
 }

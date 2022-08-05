@@ -32,7 +32,7 @@ import java.util.concurrent.FutureTask
 /**
  * 支持优先级的FutureTask
  * */
-open class ComparableFutureTask<T, E>(val runnable: PriorityCallable<T, E>) :
+class ComparableFutureTask<T, E>(val runnable: PriorityCallable<T, E>) :
     FutureTask<T>(runnable),
     Comparable<ComparableFutureTask<T, E>> {
     override fun compareTo(other: ComparableFutureTask<T, E>): Int {
