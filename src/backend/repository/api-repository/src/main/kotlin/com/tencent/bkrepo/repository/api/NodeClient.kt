@@ -161,6 +161,8 @@ interface NodeClient {
         @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
         @RequestParam includeFolder: Boolean = true,
         @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false
+        @RequestParam deep: Boolean = false,
+        @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
+        @RequestParam includeMetadata: Boolean = false
     ): Response<List<NodeInfo>>
 }
