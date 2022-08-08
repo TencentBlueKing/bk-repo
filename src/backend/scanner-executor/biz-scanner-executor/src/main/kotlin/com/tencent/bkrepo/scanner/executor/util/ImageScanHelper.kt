@@ -57,7 +57,7 @@ class ImageScanHelper(
     fun generateScanFile(fileOutputStream: FileOutputStream, task: ScanExecutorTask) {
         val manifest = task.inputStream.readJsonString<ManifestV2>()
         if (logger.isDebugEnabled) {
-            logger.debug(CommonUtils.logMsg(task, manifest.toJsonString()))
+            logger.debug(CommonUtils.buildLogMsg(task, manifest.toJsonString()))
         }
         TarArchiveOutputStream(fileOutputStream).use { tos ->
             // 打包config文件
@@ -86,7 +86,7 @@ class ImageScanHelper(
         }
         val sha256 = digestSplits[1]
         val fileName = "${digestSplits[0]}__${digestSplits[1]}"
-        logger.info(CommonUtils.logMsg(task, "load layer [$fileName]"))
+        logger.info(CommonUtils.buildLogMsg(task, "load layer [$fileName]"))
 
         // 获取layer大小
         val nodes = nodeClient.search(

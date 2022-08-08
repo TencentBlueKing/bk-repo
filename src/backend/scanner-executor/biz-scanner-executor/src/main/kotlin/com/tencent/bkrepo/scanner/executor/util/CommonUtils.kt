@@ -36,7 +36,7 @@ import java.io.File
 object CommonUtils {
     private val logger = LoggerFactory.getLogger(CommonUtils::class.java)
 
-    fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
+    fun buildLogMsg(task: ScanExecutorTask, msg: String) = with(task) {
         "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
     }
 
