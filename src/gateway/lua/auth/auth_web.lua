@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local bk_ticket, err = cookieUtil:get_cookie("bk_ticket")
 local bk_token, err = cookieUtil:get_cookie("bk_token")
 local bkrepo_token, bkrepo_err = cookieUtil:get_cookie("bkrepo_ticket")
+local ci_login_token, err2 = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
 local ticket, token, username
 
 --- standalone模式下校验bkrepo_ticket
@@ -51,8 +52,7 @@ elseif config.auth_mode == "ticket" then
     token = bk_ticket
     username = ticket.user_id
 elseif config.auth_mode == "ci" then
-    ci_login_token, err = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
-    ngx.log(ngx.STDERR, "bbbbbbbb: ", ci_login_token, err)
+    ngx.log(ngx.STDERR, "bbbbbbbb: ", ci_login_token, err2)
     if not ci_login_token then
         ngx.log(ngx.STDERR, "failed to read user request ci_login_token: ", err)
         ngx.exit(401)
