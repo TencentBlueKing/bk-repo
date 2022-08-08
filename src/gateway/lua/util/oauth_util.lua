@@ -179,7 +179,6 @@ function _M:verify_bkrepo_token(access_token)
 end
 
 function _M:verify_ci_token(ci_login_token)
-    ngx.log(ngx.STDERR, "ccccccccc: ", ci_login_token)
     local user_cache = ngx.shared.user_info_store
     local user_cache_value = user_cache:get(ci_login_token)
     if user_cache_value == nil then
@@ -205,7 +204,6 @@ function _M:verify_ci_token(ci_login_token)
             return
         end
         --- 判断返回的状态码是否是200
-        ngx.log(ngx.STDERR, "aaaaaa: ", config.bkci.host, config.bkci.port, ci_login_token)
         if res.status ~= 200 then
             ngx.log(ngx.STDERR, "failed to request get_ticket, status: ", res.status)
             ngx.exit(401)
