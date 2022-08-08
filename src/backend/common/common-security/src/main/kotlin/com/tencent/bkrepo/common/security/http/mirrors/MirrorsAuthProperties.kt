@@ -35,5 +35,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("security.auth.mirrors")
 data class MirrorsAuthProperties(
+    var enabled: Boolean = false,
     var password: String = "password"
 )

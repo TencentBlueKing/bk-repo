@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.security.http.mirrors
 
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -42,6 +43,7 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration
 @EnableConfigurationProperties(MirrorsAuthProperties::class)
+@ConditionalOnProperty(prefix = "security.auth.mirrors", name = ["enabled"], havingValue = "true")
 class MirrorsAuthConfiguration {
 
     @Bean
