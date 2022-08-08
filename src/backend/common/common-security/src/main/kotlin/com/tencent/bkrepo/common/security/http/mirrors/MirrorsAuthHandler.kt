@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,27 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.common.security.http.mirrors
 
-import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.http.login.LoginConfiguration
-import com.tencent.bkrepo.common.security.http.mirrors.MirrorsAuthConfiguration
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.http.basic.BasicAuthCredentials
+import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
+import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import javax.servlet.http.HttpServletRequest
 
 /**
- * HTTP 请求认证配置类
+ * 针对软件源的专有认证方式
  */
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(
-    HttpAuthProperties::class,
-    JwtAuthProperties::class
-)
-@Import(
-    LoginConfiguration::class,
-    HttpAuthSecurityConfiguration::class,
-    MirrorsAuthConfiguration::class
-)
-class HttpAuthConfiguration
+class MirrorsAuthHandler(
+    private val mirrorsAuthProperties: MirrorsAuthProperties,
+    authenticationManager: AuthenticationManager
+) : BasicAuthHandler(authenticationManager) {
+
+    override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
+        with(authCredentials as BasicAuthCredentials) {
+            if (mirrorsAuthProperties.password != password) {
+                throw AuthenticationException("Authorization value check failed")
+            }
+            return username
+        }
+    }
+}

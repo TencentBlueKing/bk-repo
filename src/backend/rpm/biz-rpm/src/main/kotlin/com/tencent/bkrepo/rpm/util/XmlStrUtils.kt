@@ -226,11 +226,11 @@ object XmlStrUtils {
         var len: Int
         var index: Long = 0
         // 保存上一次读取的内容
-        var tempStr = ""
+        var tempBuffer = byteArrayOf()
         randomAccessFile.seek(0L)
         loop@ while (randomAccessFile.read(buffer).also { len = it } > 0) {
-            val content = String(buffer, 0, len)
-            val mergeContent = tempStr + content
+            val mergeBuffer = tempBuffer + buffer
+            val mergeContent = String(mergeBuffer, 0, len + tempBuffer.size)
             // 只有未定位到location时 ，才查找 prefix 和 location
             if (!location.isFound) {
                 prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
@@ -254,7 +254,7 @@ object XmlStrUtils {
                 break@loop
             }
             index += buffer.size
-            tempStr = content
+            tempBuffer = buffer.copyOf(len)
         }
         return getValidXmlIndex(prefixIndex, locationIndex, suffixIndex, locationStr, suffixStr)
     }

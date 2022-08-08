@@ -95,16 +95,20 @@ class MavenMetadataService(
 
     fun delete(mavenArtifactInfo: ArtifactInfo, node: NodeDetail? = null, mavenGavc: MavenGAVC? = null) {
         node?.let {
-            val (criteria, _) = nodeCriteria(
+            val (criteria, mavenVersion) = nodeCriteria(
                 projectId = node.projectId,
                 repoName = node.repoName,
                 metadata = node.metadata,
                 fullPath = node.fullPath
             )
-            criteria?.let {
-                val query = Query(criteria)
-                mavenMetadataDao.remove(query)
+            if (criteria == null) return
+            criteria.apply {
+                mavenVersion?.timestamp?.let {
+                    this.and(TMavenMetadataRecord::timestamp.name).`is`(mavenVersion.timestamp)
+                }
             }
+            val query = Query(criteria)
+            mavenMetadataDao.remove(query)
         }
         mavenGavc?.let {
             val groupId = mavenGavc.groupId
