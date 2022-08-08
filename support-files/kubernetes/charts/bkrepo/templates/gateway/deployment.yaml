@@ -80,7 +80,7 @@ spec:
             - name: BK_CI_HOST
               value: {{ .Values.gateway.bkciHost }}
             - name: BK_CI_PORT
-              value: {{ .Values.gateway.bkciPort }}
+              value: {{ .Values.gateway.bkciPort | quote}}
             - name: BK_REPO_DOCKER_HTTP_PORT
               value: "80"
             - name: BK_REPO_DOCKER_HOST
