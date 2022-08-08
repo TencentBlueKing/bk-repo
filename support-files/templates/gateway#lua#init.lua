@@ -50,13 +50,9 @@ config = {
   },
   mode = "__BK_REPO_DEPLOY_MODE__",
   auth_mode = "__BK_REPO_AUTH_MODE__",
-  router = {
-    project = {
-      {
-        name = "devops",
-        tag = "devops"
-      }
-    }
+  bkci = {
+    host = "__BK_CI_HOST__",
+    port = "__BK_CI_PORT__"
   }
 }
   

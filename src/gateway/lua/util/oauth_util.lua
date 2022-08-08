@@ -178,56 +178,54 @@ function _M:verify_bkrepo_token(access_token)
     end
 end
 
-function _M:verify_token(access_token)
-    --- 初始化HTTP连接
-    local httpc = http.new()
-    local path = "/oauth/token?access_token=" .. access_token
-    --- 开始连接
-    httpc:set_timeout(3000)
-    httpc:connect(config.oauth.ip, config.oauth.port)
-    --- 发送请求
-    local res, err = httpc:request({
-        path = path,
-        method = "GET",
-        headers = {
-            ["Host"] = config.oauth.host,
-            ["Accept"] = "application/json",
-            ["Content-Type"] = "application/json",
-        }
-    })
-    --- 判断是否出错了
-    if not res then
-        ngx.log(ngx.ERR, "failed to request verify_token: ", err)
-        ngx.exit(401)
-        return
+function _M:verify_ci_token(ci_login_token)
+    local user_cache = ngx.shared.user_info_store
+    local user_cache_value = user_cache:get(ci_login_token)
+    if user_cache_value == nil then
+        --- 初始化HTTP连接
+        local httpc = http.new()
+        --- 开始连接
+        httpc:set_timeout(3000)
+        httpc:connect(config.bkci.host, config.bkci.port)
+        local res, err = httpc:request({
+            path = '/auth/api/external/third/login/verifyToken',
+            method = "GET",
+            headers = {
+                ["Host"] = config.bkci.host,
+                ["Accept"] = "application/json",
+                ["Content-Type"] = "application/json",
+                ["X-DEVOPS-CI-LOGIN-TOKEN"] = ci_login_token
+            }
+        })
+        --- 判断是否出错了
+        if not res then
+            ngx.log(ngx.ERR, "failed to request get_ticket: ", err)
+            ngx.exit(401)
+            return
+        end
+        --- 判断返回的状态码是否是200
+        if res.status ~= 200 then
+            ngx.log(ngx.STDERR, "failed to request get_ticket, status: ", res.status)
+            ngx.exit(401)
+            return
+        end
+        --- 获取所有回复
+        local responseBody = res:read_body()
+        --- 设置HTTP保持连接
+        httpc:set_keepalive(60000, 5)
+        --- 转换JSON的返回数据为TABLE
+        local result = json.decode(responseBody)
+        --- 判断JSON转换是否成功
+        if result == nil then
+            ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
+            ngx.exit(500)
+            return
+        end
+        local user_id = result.data
+        user_cache:set(ci_login_token, user_id, 60)
+        user_cache_value = user_id
     end
-    --- 判断返回的状态码是否是200
-    if res.status ~= 200 then
-        ngx.log(ngx.STDERR, "failed to request verify_token, status: ", res.status)
-        ngx.exit(401)
-        return
-    end
-    --- 获取所有回复
-    local responseBody = res:read_body()
-    --- 设置HTTP保持连接
-    httpc:set_keepalive(60000, 5)
-    --- 转换JSON的返回数据为TABLE
-    local result = json.decode(responseBody)
-    --- 判断JSON转换是否成功
-    if result == nil then
-        ngx.log(ngx.ERR, "failed to parse verify_token response：", responseBody)
-        ngx.exit(401)
-        return
-    end
-
-    --- 判断返回码:Q!
-    if result.code ~= 0 then
-        ngx.log(ngx.INFO, "invalid verify_token: ", result.message)
-        ngx.exit(401)
-        return
-    end
-    result.data.access_token = access_token
-    return result.data
+    return user_cache_value
 end
 
 return _M

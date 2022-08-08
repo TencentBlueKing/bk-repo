@@ -36,14 +36,6 @@ function _M:get_addr(service_name)
     local ns_config = config.ns
     local tag = ns_config.tag
 
-    -- router by project
-    for _, value in ipairs(config.router.project) do
-        local prefix = value.name .. "/"
-        if service_name == "generic" and stringUtil:startswith(ngx.var.path, prefix) then
-            tag = value.tag
-        end
-    end
-
     local query_subdomain = tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
 
     local ips = {} -- address

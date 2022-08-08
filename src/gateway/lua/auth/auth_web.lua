@@ -42,19 +42,23 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
     ticket = oauthUtil:get_ticket(bk_token, "token")
     token = bk_token
     username = ticket.identity.username
-else
-    local devops_access_token = ngx.var.http_x_devops_access_token
+elseif config.auth_mode == "ticket" then
     if bk_ticket == nil and devops_access_token == nil then
         ngx.exit(401)
         return
     end
-    if devops_access_token ~= nill then
-        ticket = oauthUtil:verify_token(devops_access_token)
-    else
-        ticket = oauthUtil:get_ticket(bk_ticket, "ticket")
-    end
+    ticket = oauthUtil:get_ticket(bk_ticket, "ticket")
     token = bk_ticket
     username = ticket.user_id
+elseif config.auth_mode == "ci" then
+    local ci_login_token, err = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
+    if not ci_login_token then
+        ngx.log(ngx.STDERR, "failed to read user request ci_login_token: ", err)
+        ngx.exit(401)
+        return
+    end
+    token = ci_login_token
+    username = oauthUtil.verify_ci_token(ci_login_token)
 end
 
 --- 其它模式校验bk_ticket
@@ -63,5 +67,5 @@ end
 --- 设置用户信息
 ngx.header["x-bkrepo-uid"] = username
 ngx.header["x-bkrepo-bk-token"] = token
-ngx.header["x-bkrepo-access-token"] = ticket.access_token
+ngx.header["x-bkrepo-access-token"] = token
 ngx.exit(200)
