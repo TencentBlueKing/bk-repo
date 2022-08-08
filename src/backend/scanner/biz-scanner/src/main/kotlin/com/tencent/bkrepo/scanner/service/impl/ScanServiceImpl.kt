@@ -294,7 +294,7 @@ class ScanServiceImpl @Autowired constructor(
             val scanPlan = planId?.let { scanPlanDao.findById(it) }
             val event = ScanTaskStatusChangedEvent(
                 ScanTaskStatus.SCANNING_SUBMITTED,
-                Converter.convert(scanTaskDao.findById(parentTaskId)!!, scanPlan)
+                Converter.convert(scanTaskDao.findById(parentTaskId)!!, scanPlan, compatible = false)
             )
             publisher.publishEvent(event)
             logger.info("scan finished, task[$parentTaskId]")
@@ -371,7 +371,7 @@ class ScanServiceImpl @Autowired constructor(
             archiveSubScanTaskDao.deleteByParentTaskId(task.id)
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
-            scanTaskScheduler.schedule(Converter.convert(resetTask, plan))
+            scanTaskScheduler.schedule(Converter.convert(resetTask, plan, compatible = false))
         }
     }
 
@@ -454,7 +454,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanResultOverview = emptyMap(),
                     metadata = metadata
                 )
-            ).run { Converter.convert(this, plan, force) }
+            ).run { Converter.convert(this, plan, force, false) }
             plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             logger.info("create scan task[${scanTask.taskId}] success")

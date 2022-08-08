@@ -55,5 +55,5 @@ data class ScannerExecutorProperties(
     /**
      * 扫描器日志最大行数
      */
-    var maxScannerLogLines: Long = 200L
+    var maxScannerLogLines: Int = 200
 )

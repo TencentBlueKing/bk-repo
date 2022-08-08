@@ -63,7 +63,7 @@ import java.io.File
 @Component(ScancodeToolkitScanner.TYPE)
 @ConditionalOnProperty(DockerProperties.SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class ScancodeToolkitExecutor @Autowired constructor(
-    private val dockerClient: DockerClient,
+    dockerClient: DockerClient,
     private val scanClient: ScanClient,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) : CommonScanExecutor() {
@@ -197,16 +197,7 @@ class ScancodeToolkitExecutor @Autowired constructor(
             return status
         }
         ReversedLinesFileReader(logFile, Charsets.UTF_8).use {
-            var line: String? = it.readLine() ?: return status
-            val logs = ArrayList<String>()
-            var count = 1
-            while (count < scannerExecutorProperties.maxScannerLogLines && line != null) {
-                line = it.readLine()?.apply {
-                    logs.add(this)
-                    count++
-                }
-            }
-
+            val logs = it.readLines(scannerExecutorProperties.maxScannerLogLines)
             logger.info(logMsg(task, "scan failed: ${logs.asReversed().joinToString("\n")}"))
         }
         return status

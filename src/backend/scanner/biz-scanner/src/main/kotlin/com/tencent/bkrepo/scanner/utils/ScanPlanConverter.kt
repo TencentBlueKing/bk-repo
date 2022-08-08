@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
@@ -58,13 +59,13 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.full.memberProperties
 
 object ScanPlanConverter {
-    fun convert(scanPlan: TScanPlan): ScanPlan {
+    fun convert(scanPlan: TScanPlan, compatible: Boolean = true): ScanPlan {
         return with(scanPlan) {
             ScanPlan(
                 id = id!!,
                 projectId = projectId,
                 name = name,
-                type = type,
+                type = if(compatible) compatiblePlanType(type, scanTypes) else type,
                 scanTypes = scanTypes,
                 scanner = scanner,
                 description = description,
@@ -105,8 +106,8 @@ object ScanPlanConverter {
             ScanPlan(
                 projectId = projectId,
                 name = name,
-                type = type,
-                scanTypes = scanTypes,
+                type = planType(type),
+                scanTypes = scanTypes(type),
                 scanner = scanner,
                 description = description,
                 scanOnNewArtifact = autoScan,
@@ -132,7 +133,7 @@ object ScanPlanConverter {
             return ScanPlanInfo(
                 id = id!!,
                 name = name,
-                planType = type,
+                planType = compatiblePlanType(type, scanTypes),
                 scanTypes = scanTypes,
                 projectId = projectId,
                 status = "",
@@ -166,7 +167,7 @@ object ScanPlanConverter {
             return ScanPlanInfo(
                 id = id!!,
                 name = name,
-                planType = type,
+                planType = compatiblePlanType(type, scanTypes),
                 scanTypes = scanTypes,
                 projectId = projectId,
                 status = status,
@@ -260,6 +261,33 @@ object ScanPlanConverter {
             }
         }
     }
+
+    /**
+     * 获取用于前端展示的方案类型
+     */
+    fun compatiblePlanType(planType: String, scanTypes: List<String>): String {
+        if (scanTypes.contains(ScanType.LICENSE.name)) {
+            return "${planType}_${ScanType.LICENSE.name}"
+        }
+        return planType
+    }
+
+    private fun planType(compatiblePlanType: String): String {
+        return if (compatiblePlanType.contains("_")) {
+            compatiblePlanType.split("_")[0]
+        } else {
+            compatiblePlanType
+        }
+    }
+
+    private fun scanTypes(planType: String): List<String> {
+        return if (planType.contains(ScanType.LICENSE.name)) {
+            listOf(ScanType.LICENSE.name)
+        } else {
+            listOf(ScanType.SECURITY.name)
+        }
+    }
+
 
     private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {
         return when (status) {
