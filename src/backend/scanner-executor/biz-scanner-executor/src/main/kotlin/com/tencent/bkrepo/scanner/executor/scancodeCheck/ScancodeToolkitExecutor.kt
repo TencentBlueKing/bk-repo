@@ -45,7 +45,7 @@ import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.incLicenseOverview
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.buildLogMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
 import com.tencent.bkrepo.scanner.executor.util.FileUtils
@@ -83,8 +83,9 @@ class ScancodeToolkitExecutor @Autowired constructor(
         loadScanBashFile(task, taskWorkDir, scannerInputFile)
 
         // 执行扫描
-        val containerCmd =
-            DOCKER_BASH + listOf(BASH_CMD.format(containerConfig.workDir, BASH, BASH_FILE, RESULT_FILE_NAME_LOG))
+        val containerCmd = listOf(
+            "sh", "-c", "cd ${containerConfig.workDir} && sh $BASH_FILE > $RESULT_FILE_NAME_LOG 2>&1"
+        )
         val result = dockerScanHelper.scan(
             image = containerConfig.image,
             binds = Binds(Bind(taskWorkDir.absolutePath, Volume(containerConfig.workDir))),
@@ -109,7 +110,8 @@ class ScancodeToolkitExecutor @Autowired constructor(
         val scanner = task.scanner
         require(scanner is ScancodeToolkitScanner)
         val fileName = FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
-        return File(File(taskWorkDir, scanner.container.inputDir), fileName)
+        val inputDir = File(taskWorkDir, scanner.container.inputDir)
+        return File(inputDir, fileName)
     }
 
     /**
@@ -170,9 +172,9 @@ class ScancodeToolkitExecutor @Autowired constructor(
         val content = SpelExpressionParser()
             .parseExpression(bashTemplate, TemplateParserContext())
             .getValue(params, String::class.java)!!
-        val bashFile = File(taskWorkDir, DEFAULT_CONFIG_BASH_PATH)
+        val bashFile = File(taskWorkDir, BASH_FILE)
         bashFile.writeText(content)
-        logger.info(logMsg(scanTask, "load scan bash success"))
+        logger.info(buildLogMsg(scanTask, "load scan bash success"))
         return bashFile
     }
 
@@ -187,18 +189,18 @@ class ScancodeToolkitExecutor @Autowired constructor(
         require(task.scanner is ScancodeToolkitScanner)
         val resultFile = File(File(workDir, task.scanner.container.outputDir), LICENSE_SCAN_RESULT_FILE_NAME)
         if (resultFile.exists()) {
-            logger.info(logMsg(task, "scancode_toolkit result file exists"))
+            logger.info(buildLogMsg(task, "scancode_toolkit result file exists"))
             return SubScanTaskStatus.SUCCESS
         }
 
         val logFile = File(workDir, RESULT_FILE_NAME_LOG)
         if (!logFile.exists()) {
-            logger.info(logMsg(task, "scancode_toolkit log file not exists"))
+            logger.info(buildLogMsg(task, "scancode_toolkit log file not exists"))
             return status
         }
         ReversedLinesFileReader(logFile, Charsets.UTF_8).use {
             val logs = it.readLines(scannerExecutorProperties.maxScannerLogLines)
-            logger.info(logMsg(task, "scan failed: ${logs.asReversed().joinToString("\n")}"))
+            logger.info(buildLogMsg(task, "scan failed: ${logs.asReversed().joinToString("\n")}"))
         }
         return status
     }
@@ -249,15 +251,7 @@ class ScancodeToolkitExecutor @Autowired constructor(
 
         private const val LICENSE_SCAN_RESULT_FILE_NAME = "result.json"
 
-        /**
-         * scancode_toolkit工具相关命令
-         **/
-        private val DOCKER_BASH = arrayListOf("sh", "-c")
-
-        private const val BASH = "sh"
         private const val BASH_FILE = "toolScan.sh"
-
-        private const val BASH_CMD = "cd %s && %s %s > %s 2>&1"
 
         private const val EXT_SUFFIX = "-extract"
 
@@ -267,10 +261,5 @@ class ScancodeToolkitExecutor @Autowired constructor(
         // scanTool 脚本文件模板key
         private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
         private const val TEMPLATE_KEY_RESULT_FILE = "resultFile"
-
-        /**
-         * 扫描执行脚本，相对于工作目录
-         */
-        private const val DEFAULT_CONFIG_BASH_PATH = "/toolScan.sh"
     }
 }

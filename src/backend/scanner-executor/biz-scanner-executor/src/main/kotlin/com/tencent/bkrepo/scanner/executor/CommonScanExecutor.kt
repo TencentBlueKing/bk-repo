@@ -91,7 +91,7 @@ abstract class CommonScanExecutor : ScanExecutor {
         task.inputStream.use { taskInputStream ->
             scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
         }
-        logger.info(CommonUtils.logMsg(task, "read file success"))
+        logger.info(CommonUtils.buildLogMsg(task, "read file success"))
     }
 
     /**
