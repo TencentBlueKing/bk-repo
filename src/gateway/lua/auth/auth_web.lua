@@ -51,7 +51,7 @@ elseif config.auth_mode == "ticket" then
     token = bk_ticket
     username = ticket.user_id
 elseif config.auth_mode == "ci" then
-    local ci_login_token, err = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
+    ci_login_token, err = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
     ngx.log(ngx.STDERR, "bbbbbbbb: ", ci_login_token, err)
     if not ci_login_token then
         ngx.log(ngx.STDERR, "failed to read user request ci_login_token: ", err)
