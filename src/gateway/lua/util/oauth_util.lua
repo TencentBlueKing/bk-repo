@@ -179,6 +179,7 @@ function _M:verify_bkrepo_token(access_token)
 end
 
 function _M:verify_ci_token(ci_login_token)
+    ngx.log(ngx.STDERR, "ccccccccc: ", ci_login_token)
     local user_cache = ngx.shared.user_info_store
     local user_cache_value = user_cache:get(ci_login_token)
     if user_cache_value == nil then

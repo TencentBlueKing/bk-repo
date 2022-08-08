@@ -58,8 +58,8 @@ elseif config.auth_mode == "ci" then
         ngx.exit(401)
         return
     end
-    token = ci_login_token
     username = oauthUtil.verify_ci_token(ci_login_token)
+    token = ci_login_token
 end
 
 --- 其它模式校验bk_ticket
