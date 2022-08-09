@@ -35,5 +35,6 @@ enum class DownloadInterceptorType {
     METADATA,
     WEB,
     MOBILE,
+    OFFICE_NETWORK,
     ;
 }

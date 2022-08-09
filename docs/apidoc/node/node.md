@@ -634,7 +634,6 @@
   | repoName  | string | 节点所属仓库 | node repository name |
   | packages  | Int    | 节点数量     | node count           |
 
-## 
 
 ## 清理创建时间早于{date}的文件节点
 
@@ -668,5 +667,3 @@
     "traceId": null
   }
   ```
-
-## 
