@@ -39,13 +39,13 @@ import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.service.ScanService
+import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.service.SpdxLicenseService
 import com.tencent.bkrepo.scanner.utils.RuleConverter
 import org.slf4j.LoggerFactory
@@ -62,10 +62,10 @@ import java.util.function.Consumer
 class ScanEventConsumer(
     private val spdxLicenseService: SpdxLicenseService,
     private val scanService: ScanService,
+    private val scannerService: ScannerService,
     private val scanPlanDao: ScanPlanDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
-    private val executor: ThreadPoolTaskExecutor,
-    private val scannerProperties: ScannerProperties
+    private val executor: ThreadPoolTaskExecutor
 ) : Consumer<ArtifactEvent> {
 
     /**
@@ -151,7 +151,7 @@ class ScanEventConsumer(
 
     private fun supportFileNameExtension(fullPath: String): Boolean {
         val fileNameExtension = fullPath.substringAfterLast('.', "")
-        return fileNameExtension in scannerProperties.supportFileNameExt
+        return fileNameExtension in scannerService.supportFileNameExt()
     }
 
     /**

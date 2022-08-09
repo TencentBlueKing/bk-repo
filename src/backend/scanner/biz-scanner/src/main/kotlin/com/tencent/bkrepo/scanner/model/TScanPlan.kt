@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -80,6 +81,11 @@ data class TScanPlan(
      * 扫描方案类型
      */
     val type: String,
+
+    /**
+     * 扫描类型
+     */
+    val scanTypes: List<String> = listOf(ScanType.SECURITY.name),
 
     /**
      * 扫描方案描述

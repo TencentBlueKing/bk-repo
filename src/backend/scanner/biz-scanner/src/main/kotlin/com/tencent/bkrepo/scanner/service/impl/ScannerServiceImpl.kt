@@ -63,7 +63,10 @@ class ScannerServiceImpl @Autowired constructor(
                     name = name,
                     type = scanner.type,
                     version = scanner.version,
-                    config = scanner.toJsonString()
+                    config = scanner.toJsonString(),
+                    supportFileNameExt = scanner.supportFileNameExt,
+                    supportPackageTypes = scanner.supportPackageTypes,
+                    supportScanTypes = scanner.supportScanTypes
                 )
             ).run { convert(this) }
         }
@@ -78,7 +81,10 @@ class ScannerServiceImpl @Autowired constructor(
                     lastModifiedBy = userId,
                     lastModifiedDate = LocalDateTime.now(),
                     version = version,
-                    config = scanner.toJsonString()
+                    config = scanner.toJsonString(),
+                    supportFileNameExt = supportFileNameExt,
+                    supportPackageTypes = supportPackageTypes,
+                    supportScanTypes = supportScanTypes
                 )
             ).run { convert(this) }
         }
@@ -95,6 +101,18 @@ class ScannerServiceImpl @Autowired constructor(
 
     override fun find(name: String): Scanner? {
         return scannerDao.findByName(name)?.run { convert(this) }
+    }
+
+    override fun find(names: List<String>): List<Scanner> {
+        return scannerDao.findByNames(names).map { convert(it) }
+    }
+
+    override fun find(packageType: String, scanType: String): List<Scanner> {
+        return scannerDao.find(packageType, scanType).map { convert(it) }
+    }
+
+    override fun supportFileNameExt(): Set<String> {
+        return scannerDao.list().flatMap { it.supportFileNameExt }.toSet()
     }
 
     override fun list(): List<Scanner> {

@@ -60,15 +60,15 @@ class DockerScanHelper(
         val containerId = dockerClient.createContainer(image, hostConfig, args)
 
         taskContainerIdMap[task.taskId] = containerId
-        logger.info(CommonUtils.logMsg(task, "run container instance Id [$taskWorkDir, $containerId]"))
+        logger.info(CommonUtils.buildLogMsg(task, "run container instance Id [$taskWorkDir, $containerId]"))
         try {
             // 启动容器
             val result = dockerClient.startContainer(containerId, maxScanDuration)
-            logger.info(CommonUtils.logMsg(task, "task docker run result[$result], [$taskWorkDir, $containerId]"))
+            logger.info(CommonUtils.buildLogMsg(task, "task docker run result[$result], [$taskWorkDir, $containerId]"))
             return result
         } finally {
             taskContainerIdMap.remove(task.taskId)
-            dockerClient.removeContainer(containerId, CommonUtils.logMsg(task, "remove container failed"))
+            dockerClient.removeContainer(containerId, CommonUtils.buildLogMsg(task, "remove container failed"))
         }
     }
 

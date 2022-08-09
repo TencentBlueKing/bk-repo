@@ -35,8 +35,11 @@ import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
@@ -113,4 +116,33 @@ interface ScanTaskService {
      * 获取属于某个扫描任务的扫描子任务扫描报告详情
      */
     fun archiveSubtaskResultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo>
+
+    /**
+     * 获取文件扫描报告详情
+     */
+    fun resultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail>
+
+    /**
+     * 获取制品扫描结果预览
+     *
+     * @param projectId 制品所属项目
+     * @param subScanTaskId 子扫描任务id
+     *
+     * @return 制品扫描结果预览信息
+     */
+    fun planLicensesArtifact(projectId: String, subScanTaskId: String): FileLicensesResultOverview
+
+    /**
+     * 获取属于某个扫描任务的扫描子任务许可扫描报告详情
+     */
+    fun archiveSubtaskResultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail>
+
+    /**
+     * 获取属于某个扫描任务的扫描子任务结果预览
+     *
+     * @param subtaskId 子扫描任务id
+     *
+     * @return 制品扫描结果预览信息
+     */
+    fun subtaskLicenseOverview(subtaskId: String): FileLicensesResultOverview
 }
