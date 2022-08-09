@@ -25,31 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.service
+package com.tencent.bkrepo.common.artifact.interceptor.impl
 
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.service.config.OperateProperties
-import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.api.util.IpUtils
+import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
-@Configuration
-@EnableConfigurationProperties(OperateProperties::class)
-@ConditionalOnWebApplication
-@Import(OperateLogDao::class)
-class OperateAutoConfiguration {
+/**
+ * 办公网下载拦截器，只允许白名单IP下载
+ */
+class OfficeNetworkInterceptor(
+    rules: Map<String, Any>,
+    private val properties: DownloadInterceptorProperties
+) : DownloadInterceptor<Map<String, Boolean>>(rules) {
 
-    @Bean
-    fun operateLogService(
-        operateProperties: OperateProperties,
-        operateLogDao: OperateLogDao,
-        permissionManager: PermissionManager
-    ): OperateLogService {
-        return OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
+    /**
+     * 示例；
+     * "rules": {
+     *   "enabled": true
+     * }
+     */
+    override fun parseRule(): Map<String, Boolean> {
+        return rules.mapValues { it.value.toString().toBoolean() }
+    }
+
+
+    override fun matcher(node: NodeDetail, rule: Map<String, Boolean>): Boolean {
+        if (rule[ENABLED] == false) {
+            return true
+        }
+
+        val cidrList = properties.officeNetwork.whiteList
+        val clientIp = HttpContextHolder.getClientAddress()
+        cidrList.forEach {
+            if (IpUtils.isInRange(clientIp, it)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    companion object {
+        private const val ENABLED = "enabled"
     }
 }

@@ -55,6 +55,8 @@ const val ARTIFACT_LIMIT_DOWNLOADING_SIZE = METER_LIMIT_PREFIX + "downloading.si
 const val ARTIFACT_LIMIT_DOWNLOADING_SIZE_DESC = "构件实时下载大小（包含仓库维度，但限制数量）"
 const val ARTIFACT_DOWNLOAD_FAILED_COUNT = "artifact.download.failed.count"
 const val ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC = "构件下载失败量"
+const val ARTIFACT_ACCESS_TIME = "artifact.access-time"
+const val ARTIFACT_ACCESS_TIME_DESC = "构件访问时间"
 
 const val ASYNC_TASK_ACTIVE_COUNT = "async.task.active.count"
 const val ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"

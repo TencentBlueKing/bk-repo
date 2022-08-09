@@ -25,31 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.service
+package com.tencent.bkrepo.common.artifact.interceptor.config
 
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.service.config.OperateProperties
-import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
-
-@Configuration
-@EnableConfigurationProperties(OperateProperties::class)
-@ConditionalOnWebApplication
-@Import(OperateLogDao::class)
-class OperateAutoConfiguration {
-
-    @Bean
-    fun operateLogService(
-        operateProperties: OperateProperties,
-        operateLogDao: OperateLogDao,
-        permissionManager: PermissionManager
-    ): OperateLogService {
-        return OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
-    }
-}
+/**
+ * 办公网下载拦截配置项
+ */
+data class OfficeNetworkProperties(
+    /**
+     * IP白名单
+     */
+    var whiteList: List<String> = listOf("0.0.0.0/0")
+)

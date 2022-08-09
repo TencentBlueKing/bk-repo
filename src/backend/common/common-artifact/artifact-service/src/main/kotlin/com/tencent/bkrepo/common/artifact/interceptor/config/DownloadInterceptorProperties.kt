@@ -25,31 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.service
+package com.tencent.bkrepo.common.artifact.interceptor.config
 
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.service.config.OperateProperties
-import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
-@Configuration
-@EnableConfigurationProperties(OperateProperties::class)
-@ConditionalOnWebApplication
-@Import(OperateLogDao::class)
-class OperateAutoConfiguration {
-
-    @Bean
-    fun operateLogService(
-        operateProperties: OperateProperties,
-        operateLogDao: OperateLogDao,
-        permissionManager: PermissionManager
-    ): OperateLogService {
-        return OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
-    }
-}
+/**
+ * 下载拦截器配置项
+ */
+@ConfigurationProperties("download.interceptor")
+data class DownloadInterceptorProperties(
+    /**
+     * 办公网下载拦截配置
+     */
+    @NestedConfigurationProperty
+    var officeNetwork: OfficeNetworkProperties = OfficeNetworkProperties()
+)

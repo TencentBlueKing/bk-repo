@@ -289,6 +289,12 @@ class DeltaSyncService(
                 }
                 logger.error("Send sse event io error.", e)
             } catch (e: Exception) {
+                if (e.message.orEmpty().contains("ResponseBodyEmitter has already completed") &&
+                    hasCompleted.get()
+                ) {
+                    logger.info("Patch has already completed.")
+                    return
+                }
                 logger.error("Send sse event unknown error.", e)
             }
         }
