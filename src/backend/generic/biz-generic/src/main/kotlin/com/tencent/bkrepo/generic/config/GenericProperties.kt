@@ -41,5 +41,7 @@ data class GenericProperties(
      */
     var domain: String = "localhost",
     @NestedConfigurationProperty
-    var delta: DeltaProperties = DeltaProperties()
+    var delta: DeltaProperties = DeltaProperties(),
+    @NestedConfigurationProperty
+    var bkBase: BkBaseProperties = BkBaseProperties()
 )

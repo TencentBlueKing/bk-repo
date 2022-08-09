@@ -27,25 +27,13 @@
 
 package com.tencent.bkrepo.generic.config
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
-
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String = "",
-    var repoName: String = "",
-    var whiteList: List<String> = listOf(ALL),
-    var speedTestExpired: Duration = Duration.ofMinutes(10),
-    var allowUseMaxBandwidth: Int = 50
-) {
-    companion object {
-        const val ALL = "all"
-    }
-}
+/**
+ * 蓝鲸基础计算平台接口配置
+ */
+data class BkBaseProperties(
+    var domain: String = "",
+    var appCode: String = "",
+    var appSecret: String = "",
+    var token: String = "",
+    var table: String = ""
+)

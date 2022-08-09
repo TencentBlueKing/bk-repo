@@ -25,27 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.generic.pojo.bkbase
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.fasterxml.jackson.annotation.JsonProperty
 
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String = "",
-    var repoName: String = "",
-    var whiteList: List<String> = listOf(ALL),
-    var speedTestExpired: Duration = Duration.ofMinutes(10),
-    var allowUseMaxBandwidth: Int = 50
-) {
-    companion object {
-        const val ALL = "all"
-    }
-}
+/**
+ * 数据平台查询请求
+ */
+data class QueryRequest(
+    @JsonProperty("bk_app_code")
+    val appCode: String,
+    @JsonProperty("bk_app_secret")
+    val appSecret: String,
+    @JsonProperty("bkdata_data_token")
+    val token: String,
+    val sql: String,
+    @JsonProperty("bkdata_authentication_method")
+    val authMethod: String = "token",
+    @JsonProperty("prefer_storage")
+    val preferStorage: String = ""
+)
