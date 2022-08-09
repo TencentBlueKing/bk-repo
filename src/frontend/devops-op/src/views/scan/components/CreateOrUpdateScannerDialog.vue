@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="createMode ? '创建扫描器' : '更新扫描器'" :visible.sync="showDialog" :before-close="beforeClose">
+  <el-dialog :title="createMode ? '创建扫描器' : '更新扫描器'" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :rules="rules" :model="scanner" status-icon>
       <el-form-item label="名称" prop="name" required>
         <el-input v-model="scanner.name" :disabled="!createMode" />
@@ -86,7 +86,7 @@
       </el-form-item>
     </el-form>
     <div slot="footer">
-      <el-button @click="beforeClose">取 消</el-button>
+      <el-button @click="close">取 消</el-button>
       <el-button type="primary" @click="handleCreateOrUpdate(scanner)">确 定</el-button>
     </div>
   </el-dialog>
@@ -180,13 +180,6 @@ export default {
       } else {
         callback(new Error('格式错误'))
       }
-    },
-    beforeClose() {
-      this.$confirm('确认关闭？')
-        .then(_ => {
-          this.close()
-        }).catch(_ => {
-        })
     },
     close() {
       this.showDialog = false
