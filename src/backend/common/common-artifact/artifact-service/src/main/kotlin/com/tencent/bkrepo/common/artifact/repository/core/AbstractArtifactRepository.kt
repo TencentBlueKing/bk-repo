@@ -197,6 +197,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 下载前回调
      */
     open fun onDownloadBefore(context: ArtifactDownloadContext) {
+        // 拦截package下载
+        context.packageVersion?.let { packageVersion ->
+            context.getPackageInterceptors().forEach { it.intercept(context.projectId, packageVersion) }
+        }
         // 控制浏览器直接下载，或打开预览
         context.useDisposition = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
         artifactMetrics.downloadingCount.incrementAndGet()

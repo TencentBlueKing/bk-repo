@@ -29,14 +29,11 @@ package com.tencent.bkrepo.common.artifact.interceptor.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 /**
  * 元数据下载拦截器
  */
-class MetadataInterceptor(
-    override val rules: Map<String, Any>
-) : DownloadInterceptor<Map<String, Any>>(rules) {
+abstract class MetadataInterceptor<A>(rules: Map<String, Any>) : DownloadInterceptor<Map<String, Any>, A>(rules) {
 
     /**
      * 示例；
@@ -50,17 +47,19 @@ class MetadataInterceptor(
         return mapOf(key to value)
     }
 
-    override fun matcher(node: NodeDetail, rule: Map<String, Any>): Boolean {
-        val metadata = node.metadata
+    override fun matcher(artifact: A, rule: Map<String, Any>): Boolean {
+        val metadata = artifactMetadata(artifact)
         for ((k, v) in rule) {
-            if (metadata[k] != v) {
+            if (metadata[k].toString() != v) {
                 return false
             }
         }
         return true
     }
 
+    abstract fun artifactMetadata(artifact: A): Map<String, Any>
+
     companion object {
-        private const val METADATA = "metadata"
+        const val METADATA = "metadata"
     }
 }

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.interceptor
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
 import com.tencent.bkrepo.common.artifact.interceptor.impl.FilenameInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.MetadataInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.impl.NodeMetadataInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -54,9 +54,11 @@ class DownloadInterceptorTest {
             FILENAME to "*.apk"
         )
         val nodeDetail = nodeDetail("test.txt")
-        assertDoesNotThrow { FilenameInterceptor(invalidRule).intercept(nodeDetail) }
-        assertDoesNotThrow { FilenameInterceptor(passRule).intercept(nodeDetail) }
-        assertThrows<ArtifactDownloadForbiddenException> { FilenameInterceptor(forbiddenRule).intercept(nodeDetail) }
+        assertDoesNotThrow { FilenameInterceptor(invalidRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertDoesNotThrow { FilenameInterceptor(passRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertThrows<ArtifactDownloadForbiddenException> {
+            FilenameInterceptor(forbiddenRule).intercept(nodeDetail.projectId, nodeDetail)
+        }
     }
 
     @Test
@@ -76,9 +78,11 @@ class DownloadInterceptorTest {
             "k2" to "v2"
         )
         val nodeDetail = nodeDetail("test", metadata)
-        assertDoesNotThrow { MetadataInterceptor(invalidRule).intercept(nodeDetail) }
-        assertDoesNotThrow { MetadataInterceptor(passRule).intercept(nodeDetail) }
-        assertThrows<ArtifactDownloadForbiddenException> { MetadataInterceptor(forbiddenRule).intercept(nodeDetail) }
+        assertDoesNotThrow { NodeMetadataInterceptor(invalidRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertDoesNotThrow { NodeMetadataInterceptor(passRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertThrows<ArtifactDownloadForbiddenException> {
+            NodeMetadataInterceptor(forbiddenRule).intercept(nodeDetail.projectId, nodeDetail)
+        }
     }
 
     @Test
@@ -98,9 +102,11 @@ class DownloadInterceptorTest {
             "k2" to "v2"
         )
         val nodeDetail = nodeDetail("test.txt", metadata)
-        assertDoesNotThrow { WebInterceptor(invalidRule).intercept(nodeDetail) }
-        assertDoesNotThrow { WebInterceptor(passRule).intercept(nodeDetail) }
-        assertThrows<ArtifactDownloadForbiddenException> { WebInterceptor(forbiddenRule).intercept(nodeDetail) }
+        assertDoesNotThrow { WebInterceptor(invalidRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertDoesNotThrow { WebInterceptor(passRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertThrows<ArtifactDownloadForbiddenException> {
+            WebInterceptor(forbiddenRule).intercept(nodeDetail.projectId, nodeDetail)
+        }
     }
 
     @Test
@@ -122,9 +128,11 @@ class DownloadInterceptorTest {
             "k2" to "v2"
         )
         val nodeDetail = nodeDetail("test", metadata)
-        assertDoesNotThrow { WebInterceptor(invalidRule).intercept(nodeDetail) }
-        assertDoesNotThrow { WebInterceptor(passRule).intercept(nodeDetail) }
-        assertThrows<ArtifactDownloadForbiddenException> { WebInterceptor(forbiddenRule).intercept(nodeDetail) }
+        assertDoesNotThrow { WebInterceptor(invalidRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertDoesNotThrow { WebInterceptor(passRule).intercept(nodeDetail.projectId, nodeDetail) }
+        assertThrows<ArtifactDownloadForbiddenException> {
+            WebInterceptor(forbiddenRule).intercept(nodeDetail.projectId, nodeDetail)
+        }
     }
 
     private fun nodeDetail(name: String, metadata: Map<String, Any>? = null): NodeDetail {

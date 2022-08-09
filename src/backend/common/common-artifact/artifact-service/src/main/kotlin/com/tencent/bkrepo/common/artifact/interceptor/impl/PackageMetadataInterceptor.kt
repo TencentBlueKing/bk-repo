@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,31 +27,8 @@
 
 package com.tencent.bkrepo.common.artifact.interceptor.impl
 
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import org.springframework.util.AntPathMatcher
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
-/**
- * 文件名下载拦截器
- */
-class FilenameInterceptor(rules: Map<String, Any>) : DownloadInterceptor<String, NodeDetail>(rules) {
-
-    /**
-     * 示例：
-     * "rules": {
-     *   "filename": "*.apk"
-     * }
-     *
-     */
-    override fun parseRule(): String {
-        return rules[FILENAME]!!.toString()
-    }
-
-    override fun matcher(artifact: NodeDetail, rule: String): Boolean {
-        return AntPathMatcher().match(rule, artifact.name)
-    }
-
-    companion object {
-        private const val FILENAME = "filename"
-    }
+class PackageMetadataInterceptor(rules: Map<String, Any>) : MetadataInterceptor<PackageVersion>(rules) {
+    override fun artifactMetadata(artifact: PackageVersion) = artifact.metadata
 }

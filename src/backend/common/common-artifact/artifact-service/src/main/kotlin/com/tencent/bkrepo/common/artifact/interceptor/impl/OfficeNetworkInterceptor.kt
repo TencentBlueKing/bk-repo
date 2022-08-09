@@ -31,15 +31,14 @@ import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 /**
  * 办公网下载拦截器，只允许白名单IP下载
  */
-class OfficeNetworkInterceptor(
+class OfficeNetworkInterceptor<A>(
     rules: Map<String, Any>,
     private val properties: DownloadInterceptorProperties
-) : DownloadInterceptor<Map<String, Boolean>>(rules) {
+) : DownloadInterceptor<Map<String, Boolean>, A>(rules) {
 
     /**
      * 示例；
@@ -52,7 +51,7 @@ class OfficeNetworkInterceptor(
     }
 
 
-    override fun matcher(node: NodeDetail, rule: Map<String, Boolean>): Boolean {
+    override fun matcher(artifact: A, rule: Map<String, Boolean>): Boolean {
         if (rule[ENABLED] == false) {
             return true
         }

@@ -46,7 +46,7 @@ class CommonLocalRepository : LocalRepository() {
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            node?.let { getInterceptors().forEach { it.intercept(node) } }
+            node?.let { getInterceptors().forEach { it.intercept(node.projectId, node) } }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
