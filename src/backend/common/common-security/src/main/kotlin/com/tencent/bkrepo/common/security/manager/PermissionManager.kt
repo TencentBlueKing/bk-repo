@@ -234,6 +234,9 @@ open class PermissionManager(
      */
     @Suppress("TooGenericExceptionCaught")
     private fun isReadSystemRepo(action: PermissionAction, repoInfo: RepositoryInfo): Boolean {
+        if (SecurityUtils.isServiceRequest()) {
+            return true
+        }
         if (action != PermissionAction.READ) {
             return false
         }
