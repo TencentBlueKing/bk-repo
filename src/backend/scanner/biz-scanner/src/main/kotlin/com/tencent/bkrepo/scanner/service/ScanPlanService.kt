@@ -35,6 +35,7 @@ import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.scanner.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 
 /**
@@ -52,10 +53,11 @@ interface ScanPlanService {
      *
      * @param projectId 扫描方案所属项目
      * @param type 扫描方案类型
+     * @param fileNameExt 文件名后缀，仅在type为GENERIC时有效
      *
      * @return 扫描方案列表
      */
-    fun list(projectId: String, type: String? = null): List<ScanPlan>
+    fun list(projectId: String, type: String? = null, fileNameExt: String? = null): List<ScanPlan>
 
     /**
      * 分页获取扫描方案列表
@@ -147,4 +149,13 @@ interface ScanPlanService {
      * @return 制品扫描状态
      */
     fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String?
+
+    /**
+     * 获取扫描方案(license)最新一次扫描详情
+     *
+     * @param request 获取扫描方案关联的统计请求，包含扫描方案信息和筛选条件
+     *
+     * @return 扫描方案最新一次扫描详情
+     */
+    fun scanLicensePlanInfo(request: PlanCountRequest): ScanLicensePlanInfo?
 }

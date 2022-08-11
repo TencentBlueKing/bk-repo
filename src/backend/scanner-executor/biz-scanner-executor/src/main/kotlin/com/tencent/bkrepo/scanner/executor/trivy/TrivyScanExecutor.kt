@@ -57,7 +57,7 @@ import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.buildLogMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
 import com.tencent.bkrepo.scanner.executor.util.ImageScanHelper
@@ -138,11 +138,11 @@ class TrivyScanExecutor @Autowired constructor(
         // 创建metadata.json文件，trivy扫描时必须的文件
         val metadataFile = File(cacheDir, METEDATA_JSON)
         if (!metadataFile.exists()) {
-            logger.info(logMsg(task, "metadata.json file not exists"))
+            logger.info(buildLogMsg(task, "metadata.json file not exists"))
             metadataFile.parentFile.mkdirs()
             metadataFile.createNewFile()
             FileOutputStream(metadataFile).use { it.write(METADATA_JSON_FILE_CONTENT.toByteArray()) }
-            logger.info(logMsg(task, "create metadata.json file success"))
+            logger.info(buildLogMsg(task, "create metadata.json file success"))
         }
 
         // 加载最新漏洞库
@@ -152,13 +152,13 @@ class TrivyScanExecutor @Autowired constructor(
             dbFile.parentFile.mkdirs()
         }
         if (!dbFile.exists() || dbFile.md5() != newestNode["md5"]) {
-            logger.info(logMsg(task, "updating trivy.db"))
+            logger.info(buildLogMsg(task, "updating trivy.db"))
             dbFile.delete()
             dbFile.createNewFile()
             getTrivyDBInputStream(newestNode, task).use { inputStream ->
                 dbFile.outputStream().use { inputStream.copyTo(it) }
             }
-            logger.info(logMsg(task, "update trivy.db file success"))
+            logger.info(buildLogMsg(task, "update trivy.db file success"))
         }
     }
 
@@ -242,9 +242,9 @@ class TrivyScanExecutor @Autowired constructor(
         status: SubScanTaskStatus = SubScanTaskStatus.FAILED
     ): SubScanTaskStatus {
         val resultFile = File(workDir, scanResultFilePath(task))
-        logger.info(logMsg(task, "resultFilePath:${resultFile.absolutePath}"))
+        logger.info(buildLogMsg(task, "resultFilePath:${resultFile.absolutePath}"))
         if (!resultFile.exists() || resultFile.length() < 1) {
-            logger.info(logMsg(task, "scan result file not exists"))
+            logger.info(buildLogMsg(task, "scan result file not exists"))
             return status
         }
         return SubScanTaskStatus.SUCCESS

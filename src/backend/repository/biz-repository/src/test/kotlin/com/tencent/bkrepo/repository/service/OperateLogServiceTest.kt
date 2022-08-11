@@ -115,7 +115,7 @@ class OperateLogServiceTest @Autowired constructor(
             )
             operateLogDao.insert(log)
         }
-        Assertions.assertTrue(sequences.size == 4)
+        Assertions.assertTrue(sequences.size == 5 || sequences.size == 4)
     }
 
     private fun deleteOperateLog() {

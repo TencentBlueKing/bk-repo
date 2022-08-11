@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.generic.service
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.IpUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -20,6 +22,8 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
@@ -40,12 +44,17 @@ import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.dao.SignFileDao
 import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
+import com.tencent.bkrepo.generic.pojo.bkbase.QueryRequest
+import com.tencent.bkrepo.generic.pojo.bkbase.QueryResponse
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.Request
+import okhttp3.RequestBody
+import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpMethod
@@ -55,6 +64,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -78,6 +88,7 @@ class DeltaSyncService(
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
+    private val bkBaseProperties = genericProperties.bkBase
     private val blockSize: Int
         get() = deltaProperties.blockSize.toBytes().toInt()
     private val patchTimeout: Long
@@ -89,6 +100,7 @@ class DeltaSyncService(
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, signFileRepoName)
     }
     private val fileSizeThreshold = storageProperties.receive.fileSizeThreshold.toBytes()
+    private val httpClient = HttpClientBuilderFactory.create().build()
 
     /**
      * 签名文件
@@ -195,8 +207,74 @@ class DeltaSyncService(
     }
 
     fun recordMetrics(ip: String, metrics: BkSyncMetrics) {
-        metrics.ip = ip
-        logger.info(metrics.toJsonString().replace("\n", ""))
+        metricsExecutor.execute {
+            metrics.ip = ip
+            // 增量上传成功的才需要记录历史上传速度，以便计算节省时间
+            if (metrics.networkSpeed < deltaProperties.allowUseMaxBandwidth && metrics.genericUploadTime == 0L) {
+                metrics.historyGenericUploadSpeed = getHistoryUploadSpeed(metrics)
+            }
+            logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
+        }
+    }
+
+    /**
+     * 获取历史上传速度
+     * 1. 从数据平台查询到相同taskId、文件类型的普通上传记录
+     * 2. 筛选出最近一次构建的记录
+     * 3. 计算文件名的编辑距离，取距离最小的记录
+     * 4. 计算上传速度
+     */
+    private fun getHistoryUploadSpeed(metrics: BkSyncMetrics): Double {
+        if (bkBaseProperties.domain.isBlank()) {
+            return 0.0
+        }
+        val sql = "SELECT buildId,fileType,fileSize,genericUploadTime FROM ${bkBaseProperties.table} " +
+            "WHERE dtEventTimeStamp >= 0 AND dtEventTimeStamp <= ${System.currentTimeMillis()} " +
+            "AND networkSpeed < ${deltaProperties.allowUseMaxBandwidth} " +
+            "AND genericUploadTime > 0 " +
+            "AND taskId = '${metrics.taskId}' " +
+            "AND fileType = '${metrics.fileType}' " +
+            "ORDER BY dtEventTimeStamp DESC LIMIT 100"
+        val url = UrlFormatter.format(bkBaseProperties.domain, "/prod/v3/dataquery/query/")
+        val query = QueryRequest(
+            appCode = bkBaseProperties.appCode,
+            appSecret = bkBaseProperties.appSecret,
+            token = bkBaseProperties.token,
+            sql = sql
+        )
+        val requestBody = RequestBody.create(okhttp3.MediaType.parse(MediaTypes.APPLICATION_JSON), query.toJsonString())
+        val request = Request.Builder().url(url).post(requestBody).build()
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return 0.0
+                }
+                val dataList = response.body()!!.string().readJsonString<QueryResponse>().data.list
+                if (dataList.isEmpty()) {
+                    return 0.0
+                }
+                val latestBuildId = dataList.first()[BkSyncMetrics::buildId.name]
+                val latestBuildData = dataList.filter { it[BkSyncMetrics::buildId.name] == latestBuildId }
+                val editDistance = LevenshteinDistance()
+                var minEditDistance: Int = Int.MAX_VALUE
+                var minIndex: Int = -1
+                latestBuildData.forEachIndexed { index, map ->
+                    val distance = editDistance.apply(metrics.fileName, map[BkSyncMetrics::fileName.name].toString())
+                    if (distance < minEditDistance) {
+                        minEditDistance = distance
+                        minIndex = index
+                    }
+                }
+                val data = latestBuildData[minIndex]
+                val fileSize = data[BkSyncMetrics::fileSize.name].toString().toLong()
+                val uploadTime = data[BkSyncMetrics::genericUploadTime.name].toString().toDouble()
+                return fileSize.div(uploadTime)
+            }
+        } catch (e: Exception) {
+            logger.warn("get [${metrics.projectId}/${metrics.pipelineId}/${metrics.buildId}/${metrics.fileName}]" +
+                "history upload speed failed", e)
+            return 0.0
+        }
     }
 
     /**
@@ -289,6 +367,12 @@ class DeltaSyncService(
                 }
                 logger.error("Send sse event io error.", e)
             } catch (e: Exception) {
+                if (e.message.orEmpty().contains("ResponseBodyEmitter has already completed") &&
+                    hasCompleted.get()
+                ) {
+                    logger.info("Patch has already completed.")
+                    return
+                }
                 logger.error("Send sse event unknown error.", e)
             }
         }
@@ -500,6 +584,11 @@ class DeltaSyncService(
             200, 200, 60, TimeUnit.SECONDS,
             LinkedBlockingQueue<Runnable>(8192),
             ThreadFactoryBuilder().setNameFormat("BkSync-patch-%d").build()
+        )
+        private val metricsExecutor = ThreadPoolExecutor(
+            4,20,60,TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024),
+            ThreadFactoryBuilder().setNameFormat("BkSync-metrics-%d").build()
         )
     }
 }

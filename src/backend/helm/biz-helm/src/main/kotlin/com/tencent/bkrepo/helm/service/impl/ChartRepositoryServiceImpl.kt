@@ -44,6 +44,7 @@ import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
@@ -61,11 +62,11 @@ import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class ChartRepositoryServiceImpl(
@@ -73,8 +74,8 @@ class ChartRepositoryServiceImpl(
     private val helmOperationService: HelmOperationService
 ) : AbstractChartService(), ChartRepositoryService {
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
+        helmOperationService.checkNodePermission(INDEX_YAML, PermissionAction.READ)
         lockAction(artifactInfo.projectId, artifactInfo.repoName) { downloadIndex(artifactInfo) }
     }
 
@@ -198,7 +199,7 @@ class ChartRepositoryServiceImpl(
         return content.byteInputStream().readYamlString()
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Permission(ResourceType.NODE, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun installTgz(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
@@ -211,7 +212,7 @@ class ChartRepositoryServiceImpl(
         }
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Permission(ResourceType.NODE, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun installProv(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
@@ -255,7 +256,7 @@ class ChartRepositoryServiceImpl(
         }
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Permission(ResourceType.NODE, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
         val context = ArtifactQueryContext()

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.service
 
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.pojo.request.ScanQualityUpdateRequest
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityCheckedDetail
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
@@ -47,6 +48,14 @@ interface ScanQualityService {
      */
     fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean
 
-    fun checkScanQualityRedLine(scanQuality: Map<String, Any>, scanResultOverview: Map<String, Number>): Boolean
+    /**
+     * 检查是否通过质量规则
+     */
+    fun checkScanQualityRedLine(
+        scanQuality: Map<String, Any>,
+        scanResultOverview: Map<String, Number>,
+        scanner: Scanner
+    ): Boolean
+
     fun checkScanQualityRedLineDetail(planId: String, scanResultOverview: Map<String, Number>): ScanQualityCheckedDetail
 }

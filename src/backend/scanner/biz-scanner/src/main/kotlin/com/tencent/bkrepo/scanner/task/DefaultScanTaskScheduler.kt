@@ -145,7 +145,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
-    @Suppress("BlockingMethodInNonBlockingContext")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
@@ -213,7 +212,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
         val finishedSubScanTasks = ArrayList<TArchiveSubScanTask>()
-        val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
+        val nodeIterator = iteratorManager.createNodeIterator(scanTask, scanner, false)
         val qualityRule = scanTask.scanPlan?.scanQuality
         for (node in nodeIterator) {
             // 未使用扫描方案的情况直接取node的projectId
@@ -231,7 +230,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             if (existsFileScanResult != null && !scanTask.force) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
                 val finishedSubtask = createFinishedSubTask(
-                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule
+                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule, scanner
                 )
                 finishedSubScanTasks.add(finishedSubtask)
             } else {
@@ -356,7 +355,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
         fileScanResult: TFileScanResult,
         node: Node,
         credentialKey: String? = null,
-        qualityRule: Map<String, Any>? = null
+        qualityRule: Map<String, Any>? = null,
+        scanner: Scanner
     ): TArchiveSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
@@ -366,8 +366,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?.overview
                 ?.let { Converter.convert(it) }
             // 质量检查结果
-            val qualityPass = if (qualityRule != null && overview != null) {
-                scanQualityService.checkScanQualityRedLine(qualityRule, overview)
+            val qualityPass = if (!qualityRule.isNullOrEmpty() && overview != null) {
+                scanQualityService.checkScanQualityRedLine(qualityRule, overview, scanner)
             } else {
                 null
             }

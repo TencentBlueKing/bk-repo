@@ -42,7 +42,8 @@ class DeltaProperties(
     var projectId: String = "",
     var repoName: String = "",
     var whiteList: List<String> = listOf(ALL),
-    var speedTestExpired: Duration = Duration.ofMinutes(10)
+    var speedTestExpired: Duration = Duration.ofMinutes(10),
+    var allowUseMaxBandwidth: Int = 50
 ) {
     companion object {
         const val ALL = "all"

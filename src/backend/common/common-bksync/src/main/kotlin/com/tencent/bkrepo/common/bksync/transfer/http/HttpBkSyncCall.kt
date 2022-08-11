@@ -103,6 +103,7 @@ class HttpBkSyncCall(
 
     private fun reportMetrics(url: String) {
         try {
+            metrics.reportTimeStamp = System.currentTimeMillis()
             val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), metrics.toJsonString())
             val request = Request.Builder().url(url).post(requestBody).build()
             client.newCall(request).execute().use {

@@ -59,5 +59,17 @@ data class TScanner(
     /**
      * 扫描器配置
      */
-    val config: String
+    val config: String,
+    /**
+     * 支持扫描的文件的文件名后缀
+     */
+    val supportFileNameExt: List<String> = emptyList(),
+    /**
+     * 支持扫描的包类型[com.tencent.bkrepo.common.artifact.pojo.RepositoryType]
+     */
+    val supportPackageTypes: List<String> = emptyList(),
+    /**
+     * 支持扫描的类型[com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType]
+     */
+    val supportScanTypes: List<String> = emptyList(),
 )

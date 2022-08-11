@@ -43,6 +43,8 @@ data class ScanPlan(
     var name: String? = null,
     @ApiModelProperty("方案类型")
     var type: String? = null,
+    @ApiModelProperty("扫描类型")
+    var scanTypes: List<String>? = null,
     @ApiModelProperty("使用的扫描器")
     var scanner: String? = null,
     @ApiModelProperty("方案描述")

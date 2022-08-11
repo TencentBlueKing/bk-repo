@@ -30,10 +30,10 @@ package com.tencent.bkrepo.scanner.controller.user
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.pojo.response.ScannerBase
 import com.tencent.bkrepo.scanner.service.ScannerService
 import io.swagger.annotations.Api
@@ -46,6 +46,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("扫描器配置接口")
@@ -73,9 +74,22 @@ class UserScannerController @Autowired constructor(
 
     @ApiOperation("获取扫描器基本信息列表")
     @GetMapping("/base")
-    fun listBaseInf(): Response<List<ScannerBase>> {
-        val scannerBaseList = scannerService.list().map { ScannerBase(it.name, it.type) }
-        return ResponseBuilder.success(scannerBaseList)
+    fun listBaseInf(
+        @RequestParam(required = false) packageType: String? = null,
+        @RequestParam(required = false) scanType: String? = null
+    ): Response<List<ScannerBase>> {
+        val scannerBaseList = if (packageType != null && scanType != null) {
+            scannerService.find(packageType, scanType)
+        } else {
+            scannerService.list()
+        }
+        return ResponseBuilder.success(scannerBaseList.map { ScannerBase(it.name, it.type) })
+    }
+
+    @ApiOperation("获取支持扫描的文件名后缀")
+    @GetMapping("/support/ext")
+    fun supportFileNameExt(): Response<Set<String>> {
+        return ResponseBuilder.success(scannerService.supportFileNameExt())
     }
 
     @ApiOperation("获取扫描器")

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="createMode ? '创建凭据' : '更新凭据'" :visible.sync="showDialog" :before-close="beforeClose">
+  <el-dialog :title="createMode ? '创建凭据' : '更新凭据'" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :rules="rules" :model="credential" status-icon>
       <el-form-item label="Key" prop="key" required>
         <el-input v-model="credential.key" :disabled="!createMode" />
@@ -163,7 +163,7 @@
       </el-form-item>
     </el-form>
     <div slot="footer">
-      <el-button @click="beforeClose">取 消</el-button>
+      <el-button @click="close">取 消</el-button>
       <el-button type="primary" @click="handleCreateOrUpdate(credential)">确 定</el-button>
     </div>
   </el-dialog>
@@ -258,13 +258,6 @@ export default {
       } else {
         callback(new Error('路径格式错误'))
       }
-    },
-    beforeClose() {
-      this.$confirm('确认关闭？')
-        .then(_ => {
-          this.close()
-        }).catch(_ => {
-        })
     },
     close() {
       this.showDialog = false

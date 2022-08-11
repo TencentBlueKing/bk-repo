@@ -32,6 +32,7 @@ import com.tencent.bkrepo.scanner.model.TScanner
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
@@ -46,6 +47,19 @@ class ScannerDao : ScannerSimpleMongoDao<TScanner>() {
     fun findByName(name: String): TScanner? {
         val query = buildQuery(name)
         return findOne(query)
+    }
+
+    fun findByNames(names: List<String>): List<TScanner> {
+        val criteria = TScanner::name.inValues(names).and(TScanner::deleted.name).isEqualTo(null)
+        val query = Query(criteria)
+        return find(query)
+    }
+
+    fun find(packageType: String, scanType: String): List<TScanner> {
+        val criteria = TScanner::deleted.isEqualTo(null)
+            .and(TScanner::supportPackageTypes.name).inValues(packageType)
+            .and(TScanner::supportScanTypes.name).inValues(scanType)
+        return find(Query(criteria))
     }
 
     fun deleteByName(name: String, deleted: LocalDateTime = LocalDateTime.now()): UpdateResult {

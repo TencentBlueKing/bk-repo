@@ -78,6 +78,7 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
             .where(TScanPlan::projectId.name).isEqualTo(projectId)
             .and(TScanPlan::scanOnNewArtifact.name).isEqualTo(scanOnNewArtifact)
             .and(TScanPlan::type.name).isEqualTo(planType)
+            .and(TScanPlan::deleted.name).isEqualTo(null)
         if (!includeEmptyRepoNames) {
             criteria.and(TScanPlan::repoNames.name).isEqualTo(repoName)
         } else {

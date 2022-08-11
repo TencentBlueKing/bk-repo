@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -45,15 +46,17 @@ import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
 import com.tencent.bkrepo.helm.service.ChartManipulationService
+import com.tencent.bkrepo.helm.utils.HelmUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationService {
+class ChartManipulationServiceImpl(
+    private val helmOperationService: HelmOperationService
+) : AbstractChartService(), ChartManipulationService {
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
         val keys = artifactFileMap.keys
@@ -75,7 +78,6 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
         }
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun uploadProv(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
         checkRepositoryExistAndCategory(artifactInfo)
@@ -87,11 +89,13 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
         ArtifactContextHolder.getRepository().upload(context)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteVersion(userId: String, artifactInfo: HelmDeleteArtifactInfo) {
         logger.info("handling delete chart version request: [$artifactInfo]")
         with(artifactInfo) {
+            helmOperationService.checkNodePermission(
+                HelmUtils.getChartFileFullPath(PackageKeys.resolveHelm(packageName), version), PermissionAction.WRITE
+            )
             if (!packageVersionExist(projectId, repoName, packageName, version)) {
                 throw HelmFileNotFoundException(
                     "remove package $packageName for version [$version] failed: no such file or directory"

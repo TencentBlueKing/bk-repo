@@ -42,8 +42,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanTaskService
@@ -113,5 +116,36 @@ class UserScanReportController(private val scanTaskService: ScanTaskService) {
         @ApiParam(value = "扫描记录id") @PathVariable subScanTaskId: String
     ): Response<SubtaskResultOverview> {
         return ResponseBuilder.success(scanTaskService.planArtifactSubtaskOverview(subScanTaskId))
+    }
+
+    @ApiOperation("制品详情--许可数据")
+    @GetMapping("/artifact/license/leak/{projectId}/{subScanTaskId}")
+    fun artifactLicenseLeak(
+        @ApiParam(value = "projectId", required = true) @PathVariable projectId: String,
+        @ApiParam(value = "扫描记录id", required = true) @PathVariable subScanTaskId: String,
+        request: ArtifactLicensesDetailRequest
+    ): Response<Page<FileLicensesResultDetail>> {
+        request.projectId = projectId
+        request.subScanTaskId = subScanTaskId
+        return ResponseBuilder.success(scanTaskService.resultDetail(request))
+    }
+
+    @ApiOperation("制品详情--许可数据")
+    @GetMapping("/artifact/license/count/{projectId}/{subScanTaskId}")
+    fun artifactLicenseCount(
+        @ApiParam(value = "projectId", required = true) @PathVariable projectId: String,
+        @ApiParam(value = "扫描记录id", required = true) @PathVariable subScanTaskId: String
+    ): Response<FileLicensesResultOverview> {
+        return ResponseBuilder.success(scanTaskService.planLicensesArtifact(projectId, subScanTaskId))
+    }
+
+    @ApiOperation("制品详情--许可数据")
+    @GetMapping("/license/reports/{subScanTaskId}")
+    fun artifactLicenseReport(
+        @ApiParam(value = "扫描记录id") @PathVariable subScanTaskId: String,
+        request: ArtifactLicensesDetailRequest
+    ): Response<Page<FileLicensesResultDetail>> {
+        request.subScanTaskId = subScanTaskId
+        return ResponseBuilder.success(scanTaskService.archiveSubtaskResultDetail(request))
     }
 }

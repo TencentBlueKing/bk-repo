@@ -30,18 +30,57 @@ package com.tencent.bkrepo.scanner.component.manager.arrowhead
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.scanner.service.SpdxLicenseService
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.springframework.stereotype.Component
 
 @Component("${ArrowheadScanner.TYPE}Converter")
-class ArrowheadConverter : ScannerConverter {
+class ArrowheadConverter(private val licenseService: SpdxLicenseService) : ScannerConverter {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun convertLicenseResult(result: Any): Page<FileLicensesResultDetail> {
+        result as Page<ApplicationItem>
+        // 查询数据库中存放的applicationItem时已经过滤了只存在license的项，license一定存在
+        val licenseIds = result.records.map { it.license!!.name }.distinct()
+        val licenses = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.toLowerCase() }
+
+        val reports = result.records.map {
+            val detail = licenses[it.license!!.name.toLowerCase()]
+            FileLicensesResultDetail(
+                licenseId = it.license!!.name,
+                fullName = detail?.name ?: "",
+                compliance = detail?.isTrust,
+                riskLevel = it.license!!.risk,
+                recommended = detail?.isDeprecatedLicenseId?.not(),
+                description = detail?.reference ?: "",
+                isOsiApproved = detail?.isOsiApproved,
+                dependentPath = it.path,
+                isFsfLibre = detail?.isFsfLibre
+            )
+        }
+        val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
+        return Pages.ofResponse(pageRequest, result.totalRecords, reports)
+    }
+
+    override fun convertToLoadArguments(request: ArtifactLicensesDetailRequest): LoadResultArguments {
+        return ArrowheadLoadResultArguments(
+            licenseIds = request.licenseId?.let { listOf(it) } ?: emptyList(),
+            riskLevels = request.riskLevel?.let { listOf(it) } ?: emptyList(),
+            reportType = ApplicationItem.TYPE,
+            pageLimit = PageLimit(request.pageNumber, request.pageSize)
+        )
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
         result as Page<CveSecItem>

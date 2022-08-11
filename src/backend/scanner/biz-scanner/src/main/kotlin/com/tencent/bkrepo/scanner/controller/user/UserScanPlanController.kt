@@ -44,6 +44,7 @@ import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.scanner.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
@@ -146,9 +147,12 @@ class UserScanPlanController(
         projectId: String,
         @ApiParam(value = "方案类型")
         @RequestParam
-        type: String?
-    ): Response<List<ScanPlan>> {
-        val planList = scanPlanService.list(projectId, type)
+        type: String?,
+        @ApiParam(value = "待扫描文件名后缀，该参数尽在type为GENERIC时有效")
+        @RequestParam(required = false)
+        fileNameExt: String? = null
+        ): Response<List<ScanPlan>> {
+        val planList = scanPlanService.list(projectId, type, fileNameExt)
         planList.forEach { ScanPlanConverter.keepProps(it, KEEP_PROPS) }
         return ResponseBuilder.success(planList)
     }
@@ -175,6 +179,12 @@ class UserScanPlanController(
         artifactRequest: ArtifactPlanRelationRequest
     ): Response<List<ArtifactPlanRelation>> {
         return ResponseBuilder.success(scanPlanService.artifactPlanList(artifactRequest))
+    }
+    @ApiOperation("方案详情-许可-统计数据")
+    @GetMapping("/license/count")
+    fun planLicenseDetailCount(countRequest: PlanCountRequest): Response<ScanLicensePlanInfo?> {
+        permissionCheckHandler.checkProjectPermission(countRequest.projectId, PermissionAction.MANAGE)
+        return ResponseBuilder.success(scanPlanService.scanLicensePlanInfo(ScanPlanConverter.convert(countRequest)))
     }
 
     companion object {

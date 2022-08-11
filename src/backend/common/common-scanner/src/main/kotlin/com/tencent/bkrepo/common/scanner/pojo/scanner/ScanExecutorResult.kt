@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExe
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
 import io.swagger.annotations.ApiModel
@@ -43,7 +45,8 @@ import io.swagger.annotations.ApiModelProperty
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrowheadScanExecutorResult::class, name = ArrowheadScanner.TYPE),
     JsonSubTypes.Type(value = DependencyScanExecutorResult::class, name = DependencyScanner.TYPE),
-    JsonSubTypes.Type(value = TrivyScanExecutorResult::class, name = TrivyScanner.TYPE)
+    JsonSubTypes.Type(value = TrivyScanExecutorResult::class, name = TrivyScanner.TYPE),
+    JsonSubTypes.Type(value = ScanCodeToolkitScanExecutorResult::class, name = ScancodeToolkitScanner.TYPE)
 )
 open class ScanExecutorResult(
     @ApiModelProperty("扫描执行状态")
