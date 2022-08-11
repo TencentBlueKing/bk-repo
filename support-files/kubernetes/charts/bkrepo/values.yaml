@@ -110,6 +110,14 @@ persistence:
   # ref: https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/
 
 init:
+  ## curl镜像地址
+  curl:
+    image:
+      registry: hub.bktencent.com
+      repository: curlimages/curl
+      tag: 7.72.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   mongodb:
     enabled: true
     image:

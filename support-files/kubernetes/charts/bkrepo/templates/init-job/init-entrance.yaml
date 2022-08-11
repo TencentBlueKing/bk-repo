@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: init-entrance
-          image: curlimages/curl:7.72.0
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.curl.image "global" .Values.global "bkrepo" .Values.common) }}
           args:
             - /bin/sh
             - -c
