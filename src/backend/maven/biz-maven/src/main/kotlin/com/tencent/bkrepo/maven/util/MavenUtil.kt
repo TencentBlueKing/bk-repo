@@ -25,11 +25,10 @@ object MavenUtil {
         }
     }
 
-
     /**
      * 提取出对应的artifactId和groupId
      */
-    fun extractGrounpIdAndArtifactId(packageKey: String): Pair<String, String> {
+    fun extractGroupIdAndArtifactId(packageKey: String): Pair<String, String> {
         val params = PackageKeys.resolveGav(packageKey)
         val artifactId = params.split(":").last()
         val groupId = params.split(":").first()
@@ -40,7 +39,7 @@ object MavenUtil {
      * 获取对应package存储的节点路径
      */
     fun extractPath(packageKey: String): String {
-        val (artifactId, groupId) = extractGrounpIdAndArtifactId(packageKey)
+        val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
         return StringUtils.join(groupId.split("."), "/") + "/$artifactId"
     }
 }

@@ -38,7 +38,6 @@ const val FULL_PATH = "fullPath"
 const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
 
-
 const val PACKAGE_SUFFIX_REGEX =
     "(.+)\\.(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"
 

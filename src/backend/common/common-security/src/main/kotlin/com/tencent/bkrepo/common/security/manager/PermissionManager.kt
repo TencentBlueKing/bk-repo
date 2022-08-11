@@ -133,7 +133,7 @@ open class PermissionManager(
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (isReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo)) {
             return
         }
         checkPermission(
@@ -166,7 +166,7 @@ open class PermissionManager(
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (isReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo)) {
             return
         }
         // 禁止批量下载流水线节点
@@ -221,7 +221,9 @@ open class PermissionManager(
      * 判断是否为public仓库且为READ操作
      */
     private fun isReadPublicRepo(
-        action: PermissionAction, repoInfo: RepositoryInfo, public: Boolean? = null
+        action: PermissionAction,
+        repoInfo: RepositoryInfo,
+        public: Boolean? = null
     ): Boolean {
         if (action != PermissionAction.READ) {
             return false
@@ -233,7 +235,10 @@ open class PermissionManager(
      * 判断是否为系统级公开仓库且为READ操作
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun isReadSystemRepo(action: PermissionAction, repoInfo: RepositoryInfo): Boolean {
+    private fun allowReadSystemRepo(action: PermissionAction, repoInfo: RepositoryInfo): Boolean {
+        if (SecurityUtils.isServiceRequest()) {
+            return true
+        }
         if (action != PermissionAction.READ) {
             return false
         }
@@ -378,7 +383,9 @@ open class PermissionManager(
     }
 
     private fun getNodeDetailList(
-        projectId: String, repoName: String?, paths: List<String>?
+        projectId: String,
+        repoName: String?,
+        paths: List<String>?
     ): List<NodeDetail>? {
         val nodeDetailList = if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
             null
@@ -397,7 +404,9 @@ open class PermissionManager(
     }
 
     private fun queryNodeDetailList(
-        projectId: String, repoName: String, paths: List<String>
+        projectId: String,
+        repoName: String,
+        paths: List<String>
     ): List<NodeDetail> {
         var prefix = paths.first()
         paths.forEach {
@@ -419,9 +428,12 @@ open class PermissionManager(
         return nodeDetailList
     }
 
-
     private fun callbackToAuth(
-        request: Request, projectId: String, repoName: String?, paths: List<String>?, errorMsg: String
+        request: Request,
+        projectId: String,
+        repoName: String?,
+        paths: List<String>?,
+        errorMsg: String
     ) {
         try {
             httpClient.newCall(request).execute().use {
@@ -431,15 +443,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url()}], project[$projectId], repo[$repoName]," +
-                            " nodes$paths, code[${it.code()}], response[$content]"
+                        " nodes$paths, code[${it.code()}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
-
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url()}], project[$projectId], " +
-                        "repo[$repoName], nodes$paths, $e"
+                    "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }
@@ -537,7 +548,6 @@ open class PermissionManager(
                 }
             }
             return Regex(escapedString.replace("*", ".*"))
-
         }
     }
 }
