@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -46,7 +45,6 @@ import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.service.MavenService
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -60,7 +58,6 @@ import java.util.regex.PatternSyntaxException
 @Service
 class MavenServiceImpl(
     private val nodeClient: NodeClient,
-    private val packageClient: PackageClient,
     private val viewModelService: ViewModelService
 ) : ArtifactService(), MavenService {
 
@@ -96,10 +93,7 @@ class MavenServiceImpl(
                     renderListView(node, this)
                 } else {
                     logger.info("The dependency file: ${getArtifactFullPath()} will be downloaded... ")
-                    val packageVersion = packageClient.findVersionByName(
-                        projectId, repoName, PackageKeys.ofGav(groupId, artifactId), versionId
-                    ).data
-                    val context = ArtifactDownloadContext(packageVersion = packageVersion)
+                    val context = ArtifactDownloadContext()
                     ArtifactContextHolder.getRepository().download(context)
                 }
             } else {

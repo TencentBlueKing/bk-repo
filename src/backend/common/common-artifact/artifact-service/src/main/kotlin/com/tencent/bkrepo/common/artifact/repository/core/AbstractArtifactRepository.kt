@@ -62,6 +62,7 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -198,7 +199,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadBefore(context: ArtifactDownloadContext) {
         // 拦截package下载
-        context.packageVersion?.let { packageVersion ->
+        packageVersion(context)?.let { packageVersion ->
             context.getPackageInterceptors().forEach { it.intercept(context.projectId, packageVersion) }
         }
         // 控制浏览器直接下载，或打开预览
@@ -293,6 +294,13 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadFinished(context: ArtifactDownloadContext) {
         artifactMetrics.downloadingCount.decrementAndGet()
+    }
+
+    /**
+     * 获取要下载的package版本信息
+     */
+    open fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        return null
     }
 
     private fun publishPackageDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
