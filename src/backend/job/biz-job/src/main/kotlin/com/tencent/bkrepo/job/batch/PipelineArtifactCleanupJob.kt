@@ -34,7 +34,7 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
-import com.tencent.bkrepo.job.config.PipelineArtifactCleanupJobProperties
+import com.tencent.bkrepo.job.config.properties.PipelineArtifactCleanupJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
@@ -112,7 +112,7 @@ class PipelineArtifactCleanupJob(
                 .and(Node::path.name).isEqualTo(pipelineNode.fullPath + PathUtils.UNIX_SEPARATOR)
                 .and(Node::folder.name).isEqualTo(true)
                 .and(Node::deleted.name).isEqualTo(null)
-        ).with(Sort.by(Sort.Direction.DESC, Node::id.name)).skip(properties.reservedFrequency-1).limit(1)
+        ).with(Sort.by(Sort.Direction.DESC, Node::id.name)).skip(properties.reservedFrequency - 1).limit(1)
         return mongoTemplate.findOne(query, collectionName)
     }
 
@@ -129,8 +129,10 @@ class PipelineArtifactCleanupJob(
         )
         val update = Update.update(Node::deleted.name, LocalDateTime.now())
         val result = mongoTemplate.updateMulti(query, update, collectionName)
-        logger.info("delete ${result.modifiedCount} node " +
-            "in [${buildNode.projectId}/${buildNode.repoName}${buildNode.path}]")
+        logger.info(
+            "delete ${result.modifiedCount} node " +
+                "in [${buildNode.projectId}/${buildNode.repoName}${buildNode.path}]"
+        )
     }
 
     data class Node(

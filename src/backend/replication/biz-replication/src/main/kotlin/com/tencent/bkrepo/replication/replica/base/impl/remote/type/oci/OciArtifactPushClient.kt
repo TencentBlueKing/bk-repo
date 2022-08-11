@@ -35,13 +35,13 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
@@ -103,7 +103,7 @@ class OciArtifactPushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: RemoteClusterInfo,
+        clusterInfo: ClusterInfo,
         targetVersions: List<String>?
     ): Boolean {
         val manifestInput = localDataManager.loadInputStream(nodes[0])
@@ -126,7 +126,7 @@ class OciArtifactPushClient(
                             projectId = nodes[0].projectId,
                             repoName = nodes[0].repoName,
                             clusterUrl = clusterInfo.url,
-                            clusterName = clusterInfo.name
+                            clusterName = clusterInfo.name.orEmpty()
                         )
                     } finally {
                         semaphore.release()
@@ -179,7 +179,7 @@ class OciArtifactPushClient(
     /**
      * 获取auth处理器
      */
-    override fun getAuthorizationDetails(name: String, clusterInfo: RemoteClusterInfo): String? {
+    override fun getAuthorizationDetails(name: String, clusterInfo: ClusterInfo): String? {
         return authService.obtainAuthorizationCode(buildAuthRequestProperties(name, clusterInfo), httpClient)
     }
 
@@ -206,7 +206,7 @@ class OciArtifactPushClient(
     /**
      * auth鉴权属性配置
      */
-    private fun buildAuthRequestProperties(name: String, clusterInfo: RemoteClusterInfo): RequestProperty {
+    private fun buildAuthRequestProperties(name: String, clusterInfo: ClusterInfo): RequestProperty {
         val baseUrl = URL(clusterInfo.url)
         val v2Url = URL(baseUrl, "/v2/").toString()
         val target = baseUrl.path.removePrefix(StringPool.SLASH)

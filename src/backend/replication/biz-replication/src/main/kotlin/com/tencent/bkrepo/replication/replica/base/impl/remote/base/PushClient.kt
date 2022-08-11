@@ -29,9 +29,9 @@ package com.tencent.bkrepo.replication.replica.base.impl.remote.base
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.OkHttpClient
@@ -67,7 +67,7 @@ abstract class PushClient(
         version: String,
         projectId: String,
         repoName: String,
-        clusterInfo: RemoteClusterInfo,
+        clusterInfo: ClusterInfo,
         targetVersions: List<String>? = null
     ): Boolean {
         logger.info(
@@ -107,7 +107,7 @@ abstract class PushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: RemoteClusterInfo,
+        clusterInfo: ClusterInfo,
         targetVersions: List<String>? = null
     ): Boolean {
         return true
@@ -116,7 +116,7 @@ abstract class PushClient(
     /**
      * 获取授权详情-Authorization token
      */
-    open fun getAuthorizationDetails(name: String, clusterInfo: RemoteClusterInfo): String? {
+    open fun getAuthorizationDetails(name: String, clusterInfo: ClusterInfo): String? {
         return null
     }
 

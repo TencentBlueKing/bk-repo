@@ -48,7 +48,11 @@ abstract class ArtifactConfigurerSupport : ArtifactConfigurer, BeanDefinitionReg
      * common-security会读取所有HttpAuthSecurity Bean进行统一配置
      */
     override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) {
-        val beanName = HttpAuthSecurity::class.java.simpleName + "#" + getRepositoryType()
+        val beanName = String.format(
+            "%s#%s#%s", this::class.java.simpleName,
+            HttpAuthSecurity::class.java.simpleName,
+            getRepositoryType()
+        )
         val httpAuthSecurity = HttpAuthSecurity().apply {
             addCustomizer(getAuthSecurityCustomizer())
         }

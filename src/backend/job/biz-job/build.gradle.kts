@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
     implementation(project(":job:api-job"))
+    implementation(project(":replication:api-replication"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("io.micrometer:micrometer-registry-prometheus")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

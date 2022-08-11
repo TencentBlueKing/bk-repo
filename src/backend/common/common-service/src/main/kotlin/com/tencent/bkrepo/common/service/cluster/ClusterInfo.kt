@@ -42,7 +42,7 @@ data class ClusterInfo(
     /**
      * 集群url
      */
-    var url: String? = null,
+    var url: String = "",
     /**
      * 集群访问用户名
      */

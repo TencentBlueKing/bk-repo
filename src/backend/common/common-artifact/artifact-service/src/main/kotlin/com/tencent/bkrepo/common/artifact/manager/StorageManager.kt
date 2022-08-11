@@ -81,7 +81,7 @@ class StorageManager(
      * 中心节点集群信息
      */
     private val centerClusterInfo = ClusterInfo(
-        url = clusterProperties.center.url.orEmpty(),
+        url = clusterProperties.center.url,
         username = clusterProperties.center.username.orEmpty(),
         password = clusterProperties.center.password.orEmpty(),
         certificate = clusterProperties.center.certificate.orEmpty()

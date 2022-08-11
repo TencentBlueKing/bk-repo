@@ -25,9 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
@@ -40,4 +39,4 @@ data class PipelineArtifactCleanupJobProperties(
     override var cron: String = "0 0 0 1 1/1 ?",
     override var enabled: Boolean = true,
     var reservedFrequency: Long = 10000,
-): MongodbJobProperties(enabled)
+) : MongodbJobProperties(enabled)
