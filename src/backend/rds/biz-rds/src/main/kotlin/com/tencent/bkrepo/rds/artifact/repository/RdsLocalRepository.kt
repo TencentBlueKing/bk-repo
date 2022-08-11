@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.rds.constants.CHART
 import com.tencent.bkrepo.rds.constants.FILE_TYPE
@@ -64,6 +65,7 @@ import com.tencent.bkrepo.rds.utils.RdsUtils
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -147,7 +149,7 @@ class RdsLocalRepository(
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+        val node = context.getArtifactNode(nodeClient, fullPath)
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
@@ -170,6 +172,16 @@ class RdsLocalRepository(
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
         return ObjectBuilderUtil.buildDownloadRecordRequest(context)
+    }
+
+    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val node = getArtifactNode(nodeClient) ?: return null
+            val packageName = node.metadata[NAME] ?: return null
+            val packageVersion = node.metadata[VERSION] ?: return null
+            val packageKey = PackageKeys.resolveHelm(packageName.toString())
+            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion.toString()).data
+        }
     }
 
     override fun query(context: ArtifactQueryContext): ArtifactInputStream? {

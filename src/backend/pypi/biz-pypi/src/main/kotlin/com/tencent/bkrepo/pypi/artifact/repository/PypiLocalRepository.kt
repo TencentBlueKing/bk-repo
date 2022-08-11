@@ -83,6 +83,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -696,6 +697,14 @@ class PypiLocalRepository(
                 projectId, repoName,
                 packageKey, pypiPackagePojo.version
             )
+        }
+    }
+
+    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val pypiPackagePojo = artifactInfo.getArtifactFullPath().toPypiPackagePojo()
+            val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
+            return packageClient.findVersionByName(projectId, repoName, packageKey, pypiPackagePojo.version).data
         }
     }
 

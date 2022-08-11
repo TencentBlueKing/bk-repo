@@ -68,6 +68,7 @@ import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import okhttp3.Response
 import org.slf4j.Logger
@@ -207,6 +208,15 @@ class NpmLocalRepository(
         }
     }
 
+    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val (packageName, packageVersion) =
+                NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
+            val packageKey = PackageKeys.ofNpm(packageName)
+            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
+        }
+    }
+
     /**
      *  迁移成功之后需要创建包
      *  迁移tgz包时需要创建node元数据
@@ -278,7 +288,7 @@ class NpmLocalRepository(
                 }.apply {
                     logger.info(
                         "migrate npm package [$name] for version [$version] success, elapse $this ms. " +
-                                "process rate: [${++count}/$totalSize]"
+                            "process rate: [${++count}/$totalSize]"
                     )
                 }
                 packageMigrateDetail.addSuccessVersion(version)
@@ -379,7 +389,7 @@ class NpmLocalRepository(
         migrateLatest(distTags, originalDistTags, timeMap, originalTimeMap)
         logger.info(
             "the different versions of the  package [$name] is [$remoteVersionList], " +
-                    "size : ${remoteVersionList.size}"
+                "size : ${remoteVersionList.size}"
         )
         if (remoteVersionList.isEmpty()) return originalPackageMetadata
         // 说明有版本更新，将新增的版本迁移过来
@@ -502,7 +512,7 @@ class NpmLocalRepository(
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with version metadata [$name-$version.json] " +
-                            "is already exists in repository [$projectId/$repoName], skip migration."
+                        "is already exists in repository [$projectId/$repoName], skip migration."
                 )
                 return
             }
@@ -529,7 +539,7 @@ class NpmLocalRepository(
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with tgz file [$fullPath] is " +
-                            "already exists in repository [$projectId/$repoName], skip migration."
+                        "already exists in repository [$projectId/$repoName], skip migration."
                 )
                 return 0L
             }
@@ -586,7 +596,7 @@ class NpmLocalRepository(
                 nodeClient.deleteNode(nodeDeleteRequest)
                 logger.info(
                     "migrate package [$name] with version [$version] failed, " +
-                            "delete package version metadata [$fullPath] success."
+                        "delete package version metadata [$fullPath] success."
                 )
             }
         }

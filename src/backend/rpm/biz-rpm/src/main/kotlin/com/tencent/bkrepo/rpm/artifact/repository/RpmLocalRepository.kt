@@ -69,6 +69,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -502,6 +503,16 @@ class RpmLocalRepository(
             } else {
                 null
             }
+        }
+    }
+
+    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val node = getArtifactNode(nodeClient)
+            val fullPath = artifactInfo.getArtifactFullPath()
+            val rpmPackage = node?.metadata?.toRpmVersion(fullPath)?.toRpmPackagePojo(fullPath) ?: return null
+            val packageKey = PackageKeys.ofRpm(rpmPackage.path, rpmPackage.name)
+            return packageClient.findVersionByName(projectId, repoName, packageKey, rpmPackage.version).data
         }
     }
 

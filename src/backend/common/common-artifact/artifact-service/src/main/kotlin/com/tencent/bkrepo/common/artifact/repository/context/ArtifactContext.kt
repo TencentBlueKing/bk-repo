@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_NODE_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -42,6 +43,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConf
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -65,6 +68,18 @@ open class ArtifactContext(
     val repoName: String = repositoryDetail.name
 
     private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
+
+    /**
+     * 获取并缓存制品对应的node详情
+     */
+    fun getArtifactNode(nodeClient: NodeClient, fullPath: String = artifactInfo.getArtifactFullPath()): NodeDetail? {
+        var node = getAttribute<NodeDetail>(ARTIFACT_NODE_KEY)
+        if (node == null) {
+            node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            node?.let { putAttribute(ARTIFACT_NODE_KEY, it) }
+        }
+        return node
+    }
 
     /**
      * 使用当前实例的属性，拷贝出一个新的[ArtifactContext]实例
