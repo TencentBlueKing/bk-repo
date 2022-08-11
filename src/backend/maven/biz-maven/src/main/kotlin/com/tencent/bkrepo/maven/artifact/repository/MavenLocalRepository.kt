@@ -132,7 +132,7 @@ class MavenLocalRepository(
         val request = super.buildNodeCreateRequest(context)
         return request.copy(
             overwrite = true,
-            metadata = createNodeMetaData(context)
+            nodeMetadata = createNodeMetaData(context)
         )
     }
 
@@ -147,11 +147,11 @@ class MavenLocalRepository(
         return request.copy(
             fullPath = combineUrl,
             overwrite = true,
-            metadata = createNodeMetaData(context)
+            nodeMetadata = createNodeMetaData(context)
         )
     }
 
-    private fun createNodeMetaData(context: ArtifactUploadContext): Map<String, String> {
+    private fun createNodeMetaData(context: ArtifactUploadContext): List<MetadataModel> {
         with(context) {
             val md5 = getArtifactMd5()
             val sha1 = getArtifactSha1()
@@ -165,7 +165,9 @@ class MavenLocalRepository(
                 HashType.SHA1.ext to sha1,
                 HashType.SHA256.ext to sha256,
                 HashType.SHA512.ext to sha512
-            )
+            ).map {
+                MetadataModel(key = it.key, value = it.value)
+            }.toMutableList()
         }
     }
 
@@ -887,7 +889,7 @@ class MavenLocalRepository(
                     artifactPath = fullPath,
                     overwrite = true,
                     createdBy = context.userId,
-                    metadata = metadata
+                    packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) }
                 )
             )
         } catch (ignore: DuplicateKeyException) {

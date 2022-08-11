@@ -102,10 +102,8 @@ class MavenMetadataService(
                 fullPath = node.fullPath
             )
             if (criteria == null) return
-            criteria.apply {
-                mavenVersion?.timestamp?.let {
-                    this.and(TMavenMetadataRecord::timestamp.name).`is`(mavenVersion.timestamp)
-                }
+            mavenVersion?.timestamp?.let {
+                criteria.and(TMavenMetadataRecord::timestamp.name).`is`(mavenVersion.timestamp)
             }
             val query = Query(criteria)
             mavenMetadataDao.remove(query)
