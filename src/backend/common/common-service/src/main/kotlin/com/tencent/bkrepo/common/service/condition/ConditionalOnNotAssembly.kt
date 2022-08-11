@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,24 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job.base
+package com.tencent.bkrepo.common.service.condition
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Conditional
+import java.lang.annotation.Inherited
 
 /**
- * 只在中心节点执行的定时任务
+ * 在微服务架构下匹配生效
  */
-abstract class CenterNodeJob : LockableJob() {
-
-    @Autowired
-    private lateinit var clusterProperties: ClusterProperties
-
-    /**
-     * 判断是否支持
-     */
-    override fun shouldExecute(): Boolean {
-        return super.shouldExecute() && clusterProperties.role == RoleType.CENTER
-    }
-}
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@Conditional(OnNotAssemblyCondition::class)
+annotation class ConditionalOnNotAssembly

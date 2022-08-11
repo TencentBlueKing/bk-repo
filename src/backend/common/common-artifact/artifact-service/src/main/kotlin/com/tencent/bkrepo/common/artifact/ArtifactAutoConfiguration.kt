@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact
 
-import com.tencent.bkrepo.common.artifact.cluster.ArtifactClusterConfiguration
+import com.tencent.bkrepo.common.service.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration

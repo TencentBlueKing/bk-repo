@@ -4,6 +4,6 @@ import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 
 abstract class DefaultContextJob(
     override val batchJobProperties: BatchJobProperties
-) : BatchJob<JobContext>(batchJobProperties) {
+) : CenterNodeJob<JobContext>(batchJobProperties) {
     override fun createJobContext(): JobContext = JobContext()
 }

@@ -29,11 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.service.condition
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.autoconfigure.condition.AllNestedConditions
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
 
-@Configuration
-@EnableConfigurationProperties(ClusterProperties::class)
-class ArtifactClusterConfiguration
+class OnNotAssemblyCondition : AllNestedConditions(ConfigurationPhase.REGISTER_BEAN) {
+
+    @ConditionalOnMissingClass("com.tencent.bkrepo.config.AssemblyApplication")
+    internal class MissClass
+}

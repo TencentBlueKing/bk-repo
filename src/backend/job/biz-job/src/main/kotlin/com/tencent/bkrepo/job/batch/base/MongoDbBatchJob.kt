@@ -49,7 +49,7 @@ import org.springframework.data.mongodb.core.query.Query
  * */
 abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private val properties: MongodbJobProperties
-) : BatchJob<Context>(properties) {
+) : CenterNodeJob<Context>(properties) {
     /**
      * 需要操作的表名列表
      * */

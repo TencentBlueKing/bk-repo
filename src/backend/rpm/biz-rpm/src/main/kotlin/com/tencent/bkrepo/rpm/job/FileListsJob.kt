@@ -10,15 +10,19 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class FileListsJob {
+class FileListsJob : CenterNodeJob() {
 
     @Autowired
     private lateinit var jobService: JobService
 
     @Scheduled(fixedDelay = 60 * 1000)
     @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
+    override fun start() {
+        super.start()
+    }
+
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
-    fun updateFilelistsIndex() {
+    override fun run() {
         logger.info("update filelists index start")
         val startMillis = System.currentTimeMillis()
         val repoList = jobService.getAllRpmRepo()

@@ -95,7 +95,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     var lastExecuteTime: Long? = null
 
     open fun start(): Boolean {
-        if (!batchJobProperties.enabled) {
+        if (!shouldExecute()) {
             logger.info("Job[${getJobName()}] not enabled,exit job.")
             return false
         }
@@ -166,6 +166,13 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * */
     private fun getLockConfiguration(): LockConfiguration {
         return LockConfiguration(getLockName(), getLockAtMostFor(), getLockAtLeastFor())
+    }
+
+    /**
+     * 判断当前节点是否执行该任务
+     */
+    open fun shouldExecute(): Boolean {
+        return batchJobProperties.enabled
     }
 
     companion object {

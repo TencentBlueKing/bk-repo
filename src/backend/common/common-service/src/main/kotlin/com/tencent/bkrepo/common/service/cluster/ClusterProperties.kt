@@ -29,24 +29,37 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job.base
+package com.tencent.bkrepo.common.service.cluster
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 /**
- * 只在中心节点执行的定时任务
+ * 集群信息
  */
-abstract class CenterNodeJob : LockableJob() {
-
-    @Autowired
-    private lateinit var clusterProperties: ClusterProperties
-
+@ConfigurationProperties("cluster")
+data class ClusterProperties(
     /**
-     * 判断是否支持
+     * 节点角色
      */
-    override fun shouldExecute(): Boolean {
-        return super.shouldExecute() && clusterProperties.role == RoleType.CENTER
-    }
+    var role: RoleType = RoleType.CENTER,
+    /**
+     * 部署区域
+     */
+    var region: String? = null,
+    /**
+     * 中心节点信息
+     */
+    @NestedConfigurationProperty
+    var center: ClusterInfo = ClusterInfo(),
+    /**
+     * 自身节点信息
+     */
+    @NestedConfigurationProperty
+    var self: ClusterInfo = ClusterInfo()
+)
+
+enum class RoleType {
+    CENTER,
+    EDGE;
 }

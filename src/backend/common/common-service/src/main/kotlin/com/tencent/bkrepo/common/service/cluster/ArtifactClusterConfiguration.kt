@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.service.cluster
 
-/**
- * 集群信息
- */
-data class ClusterInfo(
-    /**
-     * 集群名称
-     */
-    var name: String? = null,
-    /**
-     * 集群url
-     */
-    var url: String? = null,
-    /**
-     * 集群访问用户名
-     */
-    var username: String? = null,
-    /**
-     * 集群访问密码
-     */
-    var password: String? = null,
-    /**
-     * 集群访问证书
-     */
-    var certificate: String? = null
-)
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+@EnableConfigurationProperties(ClusterProperties::class)
+class ArtifactClusterConfiguration

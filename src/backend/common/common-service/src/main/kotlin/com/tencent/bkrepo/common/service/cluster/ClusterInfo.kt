@@ -29,37 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
-
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+package com.tencent.bkrepo.common.service.cluster
 
 /**
  * 集群信息
  */
-@ConfigurationProperties("cluster")
-data class ClusterProperties(
+data class ClusterInfo(
     /**
-     * 节点角色
+     * 集群名称
      */
-    var role: RoleType = RoleType.CENTER,
+    var name: String? = null,
     /**
-     * 部署区域
+     * 集群url
      */
-    var region: String? = null,
+    var url: String? = null,
     /**
-     * 中心节点信息
+     * 集群访问用户名
      */
-    @NestedConfigurationProperty
-    var center: ClusterInfo = ClusterInfo(),
+    var username: String? = null,
     /**
-     * 自身节点信息
+     * 集群访问密码
      */
-    @NestedConfigurationProperty
-    var self: ClusterInfo = ClusterInfo()
+    var password: String? = null,
+    /**
+     * 集群访问证书
+     */
+    var certificate: String? = null
 )
-
-enum class RoleType {
-    CENTER,
-    EDGE;
-}

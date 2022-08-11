@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
-import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials

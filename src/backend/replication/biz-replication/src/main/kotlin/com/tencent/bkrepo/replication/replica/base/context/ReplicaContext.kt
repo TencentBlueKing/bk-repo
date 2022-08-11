@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
@@ -93,7 +94,7 @@ class ReplicaContext(
     var targetVersions: List<String>?
 
     init {
-        cluster = RemoteClusterInfo(
+        cluster = ClusterInfo(
             name = remoteCluster.name,
             url = remoteCluster.url,
             username = remoteCluster.username,

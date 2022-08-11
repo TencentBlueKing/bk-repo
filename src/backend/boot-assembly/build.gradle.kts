@@ -42,11 +42,11 @@ dependencies {
     implementation(project(":rpm:biz-rpm"))
     implementation(project(":oci:biz-oci"))
     implementation(project(":job:biz-job"))
+    implementation(project(":replication:biz-replication"))
 }
 
 configurations.all {
     exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
     exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
     exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
 }
