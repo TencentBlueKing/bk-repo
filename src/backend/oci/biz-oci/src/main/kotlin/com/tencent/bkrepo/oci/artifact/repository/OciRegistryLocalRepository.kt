@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.FORCE
+import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
@@ -66,6 +67,7 @@ import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -348,7 +350,7 @@ class OciRegistryLocalRepository(
         }
     }
 
-/**
+    /**
      * 版本不存在时 status code 404
      */
     override fun remove(context: ArtifactRemoveContext) {
@@ -384,6 +386,26 @@ class OciRegistryLocalRepository(
             return queryManifest(context)
         }
         return null
+    }
+
+    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
+            val packageKey = PackageKeys.ofName(repo.type.name.toLowerCase(), artifactInfo.packageName)
+            val version = if (artifactInfo.isValidDigest) {
+                val fullPath = ociOperationService.getNodeByDigest(projectId, repoName, artifactInfo.reference)
+                    ?: return null
+                nodeClient
+                    .getNodeDetail(projectId, repoName, fullPath)
+                    .data
+                    ?.metadata
+                    ?.get(IMAGE_VERSION)
+                    ?.toString()
+            } else {
+                artifactInfo.reference
+            }
+            return version?.let { packageClient.findVersionByName(projectId, repoName, packageKey, it).data }
+        }
     }
 
     /**
