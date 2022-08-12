@@ -8,8 +8,8 @@
     <property name="logging.job.file" value="${logging.path}/${spring.application.name}-job.log"/>
     <property name="logging.error.file" value="${logging.path}/${spring.application.name}-error.log"/>
     <property name="logging.access.file" value="${logging.path}/${spring.application.name}-access.log"/>
-    <property name="logging.file.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS}|%X{ip:--}|%F|%L|%level|%X{err_code:-0}|%tid||||[%t] %m%ex%n"/>
-    <property name="logging.console.pattern" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} [%clr(%tid)] %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    <property name="logging.file.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS}|%X{ip:--}|%F|%L|%level|%X{err_code:-0}|%X{X-BKREPO-TRACE-ID:--}||||[%t] %m%ex%n"/>
+    <property name="logging.console.pattern" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${logging.pattern.level:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} [%clr(%X{X-BKREPO-TRACE-ID})] %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
 
     <!-- 彩色日志依赖的渲染类 -->
     <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
@@ -24,7 +24,7 @@
             <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="ch.qos.logback.classic.PatternLayout">
                 <pattern>${logging.file.pattern}</pattern>
             </layout>
         </encoder>
@@ -61,7 +61,7 @@
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="ch.qos.logback.classic.PatternLayout">
                 <pattern>${logging.file.pattern}</pattern>
             </layout>
         </encoder>
@@ -79,7 +79,7 @@
             <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="ch.qos.logback.classic.PatternLayout">
                 <pattern>${logging.file.pattern}</pattern>
             </layout>
         </encoder>
@@ -98,7 +98,7 @@
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="ch.qos.logback.classic.PatternLayout">
                 <pattern>${logging.console.pattern}</pattern>
             </layout>
         </encoder>

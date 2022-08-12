@@ -32,10 +32,19 @@
 package com.tencent.bkrepo.common.service.util
 
 import org.springframework.beans.BeansException
+import org.springframework.cloud.sleuth.SpanNamer
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.instrument.async.LazyTraceExecutor
+import org.springframework.cloud.sleuth.instrument.async.TraceCallable
+import org.springframework.cloud.sleuth.instrument.async.TraceRunnable
+import org.springframework.cloud.sleuth.internal.DefaultSpanNamer
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
+import java.util.concurrent.Callable
+import java.util.concurrent.Executor
 
 class SpringContextUtils : ApplicationContextAware {
+
     /**
      * 实现ApplicationContextAware接口的回调方法，设置上下文环境
      */
@@ -103,6 +112,28 @@ class SpringContextUtils : ApplicationContextAware {
          */
         fun publishEvent(event: Any) {
             applicationContext.publishEvent(event)
+        }
+
+        fun Executor.trace(): LazyTraceExecutor = LazyTraceExecutor(applicationContext, this)
+
+        fun Runnable.trace(): TraceRunnable {
+            val tracer = getBean<Tracer>()
+            val spanNamer = try {
+                getBean<SpanNamer>()
+            } catch (_: BeansException) {
+                DefaultSpanNamer()
+            }
+            return TraceRunnable(tracer, spanNamer, this)
+        }
+
+        fun <T> Callable<T>.trace(): TraceCallable<T> {
+            val tracer = getBean<Tracer>()
+            val spanNamer = try {
+                getBean<SpanNamer>()
+            } catch (_: BeansException) {
+                DefaultSpanNamer()
+            }
+            return TraceCallable(tracer, spanNamer, this)
         }
     }
 }

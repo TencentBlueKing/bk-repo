@@ -32,6 +32,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.trace
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
@@ -67,7 +68,7 @@ class ArtifactEventConsumer(
     private val systemWebHookCache = CacheBuilder.newBuilder()
         .maximumSize(100)
         .expireAfterWrite(10, TimeUnit.MINUTES)
-        .build<EventType, List<TWebHook>>(CacheLoader.from { key ->
+        .build<EventType, List<TWebHook>>(CacheLoader.from { _ ->
             webHookDao.findByAssociationTypeAndAssociationId(
                 AssociationType.SYSTEM, null
             )
@@ -75,7 +76,7 @@ class ArtifactEventConsumer(
 
     override fun accept(message: Message<ArtifactEvent>) {
         logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
-        val task = Runnable { triggerWebHooks(message.payload) }
+        val task = Runnable { triggerWebHooks(message.payload) }.trace()
         executors.execute(task)
     }
 

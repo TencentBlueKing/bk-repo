@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.npm.utils
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.trace
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Callable
@@ -59,7 +60,7 @@ object ThreadPoolManager {
         val resultList = mutableListOf<T>()
         val futureList = mutableListOf<Future<T>>()
         callableList.forEach { callable ->
-            val future: Future<T> = asyncExecutor.submit(callable)
+            val future: Future<T> = asyncExecutor.submit(callable.trace())
             futureList.add(future)
         }
         futureList.forEach { future ->

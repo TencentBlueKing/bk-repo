@@ -37,12 +37,11 @@ dependencies {
 
     api("io.micrometer:micrometer-registry-influx")
 
-    implementation("org.apache.skywalking:apm-toolkit-logback-1.x")
-    implementation("org.apache.skywalking:apm-toolkit-trace")
-
     api("io.jsonwebtoken:jjwt-api")
     runtimeOnly("io.jsonwebtoken:jjwt-impl")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
 
     api("com.google.guava:guava")
+    api("org.springframework.cloud:spring-cloud-starter-sleuth")
+    api("io.zipkin.brave:brave-instrumentation-okhttp3")
 }

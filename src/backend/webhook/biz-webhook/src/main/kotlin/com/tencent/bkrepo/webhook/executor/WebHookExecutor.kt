@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.webhook.executor
 
+import brave.Tracing
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
@@ -63,10 +64,11 @@ class WebHookExecutor(
     private val webHookLogDao: WebHookLogDao,
     private val eventPayloadFactory: EventPayloadFactory,
     private val webHookProperties: WebHookProperties,
-    private val webHookMetrics: WebHookMetrics
+    private val webHookMetrics: WebHookMetrics,
+    private val tracing: Tracing
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(tracing = tracing).build()
 
     init {
         httpClient.dispatcher().maxRequests = webHookProperties.maxRequests ?: 200
