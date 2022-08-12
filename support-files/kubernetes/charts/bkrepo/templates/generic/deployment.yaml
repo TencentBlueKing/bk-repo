@@ -58,13 +58,13 @@ spec:
       containers:
         - name: plugin
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) }}
+          args:
+            - /bin/sh
+            - -c
+            - touch /tmp/healthy
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/
-              args:
-                - /bin/sh
-                - -c
-                - touch /tmp/healthy
           livenessProbe:
             exec:
               command:
