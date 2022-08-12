@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 --- 蓝鲸平台登录对接
 --- 获取Cookie中bk_token 和 bk_ticket
-local ticket, token, username
+local token, username
 
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
@@ -38,7 +38,7 @@ if config.mode == "standalone" or config.mode == "" or config.mode == nil then
     token = bkrepo_login_token
 elseif config.auth_mode == "" or config.auth_mode == "token" then
     local bk_token = cookieUtil:get_cookie("bk_token")
-    if not bk_token   then
+    if not bk_token then
         ngx.exit(401)
         return
     end
@@ -46,7 +46,7 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
     token = bk_token
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
-    if not bk_ticket   then
+    if not bk_ticket then
         ngx.exit(401)
         return
     end
@@ -61,8 +61,6 @@ elseif config.auth_mode == "ci" then
     username = oauthUtil:verify_ci_token(ci_login_token)
     token = ci_login_token
 end
-
-
 
 --- 设置用户信息
 ngx.header["x-bkrepo-uid"] = username
