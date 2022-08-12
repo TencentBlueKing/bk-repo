@@ -61,6 +61,17 @@ spec:
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/
+              args:
+                - /bin/sh
+                - -c
+                - touch /tmp/healthy
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
         - name: generic
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
