@@ -303,6 +303,11 @@ class OciRegistryLocalRepository(
     private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
         if (fullPath == null) return null
         val node = getNodeDetail(context.artifactInfo as OciArtifactInfo, fullPath)
+        // 拦截制品下载
+        node?.let {
+            downloadIntercept(context, it)
+            packageVersion(context, it)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
+        }
         logger.info(
             "Starting to download $fullPath " +
                 "in repo: ${context.artifactInfo.getRepoIdentify()}"
@@ -388,23 +393,12 @@ class OciRegistryLocalRepository(
         return null
     }
 
-    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+    private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
         with(context) {
             val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
             val packageKey = PackageKeys.ofName(repo.type.name.toLowerCase(), artifactInfo.packageName)
-            val version = if (artifactInfo.isValidDigest) {
-                val fullPath = ociOperationService.getNodeByDigest(projectId, repoName, artifactInfo.reference)
-                    ?: return null
-                nodeClient
-                    .getNodeDetail(projectId, repoName, fullPath)
-                    .data
-                    ?.metadata
-                    ?.get(IMAGE_VERSION)
-                    ?.toString()
-            } else {
-                artifactInfo.reference
-            }
-            return version?.let { packageClient.findVersionByName(projectId, repoName, packageKey, it).data }
+            val version = node.metadata[IMAGE_VERSION]?.toString() ?: return null
+            return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
         }
     }
 

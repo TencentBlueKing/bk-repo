@@ -163,6 +163,11 @@ class PypiLocalRepository(
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
     }
 
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        packageVersion(context)?.let { downloadIntercept(context, it) }
+    }
+
     private fun combineSameParamQuery(entry: Map.Entry<String, List<String>>): Rule.NestedRule {
         val sameParamQueryList = mutableListOf<Rule>()
         for (value in entry.value) {
@@ -700,7 +705,7 @@ class PypiLocalRepository(
         }
     }
 
-    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+    private fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
         with(context) {
             val pypiPackagePojo = artifactInfo.getArtifactFullPath().toPypiPackagePojo()
             val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)

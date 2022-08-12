@@ -69,6 +69,7 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
@@ -165,10 +166,13 @@ class HelmLocalRepository(
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        val node = context.getArtifactNode(nodeClient)
+        val fullPath = context.getStringAttribute(FULL_PATH)!!
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
+            downloadIntercept(context, node)
+            packageVersion(context, node)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
         }
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
         inputStream?.let {
@@ -238,9 +242,8 @@ class HelmLocalRepository(
         }
     }
 
-    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+    private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
         with(context) {
-            val node = getArtifactNode(nodeClient) ?: return null
             val packageName = node.metadata[NAME] ?: return null
             val packageVersion = node.metadata[VERSION] ?: return null
             val packageKey = PackageKeys.resolveHelm(packageName.toString())

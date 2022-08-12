@@ -52,5 +52,5 @@ const val PACKAGE_JSON_SUFFIX = ".json"
 // 构件下载前缀标识
 const val DIRECT_DISTS = "direct-dists"
 
-const val METADATA_PACKAGE_KEY = "packageKey"
-const val METADATA_VERSION = "version"
+const val METADATA_KEY_PACKAGE_KEY = "packageKey"
+const val METADATA_KEY_VERSION = "version"

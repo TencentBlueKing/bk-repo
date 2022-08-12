@@ -102,6 +102,11 @@ class NpmLocalRepository(
         }
     }
 
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        packageVersion(context)?.let { downloadIntercept(context, it) }
+    }
+
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val name = context.getStringAttribute("name") ?: StringPool.EMPTY
         return NodeCreateRequest(
@@ -208,7 +213,7 @@ class NpmLocalRepository(
         }
     }
 
-    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+    private fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
         with(context) {
             val (packageName, packageVersion) =
                 NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())

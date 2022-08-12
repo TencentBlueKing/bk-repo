@@ -47,8 +47,8 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.DIRECT_DISTS
 import com.tencent.bkrepo.composer.INIT_PACKAGES
-import com.tencent.bkrepo.composer.METADATA_PACKAGE_KEY
-import com.tencent.bkrepo.composer.METADATA_VERSION
+import com.tencent.bkrepo.composer.METADATA_KEY_PACKAGE_KEY
+import com.tencent.bkrepo.composer.METADATA_KEY_VERSION
 import com.tencent.bkrepo.composer.exception.ComposerArtifactMetadataException
 import com.tencent.bkrepo.composer.pojo.ArtifactRepeat
 import com.tencent.bkrepo.composer.pojo.ArtifactUploadResponse
@@ -221,7 +221,11 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactPath = artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
-            val node = getArtifactNode(nodeClient, artifactPath)
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactPath).data
+            node?.let {
+                downloadIntercept(context, it)
+                packageVersion(it)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
+            }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
@@ -240,8 +244,8 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         }
         // 保存节点
         val metadata = mutableMapOf<String, String>()
-        metadata[METADATA_PACKAGE_KEY] = PackageKeys.ofComposer(composerArtifact.name)
-        metadata[METADATA_VERSION] = composerArtifact.version
+        metadata[METADATA_KEY_PACKAGE_KEY] = PackageKeys.ofComposer(composerArtifact.name)
+        metadata[METADATA_KEY_VERSION] = composerArtifact.version
         val nodeCreateRequest = getCompressNodeCreateRequest(context, metadata)
         store(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
         // 更新索引
@@ -473,11 +477,11 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
     ): PackageDownloadRecord? {
         with(context) {
             val fullPath = artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
-            val node = getArtifactNode(nodeClient, fullPath) ?: return null
-            val packageKey = node.metadata[METADATA_PACKAGE_KEY] ?: throw ComposerArtifactMetadataException(
+            val node = artifactResource.node ?: return null
+            val packageKey = node.metadata[METADATA_KEY_PACKAGE_KEY] ?: throw ComposerArtifactMetadataException(
                 "${artifactInfo.getArtifactFullPath()} : not found metadata.packageKay value"
             )
-            val version = node.metadata[METADATA_VERSION] ?: throw ComposerArtifactMetadataException(
+            val version = node.metadata[METADATA_KEY_VERSION] ?: throw ComposerArtifactMetadataException(
                 "${artifactInfo.getArtifactFullPath()} : not found metadata.version value"
             )
             return if (fullPath.endsWith("")) {
@@ -492,15 +496,6 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         }
     }
 
-    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
-        with(context) {
-            val artifactPath = artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
-            val node = getArtifactNode(nodeClient, artifactPath) ?: return null
-            val packageKey = node.metadata[METADATA_PACKAGE_KEY]?.toString() ?: return null
-            val packageVersion = node.metadata[METADATA_VERSION]?.toString() ?: return null
-            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
-        }
-    }
 
     /**
      * 版本详情
@@ -556,6 +551,14 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
             logger.error(exception.message)
         }
         return true
+    }
+
+    fun packageVersion(node: NodeDetail): PackageVersion? {
+        with(node) {
+            val packageKey = metadata[METADATA_KEY_PACKAGE_KEY]?.toString() ?: return null
+            val packageVersion = metadata[METADATA_KEY_VERSION]?.toString() ?: return null
+            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
+        }
     }
 
     companion object {

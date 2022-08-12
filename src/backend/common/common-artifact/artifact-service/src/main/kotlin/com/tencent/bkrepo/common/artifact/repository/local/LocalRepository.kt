@@ -36,7 +36,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
 /**
  * 本地仓库抽象逻辑
@@ -56,11 +59,38 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = getArtifactNode(nodeClient)
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            node?.let { downloadIntercept(context, it) }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
+    }
+
+    /**
+     * 拦截node下载
+     */
+    fun downloadIntercept(context: ArtifactDownloadContext, nodeDetail: NodeDetail) {
+        with(context) {
+            getInterceptors().forEach { it.intercept(projectId, nodeDetail) }
+
+            // 拦截package下载
+            val packageKey = nodeDetail.packageName()?.let { PackageKeys.ofName(repo.type, it) }
+            val version = nodeDetail.packageVersion()
+            if (packageKey != null && version != null) {
+                packageClient.findVersionByName(projectId, repoName, packageKey, version).data?.let { packageVersion ->
+                    downloadIntercept(context, packageVersion)
+                }
+            }
+        }
+    }
+
+    /**
+     * 拦截package下载
+     * TODO NODE中统一存储packageKey与version元数据后可设置为private方法
+     */
+    fun downloadIntercept(context: ArtifactDownloadContext, packageVersion: PackageVersion) {
+        context.getPackageInterceptors().forEach { it.intercept(context.projectId, packageVersion) }
     }
 
     /**

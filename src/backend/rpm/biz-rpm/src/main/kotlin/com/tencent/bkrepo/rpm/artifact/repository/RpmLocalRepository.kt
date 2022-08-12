@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -131,6 +132,20 @@ class RpmLocalRepository(
     private val stageClient: StageClient,
     private val jobService: JobService
 ) : LocalRepository() {
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        with(context) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            node?.let {
+                downloadIntercept(context, it)
+                // TODO NODE中统一存储packageKey与version元数据后可移除下方的package下载拦截
+                packageVersion(context, it)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
+            }
+            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            val responseName = artifactInfo.getResponseName()
+            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+        }
+    }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -506,11 +521,10 @@ class RpmLocalRepository(
         }
     }
 
-    override fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+    private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
         with(context) {
-            val node = getArtifactNode(nodeClient)
             val fullPath = artifactInfo.getArtifactFullPath()
-            val rpmPackage = node?.metadata?.toRpmVersion(fullPath)?.toRpmPackagePojo(fullPath) ?: return null
+            val rpmPackage = node.metadata.toRpmVersion(fullPath).toRpmPackagePojo(fullPath)
             val packageKey = PackageKeys.ofRpm(rpmPackage.path, rpmPackage.name)
             return packageClient.findVersionByName(projectId, repoName, packageKey, rpmPackage.version).data
         }
