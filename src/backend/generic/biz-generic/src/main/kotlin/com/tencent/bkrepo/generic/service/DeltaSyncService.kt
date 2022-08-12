@@ -228,12 +228,13 @@ class DeltaSyncService(
         if (bkBaseProperties.domain.isBlank()) {
             return 0.0
         }
-        val sql = "SELECT buildId,fileType,fileSize,genericUploadTime FROM ${bkBaseProperties.table} " +
+        val sql = "SELECT buildId,fileName,fileSize,genericUploadTime FROM ${bkBaseProperties.table} " +
             "WHERE dtEventTimeStamp >= 0 AND dtEventTimeStamp <= ${System.currentTimeMillis()} " +
             "AND networkSpeed < ${deltaProperties.allowUseMaxBandwidth} " +
             "AND genericUploadTime > 0 " +
             "AND taskId = '${metrics.taskId}' " +
             "AND fileType = '${metrics.fileType}' " +
+            "AND buildId != '${metrics.buildId}' " +
             "ORDER BY dtEventTimeStamp DESC LIMIT 100"
         val url = UrlFormatter.format(bkBaseProperties.domain, "/prod/v3/dataquery/query/")
         val query = QueryRequest(
