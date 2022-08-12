@@ -56,6 +56,11 @@ spec:
       securityContext: {{- omit .Values.generic.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       containers:
+        - name: plugin
+          image: { { include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) } }
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data/workspace/
         - name: generic
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
@@ -97,6 +102,8 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.common.mountPath }}
+            - name: shared-data
+              mountPath: /data/workspace/
       volumes:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
