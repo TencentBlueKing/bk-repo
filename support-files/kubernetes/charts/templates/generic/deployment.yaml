@@ -57,7 +57,7 @@ spec:
       {{- end }}
       containers:
         - name: plugin
-          image: { { include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) } }
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) }}
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/
