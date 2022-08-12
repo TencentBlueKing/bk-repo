@@ -114,4 +114,6 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        - name: shared-data
+          emptyDir: {}
 {{- end }}
