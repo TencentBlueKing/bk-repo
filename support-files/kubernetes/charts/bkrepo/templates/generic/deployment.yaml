@@ -104,7 +104,7 @@ spec:
               mountPath: {{ .Values.common.mountPath }}
       volumes:
         - name: shared-data
-            emptyDir: { }
+          emptyDir: {}
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
           nfs:
