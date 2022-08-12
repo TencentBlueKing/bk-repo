@@ -37,6 +37,7 @@ const val X_CHECKSUM_SHA1 = "X-Checksum-Sha1"
 const val FULL_PATH = "fullPath"
 const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
+
 const val METADATA_KEY_PACKAGING = "packaging"
 const val METADATA_KEY_GROUP_ID = "groupId"
 const val METADATA_KEY_ARTIFACT_ID = "artifactId"

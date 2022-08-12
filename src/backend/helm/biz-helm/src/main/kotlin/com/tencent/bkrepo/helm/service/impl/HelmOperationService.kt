@@ -27,13 +27,16 @@
 
 package com.tencent.bkrepo.helm.service.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
@@ -52,7 +55,8 @@ import java.util.SortedSet
 
 @Component
 class HelmOperationService(
-    private val helmProperties: HelmProperties
+    private val helmProperties: HelmProperties,
+    private val permissionManager: PermissionManager
 ) : AbstractChartService() {
 
     /**
@@ -203,6 +207,22 @@ class HelmOperationService(
             userId = userId,
             repoDetail = repoDetail
         )
+    }
+
+    /**
+     * 校验是否有对应节点相关访问权限
+     */
+    fun checkNodePermission(path: String, action: PermissionAction = PermissionAction.WRITE) {
+        with(ArtifactContextHolder.getRepoDetail()!!) {
+            permissionManager.checkNodePermission(
+                action = action,
+                projectId = projectId,
+                repoName = name,
+                path,
+                public = public,
+                anonymous = false
+            )
+        }
     }
 
     /**

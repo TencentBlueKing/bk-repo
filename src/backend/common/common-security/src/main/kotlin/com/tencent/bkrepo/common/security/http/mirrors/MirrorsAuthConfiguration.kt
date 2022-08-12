@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,27 +29,35 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.common.security.http.mirrors
 
-import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.http.login.LoginConfiguration
-import com.tencent.bkrepo.common.security.http.mirrors.MirrorsAuthConfiguration
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 
 /**
- * HTTP 请求认证配置类
+ * 软件源的认证配置
  */
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(
-    HttpAuthProperties::class,
-    JwtAuthProperties::class
-)
-@Import(
-    LoginConfiguration::class,
-    HttpAuthSecurityConfiguration::class,
-    MirrorsAuthConfiguration::class
-)
-class HttpAuthConfiguration
+@Configuration
+@EnableConfigurationProperties(MirrorsAuthProperties::class)
+@ConditionalOnProperty(prefix = "security.auth.mirrors", name = ["enabled"], havingValue = "true")
+class MirrorsAuthConfiguration {
+
+    @Bean
+    fun mirrorsAuthSecurityCustomizer(mirrorsAuthProperties: MirrorsAuthProperties): HttpAuthSecurityCustomizer {
+        return object : HttpAuthSecurityCustomizer {
+            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+                val mirrorsAuthHandler = MirrorsAuthHandler(
+                    mirrorsAuthProperties,
+                    httpAuthSecurity.authenticationManager!!
+                )
+                httpAuthSecurity.disableBasicAuth()
+                    .disableAnonymous()
+                    .addHttpAuthHandler(mirrorsAuthHandler)
+            }
+        }
+    }
+}

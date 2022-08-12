@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="createMode ? '创建配置' : '更新配置'" :visible.sync="showDialog" :before-close="beforeClose">
+  <el-dialog :title="createMode ? '创建配置' : '更新配置'" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :model="configuration" status-icon>
       <el-form-item label="项目名" prop="projectId" required>
         <el-input v-model="configuration.projectId" :disabled="!createMode" />
@@ -14,7 +14,7 @@
       </el-form-item>
     </el-form>
     <div slot="footer">
-      <el-button @click="beforeClose">取 消</el-button>
+      <el-button @click="close">取 消</el-button>
       <el-button type="primary" @click="handleCreateOrUpdate(configuration)">确 定</el-button>
     </div>
   </el-dialog>
@@ -74,13 +74,6 @@ export default {
     }
   },
   methods: {
-    beforeClose() {
-      this.$confirm('确认关闭？')
-        .then(_ => {
-          this.close()
-        }).catch(_ => {
-        })
-    },
     close() {
       this.showDialog = false
       this.$emit('update:visible', false)
