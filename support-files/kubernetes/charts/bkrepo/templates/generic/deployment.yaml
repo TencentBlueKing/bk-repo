@@ -57,11 +57,11 @@ spec:
       {{- end }}
       containers:
         - name: plugin
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.bkstore.image "global" .Values.global "bkrepo" .Values.common) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) }}
           args:
             - /bin/sh
             - -c
-            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/;
+            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/plugin/
