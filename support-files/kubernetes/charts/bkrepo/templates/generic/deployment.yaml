@@ -56,8 +56,8 @@ spec:
       securityContext: {{- omit .Values.generic.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       containers:
-        - name: plugin
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) }}
+        - name: plugin-bkstore
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.bkstore.image "global" .Values.global "bkrepo" .Values.common) }}
           args:
             - /bin/sh
             - -c
@@ -65,6 +65,43 @@ spec:
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/plugin/
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
+        - name: plugin-gitci
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.gitci.image "global" .Values.global "bkrepo" .Values.common) }}
+          args:
+            - /bin/sh
+            - -c
+            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/;
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data/workspace/plugin/
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
         - name: generic
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
