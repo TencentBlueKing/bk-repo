@@ -61,7 +61,7 @@ spec:
           args:
             - /bin/sh
             - -c
-            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep 600
+            - cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep 600
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/plugin/
@@ -70,7 +70,7 @@ spec:
           args:
             - /bin/sh
             - -c
-            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep 600
+            - cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep 600
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/plugin/
