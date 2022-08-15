@@ -120,6 +120,13 @@ class ScannerMetrics(
     }
 
     /**
+     * 设置[status]状态的任务数量为[count]
+     */
+    fun setTaskCount(status: ScanTaskStatus, count: Long) {
+        taskCounter(status).set(count)
+    }
+
+    /**
      * 处于[status]状态的任务数量增加[count]个
      */
     fun incSubtaskCountAndGet(status: SubScanTaskStatus, count: Long = 1): Long {
