@@ -64,7 +64,7 @@ spec:
             - touch /tmp/healthy; sleep 600
           volumeMounts:
             - name: shared-data
-              mountPath: /data/workspace/
+              mountPath: /data/workspace2/
           livenessProbe:
             exec:
               command:
