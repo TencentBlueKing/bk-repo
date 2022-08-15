@@ -80,7 +80,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       containers:
-
         - name: generic
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
