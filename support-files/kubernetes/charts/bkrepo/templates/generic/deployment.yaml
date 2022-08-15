@@ -56,7 +56,7 @@ spec:
       securityContext: {{- omit .Values.generic.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       containers:
-        - name: plugin-bkstore
+        - name: plugin
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.bkstore.image "global" .Values.global "bkrepo" .Values.common) }}
           args:
             - /bin/sh
