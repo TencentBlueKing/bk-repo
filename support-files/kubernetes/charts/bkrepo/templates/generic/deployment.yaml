@@ -55,13 +55,13 @@ spec:
       {{- if .Values.generic.podSecurityContext.enabled }}
       securityContext: {{- omit .Values.generic.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
-      containers:
+      initContainers:
         - name: plugin
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.plugin.image "global" .Values.global "bkrepo" .Values.common) }}
           args:
             - /bin/sh
             - -c
-            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep 600
+            - touch /tmp/healthy;cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep 60
           volumeMounts:
             - name: shared-data
               mountPath: /data/workspace/plugin/
@@ -79,6 +79,8 @@ spec:
                 - /tmp/healthy
             initialDelaySeconds: 5
             periodSeconds: 5
+      containers:
+
         - name: generic
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
