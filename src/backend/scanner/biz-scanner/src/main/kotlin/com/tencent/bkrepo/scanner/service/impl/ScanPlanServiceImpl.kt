@@ -272,9 +272,9 @@ class ScanPlanServiceImpl(
             val scanPlanMap = scanPlanDao.findByIds(planIds, true).associateBy { it.id!! }
             return subtasks.map {
                 if (it.planId == null) {
-                    ScanPlanConverter.convertToArtifactPlanRelation(it, "_${it.scanner}")
+                    ScanPlanConverter.convertToArtifactPlanRelation(it)
                 } else {
-                    ScanPlanConverter.convertToArtifactPlanRelation(it, scanPlanMap[it.planId]!!.name)
+                    ScanPlanConverter.convertToArtifactPlanRelation(it, scanPlanMap[it.planId]!!)
                 }
             }
         }
