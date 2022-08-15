@@ -64,7 +64,7 @@ spec:
             - touch /tmp/healthy; sleep 600
           volumeMounts:
             - name: shared-data
-              mountPath: /data/workspace2/
+              mountPath: /data/workspace/plugin/
           livenessProbe:
             exec:
               command:
@@ -120,6 +120,8 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.common.mountPath }}
+            - name: shared-data
+              mountPath: /data/workspace/plugin/
       volumes:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
