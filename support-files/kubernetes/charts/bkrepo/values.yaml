@@ -110,6 +110,14 @@ persistence:
   # ref: https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/
 
 init:
+  ## curl镜像地址
+  curl:
+    image:
+      registry: hub.bktencent.com
+      repository: curlimages/curl
+      tag: 7.72.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   mongodb:
     enabled: true
     image:
@@ -203,6 +211,10 @@ gateway:
   deployMode: standalone
   ## 网关认证模式，ticket, 校验bk_ticket token ，校验bk_token
   authMode: token
+  ## bkci 域名
+  bkciHost:
+  ## bkci 端口
+  bkciPort:
   ## ci模式必填，蓝鲸paas域名
   bkPaasUrl: paas.example.com
   ## ci模式必填，登录地址
