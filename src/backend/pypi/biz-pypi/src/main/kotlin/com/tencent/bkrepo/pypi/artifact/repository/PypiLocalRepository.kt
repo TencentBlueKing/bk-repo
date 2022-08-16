@@ -707,7 +707,13 @@ class PypiLocalRepository(
 
     private fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
         with(context) {
-            val pypiPackagePojo = artifactInfo.getArtifactFullPath().toPypiPackagePojo()
+            val pypiPackagePojo = try {
+                artifactInfo.getArtifactFullPath().toPypiPackagePojo()
+            } catch (e: Exception) {
+                logger.error("parse pypi package failed", e)
+                null
+            } ?: return null
+
             val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
             return packageClient.findVersionByName(projectId, repoName, packageKey, pypiPackagePojo.version).data
         }

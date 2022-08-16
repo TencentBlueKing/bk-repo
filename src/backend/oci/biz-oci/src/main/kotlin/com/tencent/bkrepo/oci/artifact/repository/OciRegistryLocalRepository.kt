@@ -396,7 +396,7 @@ class OciRegistryLocalRepository(
     private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
         with(context) {
             val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
-            val packageKey = PackageKeys.ofName(repo.type.name.toLowerCase(), artifactInfo.packageName)
+            val packageKey = PackageKeys.ofName(repo.type, artifactInfo.packageName)
             val version = node.metadata[IMAGE_VERSION]?.toString() ?: return null
             return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
         }

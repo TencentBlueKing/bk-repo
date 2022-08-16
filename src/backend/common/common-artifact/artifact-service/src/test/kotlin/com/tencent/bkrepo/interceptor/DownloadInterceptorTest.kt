@@ -27,12 +27,17 @@
 
 package com.tencent.bkrepo.interceptor
 
+import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType.PACKAGE_FORBID
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
+import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.artifact.interceptor.impl.FilenameInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.NodeMetadataInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.WebInterceptor
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -83,6 +88,28 @@ class DownloadInterceptorTest {
         assertThrows<ArtifactDownloadForbiddenException> {
             NodeMetadataInterceptor(forbiddenRule).intercept(nodeDetail.projectId, nodeDetail)
         }
+    }
+
+    @Test
+    @DisplayName("制品禁用下载拦截器测试")
+    fun forbidTest() {
+        val forbidInterceptor = DownloadInterceptorFactory.buildNodeForbidInterceptor()
+
+        var node = nodeDetail("test", emptyMap())
+        assertDoesNotThrow { forbidInterceptor.intercept(node.projectId, node) }
+        node = node.copy(metadata = mapOf(FORBID_STATUS to true))
+        assertThrows<ArtifactDownloadForbiddenException> { forbidInterceptor.intercept(node.projectId, node) }
+    }
+
+    @Test
+    @DisplayName("Package禁用下载拦截器测试")
+    fun packageForbidTest() {
+        val forbidInterceptor = DownloadInterceptorFactory.buildPackageInterceptor(PACKAGE_FORBID)!!
+
+        var packageVersion = packageVersion(mapOf(FORBID_STATUS to false))
+        assertDoesNotThrow { forbidInterceptor.intercept("test", packageVersion) }
+        packageVersion = packageVersion.copy(metadata = mapOf(FORBID_STATUS to true))
+        assertThrows<ArtifactDownloadForbiddenException> { forbidInterceptor.intercept("test", packageVersion) }
     }
 
     @Test
@@ -153,6 +180,25 @@ class DownloadInterceptorTest {
             metadata = metadata
         )
         return NodeDetail(nodeInfo)
+    }
+
+    private fun packageVersion(metadata: Map<String, Any> = emptyMap()): PackageVersion {
+        return PackageVersion(
+            createdBy = UT_USER,
+            createdDate = LocalDateTime.now(),
+            lastModifiedBy = UT_USER,
+            lastModifiedDate = LocalDateTime.now(),
+            name = "test",
+            size = 1L,
+            downloads = 1L,
+            stageTag = emptyList(),
+            metadata = metadata,
+            packageMetadata = metadata.map { MetadataModel(it.key, it.value) },
+            emptyList(),
+            emptyMap(),
+            "/test",
+            "/test"
+        )
     }
 
 

@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
 /**
  * 元数据下载拦截器
  */
-abstract class MetadataInterceptor<A>(rules: Map<String, Any>) : DownloadInterceptor<Map<String, Any>, A>(rules) {
+abstract class MetadataInterceptor<A>(rules: Map<String, Any>) : DownloadInterceptor<Map<String, String>, A>(rules) {
 
     /**
      * 示例；
@@ -41,13 +41,13 @@ abstract class MetadataInterceptor<A>(rules: Map<String, Any>) : DownloadInterce
      *   "metadata": "key: value"
      * }
      */
-    override fun parseRule(): Map<String, Any> {
+    override fun parseRule(): Map<String, String> {
         val kvString = rules[METADATA]!!.toString()
         val (key, value) = kvString.split(StringPool.COLON).map { it.trim() }
         return mapOf(key to value)
     }
 
-    override fun matcher(artifact: A, rule: Map<String, Any>): Boolean {
+    override fun matcher(artifact: A, rule: Map<String, String>): Boolean {
         val metadata = artifactMetadata(artifact)
         for ((k, v) in rule) {
             if (metadata[k].toString() != v) {

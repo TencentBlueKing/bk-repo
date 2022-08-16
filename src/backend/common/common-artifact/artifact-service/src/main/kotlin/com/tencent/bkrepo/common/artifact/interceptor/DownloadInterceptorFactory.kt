@@ -72,9 +72,13 @@ class DownloadInterceptorFactory(
                 type == DownloadInterceptorType.WEB && type == downloadSource -> WebInterceptor(rules)
                 type == DownloadInterceptorType.MOBILE && type == downloadSource -> MobileInterceptor(rules)
                 type == DownloadInterceptorType.OFFICE_NETWORK -> OfficeNetworkInterceptor(rules, properties)
-                type == DownloadInterceptorType.NODE_FORBID -> NodeMetadataInterceptor(forbidRule)
+                type == DownloadInterceptorType.NODE_FORBID -> buildNodeForbidInterceptor()
                 else -> null
             }
+        }
+
+        fun buildNodeForbidInterceptor(): DownloadInterceptor<*, NodeDetail> {
+            return NodeMetadataInterceptor(forbidRule)
         }
 
         fun buildPackageInterceptor(type: DownloadInterceptorType): DownloadInterceptor<*, PackageVersion>? {

@@ -138,7 +138,6 @@ class RpmLocalRepository(
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             node?.let {
                 downloadIntercept(context, it)
-                // TODO NODE中统一存储packageKey与version元数据后可移除下方的package下载拦截
                 packageVersion(context, it)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
             }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
@@ -524,7 +523,17 @@ class RpmLocalRepository(
     private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
         with(context) {
             val fullPath = artifactInfo.getArtifactFullPath()
-            val rpmPackage = node.metadata.toRpmVersion(fullPath).toRpmPackagePojo(fullPath)
+            if (!fullPath.endsWith(".rpm")) {
+                return null
+            }
+
+            val rpmPackage = try {
+                node.metadata.toRpmVersion(fullPath).toRpmPackagePojo(fullPath)
+            } catch (e: ErrorCodeException) {
+                logger.error("rpm node[$node] metadata invalid")
+                null
+            } ?: return null
+
             val packageKey = PackageKeys.ofRpm(rpmPackage.path, rpmPackage.name)
             return packageClient.findVersionByName(projectId, repoName, packageKey, rpmPackage.version).data
         }
