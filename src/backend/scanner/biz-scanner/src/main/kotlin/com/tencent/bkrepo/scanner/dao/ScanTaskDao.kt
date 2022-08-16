@@ -227,6 +227,10 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
         return exists(Query(criteria))
     }
 
+    fun countStatus(status: ScanTaskStatus): Long {
+        return count(Query(TScanTask::status.isEqualTo(status.name)))
+    }
+
     private fun buildQuery(taskId: String) = Query(Criteria.where(ID).isEqualTo(taskId))
 
     private fun buildUpdate(lastModifiedDate: LocalDateTime = LocalDateTime.now()): Update =

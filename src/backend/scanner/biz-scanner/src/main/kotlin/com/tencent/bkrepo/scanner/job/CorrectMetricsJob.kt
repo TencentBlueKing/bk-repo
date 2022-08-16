@@ -34,8 +34,12 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.CREATED
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.ENQUEUED
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.EXECUTING
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.PULLED
+import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.PENDING
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTED
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -47,6 +51,7 @@ import org.springframework.stereotype.Component
 class CorrectMetricsJob(
     private val redisOperation: RedisOperation,
     private val subScanTaskDao: SubScanTaskDao,
+    private val scanTaskDao: ScanTaskDao,
     private val scannerMetrics: ScannerMetrics
 ) {
     private val jobLock by lazy {
@@ -66,12 +71,19 @@ class CorrectMetricsJob(
             scannerMetrics.setSubtaskCount(it, count)
             logger.info("correct subtaskStatus[$it] count[$count] success")
         }
+
+        CORRECT_TASK_STATUS.forEach {
+            val count = scanTaskDao.countStatus(it)
+            scannerMetrics.setTaskCount(it, count)
+            logger.info("correct taskStatus[$it] count[$count] success")
+        }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(CorrectMetricsJob::class.java)
         private val JOB_LOCK_KEY = "job:lock:${CorrectMetricsJob::class.java.name}"
         private val CORRECT_SUBTASK_STATUS = listOf(BLOCKED, CREATED, PULLED, ENQUEUED, EXECUTING)
+        private val CORRECT_TASK_STATUS = listOf(PENDING, SCANNING_SUBMITTING, SCANNING_SUBMITTED)
         private const val FIXED_DELAY = 60 * 60 * 1000L
     }
 }
