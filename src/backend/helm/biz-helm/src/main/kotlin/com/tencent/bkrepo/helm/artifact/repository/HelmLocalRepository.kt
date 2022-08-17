@@ -247,7 +247,7 @@ class HelmLocalRepository(
         with(context) {
             val packageName = node.metadata[NAME] ?: return null
             val packageVersion = node.metadata[VERSION] ?: return null
-            val packageKey = PackageKeys.resolveHelm(packageName.toString())
+            val packageKey = PackageKeys.ofHelm(packageName.toString())
             return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion.toString()).data
         }
     }

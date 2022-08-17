@@ -30,6 +30,7 @@ package com.tencent.bkrepo.rds.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -140,6 +141,8 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
             context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
             context.putAttribute(FILE_TYPE, CHART)
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: ArtifactDownloadForbiddenException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while installing chart, error: ${e.message}")
             throw RdsFileNotFoundException(e.message.toString())
