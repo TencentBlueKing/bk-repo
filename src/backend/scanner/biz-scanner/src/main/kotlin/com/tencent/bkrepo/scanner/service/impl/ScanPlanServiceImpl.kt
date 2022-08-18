@@ -44,6 +44,7 @@ import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
+import com.tencent.bkrepo.scanner.dao.ScannerDao
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
@@ -71,6 +72,7 @@ class ScanPlanServiceImpl(
     private val packageClient: PackageClient,
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
+    private val scannerDao: ScannerDao,
     private val scannerService: ScannerService,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val permissionCheckHandler: ScannerPermissionCheckHandler
@@ -90,6 +92,10 @@ class ScanPlanServiceImpl(
             if (scanPlanDao.existsByProjectIdAndName(projectId!!, name!!)) {
                 logger.error("scan plan [$name] is exist.")
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name.toString())
+            }
+
+            if (!scannerDao.existsByName(scanner!!)) {
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, scanner!!)
             }
 
             val now = LocalDateTime.now()
@@ -161,35 +167,17 @@ class ScanPlanServiceImpl(
 
     override fun getOrCreateDefaultPlan(
         projectId: String,
-        type: String
+        type: String,
+        scanner: String?
     ): ScanPlan {
-        val name = defaultScanPlanName(type)
+        val name = defaultScanPlanName(type, scanner)
 
-        var defaultScanPlan = findByName(projectId, type, name)
+        val defaultScanPlan = findByName(projectId, type, name)
         if (defaultScanPlan != null) {
             return defaultScanPlan
         }
 
-        defaultScanPlan = try {
-            val scanPlan = ScanPlan(
-                projectId = projectId,
-                name = name,
-                type = type,
-                scanTypes = listOf(ScanType.SECURITY.name),
-                scanner = scannerService.default().name,
-                rule = RuleConverter.convert(projectId, emptyList(), type)
-            )
-            scanPlan.readOnly = true
-            create(scanPlan)
-        } catch (e: ErrorCodeException) {
-            if (e.messageCode == CommonMessageCode.RESOURCE_EXISTED) {
-                findByName(projectId, type, name)
-            } else {
-                throw e
-            }
-        }
-
-        return defaultScanPlan!!
+        return createDefaultScanPlan(projectId, type, scanner)
     }
 
     override fun delete(projectId: String, id: String) {
@@ -311,6 +299,29 @@ class ScanPlanServiceImpl(
         }
     }
 
+    private fun createDefaultScanPlan(projectId: String, type: String, scanner: String?): ScanPlan {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
+        val name = defaultScanPlanName(type)
+        return try {
+            val scanPlan = ScanPlan(
+                projectId = projectId,
+                name = name,
+                type = type,
+                scanTypes = listOf(ScanType.SECURITY.name),
+                scanner = scanner ?: scannerService.default().name,
+                rule = RuleConverter.convert(projectId, emptyList(), type)
+            )
+            scanPlan.readOnly = true
+            create(scanPlan)
+        } catch (e: ErrorCodeException) {
+            if (e.messageCode == CommonMessageCode.RESOURCE_EXISTED) {
+                findByName(projectId, type, name)!!
+            } else {
+                throw e
+            }
+        }
+    }
+
     /**
      * [rule]中只能有一个projectId且与[projectId]一致
      */
@@ -325,7 +336,11 @@ class ScanPlanServiceImpl(
         permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
     }
 
-    private fun defaultScanPlanName(type: String) = "DEFAULT_$type"
+    private fun defaultScanPlanName(type: String, scanner: String? = null) = if (scanner == null) {
+        "DEFAULT_$type"
+    } else {
+        "DEFAULT_${type}_$scanner"
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScanPlanServiceImpl::class.java)

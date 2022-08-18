@@ -122,7 +122,7 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun pipelineScan(pipelineScanRequest: PipelineScanRequest): ScanTask {
         with(pipelineScanRequest) {
-            val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId)
+            val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId, planType, scanner)
             val metadata = if (pid != null && bid != null) {
                 val data = ArrayList<TaskMetadata>()
                 pid?.let { data.add(TaskMetadata(key = TASK_METADATA_KEY_PID, value = it)) }
@@ -132,7 +132,7 @@ class ScanServiceImpl @Autowired constructor(
                 pipelineName?.let { data.add(TaskMetadata(key = TASK_METADATA_PIPELINE_NAME, value = it)) }
                 data
             } else {
-                emptyList<TaskMetadata>()
+                emptyList()
             }
             val scanRequest = ScanRequest(rule = rule, planId = defaultScanPlan.id!!, metadata = metadata)
             val task = createTask(scanRequest, ScanTriggerType.PIPELINE, SecurityUtils.getUserId())
