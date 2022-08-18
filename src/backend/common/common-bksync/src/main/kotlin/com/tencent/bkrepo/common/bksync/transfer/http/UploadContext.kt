@@ -27,12 +27,9 @@
 
 package com.tencent.bkrepo.common.bksync.transfer.http
 
-import java.util.concurrent.Future
-
 /**
  * 上传上下文
  * */
 data class UploadContext(
-    val request: UploadRequest,
-    val signFuture: Future<Unit>
+    val request: UploadRequest
 )
