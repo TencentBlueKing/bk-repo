@@ -301,7 +301,7 @@ class ScanPlanServiceImpl(
 
     private fun createDefaultScanPlan(projectId: String, type: String, scanner: String?): ScanPlan {
         permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
-        val name = defaultScanPlanName(type)
+        val name = defaultScanPlanName(type, scanner)
         return try {
             val scanPlan = ScanPlan(
                 projectId = projectId,
