@@ -63,6 +63,15 @@ class HttpBkSyncCall(
      * */
     fun upload(request: UploadRequest) {
         metrics.setBasicMetrics(request)
+        val context = UploadContext(request)
+        if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
+            if (!checkSpeed(request, speedTestSettings)) {
+                logger.info("Faster internet,use common generic upload.")
+                commonUpload(context)
+                reportMetrics(request.metricsUrl)
+                return
+            }
+        }
         // 异步计算和上传md5,sign数据
         val signFuture = executor.submit<Unit> {
             try {
@@ -73,16 +82,6 @@ class HttpBkSyncCall(
                 }
             } catch (e: Exception) {
                 logger.debug("Upload sign file error.", e)
-            }
-        }
-        val context = UploadContext(request, signFuture)
-        if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-            if (!checkSpeed(request, speedTestSettings)) {
-                logger.info("Faster internet,use common generic upload.")
-                commonUpload(context)
-                reportMetrics(request.metricsUrl)
-                signFuture.get()
-                return
             }
         }
         try {
