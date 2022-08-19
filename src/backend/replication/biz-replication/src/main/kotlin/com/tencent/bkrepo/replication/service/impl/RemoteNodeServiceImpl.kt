@@ -285,10 +285,15 @@ class RemoteNodeServiceImpl(
                     pathConstraints = pathConstraints
                 )
             )
+            val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
+                ReplicaObjectType.PACKAGE
+            } else {
+                ReplicaObjectType.REPOSITORY
+            }
             val taskCreateRequest = ReplicaTaskCreateRequest(
                 name = NAME.format(projectId, repoName, name),
                 localProjectId = projectId,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
+                replicaObjectType = replicaObjectType,
                 replicaTaskObjects = replicaTaskObjects,
                 replicaType = replicaType,
                 setting = setting,

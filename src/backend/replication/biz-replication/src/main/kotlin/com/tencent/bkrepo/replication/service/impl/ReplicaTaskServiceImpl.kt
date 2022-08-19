@@ -207,7 +207,7 @@ class ReplicaTaskServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
             }
             Preconditions.checkNotBlank(name, this::name.name)
-            Preconditions.checkNotBlank(localProjectId, this::name.name)
+            Preconditions.checkNotBlank(localProjectId, this::localProjectId.name)
             Preconditions.checkNotBlank(replicaTaskObjects, this::replicaTaskObjects.name)
             Preconditions.checkNotBlank(remoteClusterIds, this::remoteClusterIds.name)
             // 校验计划名称长度
