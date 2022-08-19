@@ -263,11 +263,6 @@ class GenericLocalRepository : LocalRepository() {
         return ArtifactResource(nodeMap, node, useDisposition = true)
     }
 
-    private fun downloadIntercept(context: ArtifactDownloadContext, nodeDetail: NodeDetail) {
-        val interceptors = context.getInterceptors()
-        interceptors.forEach { it.intercept(nodeDetail) }
-    }
-
     private fun getNodeDetailsFromReq(allowFolder: Boolean): List<NodeDetail>? {
         val nodeDetailList = HttpContextHolder.getRequest().getAttribute(NODE_DETAIL_LIST_KEY) as? List<NodeDetail>
         nodeDetailList?.forEach {

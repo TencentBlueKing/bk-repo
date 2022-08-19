@@ -33,12 +33,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 /**
  * 移动端下载拦截器
  */
-class MobileInterceptor(
-    override val rules: Map<String, Any>
-): CompositeDownloadInterceptor(rules) {
+class MobileInterceptor(rules: Map<String, Any>) : CompositeDownloadInterceptor<NodeDetail>(rules) {
 
-    override fun intercept(node: NodeDetail) {
-        FilenameInterceptor(rules).intercept(node)
-        MetadataInterceptor(rules).intercept(node)
+    override fun intercept(projectId: String, artifact: NodeDetail) {
+        FilenameInterceptor(rules).intercept(projectId, artifact)
+        NodeMetadataInterceptor(rules).intercept(projectId, artifact)
     }
 }

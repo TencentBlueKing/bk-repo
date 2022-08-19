@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.rds.constants.CHART
 import com.tencent.bkrepo.rds.constants.FILE_TYPE
@@ -63,7 +64,9 @@ import com.tencent.bkrepo.rds.utils.RdsMetadataUtils
 import com.tencent.bkrepo.rds.utils.RdsUtils
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -151,6 +154,8 @@ class RdsLocalRepository(
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
+            downloadIntercept(context, node)
+            packageVersion(context, node)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
         }
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
         inputStream?.let {
@@ -170,6 +175,15 @@ class RdsLocalRepository(
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
         return ObjectBuilderUtil.buildDownloadRecordRequest(context)
+    }
+
+    private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
+        with(context) {
+            val packageName = node.metadata[NAME] ?: return null
+            val packageVersion = node.metadata[VERSION] ?: return null
+            val packageKey = PackageKeys.ofRds(packageName.toString())
+            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion.toString()).data
+        }
     }
 
     override fun query(context: ArtifactQueryContext): ArtifactInputStream? {

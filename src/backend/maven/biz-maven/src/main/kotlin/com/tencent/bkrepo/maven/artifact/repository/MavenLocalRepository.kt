@@ -56,6 +56,11 @@ import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.constants.FULL_PATH
 import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
+import com.tencent.bkrepo.maven.constants.METADATA_KEY_ARTIFACT_ID
+import com.tencent.bkrepo.maven.constants.METADATA_KEY_CLASSIFIER
+import com.tencent.bkrepo.maven.constants.METADATA_KEY_GROUP_ID
+import com.tencent.bkrepo.maven.constants.METADATA_KEY_PACKAGING
+import com.tencent.bkrepo.maven.constants.METADATA_KEY_VERSION
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
@@ -97,12 +102,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 import org.apache.commons.lang3.StringUtils
 import org.apache.maven.artifact.repository.metadata.Snapshot
 import org.apache.maven.artifact.repository.metadata.SnapshotVersion
@@ -115,6 +114,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Component
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 
 @Component
 class MavenLocalRepository(
@@ -237,11 +242,11 @@ class MavenLocalRepository(
     ): NodeCreateRequest {
         val request = buildMavenArtifactNodeCreateRequest(context)
         val metadata = request.nodeMetadata as? MutableList
-        metadata?.add(MetadataModel(key = "packaging", value = packaging))
-        metadata?.add(MetadataModel(key = "groupId", value = mavenGavc.groupId))
-        metadata?.add(MetadataModel(key = "artifactId", value = mavenGavc.artifactId))
-        metadata?.add(MetadataModel(key = "version", value = mavenGavc.version))
-        mavenGavc.classifier?.let { metadata?.add(MetadataModel(key = "classifier", value = it)) }
+        metadata?.add(MetadataModel(key = METADATA_KEY_PACKAGING, value = packaging))
+        metadata?.add(MetadataModel(key = METADATA_KEY_GROUP_ID, value = mavenGavc.groupId))
+        metadata?.add(MetadataModel(key = METADATA_KEY_ARTIFACT_ID, value = mavenGavc.artifactId))
+        metadata?.add(MetadataModel(key = METADATA_KEY_VERSION, value = mavenGavc.version))
+        mavenGavc.classifier?.let { metadata?.add(MetadataModel(key = METADATA_KEY_CLASSIFIER, value = it)) }
         return request
     }
 
@@ -693,6 +698,11 @@ class MavenLocalRepository(
             node?.metadata?.get(HashType.SHA1.ext)?.let {
                 response.addHeader(X_CHECKSUM_SHA1, it.toString())
             }
+            // 制品下载拦截
+            node?.let {
+                downloadIntercept(context, it)
+                packageVersion(node)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
+            }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
@@ -871,12 +881,12 @@ class MavenLocalRepository(
 
     private fun createMavenVersion(context: ArtifactUploadContext, mavenGAVC: MavenGAVC, fullPath: String) {
         val metadata = mutableMapOf(
-            "groupId" to mavenGAVC.groupId,
-            "artifactId" to mavenGAVC.artifactId,
-            "version" to mavenGAVC.version
+            METADATA_KEY_GROUP_ID to mavenGAVC.groupId,
+            METADATA_KEY_ARTIFACT_ID to mavenGAVC.artifactId,
+            METADATA_KEY_VERSION to mavenGAVC.version
         )
         try {
-            mavenGAVC.classifier?.let { metadata["classifier"] = it }
+            mavenGAVC.classifier?.let { metadata[METADATA_KEY_CLASSIFIER] = it }
             packageClient.createVersion(
                 PackageVersionCreateRequest(
                     context.projectId,
@@ -920,6 +930,7 @@ class MavenLocalRepository(
                     storageCredentials = context.storageCredentials
                 )
             }
+
             else -> {
                 val fullPath = context.artifactInfo.getArtifactFullPath()
                 val nodeInfo = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
@@ -1258,7 +1269,7 @@ class MavenLocalRepository(
         with(context) {
             val fullPath = artifactInfo.getArtifactFullPath()
             val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-            return if (node != null && node.metadata["packaging"] != null) {
+            return if (node != null && node.metadata[METADATA_KEY_PACKAGING] != null) {
                 val mavenGAVC = fullPath.mavenGAVC()
                 val version = mavenGAVC.version
                 val artifactId = mavenGAVC.artifactId
@@ -1268,6 +1279,18 @@ class MavenLocalRepository(
             } else {
                 null
             }
+        }
+    }
+
+    private fun packageVersion(node: NodeDetail): PackageVersion? {
+        val groupId = node.metadata[METADATA_KEY_GROUP_ID]?.toString()
+        val artifactId = node.metadata[METADATA_KEY_ARTIFACT_ID]?.toString()
+        val version = node.metadata[METADATA_KEY_VERSION]?.toString()
+        return if (groupId != null && artifactId != null && version != null) {
+            val packageKey = PackageKeys.ofGav(groupId, artifactId)
+            packageClient.findVersionByName(node.projectId, node.repoName, packageKey, version).data
+        } else {
+            null
         }
     }
 

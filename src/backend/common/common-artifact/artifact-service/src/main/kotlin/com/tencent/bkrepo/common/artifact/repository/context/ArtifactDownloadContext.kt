@@ -36,8 +36,9 @@ import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
-import com.tencent.bkrepo.common.artifact.interceptor.impl.ForbidStatusInterceptor
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 
@@ -56,8 +57,8 @@ open class ArtifactDownloadContext(
     val artifacts = artifacts
 
     @Suppress("UNCHECKED_CAST")
-    fun getInterceptors(): List<DownloadInterceptor<*>> {
-        val interceptorList = mutableListOf<DownloadInterceptor<*>>()
+    fun getInterceptors(): List<DownloadInterceptor<*, NodeDetail>> {
+        val interceptorList = mutableListOf<DownloadInterceptor<*, NodeDetail>>()
         try {
             val settings = repo.configuration.settings
             val interceptors = settings[INTERCEPTORS] as? List<Map<String, Any>>
@@ -67,12 +68,16 @@ open class ArtifactDownloadContext(
                 val interceptor = DownloadInterceptorFactory.buildInterceptor(type, rules)
                 interceptor?.let { interceptorList.add(interceptor) }
             }
-            interceptorList.add(ForbidStatusInterceptor())
+            interceptorList.add(DownloadInterceptorFactory.buildInterceptor(DownloadInterceptorType.NODE_FORBID)!!)
             logger.debug("get repo[${repo.projectId}/${repo.name}] download interceptor: $interceptorList")
         } catch (e: Exception) {
             logger.warn("fail to get repo[${repo.projectId}/${repo.name}] download interceptor: $e")
         }
         return interceptorList
+    }
+
+    fun getPackageInterceptors(): List<DownloadInterceptor<*, PackageVersion>> {
+        return listOf(DownloadInterceptorFactory.buildPackageInterceptor(DownloadInterceptorType.PACKAGE_FORBID)!!)
     }
 
     companion object {
