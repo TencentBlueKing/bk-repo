@@ -127,7 +127,8 @@ open class PermissionManager(
         projectId: String,
         repoName: String,
         public: Boolean? = null,
-        anonymous: Boolean = false
+        anonymous: Boolean = false,
+        userId: String = SecurityUtils.getUserId()
     ) {
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicRepo(action, repoInfo, public)) {
@@ -141,7 +142,8 @@ open class PermissionManager(
             action = action,
             projectId = projectId,
             repoName = repoName,
-            anonymous = anonymous
+            anonymous = anonymous,
+            userId = userId
         )
     }
 

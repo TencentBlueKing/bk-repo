@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
@@ -66,7 +65,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/scan")
 class UserScanController @Autowired constructor(
-    private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scanService: ScanService,
     private val scanTaskService: ScanTaskService
 ) {
@@ -146,7 +144,6 @@ class UserScanController @Autowired constructor(
         @PathVariable("taskId") taskId: String,
         subtaskInfoRequest: SubtaskInfoRequest
     ): Response<Page<SubtaskInfo>> {
-        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
         subtaskInfoRequest.parentScanTaskId = taskId
         return ResponseBuilder.success(scanTaskService.subtasks(ScanPlanConverter.convert(subtaskInfoRequest)))
     }

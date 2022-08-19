@@ -217,6 +217,8 @@
 | pipelineName | string | 否    | 无   | 流水线名                                                       | pipeline name          |
 | pluginName   | string | 否    | 无   | 插件名                                                        | plugin name            |
 | planId       | string | 否    | 无   | 使用的扫描方案id                                                  | plan id                |
+| planType     | string | 否    | GENERIC | 扫描方案类型                                                  | plan type                |
+| scanner      | string | 否    | 无   | 扫描方案使用的扫描器                                                  | scanner                |
 | rule         | object | 是    | 无   | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
 | weworkBotUrl | string | 否    | 无   | 企业微信机器人webhook地址                                           | wework bot webhook url |
 | chatIds      | string | 否    | 无   | 企业微信机器人会话id，多个id用"&vert;"分隔                                | wework bot webhook url |

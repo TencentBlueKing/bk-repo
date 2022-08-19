@@ -12,6 +12,9 @@
       <el-form-item label="版本" prop="version" required>
         <el-input v-model="scanner.version" />
       </el-form-item>
+      <el-form-item label="描述信息" prop="description">
+        <el-input v-model="scanner.description" type="textarea" />
+      </el-form-item>
       <el-form-item label="根目录" prop="rootPath" required>
         <el-input v-model="scanner.rootPath" />
       </el-form-item>
@@ -243,6 +246,7 @@ export default {
     newScanner(type = SCANNER_TYPE_ARROWHEAD) {
       const scanner = {
         type: type,
+        description: '',
         rootPath: type,
         cleanWorkDir: true,
         maxScanDurationPerMb: 6000,

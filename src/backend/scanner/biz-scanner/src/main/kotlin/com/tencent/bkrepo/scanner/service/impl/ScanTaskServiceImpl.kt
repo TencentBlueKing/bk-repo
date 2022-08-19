@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -70,6 +71,7 @@ import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.RuleUtil
 import com.tencent.bkrepo.scanner.utils.ScanLicenseConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -117,8 +119,13 @@ class ScanTaskServiceImpl(
     }
 
     override fun subtasks(request: SubtaskInfoRequest): Page<SubtaskInfo> {
-        if (request.parentScanTaskId == null) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+        val scanTask = request.parentScanTaskId?.let { scanTaskDao.findByProjectIdAndId(request.projectId, it) }
+            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request.parentScanTaskId ?: "taskId")
+        val repos = RuleUtil.getRepoNames(scanTask.rule?.readJsonString())
+        if (repos.isEmpty()) {
+            permissionCheckHandler.checkProjectPermission(request.projectId, PermissionAction.MANAGE)
+        } else {
+            permissionCheckHandler.checkReposPermission(request.projectId, repos, PermissionAction.READ)
         }
         return subtasks(request, archiveSubScanTaskDao)
     }
