@@ -12,7 +12,8 @@ ALL=1
 GATEWAY=0
 BACKEND=0
 INIT=0
-PATH=
+BUILDPATH=
+SERVICE=
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
@@ -78,9 +79,13 @@ while (( $# > 0 )); do
             ALL=0
             BACKEND=1
             ;;
-        --path )
+        --buildpath )
             shift
-            PATH=$1
+            BUILDPATH=$1
+            ;;
+        --service )
+            shift
+            SERVICE=$1
             ;;
         --init )
             ALL=0
@@ -101,10 +106,9 @@ done
 
 
 # 创建临时目录
-mkdir -p $WORKING_DIR/$PATH
-tmp_dir=$WORKING_DIR/$PATH
-# 执行退出时自动清理tmp目录
-trap 'rm -rf $tmp_dir' EXIT TERM
+mkdir -p $WORKING_DIR/$BUILDPATH
+tmp_dir=$WORKING_DIR/$BUILDPATH
+echo $tmp_dir
 
 # 编译frontend
 if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
@@ -125,7 +129,7 @@ fi
 
 # 构建backend镜像
 if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
-      build_backend
+        build_backend
 fi
 
 
