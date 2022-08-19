@@ -21,6 +21,11 @@
         label="1MB最大允许扫描时间"
         width="180"
       />
+      <el-table-column
+        prop="description"
+        label="描述"
+        width="360"
+      />
       <el-table-column align="right">
         <template slot="header">
           <el-button type="primary" @click="showCreateOrUpdateDialog(true)">创建</el-button>
