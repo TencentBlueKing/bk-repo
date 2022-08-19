@@ -13,7 +13,6 @@ GATEWAY=0
 BACKEND=0
 INIT=0
 PATH=
-SERVICE=
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
