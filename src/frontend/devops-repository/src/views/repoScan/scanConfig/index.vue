@@ -24,22 +24,22 @@
             <bk-tab-panel render-directive="if" name="autoConfig" label="监控设置">
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
             </bk-tab-panel>
-            <!-- <bk-tab-panel render-directive="if" name="qualityRule" label="质量规则">
+            <bk-tab-panel render-directive="if" name="qualityRule" label="质量规则">
                 <scan-quality-rule></scan-quality-rule>
-            </bk-tab-panel> -->
+            </bk-tab-panel>
         </bk-tab>
     </div>
 </template>
 <script>
     import autoScanConfig from './autoScanConfig'
-    // import scanQualityRule from './scanQualityRule'
+    import scanQualityRule from './scanQualityRule'
     import { mapActions } from 'vuex'
     import { scanTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'scanConfig',
         components: {
-            autoScanConfig
-            // scanQualityRule
+            autoScanConfig,
+            scanQualityRule
         },
         data () {
             return {
