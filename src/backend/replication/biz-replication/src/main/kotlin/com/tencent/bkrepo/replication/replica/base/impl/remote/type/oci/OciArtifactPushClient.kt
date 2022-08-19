@@ -103,7 +103,8 @@ class OciArtifactPushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: RemoteClusterInfo
+        clusterInfo: RemoteClusterInfo,
+        targetVersions: List<String>?
     ): Boolean {
         val manifestInput = localDataManager.loadInputStream(nodes[0])
         val manifestInfo = ManifestParser.parseManifest(manifestInput)
@@ -144,15 +145,22 @@ class OciArtifactPushClient(
         }
         // 同步manifest
         if (result) {
-            val input = localDataManager.loadInputStream(nodes[0])
-            result = result && processManifestUploadHandler(
-                token = token,
-                name = name,
-                version = version,
-                input = Pair(input, nodes[0].size),
-                mediaType = manifestInfo.mediaType,
-                clusterUrl = clusterInfo.url
-            ).isSuccess
+            val targetList = if (targetVersions.isNullOrEmpty()) {
+                listOf(version)
+            } else {
+                targetVersions
+            }
+            targetList.forEach {
+                val input = localDataManager.loadInputStream(nodes[0])
+                result = result && processManifestUploadHandler(
+                    token = token,
+                    name = name,
+                    version = it,
+                    input = Pair(input, nodes[0].size),
+                    mediaType = manifestInfo.mediaType,
+                    clusterUrl = clusterInfo.url
+                ).isSuccess
+            }
         }
         logger.info(
             "The result of uploading $name|$version's artifact " +

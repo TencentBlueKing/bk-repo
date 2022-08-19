@@ -233,9 +233,13 @@ class ReplicaRecordServiceImpl(
     }
 
     override fun findOrCreateLatestRecord(key: String): ReplicaRecordInfo {
+        return findLatestRecord(key) ?: initialRecord(key)
+    }
+
+    override fun findLatestRecord(key: String): ReplicaRecordInfo? {
         val replicaRecordList = replicaRecordDao.listByTaskKey(key).map { convert(it) }
         if (replicaRecordList.isNotEmpty()) return replicaRecordList.first()!!
-        return initialRecord(key)
+        return null
     }
 
     companion object {

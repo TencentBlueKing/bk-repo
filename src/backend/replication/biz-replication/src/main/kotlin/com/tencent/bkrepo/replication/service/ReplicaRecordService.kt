@@ -149,4 +149,10 @@ interface ReplicaRecordService {
      * @param key 任务key
      */
     fun findOrCreateLatestRecord(key: String): ReplicaRecordInfo
+
+    /**
+     * 查询一次性执行任务的最新日志记录
+     * @param key 任务key
+     */
+    fun findLatestRecord(key: String): ReplicaRecordInfo?
 }

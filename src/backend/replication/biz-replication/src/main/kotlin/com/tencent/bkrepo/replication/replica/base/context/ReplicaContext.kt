@@ -88,6 +88,9 @@ class ReplicaContext(
     val httpClient: OkHttpClient?
     var cluster: RemoteClusterInfo
 
+    // 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
+    var targetVersions: List<String>?
+
     init {
         cluster = RemoteClusterInfo(
             name = remoteCluster.name,
@@ -116,6 +119,8 @@ class ReplicaContext(
         } else {
             null
         }
+
+        targetVersions = initImageTargetTag()
     }
 
     /**
@@ -135,5 +140,17 @@ class ReplicaContext(
         httpClient?.newCall(httpRequest)?.execute().use {
             it?.let { it1 -> check(it1.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
         }
+    }
+
+    /**
+     * 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
+     */
+    private fun initImageTargetTag(): List<String>? {
+        if (taskObject.packageConstraints.isNullOrEmpty()) return null
+        if (taskObject.packageConstraints!!.size != 1) return null
+        if (taskObject.packageConstraints!!.first().targetVersions.isNullOrEmpty()) return null
+        if (taskObject.packageConstraints!!.first().versions.isNullOrEmpty()) return null
+        if (taskObject.packageConstraints!!.first().versions!!.size != 1) return null
+        return taskObject.packageConstraints!!.first().targetVersions
     }
 }
