@@ -12,14 +12,8 @@ ALL=1
 GATEWAY=0
 BACKEND=0
 INIT=0
-VERSION=latest
-PUSH=0
-REGISTRY=docker.io/bkrepo
-USERNAME=
-PASSWORD=
-BACKENDS=(repository auth generic oci helm npm pypi replication opdata job)
+PATH=
 SERVICE=
-SPECIAL=0
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
@@ -71,10 +65,6 @@ build_backend () {
     rm -rf $tmp_dir/*
     cp backend/startup.sh $tmp_dir/
     cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
-#    docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
-#    if [[ $PUSH -eq 1 ]] ; then
-#        docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
-#    fi
 }
 
 # 解析命令行参数，长短混合模式
@@ -89,33 +79,13 @@ while (( $# > 0 )); do
             ALL=0
             BACKEND=1
             ;;
-        --service )
-            SPECIAL=1
+        --path )
             shift
-            SERVICE=$1
+            PATH=$1
             ;;
         --init )
             ALL=0
             INIT=1
-            ;;
-        -v | --version )
-            shift
-            VERSION=$1
-            ;;
-        -p | --push )
-            PUSH=1
-            ;;
-        -r | --registry )
-            shift
-            REGISTRY=$1
-            ;;
-        --username )
-            shift
-            USERNAME=$1
-            ;;
-        --password )
-            shift
-            PASSWORD=$1
             ;;
         --help | -h | '-?' )
             usage_and_exit 0
@@ -130,15 +100,10 @@ while (( $# > 0 )); do
     shift
 done
 
-if [[ $PUSH -eq 1 && -n "$USERNAME" ]] ; then
-    docker login --username $USERNAME --password $PASSWORD $REGISTRY
-    log "docker login成功"
-fi
 
 # 创建临时目录
-random=$RANDOM
-mkdir -p $WORKING_DIR/tmp_$random
-tmp_dir=$WORKING_DIR/tmp_$random
+mkdir -p $WORKING_DIR/$PATH
+tmp_dir=$WORKING_DIR/$PATH
 # 执行退出时自动清理tmp目录
 trap 'rm -rf $tmp_dir' EXIT TERM
 
@@ -156,29 +121,12 @@ if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
     cp -rf gateway/startup.sh $tmp_dir/
     cp -rf $ROOT_DIR/scripts/render_tpl $tmp_dir/
     cp -rf $ROOT_DIR/support-files/templates $tmp_dir/
-#    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo-gateway:$VERSION $tmp_dir --network=host
-#    if [[ $PUSH -eq 1 ]] ; then
-#        docker push $REGISTRY/bkrepo-gateway:$VERSION
-#    fi
 fi
 
 
 # 构建backend镜像
 if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
-    IFS="," read -r -a array <<< "$SERVICE"
-    if [[ $SPECIAL -eq 1 || ${#array[*]} -gt 0 ]] ;then
-      log "增量构建backend镜像..."
-      for SERVICE in ${array[@]};
-      do
-        build_backend
-      done
-    else
-      log "全量构建backend镜像..."
-      for SERVICE in ${BACKENDS[@]};
-      do
-        build_backend
-      done
-    fi
+      build_backend
 fi
 
 
@@ -189,9 +137,5 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     cp -rf init/init-mongodb.sh $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data.js $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data-ext.js $tmp_dir/
-#    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
-#    if [[ $PUSH -eq 1 ]] ; then
-#        docker push $REGISTRY/bkrepo-init:$VERSION
-#    fi
 fi
 echo "BUILD SUCCESSFUL!"
