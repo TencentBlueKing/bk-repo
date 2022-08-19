@@ -70,6 +70,24 @@ class ScannerPermissionCheckHandler(
         permissionManager.checkProjectPermission(action, projectId, userId)
     }
 
+    fun checkRepoPermission(
+        projectId: String,
+        repoName: String,
+        action: PermissionAction,
+        userId: String = SecurityUtils.getUserId()
+    ) {
+        permissionManager.checkRepoPermission(action, projectId, repoName, userId = userId)
+    }
+
+    fun checkReposPermission(
+        projectId: String,
+        repoNames: List<String>,
+        action: PermissionAction,
+        userId: String = SecurityUtils.getUserId()
+    ) {
+        repoNames.forEach { checkRepoPermission(projectId, it, action, userId) }
+    }
+
     fun checkNodePermission(
         projectId: String,
         repoName: String,

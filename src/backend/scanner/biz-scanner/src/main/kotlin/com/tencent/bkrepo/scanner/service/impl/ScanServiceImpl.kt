@@ -435,9 +435,18 @@ class ScanServiceImpl @Autowired constructor(
 
             val plan = planId?.let { scanPlanDao.get(it) }
             val projectId = projectId(rule, plan)
-            val rule = RuleConverter.convert(rule, plan?.type, projectId)
-            userId?.let { permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, it) }
+            val repoNames = RuleUtil.getRepoNames(rule)
 
+            // 校验权限
+            if (userId != null) {
+                if (repoNames.isEmpty()) {
+                    permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, userId)
+                } else {
+                    permissionCheckHandler.checkReposPermission(projectId, repoNames, PermissionAction.READ, userId)
+                }
+            }
+
+            val rule = RuleConverter.convert(rule, plan?.type, projectId)
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(

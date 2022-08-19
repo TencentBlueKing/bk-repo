@@ -300,7 +300,8 @@ class ScanPlanServiceImpl(
     }
 
     private fun createDefaultScanPlan(projectId: String, type: String, scanner: String?): ScanPlan {
-        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
+        // 项目成员即可创建默认扫描方案
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.READ)
         val name = defaultScanPlanName(type, scanner)
         return try {
             val scanPlan = ScanPlan(
