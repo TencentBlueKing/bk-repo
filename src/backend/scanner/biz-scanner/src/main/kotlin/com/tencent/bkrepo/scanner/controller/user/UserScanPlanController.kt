@@ -160,7 +160,8 @@ class UserScanPlanController(
     @ApiOperation("方案详情-统计数据")
     @GetMapping("/count")
     fun planDetailCount(countRequest: PlanCountRequest): Response<ScanPlanInfo?> {
-        permissionCheckHandler.checkProjectPermission(countRequest.projectId, PermissionAction.MANAGE)
+        // TODO 等前端流水线扫描报告移除调用该接口后改会项目管理员权限
+        permissionCheckHandler.checkProjectPermission(countRequest.projectId, PermissionAction.READ)
         return ResponseBuilder.success(scanPlanService.scanPlanInfo(ScanPlanConverter.convert(countRequest)))
     }
 
