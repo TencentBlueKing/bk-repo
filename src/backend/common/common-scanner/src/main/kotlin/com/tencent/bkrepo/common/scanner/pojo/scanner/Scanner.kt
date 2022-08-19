@@ -55,6 +55,8 @@ open class Scanner(
     val type: String,
     @ApiModelProperty("扫描器版本")
     open val version: String,
+    @ApiModelProperty("扫描器描述信息")
+    val description: String = "",
     @ApiModelProperty("扫描器根目录")
     val rootPath: String = type,
     @ApiModelProperty("扫描结束后是否清理工作目录")
