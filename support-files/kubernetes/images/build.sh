@@ -71,10 +71,10 @@ build_backend () {
     rm -rf $tmp_dir/*
     cp backend/startup.sh $tmp_dir/
     cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
-    docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
-    if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
-    fi
+#    docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
+#    if [[ $PUSH -eq 1 ]] ; then
+#        docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
+#    fi
 }
 
 # 解析命令行参数，长短混合模式
@@ -156,10 +156,10 @@ if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
     cp -rf gateway/startup.sh $tmp_dir/
     cp -rf $ROOT_DIR/scripts/render_tpl $tmp_dir/
     cp -rf $ROOT_DIR/support-files/templates $tmp_dir/
-    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo-gateway:$VERSION $tmp_dir --network=host
-    if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo-gateway:$VERSION
-    fi
+#    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo-gateway:$VERSION $tmp_dir --network=host
+#    if [[ $PUSH -eq 1 ]] ; then
+#        docker push $REGISTRY/bkrepo-gateway:$VERSION
+#    fi
 fi
 
 
@@ -189,9 +189,9 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     cp -rf init/init-mongodb.sh $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data.js $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data-ext.js $tmp_dir/
-    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
-    if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo-init:$VERSION
-    fi
+#    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
+#    if [[ $PUSH -eq 1 ]] ; then
+#        docker push $REGISTRY/bkrepo-init:$VERSION
+#    fi
 fi
 echo "BUILD SUCCESSFUL!"
