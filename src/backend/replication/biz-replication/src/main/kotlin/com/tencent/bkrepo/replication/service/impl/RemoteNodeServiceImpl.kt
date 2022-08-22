@@ -480,8 +480,8 @@ class RemoteNodeServiceImpl(
 
     companion object {
         const val NAME = "%s/%s/%s"
-        private const val REMOTE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
+        private const val REMOTE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,127}"
         private const val REMOTE_NAME_LENGTH_MIN = 2
-        private const val REMOTE_NAME_LENGTH_MAX = 32
+        private const val REMOTE_NAME_LENGTH_MAX = 128
     }
 }
