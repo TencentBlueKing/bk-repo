@@ -76,17 +76,16 @@ class ProjectRepoStatJob(
     private val submitIdExecutor = ThreadPoolExecutor(
         0, 1, 0L, TimeUnit.MILLISECONDS, SynchronousQueue()
     )
-    private val executor = ThreadPoolExecutor(
-        0,
-        opJobProperties.threadPoolSize,
-        DEFAULT_THREAD_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS,
-        LinkedBlockingQueue(DEFAULT_THREAD_POOL_QUEUE_CAPACITY),
-        ThreadPoolExecutor.CallerRunsPolicy()
-    )
+
+    private var executor: ThreadPoolExecutor? = null
 
     @Scheduled(cron = "00 00 */1 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
+        if (!opJobProperties.enabled) {
+            logger.info("stat project repo size job was disabled")
+            return
+        }
         logger.info("start to stat project metrics")
         val influxDb = influxDbConfig.influxDbUtils().getInstance() ?: run {
             logger.error("init influxdb fail")
@@ -167,6 +166,7 @@ class ProjectRepoStatJob(
         startIds: LinkedBlockingQueue<String>,
         nodeCollectionName: String
     ): List<ProjectMetrics> {
+        refreshExecutor()
         // 用于日志输出
         val totalCount = AtomicLong()
         val livedNodeCount = AtomicLong()
@@ -187,7 +187,7 @@ class ProjectRepoStatJob(
                 }
             }
 
-            val future = executor.submit {
+            val future = executor!!.submit {
                 val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
                     .with(Sort.by(FIELD_NAME_ID))
                     .limit(opJobProperties.batchSize)
@@ -272,6 +272,23 @@ class ProjectRepoStatJob(
     }
 
     private fun collectionName(shardingIndex: Int): String = "${TABLE_PREFIX}$shardingIndex"
+
+    @Synchronized
+    private fun refreshExecutor() {
+        if (executor == null) {
+            executor = ThreadPoolExecutor(
+                opJobProperties.threadPoolSize,
+                opJobProperties.threadPoolSize,
+                DEFAULT_THREAD_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS,
+                LinkedBlockingQueue(DEFAULT_THREAD_POOL_QUEUE_CAPACITY),
+                ThreadPoolExecutor.CallerRunsPolicy()
+            )
+            executor!!.allowCoreThreadTimeOut(true)
+        } else if(executor!!.maximumPoolSize != opJobProperties.threadPoolSize) {
+            executor!!.corePoolSize = opJobProperties.threadPoolSize
+            executor!!.maximumPoolSize = opJobProperties.threadPoolSize
+        }
+    }
 
     companion object {
         private val logger = LoggerHolder.jobLogger
