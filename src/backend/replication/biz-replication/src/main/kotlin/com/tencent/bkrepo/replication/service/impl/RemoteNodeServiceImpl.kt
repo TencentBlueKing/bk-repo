@@ -222,9 +222,6 @@ class RemoteNodeServiceImpl(
         if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
-        if (taskDetail.task.lastExecutionStatus != null) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
-        }
         manualReplicaJobExecutor.execute(taskDetail)
     }
 
@@ -233,7 +230,7 @@ class RemoteNodeServiceImpl(
         val record = replicaRecordService.findLatestRecord(taskInfo.key)
         record?.let {
             if (record.endTime == null) return record.copy(status = ExecutionStatus.RUNNING)
-            val taskCreateTime = LocalDateTime.parse(taskInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+            val taskCreateTime = LocalDateTime.parse(taskInfo.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             if (record.endTime!!.isBefore(taskCreateTime)) return record.copy(status = ExecutionStatus.RUNNING)
         }
         return record
@@ -327,12 +324,17 @@ class RemoteNodeServiceImpl(
                     pathConstraints = pathConstraints
                 )
             )
+            val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
+                ReplicaObjectType.PACKAGE
+            } else {
+                ReplicaObjectType.REPOSITORY
+            }
             val taskUpdateRequest = ReplicaTaskUpdateRequest(
                 key = task.key,
                 name = task.name,
                 localProjectId = projectId,
                 replicaTaskObjects = replicaTaskObjects,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
+                replicaObjectType = replicaObjectType,
                 setting = setting,
                 remoteClusterIds = setOf(clusterInfo.id),
                 description = description,
