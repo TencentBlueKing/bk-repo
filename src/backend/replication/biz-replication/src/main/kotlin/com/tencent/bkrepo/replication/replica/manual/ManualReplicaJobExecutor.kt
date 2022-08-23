@@ -61,7 +61,7 @@ class ManualReplicaJobExecutor(
             result.forEach {
                 if (it.status == ExecutionStatus.FAILED) {
                     status = ExecutionStatus.FAILED
-                    errorReason = "部分数据同步失败"
+                    errorReason = it.errorReason
                     return@forEach
                 }
             }
