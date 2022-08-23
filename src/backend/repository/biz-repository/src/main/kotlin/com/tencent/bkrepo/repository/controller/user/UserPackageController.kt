@@ -90,6 +90,19 @@ class UserPackageController(
         return ResponseBuilder.success(pageResult)
     }
 
+    @ApiOperation("查询所有版本")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @PostMapping("/version/list/{projectId}/{repoName}")
+    fun listAllVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestBody option: VersionListOption = VersionListOption()
+    ): Response<List<PackageVersion>> {
+        val versions = packageService.listAllVersion(projectId, repoName, packageKey, option)
+        return ResponseBuilder.success(versions)
+    }
+
     @ApiOperation("查询包信息")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/package/info/{projectId}/{repoName}")

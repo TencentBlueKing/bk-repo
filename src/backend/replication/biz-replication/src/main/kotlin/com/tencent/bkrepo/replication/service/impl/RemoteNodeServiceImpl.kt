@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -38,22 +39,31 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.remote.RemoteInfo
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteConfigCreateRequest
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteConfigUpdateRequest
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteCreateRequest
+import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 @Service
@@ -61,7 +71,9 @@ class RemoteNodeServiceImpl(
     private val clusterNodeService: ClusterNodeService,
     private val localDataManager: LocalDataManager,
     private val replicaTaskService: ReplicaTaskService,
-    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
+    private val replicaRecordService: ReplicaRecordService,
+    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
+    private val manualReplicaJobExecutor: ManualReplicaJobExecutor
 ) : RemoteNodeService {
 
     override fun remoteClusterCreate(
@@ -185,16 +197,7 @@ class RemoteNodeServiceImpl(
         name: String
     ) {
         val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-        val realName = NAME.format(projectId, repoName, name)
-        val clusterInfo = clusterNodeService.getByClusterName(realName)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
-        // 现只针对远端集群进行特殊指定推送
-        if (clusterInfo.type != ClusterNodeType.REMOTE) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
-        }
-        val task = replicaTaskService.getByTaskName(realName)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
-        val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+        val taskDetail = getTaskDetail(projectId, repoName, name)
         val event = VersionCreatedEvent(
             projectId = projectId,
             repoName = repoName,
@@ -206,6 +209,56 @@ class RemoteNodeServiceImpl(
             realIpAddress = null
         )
         eventBasedReplicaJobExecutor.execute(taskDetail, event)
+    }
+
+    override fun createRunOnceTask(projectId: String, repoName: String, request: RemoteRunOnceTaskCreateRequest) {
+        val repo = localDataManager.findRepoByName(projectId, repoName)
+        val taskRequest = convertRemoteConfigCreateRequest(request, repo.type)
+        remoteClusterCreate(projectId, repoName, RemoteCreateRequest(listOf(taskRequest)))
+    }
+
+    override fun executeRunOnceTask(projectId: String, repoName: String, name: String) {
+        val taskDetail = getTaskDetail(projectId, repoName, name)
+        if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
+            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
+        }
+        manualReplicaJobExecutor.execute(taskDetail)
+    }
+
+    override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {
+        val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
+        val record = replicaRecordService.findLatestRecord(taskInfo.key)
+        record?.let {
+            if (record.endTime == null) return record.copy(status = ExecutionStatus.RUNNING)
+            val taskCreateTime = LocalDateTime.parse(taskInfo.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
+            if (record.endTime!!.isBefore(taskCreateTime)) return record.copy(status = ExecutionStatus.RUNNING)
+        }
+        return record
+    }
+
+    private fun getTaskDetail(
+        projectId: String,
+        repoName: String,
+        name: String
+    ): ReplicaTaskDetail {
+        val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
+        return replicaTaskService.getDetailByTaskKey(taskInfo.key)
+    }
+
+    private fun getReplicaTaskInfo(
+        projectId: String,
+        repoName: String,
+        name: String
+    ): ReplicaTaskInfo {
+        val realName = NAME.format(projectId, repoName, name)
+        val clusterInfo = clusterNodeService.getByClusterName(realName)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
+        // 现只针对远端集群进行特殊指定推送
+        if (clusterInfo.type != ClusterNodeType.REMOTE) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+        return replicaTaskService.getByTaskName(realName)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
     }
 
     /**
@@ -229,10 +282,15 @@ class RemoteNodeServiceImpl(
                     pathConstraints = pathConstraints
                 )
             )
+            val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
+                ReplicaObjectType.PACKAGE
+            } else {
+                ReplicaObjectType.REPOSITORY
+            }
             val taskCreateRequest = ReplicaTaskCreateRequest(
                 name = NAME.format(projectId, repoName, name),
                 localProjectId = projectId,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
+                replicaObjectType = replicaObjectType,
                 replicaTaskObjects = replicaTaskObjects,
                 replicaType = replicaType,
                 setting = setting,
@@ -266,12 +324,17 @@ class RemoteNodeServiceImpl(
                     pathConstraints = pathConstraints
                 )
             )
+            val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
+                ReplicaObjectType.PACKAGE
+            } else {
+                ReplicaObjectType.REPOSITORY
+            }
             val taskUpdateRequest = ReplicaTaskUpdateRequest(
                 key = task.key,
                 name = task.name,
                 localProjectId = projectId,
                 replicaTaskObjects = replicaTaskObjects,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
+                replicaObjectType = replicaObjectType,
                 setting = setting,
                 remoteClusterIds = setOf(clusterInfo.id),
                 description = description,
@@ -373,6 +436,36 @@ class RemoteNodeServiceImpl(
         }
     }
 
+    private fun convertRemoteConfigCreateRequest(
+        request: RemoteRunOnceTaskCreateRequest,
+        repoType: RepositoryType
+    ): RemoteConfigCreateRequest {
+        with(request) {
+            val packageKey = PackageKeys.ofName(repoType, packageName)
+            val targetVersion = if (versions.size == 1) {
+                targetVersions
+            } else {
+                null
+            }
+            val packageConstraint = PackageConstraint(
+                packageKey = packageKey,
+                versions = versions,
+                targetVersions = targetVersion
+            )
+            return RemoteConfigCreateRequest(
+                name = name,
+                registry = registry,
+                username = username,
+                password = password,
+                packageConstraints = listOf(packageConstraint),
+                replicaType = replicaType,
+                setting = setting,
+                description = description,
+                enable = enable
+            )
+        }
+    }
+
     private fun validateParameter(name: String) {
         if (!Pattern.matches(REMOTE_NAME_PATTERN, name)) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
@@ -387,8 +480,8 @@ class RemoteNodeServiceImpl(
 
     companion object {
         const val NAME = "%s/%s/%s"
-        private const val REMOTE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
+        private const val REMOTE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,127}"
         private const val REMOTE_NAME_LENGTH_MIN = 2
-        private const val REMOTE_NAME_LENGTH_MAX = 32
+        private const val REMOTE_NAME_LENGTH_MAX = 128
     }
 }

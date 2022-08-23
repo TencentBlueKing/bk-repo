@@ -265,7 +265,7 @@ class ClusterNodeServiceImpl(
         private val logger = LoggerFactory.getLogger(ClusterNodeServiceImpl::class.java)
         private const val CLUSTER_NODE_URL_PATTERN = "[a-zA-z]+://[^\\s]*"
         private const val CLUSTER_NAME_LENGTH_MIN = 2
-        private const val CLUSTER_NAME_LENGTH_MAX = 128
+        private const val CLUSTER_NAME_LENGTH_MAX = 256
 
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {
