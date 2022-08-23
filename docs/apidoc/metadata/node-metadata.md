@@ -1,4 +1,4 @@
-# Metadata元数据接口
+# NodeMetadata节点元数据接口
 
 [toc]
 
@@ -38,7 +38,7 @@
 
   键值对，key为元数据名称，value为元数据值
 
-### 保存（更新）元数据
+## 保存（更新）元数据
 
 - API: POST /repository/api/metadata/{projectId}/{repoName}/{fullPath}
 - API 名称: save_metadata
@@ -84,7 +84,7 @@
   }
   ```
 
-### 保存（更新）禁用元数据
+## 保存（更新）禁用元数据
 
 - API: POST /repository/api/metadata/forbid/{projectId}/{repoName}/{fullPath}
 
@@ -131,7 +131,7 @@
 
 
 
-### 删除元数据
+## 删除元数据
 
 - API: DELETE /repository/api/metadata/{projectId}/{repoName}/{fullPath}
 - API 名称: delete_metadata
@@ -165,3 +165,5 @@
     "traceId": null
   }
   ```
+
+

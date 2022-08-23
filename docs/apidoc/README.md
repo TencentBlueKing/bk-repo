@@ -11,10 +11,14 @@
 - **节点**
   - [节点操作接口](/apidoc/node/node.md)
   - [分享链接接口](/apidoc/node/share.md)
-  - [元数据接口](/apidoc/node/metadata.md)
 - **制品包/版本**
   - [制品包版本接口](/apidoc/package/package.md)
   - [制品stage接口](/apidoc/package/stage.md)
+- **元数据**
+  - [节点元数据](/apidoc/metadata/node-metadata.md)
+  - [包版本元数据](/apidoc/metadata/package-version-metadata.md)
+  - [元数据标签](/apidoc/metadata/label.md)
+  - [元数据搜索](/apidoc/metadata/search.md)
 - **Generic通用制品仓库**
     - [简单文件操作](/apidoc/generic/simple.md)
     - [分块文件操作](/apidoc/generic/block.md)
