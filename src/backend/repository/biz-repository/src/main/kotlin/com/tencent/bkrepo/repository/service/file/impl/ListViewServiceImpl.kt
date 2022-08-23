@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.service.file.impl
 
-import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -35,7 +34,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -66,8 +64,6 @@ class ListViewServiceImpl(
     override fun listNodeView(artifactInfo: ArtifactInfo) {
         val node = nodeService.getNodeDetail(artifactInfo)
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
-        val response = HttpContextHolder.getResponse()
-        response.contentType = MediaTypes.TEXT_HTML
         if (node.folder) {
             viewModelService.trailingSlash(applicationName)
             val listOption = NodeListOption(
