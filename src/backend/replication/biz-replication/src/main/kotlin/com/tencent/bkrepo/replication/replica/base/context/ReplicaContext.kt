@@ -79,6 +79,7 @@ class ReplicaContext(
 
     // 同步状态
     var status = ExecutionStatus.RUNNING
+    var errorMessage: String? = null
     var artifactReplicaClient: ArtifactReplicaClient? = null
     var blobReplicaClient: BlobReplicaClient? = null
     val replicator: Replicator

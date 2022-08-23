@@ -263,6 +263,7 @@ abstract class AbstractReplicaService(
         context.status = ExecutionStatus.FAILED
         context.appendErrorReason(throwable.message.orEmpty())
         context.replicaContext.status = ExecutionStatus.FAILED
+        context.replicaContext.errorMessage = throwable.message.orEmpty()
     }
 
     /**
