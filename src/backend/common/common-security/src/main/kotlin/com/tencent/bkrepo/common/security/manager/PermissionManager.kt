@@ -134,7 +134,7 @@ open class PermissionManager(
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (allowReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
             return
         }
         checkPermission(
@@ -237,14 +237,17 @@ open class PermissionManager(
      * 判断是否为系统级公开仓库且为READ操作
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun allowReadSystemRepo(action: PermissionAction, repoInfo: RepositoryInfo): Boolean {
+    private fun allowReadSystemRepo(
+        action: PermissionAction,
+        repoInfo: RepositoryInfo,
+        userId: String = SecurityUtils.getUserId()
+    ): Boolean {
         if (SecurityUtils.isServiceRequest()) {
             return true
         }
         if (action != PermissionAction.READ) {
             return false
         }
-        val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
         // 加载仓库信息
