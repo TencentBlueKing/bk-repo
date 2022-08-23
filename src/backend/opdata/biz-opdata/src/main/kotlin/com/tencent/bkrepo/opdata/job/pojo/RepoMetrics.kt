@@ -25,14 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.job.pojo
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import java.util.concurrent.atomic.LongAdder
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class
+data class RepoMetrics(
+    val repoName: String,
+    val credentialsKey: String = "default",
+    var size: LongAdder = LongAdder(),
+    var num: LongAdder = LongAdder()
 )
-class OpConfiguration

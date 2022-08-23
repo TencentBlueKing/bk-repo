@@ -25,14 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.job.pojo
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.LongAdder
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class
+data class ProjectMetrics(
+    val projectId: String,
+    var nodeNum: LongAdder = LongAdder(),
+    var capSize: LongAdder = LongAdder(),
+    val repoMetrics: ConcurrentHashMap<String, RepoMetrics> = ConcurrentHashMap()
 )
-class OpConfiguration
