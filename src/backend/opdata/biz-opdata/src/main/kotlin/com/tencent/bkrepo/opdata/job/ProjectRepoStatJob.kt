@@ -79,7 +79,7 @@ class ProjectRepoStatJob(
 
     private var executor: ThreadPoolExecutor? = null
 
-    @Scheduled(cron = "00 00 */1 * * ?")
+    @Scheduled(cron = "00 00 12 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         if (!opJobProperties.enabled) {
