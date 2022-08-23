@@ -159,13 +159,13 @@ class ReplicaTaskServiceImpl(
                 setting = setting,
                 remoteClusters = clusterNodeSet,
                 status = when (replicaType) {
-                    ReplicaType.REAL_TIME -> ReplicaStatus.REPLICATING
                     ReplicaType.SCHEDULED -> ReplicaStatus.WAITING
+                    else -> ReplicaStatus.REPLICATING
                 },
                 description = description,
                 lastExecutionStatus = when (replicaType) {
                     ReplicaType.REAL_TIME -> ExecutionStatus.RUNNING
-                    ReplicaType.SCHEDULED -> null
+                    else -> null
                 },
                 lastExecutionTime = null,
                 nextExecutionTime = null,
@@ -207,7 +207,7 @@ class ReplicaTaskServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
             }
             Preconditions.checkNotBlank(name, this::name.name)
-            Preconditions.checkNotBlank(localProjectId, this::name.name)
+            Preconditions.checkNotBlank(localProjectId, this::localProjectId.name)
             Preconditions.checkNotBlank(replicaTaskObjects, this::replicaTaskObjects.name)
             Preconditions.checkNotBlank(remoteClusterIds, this::remoteClusterIds.name)
             // 校验计划名称长度
@@ -433,7 +433,7 @@ class ReplicaTaskServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaTaskServiceImpl::class.java)
         private const val TASK_NAME_LENGTH_MIN = 2
-        private const val TASK_NAME_LENGTH_MAX = 64
+        private const val TASK_NAME_LENGTH_MAX = 256
 
         private fun convert(tReplicaTask: TReplicaTask?): ReplicaTaskInfo? {
             return tReplicaTask?.let {

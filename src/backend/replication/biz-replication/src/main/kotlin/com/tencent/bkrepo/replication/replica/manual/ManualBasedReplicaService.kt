@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.replica.manual
+
+import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.replica.base.AbstractReplicaService
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import org.springframework.stereotype.Component
 
 /**
- * 同步类型
+ * 基于手动执行的一次性任务同步器
  */
-enum class ReplicaType {
-    // 调度同步，指定时间/定时执行
-    SCHEDULED,
-    // 实时同步，有新数据立即同步，可执行多次
-    REAL_TIME,
-    // 只执行一次，手动调用执行
-    RUN_ONCE
+@Component
+class ManualBasedReplicaService(
+    replicaRecordService: ReplicaRecordService,
+    localDataManager: LocalDataManager
+) : AbstractReplicaService(replicaRecordService, localDataManager) {
+    override fun replica(context: ReplicaContext) {
+        with(context) {
+            // 按包同步
+            taskObject.packageConstraints.orEmpty().forEach {
+                replicaByPackageConstraint(this, it)
+            }
+            // 按路径同步
+            taskObject.pathConstraints.orEmpty().forEach {
+                replicaByPathConstraint(this, it)
+            }
+        }
+    }
 }

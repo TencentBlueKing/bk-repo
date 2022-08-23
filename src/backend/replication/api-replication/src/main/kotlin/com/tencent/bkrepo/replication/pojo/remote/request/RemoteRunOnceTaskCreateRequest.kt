@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.objects
+package com.tencent.bkrepo.replication.pojo.remote.request
 
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 /**
- * 包/版本限制
+ * 创建一次性任务以及相关信息请求
  */
-@ApiModel("包/版本限制")
-data class PackageConstraint(
-    @ApiModelProperty("包唯一key")
-    val packageKey: String? = null,
-    @ApiModelProperty("包版本列表")
-    val versions: List<String>? = null,
-    @ApiModelProperty("目标包存储版本:将源版本经过分发后存储为指定的目标版本，在源版本只有一个时生效,只针对镜像类型")
+@ApiModel("创建一次性任务以及相关信息请求")
+data class RemoteRunOnceTaskCreateRequest(
+    @ApiModelProperty("名称", required = true)
+    var name: String,
+    @ApiModelProperty("集群地址", required = true)
+    var registry: String,
+    @ApiModelProperty("集群认证用户名", required = false)
+    var username: String? = null,
+    @ApiModelProperty("集群认证密码", required = false)
+    var password: String? = null,
+    @ApiModelProperty("包名", required = false)
+    val packageName: String,
+    @ApiModelProperty("包版本", required = false)
+    val versions: List<String>,
+    @ApiModelProperty("推送目标版本,只有当包版本数量为1时才可以设置，仅针对镜像类型", required = false)
     val targetVersions: List<String>? = null,
-    @ApiModelProperty("包正则匹配规则")
-    val packageRegex: List<String>? = null,
-    @ApiModelProperty("包版本正则匹配规则")
-    val versionRegex: List<String>? = null,
+    @ApiModelProperty("同步类型", required = false)
+    val replicaType: ReplicaType = ReplicaType.RUN_ONCE,
+    @ApiModelProperty("任务设置", required = false)
+    val setting: ReplicaSetting = ReplicaSetting(),
+    @ApiModelProperty("任务描述", required = false)
+    val description: String? = null,
+    @ApiModelProperty("是否启用，默认开启", required = false)
+    var enable: Boolean = true
 )

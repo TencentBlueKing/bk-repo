@@ -72,7 +72,8 @@ class HelmArtifactPushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: RemoteClusterInfo
+        clusterInfo: RemoteClusterInfo,
+        targetVersions: List<String>?
     ): Boolean {
         var result = true
         nodes.forEach {

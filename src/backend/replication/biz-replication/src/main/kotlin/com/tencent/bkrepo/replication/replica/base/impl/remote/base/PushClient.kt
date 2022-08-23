@@ -67,7 +67,8 @@ abstract class PushClient(
         version: String,
         projectId: String,
         repoName: String,
-        clusterInfo: RemoteClusterInfo
+        clusterInfo: RemoteClusterInfo,
+        targetVersions: List<String>? = null
     ): Boolean {
         logger.info(
             "Package $name|$version in the local repo $projectId|$repoName will be pushed to the third party repository"
@@ -86,7 +87,8 @@ abstract class PushClient(
                 name = name,
                 version = version,
                 nodes = nodes,
-                clusterInfo = clusterInfo
+                clusterInfo = clusterInfo,
+                targetVersions = targetVersions
             )
         } catch (e: Exception) {
             logger.error(
@@ -105,7 +107,8 @@ abstract class PushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: RemoteClusterInfo
+        clusterInfo: RemoteClusterInfo,
+        targetVersions: List<String>? = null
     ): Boolean {
         return true
     }
