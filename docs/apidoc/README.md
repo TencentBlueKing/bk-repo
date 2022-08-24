@@ -15,14 +15,15 @@
   - [制品包版本接口](/apidoc/package/package.md)
   - [制品stage接口](/apidoc/package/stage.md)
 - **元数据**
+  - [系统元数据说明](/apidoc/metadata/system-metadata.md)
   - [节点元数据](/apidoc/metadata/node-metadata.md)
   - [包版本元数据](/apidoc/metadata/package-version-metadata.md)
   - [元数据标签](/apidoc/metadata/label.md)
   - [元数据搜索](/apidoc/metadata/search.md)
 - **Generic通用制品仓库**
-    - [简单文件操作](/apidoc/generic/simple.md)
-    - [分块文件操作](/apidoc/generic/block.md)
-    - [临时访问凭证](/apidoc/generic/temporary-access.md)
+  - [简单文件操作](/apidoc/generic/simple.md)
+  - [分块文件操作](/apidoc/generic/block.md)
+  - [临时访问凭证](/apidoc/generic/temporary-access.md)
 - **认证服务**
   - [用户相关](/apidoc/auth/user.md)
   - [用户token相关](/apidoc/auth/token.md)
