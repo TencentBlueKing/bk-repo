@@ -92,6 +92,9 @@ class ReplicaContext(
     // 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
     var targetVersions: List<String>?
 
+    // 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
+    var targetVersions: List<String>?
+
     init {
         cluster = ClusterInfo(
             name = remoteCluster.name,

@@ -25,47 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.repository.service.metadata
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.helm.api.HelmClient
-import com.tencent.bkrepo.job.config.JobConfig
-import com.tencent.bkrepo.replication.api.ArtifactPushClient
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.NodeClient
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class,
-    TaskSchedulingAutoConfiguration::class
-)
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:bootstrap.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-@SpringBootConfiguration
-@EnableAutoConfiguration
-open class JobBaseTest {
-    @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
+/**
+ * 元数据标签服务
+ */
+interface MetadataLabelService {
 
-    @MockBean
-    lateinit var helmClient: HelmClient
+    /**
+     * 创建标签
+     */
+    fun create(request: MetadataLabelRequest)
 
-    @MockBean
-    lateinit var nodeClient: NodeClient
+    /**
+     * 更新标签
+     */
+    fun update(request: MetadataLabelRequest)
 
-    @MockBean
-    lateinit var artifactPushClient: ArtifactPushClient
+    /**
+     * 查询全部标签
+     */
+    fun listAll(projectId: String): List<MetadataLabelDetail>
+
+    /**
+     * 查询标签详情
+     */
+    fun detail(projectId: String, labelKey: String): MetadataLabelDetail
+
+    /**
+     * 删除标签
+     */
+    fun delete(projectId: String, labelKey: String)
 }
