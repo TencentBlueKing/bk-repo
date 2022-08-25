@@ -39,6 +39,14 @@
           <svg-icon icon-class="arrow-down" /> {{ scope.row.detail.downloadingCount }}
         </template>
       </el-table-column>
+      <el-table-column
+        label="正在异步上传"
+        width="180"
+      >
+        <template v-if="scope.row.detail.asyncTaskActiveCount >= 0" slot-scope="scope">
+          <svg-icon icon-class="arrow-up" />{{ scope.row.detail.asyncTaskActiveCount }}
+        </template>
+      </el-table-column>
       <el-table-column label="已加载插件">
         <template slot-scope="scope">
           <el-tag v-for="plugin in scope.row.detail.loadedPlugins" :key="plugin" style="margin-right:5px;">{{ plugin }}</el-tag>
