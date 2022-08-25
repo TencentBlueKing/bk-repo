@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.cluster
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import feign.Client
 import feign.Feign
 import feign.Logger
@@ -54,12 +54,12 @@ object FeignClientFactory {
     /**
      * [remoteClusterInfo]为远程集群信息
      */
-    inline fun <reified T> create(remoteClusterInfo: RemoteClusterInfo): T {
+    inline fun <reified T> create(remoteClusterInfo: ClusterInfo): T {
         return create(T::class.java, remoteClusterInfo)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> create(target: Class<T>, remoteClusterInfo: RemoteClusterInfo): T {
+    fun <T> create(target: Class<T>, remoteClusterInfo: ClusterInfo): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
         return cache.getOrPut(remoteClusterInfo) {
             Feign.builder().logLevel(Logger.Level.BASIC)
@@ -76,7 +76,7 @@ object FeignClientFactory {
         } as T
     }
 
-    private fun createInterceptor(cluster: RemoteClusterInfo): RequestInterceptor {
+    private fun createInterceptor(cluster: ClusterInfo): RequestInterceptor {
         return RequestInterceptor {
             if (!cluster.username.isNullOrBlank()) {
                 it.header(AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
@@ -84,7 +84,7 @@ object FeignClientFactory {
         }
     }
 
-    private fun createClient(remoteClusterInfo: RemoteClusterInfo): Client {
+    private fun createClient(remoteClusterInfo: ClusterInfo): Client {
         val hostnameVerifier = trustAllHostname
         val sslContextFactory = if (remoteClusterInfo.certificate.isNullOrBlank()) {
             disableValidationSSLSocketFactory
@@ -95,6 +95,6 @@ object FeignClientFactory {
     }
 
     private const val TIME_OUT_SECONDS = 60L
-    private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<RemoteClusterInfo, Any>>()
+    private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<ClusterInfo, Any>>()
     private val options = Request.Options(TIME_OUT_SECONDS, TimeUnit.SECONDS, TIME_OUT_SECONDS, TimeUnit.SECONDS, true)
 }

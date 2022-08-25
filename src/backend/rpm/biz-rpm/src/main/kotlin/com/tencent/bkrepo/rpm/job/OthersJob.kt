@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class OthersJob {
+class OthersJob : CenterNodeJob() {
 
     @Autowired
     private lateinit var jobService: JobService
@@ -18,8 +18,13 @@ class OthersJob {
     // 每次任务间隔 ms
     @Scheduled(fixedDelay = 30 * 1000)
     @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT30M")
+
+    override fun start() {
+        super.start()
+    }
+
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
-    fun updateOthersIndex() {
+    override fun run() {
         logger.info("update others index start")
         val startMillis = System.currentTimeMillis()
         val repoList = jobService.getAllRpmRepo()

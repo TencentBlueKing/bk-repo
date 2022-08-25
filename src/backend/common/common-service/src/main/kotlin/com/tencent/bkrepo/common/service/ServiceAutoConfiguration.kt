@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.service
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
+import com.tencent.bkrepo.common.service.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.exception.ServiceExceptionHandler
 import com.tencent.bkrepo.common.service.feign.ClientConfiguration
@@ -63,7 +64,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
     ClientConfiguration::class,
     AccessLogWebServerCustomizer::class,
     UndertowMetrics::class,
-    ServiceShutdownConfiguration::class
+    ServiceShutdownConfiguration::class,
+    ArtifactClusterConfiguration::class
 )
 class ServiceAutoConfiguration {
 

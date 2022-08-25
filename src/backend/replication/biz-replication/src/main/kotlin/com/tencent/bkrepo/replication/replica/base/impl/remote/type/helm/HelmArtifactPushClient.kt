@@ -32,9 +32,9 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
@@ -72,7 +72,7 @@ class HelmArtifactPushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: RemoteClusterInfo,
+        clusterInfo: ClusterInfo,
         targetVersions: List<String>?
     ): Boolean {
         var result = true
@@ -92,7 +92,7 @@ class HelmArtifactPushClient(
         return result
     }
 
-    override fun getAuthorizationDetails(name: String, clusterInfo: RemoteClusterInfo): String? {
+    override fun getAuthorizationDetails(name: String, clusterInfo: ClusterInfo): String? {
         return clusterInfo.username?.let {
             authService.obtainAuthorizationCode(buildAuthRequestProperties(clusterInfo), httpClient)
         }
@@ -125,7 +125,7 @@ class HelmArtifactPushClient(
         name: String,
         node: NodeDetail,
         version: String,
-        clusterInfo: RemoteClusterInfo
+        clusterInfo: ClusterInfo
     ): Boolean {
         // 先按照非chartmuseum协议进行上传
         var chartUpload = processChartUpload(
@@ -160,7 +160,7 @@ class HelmArtifactPushClient(
         version: String,
         chartMuseum: Boolean,
         node: NodeDetail,
-        clusterInfo: RemoteClusterInfo
+        clusterInfo: ClusterInfo
     ): DefaultHandlerResult {
         val input = localDataManager.loadInputStream(
             sha256 = node.sha256!!,
@@ -253,7 +253,7 @@ class HelmArtifactPushClient(
         return HttpUtils.buildUrl(v2Url.toString(), path, params)
     }
 
-    private fun buildAuthRequestProperties(clusterInfo: RemoteClusterInfo): RequestProperty {
+    private fun buildAuthRequestProperties(clusterInfo: ClusterInfo): RequestProperty {
         return RequestProperty(
             authorizationCode = BasicAuthUtils.encode(clusterInfo.username!!, clusterInfo.password!!)
         )
