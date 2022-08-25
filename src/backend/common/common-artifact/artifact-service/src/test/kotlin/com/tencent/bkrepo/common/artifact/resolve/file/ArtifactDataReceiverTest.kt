@@ -38,6 +38,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockkObject
+import java.io.ByteArrayOutputStream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -100,7 +101,8 @@ internal class ArtifactDataReceiverTest {
         Assertions.assertFalse(Files.exists(fallbackPath.resolve(filename)))
         Assertions.assertFalse(receiver.fallback)
 
-        val memoryContent = receiver.cachedByteArray.toString(Charset.defaultCharset())
+        receiver.finish()
+        val memoryContent = getByteArray(receiver).toString(Charset.defaultCharset())
         Assertions.assertEquals(shortContent, memoryContent)
     }
 
@@ -185,7 +187,8 @@ internal class ArtifactDataReceiverTest {
         Assertions.assertFalse(Files.exists(fallbackPath.resolve(filename)))
         Assertions.assertFalse(receiver.fallback)
 
-        val memoryContent = receiver.cachedByteArray.toString(Charset.defaultCharset())
+        receiver.finish()
+        val memoryContent = getByteArray(receiver).toString(Charset.defaultCharset())
         Assertions.assertEquals(shortContent + shortContent, memoryContent)
     }
 
@@ -219,6 +222,12 @@ internal class ArtifactDataReceiverTest {
             receiver.unhealthy(fallbackPath, "Simulated IO Delay")
         }
         receiver.receiveStream(inputStream)
+    }
+
+    private fun getByteArray(receiver: ArtifactDataReceiver): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        receiver.getInputStream().copyTo(outputStream)
+        return outputStream.toByteArray()
     }
 
     /**

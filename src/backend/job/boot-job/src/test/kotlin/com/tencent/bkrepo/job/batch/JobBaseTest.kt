@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.job.config.JobConfig
+import com.tencent.bkrepo.replication.api.ArtifactPushClient
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
@@ -62,4 +63,7 @@ open class JobBaseTest {
 
     @MockBean
     lateinit var nodeClient: NodeClient
+
+    @MockBean
+    lateinit var artifactPushClient: ArtifactPushClient
 }
