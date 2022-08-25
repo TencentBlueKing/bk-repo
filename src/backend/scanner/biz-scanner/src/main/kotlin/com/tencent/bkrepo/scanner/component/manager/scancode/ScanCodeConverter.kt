@@ -58,6 +58,7 @@ class ScanCodeConverter(
                 compliance = detail?.isTrust,
                 riskLevel = it.riskLevel,
                 recommended = detail?.isDeprecatedLicenseId == false,
+                deprecated = detail?.isDeprecatedLicenseId == true,
                 description = detail?.reference ?: "",
                 isOsiApproved = detail?.isOsiApproved,
                 dependentPath = it.dependentPath,

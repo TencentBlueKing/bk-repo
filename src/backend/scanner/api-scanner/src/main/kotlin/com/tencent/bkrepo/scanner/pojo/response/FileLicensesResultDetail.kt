@@ -45,7 +45,10 @@ data class FileLicensesResultDetail(
     @ApiModelProperty("是否 FSF 认证免费")
     val isFsfLibre: Boolean?,
     @ApiModelProperty("是否推荐使用")
+    @Deprecated("兼容旧接口，前端调整后移除该字段", replaceWith = ReplaceWith("deprecated?.not()"))
     val recommended: Boolean?,
+    @ApiModelProperty("是否已弃用")
+    val deprecated: Boolean?,
     @ApiModelProperty("依赖路径")
     val dependentPath: String,
     @ApiModelProperty("描述")
