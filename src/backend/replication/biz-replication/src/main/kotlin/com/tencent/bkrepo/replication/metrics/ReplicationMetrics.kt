@@ -48,12 +48,22 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
 import org.springframework.stereotype.Component
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 制品同步服务度量指标
  */
 @Component
-class ReplicationMetrics : MeterBinder {
+class ReplicationMetrics(
+    meterRegistry: MeterRegistry
+) : MeterBinder {
+
+    var runOnceTaskCreateCount = AtomicInteger(0)
+    var runOnceTaskExecuteCount = AtomicInteger(0)
+    var realTimeTaskCreateCount = AtomicInteger(0)
+    var realTimeTaskExecuteCount = AtomicInteger(0)
+    var scheduledTaskCreateCount = AtomicInteger(0)
+    var scheduledTaskExecuteCount = AtomicInteger(0)
 
     override fun bindTo(registry: MeterRegistry) {
         Gauge.builder(REPLICATION_TASK_ACTIVE_COUNT, ReplicaThreadPoolExecutor.instance) { it.activeCount.toDouble() }

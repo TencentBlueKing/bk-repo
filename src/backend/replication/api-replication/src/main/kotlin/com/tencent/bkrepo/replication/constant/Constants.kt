@@ -71,3 +71,39 @@ const val EVENT_CONSUMER_TASK_ACTIVE_COUNT_DESC = "事件处理任务实时执�
 
 const val EVENT_CONSUMER_TASK_QUEUE_SIZE = "event.consumer.task.queue.size"
 const val EVENT_CONSUMER_TASK_QUEUE_SIZE_DESC = "事件处理任务线程池等待队列大小"
+
+const val RUNONCE_REPLICATION_TASK_CREATE_COUNT = "runOnce.replication.task.create.count"
+const val RUNONCE_REPLICATION_TASK_CREATE_COUNT_DESC = "一次性分发任务创建数量"
+
+const val RUNONCE_REPLICATION_TASK_CREATE_SUMMARY = "runOnce.replication.task.create.summary"
+const val RUNONCE_REPLICATION_TASK_CREATE_SUMMARY_DESC = "一次性分发任务创建总数"
+
+const val RUNONCE_REPLICATION_TASK_EXECUTE_COUNT = "runOnce.replication.task.execute.count"
+const val RUNONCE_REPLICATION_TASK_EXECUTE_COUNT_DESC = "一次性分发任务执行数量"
+
+const val RUNONCE_REPLICATION_TASK_EXECUTE_SUMMARY = "runOnce.replication.task.execute.summary"
+const val RUNONCE_REPLICATION_TASK_EXECUTE_SUMMARY_DESC = "一次性分发任务执行总数"
+
+const val REALTIME_REPLICATION_TASK_CREATE_COUNT = "realTime.replication.task.create.count"
+const val REALTIME_REPLICATION_TASK_CREATE_COUNT_DESC = "实时分发任务创建数量"
+
+const val REALTIME_REPLICATION_TASK_CREATE_SUMMARY = "realTime.replication.task.create.summary"
+const val REALTIME_REPLICATION_TASK_CREATE_SUMMARY_DESC = "实时分发任务创建总数"
+
+const val REALTIME_REPLICATION_TASK_EXECUTE_COUNT = "realTime.replication.task.execute.count"
+const val REALTIME_REPLICATION_TASK_EXECUTE_COUNT_DESC = "实时分发任务执行数量"
+
+const val REALTIME_REPLICATION_TASK_EXECUTE_SUMMARY = "realTime.replication.task.execute.summary"
+const val REALTIME_REPLICATION_TASK_EXECUTE_SUMMARY_DESC = "实时分发任务执行总数"
+
+const val SCHEDULED_REPLICATION_TASK_CREATE_COUNT = "scheduled.replication.task.create.count"
+const val SCHEDULED_REPLICATION_TASK_CREATE_COUNT_DESC = "定时分发任务创建数量"
+
+const val SCHEDULED_REPLICATION_TASK_CREATE_SUMMARY = "scheduled.replication.task.create.summary"
+const val SCHEDULED_REPLICATION_TASK_CREATE_SUMMARY_DESC = "定时分发任务创建总数"
+
+const val SCHEDULED_REPLICATION_TASK_EXECUTE_COUNT = "scheduled.replication.task.execute.count"
+const val SCHEDULED_REPLICATION_TASK_EXECUTE_COUNT_DESC = "定时分发任务执行数量"
+
+const val SCHEDULED_REPLICATION_TASK_EXECUTE_SUMMARY = "scheduled.replication.task.execute.summary"
+const val SCHEDULED_REPLICATION_TASK_EXECUTE_SUMMARY_DESC = "定时分发任务执行总数"
