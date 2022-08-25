@@ -231,11 +231,11 @@ class ScancodeToolkitExecutor @Autowired constructor(
 
             // nature count
             if (detail.isDeprecatedLicenseId) {
-                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
+                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
             }
 
             if (!detail.isTrust) {
-                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
+                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
             }
         }
         return overview
