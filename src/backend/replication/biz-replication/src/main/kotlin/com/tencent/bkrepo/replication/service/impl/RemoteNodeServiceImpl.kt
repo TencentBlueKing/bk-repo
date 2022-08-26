@@ -61,6 +61,9 @@ import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
+import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskMetricsRecord
+import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -84,45 +87,24 @@ class RemoteNodeServiceImpl(
         return requests.configs.map {
             validateParameter(it.name)
             val realName = NAME.format(projectId, repoName, it.name)
-            val tClusterNode = clusterNodeService.getByClusterName(realName)
-            if (tClusterNode == null) {
-                val clusterInfo = clusterNodeService.create(
+            var tClusterNode = clusterNodeService.getByClusterName(realName)
+            tClusterNode = if (tClusterNode == null) {
+                clusterNodeService.create(
                     SecurityUtils.getUserId(), buildClusterNodeCreateRequest(projectId, repoName, it)
                 )
-                createTask(
-                    projectId = projectId,
-                    repoName = repoName,
-                    request = it,
-                    clusterInfo = clusterInfo
-                )
-                clusterInfo
             } else {
                 val updateRequest = convertCreateToUpdate(it)
-                val clusterInfo = clusterNodeService.update(
+                clusterNodeService.update(
                     buildClusterNodeUpdateRequest(projectId, repoName, it.name, updateRequest)
                 )
-                val task = replicaTaskService.getByTaskName(realName)
-                if (task == null) {
-                    createTask(
-                        projectId = projectId,
-                        repoName = repoName,
-                        request = it,
-                        clusterInfo = clusterInfo
-                    )
-                } else {
-                    updateTask(
-                        request = updateRequest,
-                        task = task,
-                        clusterInfo = clusterInfo,
-                        projectId = projectId,
-                        repoName = repoName
-                    )
-                    if (task.enabled != it.enable) {
-                        replicaTaskService.toggleStatus(task.key)
-                    }
-                }
-                tClusterNode
             }
+            createOrUpdateTask(
+                projectId = projectId,
+                repoName = repoName,
+                request = it,
+                clusterInfo = tClusterNode
+            )
+            tClusterNode
         }
     }
 
@@ -133,11 +115,10 @@ class RemoteNodeServiceImpl(
         request: RemoteConfigUpdateRequest
     ) {
         val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(projectId, repoName, name, request))
-        val task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+        replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
-        updateTask(
-            request = request,
-            task = task,
+        createOrUpdateTask(
+            request = convertUpdateToCreate(name, request),
             clusterInfo = clusterInfo,
             projectId = projectId,
             repoName = repoName
@@ -262,9 +243,9 @@ class RemoteNodeServiceImpl(
     }
 
     /**
-     * 当远端集群创建后，创建对应的任务
+     * 当远端集群创建后，创建/更新对应的任务
      */
-    private fun createTask(
+    private fun createOrUpdateTask(
         projectId: String,
         repoName: String,
         request: RemoteConfigCreateRequest,
@@ -287,59 +268,43 @@ class RemoteNodeServiceImpl(
             } else {
                 ReplicaObjectType.REPOSITORY
             }
-            val taskCreateRequest = ReplicaTaskCreateRequest(
-                name = NAME.format(projectId, repoName, name),
-                localProjectId = projectId,
-                replicaObjectType = replicaObjectType,
-                replicaTaskObjects = replicaTaskObjects,
-                replicaType = replicaType,
-                setting = setting,
-                remoteClusterIds = setOf(clusterInfo.id),
-                description = description,
-                enabled = enable
-            )
-            return replicaTaskService.create(taskCreateRequest)
-        }
-    }
-
-    /**
-     * 更新task
-     */
-    private fun updateTask(
-        request: RemoteConfigUpdateRequest,
-        task: ReplicaTaskInfo,
-        clusterInfo: ClusterNodeInfo,
-        projectId: String,
-        repoName: String
-    ) {
-        with(request) {
-            val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-            val replicaTaskObjects = listOf(
-                ReplicaObjectInfo(
-                    localRepoName = repoName,
-                    repoType = repositoryDetail.type,
-                    remoteProjectId = null,
-                    remoteRepoName = null,
-                    packageConstraints = packageConstraints,
-                    pathConstraints = pathConstraints
+            var task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+            if (task == null) {
+                val taskCreateRequest = ReplicaTaskCreateRequest(
+                    name = NAME.format(projectId, repoName, name),
+                    localProjectId = projectId,
+                    replicaObjectType = replicaObjectType,
+                    replicaTaskObjects = replicaTaskObjects,
+                    replicaType = replicaType,
+                    setting = setting,
+                    remoteClusterIds = setOf(clusterInfo.id),
+                    description = description,
+                    enabled = enable
                 )
-            )
-            val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
-                ReplicaObjectType.PACKAGE
+                task = replicaTaskService.create(taskCreateRequest)
             } else {
-                ReplicaObjectType.REPOSITORY
+                val taskUpdateRequest = ReplicaTaskUpdateRequest(
+                    key = task.key,
+                    name = task.name,
+                    localProjectId = projectId,
+                    replicaTaskObjects = replicaTaskObjects,
+                    replicaObjectType = replicaObjectType,
+                    setting = setting,
+                    remoteClusterIds = setOf(clusterInfo.id),
+                    description = description,
+                )
+                replicaTaskService.update(taskUpdateRequest)?.let {
+                    task = it.copy()
+                }
             }
-            val taskUpdateRequest = ReplicaTaskUpdateRequest(
-                key = task.key,
-                name = task.name,
-                localProjectId = projectId,
-                replicaTaskObjects = replicaTaskObjects,
-                replicaObjectType = replicaObjectType,
-                setting = setting,
-                remoteClusterIds = setOf(clusterInfo.id),
-                description = description,
-            )
-            replicaTaskService.update(taskUpdateRequest)
+            logger.info(convertToReplicationTaskMetricsRecord(
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repositoryDetail.type.name,
+                request = request,
+                replicaTaskInfo = task!!
+            ).toJson())
+            return task!!
         }
     }
 
@@ -436,6 +401,25 @@ class RemoteNodeServiceImpl(
         }
     }
 
+
+    private fun convertUpdateToCreate(name: String, request: RemoteConfigUpdateRequest): RemoteConfigCreateRequest {
+        with(request) {
+            return RemoteConfigCreateRequest(
+                name = name,
+                registry = registry,
+                certificate = certificate,
+                username = username,
+                password = password,
+                packageConstraints = packageConstraints,
+                pathConstraints = pathConstraints,
+                replicaType = replicaType,
+                setting = setting,
+                description = description,
+                enable = enable
+            )
+        }
+    }
+
     private fun convertRemoteConfigCreateRequest(
         request: RemoteRunOnceTaskCreateRequest,
         repoType: RepositoryType
@@ -479,6 +463,7 @@ class RemoteNodeServiceImpl(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(RemoteNodeServiceImpl::class.java)
         const val NAME = "%s/%s/%s"
         private const val REMOTE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,127}"
         private const val REMOTE_NAME_LENGTH_MIN = 2

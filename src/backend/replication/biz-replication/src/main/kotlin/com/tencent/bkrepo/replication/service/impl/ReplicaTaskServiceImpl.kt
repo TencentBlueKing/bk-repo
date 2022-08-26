@@ -335,7 +335,7 @@ class ReplicaTaskServiceImpl(
         }
     }
 
-    override fun update(request: ReplicaTaskUpdateRequest) {
+    override fun update(request: ReplicaTaskUpdateRequest): ReplicaTaskInfo? {
         with(request) {
             // 获取任务
             val tReplicaTask = replicaTaskDao.findByKey(key)
@@ -364,7 +364,10 @@ class ReplicaTaskServiceImpl(
                 replicaObjectType = replicaObjectType,
                 setting = setting,
                 remoteClusters = clusterNodeSet,
-                status = ReplicaStatus.WAITING,
+                status = when (tReplicaTask.replicaType) {
+                    ReplicaType.SCHEDULED -> ReplicaStatus.WAITING
+                    else -> ReplicaStatus.REPLICATING
+                },
                 description = description,
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now()
@@ -382,13 +385,15 @@ class ReplicaTaskServiceImpl(
                     pathConstraints = it.pathConstraints
                 )
             }
-            try {
+            return try {
                 // 移除所有object对象，重新插入
                 replicaObjectDao.remove(key)
                 replicaObjectDao.insert(replicaObjectList)
                 replicaTaskDao.save(task)
+                convert(task)
             } catch (exception: DuplicateKeyException) {
                 logger.warn("update task[$name] error: [${exception.message}]")
+                null
             }
         }
     }

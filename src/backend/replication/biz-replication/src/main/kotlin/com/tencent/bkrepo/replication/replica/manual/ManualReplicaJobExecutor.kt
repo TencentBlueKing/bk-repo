@@ -29,10 +29,14 @@ package com.tencent.bkrepo.replication.replica.manual
 
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.base.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.ReplicaRecordServiceImpl.Companion.isCronJob
+import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskDetailMetricsRecord
+import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -72,6 +76,16 @@ class ManualReplicaJobExecutor(
         } finally {
             // 保存结果
             replicaRecordService.completeRecord(taskRecord.id, status, errorReason)
+            val taskStatus = if (isCronJob(taskDetail.task.setting, taskDetail.task.replicaType))
+                ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
+            logger.info(
+                convertToReplicationTaskDetailMetricsRecord(
+                    taskDetail = taskDetail,
+                    record = taskRecord,
+                    status = status,
+                    taskStatus = taskStatus,
+                    errorReason = errorReason,
+                ).toJson())
             logger.info("Run once replica task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }
     }
