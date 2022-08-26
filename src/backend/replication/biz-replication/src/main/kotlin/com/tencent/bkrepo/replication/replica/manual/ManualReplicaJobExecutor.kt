@@ -39,6 +39,7 @@ import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertT
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 手动调用仅执行一次的任务
@@ -60,6 +61,7 @@ class ManualReplicaJobExecutor(
         var status = ExecutionStatus.SUCCESS
         var errorReason: String? = null
         val taskRecord = replicaRecordService.findOrCreateLatestRecord(taskDetail.task.key)
+            .copy(startTime = LocalDateTime.now())
         try {
             val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
             result.forEach {
@@ -84,8 +86,9 @@ class ManualReplicaJobExecutor(
                     record = taskRecord,
                     status = status,
                     taskStatus = taskStatus,
-                    errorReason = errorReason,
-                ).toJson())
+                    errorReason = errorReason
+                ).toJson()
+            )
             logger.info("Run once replica task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }
     }

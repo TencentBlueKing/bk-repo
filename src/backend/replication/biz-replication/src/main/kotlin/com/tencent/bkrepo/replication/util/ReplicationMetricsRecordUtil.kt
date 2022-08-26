@@ -29,7 +29,6 @@ package com.tencent.bkrepo.replication.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.constant.BUILD_ID
 import com.tencent.bkrepo.replication.constant.NAME
 import com.tencent.bkrepo.replication.constant.PIPELINE_ID
@@ -46,7 +45,6 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.extractName
 import java.time.LocalDateTime
 
 /**
@@ -102,23 +100,22 @@ object ReplicationMetricsRecordUtil {
         }
     }
 
-
     fun ReplicationTaskMetricsRecord.toJson(): String {
         return this.toJsonString().replace(System.lineSeparator(), "")
     }
-
 
     fun ReplicationTaskDetailMetricsRecord.toJson(): String {
         return this.toJsonString().replace(System.lineSeparator(), "")
     }
 
-
     private fun convertToReplicationContent(objects: List<ReplicaObjectInfo>): List<ReplicationContent> {
         if (objects.isEmpty()) return emptyList()
-        return objects.first().packageConstraints?.map { ReplicationContent(
-            packageName = it.packageKey.orEmpty(),
-            versions = it.versions.orEmpty()
-        ) }.orEmpty()
+        return objects.first().packageConstraints?.map {
+            ReplicationContent(
+                packageName = it.packageKey.orEmpty(),
+                versions = it.versions.orEmpty()
+            )
+        }.orEmpty()
     }
 
     /**
@@ -126,7 +123,7 @@ object ReplicationMetricsRecordUtil {
      * p-*******-b-*******-e-******
      */
     private fun splitName(name: String): Map<String, String> {
-        if (!name.startsWith("p-") || !name.contains("-b-") || !name.contains("-e-")){
+        if (!name.startsWith("p-") || !name.contains("-b-") || !name.contains("-e-")) {
             return emptyMap()
         }
         val buildIdIndex = name.indexOf("-b-")

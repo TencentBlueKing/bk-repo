@@ -393,7 +393,7 @@ class ReplicaTaskServiceImpl(
                 convert(task)
             } catch (exception: DuplicateKeyException) {
                 logger.warn("update task[$name] error: [${exception.message}]")
-                null
+                getByTaskKey(key)
             }
         }
     }

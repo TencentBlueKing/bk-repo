@@ -297,13 +297,15 @@ class RemoteNodeServiceImpl(
                     task = it.copy()
                 }
             }
-            logger.info(convertToReplicationTaskMetricsRecord(
-                projectId = projectId,
-                repoName = repoName,
-                repoType = repositoryDetail.type.name,
-                request = request,
-                replicaTaskInfo = task!!
-            ).toJson())
+            logger.info(
+                convertToReplicationTaskMetricsRecord(
+                    projectId = projectId,
+                    repoName = repoName,
+                    repoType = repositoryDetail.type.name,
+                    request = request,
+                    replicaTaskInfo = task!!
+                ).toJson()
+            )
             return task!!
         }
     }
@@ -400,7 +402,6 @@ class RemoteNodeServiceImpl(
             )
         }
     }
-
 
     private fun convertUpdateToCreate(name: String, request: RemoteConfigUpdateRequest): RemoteConfigCreateRequest {
         with(request) {
