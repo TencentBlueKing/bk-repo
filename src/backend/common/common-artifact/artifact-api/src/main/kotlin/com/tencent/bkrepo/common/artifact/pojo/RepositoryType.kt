@@ -47,7 +47,8 @@ enum class RepositoryType {
     RPM,
     NUGET,
     GIT,
-    OCI;
+    OCI,
+    CONAN;
 
     companion object {
         fun ofValueOrDefault(type: String): RepositoryType {
