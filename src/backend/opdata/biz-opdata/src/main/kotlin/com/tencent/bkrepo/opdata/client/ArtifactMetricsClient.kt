@@ -48,4 +48,20 @@ interface ArtifactMetricsClient {
      * @return 返回正在下载的请求数量，获取失败时返回-1
      */
     fun downloadingCount(instanceInfo: InstanceInfo): Long
+
+    /**
+     * 获取目标服务器正在从缓存异步上传到实际存储的任务数量
+     *
+     * @param instanceInfo 目标服务实例信息
+     * @return 返回正在下载的请求数量，获取失败时返回-1
+     */
+    fun asyncTaskActiveCount(instanceInfo: InstanceInfo): Long
+
+    /**
+     * 获取目标服务器正在从缓存异步上传到实际存储的任务队列大小
+     *
+     * @param instanceInfo 目标服务实例信息
+     * @return 返回正在下载的请求数量，获取失败时返回-1
+     */
+    fun asyncTaskQueueSize(instanceInfo: InstanceInfo): Long
 }
