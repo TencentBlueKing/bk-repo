@@ -25,33 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.repository.dao.repository
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.SpringBootConfiguration
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.repository.model.TMetadataLabel
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class,
-    TaskSchedulingAutoConfiguration::class,
-    ClusterProperties::class
-)
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-@SpringBootConfiguration
-@EnableAutoConfiguration
-open class JobBaseTest
+@Repository
+interface MetadataLabelRepository : MongoRepository<TMetadataLabel, String> {
+    fun findByProjectIdAndLabelKey(projectId: String, labelKey: String): TMetadataLabel?
+    fun findByProjectId(projectId: String): List<TMetadataLabel>
+}

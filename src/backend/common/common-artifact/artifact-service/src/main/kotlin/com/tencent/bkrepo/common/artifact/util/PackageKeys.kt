@@ -138,7 +138,6 @@ object PackageKeys {
     fun ofComposer(name: String): String {
         return ofName(COMPOSER, name)
     }
-
     /**
      * 生成nuget格式key
      * 例子: nuget://test

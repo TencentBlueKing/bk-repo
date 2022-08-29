@@ -25,33 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.repository.pojo.metadata.label
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.SpringBootConfiguration
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
-
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class,
-    TaskSchedulingAutoConfiguration::class,
-    ClusterProperties::class
+data class MetadataLabelRequest(
+    val projectId: String,
+    val labelKey: String,
+    val labelColorMap: Map<String, String>
 )
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-@SpringBootConfiguration
-@EnableAutoConfiguration
-open class JobBaseTest

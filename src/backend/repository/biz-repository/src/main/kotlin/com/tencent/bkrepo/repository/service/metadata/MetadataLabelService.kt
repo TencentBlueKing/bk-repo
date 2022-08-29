@@ -25,33 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.repository.service.metadata
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.SpringBootConfiguration
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class,
-    TaskSchedulingAutoConfiguration::class,
-    ClusterProperties::class
-)
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-@SpringBootConfiguration
-@EnableAutoConfiguration
-open class JobBaseTest
+/**
+ * 元数据标签服务
+ */
+interface MetadataLabelService {
+
+    /**
+     * 创建标签
+     */
+    fun create(request: MetadataLabelRequest)
+
+    /**
+     * 更新标签
+     */
+    fun update(request: MetadataLabelRequest)
+
+    /**
+     * 查询全部标签
+     */
+    fun listAll(projectId: String): List<MetadataLabelDetail>
+
+    /**
+     * 查询标签详情
+     */
+    fun detail(projectId: String, labelKey: String): MetadataLabelDetail
+
+    /**
+     * 删除标签
+     */
+    fun delete(projectId: String, labelKey: String)
+}

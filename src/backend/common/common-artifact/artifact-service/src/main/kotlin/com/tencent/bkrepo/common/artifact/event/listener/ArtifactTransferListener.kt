@@ -126,6 +126,9 @@ class ArtifactTransferListener(
                 // nfs不支持读取文件更新atime,所以这里用当前时间替换。
                 val intervalOfMillis = System.currentTimeMillis() - attr.lastModifiedTime().toMillis()
                 val intervalOfDays = intervalOfMillis / MILLIS_OF_DAY + 1
+                if (logger.isDebugEnabled && intervalOfDays > 30) {
+                    logger.debug("File[${it.file}] since last access more than 30d.")
+                }
                 accessTimeDs.record(intervalOfDays.toDouble())
             }
     }

@@ -25,33 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.SpringBootConfiguration
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class,
-    TaskSchedulingAutoConfiguration::class,
-    ClusterProperties::class
+@Document("metadata_label")
+data class TMetadataLabel(
+    val id: String? = null,
+    @Indexed(background = true)
+    val projectId: String,
+    val labelKey: String,
+    var labelColorMap: Map<String, String>,
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime
 )
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
-@SpringBootConfiguration
-@EnableAutoConfiguration
-open class JobBaseTest
