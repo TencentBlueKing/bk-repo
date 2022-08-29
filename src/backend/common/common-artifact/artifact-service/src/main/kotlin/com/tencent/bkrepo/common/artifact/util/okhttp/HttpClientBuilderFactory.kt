@@ -31,13 +31,16 @@
 
 package com.tencent.bkrepo.common.artifact.util.okhttp
 
-import brave.Tracing
-import brave.okhttp3.TracingInterceptor
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationTrustManager
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
+import okhttp3.internal.Util
+import org.springframework.beans.factory.BeanFactory
+import org.springframework.cloud.sleuth.instrument.async.TraceableExecutorService
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -48,17 +51,19 @@ object HttpClientBuilderFactory {
     private const val DEFAULT_READ_TIMEOUT_SECONDS = 10 * 1000L
     private const val DEFAULT_CONNECT_TIMEOUT_SECONDS = 10 * 1000L
 
-    private val defaultClient = OkHttpClient.Builder()
-        .sslSocketFactory(disableValidationSSLSocketFactory, disableValidationTrustManager)
-        .hostnameVerifier(trustAllHostname)
-        .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS)
-        .connectTimeout(DEFAULT_CONNECT_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS)
-        .build()
+    private val defaultClient by lazy {
+        OkHttpClient.Builder()
+            .sslSocketFactory(disableValidationSSLSocketFactory, disableValidationTrustManager)
+            .hostnameVerifier(trustAllHostname)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS)
+            .connectTimeout(DEFAULT_CONNECT_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS)
+            .build()
+    }
 
     fun create(
         certificate: String? = null,
         neverReadTimeout: Boolean = false,
-        tracing: Tracing? = null
+        beanFactory: BeanFactory? = null
     ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
             .apply {
@@ -67,19 +72,26 @@ object HttpClientBuilderFactory {
                     val sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
                     sslSocketFactory(sslSocketFactory, trustManager)
                 }
-            }.apply {
+
                 if (neverReadTimeout) {
                     readTimeout(0, TimeUnit.MILLISECONDS)
                 }
-            }.apply {
+
                 writeTimeout(0, TimeUnit.MILLISECONDS)
-            }.apply {
-                tracing?.let {
-                    dispatcher(
-                        Dispatcher(
-                            tracing.currentTraceContext().executorService(Dispatcher().executorService())
+
+                beanFactory?.let {
+                    val traceableExecutorService = TraceableExecutorService(
+                        beanFactory,
+                        ThreadPoolExecutor(
+                            0,
+                            Int.MAX_VALUE,
+                            60L,
+                            TimeUnit.SECONDS,
+                            SynchronousQueue(),
+                            Util.threadFactory("OkHttp Dispatcher", false)
                         )
-                    ).addNetworkInterceptor(TracingInterceptor.create(tracing))
+                    )
+                    dispatcher(Dispatcher(traceableExecutorService))
                 }
             }
     }

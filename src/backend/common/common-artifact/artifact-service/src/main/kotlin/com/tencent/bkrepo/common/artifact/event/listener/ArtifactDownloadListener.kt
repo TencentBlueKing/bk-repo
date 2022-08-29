@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -69,14 +70,16 @@ class ArtifactDownloadListener(
         .concurrencyLevel(1)
         .expireAfterAccess(30, TimeUnit.MINUTES)
         .removalListener<Triple<String, String, String>, LocalDateTime> {
-            updateAccessDateExecutor.execute {
-                updateNodeLastAccessDate(
-                    projectId = it.key!!.first,
-                    repoName = it.key!!.second,
-                    fullPath = it.key!!.third,
-                    accessDate = it.value!!
-                )
-            }
+            updateAccessDateExecutor.execute(
+                Runnable {
+                    updateNodeLastAccessDate(
+                        projectId = it.key!!.first,
+                        repoName = it.key!!.second,
+                        fullPath = it.key!!.third,
+                        accessDate = it.value!!
+                    )
+                }.trace()
+            )
         }
         .build()
 

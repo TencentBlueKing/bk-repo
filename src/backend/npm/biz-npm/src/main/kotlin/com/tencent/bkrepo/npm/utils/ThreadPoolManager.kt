@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.npm.utils
 
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.trace
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Callable

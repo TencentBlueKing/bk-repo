@@ -31,17 +31,15 @@
 
 package com.tencent.bkrepo.common.service.util
 
-import com.tencent.bkrepo.common.api.constant.TRACE_ID_HEADER
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import org.springframework.beans.BeansException
 import org.springframework.cloud.sleuth.Tracer
 
 object ResponseBuilder {
 
-    private val tracer = SpringContextUtils.getBean<Tracer>()
-
     fun <T> build(code: Int, message: String?, data: T?) =
-        Response(code, message, data, tracer.getBaggage(TRACE_ID_HEADER).get())
+        Response(code, message, data, getTraceId())
 
     /**
      * 创建确定类型的[Response]，规避Jackson序列化时不包含类型信息问题
@@ -57,4 +55,12 @@ object ResponseBuilder {
     fun <T> success(data: T) = build(CommonMessageCode.SUCCESS.getCode(), null, data)
 
     fun fail(code: Int, message: String?) = build(code, message, null)
+
+    private fun getTraceId(): String? {
+        return try {
+            SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
+        } catch (_: BeansException) {
+            null
+        }
+    }
 }

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.webhook.executor
 
-import brave.Tracing
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
@@ -48,6 +47,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.BeanFactory
 import org.springframework.cloud.endpoint.event.RefreshEvent
 import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
@@ -65,10 +65,10 @@ class WebHookExecutor(
     private val eventPayloadFactory: EventPayloadFactory,
     private val webHookProperties: WebHookProperties,
     private val webHookMetrics: WebHookMetrics,
-    private val tracing: Tracing
+    private val beanFactory: BeanFactory
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create(tracing = tracing).build()
+    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory).build()
 
     init {
         httpClient.dispatcher().maxRequests = webHookProperties.maxRequests ?: 200
