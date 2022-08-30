@@ -63,6 +63,14 @@ class ManualReplicaJobExecutor(
         val taskRecord = replicaRecordService.findOrCreateLatestRecord(taskDetail.task.key)
             .copy(startTime = LocalDateTime.now())
         try {
+            logger.info(
+                convertToReplicationTaskDetailMetricsRecord(
+                    taskDetail = taskDetail,
+                    record = taskRecord,
+                    status = ExecutionStatus.RUNNING,
+                    taskStatus = ReplicaStatus.REPLICATING
+                ).toJson()
+            )
             val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
             result.forEach {
                 if (it.status == ExecutionStatus.FAILED) {
