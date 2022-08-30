@@ -221,7 +221,7 @@ function _M:verify_ci_token(ci_login_token)
             ngx.exit(401)
             return
         end
-        local user_cache_value = result.data
+        user_cache_value = result.data
         user_cache:set(ci_login_token, user_cache_value, 60)
     end
     return user_cache_value
