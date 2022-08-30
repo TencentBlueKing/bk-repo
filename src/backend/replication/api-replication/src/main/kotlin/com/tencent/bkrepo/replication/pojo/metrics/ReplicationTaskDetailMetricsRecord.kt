@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
  * remote类型分发任务执行详情指标
  */
 data class ReplicationTaskDetailMetricsRecord(
+    var tag: String = "ExecutionTaskTag",
     var taskKey: String = StringPool.EMPTY,
     var repContent: List<ReplicationContent> = emptyList(),
     var recordId: String = StringPool.EMPTY,
