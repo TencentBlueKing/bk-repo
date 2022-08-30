@@ -211,7 +211,7 @@ class ScanServiceImpl @Autowired constructor(
 
             // 统计任务耗时
             scannerMetrics.record(
-                subScanTask.fullPath, subScanTask.size, subScanTask.scanner, startTimestamp, finishedTimestamp
+                subScanTask.fullPath, subScanTask.packageSize, subScanTask.scanner, startTimestamp, finishedTimestamp
             )
 
             // 更新文件扫描结果
@@ -328,7 +328,7 @@ class ScanServiceImpl @Autowired constructor(
 
             val oldStatus = SubScanTaskStatus.valueOf(subScanTask.status)
             val scanner = scannerService.get(subScanTask.scanner)
-            val maxScanDuration = scanner.maxScanDuration(subScanTask.size)
+            val maxScanDuration = scanner.maxScanDuration(subScanTask.packageSize)
             // 多加1分钟，避免执行器超时后正在上报结果又被重新触发
             val timeoutDateTime = LocalDateTime.now().plus(maxScanDuration, ChronoUnit.MILLIS).plusMinutes(1L)
             val updateResult = subScanTaskDao.updateStatus(

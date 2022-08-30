@@ -78,7 +78,7 @@ object Request {
             val size = toLong(it[NodeDetail::size.name]!!)
             val fullPath = it[NodeDetail::fullPath.name]!! as String
             val name = it[NodeDetail::name.name]!! as String
-            Node(projectId, repoName, fullPath, name, null, null, sha256, size)
+            Node(projectId, repoName, fullPath, name, null, null, sha256, size, size)
         }
     }
 

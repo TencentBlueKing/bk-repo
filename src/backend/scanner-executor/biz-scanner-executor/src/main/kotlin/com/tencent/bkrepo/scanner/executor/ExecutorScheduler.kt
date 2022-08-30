@@ -130,10 +130,10 @@ class ExecutorScheduler @Autowired constructor(
             logger.info("start load file[$sha256]")
             // 文件大小超过限制直接返回
             val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
-            if (size > fileSizeLimit) {
+            if (packageSize > fileSizeLimit) {
                 logger.warn(
                     "file too large, sha256[$sha256, credentials: [$credentialsKey], subtaskId[$taskId]" +
-                        ", size[$size], limit[$fileSizeLimit]"
+                        ", size[$packageSize], limit[$fileSizeLimit]"
                 )
                 report(taskId, parentScanTaskId, startTimestamp)
                 return
@@ -167,7 +167,7 @@ class ExecutorScheduler @Autowired constructor(
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
             logger.info(
-                "scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$size], " +
+                "scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$packageSize], " +
                     "subtaskId[$taskId], sha256[$sha256], reporting result"
             )
             report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)

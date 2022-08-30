@@ -105,6 +105,10 @@ open class SubScanTaskDefinition(
      */
     val size: Long,
     /**
+     * 包大小
+     */
+    val packageSize: Long = size,
+    /**
      * 文件所在存储使用的凭据
      */
     val credentialsKey: String?,
