@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 data class ReplicationTaskDetailMetricsRecord(
     var tag: String = "ExecutionTaskTag",
     var taskKey: String = StringPool.EMPTY,
+    var replicaType: String = StringPool.EMPTY,
     var repContent: List<ReplicationContent> = emptyList(),
     var recordId: String = StringPool.EMPTY,
     var taskStatus: String = StringPool.EMPTY,
