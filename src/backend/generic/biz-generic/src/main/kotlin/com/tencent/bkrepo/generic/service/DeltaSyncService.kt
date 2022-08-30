@@ -129,7 +129,11 @@ class DeltaSyncService(
      * */
     fun patch(oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(ArtifactContext()) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, UrlEncoded.decodeString(oldFilePath)).data
+            val node = nodeClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8)
+            ).data
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
