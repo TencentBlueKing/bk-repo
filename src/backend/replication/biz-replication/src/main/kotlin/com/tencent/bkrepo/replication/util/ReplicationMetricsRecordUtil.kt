@@ -44,6 +44,7 @@ import com.tencent.bkrepo.replication.pojo.remote.request.RemoteConfigCreateRequ
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import java.time.LocalDateTime
 
@@ -68,6 +69,7 @@ object ReplicationMetricsRecordUtil {
                 pipelineId = map[PIPELINE_ID].orEmpty(),
                 buildId = map[BUILD_ID].orEmpty(),
                 pipelineTaskId = map[TASK_ID].orEmpty(),
+                repContent = convertPSToReplicationContent(packageConstraints),
                 name = name,
                 taskKey = replicaTaskInfo.key,
                 registries = listOf(registry),
@@ -118,6 +120,16 @@ object ReplicationMetricsRecordUtil {
                 versions = it.versions.orEmpty()
             )
         }.orEmpty()
+    }
+
+    private fun convertPSToReplicationContent(objects: List<PackageConstraint>?): List<ReplicationContent> {
+        if (objects.isNullOrEmpty()) return emptyList()
+        return objects.map {
+            ReplicationContent(
+                packageName = it.packageKey.orEmpty(),
+                versions = it.versions.orEmpty()
+            )
+        }
     }
 
     /**
