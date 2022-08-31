@@ -131,8 +131,8 @@ object ReplicationMetricsRecordUtil {
         val buildIdIndex = name.indexOf("-b-")
         val taskIdIndex = name.indexOf("-e-")
         val pipelineId = name.substring(0, buildIdIndex)
-        val buildId = name.substring(buildIdIndex, taskIdIndex)
-        val taskId = name.substring(taskIdIndex)
+        val buildId = name.substring(buildIdIndex + 1, taskIdIndex)
+        val taskId = name.substring(taskIdIndex + 1)
         return mapOf(
             PIPELINE_ID to pipelineId,
             BUILD_ID to buildId,
