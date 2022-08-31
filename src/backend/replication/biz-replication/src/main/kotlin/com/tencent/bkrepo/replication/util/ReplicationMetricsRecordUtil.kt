@@ -95,7 +95,8 @@ object ReplicationMetricsRecordUtil {
                 recordId = record.id,
                 executionStatus = status.name,
                 executionStartTime = record.startTime.toString(),
-                executionEndTime = LocalDateTime.now().toString(),
+                executionEndTime = if (status == ExecutionStatus.RUNNING) StringPool.EMPTY
+                else LocalDateTime.now().toString(),
                 errorReason = errorReason.orEmpty()
             )
         }
