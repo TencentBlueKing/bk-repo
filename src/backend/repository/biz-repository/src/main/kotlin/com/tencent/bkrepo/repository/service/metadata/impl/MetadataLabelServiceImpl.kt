@@ -56,6 +56,7 @@ class MetadataLabelServiceImpl(
                 projectId = projectId,
                 labelKey = labelKey,
                 labelColorMap = labelColorMap,
+                display = display,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
@@ -73,6 +74,7 @@ class MetadataLabelServiceImpl(
                 ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, labelKey)
             val userId = SecurityUtils.getUserId()
             metadataLabel.labelColorMap = labelColorMap
+            display?.let { metadataLabel.display = it }
             metadataLabel.lastModifiedBy = userId
             metadataLabel.lastModifiedDate = LocalDateTime.now()
             metadataLabelRepository.save(metadataLabel)
@@ -101,6 +103,7 @@ class MetadataLabelServiceImpl(
             return MetadataLabelDetail(
                 labelKey = labelKey,
                 labelColorMap = labelColorMap,
+                display = display ?: true,
                 createdBy = createdBy,
                 createdDate = createdDate,
                 lastModifiedBy = lastModifiedBy,

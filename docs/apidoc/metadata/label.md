@@ -14,7 +14,8 @@
 	"labelColorMap": {
 		"FAILED": "#FF0000",
 		"SUCCESS": "#00EE00"
-	}
+	},
+	"display": true
   }
 ```
 - 响应体
@@ -32,6 +33,8 @@
 | projecctId | String |是 | 项目id | bkrepo |
 | labelKey | String | 是 | 标签对应元数据的key | scanStatus |
 | labelColorMap | Map | 是 | 元数据值和标签颜色的对应关系, 颜色为十六进制颜色码 | { "FAILED": "#FF0000", "SUCCESS": "#00EE00" } |
+| display | Boolean | 否 | 标签是否在文件列表展示，默认值true | true |
+
 
 
 ## 更新元数据标签
@@ -46,7 +49,8 @@
 	"labelColorMap": {
 	     "FAILED": "#FF0000",
 	     "SUCCESS": "#00EE00"
-	}
+	},
+	"display": true
  }
  ```
  - 响应体
@@ -75,6 +79,7 @@
 		      "FAILED": "#FF0000",
 		      "SUCCESS": "#00EE00"
 	    },
+	    "display": true,
 	    "createdBy": "admin",
 	    "createdDate": "2022-08-22T17:00:00.000",
 	    "lastModifiedBy": "admin",
@@ -101,6 +106,7 @@
 		  "FAILED": "#FF0000",
 		  "SUCCESS": "#00EE00"
 	    },
+	    "display": true,
 	    "createdBy": "admin",
 	    "createdDate": "2022-08-22T17:00:00.000",
 	    "lastModifiedBy": "admin",

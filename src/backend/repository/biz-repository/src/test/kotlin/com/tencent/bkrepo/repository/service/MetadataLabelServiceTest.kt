@@ -77,7 +77,8 @@ class MetadataLabelServiceTest @Autowired constructor(
             labelColorMap = mapOf(
                 "FAILED" to "#FF000",
                 "SUCCESS" to "#00EE00"
-            )
+            ),
+            display = true
         )
         assertThrows<ErrorCodeException> { metadataLabelService.create(invalidColorRequest) }
     }
@@ -92,7 +93,8 @@ class MetadataLabelServiceTest @Autowired constructor(
             labelColorMap = mapOf(
                 "FAILED" to "#000000",
                 "SUCCESS" to "#000000"
-            )
+            ),
+            display = true
         )
         metadataLabelService.update(updateRequest)
         val metadataLabel = metadataLabelService.detail(updateRequest.projectId, updateRequest.labelKey)
@@ -114,6 +116,7 @@ class MetadataLabelServiceTest @Autowired constructor(
         labelColorMap = mapOf(
             "FAILED" to "#FF0000",
             "SUCCESS" to "#00EE00"
-        )
+        ),
+        display = true
     )
 }
