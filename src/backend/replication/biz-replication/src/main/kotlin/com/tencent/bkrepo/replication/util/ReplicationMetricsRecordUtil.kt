@@ -89,10 +89,17 @@ object ReplicationMetricsRecordUtil {
         errorReason: String? = null
     ): ReplicationTaskDetailMetricsRecord {
         with(taskDetail) {
+            val map = extractName(task.name)
+            val pMap = map[NAME]?.let { splitName(it) } ?: emptyMap()
             return ReplicationTaskDetailMetricsRecord(
                 taskKey = task.key,
                 replicaType = task.replicaType.name,
                 projectId = task.projectId,
+                repoName = map[REPO_NAME].orEmpty(),
+                name = map[NAME].orEmpty(),
+                pipelineId = pMap[PIPELINE_ID].orEmpty(),
+                buildId = pMap[BUILD_ID].orEmpty(),
+                pipelineTaskId = pMap[TASK_ID].orEmpty(),
                 repContent = convertToReplicationContent(objects),
                 taskStatus = taskStatus.name,
                 recordId = record.id,

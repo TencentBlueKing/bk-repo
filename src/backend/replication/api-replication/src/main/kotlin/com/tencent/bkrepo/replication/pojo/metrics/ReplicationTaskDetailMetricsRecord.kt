@@ -36,7 +36,13 @@ data class ReplicationTaskDetailMetricsRecord(
     var tag: String = "ExecutionTaskTag",
     var taskKey: String = StringPool.EMPTY,
     var projectId: String = StringPool.EMPTY,
+    var repoName: String = StringPool.EMPTY,
     var replicaType: String = StringPool.EMPTY,
+    var pipelineId: String = StringPool.EMPTY,
+    var buildId: String = StringPool.EMPTY,
+    // 流水线中的任务id，非分发任务id
+    var pipelineTaskId: String = StringPool.EMPTY,
+    var name: String = StringPool.EMPTY,
     var repContent: List<ReplicationContent> = emptyList(),
     var recordId: String = StringPool.EMPTY,
     var taskStatus: String = StringPool.EMPTY,
