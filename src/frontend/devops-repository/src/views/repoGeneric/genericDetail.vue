@@ -66,8 +66,14 @@
                         <template #empty>
                             <empty-data :is-loading="detailSlider.loading"></empty-data>
                         </template>
-                        <bk-table-column :label="$t('key')" prop="key" show-overflow-tooltip></bk-table-column>
-                        <bk-table-column :label="$t('value')" prop="value" show-overflow-tooltip></bk-table-column>
+                        <!-- <bk-table-column :label="$t('key')" prop="key" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column :label="$t('value')" prop="value" show-overflow-tooltip></bk-table-column> -->
+                        <bk-table-column :label="$t('metadata')">
+                            <template #default="{ row }">
+                                <metadata-tag :metadata="row" />
+                            </template>
+                        </bk-table-column>
+
                         <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
                         <bk-table-column width="60">
                             <template #default="{ row }">
@@ -82,13 +88,14 @@
     </bk-sideslider>
 </template>
 <script>
+    import metadataTag from '@repository/views/repoCommon/metadataTag'
     import CodeArea from '@repository/components/CodeArea'
     import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     export default {
         name: 'genericDetail',
-        components: { CodeArea, createTokenDialog },
+        components: { CodeArea, createTokenDialog, metadataTag },
         data () {
             return {
                 tabName: 'detailInfo',
