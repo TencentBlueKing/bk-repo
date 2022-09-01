@@ -30,5 +30,6 @@ package com.tencent.bkrepo.repository.pojo.metadata.label
 data class MetadataLabelRequest(
     val projectId: String,
     val labelKey: String,
-    val labelColorMap: Map<String, String>
+    val labelColorMap: Map<String, String>,
+    val display: Boolean?
 )
