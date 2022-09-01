@@ -1,24 +1,39 @@
 <template>
-    <span class="repo-tag scan-tag-container"
-        :class="status"
+    <span class="scan-tag-container"
+        :class="{ 'spin-icon': status === 'RUNNING', readonly }"
+        v-bk-tooltips="{ content: scanStatusEnum[status] || '未扫描', placements: ['right'] }"
         @click.stop="showScanList"
-        v-bk-clickoutside="handleClickOutSide"
-        :data-name="scanStatusEnum[status] || '未扫描'">
+        v-bk-clickoutside="handleClickOutSide">
+        <Icon size="16" :name="`scan-${(status || 'INIT').toLowerCase()}`" />
         <bk-dialog
             class="scan-list-dialog"
             v-model="visible"
             :position="position"
-            :width="300"
+            :width="330"
             :show-mask="false"
             :close-icon="false"
             :show-footer="false"
             :draggable="false">
+            <div class="">
+                <span style="font-size:14px;font-weight:600;">质量规则</span>
+                <span class="ml10 repo-tag"
+                    :class="{
+                        [status]: true,
+                        'SUCCESS': status === 'QUALITY_PASS',
+                        'INIT': status === 'UN_QUALITY',
+                        'WARNING': status === 'QUALITY_UNPASS'
+                    }">
+                    {{scanStatusEnum[status] || '未扫描'}}
+                </span>
+            </div>
             <div class="scan-item flex-between-center"
                 v-for="scan in scanList"
                 :key="scan.id">
-                <span class="text-overflow" :class="{ 'hover-btn': scan.status === 'SUCCESS' }" style="max-width:150px;"
-                    @click="toReport(scan)" :title="scan.name">{{ scan.name }}</span>
-                <span class="repo-tag" :class="scan.status">{{scanStatusEnum[scan.status]}}</span>
+                <div class="flex-align-center">
+                    <Icon v-bk-tooltips="{ content: scanStatusEnum[scan.status] || '未扫描', placements: ['bottom-start'] }" size="16" :name="`scan-${(scan.status || 'INIT').toLowerCase()}`" />
+                    <span class="ml5 text-overflow" style="max-width:150px;" :title="scan.name">{{ scan.name }}</span>
+                </div>
+                <bk-button text theme="primary" :disabled="!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(scan.status)" @click="toReport(scan)">查看详情</bk-button>
             </div>
         </bk-dialog>
     </span>
@@ -61,8 +76,8 @@
                     packageKey: packageKey || undefined,
                     version: version || undefined,
                     fullPath: this.fullPath || undefined
-                }).then(res => {
-                    this.scanList = res
+                }).then(({ scanPlans }) => {
+                    this.scanList = scanPlans
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -78,7 +93,7 @@
                 this.visible = false
             },
             toReport ({ planType, id, recordId, status }) {
-                if (status === 'SUCCESS') {
+                if (['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(status)) {
                     this.$router.push({
                         name: 'artiReport',
                         params: {
@@ -86,10 +101,10 @@
                             recordId
                         },
                         query: {
-                            repoType: this.repoType,
-                            scanType: planType,
                             ...this.$route.params,
-                            ...this.$route.query
+                            ...this.$route.query,
+                            ...(this.repoType ? { repoType: this.repoType } : {}),
+                            scanType: planType
                         }
                     })
                 }
@@ -99,9 +114,9 @@
 </script>
 <style lang="scss" scoped>
 .scan-tag-container {
-    cursor: pointer;
-    &:before {
-        content: attr(data-name);
+    font-size: 0;
+    &:not(.readonly) {
+        cursor: pointer;
     }
 }
 </style>
@@ -115,7 +130,7 @@
             }
             .bk-dialog-body {
                 padding: 20px;
-                max-height: 200px;
+                max-height: 270px;
                 min-height: auto;
                 overflow-y: auto;
             }
@@ -123,7 +138,7 @@
     }
     .scan-item {
         margin-top: 10px;
-        padding: 10px 20px;
+        padding: 10px 15px;
         font-size: 12px;
         border: 1px solid var(--borderColor);
         &:first-child {
