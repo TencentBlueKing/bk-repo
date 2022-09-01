@@ -55,6 +55,7 @@ object Converter {
             fullPath = fullPath,
             sha256 = sha256,
             size = size,
+            packageSize = packageSize,
             credentialsKey = credentialsKey
         )
     }

@@ -95,6 +95,7 @@ class TSubScanTask(
     scannerType: String,
     sha256: String,
     size: Long,
+    packageSize: Long = size,
     credentialsKey: String?,
     /**
      * 扫描时方案的质量规则
@@ -123,6 +124,7 @@ class TSubScanTask(
     scannerType = scannerType,
     sha256 = sha256,
     size = size,
+    packageSize = packageSize,
     credentialsKey = credentialsKey,
     scanResultOverview = null,
     scanQuality = scanQuality

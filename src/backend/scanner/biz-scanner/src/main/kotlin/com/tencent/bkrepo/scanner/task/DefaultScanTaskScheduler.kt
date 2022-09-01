@@ -344,6 +344,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
                 size = size,
+                packageSize = packageSize,
                 credentialsKey = credentialKey,
                 scanQuality = scanTask.scanPlan?.scanQuality
             )
@@ -396,6 +397,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
                 size = size,
+                packageSize = packageSize,
                 credentialsKey = credentialKey,
 
                 scanResultOverview = overview,
