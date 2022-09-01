@@ -29,11 +29,11 @@ package com.tencent.bkrepo.replication.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.replication.constant.BUILD_ID
 import com.tencent.bkrepo.replication.constant.NAME
 import com.tencent.bkrepo.replication.constant.PIPELINE_ID
-import com.tencent.bkrepo.replication.constant.PROJECT_ID
-import com.tencent.bkrepo.replication.constant.REPO_NAME
 import com.tencent.bkrepo.replication.constant.TASK_ID
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationContent
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationTaskDetailMetricsRecord

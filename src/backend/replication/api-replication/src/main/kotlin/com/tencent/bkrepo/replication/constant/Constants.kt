@@ -51,9 +51,6 @@ const val SHA256 = "sha256"
 const val PIPELINE_ID = "pipelineId"
 const val BUILD_ID = "buildId"
 const val TASK_ID = "taskId"
-
-const val PROJECT_ID = "projectId"
-const val REPO_NAME = "repoName"
 const val NAME = "name"
 
 /**
@@ -79,4 +76,3 @@ const val EVENT_CONSUMER_TASK_ACTIVE_COUNT_DESC = "事件处理任务实时执�
 
 const val EVENT_CONSUMER_TASK_QUEUE_SIZE = "event.consumer.task.queue.size"
 const val EVENT_CONSUMER_TASK_QUEUE_SIZE_DESC = "事件处理任务线程池等待队列大小"
-
