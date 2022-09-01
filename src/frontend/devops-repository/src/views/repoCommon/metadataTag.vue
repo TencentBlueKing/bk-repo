@@ -4,7 +4,7 @@
             <template v-for="(item, index) in metadataList">
                 <li :key="index" v-if="index < 2">
                     <span class="key">{{ item.key }}</span>
-                    <span class="green" v-bk-overflow-tips>Lorem ipsum dolor sit amet consectetur adipisicing elit. Alias ipsum deserunt dolor ex repellendus eaque omnis qui, magni est dolore maiores optio nesciunt voluptatum odio! Dicta sapiente voluptatem porro. Omnis.</span>
+                    <span class="green" v-bk-overflow-tips>{{ item.value }}</span>
                 </li>
             </template>
             <li v-if="metadataList.length > 2">
@@ -56,16 +56,17 @@
 .metadata-tag,
 .popover-list {
     li {
-        border-radius: 2px;
+        border-radius: 4px;
         display: flex;
         overflow: hidden;
         margin: 5px 10px 5px 0;
         flex-shrink: 0;
+        height: 20px;
 
         i.more-wrap {
             width: 20px;
             height: 20px;
-            border-radius: 2px;
+            border-radius: 4px;
             background: rgba(58,132,255,0.1);
             cursor: pointer;
             display: flex;
@@ -90,16 +91,20 @@
 
         &.key {
             background-color: #363c5e;
+            background-image: linear-gradient(#606164, #4D4D4D);
         }
 
         &.blue {
             background-color: #1283C4;
+            background-image: linear-gradient(#2F79BA, #1E68A8);
         }
         &.green {
             background-color: #4CC71F;
+            background-image: linear-gradient(#66BF3F, #54AD2D);
         }
         &.red {
             background-color: #CA553E;
+            background-image: linear-gradient(#CF6D57, #BD5B46);
         }
     }
 }

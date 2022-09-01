@@ -92,8 +92,14 @@
                     <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
-                            <scan-tag class="mr5"
+                            <!-- <scan-tag class="mr5"
                                 v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
+                                :status="row.metadata.scanStatus"
+                                repo-type="generic"
+                                :full-path="row.fullPath">
+                            </scan-tag> -->
+                            <scan-tag class="mr5 table-svg"
+                                v-if="!row.folder && genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1'))"
                                 :status="row.metadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
@@ -149,7 +155,7 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' }
+                                            genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1')) && { clickEvent: () => handlerScan(row), label: '安全扫描' }
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
@@ -198,7 +204,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
-    import { getIconName } from '@repository/store/publicEnum'
+    import { getIconName, genericScanFileTypes } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
 
     export default {
@@ -222,6 +228,7 @@
         data () {
             return {
                 MODE_CONFIG,
+                genericScanFileTypes,
                 sideBarWidth: 300,
                 moveBarWidth: 10,
                 isLoading: false,
