@@ -92,6 +92,7 @@ object ReplicationMetricsRecordUtil {
             return ReplicationTaskDetailMetricsRecord(
                 taskKey = task.key,
                 replicaType = task.replicaType.name,
+                projectId = task.projectId,
                 repContent = convertToReplicationContent(objects),
                 taskStatus = taskStatus.name,
                 recordId = record.id,
