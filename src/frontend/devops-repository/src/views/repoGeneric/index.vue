@@ -106,6 +106,13 @@
                             <span class="ml10">{{row.name}}</span>
                         </template>
                     </bk-table-column>
+                    
+                    <bk-table-column :label="$t('metadata')">
+                        <template #default="{ row }">
+                            <metadata-tag :metadata="row.nodeMetadata" />
+                        </template>
+                    </bk-table-column>
+
                     <bk-table-column v-if="searchFileName" :label="$t('path')" prop="fullPath" show-overflow-tooltip></bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
@@ -182,6 +189,7 @@
     import RepoTree from '@repository/components/RepoTree'
     import ScanTag from '@repository/views/repoScan/scanTag'
     import forbidTag from '@repository/components/ForbidTag'
+    import metadataTag from '@repository/views/repoCommon/metadataTag'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import genericUploadDialog from '@repository/views/repoGeneric/genericUploadDialog'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
@@ -202,6 +210,7 @@
             MoveSplitBar,
             RepoTree,
             ScanTag,
+            metadataTag,
             genericDetail,
             genericUploadDialog,
             genericFormDialog,
