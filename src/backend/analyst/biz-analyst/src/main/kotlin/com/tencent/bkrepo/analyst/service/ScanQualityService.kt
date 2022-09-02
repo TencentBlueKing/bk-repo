@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.analyst.service
 
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.pojo.response.ScanQualityCheckedDetail
 import com.tencent.bkrepo.analyst.pojo.response.ScanQualityResponse
 

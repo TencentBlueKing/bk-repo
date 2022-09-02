@@ -32,10 +32,10 @@ package com.tencent.bkrepo.analyst.utils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TScanPlan

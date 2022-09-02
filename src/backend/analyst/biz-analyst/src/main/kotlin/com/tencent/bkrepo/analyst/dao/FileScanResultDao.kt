@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.model.TFileScanResult
 import com.tencent.bkrepo.analyst.model.TScanResult
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles

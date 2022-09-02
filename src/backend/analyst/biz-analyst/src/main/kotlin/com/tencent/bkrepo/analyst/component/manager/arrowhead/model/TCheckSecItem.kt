@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.analyst.component.manager.arrowhead.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.analyst.component.manager.ResultItem
 import org.springframework.data.mongodb.core.mapping.Document
 

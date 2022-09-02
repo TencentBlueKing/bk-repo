@@ -29,7 +29,7 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 
 data class ScanQualityUpdateRequest(
     val critical: Long? = null,

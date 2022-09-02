@@ -29,7 +29,7 @@ package com.tencent.bkrepo.analyst.metrics
 
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.analyst.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge

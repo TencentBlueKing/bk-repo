@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.pojo.request.LicenseScanQualityUpdateRequest

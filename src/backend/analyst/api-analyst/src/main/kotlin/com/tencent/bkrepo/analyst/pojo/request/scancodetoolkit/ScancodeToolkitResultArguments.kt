@@ -29,7 +29,7 @@ package com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit
 
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import io.swagger.annotations.ApiModelProperty
 
 class ScancodeToolkitResultArguments(

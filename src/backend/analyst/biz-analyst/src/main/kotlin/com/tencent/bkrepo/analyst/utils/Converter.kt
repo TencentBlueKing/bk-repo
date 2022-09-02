@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.analyst.utils
 
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
 import com.tencent.bkrepo.analyst.model.TScanPlan

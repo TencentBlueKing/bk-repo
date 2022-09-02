@@ -28,6 +28,6 @@
 package com.tencent.bkrepo.analyst.pojo.request.trivy
 
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
-import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
 
 class TrivySaveResultArguments : SaveResultArguments(TrivyScanner.TYPE)

@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

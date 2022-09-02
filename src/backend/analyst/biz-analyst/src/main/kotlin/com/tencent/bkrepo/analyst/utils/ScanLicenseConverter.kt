@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.analyst.utils
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.NIL
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.TOTAL
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.NIL
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.TOTAL
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TScanPlan

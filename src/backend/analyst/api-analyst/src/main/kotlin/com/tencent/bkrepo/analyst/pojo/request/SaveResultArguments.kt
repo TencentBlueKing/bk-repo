@@ -29,9 +29,9 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.analyst.pojo.request.dependencecheck.DependencySaveResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.trivy.TrivySaveResultArguments
 import io.swagger.annotations.ApiModel

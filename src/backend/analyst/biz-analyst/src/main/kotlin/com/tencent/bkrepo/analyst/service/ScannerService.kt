@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.analyst.service
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 
 /**
  * 扫描器服务

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.analyst.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document

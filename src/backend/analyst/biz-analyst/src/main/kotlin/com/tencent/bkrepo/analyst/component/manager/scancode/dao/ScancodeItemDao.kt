@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.analyst.component.manager.scancode.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScancodeItem
 import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
 import com.tencent.bkrepo.analyst.component.manager.scancode.model.TScancodeItem
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments

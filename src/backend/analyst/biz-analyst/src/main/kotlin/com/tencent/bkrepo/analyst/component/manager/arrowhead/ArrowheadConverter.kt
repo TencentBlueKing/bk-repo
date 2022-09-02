@@ -39,9 +39,9 @@ import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
 import org.springframework.stereotype.Component
 
 @Component("${ArrowheadScanner.TYPE}Converter")

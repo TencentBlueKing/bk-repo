@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.analyst.component.manager.arrowhead
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.License
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.License
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.model.TApplicationItem
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.model.TApplicationItemData

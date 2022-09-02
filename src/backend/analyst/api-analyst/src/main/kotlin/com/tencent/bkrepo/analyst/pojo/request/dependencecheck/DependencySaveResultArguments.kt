@@ -28,6 +28,6 @@
 package com.tencent.bkrepo.analyst.pojo.request.dependencecheck
 
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 
 class DependencySaveResultArguments : SaveResultArguments(DependencyScanner.TYPE)

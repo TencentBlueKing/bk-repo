@@ -27,6 +27,6 @@
 
 package com.tencent.bkrepo.analyst.pojo.request
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
 
 class ArrowheadSaveResultArguments : SaveResultArguments(ArrowheadScanner.TYPE)

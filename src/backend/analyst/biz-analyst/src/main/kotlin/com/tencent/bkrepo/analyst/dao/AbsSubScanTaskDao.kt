@@ -30,7 +30,7 @@ package com.tencent.bkrepo.analyst.dao
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.analyst.utils.Converter

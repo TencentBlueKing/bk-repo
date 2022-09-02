@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.analyst.component.manager.knowledgebase
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CvssV2
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CvssV3
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CvssV2
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CvssV3
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document

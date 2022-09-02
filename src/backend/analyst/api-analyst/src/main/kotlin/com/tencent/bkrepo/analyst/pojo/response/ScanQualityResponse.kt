@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 
 data class ScanQualityResponse(
     val critical: Long?,

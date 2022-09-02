@@ -29,11 +29,11 @@ package com.tencent.bkrepo.analyst.job
 
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.BLOCKED
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.CREATED
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.ENQUEUED
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.EXECUTING
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.PULLED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCKED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.CREATED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
