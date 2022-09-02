@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.util
 
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import java.io.InputStream
 
 object Converter {

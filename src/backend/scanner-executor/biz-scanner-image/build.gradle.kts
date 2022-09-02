@@ -34,7 +34,7 @@ application {
 }
 
 dependencies {
-    implementation(project(":scanner:api-scanner"))
+    implementation(project(":analyst:api-analyst"))
     implementation(project(":scanner-executor:biz-scanner-executor"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("commons-io:commons-io")

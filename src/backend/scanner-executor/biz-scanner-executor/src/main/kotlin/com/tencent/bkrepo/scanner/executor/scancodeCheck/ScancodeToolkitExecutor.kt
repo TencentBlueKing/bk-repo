@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScanC
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeToolItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import com.tencent.bkrepo.scanner.api.ScanClient
+import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
