@@ -374,7 +374,7 @@
             async getArtifactories () {
                 this.isLoading = true
 
-                const { data: metadataLabelList } = await this.getMetadataLabelList({
+                const metadataLabelList = await this.getMetadataLabelList({
                     projectId: this.projectId
                 })
 
