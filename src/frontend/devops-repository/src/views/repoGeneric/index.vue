@@ -92,12 +92,6 @@
                     <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
-                            <!-- <scan-tag class="mr5"
-                                v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
-                                :status="row.metadata.scanStatus"
-                                repo-type="generic"
-                                :full-path="row.fullPath">
-                            </scan-tag> -->
                             <scan-tag class="mr5 table-svg"
                                 v-if="!row.folder && genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1'))"
                                 :status="row.metadata.scanStatus"
@@ -311,6 +305,7 @@
                 'getRepoListAll',
                 'getFolderList',
                 'getArtifactoryList',
+                'getMetadataLabelList',
                 'deleteArtifactory',
                 'deleteMultiArtifactory',
                 'getFolderSize',
@@ -376,8 +371,13 @@
                 })
             },
             // 获取中间列表数据
-            getArtifactories () {
+            async getArtifactories () {
                 this.isLoading = true
+
+                const { data: metadataLabelList } = await this.getMetadataLabelList({
+                    projectId: this.projectId
+                })
+
                 this.getArtifactoryList({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -397,6 +397,14 @@
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
+                        v.nodeMetadata.forEach(item => {
+                            metadataLabelList.forEach(ele => {
+                                if (ele.labelKey === item.key) {
+                                    item.display = ele.display
+                                }
+                            })
+                        })
+
                         return {
                             metadata: {},
                             ...v,

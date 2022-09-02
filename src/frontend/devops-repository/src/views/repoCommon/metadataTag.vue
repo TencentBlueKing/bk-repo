@@ -35,7 +35,7 @@
         },
         computed: {
             metadataList () {
-                return this.metadata.filter(item => item.system === true)
+                return this.metadata.filter(item => item.display === true)
             },
             getColor () {
                 const { system } = this.metadata
