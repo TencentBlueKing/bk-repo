@@ -50,7 +50,7 @@ end
 
 ngx.var.target = hostUtil:get_addr(service_name)
 
-if ngx.var.assembly then
+if ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
    ngx.var.target = ngx.var.target .. "/" .. service_name
 end
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,11 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata.label
+package com.tencent.bkrepo.replication.pojo.metrics
 
-data class MetadataLabelRequest(
-    val projectId: String,
-    val labelKey: String,
-    val labelColorMap: Map<String, String>,
-    val display: Boolean?
+import com.tencent.bkrepo.common.api.constant.StringPool
+
+/**
+ * 分发任务具体内容
+ */
+data class ReplicationContent(
+    var packageName: String = StringPool.EMPTY,
+    var versions: List<String> = emptyList(),
 )

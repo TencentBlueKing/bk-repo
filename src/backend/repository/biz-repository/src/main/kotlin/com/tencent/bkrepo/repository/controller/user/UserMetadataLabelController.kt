@@ -65,7 +65,8 @@ class UserMetadataLabelController(
         val request = MetadataLabelRequest(
             projectId = projectId,
             labelKey = userLabelCreateRequest.labelKey,
-            labelColorMap = userLabelCreateRequest.labelColorMap
+            labelColorMap = userLabelCreateRequest.labelColorMap,
+            display = userLabelCreateRequest.display
         )
         metadataLabelService.create(request)
         return ResponseBuilder.success()
@@ -82,7 +83,8 @@ class UserMetadataLabelController(
         val request = MetadataLabelRequest(
             projectId = projectId,
             labelKey = labelKey,
-            labelColorMap = userLabelUpdateRequest.labelColorMap
+            labelColorMap = userLabelUpdateRequest.labelColorMap,
+            display = userLabelUpdateRequest.display
         )
         metadataLabelService.update(request)
         return ResponseBuilder.success()

@@ -33,7 +33,6 @@ package com.tencent.bkrepo.opdata.job
 
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.opdata.config.InfluxDbConfig
 import com.tencent.bkrepo.opdata.config.OpProjectRepoStatJobProperties
 import com.tencent.bkrepo.opdata.job.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.model.RepoModel
@@ -44,8 +43,6 @@ import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.bson.types.ObjectId
-import org.influxdb.dto.BatchPoints
-import org.influxdb.dto.Point
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -67,7 +64,6 @@ import java.util.concurrent.atomic.AtomicReference
 @Component
 class ProjectRepoStatJob(
     private val repoModel: RepoModel,
-    private val influxDbConfig: InfluxDbConfig,
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val mongoTemplate: MongoTemplate,
     private val opJobProperties: OpProjectRepoStatJobProperties
@@ -87,24 +83,11 @@ class ProjectRepoStatJob(
             return
         }
         logger.info("start to stat project metrics")
-        val influxDb = influxDbConfig.influxDbUtils().getInstance() ?: run {
-            logger.error("init influxdb fail")
-            return
-        }
-        val timeMillis = System.currentTimeMillis()
-        val batchPoints = BatchPoints
-            .database(influxDbConfig.database)
-            .build()
         val projectMetricsList = mutableListOf<TProjectMetrics>()
 
         for (i in 0 until SHARDING_COUNT) {
-            projectMetricsList.addAll(stat(i, batchPoints, timeMillis))
+            projectMetricsList.addAll(stat(i))
         }
-
-        // 数据写入 influxdb
-        logger.info("start to insert influxdb metrics ")
-        influxDb.write(batchPoints)
-        influxDb.close()
 
         // 数据写入mongodb统计表
         projectMetricsRepository.deleteAll()
@@ -113,7 +96,7 @@ class ProjectRepoStatJob(
         logger.info("stat project metrics done")
     }
 
-    private fun stat(shardingIndex: Int, batchPoints: BatchPoints, timeMillis: Long): List<TProjectMetrics> {
+    private fun stat(shardingIndex: Int): List<TProjectMetrics> {
         val lastId = AtomicReference<String>()
         val startIds = LinkedBlockingQueue<String>(DEFAULT_ID_QUEUE_SIZE)
         val collectionName = collectionName(shardingIndex)
@@ -139,15 +122,6 @@ class ProjectRepoStatJob(
                 // 有效仓库的统计数据
                 if (num != 0L && size != 0L) {
                     logger.info("project : [${projectMetrics.projectId}],repo: [${repo.repoName}],size:[$repo]")
-                    val point = Point.measurement(INFLUX_COLLECION)
-                        .time(timeMillis, TimeUnit.MILLISECONDS)
-                        .addField("size", size / TOGIGABYTE)
-                        .addField("num", num)
-                        .tag("projectId", projectMetrics.projectId)
-                        .tag("repoName", repo.repoName)
-                        .tag("table", collectionName)
-                        .build()
-                    batchPoints.point(point)
                     repoMetrics.add(RepoMetrics(repo.repoName, repo.credentialsKey, size / TOGIGABYTE, num))
                 }
             }
@@ -284,7 +258,7 @@ class ProjectRepoStatJob(
                 ThreadPoolExecutor.CallerRunsPolicy()
             )
             executor!!.allowCoreThreadTimeOut(true)
-        } else if(executor!!.maximumPoolSize != opJobProperties.threadPoolSize) {
+        } else if (executor!!.maximumPoolSize != opJobProperties.threadPoolSize) {
             executor!!.corePoolSize = opJobProperties.threadPoolSize
             executor!!.maximumPoolSize = opJobProperties.threadPoolSize
         }
@@ -292,7 +266,6 @@ class ProjectRepoStatJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val INFLUX_COLLECION = "repoInfo"
         private const val TABLE_PREFIX = "node_"
         private const val TOGIGABYTE = 1024 * 1024 * 1024
         private const val FIELD_NAME_ID = AbstractMongoDao.ID
