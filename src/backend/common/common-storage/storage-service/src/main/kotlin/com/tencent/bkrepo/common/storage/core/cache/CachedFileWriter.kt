@@ -114,7 +114,12 @@ class CachedFileWriter(
             } catch (ignore: FileAlreadyExistsException) {
                 logger.info("File[$cacheFilePath] already exists")
             } catch (exception: Exception) {
-                logger.warn("finish CacheFileWriter error: $exception")
+                // 已经由其他进程缓存
+                if (Files.exists(cacheFilePath)) {
+                    logger.info("File[$cacheFilePath] already exists")
+                } else {
+                    logger.error("Finish CacheFileWriter error: $exception", exception)
+                }
             } finally {
                 close()
             }
