@@ -36,6 +36,7 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.PACKAG
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.PACKAGE_SEARCH_V2
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.SEARCH_V1
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.SEARCH_V2
+import com.tencent.bkrepo.conan.service.ConanSearchService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -46,7 +47,9 @@ import org.springframework.web.bind.annotation.RestController
  * conan package搜索请求
  */
 @RestController
-class ConanSearchController {
+class ConanSearchController(
+    private val conanSearchService: ConanSearchService
+) {
     @GetMapping(SEARCH_V1, SEARCH_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun search(
@@ -56,19 +59,7 @@ class ConanSearchController {
         @RequestParam ignorecase: Boolean?
     ): ResponseEntity<Any> {
         val ignoreCase = ignorecase ?: true
-        return ConanCommonController.buildResponse(
-            "{\n" +
-                "    \"results\": [\n" +
-                "        \"fmt/6.0.0@bincrafters/stable\",\n" +
-                "        \"glog/0.3.5@bincrafters/stable\",\n" +
-                "        \"glog/0.4.0@_/_\",\n" +
-                "        \"glog/0.4.0@bincrafters/stable\",\n" +
-                "        \"hello/0.1@demo/testing\",\n" +
-                "        \"hello/3.0@_/_\",\n" +
-                "        \"poco/1.9.4@_/_\"\n" +
-                "    ]\n" +
-                "}"
-        )
+        return ConanCommonController.buildResponse(conanSearchService.search(projectId, repoName, q, ignoreCase))
     }
 
     @GetMapping(PACKAGE_SEARCH_V1, PACKAGE_SEARCH_V2)
@@ -77,18 +68,6 @@ class ConanSearchController {
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo,
         @RequestParam q: String?
     ): ResponseEntity<Any> {
-        return ConanCommonController.buildResponse(
-            "{\n" +
-                "    \"results\": [\n" +
-                "        \"fmt/6.0.0@bincrafters/stable\",\n" +
-                "        \"glog/0.3.5@bincrafters/stable\",\n" +
-                "        \"glog/0.4.0@_/_\",\n" +
-                "        \"glog/0.4.0@bincrafters/stable\",\n" +
-                "        \"hello/0.1@demo/testing\",\n" +
-                "        \"hello/3.0@_/_\",\n" +
-                "        \"poco/1.9.4@_/_\"\n" +
-                "    ]\n" +
-                "}"
-        )
+        return ConanCommonController.buildResponse(conanSearchService.searchPackages(q, conanArtifactInfo))
     }
 }

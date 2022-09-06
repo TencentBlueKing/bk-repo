@@ -43,10 +43,15 @@ interface ConanDeleteService {
     /**
      * Remove packages.
      */
-    fun removePackages(conanArtifactInfo: ConanArtifactInfo)
+    fun removePackages(conanArtifactInfo: ConanArtifactInfo, revisionId: String, packageIds: List<String> = emptyList())
+
+    /**
+     * Remove package.
+     */
+    fun removePackage(conanArtifactInfo: ConanArtifactInfo)
 
     /**
      * Remove files.
      */
-    fun removeRecipeFiles(conanArtifactInfo: ConanArtifactInfo)
+    fun removeRecipeFiles(conanArtifactInfo: ConanArtifactInfo, files: List<String> = emptyList())
 }

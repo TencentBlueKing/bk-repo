@@ -48,19 +48,17 @@ const val CONAN_INFOS = "conanInfos"
 const val CONANFILE = "conanfile.py"
 const val CONANFILE_TXT = "conanfile.txt"
 const val CONAN_MANIFEST = "conanmanifest.txt"
-const val REVISIONS_FILE = "revisions.txt"
+// const val REVISIONS_FILE = "revisions.txt"
 const val CONANINFO = "conaninfo.txt"
 const val INDEX_JSON = "index.json"
 const val PACKAGE_TGZ_NAME = "conan_package.tgz"
 const val EXPORT_TGZ_NAME = "conan_export.tgz"
 const val EXPORT_SOURCES_TGZ_NAME = "conan_sources.tgz"
 
-
 // Directories
 const val EXPORT_FOLDER = "export"
 const val EXPORT_SRC_FOLDER = "export_source"
 const val PACKAGES_FOLDER = "package"
-
 
 // type
 const val MD5 = "md5"

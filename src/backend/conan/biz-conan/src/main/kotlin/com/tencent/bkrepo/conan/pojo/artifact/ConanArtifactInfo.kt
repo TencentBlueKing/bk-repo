@@ -48,18 +48,13 @@ class ConanArtifactInfo(
 
         // check_credentials
         const val CHECK_CREDENTIALS_V1 = "/{projectId}/{repoName}/v1/users/check_credentials"
-        const val CHECK_CREDENTIALS_V2 = "/{projectId}/{repoName}/v2/users/check_credentials"
         // authenticate
         const val AUTHENTICATE_V1 = "/{projectId}/{repoName}/v1/users/authenticate"
-        const val AUTHENTICATE_V2 = "/{projectId}/{repoName}/v2/users/authenticate"
 
         // search
         const val SEARCH_V1 = "/{projectId}/{repoName}/v1/conans/search"
-        const val SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/search"
         // package search
         const val PACKAGE_SEARCH_V1 = "/{projectId}/{repoName}/v1/conans/" +
-            "{name}/{version}/{username}/{channel}/search"
-        const val PACKAGE_SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/search"
 
         // get recipe manifest
@@ -130,5 +125,27 @@ class ConanArtifactInfo(
         const val PACKAGE_LATEST_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/revisions/{revision}" +
             "/packages/{packageId}/latest"
+        // search
+        const val SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/search"
+        // package search
+        const val PACKAGE_SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/" +
+            "{name}/{version}/{username}/{channel}/search"
+        // check_credentials
+        const val CHECK_CREDENTIALS_V2 = "/{projectId}/{repoName}/v2/users/check_credentials"
+        // authenticate
+        const val AUTHENTICATE_V2 = "/{projectId}/{repoName}/v2/users/authenticate"
+
+        // remove recipe
+        const val REMOVE_RECIPE_V2 = "/{projectId}/{repoName}/v2/conans/{name}/{version}/{username}/{channel}"
+        const val REMOVE_RECIPE_REVISIONS_V2 =
+            "/{projectId}/{repoName}/v2/conans/{name}/{version}/{username}/{channel}/revisions/{revision}"
+        // remove packages
+        const val REMOVE_PACKAGE_RECIPE_REVISION_V2 = "/{projectId}/{repoName}/v2/conans/" +
+            "{name}/{version}/{username}/{channel}/revisions/{revision}/packages/{packageId}"
+        const val REMOVE_PACKAGE_REVISION_V2 = "/{projectId}/{repoName}/v2/conans/" +
+            "{name}/{version}/{username}/{channel}/revisions/{revision}/packages/{packageId}/revisions/{pRevision}"
+        // remove all packages in revision
+        const val REMOVE_ALL_PACKAGE_UNDER_REVISION_V2 = "/{projectId}/{repoName}/v2/conans/" +
+            "{name}/{version}/{username}/{channel}/revisions/{revision}/packages"
     }
 }

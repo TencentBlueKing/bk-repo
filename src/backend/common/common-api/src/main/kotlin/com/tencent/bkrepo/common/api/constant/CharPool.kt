@@ -43,4 +43,5 @@ object CharPool {
     const val QUESTION = '?'
     const val AND = "&"
     const val EQUAL = "="
+    const val LEFT_SQUARE_BRACKET = '['
 }

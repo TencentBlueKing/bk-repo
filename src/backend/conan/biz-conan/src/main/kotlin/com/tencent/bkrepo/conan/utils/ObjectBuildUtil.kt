@@ -37,7 +37,7 @@ import com.tencent.bkrepo.conan.constant.CONAN_INFOS
 import com.tencent.bkrepo.conan.constant.X_CONAN_SERVER_CAPABILITIES
 import com.tencent.bkrepo.conan.controller.ConanCommonController.Companion.capabilities
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
-import com.tencent.bkrepo.conan.service.impl.ConanServiceImpl.Companion.convertToConanFileReference
+import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
@@ -57,7 +57,7 @@ object ObjectBuildUtil {
                 projectId = projectId,
                 repoName = repoName,
                 packageName = name,
-                packageKey = PackageKeys.ofConan(name),
+                packageKey = PackageKeys.ofConan(name, userName),
                 packageType = PackageType.CONAN,
                 versionName = version,
                 size = size,
@@ -80,7 +80,7 @@ object ObjectBuildUtil {
             return PackageVersionUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                packageKey = PackageKeys.ofConan(name),
+                packageKey = PackageKeys.ofConan(name, userName),
                 versionName = version,
                 size = size,
                 manifestPath = null,
@@ -116,7 +116,7 @@ object ObjectBuildUtil {
                 projectId = projectId,
                 repoName = repoName,
                 name = name,
-                packageKey = PackageKeys.ofConan(name),
+                packageKey = PackageKeys.ofConan(name, userName),
                 versionTag = null,
                 extension = mapOf("appVersion" to version)
             )

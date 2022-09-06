@@ -25,28 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.service
+package com.tencent.bkrepo.conan.exception
 
-import com.tencent.bkrepo.conan.pojo.ConanInfo
-import com.tencent.bkrepo.conan.pojo.ConanSearchResult
-import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
-
-/**
- * conan 搜索功能接口
- */
-interface ConanSearchService {
-    /**
-     * Get all the info about any recipe
-     * [pattern] like hello/\*
-     */
-    fun search(projectId: String, repoName: String, pattern: String?, ignoreCase: Boolean): ConanSearchResult
-
-    /**
-     * Get all the info about any package
-     * [pattern] like hello/\*
-     * result: {package_ID: {name: "OpenCV",
-     *  version: "2.14",
-     *  settings: {os: Windows}}}
-     */
-    fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo>
-}
+class ConanException(message: String) : RuntimeException(message)

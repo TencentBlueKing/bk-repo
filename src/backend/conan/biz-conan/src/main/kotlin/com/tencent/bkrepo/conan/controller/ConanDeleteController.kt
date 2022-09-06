@@ -29,26 +29,113 @@ package com.tencent.bkrepo.conan.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_ALL_PACKAGE_UNDER_REVISION_V2
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_FILES_V1
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_PACKAGES_V1
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_PACKAGE_RECIPE_REVISION_V2
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_PACKAGE_REVISION_V2
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_RECIPE_REVISIONS_V2
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_RECIPE_V1
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.REMOVE_RECIPE_V2
+import com.tencent.bkrepo.conan.pojo.request.FileRemoveRequest
+import com.tencent.bkrepo.conan.pojo.request.PackageIdRemoveRequest
+import com.tencent.bkrepo.conan.service.ConanDeleteService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * conan删除相关的请求
  */
 @RestController
-class ConanDeleteController {
+class ConanDeleteController(
+    private val conanDeleteService: ConanDeleteService
+) {
 
-    @GetMapping(REMOVE_RECIPE_V1)
+    /**
+     * Remove any existing recipes or its packages created.
+     * Will remove all revisions, packages and package revisions (parent folder)
+     */
+    @DeleteMapping(REMOVE_RECIPE_V1)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removeRecipe(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
+        conanDeleteService.removeConanFile(conanArtifactInfo)
+        return ConanCommonController.buildResponse(StringPool.EMPTY)
+    }
+
+    /**
+     * if packageIds is empty, then will remove all packages
+     */
+    @PostMapping(REMOVE_PACKAGES_V1)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    fun removePackages(
+        @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo,
+        @RequestBody removeRequest: PackageIdRemoveRequest
+    ): ResponseEntity<Any> {
+        conanDeleteService.removePackages(conanArtifactInfo, DEFAULT_REVISION_V1, removeRequest.packageIds)
+        return ConanCommonController.buildResponse(StringPool.EMPTY)
+    }
+
+    /**
+     * The remove files is a part of the upload process,
+     * where the revision in v1 will always be DEFAULT_REVISION_V1
+     */
+    @PostMapping(REMOVE_FILES_V1)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    fun removeRecipeFiles(
+        @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo,
+        @RequestBody fileRemoveRequest: FileRemoveRequest
+    ): ResponseEntity<Any> {
+        conanDeleteService.removeRecipeFiles(conanArtifactInfo, fileRemoveRequest.files)
+        return ConanCommonController.buildResponse(StringPool.EMPTY)
+    }
+
+    /**
+     * Remove any existing recipes or its packages created.
+     * Will remove all revisions, packages and package revisions (parent folder)
+     */
+    @DeleteMapping(REMOVE_RECIPE_V2, REMOVE_RECIPE_REVISIONS_V2)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    fun removeRecipeV2(
+        @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
+    ): ResponseEntity<Any> {
+        conanDeleteService.removeConanFile(conanArtifactInfo)
+        return ConanCommonController.buildResponse(StringPool.EMPTY)
+    }
+
+    /**
+     * - If both RRev and PRev are specified, it will remove the specific package revision
+     * of the specific recipe revision.
+     * - If PRev is NOT specified but RRev is specified (package_recipe_revision_url)
+     * it will remove all the package revisions
+     */
+    @DeleteMapping(REMOVE_PACKAGE_RECIPE_REVISION_V2, REMOVE_PACKAGE_REVISION_V2)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    fun removePackagesV2(
+        @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
+    ): ResponseEntity<Any> {
+        conanDeleteService.removePackage(conanArtifactInfo)
+        return ConanCommonController.buildResponse(StringPool.EMPTY)
+    }
+
+    /**
+     * Remove all packages from a RREV
+     */
+    @DeleteMapping(REMOVE_ALL_PACKAGE_UNDER_REVISION_V2)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    fun removeAllPackagesV2(
+        @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
+    ): ResponseEntity<Any> {
+        conanDeleteService.removePackages(conanArtifactInfo, conanArtifactInfo.revision!!)
+        return ConanCommonController.buildResponse(StringPool.EMPTY)
     }
 }

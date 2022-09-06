@@ -32,11 +32,10 @@ import com.tencent.bkrepo.conan.constant.EXPORT_FOLDER
 import com.tencent.bkrepo.conan.constant.PACKAGES_FOLDER
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.PackageReference
-import org.apache.commons.lang3.StringUtils
 
 object PathUtils {
 
-    fun String.extractConanFileReference() : ConanFileReference {
+    fun String.extractConanFileReference(): ConanFileReference {
         val pathList = this.trim('/').split("/")
         if (pathList.size < 7) throw IllegalArgumentException("invalid path $this")
         val userName = pathList[0]
@@ -44,7 +43,7 @@ object PathUtils {
         val version = pathList[2]
         val channel = pathList[3]
         val revision = pathList[4]
-        return ConanFileReference(name, version, userName, channel,revision)
+        return ConanFileReference(name, version, userName, channel, revision)
     }
 
     fun joinString(first: String, second: String): String {
@@ -80,7 +79,7 @@ object PathUtils {
         }
     }
 
-    fun buildReference(fileReference: ConanFileReference) : String {
+    fun buildReference(fileReference: ConanFileReference): String {
         with(fileReference) {
             return StringBuilder(userName)
                 .append(CharPool.SLASH)
@@ -122,11 +121,29 @@ object PathUtils {
         }
     }
 
-    fun buildPackageFolderPath(packageReference: PackageReference): String {
-        with(packageReference) {
-            return StringBuilder(buildRevisionPath(conRef))
+    fun buildPackageFolderPath(fileReference: ConanFileReference): String {
+        with(fileReference) {
+            return StringBuilder(buildRevisionPath(fileReference))
                 .append(CharPool.SLASH)
                 .append(PACKAGES_FOLDER)
+                .toString()
+        }
+    }
+
+    fun buildPackageIdFolderPath(fileReference: ConanFileReference, packageId: String): String {
+        with(fileReference) {
+            return StringBuilder(buildRevisionPath(fileReference))
+                .append(CharPool.SLASH)
+                .append(PACKAGES_FOLDER)
+                .append(CharPool.SLASH)
+                .append(packageId)
+                .toString()
+        }
+    }
+
+    fun buildPackageRevisionFolderPath(packageReference: PackageReference): String {
+        with(packageReference) {
+            return StringBuilder(buildPackageFolderPath(conRef))
                 .append(CharPool.SLASH)
                 .append(packageId)
                 .append(CharPool.SLASH)

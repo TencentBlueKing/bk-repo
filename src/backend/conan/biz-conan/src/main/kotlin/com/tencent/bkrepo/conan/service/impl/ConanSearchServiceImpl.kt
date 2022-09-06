@@ -27,16 +27,14 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
-import com.tencent.bkrepo.common.api.constant.CharPool
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
+import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
-import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -48,6 +46,8 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     @Autowired
     lateinit var packageClient: PackageClient
+    @Autowired
+    lateinit var commonService: CommonService
 
     override fun search(
         projectId: String,
@@ -70,10 +70,10 @@ class ConanSearchServiceImpl : ConanSearchService {
         return ConanSearchResult(list)
     }
 
-
-    override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): List<Map<String, Any>> {
+    override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
+            return commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
         }
     }
 

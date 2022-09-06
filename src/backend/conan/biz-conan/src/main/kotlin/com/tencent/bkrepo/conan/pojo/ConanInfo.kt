@@ -30,16 +30,9 @@ package com.tencent.bkrepo.conan.pojo
 import com.fasterxml.jackson.annotation.JsonAlias
 
 data class ConanInfo(
-    val invalid: String? = null,
-    @JsonAlias("full_settings")
-    val fullSettings: Map<String, String> = emptyMap(),
     val settings: Map<String, String> = emptyMap(),
     val options: Map<String, String> = emptyMap(),
-    @JsonAlias("full_options")
-    val fullOptions: Map<String, String> = emptyMap(),
-    @JsonAlias("full_requires")
-    val fullRequires: Map<String, String> = emptyMap(),
     val requires: List<String> = emptyList(),
     @JsonAlias("recipe_hash")
-    val recipeHash: String? = null
+    val recipeHash: String? = null,
 )
