@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.common.artifact
 
-import com.tencent.bkrepo.common.artifact.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
+import com.tencent.bkrepo.common.artifact.interceptor.ArtifactDownloadInterceptorConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
@@ -56,7 +56,6 @@ import org.springframework.context.annotation.PropertySource
 @EnableConfigurationProperties(ViewModelProperties::class)
 @ConditionalOnWebApplication
 @Import(
-    ArtifactClusterConfiguration::class,
     ArtifactContextConfiguration::class,
     ArtifactEventConfiguration::class,
     ArtifactExceptionConfiguration::class,
@@ -65,6 +64,7 @@ import org.springframework.context.annotation.PropertySource
     ArtifactManagerConfiguration::class,
     ArtifactResolverConfiguration::class,
     ArtifactViewModelConfiguration::class,
-    ArtifactHealthConfiguration::class
+    ArtifactHealthConfiguration::class,
+    ArtifactDownloadInterceptorConfiguration::class
 )
 class ArtifactAutoConfiguration

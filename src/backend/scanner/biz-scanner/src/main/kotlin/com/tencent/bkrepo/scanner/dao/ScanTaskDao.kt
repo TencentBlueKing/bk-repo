@@ -189,6 +189,15 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
         )
     }
 
+    fun findUnFinished(projectId: String, planId: String): List<TScanTask> {
+        return find(
+            Query(
+                TScanTask::projectId.isEqualTo(projectId).and(TScanTask::planId).isEqualTo(planId)
+                    .and(TScanTask::status).`in`(ScanTaskStatus.unFinishedStatus)
+            )
+        )
+    }
+
     fun find(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<TScanTask> {
         val criteria = Criteria()
         with(scanTaskQuery) {
@@ -216,6 +225,10 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
             .where(TScanTask::planId.name).isEqualTo(planId)
             .and(TScanTask::status.name).inValues(status)
         return exists(Query(criteria))
+    }
+
+    fun countStatus(status: ScanTaskStatus): Long {
+        return count(Query(TScanTask::status.isEqualTo(status.name)))
     }
 
     private fun buildQuery(taskId: String) = Query(Criteria.where(ID).isEqualTo(taskId))

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.pojo.enums.UserSource
 import com.tencent.bkrepo.auth.pojo.token.Token
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -61,6 +62,7 @@ data class TUser(
     val email: String? = null,
     val phone: String? = null,
     var accounts: List<String>? = emptyList(),
+    val source: UserSource = UserSource.REPO,
     val createdDate: LocalDateTime? = LocalDateTime.now(),
     val lastModifiedDate: LocalDateTime? = LocalDateTime.now()
 )

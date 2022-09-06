@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.scanner.executor.arrowhead.AbsArrowheadScanExecutor
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.buildLogMsg
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -57,10 +57,10 @@ class ArrowheadCmdScanExecutor(
         val process = Runtime.getRuntime().exec(arrayOf("/bin/bash", "-c", scanCommand(configFile)))
         try {
             taskIdProcessMap[task.taskId] = process
-            logger.info(logMsg(task, "running arrowhead [$taskWorkDir]"))
+            logger.info(buildLogMsg(task, "running arrowhead [$taskWorkDir]"))
             val maxScanDuration = scanner.maxScanDuration(scannerInputFile.length())
             val result = process.waitFor(maxScanDuration, TimeUnit.MILLISECONDS)
-            logger.info(logMsg(task, "arrowhead run result[$result], [$taskWorkDir]"))
+            logger.info(buildLogMsg(task, "arrowhead run result[$result], [$taskWorkDir]"))
             if (!result) {
                 return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
             }
@@ -76,7 +76,6 @@ class ArrowheadCmdScanExecutor(
 
     private fun scanCommand(configFile: File) =
         "/opt/sysauditor/bin/sys/arrowhead -cfg /opt/sysauditor/config/backend.toml -in ${configFile.absolutePath}"
-
 
     override fun stop(taskId: String): Boolean {
         return taskIdProcessMap[taskId]?.destroyForcibly()?.isAlive == false

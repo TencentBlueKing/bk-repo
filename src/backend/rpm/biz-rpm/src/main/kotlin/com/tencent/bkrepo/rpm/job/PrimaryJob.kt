@@ -10,15 +10,23 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class PrimaryJob {
+class PrimaryJob : CenterNodeJob() {
 
     @Autowired
     private lateinit var jobService: JobService
 
     @Scheduled(fixedDelay = 20 * 1000)
     @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT30M")
+    override fun start() {
+        super.start()
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(PrimaryJob::class.java)
+    }
+
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
-    fun updatePrimaryIndex() {
+    override fun run() {
         logger.info("update primary index start")
         val startMillis = System.currentTimeMillis()
         val repoList = jobService.getAllRpmRepo()
@@ -37,9 +45,5 @@ class PrimaryJob {
             }
         }
         logger.info("update primary index done, cost time: ${System.currentTimeMillis() - startMillis} ms")
-    }
-
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(PrimaryJob::class.java)
     }
 }

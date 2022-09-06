@@ -55,11 +55,17 @@ object Converter {
             fullPath = fullPath,
             sha256 = sha256,
             size = size,
+            packageSize = packageSize,
             credentialsKey = credentialsKey
         )
     }
 
-    fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null, force: Boolean = false): ScanTask = with(scanTask) {
+    fun convert(
+        scanTask: TScanTask,
+        scanPlan: TScanPlan? = null,
+        force: Boolean = false,
+        compatible: Boolean = true
+    ): ScanTask = with(scanTask) {
         ScanTask(
             name = scanTask.name,
             taskId = id!!,
@@ -71,7 +77,7 @@ object Converter {
             finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
             triggerType = triggerType,
             status = status,
-            scanPlan = scanPlan?.let { ScanPlanConverter.convert(it) },
+            scanPlan = scanPlan?.let { ScanPlanConverter.convert(it, compatible) },
             rule = scanTask.rule?.readJsonString(),
             total = total,
             scanning = scanning,

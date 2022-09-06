@@ -65,11 +65,11 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class PackageServiceImpl(
@@ -370,6 +370,9 @@ class PackageServiceImpl(
         }
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.artifactPath!!)
         val context = ArtifactDownloadContext(artifact = artifactInfo, useDisposition = true)
+        // 拦截package下载
+        val packageVersion = convert(tPackageVersion)!!
+        context.getPackageInterceptors().forEach { it.intercept(projectId, packageVersion) }
         // context 复制时会从request map中获取对应的artifactInfo， 而artifactInfo设置到map中是在接口url解析时
         HttpContextHolder.getRequestOrNull()?.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
         ArtifactContextHolder.getRepository().download(context)

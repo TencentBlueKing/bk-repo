@@ -66,7 +66,8 @@ export function getIconName (name) {
 export const nodeTypeEnum = {
     CENTER: '中心节点',
     EDGE: '边缘节点',
-    STANDALONE: '独立节点'
+    STANDALONE: '独立节点',
+    REMOTE: '远程节点'
 }
 
 // 同步计划执行状态
@@ -80,29 +81,31 @@ export const asyncPlanStatusEnum = {
 export const scanTypeEnum = {
     GENERIC: 'Generic仓库漏洞扫描',
     DOCKER: 'Docker仓库漏洞扫描',
-    MAVEN: 'Maven仓库漏洞扫描'
+    MAVEN: 'Maven仓库漏洞扫描',
     // NPM: 'Npm仓库漏洞扫描',
     // PYPI: 'Pypi仓库漏洞扫描',
-    // GENERIC_LICENSE: 'Generic仓库许可证扫描',
-    // MAVEN_LICENSE: 'Maven仓库许可证扫描'
+    GENERIC_LICENSE: 'Generic仓库许可证扫描',
+    MAVEN_LICENSE: 'Maven仓库许可证扫描'
 }
 
 export const scannerTypeEnum = {
     // 科恩
     arrowhead: {
-        GENERIC: '支持apk、ipa、aab、jar格式的文件',
+        GENERIC: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
         MAVEN: '',
-        DOCKER: ''
+        DOCKER: '',
+        GENERIC_LICENSE: '支持apk、ipa、aab、jar格式的文件',
+        MAVEN_LICENSE: ''
     },
     // DependencyCheck
     DependencyCheck: {
-        GENERIC: '支持apk、ipa、jar格式的文件',
+        GENERIC: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
         MAVEN: '',
         NPM: '',
         PYPI: ''
     },
     scancodeToolkit: {
-        GENERIC_LICENSE: '支持apk、ipa、jar格式的文件',
+        GENERIC_LICENSE: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
         MAVEN_LICENSE: ''
     },
     trivy: {
@@ -110,12 +113,21 @@ export const scannerTypeEnum = {
     }
 }
 
+export const genericScanFileTypes = [
+    'zip', 'tar', 'tgz', 'jar', 'war', 'exe',
+    'apk', 'ear', 'sar', 'nupkg', 'gz', 'bz2',
+    'tbz2', 'rpm', 'ipa', 'aab'
+]
+
 // 扫描方案执行状态
 export const scanStatusEnum = {
     INIT: '等待扫描',
-    RUNNING: '正在扫描',
+    RUNNING: '扫描中',
     STOP: '扫描中止',
     SUCCESS: '扫描完成',
+    UN_QUALITY: '未设置质量规则',
+    QUALITY_PASS: '质量规则通过',
+    QUALITY_UNPASS: '质量规则未通过',
     FAILED: '扫描异常'
 }
 

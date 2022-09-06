@@ -237,7 +237,7 @@ class PackageIterator(
             it.artifactName = pkg.artifactName
             it.packageKey = pkg.packageKey
             it.packageVersion = pkg.packageVersion
-            it.size = pkg.size ?: it.size
+            it.packageSize = pkg.size ?: it.size
         }
         return nodes
     }

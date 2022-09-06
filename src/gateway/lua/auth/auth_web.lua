@@ -19,10 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 --- 蓝鲸平台登录对接
 --- 获取Cookie中bk_token 和 bk_ticket
-local bk_ticket, err = cookieUtil:get_cookie("bk_ticket")
-local bk_token, err = cookieUtil:get_cookie("bk_token")
-local bkrepo_token, bkrepo_err = cookieUtil:get_cookie("bkrepo_ticket")
-local ticket, token, username
+local token, username
 
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
@@ -32,36 +29,41 @@ if config.mode == "standalone" or config.mode == "" or config.mode == nil then
     if start_i ~= nil or start_i2 ~= nil then
         return
     end
-    if bkrepo_token == nil then
+    local bkrepo_login_token = cookieUtil:get_cookie("bkrepo_ticket")
+    if not bkrepo_login_token then
         ngx.exit(401)
         return
     end
-    ticket = oauthUtil:verify_bkrepo_token(bkrepo_token)
-    username = ticket.user_id
+    username = oauthUtil:verify_bkrepo_token(bkrepo_login_token)
+    token = bkrepo_login_token
 elseif config.auth_mode == "" or config.auth_mode == "token" then
-    ticket = oauthUtil:get_ticket(bk_token, "token")
-    token = bk_token
-    username = ticket.identity.username
-else
-    local devops_access_token = ngx.var.http_x_devops_access_token
-    if bk_ticket == nil and devops_access_token == nil then
+    local bk_token = cookieUtil:get_cookie("bk_token")
+    if not bk_token then
         ngx.exit(401)
         return
     end
-    if devops_access_token ~= nill then
-        ticket = oauthUtil:verify_token(devops_access_token)
-    else
-        ticket = oauthUtil:get_ticket(bk_ticket, "ticket")
+    username = oauthUtil:verify_ticket(bk_token, "token")
+    token = bk_token
+elseif config.auth_mode == "ticket" then
+    local bk_ticket = cookieUtil:get_cookie("bk_ticket")
+    if not bk_ticket then
+        ngx.exit(401)
+        return
     end
+    username = oauthUtil:verify_ticket(bk_ticket, "ticket")
     token = bk_ticket
-    username = ticket.user_id
+elseif config.auth_mode == "ci" then
+    local ci_login_token = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
+    if not ci_login_token then
+        ngx.exit(401)
+        return
+    end
+    username = oauthUtil:verify_ci_token(ci_login_token)
+    token = ci_login_token
 end
-
---- 其它模式校验bk_ticket
-
 
 --- 设置用户信息
 ngx.header["x-bkrepo-uid"] = username
 ngx.header["x-bkrepo-bk-token"] = token
-ngx.header["x-bkrepo-access-token"] = ticket.access_token
+ngx.header["x-bkrepo-access-token"] = token
 ngx.exit(200)

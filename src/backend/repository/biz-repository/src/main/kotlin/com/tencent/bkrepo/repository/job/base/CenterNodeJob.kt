@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.repository.job.base
 
-import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
-import com.tencent.bkrepo.common.artifact.cluster.RoleType
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.RoleType
 import org.springframework.beans.factory.annotation.Autowired
 
 /**

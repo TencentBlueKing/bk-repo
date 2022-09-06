@@ -70,6 +70,7 @@ class TArchiveSubScanTask(
     scannerType: String,
     sha256: String,
     size: Long,
+    packageSize: Long = size,
     credentialsKey: String?,
 
     scanResultOverview: Map<String, Number>?,
@@ -103,6 +104,7 @@ class TArchiveSubScanTask(
     scannerType = scannerType,
     sha256 = sha256,
     size = size,
+    packageSize = packageSize,
     credentialsKey = credentialsKey,
     scanResultOverview = scanResultOverview,
     qualityRedLine = qualityRedLine,
@@ -146,6 +148,7 @@ class TArchiveSubScanTask(
                 scannerType = scannerType,
                 sha256 = sha256,
                 size = size,
+                packageSize = packageSize,
                 credentialsKey = credentialsKey,
                 scanResultOverview = numberOverview,
                 qualityRedLine = qualityPass,

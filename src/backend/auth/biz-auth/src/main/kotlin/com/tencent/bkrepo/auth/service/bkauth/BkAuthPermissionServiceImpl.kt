@@ -53,11 +53,11 @@ class BkAuthPermissionServiceImpl constructor(
     roleRepository: RoleRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
-    repositoryClient: RepositoryClient,
-    projectClient: ProjectClient,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPipelineService: BkAuthPipelineService,
-    private val bkAuthProjectService: BkAuthProjectService
+    private val bkAuthProjectService: BkAuthProjectService,
+    val repositoryClient: RepositoryClient,
+    val projectClient: ProjectClient
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
@@ -82,8 +82,6 @@ class BkAuthPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
-                // devops直接放过
-                if (appId == bkAuthConfig.devopsAppId) return true
                 // 其它请求校验项目权限
                 return checkProjectPermission(uid, projectId!!, action)
             }

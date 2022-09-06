@@ -21,11 +21,11 @@
                 </div>
             </bk-form-item>
         </template>
-        <!-- <bk-form-item label="触发事件">
+        <bk-form-item label="触发事件">
             <div style="color:var(--fontSubsidiaryColor);">可勾选下方按钮，在扫描或扫描结束后触发勾选项</div>
-            <div class="mt10"><bk-checkbox v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div>
+            <!-- <div class="mt10"><bk-checkbox v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div> -->
             <div class="mt10"><bk-checkbox v-model="rule.forbidQualityUnPass">自动禁止使用制品：质量规则未通过的制品</bk-checkbox></div>
-        </bk-form-item> -->
+        </bk-form-item>
         <bk-form-item>
             <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
         </bk-form-item>

@@ -61,7 +61,7 @@ class ClusterReplicator(
     private val replicationProperties: ReplicationProperties
 ) : Replicator {
 
-    @Value("\${spring.application.version}")
+    @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
 
     override fun checkVersion(context: ReplicaContext) {

@@ -31,6 +31,7 @@ data:
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI
+    plugin.path: /data/workspace/plugin/
     cluster:
       region: {{ .Values.common.region }}
       self:

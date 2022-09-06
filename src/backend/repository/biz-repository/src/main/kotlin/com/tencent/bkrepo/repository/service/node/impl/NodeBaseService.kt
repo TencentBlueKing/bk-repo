@@ -59,6 +59,7 @@ import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -205,7 +206,14 @@ abstract class NodeBaseService(
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val query = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
+            val query = Query(
+                NodeQueryHelper.nodeListCriteria(
+                    projectId = projectId,
+                    repoName = repoName,
+                    path = node.fullPath,
+                    option = NodeListOption(includeFolder = false, deep = true)
+                )
+            )
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
             nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")

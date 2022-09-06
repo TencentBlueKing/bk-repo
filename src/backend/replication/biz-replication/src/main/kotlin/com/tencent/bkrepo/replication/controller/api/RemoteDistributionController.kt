@@ -33,9 +33,11 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.remote.RemoteInfo
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteConfigUpdateRequest
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteCreateRequest
+import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -131,7 +133,7 @@ class RemoteDistributionController(
     }
 
     /**
-     * 手动调用同步指定版本的制品(主要用于内部补偿使用，不对外)
+     * 手动调用同步指定版本的制品(主要用于内部补偿使用，针对非一次性任务，不对外)
      */
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/push/{projectId}/{repoName}/{name}")
@@ -146,5 +148,52 @@ class RemoteDistributionController(
     ): Response<Void> {
         remoteNodeService.pushSpecialArtifact(projectId, repoName, packageName, version, name)
         return ResponseBuilder.success()
+    }
+
+    /**
+     * 创建一次性分发任务
+     */
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @PostMapping("/create/runOnceTask/{projectId}/{repoName}")
+    fun createRunOnceTask(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String,
+        @RequestBody requests: RemoteRunOnceTaskCreateRequest
+    ): Response<Void> {
+        remoteNodeService.createRunOnceTask(projectId, repoName, requests)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 手动调用一次性执行任务
+     */
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @PostMapping("/execute/runOnceTask/{projectId}/{repoName}")
+    fun executeRunOnceTask(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String,
+        @RequestParam name: String,
+    ): Response<Void> {
+        remoteNodeService.executeRunOnceTask(projectId, repoName, name)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 查询一次性任务的执行结果
+     */
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @GetMapping("/get/runOnceTaskStatus/{projectId}/{repoName}")
+    fun getRunOnceTaskResult(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String,
+        @RequestParam name: String,
+    ): Response<ReplicaRecordInfo?> {
+        return ResponseBuilder.success(remoteNodeService.getRunOnceTaskResult(projectId, repoName, name))
     }
 }

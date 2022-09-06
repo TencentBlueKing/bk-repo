@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
@@ -46,7 +47,6 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
@@ -198,7 +198,7 @@ class ClusterNodeServiceImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    fun tryConnect(remoteClusterInfo: RemoteClusterInfo, type: ClusterNodeType) {
+    fun tryConnect(remoteClusterInfo: ClusterInfo, type: ClusterNodeType) {
         with(remoteClusterInfo) {
             if (ClusterNodeType.REMOTE == type) {
                 tryConnectRemoteCluster(this)
@@ -211,7 +211,7 @@ class ClusterNodeServiceImpl(
     /**
      * 针对非third party集群做连接判断
      */
-    fun tryConnectNonRemoteCluster(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnectNonRemoteCluster(remoteClusterInfo: ClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
@@ -220,7 +220,7 @@ class ClusterNodeServiceImpl(
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.error("ping cluster [$name] failed, reason: $message")
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
             }
         }
     }
@@ -228,14 +228,14 @@ class ClusterNodeServiceImpl(
     /**
      * 针对third party集群做额外的判断
      */
-    fun tryConnectRemoteCluster(remoteClusterInfo: RemoteClusterInfo) {
+    fun tryConnectRemoteCluster(remoteClusterInfo: ClusterInfo) {
         with(remoteClusterInfo) {
             try {
                 HttpUtils.pingURL(remoteClusterInfo.url, 60000)
             } catch (exception: Exception) {
                 val message = exception.message ?: UNKNOWN
                 logger.warn("ping cluster [$name] failed, reason: $message")
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
             }
         }
     }
@@ -265,7 +265,7 @@ class ClusterNodeServiceImpl(
         private val logger = LoggerFactory.getLogger(ClusterNodeServiceImpl::class.java)
         private const val CLUSTER_NODE_URL_PATTERN = "[a-zA-z]+://[^\\s]*"
         private const val CLUSTER_NAME_LENGTH_MIN = 2
-        private const val CLUSTER_NAME_LENGTH_MAX = 128
+        private const val CLUSTER_NAME_LENGTH_MAX = 256
 
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {
@@ -287,9 +287,9 @@ class ClusterNodeServiceImpl(
             }
         }
 
-        private fun convertRemoteInfo(tClusterNode: TClusterNode?): RemoteClusterInfo? {
+        private fun convertRemoteInfo(tClusterNode: TClusterNode?): ClusterInfo? {
             return tClusterNode?.let {
-                RemoteClusterInfo(
+                ClusterInfo(
                     name = it.name,
                     url = it.url,
                     certificate = it.certificate,

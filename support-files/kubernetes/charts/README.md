@@ -168,25 +168,33 @@ $ helm uninstall bkrepo
 
 ### 数据初始化job配置
 
-|参数|描述|默认值 |
-|---|---|---|
-| `init.mongodb.enabled` | 是否初始化mongodb数据，支持幂等执行 | `true` |
-| `init.mongodb.image` | mongodb job镜像拉取相关配置 | Check `values.yaml` |
+|参数| 描述             | 默认值                                 |
+|---|----------------|-------------------------------------|
+| `init.mongodb.enabled` | 是否初始化mongodb数据，支持幂等执行 | `true`                              |
+| `init.mongodb.image` | mongodb job镜像拉取相关配置 | Check `values.yaml`                 |
+| `init.bcs.enabled` | 是否初始化bcs仓库     | false                               |
+| `init.bcs.publicImageUrl` | bcs代理image仓库地址 | https://hub.bktencent.com/blueking  |
+| `init.bcs.publicChartUrl` | bcs代理chart仓库地址 | https://hub.bktencent.com/chartrepo/blueking                                    |
 
 
 ### 网关配置
 
 **以下为除Kubernetes组件通用配置之外的配置列表**
 
-|参数|描述|默认值 |
-|---|---|---|
-| `gateway.service.type` | 服务类型 | `ClusterIP` |
-| `gateway.service.port` | 服务类型为`ClusterIP`时端口设置 | `80` |
+| 参数                         |描述|默认值 |
+|----------------------------|---|--|
+| `gateway.service.type`     | 服务类型 | `ClusterIP` |
+| `gateway.service.port`     | 服务类型为`ClusterIP`时端口设置 | `80` |
 | `gateway.service.nodePort` | 服务类型为`NodePort`时端口设置 | `80` |
-| `gateway.host` | bkrepo 地址 | `bkrepo.example.com` |
-| `gateway.dnsServer` | dns服务器地址，用于配置nginx resolver | `local=on`(openrestry语法，取本机`/etc/resolv.conf`配置) |
-| `gateway.authorization` | 网关访问微服务认证信息 | `"Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="` |
-| `gateway.deployMode` | 部署模式，standalone: 独立模式，ci: 与ci搭配模式 | `standalone` |
+| `gateway.host`             | bkrepo 地址 | `bkrepo.example.com` |
+| `gateway.dnsServer`        | dns服务器地址，用于配置nginx resolver | `local=on`(openrestry语法，取本机`/etc/resolv.conf`配置) |
+| `gateway.authorization`    | 网关访问微服务认证信息 | `"Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="` |
+| `gateway.deployMode`       | 部署模式，standalone: 独立模式，ci: 与ci搭配模式 | `standalone` |
+| `gateway.deployMode`       | 部署模式，standalone: 独立模式，ci: 与ci搭配模式, saas模式：部署在蓝鲸paas上 | `standalone` |
+| `gateway.authMode`         | 登陆校验模式，ticket or token | `token` |
+| `gateway.bkciHost`         | 访问bkci域名 |  |
+| `gateway.bkciPort`         | 访问bkci端口 |  |
+
 
 ### repository服务配置
 
@@ -254,7 +262,7 @@ $ helm uninstall bkrepo
 
 ```shell
 $ helm install bkrepo bkee/bkrepo \
-  --set global.imageRegistry=your.registry.com \
+  --set global.imageRegistry=your.registry.com \
   --set gateway.host=bkrepo.example.com
 ```
 

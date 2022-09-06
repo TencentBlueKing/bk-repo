@@ -38,6 +38,10 @@ data class ArrowheadLoadResultArguments(
     val vulIds: List<String> = emptyList(),
     @ApiModelProperty("需要的漏洞严重性等级列表")
     val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("需要的许可id列表")
+    val licenseIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的许可风险等级列表")
+    val riskLevels: List<String> = emptyList(),
     @ApiModelProperty("扫描结果类型")
     val reportType: String,
     @ApiModelProperty("分页参数")

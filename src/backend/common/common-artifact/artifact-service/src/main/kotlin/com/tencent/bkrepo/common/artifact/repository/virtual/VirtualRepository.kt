@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.virtual
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.constant.TRAVERSED_LIST
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -41,12 +42,17 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 虚拟仓库抽象逻辑
  */
 abstract class VirtualRepository : AbstractArtifactRepository() {
+
+    @Autowired
+    lateinit var permissionManager: PermissionManager
 
     override fun query(context: ArtifactQueryContext): Any? {
         return mapFirstRepo(context) { sub, repository ->
@@ -93,6 +99,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             }
             traversedList.add(repoIdentify)
             try {
+                permissionManager.checkRepoPermission(PermissionAction.READ, repoIdentify.projectId, repoIdentify.name)
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail)

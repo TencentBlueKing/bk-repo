@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.sensitive.SensitiveType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("创建用户请求")
+@ApiModel("创建用户到项目管理员请求")
 data class CreateUserToProjectRequest(
     @ApiModelProperty("用户id")
     val userId: String,

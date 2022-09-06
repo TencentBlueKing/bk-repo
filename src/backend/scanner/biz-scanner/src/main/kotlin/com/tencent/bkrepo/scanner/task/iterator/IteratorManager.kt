@@ -30,13 +30,13 @@ package com.tencent.bkrepo.scanner.task.iterator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -52,19 +52,19 @@ import org.springframework.stereotype.Component
 class IteratorManager(
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
-    private val packageClient: PackageClient,
-    private val scannerProperties: ScannerProperties
+    private val packageClient: PackageClient
 ) {
     /**
      * 创建待扫描文件迭代器
      *
      * @param scanTask 扫描任务
+     * @param scanner 使用的扫描器
      * @param resume 是否从之前的扫描进度恢复
      */
-    fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
+    fun createNodeIterator(scanTask: ScanTask, scanner: Scanner, resume: Boolean = false): Iterator<Node> {
         val rule = if (scanTask.scanPlan != null && scanTask.rule is Rule.NestedRule) {
             // 存在扫描方案时才修改制品遍历规则
-            modifyRule(scanTask.scanPlan!!, scanTask.rule as Rule.NestedRule)
+            modifyRule(scanTask.scanPlan!!, scanner, scanTask.rule as Rule.NestedRule)
         } else {
             scanTask.rule
         }
@@ -82,36 +82,36 @@ class IteratorManager(
         }
     }
 
-    private fun modifyRule(scanPlan: ScanPlan, rule: Rule.NestedRule): Rule {
+    private fun modifyRule(scanPlan: ScanPlan, scanner: Scanner, rule: Rule.NestedRule): Rule {
         if (scanPlan.type == RepositoryType.GENERIC.name) {
             if (RuleUtil.getRepoNames(rule).isEmpty()) {
                 // 未指定要扫描的仓库时限制只扫描GENERIC类型仓库
                 addRepoNames(rule, scanPlan.projectId!!)
             }
             // 限制待扫描文件后缀
-            return addMobilePackageRule(rule)
+            return addFileNameExtRule(rule, scanner.supportFileNameExt)
         }
         return rule
     }
 
     /**
-     * 添加ipa和apk文件过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
+     * 添加文件名后缀过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
      */
-    private fun addMobilePackageRule(rule: Rule): Rule {
-        if (scannerProperties.supportFileNameExt.isEmpty()) {
+    private fun addFileNameExtRule(rule: Rule, supportFileNameExt: List<String>): Rule {
+        if (supportFileNameExt.isEmpty()) {
             return rule
         }
 
-        val fileNameExtensionRules = scannerProperties.supportFileNameExt
+        val fileNameExtensionRules = supportFileNameExt
             .map { Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX) }
             .toMutableList<Rule>()
-        val mobilePackageRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)
+        val fileNameExtRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)
 
         if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            rule.rules.add(mobilePackageRule)
+            rule.rules.add(fileNameExtRule)
             return rule
         }
-        return Rule.NestedRule(mutableListOf(rule, mobilePackageRule), Rule.NestedRule.RelationType.AND)
+        return Rule.NestedRule(mutableListOf(rule, fileNameExtRule), Rule.NestedRule.RelationType.AND)
     }
 
     private fun addRepoNames(rule: Rule, projectId: String): Rule {

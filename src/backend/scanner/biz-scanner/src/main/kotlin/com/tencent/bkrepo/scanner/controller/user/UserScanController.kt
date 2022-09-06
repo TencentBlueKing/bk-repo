@@ -29,19 +29,21 @@ package com.tencent.bkrepo.scanner.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
@@ -63,7 +65,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/scan")
 class UserScanController @Autowired constructor(
-    private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scanService: ScanService,
     private val scanTaskService: ScanTaskService
 ) {
@@ -87,9 +88,21 @@ class UserScanController @Autowired constructor(
         @ApiParam(value = "projectId")
         @PathVariable projectId: String,
         @ApiParam(value = "记录id")
-        @RequestParam("recordId") subtaskId: String
+        @RequestParam("recordId") subtaskId: String?,
+        @ApiParam(value = "方案id")
+        @RequestParam("id") planId: String?
     ): Response<Boolean> {
-        return ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
+        return when {
+            !subtaskId.isNullOrBlank() -> {
+                ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
+            }
+            !planId.isNullOrBlank() -> {
+                ResponseBuilder.success(scanService.stopScanPlan(projectId, planId))
+            }
+            else -> {
+                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+            }
+        }
     }
 
     @ApiOperation("中止制品扫描")
@@ -131,8 +144,16 @@ class UserScanController @Autowired constructor(
         @PathVariable("taskId") taskId: String,
         subtaskInfoRequest: SubtaskInfoRequest
     ): Response<Page<SubtaskInfo>> {
-        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
         subtaskInfoRequest.parentScanTaskId = taskId
         return ResponseBuilder.success(scanTaskService.subtasks(ScanPlanConverter.convert(subtaskInfoRequest)))
+    }
+
+    @ApiOperation("获取许可扫描子任务信息")
+    @GetMapping("/license/tasks/{taskId}/subtasks/{subtaskId}")
+    fun licenseSubtask(
+        @PathVariable("taskId") taskId: String,
+        @PathVariable("subtaskId") subtaskId: String
+    ): Response<FileLicensesResultOverview> {
+        return ResponseBuilder.success(scanTaskService.subtaskLicenseOverview(subtaskId))
     }
 }

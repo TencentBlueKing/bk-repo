@@ -37,10 +37,10 @@ import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
 import com.tencent.bkrepo.common.api.concurrent.PriorityCallable
 import com.tencent.bkrepo.common.api.stream.ChunkedFuture
 import com.tencent.bkrepo.common.api.stream.ChunkedFutureInputStream
-import com.tencent.bkrepo.common.api.stream.FileChunkedFutureWrapper
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.api.stream.EnhanceFileChunkedFutureWrapper
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
@@ -121,6 +121,8 @@ class CosClient(val credentials: InnerCosCredentials) {
     } else null
 
     private val useChunkedLoad = (watchDog != null) && (downloadThreadPool != null)
+
+    private val fastFallbackTimeout = config.timeout shr 1
 
     /**
      * 单连接获取文件
@@ -358,18 +360,31 @@ class CosClient(val credentials: InnerCosCredentials) {
             var priority = System.currentTimeMillis()
             while (factory.hasMoreRequests()) {
                 val downloadPartRequest = factory.nextDownloadPartRequest()
-                val task = DownloadTask(i++, downloadPartRequest, tempRootPath, session, priority)
+                val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority)
                 val futureTask = ComparableFutureTask(task)
                 executor.execute(futureTask)
-                futureList.add(FileChunkedFutureWrapper(futureTask))
+                val futureWrapper = EnhanceFileChunkedFutureWrapper(futureTask) {
+                    val getRequest = task.getComparable().downloadPartRequest
+                    this.getObject(getRequest).inputStream ?: throw InnerCosException("not found $getRequest")
+                }
+                futureList.add(futureWrapper)
                 priority += config.downloadTaskInterval
+                if (i == 0) {
+                    /*
+                    * 快速降级
+                    * 较短的时间内，第一个分块不能准备好，则抛出TimeoutException，由外层方法降级普通上传。
+                    * 可以避免在分片下载忙碌时，继续往线程池中添加任务，且长时间等待。
+                    * */
+                    futureTask.get(fastFallbackTimeout, TimeUnit.MILLISECONDS)
+                }
+                i++
             }
 
             val chunkedFutureListeners = listOf(
                 FileCleanupChunkedFutureListener(),
                 SessionChunkedFutureListener(session)
             )
-            val chunkedInput = ChunkedFutureInputStream(futureList, chunkedFutureListeners)
+            val chunkedInput = ChunkedFutureInputStream(futureList, config.timeout, chunkedFutureListeners)
             return object : DelegateInputStream(chunkedInput) {
                 override fun close() {
                     super.close()
@@ -434,7 +449,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      * */
     inner class DownloadTask(
         private val seq: Int,
-        private val downloadPartRequest: GetObjectRequest,
+        val downloadPartRequest: GetObjectRequest,
         private val rootPath: Path,
         private val session: DownloadSession,
         private val priority: Long

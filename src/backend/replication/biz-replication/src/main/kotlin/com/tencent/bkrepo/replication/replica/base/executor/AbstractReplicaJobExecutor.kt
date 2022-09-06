@@ -69,6 +69,7 @@ open class AbstractReplicaJobExecutor(
                 val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
                 require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
                 var status = ExecutionStatus.SUCCESS
+                var message: String? = null
                 taskDetail.objects.map { taskObject ->
                     val localRepo = localDataManager.findRepoByName(
                         taskDetail.task.projectId,
@@ -80,9 +81,10 @@ open class AbstractReplicaJobExecutor(
                     replicaService.replica(context)
                     if (context.status == ExecutionStatus.FAILED) {
                         status = context.status
+                        message = context.errorMessage
                     }
                 }
-                ExecutionResult(status)
+                ExecutionResult(status = status, errorReason = message)
             } catch (exception: Throwable) {
                 ExecutionResult.fail(exception.message)
             }

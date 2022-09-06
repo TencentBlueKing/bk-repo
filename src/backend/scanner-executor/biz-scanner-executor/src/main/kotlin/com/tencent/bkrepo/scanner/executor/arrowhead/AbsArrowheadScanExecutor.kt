@@ -40,7 +40,8 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils.logMsg
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.incLicenseOverview
+import com.tencent.bkrepo.scanner.executor.util.CommonUtils.buildLogMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.FileUtils
 import org.apache.commons.io.input.ReversedLinesFileReader
@@ -105,7 +106,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
     ): SubScanTaskStatus {
         val logFile = File(taskWorkDir, RESULT_FILE_NAME_LOG)
         if (!logFile.exists()) {
-            logger.info(logMsg(task, "arrowhead log file not exists"))
+            logger.info(buildLogMsg(task, "arrowhead log file not exists"))
             return status
         }
 
@@ -124,7 +125,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
                 }
             }
 
-            logger.info(logMsg(task, "scan failed: ${arrowheadLog.asReversed().joinToString("\n")}"))
+            logger.info(buildLogMsg(task, "scan failed: ${arrowheadLog.asReversed().joinToString("\n")}"))
         }
 
         return status
@@ -173,7 +174,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
         val configFile = File(taskWorkDir, scanner.configFilePath)
         configFile.writeText(content)
-        logger.info(logMsg(scanTask, "load config success"))
+        logger.info(buildLogMsg(scanTask, "load config success"))
         return configFile
     }
 
@@ -193,6 +194,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
+                ?.distinct()
                 ?.map { ApplicationItem.normalize(it) }
                 ?: emptyList()
 
@@ -218,10 +220,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
         // license risk
         applicationItems.forEach {
-            it.license?.let { license ->
-                val overviewKey = ArrowheadScanExecutorResult.overviewKeyOfLicenseRisk(license.risk)
-                overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-            }
+            it.license?.let { license -> incLicenseOverview(overview, license.risk) }
         }
 
         // sensitive count
@@ -236,7 +235,20 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
             overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
 
+        additionalOverview(overview, applicationItems, sensitiveItems, cveSecItems)
         return overview
+    }
+
+    /**
+     * 添加额外预览数据
+     */
+    protected open fun additionalOverview(
+        overview: MutableMap<String, Long>,
+        applicationItems: List<ApplicationItem>,
+        sensitiveItems: List<SensitiveItem>,
+        cveSecItems: List<CveSecItem>
+    ) {
+        // DO NOTHING
     }
 
     companion object {
@@ -251,7 +263,6 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
-
 
         // arrowhead输出日志路径
         private const val RESULT_FILE_NAME_LOG = "sysauditor.log"

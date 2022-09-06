@@ -37,6 +37,11 @@ package com.tencent.bkrepo.common.api.constant
 const val USER_KEY = "userId"
 
 /**
+ * 是否系统管理员
+ */
+const val ADMIN_USER = "admin"
+
+/**
  * 认证成功后platform写入request attributes的key
  */
 const val PLATFORM_KEY = "platformId"

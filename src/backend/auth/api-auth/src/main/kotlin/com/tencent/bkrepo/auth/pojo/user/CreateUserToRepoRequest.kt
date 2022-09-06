@@ -33,8 +33,10 @@ package com.tencent.bkrepo.auth.pojo.user
 
 import com.tencent.bkrepo.common.api.sensitive.Sensitive
 import com.tencent.bkrepo.common.api.sensitive.SensitiveType
+import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
+@ApiModel("创建用户到仓库管理员请求")
 data class CreateUserToRepoRequest(
     @ApiModelProperty("用户id")
     val userId: String,

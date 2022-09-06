@@ -83,6 +83,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -160,6 +161,11 @@ class PypiLocalRepository(
             HttpContextHolder.getClientAddress()
         )
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
+    }
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        packageVersion(context)?.let { downloadIntercept(context, it) }
     }
 
     private fun combineSameParamQuery(entry: Map.Entry<String, List<String>>): Rule.NestedRule {
@@ -364,7 +370,7 @@ class PypiLocalRepository(
             else {
                 val packageNode = nodeClient.listNode(
                     projectId, repoName, getArtifactFullPath(), includeFolder = false,
-                    deep = true
+                    deep = true, includeMetadata = true
                 ).data
                 if (packageNode.isNullOrEmpty()) {
                     throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
@@ -399,14 +405,12 @@ class PypiLocalRepository(
         val builder = StringBuilder()
         for (node in nodeList) {
             val md5 = node.md5
-            // 查询的对应的文件节点的metadata
-            val metadata = filenodeMetadata(node)
-            builder.append(
-                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${
-                    node
-                        .fullPath
-                }#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
-            )
+            builder.append("<a")
+            val requiresPython = node.metadata?.get("requires_python")?.toString()
+            if (!requiresPython.isNullOrBlank()) {
+                builder.append(" data-requires-python=\"$requiresPython\"")
+            }
+            builder.append(" href=\"../../packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
         }
         return builder.toString()
     }
@@ -427,32 +431,6 @@ class PypiLocalRepository(
             )
         }
         return builder.toString()
-    }
-
-    /**
-     * 根据每个文件节点数据去查metadata
-     * @param nodeInfo 节点
-     */
-    fun filenodeMetadata(nodeInfo: NodeInfo): List<Map<String, Any?>>? {
-        val fileNodeList: List<Map<String, Any?>>?
-        with(nodeInfo) {
-            val projectId = Rule.QueryRule("projectId", projectId)
-            val repoName = Rule.QueryRule("repoName", repoName)
-            val packageQuery = Rule.QueryRule("metadata.name", name, OperationType.EQ)
-            val fullPathQuery = Rule.QueryRule("fullPath", fullPath)
-            val rule = Rule.NestedRule(
-                mutableListOf(repoName, projectId, packageQuery, fullPathQuery),
-                Rule.NestedRule.RelationType.AND
-            )
-            val queryModel = QueryModel(
-                page = PageLimit(pageLimitCurrent, pageLimitSize),
-                sort = Sort(listOf("name"), Sort.Direction.ASC),
-                select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                rule = rule
-            )
-            fileNodeList = nodeClient.search(queryModel).data?.records
-        }
-        return fileNodeList
     }
 
     @org.springframework.beans.factory.annotation.Value("\${migrate.url:''}")
@@ -724,6 +702,20 @@ class PypiLocalRepository(
                 projectId, repoName,
                 packageKey, pypiPackagePojo.version
             )
+        }
+    }
+
+    private fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val pypiPackagePojo = try {
+                artifactInfo.getArtifactFullPath().toPypiPackagePojo()
+            } catch (e: Exception) {
+                logger.error("parse pypi package failed", e)
+                null
+            } ?: return null
+
+            val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
+            return packageClient.findVersionByName(projectId, repoName, packageKey, pypiPackagePojo.version).data
         }
     }
 

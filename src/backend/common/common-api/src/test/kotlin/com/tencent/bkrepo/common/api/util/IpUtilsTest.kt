@@ -35,6 +35,7 @@ class IpUtilsTest {
     @Test
     fun isInRangeTest() {
         val cidr = "196.168.1.0/24"
+        Assertions.assertTrue(IpUtils.isInRange("192.168.1.1", "0.0.0.0/0"))
         Assertions.assertTrue(IpUtils.isInRange("196.168.1.1", cidr))
         Assertions.assertFalse(IpUtils.isInRange("196.168.2.1", cidr))
         // invalid ip
@@ -43,8 +44,8 @@ class IpUtilsTest {
 
     @Test
     fun parseCidrTest() {
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/32") }
-        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/0") }
+        Assertions.assertThrows(IllegalArgumentException::class.java) { IpUtils.parseCidr("192.168.1.0/33") }
+        Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/0") }
         Assertions.assertDoesNotThrow() { IpUtils.parseCidr("192.168.1.0/24") }
     }
 }

@@ -33,6 +33,8 @@ package com.tencent.bkrepo.replication.pojo.request
 enum class ReplicaType {
     // 调度同步，指定时间/定时执行
     SCHEDULED,
-    // 实时同步，有新数据立即同步
-    REAL_TIME
+    // 实时同步，有新数据立即同步，可执行多次
+    REAL_TIME,
+    // 只执行一次，手动调用执行
+    RUN_ONCE
 }

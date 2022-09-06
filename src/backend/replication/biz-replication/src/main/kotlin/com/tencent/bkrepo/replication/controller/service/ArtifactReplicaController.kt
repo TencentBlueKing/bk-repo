@@ -71,7 +71,7 @@ class ArtifactReplicaController(
     private val metadataClient: MetadataClient
 ) : ArtifactReplicaClient {
 
-    @Value("\${spring.application.version}")
+    @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
 
     override fun ping(token: String) = ResponseBuilder.success()

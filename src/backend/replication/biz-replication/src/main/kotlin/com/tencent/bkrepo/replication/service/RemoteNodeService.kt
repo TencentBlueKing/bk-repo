@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.remote.RemoteInfo
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteConfigUpdateRequest
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteCreateRequest
+import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 
 interface RemoteNodeService {
     /**
@@ -62,4 +64,19 @@ interface RemoteNodeService {
      * 推送指定版本制品到对应远端集群
      */
     fun pushSpecialArtifact(projectId: String, repoName: String, packageName: String, version: String, name: String)
+
+    /**
+     * 创建一次性执行任务
+     */
+    fun createRunOnceTask(projectId: String, repoName: String, request: RemoteRunOnceTaskCreateRequest)
+
+/**
+     * 执行一次性执行任务
+     */
+    fun executeRunOnceTask(projectId: String, repoName: String, name: String)
+
+    /**
+     * 获取一次性执行任务的结果
+     */
+    fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo?
 }

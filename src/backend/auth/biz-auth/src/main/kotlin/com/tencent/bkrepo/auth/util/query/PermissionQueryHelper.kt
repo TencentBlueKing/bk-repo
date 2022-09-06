@@ -16,9 +16,9 @@ object PermissionQueryHelper {
     ): Query {
         val criteria = Criteria()
         var celeriac = criteria.orOperator(
-            Criteria.where(TPermission::users.name).`in`(uid),
+            Criteria.where(TPermission::users.name).`is`(uid),
             Criteria.where(TPermission::roles.name).`in`(roles)
-        ).and(TPermission::resourceType.name).`is`(resourceType).and(TPermission::actions.name).`in`(action)
+        ).and(TPermission::resourceType.name).`is`(resourceType).and(TPermission::actions.name).`is`(action)
         projectId?.let {
             celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
         }

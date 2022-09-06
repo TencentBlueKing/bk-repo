@@ -87,7 +87,7 @@
 
 ## 获取扫描报告详情
 
-- API: POST /scanner/api/scan/reports/detail/{projectId}/{repoName}/{artifactUri}
+- API: POST /scanner/api/scan/reports/detail/{projectId}/{repoName}/{fullPath}
 - API 名称: get_report_detail
 - 功能说明：
   - 中文：获取扫描报告详情
@@ -117,7 +117,7 @@
 |-------------------------------|--------|------|-----|----------------------------------------------------------------------------------------|-----------------|
 | projectId                     | string | 是    | 无   | 文件所属项目id                                                                               | project id      |
 | repoName                      | string | 是    | 无   | 文件所属仓库名                                                                                | repository name |
-| artifactUri                   | string | 是    | 无   | 文件路径                                                                                   | artifact uri    |
+| fullPath                      | string | 是    | 无   | 文件完整路径                                                                                 | file path       |
 | scanner                       | string | 是    | 无   | 扫描器名                                                                                   | scanner name    |
 | arguments.type                | string | 是    | 无   | 参数类型，目前支持arrowhead                                                                     | arg type        |
 | arguments.reportType          | string | 是    | 无   | 扫描报告类型，arrowhead有CHECK_SEC_ITEM,APPLICATION_ITEM,CVE_SEC_ITEM,SENSITIVE_ITEM，4种类型的扫描报告 | report type     |

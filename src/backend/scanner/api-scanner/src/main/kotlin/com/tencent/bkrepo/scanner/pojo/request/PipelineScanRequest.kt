@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.Rule
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -47,6 +48,10 @@ data class PipelineScanRequest(
     val pluginName: String? = null,
     @ApiModelProperty("扫描方案id，未指定时会创建一个generic类型的默认方案")
     val planId: String? = null,
+    @ApiModelProperty("未指定planId时默认创建的扫描方案类型")
+    val planType: String = RepositoryType.GENERIC.name,
+    @ApiModelProperty("未指定planId时默认创建的扫描方案使用的扫描器")
+    val scanner: String? = null,
     @ApiModelProperty("扫描文件匹配规则")
     val rule: Rule,
     @ApiModelProperty("用于通知扫描结果的企业微信群机器人")

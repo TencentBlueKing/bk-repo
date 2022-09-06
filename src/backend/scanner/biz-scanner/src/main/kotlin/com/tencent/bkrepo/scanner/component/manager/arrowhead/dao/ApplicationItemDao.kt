@@ -29,7 +29,30 @@ package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
 import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItemData
+import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import org.bson.BsonRegularExpression
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
 
 @Repository
-class ApplicationItemDao : ResultItemDao<TApplicationItem>()
+class ApplicationItemDao : ResultItemDao<TApplicationItem>() {
+    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
+        require(arguments is ArrowheadLoadResultArguments)
+        if (arguments.riskLevels.isNotEmpty()) {
+            criteria.and(dataKey(TApplicationItemData::risk.name)).inValues(arguments.riskLevels)
+        }
+        if (arguments.licenseIds.isNotEmpty()) {
+            val licenseIdExpressions = arguments.licenseIds.map { BsonRegularExpression("^$it$", "i") }
+            criteria.and(dataKey(TApplicationItemData::licenseName.name)).inValues(licenseIdExpressions)
+        } else {
+            // 只查找存在license的项
+            criteria.and(dataKey(TApplicationItemData::licenseName.name)).exists(true)
+        }
+        return criteria
+    }
+
+    private fun dataKey(name: String) = "${TApplicationItem::data.name}.$name"
+}

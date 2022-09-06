@@ -35,5 +35,7 @@ data class ScannerBase(
     @ApiModelProperty("扫描器名")
     val name: String,
     @ApiModelProperty("扫描器类型")
-    val type: String
+    val type: String,
+    @ApiModelProperty("扫描器描述信息")
+    val description: String
 )

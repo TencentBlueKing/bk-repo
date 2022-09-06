@@ -30,8 +30,10 @@ package com.tencent.bkrepo.scanner.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -55,9 +57,13 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
@@ -65,6 +71,8 @@ import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.RuleUtil
+import com.tencent.bkrepo.scanner.utils.ScanLicenseConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
@@ -111,8 +119,13 @@ class ScanTaskServiceImpl(
     }
 
     override fun subtasks(request: SubtaskInfoRequest): Page<SubtaskInfo> {
-        if (request.parentScanTaskId == null) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+        val scanTask = request.parentScanTaskId?.let { scanTaskDao.findByProjectIdAndId(request.projectId, it) }
+            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request.parentScanTaskId ?: "taskId")
+        val repos = RuleUtil.getRepoNames(scanTask.rule?.readJsonString())
+        if (repos.isEmpty()) {
+            permissionCheckHandler.checkProjectPermission(request.projectId, PermissionAction.MANAGE)
+        } else {
+            permissionCheckHandler.checkReposPermission(request.projectId, repos, PermissionAction.READ)
         }
         return subtasks(request, archiveSubScanTaskDao)
     }
@@ -152,8 +165,13 @@ class ScanTaskServiceImpl(
     override fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail {
         with(request) {
             val node = artifactInfo!!.run {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath())
-            }.data!!
+                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                    ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, getArtifactFullPath())
+            }
+            if (node.folder) {
+                throw ParameterInvalidException(node.fullPath)
+            }
+
             val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
 
             val scanner = scannerService.get(scanner)
@@ -171,11 +189,19 @@ class ScanTaskServiceImpl(
     }
 
     override fun resultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo> {
-        return resultDetail(request, planArtifactLatestSubScanTaskDao)
+        return resultDetail(
+            request, request.subScanTaskId!!, planArtifactLatestSubScanTaskDao,
+            { converter, req -> converter.convertToLoadArguments(req) },
+            { converter, report -> converter.convertCveResult(report) }
+        ) ?: Pages.buildPage(emptyList(), request.pageSize, request.pageNumber)
     }
 
     override fun archiveSubtaskResultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo> {
-        return resultDetail(request, archiveSubScanTaskDao)
+        return resultDetail(
+            request, request.subScanTaskId!!, archiveSubScanTaskDao,
+            { converter, req -> converter.convertToLoadArguments(req) },
+            { converter, report -> converter.convertCveResult(report) }
+        ) ?: Pages.buildPage(emptyList(), request.pageSize, request.pageNumber)
     }
 
     private fun subtaskOverview(subtaskId: String, subtaskDao: AbsSubScanTaskDao<*>): SubtaskResultOverview {
@@ -201,30 +227,63 @@ class ScanTaskServiceImpl(
         }
     }
 
-    private fun resultDetail(
-        request: ArtifactVulnerabilityRequest,
-        subScanTaskDao: AbsSubScanTaskDao<*>
-    ): Page<ArtifactVulnerabilityInfo> {
-        with(request) {
-            val subtask = subScanTaskDao.findById(subScanTaskId!!)
-                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+    override fun resultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail> {
+        return resultDetail(
+            request, request.subScanTaskId!!, planArtifactLatestSubScanTaskDao,
+            { converter, req -> converter.convertToLoadArguments(req) },
+            { converter, report -> converter.convertLicenseResult(report) }
+        ) ?: Pages.buildPage(emptyList(), request.pageSize, request.pageNumber)
+    }
 
-            try {
-                permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
-            } catch (e: RepoNotFoundException) {
-                logger.info("Failed to checkSubtaskPermission: ", e)
-                permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
-            }
+    override fun planLicensesArtifact(projectId: String, subScanTaskId: String): FileLicensesResultOverview {
+        return planLicensesArtifact(subScanTaskId, planArtifactLatestSubScanTaskDao)
+    }
 
-            val scanner = scannerService.get(subtask.scanner)
-            val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)]
-            val arguments = scannerConverter?.convertToLoadArguments(request)
-            val scanResultManager = resultManagers[subtask.scannerType]
-            val detailReport = scanResultManager?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
+    override fun archiveSubtaskResultDetail(request: ArtifactLicensesDetailRequest): Page<FileLicensesResultDetail> {
+        return resultDetail(
+            request, request.subScanTaskId!!, archiveSubScanTaskDao,
+            { converter, req -> converter.convertToLoadArguments(req) },
+            { converter, report -> converter.convertLicenseResult(report) }
+        ) ?: Pages.buildPage(emptyList(), request.pageSize, request.pageNumber)
+    }
 
-            return detailReport
-                ?.let { scannerConverter?.convertCveResult(it) }
-                ?: Pages.buildPage(emptyList(), pageSize, pageNumber)
+    override fun subtaskLicenseOverview(subtaskId: String): FileLicensesResultOverview {
+        return planLicensesArtifact(subtaskId, archiveSubScanTaskDao)
+    }
+
+    private fun <Req, Res> resultDetail(
+        request: Req,
+        subtaskId: String,
+        subScanTaskDao: AbsSubScanTaskDao<*>,
+        convertToArgs: (converter: ScannerConverter, req: Req) -> LoadResultArguments,
+        convertToRes: (converter: ScannerConverter, report: Any) -> Page<Res>
+    ): Page<Res>? {
+        val subtask = subScanTaskDao.findById(subtaskId)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
+
+        try {
+            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        } catch (e: RepoNotFoundException) {
+            logger.info("Failed to checkSubtaskPermission: ", e)
+            permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
         }
+
+        val scanner = scannerService.get(subtask.scanner)
+        val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)] ?: return null
+        val arguments = convertToArgs(scannerConverter, request)
+        val scanResultManager = resultManagers[subtask.scannerType]
+        return scanResultManager
+            ?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
+            ?.let { convertToRes(scannerConverter, it) }
+    }
+
+    private fun planLicensesArtifact(
+        subScanTaskId: String,
+        subtaskDao: AbsSubScanTaskDao<*>
+    ): FileLicensesResultOverview {
+        val subtask = subtaskDao.findById(subScanTaskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
+        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        return ScanLicenseConverter.convert(subtask)
     }
 }

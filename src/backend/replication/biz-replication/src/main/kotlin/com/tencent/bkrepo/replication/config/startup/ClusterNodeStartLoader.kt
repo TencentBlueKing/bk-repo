@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.replication.config.startup
 
-import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
-import com.tencent.bkrepo.common.artifact.cluster.RoleType
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.RoleType
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService

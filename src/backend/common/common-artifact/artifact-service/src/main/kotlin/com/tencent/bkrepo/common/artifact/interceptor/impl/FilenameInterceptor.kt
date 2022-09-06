@@ -34,7 +34,7 @@ import org.springframework.util.AntPathMatcher
 /**
  * 文件名下载拦截器
  */
-class FilenameInterceptor(override val rules: Map<String, Any>) : DownloadInterceptor<String>(rules) {
+class FilenameInterceptor(rules: Map<String, Any>) : DownloadInterceptor<String, NodeDetail>(rules) {
 
     /**
      * 示例：
@@ -47,8 +47,8 @@ class FilenameInterceptor(override val rules: Map<String, Any>) : DownloadInterc
         return rules[FILENAME]!!.toString()
     }
 
-    override fun matcher(node: NodeDetail, rule: String): Boolean {
-        return AntPathMatcher().match(rule, node.name)
+    override fun matcher(artifact: NodeDetail, rule: String): Boolean {
+        return AntPathMatcher().match(rule, artifact.name)
     }
 
     companion object {

@@ -39,6 +39,8 @@ data class PackageConstraint(
     val packageKey: String? = null,
     @ApiModelProperty("包版本列表")
     val versions: List<String>? = null,
+    @ApiModelProperty("目标包存储版本:将源版本经过分发后存储为指定的目标版本，在源版本只有一个时生效,只针对镜像类型")
+    val targetVersions: List<String>? = null,
     @ApiModelProperty("包正则匹配规则")
     val packageRegex: List<String>? = null,
     @ApiModelProperty("包版本正则匹配规则")

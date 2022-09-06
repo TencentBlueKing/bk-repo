@@ -32,17 +32,14 @@ function _M:get_addr(service_name)
     if ngx.var.name_space ~= "" then
         return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
     end
+    
+    -- boot assembly部署
+    if config.service_name ~= nil and config.service_name ~= ""  then
+        return config.bkrepo.domain
+    end
 
     local ns_config = config.ns
     local tag = ns_config.tag
-
-    -- router by project
-    for _, value in ipairs(config.router.project) do
-        local prefix = value.name .. "/"
-        if service_name == "generic" and stringUtil:startswith(ngx.var.path, prefix) then
-            tag = value.tag
-        end
-    end
 
     local query_subdomain = tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
 

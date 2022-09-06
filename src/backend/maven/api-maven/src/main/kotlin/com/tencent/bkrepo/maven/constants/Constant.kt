@@ -38,6 +38,11 @@ const val FULL_PATH = "fullPath"
 const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
 
+const val METADATA_KEY_PACKAGING = "packaging"
+const val METADATA_KEY_GROUP_ID = "groupId"
+const val METADATA_KEY_ARTIFACT_ID = "artifactId"
+const val METADATA_KEY_VERSION = "version"
+const val METADATA_KEY_CLASSIFIER = "classifier"
 
 const val PACKAGE_SUFFIX_REGEX =
     "(.+)\\.(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"

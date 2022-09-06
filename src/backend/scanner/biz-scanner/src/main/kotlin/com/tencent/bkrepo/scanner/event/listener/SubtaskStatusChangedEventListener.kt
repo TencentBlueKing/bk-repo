@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.scanner.event.listener
 
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
@@ -55,6 +57,7 @@ class SubtaskStatusChangedEventListener(
     @EventListener(SubtaskStatusChangedEvent::class)
     fun listen(event: SubtaskStatusChangedEvent) {
         with(event.subtask) {
+            recordSubtask(event.subtask)
             // 未指定扫描方案表示为系统级别触发的扫描，不更新元数据
             if (planId == null) {
                 return
@@ -96,6 +99,15 @@ class SubtaskStatusChangedEventListener(
                 packageMetadataClient.saveMetadata(request)
             }
             logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
+        }
+    }
+
+    /**
+     * 打印子任务详情，用于数据分析
+     */
+    private fun recordSubtask(subtask: TPlanArtifactLatestSubScanTask) {
+        if (SubScanTaskStatus.finishedStatus(subtask.status)) {
+            logger.info(subtask.toJsonString().replace(System.lineSeparator(), ""))
         }
     }
 

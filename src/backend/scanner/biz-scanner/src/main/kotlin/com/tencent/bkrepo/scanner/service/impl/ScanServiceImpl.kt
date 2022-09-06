@@ -122,7 +122,7 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun pipelineScan(pipelineScanRequest: PipelineScanRequest): ScanTask {
         with(pipelineScanRequest) {
-            val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId)
+            val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId, planType, scanner)
             val metadata = if (pid != null && bid != null) {
                 val data = ArrayList<TaskMetadata>()
                 pid?.let { data.add(TaskMetadata(key = TASK_METADATA_KEY_PID, value = it)) }
@@ -132,7 +132,7 @@ class ScanServiceImpl @Autowired constructor(
                 pipelineName?.let { data.add(TaskMetadata(key = TASK_METADATA_PIPELINE_NAME, value = it)) }
                 data
             } else {
-                emptyList<TaskMetadata>()
+                emptyList()
             }
             val scanRequest = ScanRequest(rule = rule, planId = defaultScanPlan.id!!, metadata = metadata)
             val task = createTask(scanRequest, ScanTriggerType.PIPELINE, SecurityUtils.getUserId())
@@ -186,6 +186,15 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
+    override fun stopScanPlan(projectId: String, planId: String): Boolean {
+        val unFinishedTasks = scanTaskDao.findUnFinished(projectId, planId)
+        unFinishedTasks.forEach {
+            stopTask(projectId, it.id!!)
+        }
+        return true
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
             logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
@@ -202,7 +211,7 @@ class ScanServiceImpl @Autowired constructor(
 
             // 统计任务耗时
             scannerMetrics.record(
-                subScanTask.fullPath, subScanTask.size, subScanTask.scanner, startTimestamp, finishedTimestamp
+                subScanTask.fullPath, subScanTask.packageSize, subScanTask.scanner, startTimestamp, finishedTimestamp
             )
 
             // 更新文件扫描结果
@@ -294,7 +303,7 @@ class ScanServiceImpl @Autowired constructor(
             val scanPlan = planId?.let { scanPlanDao.findById(it) }
             val event = ScanTaskStatusChangedEvent(
                 ScanTaskStatus.SCANNING_SUBMITTED,
-                Converter.convert(scanTaskDao.findById(parentTaskId)!!, scanPlan)
+                Converter.convert(scanTaskDao.findById(parentTaskId)!!, scanPlan, compatible = false)
             )
             publisher.publishEvent(event)
             logger.info("scan finished, task[$parentTaskId]")
@@ -319,7 +328,7 @@ class ScanServiceImpl @Autowired constructor(
 
             val oldStatus = SubScanTaskStatus.valueOf(subScanTask.status)
             val scanner = scannerService.get(subScanTask.scanner)
-            val maxScanDuration = scanner.maxScanDuration(subScanTask.size)
+            val maxScanDuration = scanner.maxScanDuration(subScanTask.packageSize)
             // 多加1分钟，避免执行器超时后正在上报结果又被重新触发
             val timeoutDateTime = LocalDateTime.now().plus(maxScanDuration, ChronoUnit.MILLIS).plusMinutes(1L)
             val updateResult = subScanTaskDao.updateStatus(
@@ -371,7 +380,7 @@ class ScanServiceImpl @Autowired constructor(
             archiveSubScanTaskDao.deleteByParentTaskId(task.id)
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
-            scanTaskScheduler.schedule(Converter.convert(resetTask, plan))
+            scanTaskScheduler.schedule(Converter.convert(resetTask, plan, compatible = false))
         }
     }
 
@@ -426,9 +435,18 @@ class ScanServiceImpl @Autowired constructor(
 
             val plan = planId?.let { scanPlanDao.get(it) }
             val projectId = projectId(rule, plan)
-            val rule = RuleConverter.convert(rule, plan?.type, projectId)
-            userId?.let { permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, it) }
+            val repoNames = RuleUtil.getRepoNames(rule)
 
+            // 校验权限
+            if (userId != null) {
+                if (repoNames.isEmpty()) {
+                    permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, userId)
+                } else {
+                    permissionCheckHandler.checkReposPermission(projectId, repoNames, PermissionAction.READ, userId)
+                }
+            }
+
+            val rule = RuleConverter.convert(rule, plan?.type, projectId)
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
@@ -454,7 +472,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanResultOverview = emptyMap(),
                     metadata = metadata
                 )
-            ).run { Converter.convert(this, plan, force) }
+            ).run { Converter.convert(this, plan, force, false) }
             plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             logger.info("create scan task[${scanTask.taskId}] success")
@@ -471,6 +489,7 @@ class ScanServiceImpl @Autowired constructor(
                 val pluginName = metadataMap[TASK_METADATA_PLUGIN_NAME]?.value ?: ""
                 "$pipelineName-$buildNo-$pluginName"
             }
+
             ScanTriggerType.MANUAL_SINGLE -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
             else -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
         }

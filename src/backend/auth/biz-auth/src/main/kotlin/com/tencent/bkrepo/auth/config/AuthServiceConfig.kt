@@ -52,17 +52,27 @@ import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import org.springframework.core.Ordered
 import org.springframework.data.mongodb.core.MongoTemplate
 
 @Configuration
 @AutoConfigureOrder(Ordered.LOWEST_PRECEDENCE)
 class AuthServiceConfig {
+
+    @Autowired
+    @Lazy
+    private lateinit var repositoryClient: RepositoryClient
+
+    @Autowired
+    @Lazy
+    private lateinit var projectClient: ProjectClient
 
     @Bean
     @ConditionalOnMissingBean(AccountService::class)
@@ -79,11 +89,8 @@ class AuthServiceConfig {
         userRepository: UserRepository,
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
-        mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient,
-        projectClient: ProjectClient
+        mongoTemplate: MongoTemplate
     ): PermissionService {
-        logger.debug("init PermissionServiceImpl")
         return PermissionServiceImpl(
             userRepository,
             roleRepository,
@@ -101,19 +108,16 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient,
-        projectClient: ProjectClient,
         bkiamService: BkiamService
     ): PermissionService {
-        logger.debug("init BkiamPermissionServiceImpl")
         return BkiamPermissionServiceImpl(
             userRepository,
             roleRepository,
             permissionRepository,
             mongoTemplate,
+            bkiamService,
             repositoryClient,
-            projectClient,
-            bkiamService
+            projectClient
         )
     }
 
@@ -124,8 +128,6 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient,
-        projectClient: ProjectClient,
         bkAuthConfig: BkAuthConfig,
         bkAuthPipelineService: BkAuthPipelineService,
         bkAuthProjectService: BkAuthProjectService
@@ -136,11 +138,11 @@ class AuthServiceConfig {
             roleRepository,
             permissionRepository,
             mongoTemplate,
-            repositoryClient,
-            projectClient,
             bkAuthConfig,
             bkAuthPipelineService,
-            bkAuthProjectService
+            bkAuthProjectService,
+            repositoryClient,
+            projectClient
         )
     }
 

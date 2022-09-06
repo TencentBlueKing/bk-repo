@@ -54,9 +54,9 @@ class BkiamPermissionServiceImpl constructor(
     roleRepository: RoleRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
-    repositoryClient: RepositoryClient,
-    projectClient: ProjectClient,
-    private val bkiamService: BkiamService
+    private val bkiamService: BkiamService,
+    val repositoryClient: RepositoryClient,
+    val projectClient: ProjectClient
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
