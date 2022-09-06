@@ -1,17 +1,17 @@
-# 制品扫描介绍
+# 制品分析介绍
 
-制品扫描功能主要由`scanner`和`scanner-executor`两个服务构成
+制品分析功能主要由`analyst`和`analysis-executor`两个服务构成
 
-`scanner`服务负责管理扫描器、扫描任务、扫描报告存取
+`analyst`服务负责管理扫描器、扫描任务、扫描报告存取
 
-`scanner-executor`是实际执行扫描任务的服务，通过`scanner`服务创建的任务最终都将由`scanner-executor`执行，
-执行完后再将扫描结果上报到`scanner`服务
+`analysis-executor`是实际执行扫描任务的服务，通过`analyst`服务创建的任务最终都将由`analysis-executor`执行，
+执行完后再将扫描结果上报到`analyst`服务
 
 # 如何执行扫描
 
 下面提到的接口详情见api文档
 
-1. 通过`/api/scanner/api/scanners`接口创建扫描器
+1. 通过`/api/scanners`接口创建扫描器
 2. 通过`/api/scan`接口指定使用的扫描器和要扫描的文件，创建扫描任务
 3. 通过`/api/scan/tasks/{taskId}`接口获取扫描任务信息，查看当前任务状态和进度
 4. 扫描结束后可以通过`api/scan/reports/overview`接口获取指定文件的扫描结果预览信息， 或者通过`/api/scan/reports/detail/{artifactUri}`获取指定文件的详细扫描报告

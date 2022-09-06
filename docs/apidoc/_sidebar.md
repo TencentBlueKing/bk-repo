@@ -34,7 +34,7 @@
   - [docker扩展接口](/apidoc/registry/docker.md)
   - [npm扩展接口](/apidoc/registry/npm.md)
   - [rpm扩展接口](/apidoc/registry/rpm.md)
-- **制品扫描**
+- **制品分析**
   - [许可证扫描](/apidoc/scanner/license.md)
   - [扫描器管理](/apidoc/scanner/scanner.md)
   - [扫描](/apidoc/scanner/scan.md)

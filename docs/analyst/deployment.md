@@ -1,6 +1,6 @@
 # 服务部署
 
-## scanner服务
+## analyst服务
 
 ### 配置
 
@@ -26,7 +26,7 @@ scanner:
         uri: mongoUri
 ```
 
-## scanner-executor服务
+## analysis-executor服务
 
 ### 配置
 
@@ -54,5 +54,5 @@ scanner:
 ### 依赖
 
 - docker daemon
-- 扫描器依赖容器镜像时机器上要有对应的容器镜像，不存在镜像但是可以拉取到时scanner-executor服务会自动拉取
+- 扫描器依赖容器镜像时机器上要有对应的容器镜像，不存在镜像但是可以拉取到时analysis-executor服务会自动拉取
 - 运行服务器最好是8C/16G 以上的配置，因为扫描器目前还比较消耗资源

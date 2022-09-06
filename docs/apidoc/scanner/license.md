@@ -136,7 +136,7 @@
 
 ## 导入许可证数据（页面功能不使用）
 
-- API：GET /scanner/api/license/import
+- API：GET /analyst/api/license/import
 - API 名称：import_license_data
 - 功能说明：
   - 中文：接口导入许可证数据
@@ -164,7 +164,7 @@
 
 ## 分页查询许可证信息
 
-- API：GET /scanner/api/license/list
+- API：GET /analyst/api/license/list
 - API 名称：query_license_data
 - 功能说明：
   - 中文：分页查询许可证数据
@@ -225,7 +225,7 @@
 
 ## 查询所有许可信息（页面功能不使用）
 
-- API：GET /scanner/api/license/all
+- API：GET /analyst/api/license/all
 - API 名称：query_all_license_data
 - 功能说明：
   - 中文：查询所有许可证数据
@@ -269,7 +269,7 @@
 
 ## 查询许可证详细信息
 
-- API：GET /scanner/api/license/info
+- API：GET /analyst/api/license/info
 - API 名称：query_license_info
 - 功能说明：
   - 中文：查询许可证详细信息
@@ -316,7 +316,7 @@
 
 ## 更新许可证信息(切换【合规】/【不合规】)
 
-- API：POST /scanner/api/license/{licenseId}
+- API：POST /analyst/api/license/{licenseId}
 - API 名称：update_license_info
 - 功能说明：
   - 中文：更新许可证信息
