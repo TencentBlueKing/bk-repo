@@ -57,7 +57,7 @@
                         :list="[
                             !row.readOnly && { label: '设置', clickEvent: () => showScanConfig(row) },
                             { label: '中止', clickEvent: () => stopScanHandler(row) },
-                            !row.readOnly && { label: '扫描', clickEvent: () => startScanHandler(row) },
+                            !row.readOnly && { label: '立即扫描', clickEvent: () => startScanHandler(row) },
                             !row.readOnly && { label: '删除', clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>
                 </template>

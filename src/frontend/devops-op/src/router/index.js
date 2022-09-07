@@ -150,7 +150,7 @@ export const asyncRoutes = [
     alwaysShow: true,
     redirect: '/scan/scanners',
     component: Layout,
-    meta: { title: '制品扫描管理', icon: 'scan' },
+    meta: { title: '制品分析管理', icon: 'scan' },
     children: [
       {
         path: 'scanners',
@@ -162,7 +162,7 @@ export const asyncRoutes = [
         path: 'configurations',
         name: ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS,
         component: () => import('@/views/scan/ProjectScanConfiguration'),
-        meta: { title: '项目扫描配置', icon: 'setting' }
+        meta: { title: '项目配置', icon: 'setting' }
       }
     ]
   },

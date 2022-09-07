@@ -48,7 +48,7 @@
                                             disabled: ($version.stageTag || '').includes('@release')
                                         },
                                         repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
-                                        showRepoScan && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) }
+                                        showRepoScan && { label: '扫描制品', clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
                                     showRepoScan && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
@@ -68,7 +68,7 @@
                 </version-detail>
             </div>
         </div>
-        
+
         <common-form-dialog ref="commonFormDialog" @refresh="refresh"></common-form-dialog>
     </div>
 </template>
@@ -244,7 +244,7 @@
                 this.$refs.commonFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: '安全扫描',
+                    title: '扫描制品',
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,

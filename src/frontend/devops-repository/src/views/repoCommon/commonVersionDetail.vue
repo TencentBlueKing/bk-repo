@@ -237,7 +237,7 @@
                     ...(!metadataMap.forbidStatus
                         ? [
                             this.permission.edit && { clickEvent: () => this.$emit('tag'), label: '晋级', disabled: (basic.stageTag || '').includes('@release') },
-                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: '安全扫描' }
+                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: '扫描制品' }
                         ]
                         : []),
                     this.showRepoScan && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },

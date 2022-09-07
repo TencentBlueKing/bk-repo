@@ -1,6 +1,6 @@
 import Vue from 'vue'
 
-const prefix = 'scanner/api/scan'
+const prefix = 'analyst/api/scan'
 
 export default {
     // 创建扫描方案
@@ -236,15 +236,15 @@ export default {
     },
     // 获取扫描器列表
     getScannerList () {
-        return Vue.prototype.$ajax.get('/scanner/api/scanners/base')
+        return Vue.prototype.$ajax.get('/analyst/api/scanners/base')
     },
     // 获取质量规则
     getQualityRule (_, { type, id }) {
-        return Vue.prototype.$ajax.get(`/scanner/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`)
+        return Vue.prototype.$ajax.get(`/analyst/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`)
     },
     // 更新质量规则
     saveQualityRule (_, { type, id, body }) {
-        return Vue.prototype.$ajax.post(`/scanner/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`, body)
+        return Vue.prototype.$ajax.post(`/analyst/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`, body)
     },
     // 查询任务列表
     getScanTaskList (_, { projectId, planId, triggerType, namePrefix, current = 1, limit = 20 }) {
@@ -287,7 +287,7 @@ export default {
     // 查询许可证列表
     getLicenseList (_, { name, isTrust, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.get(
-            'scanner/api/license/list',
+            'analyst/api/license/list',
             {
                 params: {
                     name,
@@ -301,7 +301,7 @@ export default {
     // 设置许可证
     editLicense (_, { licenseId, isTrust }) {
         return Vue.prototype.$ajax.post(
-            `scanner/api/license/${licenseId}`,
+            `analyst/api/license/${licenseId}`,
             {
                 isTrust
             }

@@ -106,7 +106,7 @@
                             <span class="ml10">{{row.name}}</span>
                         </template>
                     </bk-table-column>
-                    
+
                     <bk-table-column :label="$t('metadata')">
                         <template #default="{ row }">
                             <metadata-tag :metadata="row.nodeMetadata" />
@@ -149,7 +149,7 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1')) && { clickEvent: () => handlerScan(row), label: '安全扫描' }
+                                            genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1')) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
@@ -436,7 +436,7 @@
             // 树组件选中文件夹
             itemClickHandler (node) {
                 this.selectedTreeNode = node
-                
+
                 this.handlerPaginationChange()
                 // 更新已展开文件夹数据
                 const reg = new RegExp(`^${node.roadMap}`)
@@ -532,7 +532,7 @@
                 this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: '安全扫描',
+                    title: '扫描制品',
                     type: 'scan',
                     id: '',
                     name,
@@ -708,7 +708,7 @@
                     isLoading: true,
                     path: row.fullPath
                 })
-                
+
                 const res = await this.previewCompressedFileList({
                     projectId: row.projectId,
                     repoName: row.repoName,
@@ -727,7 +727,7 @@
                     return acc
                 }, [])
             },
-            
+
             async handleShowPreview (row) {
                 const { projectId, repoName, path, filePath } = row
                 this.$refs.previewBasicFileDialog.setDialogData({
@@ -743,7 +743,7 @@
                 })
                 this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
-            
+
             getBtnDisabled (name) {
                 return name.endsWith('txt')
                     || name.endsWith('sh')
