@@ -52,7 +52,12 @@ import java.io.File
 
 abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
-    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+    override fun doScan(
+        taskWorkDir: File,
+        scannerInputFile: File,
+        sha256: String,
+        task: ScanExecutorTask
+    ): SubScanTaskStatus {
         val analysisSubType = if (task.repoType == RepositoryType.DOCKER.name) {
             ANALYSIS_SUB_TYPE_DOCKER
         } else {

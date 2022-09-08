@@ -53,6 +53,4 @@ class ApplicationItemDao : ResultItemDao<TApplicationItem>() {
         }
         return criteria
     }
-
-    private fun dataKey(name: String) = "${TApplicationItem::data.name}.$name"
 }

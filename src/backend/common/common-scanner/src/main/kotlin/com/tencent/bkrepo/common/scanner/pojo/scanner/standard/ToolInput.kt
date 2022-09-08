@@ -25,17 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result
+package com.tencent.bkrepo.common.scanner.pojo.scanner.standard
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+/**
+ * 分析工具输入
+ *
+ * 分析工具有两种形式的输入参数
+ * 1. --input /path/to/input.json指定输入文件参数，input.json数据格式与本类相同
+ * 2. 分析工具输入参数为--token xxx --taskId xxx --bkrepoBaseUrl xxx时调用分析管理服务接口返回的数据格式与本类相同
+ */
+data class ToolInput(
+    /**
+     * 子任务id
+     */
+    val taskId: String,
+    /**
+     * 制品类型
+     */
+    val packageType: String,
+    /**
+     * 工具配置
+     */
+    val toolConfig: ToolConfig,
+    /**
+     * 待分析文件路径
+     * fileUrls与filePath只有一个字段非null
+     * packageType为DOCKER时指向的是镜像tar包路径
+     */
+    val filePath: String? = null,
+    /**
+     * 待分析文件sha256，仅filePath字段非null时存在
+     */
+    val sha256: String? = null,
+    /**
+     * 仅当从分析管理服务拉取input.json时存在
+     * 存在多个url时候第一个为manifest，工具可根据manifest组装成tar，或直接扫描layer
+     */
+    val fileUrls: List<FileUrl>? = null
+)
 
-@ApiModel("scancode_toolkit扫描器扫描结果")
-data class ScanCodeToolkitScanExecutorResult(
-    override val scanStatus: String,
-    override var overview: Map<String, Any?>,
-    @ApiModelProperty("结果")
-    val scancodeItem: Set<ScancodeItem>
-) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
+data class FileUrl(val url: String, val sha256: String)
+data class ToolConfig(val args: List<StandardScanner.Argument>)

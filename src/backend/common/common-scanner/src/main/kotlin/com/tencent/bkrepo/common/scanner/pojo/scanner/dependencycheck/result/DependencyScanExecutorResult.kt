@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("DependencyCheck扫描器扫描结果")
 data class DependencyScanExecutorResult(
     override val scanStatus: String,
-    override val overview: Map<String, Any?>,
+    override var overview: Map<String, Any?>,
     @ApiModelProperty("结果")
     val dependencyItems: List<DependencyItem>
 ) : ScanExecutorResult(scanStatus, overview, DependencyScanner.TYPE)

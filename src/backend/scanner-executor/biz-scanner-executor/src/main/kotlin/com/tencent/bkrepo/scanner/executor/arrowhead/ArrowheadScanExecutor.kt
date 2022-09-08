@@ -91,7 +91,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         // 执行扫描
         val result = dockerScanHelper.scan(
             containerConfig.image, Binds(tmpBind, bind), listOf(containerConfig.args),
-            taskWorkDir, scannerInputFile, task
+            scannerInputFile, task
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
@@ -99,8 +99,8 @@ class ArrowheadScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
-        if (task.repoType == RepositoryType.DOCKER.name) {
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
+        return if (task.repoType == RepositoryType.DOCKER.name) {
             scannerInputFile.parentFile.mkdirs()
             scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
         } else {

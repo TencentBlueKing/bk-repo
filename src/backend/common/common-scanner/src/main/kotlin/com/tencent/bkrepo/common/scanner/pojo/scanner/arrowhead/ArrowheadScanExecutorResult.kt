@@ -34,7 +34,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("arrowhead扫描器扫描结果")
 data class ArrowheadScanExecutorResult(
     override val scanStatus: String,
-    override val overview: Map<String, Any?>,
+    override var overview: Map<String, Any?>,
     @ApiModelProperty("安全审计结果")
     val checkSecItems: List<CheckSecItem>,
     @ApiModelProperty("License审计结果")

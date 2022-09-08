@@ -25,17 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result
+package com.tencent.bkrepo.scanner.component.manager.standard.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.scanner.component.manager.ResultItem
+import org.springframework.data.mongodb.core.mapping.Document
 
-@ApiModel("scancode_toolkit扫描器扫描结果")
-data class ScanCodeToolkitScanExecutorResult(
-    override val scanStatus: String,
-    override var overview: Map<String, Any?>,
-    @ApiModelProperty("结果")
-    val scancodeItem: Set<ScancodeItem>
-) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
+@Document("license_result")
+class TLicenseResult(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: LicenseResult
+) : ResultItem<LicenseResult>(id, credentialsKey, sha256, scanner, data)

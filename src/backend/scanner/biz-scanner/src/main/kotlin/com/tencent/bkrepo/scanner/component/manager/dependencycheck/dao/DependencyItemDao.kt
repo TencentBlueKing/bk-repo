@@ -48,6 +48,4 @@ class DependencyItemDao : ResultItemDao<TDependencyItem>() {
         }
         return criteria
     }
-
-    private fun dataKey(name: String) = "${TDependencyItem::data.name}.$name"
 }

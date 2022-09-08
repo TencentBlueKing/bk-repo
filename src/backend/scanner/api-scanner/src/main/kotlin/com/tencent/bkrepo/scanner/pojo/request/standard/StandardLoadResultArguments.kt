@@ -25,17 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result
+package com.tencent.bkrepo.scanner.pojo.request.standard
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("scancode_toolkit扫描器扫描结果")
-data class ScanCodeToolkitScanExecutorResult(
-    override val scanStatus: String,
-    override var overview: Map<String, Any?>,
-    @ApiModelProperty("结果")
-    val scancodeItem: Set<ScancodeItem>
-) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
+class StandardLoadResultArguments(
+    @ApiModelProperty("需要的cve列表")
+    val vulIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的漏洞严重性等级列表")
+    val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("需要的许可id列表")
+    val licenseIds: List<String> = emptyList(),
+    @ApiModelProperty("扫描结果类型")
+    val reportType: String,
+    @ApiModelProperty("分页参数")
+    val pageLimit: PageLimit = PageLimit()
+) : LoadResultArguments(StandardScanner.TYPE)

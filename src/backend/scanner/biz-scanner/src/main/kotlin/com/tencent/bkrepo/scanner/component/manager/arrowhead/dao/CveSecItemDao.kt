@@ -86,6 +86,4 @@ class CveSecItemDao : ResultItemDao<TCveSecItem>() {
             criteria.orOperator(Criteria.where(key).inValues(vulIds))
         }
     }
-
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
 }

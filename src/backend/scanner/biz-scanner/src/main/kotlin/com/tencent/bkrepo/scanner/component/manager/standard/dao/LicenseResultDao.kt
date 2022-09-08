@@ -25,17 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result
+package com.tencent.bkrepo.scanner.component.manager.standard.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
+import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
+import com.tencent.bkrepo.scanner.component.manager.standard.model.TLicenseResult
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.standard.StandardLoadResultArguments
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.stereotype.Repository
 
-@ApiModel("scancode_toolkit扫描器扫描结果")
-data class ScanCodeToolkitScanExecutorResult(
-    override val scanStatus: String,
-    override var overview: Map<String, Any?>,
-    @ApiModelProperty("结果")
-    val scancodeItem: Set<ScancodeItem>
-) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
+@Repository
+class LicenseResultDao : ResultItemDao<TLicenseResult>() {
+    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
+        require(arguments is StandardLoadResultArguments)
+        if (arguments.licenseIds.isNotEmpty()) {
+            criteria.and(dataKey(ScancodeItem::licenseId.name)).inValues(arguments.licenseIds)
+        }
+        return criteria
+    }
+}

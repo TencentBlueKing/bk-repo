@@ -42,8 +42,8 @@ abstract class CommonScanExecutor : ScanExecutor {
         val taskWorkDir = createTaskWorkDir(workDir(), task.scanner.rootPath, task.taskId)
         try {
             val scannerInputFile = scannerInputFile(taskWorkDir, task)
-            loadFileTo(scannerInputFile, task)
-            val status = doScan(taskWorkDir, scannerInputFile, task)
+            val sha256 = loadFileTo(scannerInputFile, task)
+            val status = doScan(taskWorkDir, scannerInputFile, sha256, task)
             return result(taskWorkDir, task, status)
         } finally {
             // 清理工作目录
@@ -58,11 +58,17 @@ abstract class CommonScanExecutor : ScanExecutor {
      *
      * @param taskWorkDir 任务工作目录
      * @param scannerInputFile 待扫描文件
+     * @param sha256 [scannerInputFile]的sha256
      * @param task 扫描任务
      *
      * @return 扫描任务状态
      */
-    protected abstract fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus
+    protected abstract fun doScan(
+        taskWorkDir: File,
+        scannerInputFile: File,
+        sha256: String,
+        task: ScanExecutorTask
+    ): SubScanTaskStatus
 
     /**
      * 获取工作目录
@@ -85,13 +91,14 @@ abstract class CommonScanExecutor : ScanExecutor {
     /**
      * 将待扫描文件写入[scannerInputFile]
      */
-    protected open fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
+    protected open fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
         // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
         scannerInputFile.parentFile.mkdirs()
         task.inputStream.use { taskInputStream ->
             scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
         }
         logger.info(CommonUtils.buildLogMsg(task, "read file success"))
+        return task.sha256
     }
 
     /**

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
+import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
@@ -100,6 +101,7 @@ class ScanServiceImpl @Autowired constructor(
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
+    private val scannerConverters: Map<String, ScannerConverter>,
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val publisher: ApplicationEventPublisher,
@@ -199,6 +201,8 @@ class ScanServiceImpl @Autowired constructor(
         with(reportResultRequest) {
             logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
+            val scanner = scannerService.get(subScanTask.scanner)
+            scanExecutorResult?.let { it.overview = scannerConverters[scanner.type]!!.convertOverview(it) }
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
                 subScanTask, scanStatus, scanExecutorResult?.overview ?: emptyMap()
@@ -215,7 +219,6 @@ class ScanServiceImpl @Autowired constructor(
             )
 
             // 更新文件扫描结果
-            val scanner = scannerService.get(subScanTask.scanner)
             fileScanResultDao.upsertResult(
                 subScanTask.credentialsKey,
                 subScanTask.sha256,

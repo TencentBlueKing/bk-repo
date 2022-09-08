@@ -25,17 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result
+package com.tencent.bkrepo.common.scanner.pojo.scanner.standard
 
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("scancode_toolkit扫描器扫描结果")
-data class ScanCodeToolkitScanExecutorResult(
-    override val scanStatus: String,
-    override var overview: Map<String, Any?>,
-    @ApiModelProperty("结果")
-    val scancodeItem: Set<ScancodeItem>
-) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
+data class StandardScanExecutorResult(
+    @ApiModelProperty("工具分析结果")
+    val output: ToolOutput? = null,
+    override val scanStatus: String = output?.status ?: SubScanTaskStatus.FAILED.name,
+    /**
+     * 后面全部分析工具替换为Standard实现可以移除overview字段
+     */
+    override var overview: Map<String, Any?> = emptyMap(),
+) : ScanExecutorResult(scanStatus, overview, StandardScanner.TYPE)

@@ -30,6 +30,8 @@ package com.tencent.bkrepo.scanner.component.manager.arrowhead
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.License
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.SecurityResult
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItemData
@@ -37,6 +39,9 @@ import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TLicense
+import com.tencent.bkrepo.scanner.component.manager.standard.model.TLicenseResult
+import com.tencent.bkrepo.scanner.component.manager.standard.model.TSecurityResult
+import com.tencent.bkrepo.scanner.component.manager.standard.model.TSecurityResultData
 import java.time.LocalDateTime
 
 object Converter {
@@ -71,6 +76,14 @@ object Converter {
         )
     }
 
+    fun convert(licenseResult: TLicenseResult) = with(licenseResult.data) {
+        LicenseResult(
+            licenseName = licenseName,
+            path = path,
+            pkgName
+        )
+    }
+
     fun convertToCve(cveSecItem: CveSecItem, now: LocalDateTime = LocalDateTime.now()) = with(cveSecItem) {
         TCve(
             createdBy = SYSTEM_USER,
@@ -100,6 +113,25 @@ object Converter {
         )
     }
 
+    fun convertToCve(securityResult: SecurityResult, now: LocalDateTime = LocalDateTime.now()) = with(securityResult) {
+        TCve(
+            createdBy = SYSTEM_USER,
+            createdDate = now,
+            lastModifiedBy = SYSTEM_USER,
+            lastModifiedDate = now,
+            component = pkgName ?: "",
+            versionFixed = fixedVersion,
+            name = vulName ?: "",
+            description = des ?: "",
+            officialSolution = solution,
+            references = references,
+            pocId = vulId,
+            cveId = cveId,
+            cvssRank = severity,
+            cvss = cvss ?: 0.0,
+        )
+    }
+
     fun convert(cveSecItem: CveSecItem): TCveSecItemData = with(cveSecItem) {
         TCveSecItemData(
             path = path,
@@ -111,6 +143,17 @@ object Converter {
             cnnvdId = cnnvdId,
             cnvdId = cnvdId,
             cvssRank = cvssRank
+        )
+    }
+
+    fun convert(securityResult: SecurityResult) = with(securityResult) {
+        TSecurityResultData(
+            path = path ?: "",
+            pkgName = pkgName ?: "",
+            pkgVersions = pkgVersions,
+            vulId = vulId,
+            cveId = cveId ?: "",
+            severity = severity
         )
     }
 
@@ -139,6 +182,23 @@ object Converter {
             cvss = cve?.cvss ?: 0.0,
             cvssV3 = cve?.cvssV3,
             cvssV2 = cve?.cvssV2
+        )
+    }
+
+    fun convert(securityResult: TSecurityResult, cve: TCve?): SecurityResult {
+        return SecurityResult(
+            vulId = securityResult.data.vulId,
+            vulName = cve?.name,
+            cveId = cve?.cveId,
+            path = securityResult.data.path,
+            pkgName = securityResult.data.pkgName,
+            pkgVersions = securityResult.data.pkgVersions,
+            fixedVersion = cve?.versionFixed,
+            des = cve?.description,
+            solution = cve?.officialSolution,
+            references = cve?.references ?: emptyList(),
+            cvss = cve?.cvss,
+            severity = cve?.cvssRank ?: ""
         )
     }
 

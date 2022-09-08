@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.component.manager
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
@@ -50,6 +51,10 @@ interface ScannerConverter {
     }
     fun convertToLoadArguments(request: ArtifactLicensesDetailRequest): LoadResultArguments {
         throw UnsupportedOperationException()
+    }
+
+    fun convertOverview(scanExecutorResult: ScanExecutorResult): Map<String, Any?> {
+        return scanExecutorResult.overview
     }
 
     companion object {

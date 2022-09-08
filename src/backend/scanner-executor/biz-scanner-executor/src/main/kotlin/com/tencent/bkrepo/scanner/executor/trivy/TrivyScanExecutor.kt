@@ -81,7 +81,12 @@ class TrivyScanExecutor @Autowired constructor(
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
     private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
-    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+    override fun doScan(
+        taskWorkDir: File,
+        scannerInputFile: File,
+        sha256: String,
+        task: ScanExecutorTask
+    ): SubScanTaskStatus {
         require(task.scanner is TrivyScanner)
         val containerConfig = task.scanner.container
 
@@ -102,7 +107,7 @@ class TrivyScanExecutor @Autowired constructor(
         val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
         val cmd = buildScanCmds(task, scannerInputFile)
         val result = dockerScanHelper.scan(
-            containerConfig.image, Binds(bind, cacheBind), cmd, taskWorkDir, scannerInputFile, task
+            containerConfig.image, Binds(bind, cacheBind), cmd, scannerInputFile, task
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
@@ -110,9 +115,9 @@ class TrivyScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
         scannerInputFile.parentFile.mkdirs()
-        scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
+        return scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
     }
 
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {

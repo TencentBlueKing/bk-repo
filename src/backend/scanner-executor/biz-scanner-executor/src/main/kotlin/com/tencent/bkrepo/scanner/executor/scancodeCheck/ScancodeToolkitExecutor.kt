@@ -74,7 +74,12 @@ class ScancodeToolkitExecutor @Autowired constructor(
 
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
 
-    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+    override fun doScan(
+        taskWorkDir: File,
+        scannerInputFile: File,
+        sha256: String,
+        task: ScanExecutorTask
+    ): SubScanTaskStatus {
         require(task.scanner is ScancodeToolkitScanner)
         val containerConfig = task.scanner.container
         File(taskWorkDir, task.scanner.container.outputDir).mkdirs()
@@ -90,7 +95,6 @@ class ScancodeToolkitExecutor @Autowired constructor(
             image = containerConfig.image,
             binds = Binds(Bind(taskWorkDir.absolutePath, Volume(containerConfig.workDir))),
             args = containerCmd,
-            taskWorkDir = taskWorkDir,
             scannerInputFile = scannerInputFile,
             task = task
         )
