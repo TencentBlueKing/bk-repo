@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -63,6 +64,7 @@ import java.util.regex.Pattern
 @Service
 class ClusterNodeServiceImpl(
     private val clusterNodeDao: ClusterNodeDao,
+    private val clusterProperties: ClusterProperties
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
@@ -129,7 +131,7 @@ class ClusterNodeServiceImpl(
                 lastModifiedDate = LocalDateTime.now()
             )
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
+            tryConnect(convert(clusterNode)!!)
             return try {
                 clusterNodeDao.insert(clusterNode)
                     .also { logger.info("Create cluster node [$name] with url [$url] success.") }
@@ -156,7 +158,7 @@ class ClusterNodeServiceImpl(
                 certificate = request.certificate
             }
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(tClusterNode)!!, tClusterNode.type)
+            tryConnect(convert(tClusterNode)!!)
             return try {
                 clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
@@ -175,11 +177,21 @@ class ClusterNodeServiceImpl(
         logger.info("delete cluster node for id [$id] success.")
     }
 
+    override fun tryConnect(clusterNodeInfo: ClusterNodeInfo) {
+        with(clusterNodeInfo) {
+            val clusterInfo = convertRemoteInfo(clusterNodeInfo)
+            if (ClusterNodeType.REMOTE == type) {
+                tryConnectRemoteCluster(clusterInfo)
+            } else {
+                tryConnectNonRemoteCluster(clusterInfo)
+            }
+        }
+    }
+
     override fun tryConnect(name: String) {
-        val clusterNode = clusterNodeDao.findByName(name)
-        val clusterNodeInfo = convertRemoteInfo(clusterNode)
+        val node = clusterNodeDao.findByName(name)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-        tryConnect(clusterNodeInfo, clusterNode!!.type)
+        tryConnect(convert(node)!!)
     }
 
     override fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest) {
@@ -197,23 +209,15 @@ class ClusterNodeServiceImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    fun tryConnect(remoteClusterInfo: ClusterInfo, type: ClusterNodeType) {
-        with(remoteClusterInfo) {
-            if (ClusterNodeType.REMOTE == type) {
-                tryConnectRemoteCluster(this)
-            } else {
-                tryConnectNonRemoteCluster(this)
-            }
-        }
-    }
-
     /**
      * 针对非third party集群做连接判断
      */
     fun tryConnectNonRemoteCluster(remoteClusterInfo: ClusterInfo) {
         with(remoteClusterInfo) {
             try {
+                remoteClusterInfo.appId = clusterProperties.self.appId
+                remoteClusterInfo.accessKey = clusterProperties.self.accessKey
+                remoteClusterInfo.secretKey = clusterProperties.self.secretKey
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
                 val authToken = BasicAuthUtils.encode(username.orEmpty(), password.orEmpty())
                 replicationService.ping(authToken)
@@ -287,8 +291,8 @@ class ClusterNodeServiceImpl(
             }
         }
 
-        private fun convertRemoteInfo(tClusterNode: TClusterNode?): ClusterInfo? {
-            return tClusterNode?.let {
+        private fun convertRemoteInfo(tClusterNode: ClusterNodeInfo): ClusterInfo {
+            return tClusterNode.let {
                 ClusterInfo(
                     name = it.name,
                     url = it.url,

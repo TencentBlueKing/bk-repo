@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import org.slf4j.LoggerFactory
 
 /**
  * 同步服务抽象类
@@ -130,6 +131,7 @@ abstract class AbstractReplicaService(
             ).nodeInfo
             replicaByPath(context, nodeInfo)
         } catch (throwable: Throwable) {
+            logger.error("同步指定路径失败", throwable)
             setErrorStatus(context, throwable)
         } finally {
             completeRecordDetail(context)
@@ -281,6 +283,7 @@ abstract class AbstractReplicaService(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(AbstractReplicaService::class.java)
         private const val PAGE_SIZE = 1000
     }
 }

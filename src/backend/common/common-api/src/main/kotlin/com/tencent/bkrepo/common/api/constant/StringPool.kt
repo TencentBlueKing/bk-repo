@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.common.api.constant
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.abs
@@ -79,3 +81,4 @@ fun String.ensureSuffix(suffix: CharSequence): String {
 
 fun String.ensurePrefix(prefix: Char) = if (startsWith(prefix)) this else prefix + this
 fun String.ensureSuffix(suffix: Char) = if (endsWith(suffix)) this else this + suffix
+fun String.urlEncode() = URLEncoder.encode(this, StandardCharsets.UTF_8.displayName())

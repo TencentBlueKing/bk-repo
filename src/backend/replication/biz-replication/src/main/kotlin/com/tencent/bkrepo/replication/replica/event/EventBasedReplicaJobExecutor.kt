@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -46,8 +47,9 @@ class EventBasedReplicaJobExecutor(
     clusterNodeService: ClusterNodeService,
     localDataManager: LocalDataManager,
     replicaService: EventBasedReplicaService,
+    clusterProperties: ClusterProperties,
     private val replicaRecordService: ReplicaRecordService
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService) {
+) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, clusterProperties) {
 
     /**
      * 执行同步

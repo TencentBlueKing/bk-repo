@@ -29,10 +29,9 @@ package com.tencent.bkrepo.replication.replica.base.context
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
@@ -42,23 +41,26 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
+import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import java.io.InputStream
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.InputStream
 
 class ReplicaContext(
     taskDetail: ReplicaTaskDetail,
+    clusterProperties: ClusterProperties,
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
-    val remoteCluster: ClusterNodeInfo,
+    val remoteCluster: ClusterNodeInfo
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -84,13 +86,13 @@ class ReplicaContext(
     var blobReplicaClient: BlobReplicaClient? = null
     val replicator: Replicator
 
-    // TODO: Feign暂时不支持Stream上传，11+之后支持，升级后可以移除HttpClient上传
-    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
-    val httpClient: OkHttpClient?
     var cluster: ClusterInfo
 
     // 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
     var targetVersions: List<String>?
+
+    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
+    private val httpClient: OkHttpClient
 
     init {
         cluster = ClusterInfo(
@@ -98,7 +100,10 @@ class ReplicaContext(
             url = remoteCluster.url,
             username = remoteCluster.username,
             password = remoteCluster.password,
-            certificate = remoteCluster.certificate
+            certificate = remoteCluster.certificate,
+            appId = clusterProperties.self.appId,
+            accessKey = clusterProperties.self.accessKey,
+            secretKey = clusterProperties.self.secretKey
         )
 
         // 远端集群仓库特殊处理, 远端集群走对应制品类型协议传输
@@ -112,16 +117,12 @@ class ReplicaContext(
             ClusterNodeType.REMOTE -> SpringContextUtils.getBean<RemoteReplicator>()
             else -> throw UnsupportedOperationException()
         }
-        // 远端集群仓库特殊处理, 远端集群请求鉴权特殊处理
-        httpClient = if (remoteCluster.type != ClusterNodeType.REMOTE) {
-            HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
-                BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
-            ).build()
-        } else {
-            null
-        }
 
         targetVersions = initImageTargetTag()
+        httpClient = OkHttpClientPool.getHttpClient(
+            cluster,
+            SignInterceptor(cluster)
+        )
     }
 
     /**
@@ -138,8 +139,8 @@ class ReplicaContext(
             .url(pushBlobUrl)
             .post(requestBody)
             .build()
-        httpClient?.newCall(httpRequest)?.execute().use {
-            it?.let { it1 -> check(it1.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" } }
+        httpClient.newCall(httpRequest).execute().use {
+            check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
         }
     }
 
