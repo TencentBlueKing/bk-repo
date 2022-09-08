@@ -146,7 +146,7 @@
     "projectConfig": "项目设置",
     "nodeManage": "节点管理",
     "securityConfig": "安全设置",
-    "repoScan": "制品扫描",
+    "repoScan": "制品分析",
     "planManage": "制品分发",
     "repoAudit": "审计日志",
     "userInfo": "个人信息",
