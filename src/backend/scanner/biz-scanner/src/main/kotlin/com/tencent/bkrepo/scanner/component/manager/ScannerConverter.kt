@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.component.manager
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
@@ -54,7 +55,12 @@ interface ScannerConverter {
     }
 
     fun convertOverview(scanExecutorResult: ScanExecutorResult): Map<String, Any?> {
-        return scanExecutorResult.overview
+        throw UnsupportedOperationException()
+    }
+
+    fun incLicenseOverview(overview: MutableMap<String, Long>, level: String) {
+        val overviewKey = LicenseOverviewKey.overviewKeyOf(level)
+        overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
     }
 
     companion object {

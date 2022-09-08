@@ -31,20 +31,15 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.TOTAL
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeToolItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import com.tencent.bkrepo.scanner.api.ScanClient
 import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils.incLicenseOverview
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.buildLogMsg
 import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
@@ -64,7 +59,6 @@ import java.io.File
 @ConditionalOnProperty(DockerProperties.SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class ScancodeToolkitExecutor @Autowired constructor(
     dockerClient: DockerClient,
-    private val scanClient: ScanClient,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) : CommonScanExecutor() {
 
@@ -133,7 +127,7 @@ class ScancodeToolkitExecutor @Autowired constructor(
         val resultFile = File(File(taskWorkDir, scanner.container.outputDir), LICENSE_SCAN_RESULT_FILE_NAME)
 
         val scancodeToolItem = readJsonString<ScancodeToolItem>(resultFile)
-            ?: return ScanCodeToolkitScanExecutorResult(scanStatus.name, emptyMap(), emptySet())
+            ?: return ScanCodeToolkitScanExecutorResult(scanStatus.name, emptySet())
 
         val scancodeItems = HashSet<ScancodeItem>()
         scancodeToolItem.files.forEach { file ->
@@ -144,7 +138,6 @@ class ScancodeToolkitExecutor @Autowired constructor(
         }
 
         return ScanCodeToolkitScanExecutorResult(
-            overview = updateRiskAndOverview(scancodeItems),
             scanStatus = scanStatus.name,
             scancodeItem = scancodeItems
         )
@@ -207,42 +200,6 @@ class ScancodeToolkitExecutor @Autowired constructor(
             logger.info(buildLogMsg(task, "scan failed: ${logs.asReversed().joinToString("\n")}"))
         }
         return status
-    }
-
-    /**
-     * 数量统计
-     */
-    private fun updateRiskAndOverview(scancodeItems: Set<ScancodeItem>): Map<String, Any?> {
-        val overview = HashMap<String, Long>()
-        // 不推荐和不合规可能重合，单独统计总数
-        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = scancodeItems.size.toLong()
-
-        // 获取许可证详情信息
-        val licenseIds = scancodeItems.mapTo(HashSet()) { it.licenseId }.toList()
-        val licensesInfo = scanClient.licenseInfoByIds(licenseIds).data!!
-
-        // 统计各类型许可证数量
-        for (scancodeItem in scancodeItems) {
-            val detail = licensesInfo[scancodeItem.licenseId]
-            if (detail == null) {
-                incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
-                continue
-            }
-
-            // license risk
-            scancodeItem.riskLevel = detail.risk
-            scancodeItem.riskLevel?.let { incLicenseOverview(overview, it) }
-
-            // nature count
-            if (detail.isDeprecatedLicenseId) {
-                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
-            }
-
-            if (!detail.isTrust) {
-                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
-            }
-        }
-        return overview
     }
 
     companion object {

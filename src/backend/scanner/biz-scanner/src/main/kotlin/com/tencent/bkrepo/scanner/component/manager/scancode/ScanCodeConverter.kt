@@ -30,6 +30,10 @@ package com.tencent.bkrepo.scanner.component.manager.scancode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.result.ScancodeItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
@@ -75,5 +79,40 @@ class ScanCodeConverter(
             riskLevels = request.riskLevel?.let { listOf(it) } ?: emptyList(),
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
+    }
+
+    override fun convertOverview(scanExecutorResult: ScanExecutorResult): Map<String, Any?> {
+        scanExecutorResult as ScanCodeToolkitScanExecutorResult
+        val scancodeItems = scanExecutorResult.scancodeItem
+        val overview = HashMap<String, Long>()
+        // 不推荐和不合规可能重合，单独统计总数
+        overview[LicenseOverviewKey.overviewKeyOf(LicenseOverviewKey.TOTAL)] = scancodeItems.size.toLong()
+
+        // 获取许可证详情信息
+        val licenseIds = scancodeItems.mapTo(HashSet()) { it.licenseId }.toList()
+        val licensesInfo = licenseService.listLicenseByIds(licenseIds)
+
+        // 统计各类型许可证数量
+        for (scancodeItem in scancodeItems) {
+            val detail = licensesInfo[scancodeItem.licenseId]
+            if (detail == null) {
+                incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
+                continue
+            }
+
+            // license risk
+            scancodeItem.riskLevel = detail.risk
+            scancodeItem.riskLevel?.let { incLicenseOverview(overview, it) }
+
+            // nature count
+            if (detail.isDeprecatedLicenseId) {
+                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
+            }
+
+            if (!detail.isTrust) {
+                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
+            }
+        }
+        return overview
     }
 }

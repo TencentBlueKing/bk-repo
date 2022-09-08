@@ -35,7 +35,6 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("scancode_toolkit扫描器扫描结果")
 data class ScanCodeToolkitScanExecutorResult(
     override val scanStatus: String,
-    override var overview: Map<String, Any?>,
     @ApiModelProperty("结果")
     val scancodeItem: Set<ScancodeItem>
-) : ScanExecutorResult(scanStatus, overview, ScancodeToolkitScanner.TYPE)
+) : ScanExecutorResult(scanStatus, ScancodeToolkitScanner.TYPE)

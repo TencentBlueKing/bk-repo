@@ -64,22 +64,20 @@ object ScanRunner {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val startTimestamp = System.currentTimeMillis()
         val task = args[0].readJsonString<SubScanTask>()
         val serverHost = args[1]
         val workDirPath = args[2]
         val workDir = File(workDirPath)
-        val token = task.token ?: throw RuntimeException("token is null")
+        val token = task.token ?: throw IllegalArgumentException("token is null")
 
         try {
-            val url = task.url ?: throw RuntimeException("file url is null")
+            val url = task.url ?: throw IllegalArgumentException("file url is null")
             val executorTask = convert(task, loadFile(url))
             val result = createExecutor(workDir, task.scanner.type).scan(executorTask)
-            val finishedTimestamp = System.currentTimeMillis()
-            report(serverHost, token, task.taskId, task.parentScanTaskId, startTimestamp, finishedTimestamp, result)
+            report(serverHost, token, task.taskId, task.parentScanTaskId, result)
         } catch (e: Exception) {
             logger.error("scan failed[$task]", e)
-            report(serverHost, token, task.taskId, task.parentScanTaskId, startTimestamp)
+            report(serverHost, token, task.taskId, task.parentScanTaskId)
         }
     }
 
@@ -95,7 +93,7 @@ object ScanRunner {
     private fun createExecutor(workDir: File, type: String): ScanExecutor {
         return when (type) {
             ArrowheadScanner.TYPE -> ArrowheadCmdScanExecutor(workDir)
-            else -> throw RuntimeException("unknown scanner type[$type]")
+            else -> throw IllegalArgumentException("unknown scanner type[$type]")
         }
     }
 
@@ -104,15 +102,10 @@ object ScanRunner {
         token: String,
         subtaskId: String,
         parentTaskId: String,
-        startTimestamp: Long,
-        finishedTimestamp: Long = System.currentTimeMillis(),
         result: ScanExecutorResult? = null
     ) {
         val content = ReportResultRequest(
             subTaskId = subtaskId,
-            parentTaskId = parentTaskId,
-            startTimestamp = startTimestamp,
-            finishedTimestamp = finishedTimestamp,
             scanStatus = result?.scanStatus ?: SubScanTaskStatus.FAILED.name,
             scanExecutorResult = result,
             token = token

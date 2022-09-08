@@ -30,7 +30,6 @@ package com.tencent.bkrepo.scanner.executor.dependencycheck
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.checker.pojo.DependencyInfo
 import com.tencent.bkrepo.common.checker.util.DependencyCheckerUtils
-import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
@@ -115,26 +114,8 @@ class DependencyScanExecutor @Autowired constructor(
 
         return DependencyScanExecutorResult(
             scanStatus = SubScanTaskStatus.SUCCESS.name,
-            overview = overview(dependencyItems),
             dependencyItems = dependencyItems
         )
-    }
-
-    /**
-     * 数量统计
-     */
-    private fun overview(dependencyItems: MutableList<DependencyItem>): Map<String, Any?> {
-        val overview = HashMap<String, Long>()
-
-        // cve count
-        dependencyItems.forEach {
-            val overviewKey = CveOverviewKey.overviewKeyOf(it.severity)
-            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-        }
-
-        logger.debug("overview:${overview.toJsonString()}")
-
-        return overview
     }
 
     private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {

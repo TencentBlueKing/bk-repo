@@ -34,7 +34,6 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("arrowhead扫描器扫描结果")
 data class ArrowheadScanExecutorResult(
     override val scanStatus: String,
-    override var overview: Map<String, Any?>,
     @ApiModelProperty("安全审计结果")
     val checkSecItems: List<CheckSecItem>,
     @ApiModelProperty("License审计结果")
@@ -43,7 +42,7 @@ data class ArrowheadScanExecutorResult(
     val sensitiveItems: List<SensitiveItem>,
     @ApiModelProperty("cve审计结果")
     val cveSecItems: List<CveSecItem>
-) : ScanExecutorResult(scanStatus, overview, ArrowheadScanner.TYPE) {
+) : ScanExecutorResult(scanStatus, ArrowheadScanner.TYPE) {
     companion object {
 
         fun overviewKeyOfSensitive(type: String): String {

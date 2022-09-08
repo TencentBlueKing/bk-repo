@@ -82,9 +82,8 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Instant
+import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -199,13 +198,13 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
-            logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
+            logger.info("report result, parentTask[${subScanTask.parentScanTaskId}], subTask[$subTaskId]")
             val scanner = scannerService.get(subScanTask.scanner)
-            scanExecutorResult?.let { it.overview = scannerConverters[scanner.type]!!.convertOverview(it) }
+            val overview = scanExecutorResult?.let { scannerConverters[scanner.type]!!.convertOverview(it) }
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
-                subScanTask, scanStatus, scanExecutorResult?.overview ?: emptyMap()
+                subScanTask, scanStatus, overview ?: emptyMap()
             )
 
             // 没有扫描任务被更新或子扫描任务失败时直接返回
@@ -214,19 +213,19 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             // 统计任务耗时
-            scannerMetrics.record(
-                subScanTask.fullPath, subScanTask.size, subScanTask.scanner, startTimestamp, finishedTimestamp
-            )
+            val now = LocalDateTime.now()
+            val duration = Duration.between(subScanTask.startDateTime!!, now)
+            scannerMetrics.record(subScanTask.fullPath, subScanTask.size, subScanTask.scanner, duration)
 
             // 更新文件扫描结果
             fileScanResultDao.upsertResult(
                 subScanTask.credentialsKey,
                 subScanTask.sha256,
-                parentTaskId,
+                subScanTask.parentScanTaskId,
                 scanner,
-                scanExecutorResult!!.overview,
-                toLocalDateTime(startTimestamp),
-                toLocalDateTime(finishedTimestamp)
+                overview!!,
+                subScanTask.startDateTime,
+                now
             )
 
             // 保存详细扫描结果
@@ -508,10 +507,6 @@ class ScanServiceImpl @Autowired constructor(
         } else {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
         }
-    }
-
-    private fun toLocalDateTime(timestamp: Long): LocalDateTime {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
     }
 
     companion object {

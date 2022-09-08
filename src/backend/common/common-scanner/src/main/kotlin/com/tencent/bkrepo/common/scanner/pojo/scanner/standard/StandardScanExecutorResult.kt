@@ -34,9 +34,5 @@ import io.swagger.annotations.ApiModelProperty
 data class StandardScanExecutorResult(
     @ApiModelProperty("工具分析结果")
     val output: ToolOutput? = null,
-    override val scanStatus: String = output?.status ?: SubScanTaskStatus.FAILED.name,
-    /**
-     * 后面全部分析工具替换为Standard实现可以移除overview字段
-     */
-    override var overview: Map<String, Any?> = emptyMap(),
-) : ScanExecutorResult(scanStatus, overview, StandardScanner.TYPE)
+    override val scanStatus: String = output?.status ?: SubScanTaskStatus.FAILED.name
+) : ScanExecutorResult(scanStatus, StandardScanner.TYPE)

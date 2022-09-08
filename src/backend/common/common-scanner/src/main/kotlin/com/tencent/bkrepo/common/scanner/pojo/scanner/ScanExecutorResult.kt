@@ -54,8 +54,6 @@ import io.swagger.annotations.ApiModelProperty
 open class ScanExecutorResult(
     @ApiModelProperty("扫描执行状态")
     open val scanStatus: String,
-    @ApiModelProperty("扫描结果预览")
-    open var overview: Map<String, Any?>,
     @ApiModelProperty("扫描器类型")
     val type: String
 )

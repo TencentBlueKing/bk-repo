@@ -30,7 +30,10 @@ package com.tencent.bkrepo.scanner.component.manager.dependencycheck
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
@@ -70,5 +73,18 @@ class DependencyCheckConverter : ScannerConverter {
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
+    }
+
+    override fun convertOverview(scanExecutorResult: ScanExecutorResult): Map<String, Any?> {
+        scanExecutorResult as DependencyScanExecutorResult
+        val overview = HashMap<String, Long>()
+
+        // cve count
+        scanExecutorResult.dependencyItems.forEach {
+            val overviewKey = CveOverviewKey.overviewKeyOf(it.severity)
+            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+        }
+
+        return overview
     }
 }

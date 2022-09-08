@@ -34,7 +34,6 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("trivy扫描器扫描结果")
 data class TrivyScanExecutorResult(
     override val scanStatus: String,
-    override var overview: Map<String, Any?>,
     @ApiModelProperty("cve审计结果")
     val vulnerabilityItems: List<VulnerabilityItem>
-) : ScanExecutorResult(scanStatus, overview, TrivyScanner.TYPE)
+) : ScanExecutorResult(scanStatus, TrivyScanner.TYPE)

@@ -30,7 +30,12 @@ package com.tencent.bkrepo.scanner.component.manager.arrowhead
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
@@ -110,6 +115,50 @@ class ArrowheadConverter(private val licenseService: SpdxLicenseService) : Scann
             reportType = request.reportType,
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
+    }
+
+    override fun convertOverview(scanExecutorResult: ScanExecutorResult): Map<String, Any?> {
+        scanExecutorResult as ArrowheadScanExecutorResult
+        val overview = HashMap<String, Long>()
+        scanExecutorResult.cveSecItems.forEach {
+            val overviewKey = CveOverviewKey.overviewKeyOf(it.cvssRank)
+            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+        }
+        addLicenseOverview(overview, scanExecutorResult.applicationItems)
+        return super.convertOverview(scanExecutorResult)
+    }
+
+    private fun addLicenseOverview(
+        overview: MutableMap<String, Long>,
+        applicationItems: List<ApplicationItem>
+    ) {
+        val licenseIds = HashSet<String>()
+        val licenses = HashSet<ApplicationItem>()
+        applicationItems.forEach { item ->
+            item.license?.let {
+                licenses.add(item)
+                licenseIds.add(it.name)
+            }
+        }
+        overview[LicenseOverviewKey.overviewKeyOf(LicenseOverviewKey.TOTAL)] = licenses.size.toLong()
+
+        // 获取许可证详情
+        val licenseInfo = licenseService.listLicenseByIds(licenseIds.toList()).mapKeys { it.key.toLowerCase() }
+        for (license in licenses) {
+            val detail = licenseInfo[license.license!!.name.toLowerCase()]
+            if (detail == null) {
+                incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
+                continue
+            }
+
+            if (detail.isDeprecatedLicenseId) {
+                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
+            }
+
+            if (!detail.isTrust) {
+                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
+            }
+        }
     }
 
     private fun getVulId(cveSecItem: CveSecItem): String {

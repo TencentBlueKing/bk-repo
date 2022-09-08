@@ -38,6 +38,7 @@ import io.micrometer.core.instrument.binder.MeterBinder
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -163,12 +164,11 @@ class ScannerMetrics(
         fullPath: String,
         fileSize: Long,
         scanner: String,
-        startTimestamp: Long,
-        finishedTimestamp: Long
+        duration: Duration
     ) {
         val fileExtensionName = fullPath.substringAfterLast('.', UNKNOWN_EXTENSION)
         val summary = taskSpeedSummary(fileExtensionName, scanner)
-        val elapsedSeconds = (finishedTimestamp - startTimestamp).toDouble() / 1000
+        val elapsedSeconds = duration.seconds.toDouble()
         summary.record(fileSize / elapsedSeconds)
     }
 
