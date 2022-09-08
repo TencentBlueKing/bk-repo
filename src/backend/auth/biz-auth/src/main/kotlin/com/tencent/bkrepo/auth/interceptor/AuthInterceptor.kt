@@ -103,8 +103,8 @@ class AuthInterceptor : HandlerInterceptor {
             }
             val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
             if (userId.isNotEmpty() && userService.getUserInfoById(userId) == null) {
-                val request = CreateUserRequest(userId = userId, name = userId)
-                userService.createUser(request)
+                val createRsq = CreateUserRequest(userId = userId, name = userId)
+                userService.createUser(createRsq)
             }
             logger.debug("auth userId [$userId], platId [$appId]")
             request.setAttribute(USER_KEY, userId)
