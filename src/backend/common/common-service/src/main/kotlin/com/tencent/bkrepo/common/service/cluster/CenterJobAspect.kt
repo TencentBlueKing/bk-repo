@@ -15,8 +15,8 @@ class CenterJobAspect(
     fun around(point: ProceedingJoinPoint): Any? {
         val signature = point.signature as MethodSignature
         val method = signature.method
-        val permission = method.getAnnotation(Scheduled::class.java)
-        if (permission != null && clusterProperties.role != RoleType.CENTER) {
+        val scheduled = method.getAnnotation(Scheduled::class.java)
+        if (scheduled != null && clusterProperties.role != RoleType.CENTER) {
             return null
         }
         return point.proceed()
