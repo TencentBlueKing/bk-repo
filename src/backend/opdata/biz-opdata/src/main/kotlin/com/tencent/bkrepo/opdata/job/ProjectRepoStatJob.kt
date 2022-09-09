@@ -31,16 +31,13 @@
 
 package com.tencent.bkrepo.opdata.job
 
-import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpProjectRepoStatJobProperties
 import com.tencent.bkrepo.opdata.job.pojo.ProjectMetrics
-import com.tencent.bkrepo.opdata.model.RepoModel
+import com.tencent.bkrepo.opdata.model.TFolderMetrics
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
@@ -50,12 +47,8 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -63,19 +56,12 @@ import java.util.concurrent.atomic.AtomicReference
  */
 @Component
 class ProjectRepoStatJob(
-    private val repoModel: RepoModel,
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val mongoTemplate: MongoTemplate,
     private val opJobProperties: OpProjectRepoStatJobProperties
-) {
+) : BaseJob(mongoTemplate) {
 
-    private val submitIdExecutor = ThreadPoolExecutor(
-        0, 1, 0L, TimeUnit.MILLISECONDS, SynchronousQueue()
-    )
-
-    private var executor: ThreadPoolExecutor? = null
-
-    @Scheduled(cron = "00 00 12 * * ?")
+    @Scheduled(cron = "00 00 16 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         if (!opJobProperties.enabled) {
@@ -83,11 +69,7 @@ class ProjectRepoStatJob(
             return
         }
         logger.info("start to stat project metrics")
-        val projectMetricsList = mutableListOf<TProjectMetrics>()
-
-        for (i in 0 until SHARDING_COUNT) {
-            projectMetricsList.addAll(stat(i))
-        }
+        val projectMetricsList = stat()
 
         // 数据写入mongodb统计表
         projectMetricsRepository.deleteAll()
@@ -96,13 +78,11 @@ class ProjectRepoStatJob(
         logger.info("stat project metrics done")
     }
 
-    private fun stat(shardingIndex: Int): List<TProjectMetrics> {
+    private fun stat(): List<TProjectMetrics> {
         val lastId = AtomicReference<String>()
         val startIds = LinkedBlockingQueue<String>(DEFAULT_ID_QUEUE_SIZE)
-        val collectionName = collectionName(shardingIndex)
-
-        val projectMetricsList = if (submitId(lastId, startIds, collectionName)) {
-            doStat(lastId, startIds, collectionName)
+        val projectMetricsList = if (submitId(lastId, startIds, TABLE_NAME, opJobProperties.batchSize)) {
+            doStat(lastId, startIds)
         } else {
             emptyList()
         }.ifEmpty { return emptyList() }
@@ -137,141 +117,54 @@ class ProjectRepoStatJob(
     @Suppress("LoopWithTooManyJumpStatements")
     private fun doStat(
         lastId: AtomicReference<String>,
-        startIds: LinkedBlockingQueue<String>,
-        nodeCollectionName: String
+        startIds: LinkedBlockingQueue<String>
     ): List<ProjectMetrics> {
-        refreshExecutor()
-        // 用于日志输出
-        val totalCount = AtomicLong()
-        val livedNodeCount = AtomicLong()
-        val start = System.currentTimeMillis()
 
         // 统计数据
         val projectMetrics = ConcurrentHashMap<String, ProjectMetrics>()
-        val futures = ArrayList<Future<*>>()
 
         while (true) {
             val startId = startIds.poll(1, TimeUnit.SECONDS)
-            if (startId == null) {
-                // lastId为null表示id遍历提交未结束，等待新id入队
+                ?: // lastId为null表示id遍历提交未结束，等待新id入队
                 if (lastId.get() == null) {
                     continue
                 } else {
                     break
                 }
-            }
-
-            val future = executor!!.submit {
-                val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
-                    .with(Sort.by(FIELD_NAME_ID))
-                    .limit(opJobProperties.batchSize)
-                query.fields().include(
-                    NodeDetail::projectId.name, NodeDetail::repoName.name, NodeDetail::size.name, FIELD_NAME_DELETED
-                )
-                val nodes = mongoTemplate.find(query, Map::class.java, nodeCollectionName)
-                nodes.forEach {
-                    val deleted = it[FIELD_NAME_DELETED]
-                    totalCount.incrementAndGet()
-                    if (deleted == null) {
-                        val projectId = it[NodeDetail::projectId.name].toString()
-                        val repoName = it[NodeDetail::repoName.name].toString()
-                        val size = it[NodeDetail::size.name].toString().toLong()
-                        val credentialsKey = repoModel.getRepoInfo(projectId, repoName)?.credentialsKey ?: "default"
-                        livedNodeCount.incrementAndGet()
-                        projectMetrics
-                            .getOrPut(projectId) { ProjectMetrics(projectId) }
-                            .apply {
-                                capSize.add(size)
-                                nodeNum.increment()
-                                val repo = repoMetrics.getOrPut(repoName) {
-                                    com.tencent.bkrepo.opdata.job.pojo.RepoMetrics(repoName, credentialsKey)
-                                }
-                                repo.size.add(size)
-                                repo.num.increment()
-                            }
-                    }
-                }
-            }
-            futures.add(future)
-        }
-
-        // 等待所有任务结束
-        futures.forEach { it.get() }
-
-        // 输出结果
-        val elapsed = System.currentTimeMillis() - start
-        logger.info(
-            "process $nodeCollectionName finished, elapsed[$elapsed ms]" +
-                "totalNodeCount[${totalCount.toLong()}, lived[${livedNodeCount.get()}]]"
-        )
-        return projectMetrics.values.toList()
-    }
-
-    private fun submitId(
-        lastId: AtomicReference<String>,
-        startIds: LinkedBlockingQueue<String>,
-        collectionName: String
-    ): Boolean {
-        val initId = nextId(null, 0, collectionName) ?: return false
-        submitIdExecutor.execute {
-            logger.info("submit id started.")
-            var startId: String? = initId
-            var preId: String? = null
-            val start = System.currentTimeMillis()
-            var submittedIdCount = 0L
-            while (startId != null) {
-                submittedIdCount++
-                startIds.add(startId)
-                preId = startId
-                // 获取下一个id
-                startId = nextId(startId, opJobProperties.batchSize, collectionName)
-            }
-            val elapsed = System.currentTimeMillis() - start
-            logger.info("$submittedIdCount ids submitted, last id[$preId], elapsed[$elapsed]")
-            lastId.set(preId)
-        }
-        return true
-    }
-
-    private fun nextId(
-        startId: String? = null,
-        skip: Int = opJobProperties.batchSize,
-        collectionName: String
-    ): String? {
-        val criteria = Criteria()
-        startId?.let { criteria.and(FIELD_NAME_ID).gte(ObjectId(it)) }
-        val query = Query(criteria).with(Sort.by(FIELD_NAME_ID)).skip(skip.toLong())
-        query.fields().include(FIELD_NAME_ID)
-        return mongoTemplate.findOne(query, Map::class.java, collectionName)?.get(FIELD_NAME_ID)?.toString()
-    }
-
-    private fun collectionName(shardingIndex: Int): String = "${TABLE_PREFIX}$shardingIndex"
-
-    @Synchronized
-    private fun refreshExecutor() {
-        if (executor == null) {
-            executor = ThreadPoolExecutor(
-                opJobProperties.threadPoolSize,
-                opJobProperties.threadPoolSize,
-                DEFAULT_THREAD_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS,
-                LinkedBlockingQueue(DEFAULT_THREAD_POOL_QUEUE_CAPACITY),
-                ThreadPoolExecutor.CallerRunsPolicy()
+            val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
+                .with(Sort.by(FIELD_NAME_ID))
+                .limit(opJobProperties.batchSize)
+            query.fields().include(
+                TFolderMetrics::projectId.name, TFolderMetrics::repoName.name, TFolderMetrics::capSize.name,
+                TFolderMetrics::nodeNum.name, TFolderMetrics::credentialsKey.name
             )
-            executor!!.allowCoreThreadTimeOut(true)
-        } else if (executor!!.maximumPoolSize != opJobProperties.threadPoolSize) {
-            executor!!.corePoolSize = opJobProperties.threadPoolSize
-            executor!!.maximumPoolSize = opJobProperties.threadPoolSize
+            val folders = mongoTemplate.find(query, Map::class.java, TABLE_NAME)
+            folders.forEach {
+                val projectId = it[TFolderMetrics::projectId.name].toString()
+                val repoName = it[TFolderMetrics::repoName.name].toString()
+                val size = it[TFolderMetrics::capSize.name].toString().toLong()
+                val num = it[TFolderMetrics::nodeNum.name].toString().toLong()
+                val credentialsKey = it[TFolderMetrics::credentialsKey.name].toString()
+                projectMetrics
+                    .getOrPut(projectId) { ProjectMetrics(projectId) }
+                    .apply {
+                        capSize.add(size)
+                        nodeNum.add(num)
+                        val repo = repoMetrics.getOrPut(repoName) {
+                            com.tencent.bkrepo.opdata.job.pojo.RepoMetrics(repoName, credentialsKey)
+                        }
+                        repo.size.add(size)
+                        repo.num.add(num)
+                    }
+            }
         }
+        return projectMetrics.values.toList()
     }
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val TABLE_PREFIX = "node_"
+        private const val TABLE_NAME = "folder_metrics"
         private const val TOGIGABYTE = 1024 * 1024 * 1024
-        private const val FIELD_NAME_ID = AbstractMongoDao.ID
-        private const val FIELD_NAME_DELETED = "deleted"
         private const val DEFAULT_ID_QUEUE_SIZE = 10000
-        private const val DEFAULT_THREAD_KEEP_ALIVE_SECONDS = 60L
-        private const val DEFAULT_THREAD_POOL_QUEUE_CAPACITY = 1000
     }
 }

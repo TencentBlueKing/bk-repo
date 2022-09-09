@@ -27,13 +27,11 @@
 
 package com.tencent.bkrepo.opdata.config
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class
+@ConfigurationProperties("op.job.folder-stat")
+data class OpFolderStatJobProperties(
+    var enabled: Boolean = true,
+    var batchSize: Int = 50000,
+    var threadPoolSize: Int = 1
 )
-class OpConfiguration
