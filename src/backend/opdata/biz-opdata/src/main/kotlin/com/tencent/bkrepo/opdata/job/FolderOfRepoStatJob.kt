@@ -148,7 +148,11 @@ class FolderOfRepoStatJob(
                         val repoName = it[NodeDetail::repoName.name].toString()
                         val path = it[NodeDetail::path.name].toString()
                         val isFolder = it[NodeDetail::folder.name].toString().toBoolean()
-                        val size = it[NodeDetail::size.name].toString().toLong()
+                        val size = try {
+                            it[NodeDetail::size.name].toString().toLong()
+                        } catch (e: NumberFormatException) {
+                            0
+                        }
                         val fullPath = it[NodeDetail::fullPath.name].toString()
                         livedNodeCount.incrementAndGet()
                         val key = if (path == "/" && !isFolder) {
