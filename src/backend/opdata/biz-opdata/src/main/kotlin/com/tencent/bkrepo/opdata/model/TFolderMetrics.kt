@@ -25,15 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.model
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class
+@Document("folder_metrics")
+data class TFolderMetrics(
+    val projectId: String,
+    val repoName: String,
+    var credentialsKey: String? = "default",
+    val folderPath: String,
+    val nodeNum: Long,
+    val capSize: Long,
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )
-class OpConfiguration
