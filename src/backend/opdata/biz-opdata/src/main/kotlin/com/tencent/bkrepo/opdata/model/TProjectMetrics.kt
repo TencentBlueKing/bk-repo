@@ -35,7 +35,7 @@ import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("project_metrics1")
+@Document("project_metrics")
 data class TProjectMetrics(
     var projectId: String,
     var nodeNum: Long,
