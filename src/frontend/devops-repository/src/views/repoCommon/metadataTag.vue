@@ -5,7 +5,7 @@
                 <li :key="index" v-if="index < 2">
                     <span class="key">{{ item.key }}</span>
                     <span
-                        :style="{ 'background-color': getColorMapConfig(item.key, item.value) }"
+                        :style="{ 'background-color': getColorMap(item.key, item.value) }"
                         v-bk-overflow-tips
                     >
                         {{ item.value }}
@@ -19,7 +19,7 @@
                         <li v-for="(item, index) in metadataList.splice(2)" :key="index">
                             <span class="key">{{ item.key }}</span>
                             <span
-                                :style="{ 'background-color': getColorMapConfig(item.key, item.value) }"
+                                :style="{ 'background-color': getColorMap(item.key, item.value) }"
                                 v-bk-overflow-tips
                             >
                                 {{ item.value }}
@@ -32,7 +32,7 @@
         <li v-else>
             <span class="key">{{ metadata.key }}</span>
             <span
-                :style="{ 'background-color': getColorMapConfig(metadata.key, metadata.value) }"
+                :style="{ 'background-color': getColorMap(metadata.key, metadata.value) }"
                 v-bk-overflow-tips
             >
                 {{ metadata.value }}
@@ -67,10 +67,10 @@
                 }
             },
             // 根据元数据的 key 和 value，获取 value 的配色
-            getColorMapConfig () {
+            getColorMap () {
                 return function (key, value) {
                     const label = this.metadataLabelList.find(item => item.labelKey === key)
-                    return label?.labelColorMap[value] || '#000000'
+                    return label?.labelColorMap[value] || '#333333'
                 }
             }
         }
