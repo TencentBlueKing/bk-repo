@@ -25,28 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.configuration
+package com.tencent.bkrepo.scanner.service
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolInput
 
-@ConfigurationProperties("scanner")
-data class ScannerProperties(
-    /**
-     * 默认项目扫描子任务数量限制
-     */
-    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    /**
-     * 扫描报告地址
-     */
-    var detailReportUrl: String = "http://localhost",
-    /**
-     * 后端服务baseUrl
-     */
-    var baseUrl: String = "http://localhost"
-) {
-    companion object {
-        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
-        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
-        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
-    }
+interface TemporaryScanTokenService {
+    fun createToken(subtaskId: String): String
+    fun createToken(subtaskIds: List<String>): Map<String, String>
+    fun checkToken(subtaskId: String, token: String?)
+    fun deleteToken(subtaskId: String)
+    fun getToolInput(subtaskId: String): ToolInput
 }

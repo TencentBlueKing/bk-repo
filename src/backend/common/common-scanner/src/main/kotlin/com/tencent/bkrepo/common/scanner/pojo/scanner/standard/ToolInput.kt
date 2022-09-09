@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.scanner.pojo.scanner.standard
 
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner.Argument
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
+
 /**
  * 分析工具输入
  *
@@ -39,10 +42,6 @@ data class ToolInput(
      * 子任务id
      */
     val taskId: String,
-    /**
-     * 制品类型
-     */
-    val packageType: String,
     /**
      * 工具配置
      */
@@ -62,7 +61,44 @@ data class ToolInput(
      * 存在多个url时候第一个为manifest，工具可根据manifest组装成tar，或直接扫描layer
      */
     val fileUrls: List<FileUrl>? = null
-)
+) {
+    companion object {
+        fun create(
+            taskId: String,
+            scanner: StandardScanner,
+            packageType: String,
+            packageSize: Long,
+            fileUrls: List<FileUrl>
+        ): ToolInput {
+            val args = generateArgs(scanner, packageType, packageSize)
+            return ToolInput(taskId = taskId, toolConfig = ToolConfig(args), fileUrls = fileUrls)
+        }
 
-data class FileUrl(val url: String, val sha256: String)
-data class ToolConfig(val args: List<StandardScanner.Argument>)
+        fun create(
+            taskId: String,
+            scanner: StandardScanner,
+            packageType: String,
+            packageSize: Long,
+            filePath: String,
+            sha256: String
+        ): ToolInput {
+            val args = generateArgs(scanner, packageType, packageSize)
+            return ToolInput(taskId = taskId, toolConfig = ToolConfig(args), filePath = filePath, sha256 = sha256)
+        }
+
+        private fun generateArgs(
+            scanner: StandardScanner,
+            packageType: String,
+            packageSize: Long
+        ): List<Argument> {
+            val args = scanner.args.toMutableList()
+            args.add(Argument(STRING.name, StandardScanner.ARG_KEY_PKG_TYPE, packageType))
+            val maxTime = scanner.maxScanDuration(packageSize).toString()
+            args.add(Argument(StandardScanner.ArgumentType.NUMBER.name, StandardScanner.ARG_KEY_MAX_TIME, maxTime))
+            return args
+        }
+    }
+}
+
+data class FileUrl(val url: String, val name: String, val sha256: String)
+data class ToolConfig(val args: List<Argument>)

@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolConfig
+import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
 import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolOutput
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -127,12 +127,11 @@ class StandardScanExecutor(
     ): File {
         val scanner = task.scanner as StandardScanner
         val inputFile = File(workDir, INPUT_FILE)
-        val toolInput = ToolInput(
-            taskId = task.taskId,
-            packageType = task.repoType,
-            toolConfig = ToolConfig(scanner.args),
-            filePath = convertToContainerPath(scannerInputFile.absolutePath, workDir),
-            sha256 = sha256
+        val args = scanner.args.toMutableList()
+        args.add(StandardScanner.Argument(STRING.name, StandardScanner.ARG_KEY_PKG_TYPE, task.repoType))
+        val toolInput = ToolInput.create(
+            task.taskId, scanner, task.repoType, scannerInputFile.length(),
+            convertToContainerPath(scannerInputFile.absolutePath, workDir), sha256
         )
         inputFile.writeText(toolInput.toJsonString())
         return inputFile

@@ -354,6 +354,12 @@ class ScanServiceImpl @Autowired constructor(
         return false
     }
 
+    override fun get(subtaskId: String): SubScanTask {
+        return subScanTaskDao.findById(subtaskId)?.let {
+            Converter.convert(it, scannerService.get(it.scanner))
+        } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
+    }
+
     // TODO 添加消息队列后开启定时任务
     // @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun enqueueTimeoutSubTask() {

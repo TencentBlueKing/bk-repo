@@ -46,6 +46,8 @@ class StandardScanner(
 ) : Scanner(name, TYPE, version) {
     companion object {
         const val TYPE = "standard"
+        const val ARG_KEY_PKG_TYPE = "packageType"
+        const val ARG_KEY_MAX_TIME = "maxTime"
     }
 
     @ApiModel("扫描器参数")
