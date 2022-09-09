@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.opdata.job
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveFirstLevelFolder
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpFolderStatJobProperties
 import com.tencent.bkrepo.opdata.job.pojo.FolderMetric
@@ -76,6 +77,7 @@ class FolderOfRepoStatJob(
         val folderMetricsList = mutableListOf<TFolderMetrics>()
 
         for (i in 0 until SHARDING_COUNT) {
+            logger.info("start to stat folder metrics in table $i")
             folderMetricsList.addAll(stat(i))
         }
 
@@ -158,8 +160,7 @@ class FolderOfRepoStatJob(
                         val key = if (path == "/" && !isFolder) {
                             "/"
                         } else {
-                            val values = fullPath.split("/")
-                            "/${values[1]}"
+                            resolveFirstLevelFolder(fullPath)
                         }
                         folderMetrics.getOrPut(FOLDER_KEY_FORMAT.format(projectId, repoName, key)) {
                             FolderMetric(projectId, repoName, key)
