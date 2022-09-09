@@ -213,6 +213,14 @@ object PathUtils {
     }
 
     /**
+     * 提取一级目录
+     */
+    fun resolveFirstLevelFolder(fullPath: String): String {
+        val trimmedPath = fullPath.trimEnd(UNIX_SEPARATOR)
+        return "$UNIX_SEPARATOR${trimmedPath.split(UNIX_SEPARATOR)[1]}"
+    }
+
+    /**
      * 解析文件后缀
      */
     fun resolveExtension(fileName: String): String {
