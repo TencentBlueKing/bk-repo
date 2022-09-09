@@ -109,7 +109,7 @@
 
                     <bk-table-column :label="$t('metadata')">
                         <template #default="{ row }">
-                            <metadata-tag :metadata="row.nodeMetadata" />
+                            <metadata-tag :metadata="row.nodeMetadata" :metadata-label-list="metadataLabelList" />
                         </template>
                     </bk-table-column>
 
@@ -246,7 +246,8 @@
                     limitList: [10, 20, 40]
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
-                compressedData: []
+                compressedData: [],
+                metadataLabelList: []
             }
         },
         computed: {
@@ -377,6 +378,7 @@
                 const metadataLabelList = await this.getMetadataLabelList({
                     projectId: this.projectId
                 })
+                this.metadataLabelList = metadataLabelList
 
                 this.getArtifactoryList({
                     projectId: this.projectId,
@@ -506,7 +508,8 @@
                     repoName: this.repoName,
                     folder,
                     path: fullPath,
-                    data: {}
+                    data: {},
+                    metadataLabelList: this.metadataLabelList
                 })
             },
             renameRes ({ name, fullPath }) {

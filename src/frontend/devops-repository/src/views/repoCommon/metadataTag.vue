@@ -4,7 +4,12 @@
             <template v-for="(item, index) in metadataList">
                 <li :key="index" v-if="index < 2">
                     <span class="key">{{ item.key }}</span>
-                    <span class="green" v-bk-overflow-tips>{{ item.value }}</span>
+                    <span
+                        :style="{ 'background-color': getColorMapConfig(item.key, item.value) }"
+                        v-bk-overflow-tips
+                    >
+                        {{ item.value }}
+                    </span>
                 </li>
             </template>
             <li v-if="metadataList.length > 2">
@@ -13,7 +18,12 @@
                     <ul slot="content" class="popover-list">
                         <li v-for="(item, index) in metadataList.splice(2)" :key="index">
                             <span class="key">{{ item.key }}</span>
-                            <span class="green" v-bk-overflow-tips>{{ item.value }}</span>
+                            <span
+                                :style="{ 'background-color': getColorMapConfig(item.key, item.value) }"
+                                v-bk-overflow-tips
+                            >
+                                {{ item.value }}
+                            </span>
                         </li>
                     </ul>
                 </bk-popover>
@@ -21,7 +31,12 @@
         </template>
         <li v-else>
             <span class="key">{{ metadata.key }}</span>
-            <span :class="getColor" v-bk-overflow-tips>{{ metadata.value }}</span>
+            <span
+                :style="{ 'background-color': getColorMapConfig(metadata.key, metadata.value) }"
+                v-bk-overflow-tips
+            >
+                {{ metadata.value }}
+            </span>
         </li>
     </ul>
 </template>
@@ -31,6 +46,9 @@
         props: {
             metadata: {
                 type: [Array, Object]
+            },
+            metadataLabelList: {
+                type: Array
             }
         },
         computed: {
@@ -46,6 +64,13 @@
                         return 'red'
                     default:
                         return 'blue'
+                }
+            },
+            // 根据元数据的 key 和 value，获取 value 的配色
+            getColorMapConfig () {
+                return function (key, value) {
+                    const label = this.metadataLabelList.find(item => item.labelKey === key)
+                    return label?.labelColorMap[value] || '#000000'
                 }
             }
         }
