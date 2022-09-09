@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.opdata.job
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
+import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
+import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveFirstLevelFolder
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpFolderStatJobProperties
@@ -157,10 +160,14 @@ class FolderOfRepoStatJob(
                         }
                         val fullPath = it[NodeDetail::fullPath.name].toString()
                         livedNodeCount.incrementAndGet()
-                        val key = if (path == "/" && !isFolder) {
-                            "/"
+                        val key: String = if (isRoot(path)) {
+                            if (isFolder) {
+                                fullPath
+                            } else {
+                                UNIX_SEPARATOR.toString()
+                            }
                         } else {
-                            resolveFirstLevelFolder(fullPath)
+                            resolveFirstLevelFolder(normalizeFullPath(path))
                         }
                         folderMetrics.getOrPut(FOLDER_KEY_FORMAT.format(projectId, repoName, key)) {
                             FolderMetric(projectId, repoName, key)
