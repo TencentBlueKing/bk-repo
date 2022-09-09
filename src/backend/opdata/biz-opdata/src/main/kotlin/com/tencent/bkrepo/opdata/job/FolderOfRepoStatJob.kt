@@ -79,7 +79,6 @@ class FolderOfRepoStatJob(
         val folderMetricsList = mutableListOf<TFolderMetrics>()
 
         for (i in 0 until SHARDING_COUNT) {
-            logger.info("start to stat folder metrics in table $i")
             folderMetricsList.addAll(stat(i))
         }
 
