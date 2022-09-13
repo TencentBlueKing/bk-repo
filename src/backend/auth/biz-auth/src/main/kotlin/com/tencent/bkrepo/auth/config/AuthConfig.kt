@@ -33,13 +33,8 @@ package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.interceptor.AuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
-import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
-import com.tencent.bkrepo.repository.api.ProjectClient
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Lazy
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
@@ -70,5 +65,5 @@ class AuthConfig : WebMvcConfigurer {
 
     @Bean
     fun clientAuthInterceptor() = AuthInterceptor()
-
 }
+
