@@ -68,7 +68,7 @@ class FolderOfRepoStatJob(
 
     private var executor: ThreadPoolExecutor? = null
 
-    @Scheduled(cron = "00 00 12 * * ?")
+    @Scheduled(cron = "00 00 15 * * ?")
     @SchedulerLock(name = "FolderStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {

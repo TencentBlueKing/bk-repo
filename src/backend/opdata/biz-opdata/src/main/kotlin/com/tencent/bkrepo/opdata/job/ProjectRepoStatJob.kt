@@ -61,7 +61,7 @@ class ProjectRepoStatJob(
     private val opJobProperties: OpProjectRepoStatJobProperties
 ) : BaseJob(mongoTemplate) {
 
-    @Scheduled(cron = "00 00 16 * * ?")
+    @Scheduled(cron = "00 00 17 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         if (!opJobProperties.enabled) {
