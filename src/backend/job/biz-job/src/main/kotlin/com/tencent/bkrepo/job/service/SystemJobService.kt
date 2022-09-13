@@ -28,11 +28,26 @@
 package com.tencent.bkrepo.job.service
 
 import com.tencent.bkrepo.job.batch.base.BatchJob
+import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.pojo.JobDetail
+import org.springframework.context.ApplicationContext
+import org.springframework.scheduling.support.CronSequenceGenerator
+import org.springframework.scheduling.support.PeriodicTrigger
+import org.springframework.scheduling.support.SimpleTriggerContext
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.*
+import java.util.concurrent.TimeUnit
+import javax.annotation.Resource
+
 
 @Service
 class SystemJobService(val jobs: List<BatchJob<*>>) {
+
+    @Resource
+    private val ctx: ApplicationContext? = null
+
     fun detail() :List<JobDetail>{
         val jobDetails = mutableListOf<JobDetail>()
         jobs.forEach {
@@ -47,11 +62,64 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
                     running = it.isRunning(),
                     lastBeginTime = it.lastBeginTime,
                     lastEndTime = it.lastEndTime,
-                    lastExecuteTime = it.lastExecuteTime
+                    lastExecuteTime = it.lastExecuteTime,
+                    nextExecuteTime = getNextExecuteTime(it.batchJobProperties,
+                            it.lastBeginTime,
+                            it.lastEndTime,
+                            it.getJobName()
+                    )
                 )
                 jobDetails.add(jobDetail)
             }
         }
         return jobDetails
+    }
+
+    fun getNextExecuteTime(batchJobProperties: BatchJobProperties,
+                           lastBeginTime: LocalDateTime?,
+                           lastEndTime: LocalDateTime?,
+                           name: String
+    ): LocalDateTime? {
+        // 没启用，没下次执行执行时间
+        if (!batchJobProperties.enabled) {
+            return null
+        }
+        var finalNextTime: Date
+        // 不根据cron表达式
+        if (batchJobProperties.cron.equals("-")) {
+            return if (lastBeginTime != null) {
+                // 根据trigger和上次调用取下次
+                var lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
+                var lastStartTime = Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant())
+                finalNextTime = if (batchJobProperties.fixedDelay != 0L) {
+                    val periodicTrigger = PeriodicTrigger(batchJobProperties.fixedDelay, TimeUnit.MILLISECONDS)
+                    periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
+                    periodicTrigger.setFixedRate(false)
+                    periodicTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
+                } else {
+                    val periodicTrigger = PeriodicTrigger(batchJobProperties.fixedRate, TimeUnit.MILLISECONDS)
+                    periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
+                    periodicTrigger.setFixedRate(true)
+                    periodicTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
+                }
+                LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
+            } else {
+                // 获取容器启动时间，增加initaldelay
+                finalNextTime = if (ctx != null) {
+                    Date(ctx.startupDate + batchJobProperties.initialDelay)
+                } else {
+                    Date(System.currentTimeMillis() + batchJobProperties.initialDelay)
+                }
+                LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
+            }
+        }
+        // 根据cron表达式
+        val cronGenerator = CronSequenceGenerator(batchJobProperties.cron)
+        finalNextTime = if (lastBeginTime != null) {
+            cronGenerator.next(Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant()))
+        } else {
+            cronGenerator.next(Date())
+        }
+        return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
     }
 }
