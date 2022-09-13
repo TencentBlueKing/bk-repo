@@ -38,6 +38,4 @@ class HttpAuthConfig(config: AuthConfig) {
     init {
         config.prefixEnabled = false
     }
-
-
 }
