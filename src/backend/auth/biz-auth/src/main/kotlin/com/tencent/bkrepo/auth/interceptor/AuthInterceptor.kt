@@ -102,13 +102,19 @@ class AuthInterceptor : HandlerInterceptor {
                 throw IllegalArgumentException("check auth credential fail")
             }
             val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
-            if (userId.isNotEmpty() && userService.getUserInfoById(userId) == null) {
-                val createRsq = CreateUserRequest(userId = userId, name = userId)
-                userService.createUser(createRsq)
+            val userInfo = userService.getUserInfoById(userId)
+            val isAdmin: Boolean
+            if (userId.isNotEmpty() && userInfo == null) {
+                val request = CreateUserRequest(userId = userId, name = userId)
+                isAdmin = false
+                userService.createUser(request)
+            } else {
+                isAdmin = userInfo!!.admin
             }
             logger.debug("auth userId [$userId], platId [$appId]")
             request.setAttribute(USER_KEY, userId)
             request.setAttribute(PLATFORM_KEY, appId)
+            request.setAttribute(ADMIN_USER, isAdmin)
             return true
         } catch (e: IllegalArgumentException) {
             response.status = HttpStatus.UNAUTHORIZED.value
