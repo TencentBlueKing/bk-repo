@@ -4,7 +4,7 @@
 
 ## 创建扫描任务
 
-- API: POST /scanner/api/scan
+- API: POST /analyst/api/scan
 - API 名称: scan
 - 功能说明：
     - 中文：发起扫描
@@ -166,7 +166,7 @@
 
 ## 通过流水线创建扫描任务
 
-- API: POST /scanner/api/scan/pipeline
+- API: POST /analyst/api/scan/pipeline
 - API 名称: pipeline scan
 - 功能说明：
   - 中文：通过流水线发起扫描
@@ -240,7 +240,7 @@
 
 ## 停止扫描
 
-- API: POST /scanner/api/scan/{projectId}/stop
+- API: POST /analyst/api/scan/{projectId}/stop
 - API 名称: stop_scan
 - 功能说明：
   - 中文：停止扫描
@@ -256,7 +256,7 @@
 
 ## 停止扫描任务
 
-- API: POST /scanner/api/scan/{projectId}/tasks/{taskId}/stop
+- API: POST /analyst/api/scan/{projectId}/tasks/{taskId}/stop
 - API 名称: stop_scan_task
 - 功能说明：
   - 中文：停止扫描任务
@@ -284,7 +284,7 @@
 
 ## 获取扫描任务
 
-- API: GET /scanner/api/scan/tasks/{taskId}
+- API: GET /analyst/api/scan/tasks/{taskId}
 - API 名称: get_task
 - 功能说明：
     - 中文：获取扫描任务
@@ -314,7 +314,7 @@
 
 ## 分页获取扫描任务
 
-- API: GET /scanner/api/scan/tasks
+- API: GET /analyst/api/scan/tasks
 - API 名称: get_tasks
 - 功能说明：
   - 中文：分页获取扫描任务
@@ -363,7 +363,7 @@
 
 ## 获取扫描子任务
 
-- API: GET /scanner/api/scan/tasks/{taskId}/subtasks/{subtaskId}
+- API: GET /analyst/api/scan/tasks/{taskId}/subtasks/{subtaskId}
 - API 名称: get_subtask
 - 功能说明：
   - 中文：获取扫描子任务
@@ -431,7 +431,7 @@
 
 ## 分页获取扫描子任务
 
-- API: GET /scanner/api/scan/tasks/{taskId}/subtasks
+- API: GET /analyst/api/scan/tasks/{taskId}/subtasks
 - API 名称: get_subtasks
 - 功能说明：
   - 中文：分页获取扫描子任务

@@ -4,7 +4,7 @@
 
 ## 创建扫描器
 
-- API: POST /scanner/api/scanners
+- API: POST /analyst/api/scanners
 - API 名称: create_scanner
 - 功能说明：
     - 中文：创建扫描器
@@ -95,7 +95,7 @@
 
 ## 查询扫描器
 
-- API: GET /scanner/api/scanners/{scannerName}
+- API: GET /analyst/api/scanners/{scannerName}
 - API 名称: get_scanner
 - 功能说明：
     - 中文：查询扫描器
@@ -143,7 +143,7 @@
 
 ## 删除扫描器
 
-- API: DELETE /scanner/api/scanners/{scannerName}
+- API: DELETE /analyst/api/scanners/{scannerName}
 - API 名称: delete_scanner
 - 功能说明：
     - 中文：删除扫描器
@@ -169,7 +169,7 @@
 
 ## 获取扫描器列表
 
-- API: GET /scanner/api/scanners
+- API: GET /analyst/api/scanners
 - API 名称: list_scanner
 - 功能说明：
     - 中文：获取扫描器列表

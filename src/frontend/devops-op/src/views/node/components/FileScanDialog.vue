@@ -61,7 +61,7 @@ export default {
     },
     doScan() {
       scan(this.scanner.name, this.node.projectId, this.node.repoName, this.node.fullPath).then(_ => {
-        this.$message.success('创建扫描任务成功')
+        this.$message.success('创建任务成功')
         this.close()
       })
     }

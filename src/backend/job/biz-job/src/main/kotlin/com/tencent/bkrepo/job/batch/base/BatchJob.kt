@@ -96,7 +96,6 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
 
     open fun start(): Boolean {
         if (!shouldExecute()) {
-            logger.info("Job[${getJobName()}] not enabled,exit job.")
             return false
         }
         logger.info("Start to execute async job[${getJobName()}]")
