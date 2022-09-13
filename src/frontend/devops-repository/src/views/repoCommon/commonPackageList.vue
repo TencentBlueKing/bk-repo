@@ -1,15 +1,15 @@
 <template>
     <div class="common-package-container" v-bkloading="{ isLoading }">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
-            <Icon class="package-img" size="70" :name="repoType" />
-            <div class="ml20 common-package-title">
+            <Icon class="package-img" size="30" :name="repoType" />
+            <div class="ml10 common-package-title">
                 <div class="mb5 repo-title text-overflow" :title="repoName">
                     {{ repoName }}
                 </div>
-                <div class="repo-description text-overflow"
+                <!-- <div class="repo-description text-overflow"
                     :title="currentRepo.description">
                     {{ currentRepo.description || '【仓库描述】' }}
-                </div>
+                </div> -->
             </div>
             <div class="flex-end-center flex-1">
                 <bk-button class="ml10 flex-align-center" text theme="primary" @click="showGuide = true">
@@ -208,25 +208,24 @@
 .common-package-container {
     height: 100%;
     .common-package-header{
-        height: 90px;
+        height: 60px;
         background-color: white;
         .package-img {
-            padding: 15px;
             border-radius: 4px;
-            box-shadow: 0px 3px 5px 0px rgba(217, 217, 217, 0.5);
         }
         .common-package-title {
             .repo-title {
                 max-width: 500px;
                 font-size: 16px;
-                font-weight: bold;
+                font-weight: 500;
+                color: #081E40;
             }
-            .repo-description {
-                max-width: 70vw;
-                padding: 5px 15px;
-                background-color: var(--bgWeightColor);
-                border-radius: 2px;
-            }
+            // .repo-description {
+            //     max-width: 70vw;
+            //     padding: 5px 15px;
+            //     background-color: var(--bgWeightColor);
+            //     border-radius: 2px;
+            // }
         }
     }
     .package-search-tools {
