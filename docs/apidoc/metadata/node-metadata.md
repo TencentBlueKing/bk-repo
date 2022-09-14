@@ -57,7 +57,8 @@
       {
         "key": "key3",
         "value":  "value3",
-        "description": "description"
+        "description": "description",
+        "link": "https://bkrepo.example.com"
       }
     ]
   }
