@@ -83,6 +83,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -160,6 +161,11 @@ class PypiLocalRepository(
             HttpContextHolder.getClientAddress()
         )
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
+    }
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        packageVersion(context)?.let { downloadIntercept(context, it) }
     }
 
     private fun combineSameParamQuery(entry: Map.Entry<String, List<String>>): Rule.NestedRule {
@@ -696,6 +702,20 @@ class PypiLocalRepository(
                 projectId, repoName,
                 packageKey, pypiPackagePojo.version
             )
+        }
+    }
+
+    private fun packageVersion(context: ArtifactDownloadContext): PackageVersion? {
+        with(context) {
+            val pypiPackagePojo = try {
+                artifactInfo.getArtifactFullPath().toPypiPackagePojo()
+            } catch (e: Exception) {
+                logger.error("parse pypi package failed", e)
+                null
+            } ?: return null
+
+            val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
+            return packageClient.findVersionByName(projectId, repoName, packageKey, pypiPackagePojo.version).data
         }
     }
 

@@ -295,16 +295,18 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (context.repositoryDetail.type != RepositoryType.GENERIC) {
             val packageType = context.repositoryDetail.type.name
             val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
-            publisher.publishEvent(VersionDownloadEvent(
-                projectId = record.projectId,
-                repoName = record.repoName,
-                userId = SecurityUtils.getUserId(),
-                packageKey = record.packageKey,
-                packageVersion = record.packageVersion,
-                packageName = packageName,
-                packageType = packageType,
-                realIpAddress = HttpContextHolder.getClientAddress()
-            ))
+            publisher.publishEvent(
+                VersionDownloadEvent(
+                    projectId = record.projectId,
+                    repoName = record.repoName,
+                    userId = SecurityUtils.getUserId(),
+                    packageKey = record.packageKey,
+                    packageVersion = record.packageVersion,
+                    packageName = packageName,
+                    packageType = packageType,
+                    realIpAddress = HttpContextHolder.getClientAddress()
+                )
+            )
         }
     }
 

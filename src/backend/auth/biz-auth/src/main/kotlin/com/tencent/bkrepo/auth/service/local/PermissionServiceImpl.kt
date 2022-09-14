@@ -60,7 +60,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import java.time.LocalDateTime
 
@@ -68,14 +67,11 @@ open class PermissionServiceImpl constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val repoClient: RepositoryClient,
+    private val projectClient: ProjectClient
 ) : PermissionService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
-    @Autowired
-    lateinit var repoClient: RepositoryClient
-
-    @Autowired
-    lateinit var projectClient: ProjectClient
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
         permissionRepository.deleteById(id)
@@ -239,7 +235,6 @@ open class PermissionServiceImpl constructor(
         var queryRoles = emptyList<String>()
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
             queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
-
         }
         if (queryRoles.isEmpty()) return false
 
@@ -270,7 +265,6 @@ open class PermissionServiceImpl constructor(
                 if (checkIncludePattern(it.includePattern, path!!)) return true
 
                 if (!checkExcludePattern(it.excludePattern, path!!)) return false
-
             }
         }
         return false
@@ -447,7 +441,10 @@ open class PermissionServiceImpl constructor(
     }
 
     private fun getOnePermission(
-        projectId: String, repoName: String, permName: String, actions: List<PermissionAction>
+        projectId: String,
+        repoName: String,
+        permName: String,
+        actions: List<PermissionAction>
     ): TPermission {
         permissionRepository.findOneByProjectIdAndReposAndPermNameAndResourceType(
             projectId, repoName, permName, ResourceType.REPO

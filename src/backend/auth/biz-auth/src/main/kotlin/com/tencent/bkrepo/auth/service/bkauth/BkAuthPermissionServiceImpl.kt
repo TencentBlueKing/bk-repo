@@ -40,6 +40,8 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 
@@ -53,12 +55,16 @@ class BkAuthPermissionServiceImpl constructor(
     mongoTemplate: MongoTemplate,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPipelineService: BkAuthPipelineService,
-    private val bkAuthProjectService: BkAuthProjectService
+    private val bkAuthProjectService: BkAuthProjectService,
+    repositoryClient: RepositoryClient,
+    projectClient: ProjectClient
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
     permissionRepository,
-    mongoTemplate
+    mongoTemplate,
+    repositoryClient,
+    projectClient
 ) {
     private fun parsePipelineId(path: String): String? {
         val roads = PathUtils.normalizeFullPath(path).split("/")
@@ -76,9 +82,6 @@ class BkAuthPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
-                // devops直接放过
-                if (appId == bkAuthConfig.devopsAppId) return true
-                // 其它请求校验项目权限
                 return checkProjectPermission(uid, projectId!!, action)
             }
 

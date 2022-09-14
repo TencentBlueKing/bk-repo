@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.rpm.job
 
+import com.tencent.bkrepo.common.service.cluster.CenterJob
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -15,7 +16,7 @@ class OthersJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔 ms
+    @CenterJob
     @Scheduled(fixedDelay = 30 * 1000)
     @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT30M")
     @Suppress("SwallowedException", "TooGenericExceptionCaught")

@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.repository.pojo.node
 
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_PACKAGE_NAME
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_PACKAGE_VERSION
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -77,4 +79,14 @@ data class NodeDetail(
     val projectId: String = nodeInfo.projectId,
     @ApiModelProperty("所属仓库名称")
     val repoName: String = nodeInfo.repoName
-)
+) {
+    /**
+     * 获取node所属package的name
+     */
+    fun packageName() = metadata[METADATA_KEY_PACKAGE_NAME]?.toString()
+
+    /**
+     * 获取node所属package的版本
+     */
+    fun packageVersion() = metadata[METADATA_KEY_PACKAGE_VERSION]?.toString()
+}

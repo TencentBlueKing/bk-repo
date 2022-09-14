@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
@@ -58,7 +59,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
-@RestControllerAdvice
+@RestControllerAdvice("com.tencent.bkrepo.oci")
 class OciExceptionHandler(
     private val ociProperties: OciProperties
 ) {
@@ -121,21 +122,24 @@ class OciExceptionHandler(
     @ExceptionHandler(ArtifactNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleException(exception: ArtifactNotFoundException) {
-        val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
+        val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val responseObject = OciErrorResponse(message, exception.messageCode, null)
         ociResponse(responseObject, exception)
     }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: ErrorCodeException) {
-        val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
+        val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val responseObject = OciErrorResponse(message, exception.messageCode, null)
         ociResponse(responseObject, exception)
     }
 
     @ExceptionHandler(PermissionException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleException(exception: PermissionException) {
-        val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
+        val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val responseObject = OciErrorResponse(message, exception.messageCode, null)
         ociResponse(responseObject, exception)
     }
 

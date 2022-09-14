@@ -69,7 +69,9 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -170,6 +172,8 @@ class HelmLocalRepository(
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
+            downloadIntercept(context, node)
+            packageVersion(context, node)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
         }
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
         inputStream?.let {
@@ -236,6 +240,15 @@ class HelmLocalRepository(
                 )
             }
             publishEvent(event)
+        }
+    }
+
+    private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
+        with(context) {
+            val packageName = node.metadata[NAME] ?: return null
+            val packageVersion = node.metadata[VERSION] ?: return null
+            val packageKey = PackageKeys.ofHelm(packageName.toString())
+            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion.toString()).data
         }
     }
 

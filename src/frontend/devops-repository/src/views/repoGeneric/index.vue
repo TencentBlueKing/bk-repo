@@ -1,15 +1,15 @@
 <template>
     <div class="repo-generic-container">
         <header class="mb10 pl20 pr20 generic-header flex-align-center">
-            <Icon class="generic-img" size="70" name="generic" />
-            <div class="ml20 generic-title">
-                <div class="mb10 repo-title text-overflow" :title="replaceRepoName(repoName)">
+            <Icon class="generic-img" size="30" name="generic" />
+            <div class="ml10 generic-title">
+                <div class="repo-title text-overflow" :title="replaceRepoName(repoName)">
                     {{ replaceRepoName(repoName) }}
                 </div>
-                <div class="repo-description text-overflow"
+                <!-- <div class="repo-description text-overflow"
                     :title="currentRepo.description">
                     {{ currentRepo.description || '【仓库描述】' }}
-                </div>
+                </div> -->
             </div>
         </header>
         <div class="repo-generic-main flex-align-center"
@@ -92,20 +92,28 @@
                     <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
-                            <scan-tag class="mr5"
-                                v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
+                            <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
+                            <span
+                                class="hover-btn disabled"
+                                v-if="!row.folder && row.metadata.forbidStatus"
+                                v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
+                            >{{row.name}}</span>
+                            <span v-else>{{ row.name }}</span>
+                            <scan-tag class="mr5 table-svg"
+                                v-if="!row.folder && genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1'))"
                                 :status="row.metadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>
-                            <forbid-tag class="mr5"
-                                v-if="!row.folder && row.metadata.forbidStatus"
-                                v-bind="row.metadata">
-                            </forbid-tag>
-                            <Icon class="table-svg" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
-                            <span class="ml10">{{row.name}}</span>
                         </template>
                     </bk-table-column>
+
+                    <bk-table-column :label="$t('metadata')">
+                        <template #default="{ row }">
+                            <metadata-tag :metadata="row.nodeMetadata" :metadata-label-list="metadataLabelList" />
+                        </template>
+                    </bk-table-column>
+
                     <bk-table-column v-if="searchFileName" :label="$t('path')" prop="fullPath" show-overflow-tooltip></bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
@@ -142,10 +150,10 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' }
+                                            genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1')) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
                                         ] : [])
                                     ] : []),
-                                    // !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
+                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
@@ -181,7 +189,7 @@
     import MoveSplitBar from '@repository/components/MoveSplitBar'
     import RepoTree from '@repository/components/RepoTree'
     import ScanTag from '@repository/views/repoScan/scanTag'
-    import forbidTag from '@repository/components/ForbidTag'
+    import metadataTag from '@repository/views/repoCommon/metadataTag'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import genericUploadDialog from '@repository/views/repoGeneric/genericUploadDialog'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
@@ -190,18 +198,18 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
-    import { getIconName } from '@repository/store/publicEnum'
+    import { getIconName, genericScanFileTypes } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
 
     export default {
         name: 'repoGeneric',
         components: {
-            forbidTag,
             OperationList,
             Breadcrumb,
             MoveSplitBar,
             RepoTree,
             ScanTag,
+            metadataTag,
             genericDetail,
             genericUploadDialog,
             genericFormDialog,
@@ -213,6 +221,7 @@
         data () {
             return {
                 MODE_CONFIG,
+                genericScanFileTypes,
                 sideBarWidth: 300,
                 moveBarWidth: 10,
                 isLoading: false,
@@ -236,7 +245,8 @@
                     limitList: [10, 20, 40]
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
-                compressedData: []
+                compressedData: [],
+                metadataLabelList: []
             }
         },
         computed: {
@@ -295,6 +305,7 @@
                 'getRepoListAll',
                 'getFolderList',
                 'getArtifactoryList',
+                'getMetadataLabelList',
                 'deleteArtifactory',
                 'deleteMultiArtifactory',
                 'getFolderSize',
@@ -305,6 +316,18 @@
                 'previewCompressedFileList',
                 'forbidMetadata'
             ]),
+            tooltipContent ({ forbidType, forbidUser }) {
+                switch (forbidType) {
+                    case 'SCANNING':
+                        return '制品正在扫描中'
+                    case 'QUALITY_UNPASS':
+                        return '制品扫描质量规则未通过'
+                    case 'MANUAL':
+                        return `${this.userList[forbidUser]?.name || forbidUser} 手动禁止`
+                    default:
+                        return ''
+                }
+            },
             changeSideBarWidth (sideBarWidth) {
                 if (sideBarWidth > 260) {
                     this.sideBarWidth = sideBarWidth
@@ -360,8 +383,14 @@
                 })
             },
             // 获取中间列表数据
-            getArtifactories () {
+            async getArtifactories () {
                 this.isLoading = true
+                
+                const metadataLabelList = await this.getMetadataLabelList({
+                    projectId: this.projectId
+                })
+                this.metadataLabelList = metadataLabelList
+
                 this.getArtifactoryList({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -381,6 +410,14 @@
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
+                        v.nodeMetadata.forEach(item => {
+                            metadataLabelList.forEach(ele => {
+                                if (ele.labelKey === item.key) {
+                                    item.display = ele.display
+                                }
+                            })
+                        })
+
                         return {
                             metadata: {},
                             ...v,
@@ -412,7 +449,7 @@
             // 树组件选中文件夹
             itemClickHandler (node) {
                 this.selectedTreeNode = node
-                
+
                 this.handlerPaginationChange()
                 // 更新已展开文件夹数据
                 const reg = new RegExp(`^${node.roadMap}`)
@@ -482,7 +519,8 @@
                     repoName: this.repoName,
                     folder,
                     path: fullPath,
-                    data: {}
+                    data: {},
+                    metadataLabelList: this.metadataLabelList
                 })
             },
             renameRes ({ name, fullPath }) {
@@ -508,7 +546,7 @@
                 this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: '安全扫描',
+                    title: '扫描制品',
                     type: 'scan',
                     id: '',
                     name,
@@ -684,7 +722,7 @@
                     isLoading: true,
                     path: row.fullPath
                 })
-                
+
                 const res = await this.previewCompressedFileList({
                     projectId: row.projectId,
                     repoName: row.repoName,
@@ -703,7 +741,7 @@
                     return acc
                 }, [])
             },
-            
+
             async handleShowPreview (row) {
                 const { projectId, repoName, path, filePath } = row
                 this.$refs.previewBasicFileDialog.setDialogData({
@@ -719,7 +757,7 @@
                 })
                 this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
-            
+
             getBtnDisabled (name) {
                 return name.endsWith('txt')
                     || name.endsWith('sh')
@@ -741,25 +779,24 @@
     height: 100%;
     overflow: hidden;
     .generic-header{
-        height: 90px;
+        height: 60px;
         background-color: white;
         .generic-img {
-            padding: 15px;
             border-radius: 4px;
-            box-shadow: 0px 3px 5px 0px rgba(217, 217, 217, 0.5);
         }
         .generic-title {
             .repo-title {
                 max-width: 500px;
                 font-size: 16px;
-                font-weight: bold;
+                font-weight: 500;
+                color: #081E40;
             }
-            .repo-description {
-                max-width: 70vw;
-                padding: 5px 15px;
-                background-color: var(--bgWeightColor);
-                border-radius: 2px;
-            }
+            // .repo-description {
+            //     max-width: 70vw;
+            //     padding: 5px 15px;
+            //     background-color: var(--bgWeightColor);
+            //     border-radius: 2px;
+            // }
         }
     }
     .repo-generic-main {

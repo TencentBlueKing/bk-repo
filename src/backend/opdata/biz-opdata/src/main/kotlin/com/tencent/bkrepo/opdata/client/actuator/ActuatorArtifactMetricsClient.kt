@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus.UNAUTHORIZED
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_COUNT
+import com.tencent.bkrepo.common.artifact.metrics.ASYNC_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.common.artifact.metrics.ASYNC_TASK_QUEUE_SIZE
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
@@ -53,47 +55,48 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
     private val opProperties: OpProperties
 ) : ArtifactMetricsClient {
     override fun uploadingCount(instanceInfo: InstanceInfo): Long {
-        try {
-            return count(instanceInfo, ARTIFACT_UPLOADING_COUNT)
-        } catch (e: Exception) {
-            logger.error("get uploading count failed", e)
-        }
-        return UNKNOWN
+        return count(instanceInfo, ARTIFACT_UPLOADING_COUNT)
     }
 
     override fun downloadingCount(instanceInfo: InstanceInfo): Long {
-        try {
-            return count(instanceInfo, ARTIFACT_DOWNLOADING_COUNT)
-        } catch (e: Exception) {
-            logger.error("get downloading count failed", e)
-        }
-        return UNKNOWN
+        return count(instanceInfo, ARTIFACT_DOWNLOADING_COUNT)
+    }
+
+    override fun asyncTaskActiveCount(instanceInfo: InstanceInfo): Long {
+        return count(instanceInfo, ASYNC_TASK_ACTIVE_COUNT)
+    }
+
+    override fun asyncTaskQueueSize(instanceInfo: InstanceInfo): Long {
+        return count(instanceInfo, ASYNC_TASK_QUEUE_SIZE)
     }
 
     private fun count(instanceInfo: InstanceInfo, metricsName: String): Long {
-        if (!checkUsernameAndPassword()) {
-            logger.warn("get $metricsName failed, username or password is empty")
-            return UNKNOWN
-        }
-
-        val req = buildRequest(instanceInfo, metricsName)
-        httpClient.newCall(req).execute().use { res ->
-            if (res.isSuccessful) {
-                val metrics = res.body()!!.string().readJsonString<Metrics>()
-                require(metrics.measurements.size == 1)
-                return metrics.measurements[0].value.toLong()
+        try {
+            if (!checkUsernameAndPassword()) {
+                logger.warn("get $metricsName failed, username or password is empty")
+                return UNKNOWN
             }
 
-            val resCode = res.code()
-            val logMsg = "request metrics actuator $metricsName failed, code: $resCode, message: ${res.message()}"
-            if (resCode == NOT_FOUND.value || resCode == UNAUTHORIZED.value || resCode == FORBIDDEN.value) {
-                logger.warn(logMsg)
-            } else {
-                logger.error(logMsg)
-            }
+            val req = buildRequest(instanceInfo, metricsName)
+            httpClient.newCall(req).execute().use { res ->
+                if (res.isSuccessful) {
+                    val metrics = res.body()!!.string().readJsonString<Metrics>()
+                    require(metrics.measurements.size == 1)
+                    return metrics.measurements[0].value.toLong()
+                }
 
-            return UNKNOWN
+                val resCode = res.code()
+                val logMsg = "request metrics actuator $metricsName failed, code: $resCode, message: ${res.message()}"
+                if (resCode == NOT_FOUND.value || resCode == UNAUTHORIZED.value || resCode == FORBIDDEN.value) {
+                    logger.warn(logMsg)
+                } else {
+                    logger.error(logMsg)
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("get $metricsName failed", e)
         }
+        return UNKNOWN
     }
 
     private fun buildRequest(instanceInfo: InstanceInfo, metricsName: String): Request {

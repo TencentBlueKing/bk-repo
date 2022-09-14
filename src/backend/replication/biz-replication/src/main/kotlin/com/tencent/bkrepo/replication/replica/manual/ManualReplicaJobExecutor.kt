@@ -29,12 +29,17 @@ package com.tencent.bkrepo.replication.replica.manual
 
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.base.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.ReplicaRecordServiceImpl.Companion.isCronJob
+import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskDetailMetricsRecord
+import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 手动调用仅执行一次的任务
@@ -56,7 +61,16 @@ class ManualReplicaJobExecutor(
         var status = ExecutionStatus.SUCCESS
         var errorReason: String? = null
         val taskRecord = replicaRecordService.findOrCreateLatestRecord(taskDetail.task.key)
+            .copy(startTime = LocalDateTime.now())
         try {
+            logger.info(
+                convertToReplicationTaskDetailMetricsRecord(
+                    taskDetail = taskDetail,
+                    record = taskRecord,
+                    status = ExecutionStatus.RUNNING,
+                    taskStatus = ReplicaStatus.REPLICATING
+                ).toJson()
+            )
             val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
             result.forEach {
                 if (it.status == ExecutionStatus.FAILED) {
@@ -72,6 +86,17 @@ class ManualReplicaJobExecutor(
         } finally {
             // 保存结果
             replicaRecordService.completeRecord(taskRecord.id, status, errorReason)
+            val taskStatus = if (isCronJob(taskDetail.task.setting, taskDetail.task.replicaType))
+                ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
+            logger.info(
+                convertToReplicationTaskDetailMetricsRecord(
+                    taskDetail = taskDetail,
+                    record = taskRecord,
+                    status = status,
+                    taskStatus = taskStatus,
+                    errorReason = errorReason
+                ).toJson()
+            )
             logger.info("Run once replica task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }
     }

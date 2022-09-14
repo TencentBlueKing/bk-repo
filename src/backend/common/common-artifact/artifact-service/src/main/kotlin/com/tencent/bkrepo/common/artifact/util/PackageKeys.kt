@@ -138,25 +138,6 @@ object PackageKeys {
     fun ofComposer(name: String): String {
         return ofName(COMPOSER, name)
     }
-
-    /**
-     * 生成name格式key
-     *
-     * 例子: {schema}://test
-     *
-     * @param repositoryType repository type
-     * @param name package name
-     *
-     * @return package key
-     */
-    fun ofName(repositoryType: RepositoryType, name: String): String {
-        val schema = when (repositoryType) {
-            RepositoryType.MAVEN -> MAVEN
-            else -> repositoryType.name.toLowerCase()
-        }
-        return ofName(schema, name)
-    }
-
     /**
      * 生成nuget格式key
      * 例子: nuget://test
@@ -250,6 +231,24 @@ object PackageKeys {
      */
     fun ofName(schema: String, name: String): String {
         return StringBuilder(schema).append(SEPARATOR).append(name).toString()
+    }
+
+    /**
+     * 生成name格式key
+     *
+     * 例子: {schema}://test
+     *
+     * @param repositoryType repository type
+     * @param name package name
+     *
+     * @return package key
+     */
+    fun ofName(repositoryType: RepositoryType, name: String): String {
+        val schema = when(repositoryType) {
+            RepositoryType.MAVEN -> MAVEN
+            else -> repositoryType.name.toLowerCase()
+        }
+        return ofName(schema, name)
     }
 
     /**

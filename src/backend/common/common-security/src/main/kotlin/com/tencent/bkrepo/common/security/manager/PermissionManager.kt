@@ -127,13 +127,14 @@ open class PermissionManager(
         projectId: String,
         repoName: String,
         public: Boolean? = null,
-        anonymous: Boolean = false
+        anonymous: Boolean = false,
+        userId: String = SecurityUtils.getUserId()
     ) {
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (allowReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
             return
         }
         checkPermission(
@@ -141,7 +142,8 @@ open class PermissionManager(
             action = action,
             projectId = projectId,
             repoName = repoName,
-            anonymous = anonymous
+            anonymous = anonymous,
+            userId = userId
         )
     }
 
@@ -201,6 +203,9 @@ open class PermissionManager(
                 throw PermissionException()
             }
         } else if (principalType == PrincipalType.PLATFORM) {
+            if (userId.isNullOrEmpty()) {
+                logger.warn("platform auth with empty userId[$platformId,$userId]")
+            }
             if (platformId == null && !isAdminUser(userId)) {
                 throw PermissionException()
             }
@@ -235,7 +240,11 @@ open class PermissionManager(
      * 判断是否为系统级公开仓库且为READ操作
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun allowReadSystemRepo(action: PermissionAction, repoInfo: RepositoryInfo): Boolean {
+    private fun allowReadSystemRepo(
+        action: PermissionAction,
+        repoInfo: RepositoryInfo,
+        userId: String = SecurityUtils.getUserId()
+    ): Boolean {
         if (SecurityUtils.isServiceRequest()) {
             return true
         }

@@ -4,7 +4,7 @@
 
 ## 获取扫描报告预览
 
-- API: POST /scanner/api/scan/reports/overview
+- API: POST /analyst/api/scan/reports/overview
 - API 名称: get_report_overview
 - 功能说明：
     - 中文：预览扫描报告
@@ -87,7 +87,7 @@
 
 ## 获取扫描报告详情
 
-- API: POST /scanner/api/scan/reports/detail/{projectId}/{repoName}/{fullPath}
+- API: POST /analyst/api/scan/reports/detail/{projectId}/{repoName}/{fullPath}
 - API 名称: get_report_detail
 - 功能说明：
   - 中文：获取扫描报告详情
@@ -192,7 +192,7 @@
 
 ## 获取子任务扫描报告详情
 
-- API: GET /scanner/api/scan/reports/{subScanTaskId}
+- API: GET /analyst/api/scan/reports/{subScanTaskId}
 - API 名称: get_subtask_report_detail
 - 功能说明：
   - 中文：获取扫描子任务漏洞数据
@@ -294,7 +294,7 @@ data字段说明
 
 ## 获取属于方案的子任务扫描报告详情
 
-- API: GET /scanner/api/scan/artifact/leak/{projectId}/{subScanTaskId}
+- API: GET /analyst/api/scan/artifact/leak/{projectId}/{subScanTaskId}
 - API 名称: get_plan_subtask_report_detail
 - 功能说明：
   - 中文：获取属于方案的扫描子任务漏洞数据
@@ -318,7 +318,7 @@ data字段说明
 
 ## 获取属于方案的子任务信息
 
-- API: GET /scanner/api/scan/artifact/count/{projectId}/{subScanTaskId}
+- API: GET /analyst/api/scan/artifact/count/{projectId}/{subScanTaskId}
 - API 名称: get_plan_subtask_report_detail
 - 功能说明：
   - 中文：获取属于方案的扫描子任务信息

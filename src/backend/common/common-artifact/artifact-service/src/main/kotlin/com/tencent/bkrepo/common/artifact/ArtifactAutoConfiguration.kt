@@ -57,7 +57,6 @@ import org.springframework.context.annotation.PropertySource
 @EnableConfigurationProperties(ViewModelProperties::class)
 @ConditionalOnWebApplication
 @Import(
-    ArtifactClusterConfiguration::class,
     ArtifactContextConfiguration::class,
     ArtifactEventConfiguration::class,
     ArtifactExceptionConfiguration::class,
@@ -67,6 +66,7 @@ import org.springframework.context.annotation.PropertySource
     ArtifactResolverConfiguration::class,
     ArtifactViewModelConfiguration::class,
     ArtifactHealthConfiguration::class,
-    ArtifactDownloadInterceptorConfiguration::class
+    ArtifactDownloadInterceptorConfiguration::class,
+    ArtifactClusterConfiguration::class
 )
 class ArtifactAutoConfiguration

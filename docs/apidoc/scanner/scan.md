@@ -4,7 +4,7 @@
 
 ## 创建扫描任务
 
-- API: POST /scanner/api/scan
+- API: POST /analyst/api/scan
 - API 名称: scan
 - 功能说明：
     - 中文：发起扫描
@@ -166,7 +166,7 @@
 
 ## 通过流水线创建扫描任务
 
-- API: POST /scanner/api/scan/pipeline
+- API: POST /analyst/api/scan/pipeline
 - API 名称: pipeline scan
 - 功能说明：
   - 中文：通过流水线发起扫描
@@ -217,6 +217,8 @@
 | pipelineName | string | 否    | 无   | 流水线名                                                       | pipeline name          |
 | pluginName   | string | 否    | 无   | 插件名                                                        | plugin name            |
 | planId       | string | 否    | 无   | 使用的扫描方案id                                                  | plan id                |
+| planType     | string | 否    | GENERIC | 扫描方案类型                                                  | plan type                |
+| scanner      | string | 否    | 无   | 扫描方案使用的扫描器                                                  | scanner                |
 | rule         | object | 是    | 无   | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
 | weworkBotUrl | string | 否    | 无   | 企业微信机器人webhook地址                                           | wework bot webhook url |
 | chatIds      | string | 否    | 无   | 企业微信机器人会话id，多个id用"&vert;"分隔                                | wework bot webhook url |
@@ -238,7 +240,7 @@
 
 ## 停止扫描
 
-- API: POST /scanner/api/scan/{projectId}/stop
+- API: POST /analyst/api/scan/{projectId}/stop
 - API 名称: stop_scan
 - 功能说明：
   - 中文：停止扫描
@@ -254,7 +256,7 @@
 
 ## 停止扫描任务
 
-- API: POST /scanner/api/scan/{projectId}/tasks/{taskId}/stop
+- API: POST /analyst/api/scan/{projectId}/tasks/{taskId}/stop
 - API 名称: stop_scan_task
 - 功能说明：
   - 中文：停止扫描任务
@@ -282,7 +284,7 @@
 
 ## 获取扫描任务
 
-- API: GET /scanner/api/scan/tasks/{taskId}
+- API: GET /analyst/api/scan/tasks/{taskId}
 - API 名称: get_task
 - 功能说明：
     - 中文：获取扫描任务
@@ -312,7 +314,7 @@
 
 ## 分页获取扫描任务
 
-- API: GET /scanner/api/scan/tasks
+- API: GET /analyst/api/scan/tasks
 - API 名称: get_tasks
 - 功能说明：
   - 中文：分页获取扫描任务
@@ -361,7 +363,7 @@
 
 ## 获取扫描子任务
 
-- API: GET /scanner/api/scan/tasks/{taskId}/subtasks/{subtaskId}
+- API: GET /analyst/api/scan/tasks/{taskId}/subtasks/{subtaskId}
 - API 名称: get_subtask
 - 功能说明：
   - 中文：获取扫描子任务
@@ -429,7 +431,7 @@
 
 ## 分页获取扫描子任务
 
-- API: GET /scanner/api/scan/tasks/{taskId}/subtasks
+- API: GET /analyst/api/scan/tasks/{taskId}/subtasks
 - API 名称: get_subtasks
 - 功能说明：
   - 中文：分页获取扫描子任务

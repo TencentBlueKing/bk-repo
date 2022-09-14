@@ -78,8 +78,10 @@ class OpServiceService @Autowired constructor(
     private fun instanceDetail(instanceInfo: InstanceInfo): InstanceDetail {
         val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo)
         val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo)
+        val asyncTaskActiveCount = artifactMetricsClient.asyncTaskActiveCount(instanceInfo)
+        val asyncTaskQueueSize = artifactMetricsClient.asyncTaskQueueSize(instanceInfo)
         val loadedPlugins = pluginClient.loadedPlugins(instanceInfo)
-        return InstanceDetail(downloadingCount, uploadingCount, loadedPlugins)
+        return InstanceDetail(downloadingCount, uploadingCount, asyncTaskActiveCount, asyncTaskQueueSize, loadedPlugins)
     }
 
     /**

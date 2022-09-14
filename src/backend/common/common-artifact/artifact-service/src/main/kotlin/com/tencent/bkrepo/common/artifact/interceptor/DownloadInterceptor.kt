@@ -28,30 +28,29 @@
 package com.tencent.bkrepo.common.artifact.interceptor
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 
 /**
  * 下载拦截器
  */
-abstract class DownloadInterceptor<T>(
-    open val rules: Map<String, Any>
+abstract class DownloadInterceptor<R, A>(
+    protected val rules: Map<String, Any>
 ) {
-    abstract fun parseRule(): T
+    abstract fun parseRule(): R
 
-    abstract fun matcher(node: NodeDetail, rule: T): Boolean
+    abstract fun matcher(artifact: A, rule: R): Boolean
 
-    open fun intercept(node: NodeDetail) {
+    open fun intercept(projectId: String, artifact: A) {
         val rule = try {
             parseRule()
         } catch (e: Exception) {
-            logger.warn("fail to parse repo[${node.projectId}/${node.repoName}] rule[$rules]: $e")
+            logger.warn("fail to parse rule[$rules] of artifact[$artifact]", e)
             return
         }
-        val match = matcher(node, rule)
+        val match = matcher(artifact, rule)
         val forbidden = (allowed() && !match) || (!allowed() && match)
         if (forbidden) {
-            throw ArtifactDownloadForbiddenException(node.projectId)
+            throw ArtifactDownloadForbiddenException(projectId)
         }
     }
 
@@ -68,6 +67,6 @@ abstract class DownloadInterceptor<T>(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DownloadInterceptor::class.java)
-        private const val ALLOWED = "allowed"
+        const val ALLOWED = "allowed"
     }
 }

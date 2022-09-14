@@ -1,7 +1,7 @@
 import request from '@/utils/request'
 
-const PREFIX_SCAN = '/scanner/api/scan'
-const PREFIX_SCANNER = '/scanner/api/scanners'
+const PREFIX_SCAN = '/analyst/api/scan'
+const PREFIX_SCANNER = '/analyst/api/scanners'
 const PREFIX_PROJECT_SCAN_CONFIGURATION = `${PREFIX_SCAN}/configurations`
 
 export const SCANNER_TYPE_ARROWHEAD = 'arrowhead'

@@ -34,13 +34,12 @@ package com.tencent.bkrepo.common.artifact.manager
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
-import com.tencent.bkrepo.common.artifact.stream.releaseQuietly
 import com.tencent.bkrepo.common.storage.core.StorageService
-import java.io.FileOutputStream
-import java.nio.channels.FileChannel
-import java.nio.channels.FileLock
+import com.tencent.bkrepo.common.storage.util.createNewOutputStream
+import java.io.OutputStream
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
-import java.nio.file.StandardOpenOption
+import org.slf4j.LoggerFactory
 
 /**
  * 代理拉取数据写入缓存
@@ -50,58 +49,47 @@ class ProxyBlobCacheWriter(
     val digest: String
 ) : StreamReadListener {
 
-    private val receivedPath = storageService.getTempPath().resolve(digest.plus(LOCK_SUFFIX))
-    private val channel = FileChannel.open(receivedPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-    private var outputStream: FileOutputStream? = null
-    private var lock: FileLock? = null
+    private val receivedPath = storageService.getTempPath().resolve(digest)
+    private var outputStream: OutputStream? = null
 
     init {
         try {
-            lock = channel.tryLock()
-            outputStream = receivedPath.toFile().outputStream()
-            check(lock != null)
-        } catch (ignored: Exception) {
-            outputStream?.closeQuietly()
-            channel.closeQuietly()
-            lock = null
+            if (Files.exists(receivedPath)) {
+                logger.debug("Path[$receivedPath] exists, ignore caching")
+            } else {
+                outputStream = receivedPath.createNewOutputStream()
+            }
+        } catch (ignore: FileAlreadyExistsException) {
+            // 如果目录或者文件已存在则忽略
+        } catch (exception: Exception) {
+            logger.error("initial ProxyBlobCacheWriter error: $exception", exception)
+            close()
         }
     }
 
     override fun data(i: Int) {
-        if (lock != null) {
-            outputStream?.write(i)
-        }
+        outputStream?.write(i)
     }
 
     override fun data(buffer: ByteArray, off: Int, length: Int) {
-        if (lock != null) {
-            outputStream?.write(buffer, off, length)
-        }
+        outputStream?.write(buffer, off, length)
     }
 
     override fun finish() {
-        if (lock != null) {
-            outputStream?.flush()
-            outputStream?.closeQuietly()
-            channel.closeQuietly()
-            storageService.store(digest, receivedPath.toFile().toArtifactFile(), null)
-            lock?.releaseQuietly()
-            lock = null
-        }
+        outputStream?.flush()
+        outputStream?.closeQuietly()
+        storageService.store(digest, receivedPath.toFile().toArtifactFile(), null)
     }
 
     override fun close() {
-        if (lock != null) {
-            outputStream?.flush()
-            outputStream?.closeQuietly()
+        outputStream?.let {
+            it.flush()
+            it.closeQuietly()
             Files.deleteIfExists(receivedPath)
-            channel.closeQuietly()
-            lock?.releaseQuietly()
-            lock = null
         }
     }
 
     companion object {
-        private const val LOCK_SUFFIX = ".lock"
+        private val logger = LoggerFactory.getLogger(ProxyBlobCacheWriter::class.java)
     }
 }

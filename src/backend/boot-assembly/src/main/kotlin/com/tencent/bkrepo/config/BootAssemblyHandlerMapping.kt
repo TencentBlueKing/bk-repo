@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.config
 
+import com.tencent.bkrepo.common.api.util.ServiceCommonUtils
 import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.RestController
@@ -45,8 +46,6 @@ import java.lang.reflect.Method
  * 2. 过滤掉/service/开头的微服务接口
  */
 class BootAssemblyHandlerMapping : RequestMappingHandlerMapping() {
-
-    private val regex = Regex("""com\.tencent\.bkrepo\.(\w+)\..*""")
 
     override fun isHandler(beanType: Class<*>): Boolean {
         return AnnotatedElementUtils.hasAnnotation(beanType, Controller::class.java) ||
@@ -64,9 +63,8 @@ class BootAssemblyHandlerMapping : RequestMappingHandlerMapping() {
      */
     @Suppress("SpreadOperator")
     private fun updateMapping(mapping: RequestMappingInfo, method: Method): RequestMappingInfo? {
-        val declaringClassName = method.declaringClass.name
-        val serviceName = regex.find(declaringClassName)?.groupValues?.get(1)
-        val newPatterns = updatePatterns(mapping.patternsCondition.patterns, serviceName)
+        val serviceName = ServiceCommonUtils.getServiceName(method.declaringClass)
+        val newPatterns = updatePatterns(mapping.patternsCondition?.patterns.orEmpty(), serviceName)
         if (newPatterns.isEmpty()) {
             return null
         }

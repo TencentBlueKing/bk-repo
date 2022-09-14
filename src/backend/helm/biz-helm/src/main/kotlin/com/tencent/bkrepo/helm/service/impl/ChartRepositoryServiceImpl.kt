@@ -30,6 +30,7 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -206,6 +207,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FILE_TYPE, CHART)
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: ArtifactDownloadForbiddenException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while installing chart, error: ${e.message}")
             throw HelmFileNotFoundException(e.message.toString())

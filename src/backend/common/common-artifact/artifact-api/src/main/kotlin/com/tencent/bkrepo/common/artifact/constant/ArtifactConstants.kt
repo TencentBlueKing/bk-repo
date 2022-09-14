@@ -138,3 +138,6 @@ const val FORBID_TYPE = "forbidType"
 
 // 制品扫描状态
 const val SCAN_STATUS = "scanStatus"
+
+const val METADATA_KEY_PACKAGE_NAME = "packageName"
+const val METADATA_KEY_PACKAGE_VERSION = "packageVersion"

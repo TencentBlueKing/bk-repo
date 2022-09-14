@@ -1,15 +1,15 @@
 <template>
     <div class="common-package-detail">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
-            <Icon class="package-img" size="70" :name="repoType" />
-            <div class="ml20 common-package-title">
-                <div class="mb5 repo-title text-overflow" :title="pkg.name">
+            <Icon class="package-img" size="30" :name="repoType" />
+            <div class="ml10 common-package-title">
+                <div class="repo-title text-overflow" :title="pkg.name">
                     {{ pkg.name }}
                 </div>
-                <div class="repo-description text-overflow"
+                <!-- <div class="repo-description text-overflow"
                     :title="pkg.description">
                     {{ pkg.description || '【制品描述】' }}
-                </div>
+                </div> -->
             </div>
         </header>
         <div class="common-version-main flex-align-center">
@@ -48,9 +48,9 @@
                                             disabled: ($version.stageTag || '').includes('@release')
                                         },
                                         repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
-                                        showRepoScan && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) }
+                                        showRepoScan && { label: '扫描制品', clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    // showRepoScan && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
+                                    showRepoScan && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
@@ -68,7 +68,7 @@
                 </version-detail>
             </div>
         </div>
-        
+
         <common-form-dialog ref="commonFormDialog" @refresh="refresh"></common-form-dialog>
     </div>
 </template>
@@ -244,7 +244,7 @@
                 this.$refs.commonFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: '安全扫描',
+                    title: '扫描制品',
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,
@@ -312,25 +312,24 @@
 .common-package-detail {
     height: 100%;
     .common-package-header{
-        height: 90px;
+        height: 60px;
         background-color: white;
         .package-img {
-            padding: 15px;
             border-radius: 4px;
-            box-shadow: 0px 3px 5px 0px rgba(217, 217, 217, 0.5);
         }
         .common-package-title {
             .repo-title {
                 max-width: 500px;
                 font-size: 16px;
-                font-weight: bold;
+                font-weight: 500;
+                color: #081E40;
             }
-            .repo-description {
-                max-width: 70vw;
-                padding: 5px 15px;
-                background-color: var(--bgWeightColor);
-                border-radius: 2px;
-            }
+            // .repo-description {
+            //     max-width: 70vw;
+            //     padding: 5px 15px;
+            //     background-color: var(--bgWeightColor);
+            //     border-radius: 2px;
+            // }
         }
     }
     .common-version-main {

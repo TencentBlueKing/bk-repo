@@ -27,20 +27,16 @@
 
 package com.tencent.bkrepo.common.artifact.interceptor
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-
 /**
  * 组合下载拦截器
  */
-abstract class CompositeDownloadInterceptor(
-    override val rules: Map<String, Any>
-): DownloadInterceptor<Any>(rules) {
+abstract class CompositeDownloadInterceptor<T>(rules: Map<String, Any>) : DownloadInterceptor<Any, T>(rules) {
 
     override fun parseRule() {
         throw UnsupportedOperationException()
     }
 
-    override fun matcher(node: NodeDetail, rule: Any): Boolean {
+    override fun matcher(artifact: T, rule: Any): Boolean {
         throw UnsupportedOperationException()
     }
 }
