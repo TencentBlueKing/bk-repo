@@ -121,7 +121,7 @@ interface ReplicaTaskService {
     /**
      * 更新同步任务
      */
-    fun update(request: ReplicaTaskUpdateRequest)
+    fun update(request: ReplicaTaskUpdateRequest): ReplicaTaskInfo?
 
     /**
      * 手动执行任务

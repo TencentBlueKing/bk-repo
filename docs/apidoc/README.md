@@ -38,7 +38,7 @@
   - [git扩展接口](/apidoc/registry/git.md)
 - **仓库操作指引**
   - [oci仓库](/repository/oci.md)
-- **制品扫描** 
+- **制品分析** 
   - [许可证扫描](/apidoc/scanner/license.md)
   - [扫描器管理](/apidoc/scanner/scanner.md)
   - [扫描](/apidoc/scanner/scan.md)

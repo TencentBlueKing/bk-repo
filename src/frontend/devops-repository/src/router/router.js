@@ -207,7 +207,7 @@ const routes = [
                 component: repoScan,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoScan', label: '制品扫描' }
+                        { name: 'repoScan', label: '制品分析' }
                     ]
                 }
             },
@@ -217,7 +217,7 @@ const routes = [
                 component: scanReport,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'repoScan', label: '制品分析' },
                         { name: 'scanReport', label: '{scanName}', template: '扫描详情' }
                     ]
                 }
@@ -230,7 +230,7 @@ const routes = [
                     const repoType = to.query.repoType
                     if (to.query.scanName) {
                         to.meta.breadcrumb = [
-                            { name: 'repoScan', label: '制品扫描' },
+                            { name: 'repoScan', label: '制品分析' },
                             { name: 'scanReport', label: '{scanName}', template: '扫描详情' },
                             { name: 'artiReport', label: '{artiName}', template: '制品扫描结果' }
                         ]
@@ -257,7 +257,7 @@ const routes = [
                 component: scanConfig,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'repoScan', label: '制品分析' },
                         { name: 'scanConfig', label: '{scanName}', template: '方案设置' }
                     ]
                 }
@@ -268,7 +268,7 @@ const routes = [
                 component: startScan,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'repoScan', label: '制品分析' },
                         { name: 'scanReport', label: '{scanName}', template: '扫描详情' },
                         { name: 'startScan', label: '立即扫描' }
                     ]

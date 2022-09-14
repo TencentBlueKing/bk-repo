@@ -38,6 +38,7 @@ data class TMetadataLabel(
     val projectId: String,
     val labelKey: String,
     var labelColorMap: Map<String, String>,
+    var display: Boolean?,
     val createdBy: String,
     val createdDate: LocalDateTime,
     var lastModifiedBy: String,
