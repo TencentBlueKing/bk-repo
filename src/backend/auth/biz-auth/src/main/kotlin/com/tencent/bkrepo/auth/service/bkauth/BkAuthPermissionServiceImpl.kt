@@ -56,8 +56,8 @@ class BkAuthPermissionServiceImpl constructor(
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
-    val repositoryClient: RepositoryClient,
-    val projectClient: ProjectClient
+    repositoryClient: RepositoryClient,
+    projectClient: ProjectClient
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
@@ -82,7 +82,6 @@ class BkAuthPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
-                // 其它请求校验项目权限
                 return checkProjectPermission(uid, projectId!!, action)
             }
 
