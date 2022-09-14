@@ -25,17 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-}
+package com.tencent.bkrepo.oci.model
+
+/**
+ * manifest描述文件
+ */
+class ManifestSchema2(
+    override var schemaVersion: Int,
+    var mediaType: String? = null,
+    var config: ConfigDescriptor,
+    var layers: List<LayerDescriptor>,
+    var annotations: Map<String, String> = emptyMap()
+) : SchemaVersion(schemaVersion)

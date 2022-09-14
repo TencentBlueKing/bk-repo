@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.oci.model
 
-class ManifestSchema1(
-    override var schemaVersion: Int,
-    var fsLayers: List<BlobSum> = emptyList(),
-    var tag: String? = null,
-    var architecture: String? = null
-) : SchemaVersion(schemaVersion)
+data class ConfigDescriptor(
+    override var mediaType: String,
+    override var size: Long,
+    override var digest: String
+) : Descriptor(mediaType, size, digest)

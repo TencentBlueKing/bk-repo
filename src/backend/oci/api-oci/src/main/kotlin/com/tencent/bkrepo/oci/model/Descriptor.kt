@@ -25,17 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.oci.model
+
+open class Descriptor(
+    open var mediaType: String,
+    open var size: Long,
+    open var digest: String
+) {
+    val filename
+        get() = digest.replace(":", "__")
+
+    val sha256: String
+        get() {
+            val digestSplits = digest.split(":")
+            require(digestSplits.size == 2 && digestSplits[0] == "sha256")
+            return digestSplits[1]
+        }
 }

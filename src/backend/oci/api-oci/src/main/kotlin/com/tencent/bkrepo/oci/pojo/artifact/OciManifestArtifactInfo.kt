@@ -25,17 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.oci.pojo.artifact
+
+import com.tencent.bkrepo.oci.util.OciLocationUtils
+
+class OciManifestArtifactInfo(
+    projectId: String,
+    repoName: String,
+    packageName: String,
+    version: String,
+    val reference: String,
+    val isValidDigest: Boolean
+) : OciArtifactInfo(projectId, repoName, packageName, version) {
+    override fun getArtifactFullPath(): String {
+        return if (isValidDigest) {
+            OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference)
+        } else {
+            OciLocationUtils.buildManifestPath(packageName, reference)
+        }
+    }
 }

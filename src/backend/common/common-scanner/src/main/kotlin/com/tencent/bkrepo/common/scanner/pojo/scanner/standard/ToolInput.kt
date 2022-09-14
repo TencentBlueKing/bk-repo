@@ -100,5 +100,5 @@ data class ToolInput(
     }
 }
 
-data class FileUrl(val url: String, val name: String, val sha256: String)
+data class FileUrl(val url: String, val name: String, val sha256: String, val size: Long)
 data class ToolConfig(val args: List<Argument>)
