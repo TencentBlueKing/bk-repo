@@ -8,3 +8,10 @@ export function jobs() {
     method: 'get'
   })
 }
+
+export function update(name, status) {
+  return request({
+    url: `${PREFIX_SERVICES}/update/${name}/${status}`,
+    method: 'get'
+  })
+}

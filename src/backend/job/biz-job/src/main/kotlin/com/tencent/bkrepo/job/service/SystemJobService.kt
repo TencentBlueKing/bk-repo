@@ -65,8 +65,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
                     lastExecuteTime = it.lastExecuteTime,
                     nextExecuteTime = getNextExecuteTime(it.batchJobProperties,
                             it.lastBeginTime,
-                            it.lastEndTime,
-                            it.getJobName()
+                            it.lastEndTime
                     )
                 )
                 jobDetails.add(jobDetail)
@@ -75,10 +74,9 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         return jobDetails
     }
 
-    fun getNextExecuteTime(batchJobProperties: BatchJobProperties,
+    private fun getNextExecuteTime(batchJobProperties: BatchJobProperties,
                            lastBeginTime: LocalDateTime?,
-                           lastEndTime: LocalDateTime?,
-                           name: String
+                           lastEndTime: LocalDateTime?
     ): LocalDateTime? {
         // 没启用，没下次执行执行时间
         if (!batchJobProperties.enabled) {
@@ -121,5 +119,14 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
             cronGenerator.next(Date())
         }
         return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
+    }
+
+    fun update(name: String, status: Boolean): Boolean{
+        if (status) {
+            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.get(0).start()
+        } else {
+            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.get(0).stop()
+        }
+        return true
     }
 }
