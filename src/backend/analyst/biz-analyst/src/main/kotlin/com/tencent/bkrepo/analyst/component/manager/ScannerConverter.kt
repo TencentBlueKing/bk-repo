@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.analyst.component.manager
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.analyst.pojo.scanner.LicenseOverviewKey
-import com.tencent.bkrepo.common.analyst.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest

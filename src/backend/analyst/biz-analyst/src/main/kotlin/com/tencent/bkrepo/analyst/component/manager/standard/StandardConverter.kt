@@ -25,29 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.standard
+package com.tencent.bkrepo.analyst.component.manager.standard
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseNature
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey
-import com.tencent.bkrepo.common.scanner.pojo.scanner.LicenseOverviewKey.TOTAL
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.LicenseResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.SecurityResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
-import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
-import com.tencent.bkrepo.scanner.pojo.response.FileLicensesResultDetail
-import com.tencent.bkrepo.scanner.service.SpdxLicenseService
+import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.TOTAL
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
+import com.tencent.bkrepo.analyst.pojo.request.ArrowheadLoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
+import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import org.springframework.stereotype.Component
 
 @Component("${StandardScanner.TYPE}Converter")

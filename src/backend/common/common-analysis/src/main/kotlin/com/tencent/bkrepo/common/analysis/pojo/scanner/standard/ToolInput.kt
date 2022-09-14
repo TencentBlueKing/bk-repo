@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.standard
+package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner.Argument
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.Argument
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
 
 /**
  * 分析工具输入

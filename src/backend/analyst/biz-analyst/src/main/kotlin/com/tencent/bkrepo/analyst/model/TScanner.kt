@@ -73,7 +73,7 @@ data class TScanner(
      */
     val supportPackageTypes: List<String> = emptyList(),
     /**
-     * 支持扫描的类型[com.tencent.bkrepo.common.scanner.pojo.scanner.ScanType]
+     * 支持扫描的类型[com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType]
      */
     val supportScanTypes: List<String> = emptyList(),
 )

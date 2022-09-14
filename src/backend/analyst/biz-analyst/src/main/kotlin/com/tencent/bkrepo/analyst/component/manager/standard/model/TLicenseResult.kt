@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.standard.model
+package com.tencent.bkrepo.analyst.component.manager.standard.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.LicenseResult
-import com.tencent.bkrepo.scanner.component.manager.ResultItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.analyst.component.manager.ResultItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("license_result")

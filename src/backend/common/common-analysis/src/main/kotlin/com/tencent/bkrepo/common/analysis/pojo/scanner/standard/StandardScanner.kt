@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.standard
+package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

@@ -25,14 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.controller.user
+package com.tencent.bkrepo.analyst.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolInput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
-import com.tencent.bkrepo.scanner.service.ScanService
-import com.tencent.bkrepo.scanner.service.TemporaryScanTokenService
+import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping

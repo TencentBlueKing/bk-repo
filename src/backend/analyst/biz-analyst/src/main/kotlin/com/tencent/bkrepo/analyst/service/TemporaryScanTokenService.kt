@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.service
+package com.tencent.bkrepo.analyst.service
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolInput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 
 interface TemporaryScanTokenService {
     fun createToken(subtaskId: String): String

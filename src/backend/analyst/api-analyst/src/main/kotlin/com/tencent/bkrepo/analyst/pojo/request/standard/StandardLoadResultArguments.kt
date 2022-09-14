@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request.standard
+package com.tencent.bkrepo.analyst.pojo.request.standard
 
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import io.swagger.annotations.ApiModelProperty
 
 class StandardLoadResultArguments(

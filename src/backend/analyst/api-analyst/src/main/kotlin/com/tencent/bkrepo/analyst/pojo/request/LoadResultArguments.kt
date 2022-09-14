@@ -29,11 +29,11 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.analyst.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.analyst.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.common.analyst.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import com.tencent.bkrepo.common.analyst.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.analyst.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.analyst.pojo.request.dependencecheck.DependencyLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ScancodeToolkitResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments

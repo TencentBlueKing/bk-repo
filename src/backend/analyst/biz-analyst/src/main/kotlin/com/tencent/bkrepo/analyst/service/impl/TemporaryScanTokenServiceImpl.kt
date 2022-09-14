@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.service.impl
+package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -38,9 +38,9 @@ import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.FileUrl
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolInput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
@@ -50,10 +50,10 @@ import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.scanner.configuration.ScannerProperties
-import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.service.ScanService
-import com.tencent.bkrepo.scanner.service.TemporaryScanTokenService
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption.UPSERT
 import org.springframework.data.redis.core.RedisTemplate

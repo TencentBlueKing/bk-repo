@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.standard
+package com.tencent.bkrepo.analysis.executor.standard
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
@@ -33,22 +33,22 @@ import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolInput
-import com.tencent.bkrepo.common.scanner.pojo.scanner.standard.ToolOutput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolOutput
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.scanner.executor.CommonScanExecutor
-import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties
-import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
-import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommonUtils.readJsonString
-import com.tencent.bkrepo.scanner.executor.util.DockerScanHelper
-import com.tencent.bkrepo.scanner.executor.util.ImageScanHelper
+import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
+import com.tencent.bkrepo.analysis.executor.configuration.DockerProperties
+import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
+import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
+import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
+import com.tencent.bkrepo.analysis.executor.util.ImageScanHelper
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import java.io.File

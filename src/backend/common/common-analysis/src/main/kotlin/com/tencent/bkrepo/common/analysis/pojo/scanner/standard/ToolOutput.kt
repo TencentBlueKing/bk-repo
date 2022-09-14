@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.standard
+package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
 /**
  * 分析工具输出
