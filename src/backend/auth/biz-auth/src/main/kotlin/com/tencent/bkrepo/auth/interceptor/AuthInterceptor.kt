@@ -102,6 +102,9 @@ class AuthInterceptor : HandlerInterceptor {
                 throw IllegalArgumentException("check auth credential fail")
             }
             val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
+            if (userId.isEmpty()) {
+                logger.warn("platform auth with empty userId")
+            }
             val userInfo = userService.getUserInfoById(userId)
             val isAdmin: Boolean
             if (userId.isNotEmpty() && userInfo == null) {
