@@ -33,7 +33,6 @@ package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.interceptor.AuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
@@ -42,8 +41,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @Configuration
 class AuthConfig : WebMvcConfigurer {
 
-    @Value("\${auth.security.enablePrefix:false}")
-    var enablePrefix: Boolean = false
+    var prefixEnabled = true
+
     override fun addInterceptors(registry: InterceptorRegistry) {
         val httpAuthSecurity = HttpAuthSecurity()
             .withPrefix("/auth")
@@ -54,7 +53,7 @@ class AuthConfig : WebMvcConfigurer {
             .excludePattern("/api/user/verify")
             .excludePattern("/api/user/rsa")
             .excludePattern("/api/oauth/token")
-        if (enablePrefix) {
+        if (prefixEnabled) {
             httpAuthSecurity.enablePrefix()
         }
         registry.addInterceptor(clientAuthInterceptor())
@@ -67,3 +66,4 @@ class AuthConfig : WebMvcConfigurer {
     @Bean
     fun clientAuthInterceptor() = AuthInterceptor()
 }
+
