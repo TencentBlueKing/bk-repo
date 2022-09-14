@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <el-table
-      :data="Jobs"
+      :data="jobs"
       style="width: 100%"
     >
       <el-table-column
@@ -16,7 +16,7 @@
         <template slot-scope="scope">
           <el-switch
             v-model="scope.row.enabled"
-            @change="enablechange(scope.row.enabled)"
+            @change="changeEnabled(scope.row.enabled, scope.row.name)"
           />
         </template>
       </el-table-column>
@@ -44,11 +44,11 @@
         label="运行中"
         width="100"
       >
-        <template slot-scope="scope">
-          <el-switch
-            v-model="scope.row.running"
-            disabled
-          />
+        <template v-if="scope.row.runnig === true" slot-scope="scope">
+          <label>是</label>
+        </template>
+        <template v-if="scope.row.runnig !== true" slot-scope="scope">
+          <label>否</label>
         </template>
       </el-table-column>
       <el-table-column
@@ -77,7 +77,7 @@
 
 <script>
 
-import { jobs } from '@/api/job'
+import { jobs, update } from '@/api/job'
 import moment from 'moment'
 
 export default {
@@ -88,18 +88,21 @@ export default {
     }
   },
   created() {
-    jobs().then(res => {
-      for (let i = 0; i < res.data.length; i++) {
-        res.data[i].lastBeginTime = res.data[i].lastBeginTime != null ? moment(res.data[i].lastBeginTime).format('YYYY-MM-DD HH:mm:ss') : null
-        res.data[i].lastEndTime = res.data[i].lastEndTime != null ? moment(res.data[i].lastEndTime).format('YYYY-MM-DD HH:mm:ss') : null
-        res.data[i].nextExecuteTime = res.data[i].nextExecuteTime != null ? moment(res.data[i].nextExecuteTime).format('YYYY-MM-DD HH:mm:ss') : null
-      }
-      this.jobs = res.data
-    })
+    this.query()
   },
   methods: {
-    enablechange(enabled) {
-      console.log(enabled)
+    changeEnabled(enabled, name) {
+      update(name, enabled)
+    },
+    query() {
+      jobs().then(res => {
+        for (let i = 0; i < res.data.length; i++) {
+          res.data[i].lastBeginTime = res.data[i].lastBeginTime != null ? moment(res.data[i].lastBeginTime).format('YYYY-MM-DD HH:mm:ss') : null
+          res.data[i].lastEndTime = res.data[i].lastEndTime != null ? moment(res.data[i].lastEndTime).format('YYYY-MM-DD HH:mm:ss') : null
+          res.data[i].nextExecuteTime = res.data[i].nextExecuteTime != null ? moment(res.data[i].nextExecuteTime).format('YYYY-MM-DD HH:mm:ss') : null
+        }
+        this.jobs = res.data
+      })
     }
   }
 }

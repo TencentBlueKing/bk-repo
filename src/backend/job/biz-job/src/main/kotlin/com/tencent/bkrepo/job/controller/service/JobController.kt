@@ -39,4 +39,8 @@ class JobController(val systemJobService: SystemJobService) : JobClient {
     override fun detail(): Response<List<JobDetail>> {
         return ResponseBuilder.success(systemJobService.detail())
     }
+
+    override fun update(name: String, status: Boolean): Response<Boolean> {
+       return ResponseBuilder.success(systemJobService.update(name, status))
+    }
 }
