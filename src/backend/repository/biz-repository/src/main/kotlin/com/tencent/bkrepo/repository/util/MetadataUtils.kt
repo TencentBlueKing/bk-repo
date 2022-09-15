@@ -78,7 +78,8 @@ object MetadataUtils {
                 key = it.key,
                 value = it.value,
                 system = it.system,
-                description = it.description
+                description = it.description,
+                link = it.link
             )
         }.orEmpty()
     }
@@ -157,7 +158,8 @@ object MetadataUtils {
                 val value = it.getValue(TMetadata::value.name)
                 val system = it[TMetadata::system.name] as Boolean? ?: false
                 val description = it[TMetadata::description.name]?.toString()
-                MetadataModel(key = key, value = value, system = system, description = description)
+                val link = it[TMetadata::link.name]?.toString()
+                MetadataModel(key = key, value = value, system = system, description = description, link = link)
             }
     }
 
@@ -173,7 +175,8 @@ object MetadataUtils {
                 key = key,
                 value = value,
                 system = system,
-                description = description
+                description = description,
+                link = link
             )
             checkReservedKey(key, operator)
             checkPermission(tMetadata, operator)

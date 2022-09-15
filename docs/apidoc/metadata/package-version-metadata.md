@@ -1,5 +1,7 @@
 # 包版本元数据接口
 
+[TOC]
+
 ## 保存（更新）元数据
 - API: POST /repository/api/metadata/package/{projectId}/{repoName}
 - API 名称: save_metadata
@@ -42,3 +44,22 @@
     "traceId": null
   }
   ```
+
+
+## 根据元数据查询包版本
+
+利用[查询版本列表](../package/package.md?id=查询包版本)接口查询符合元数据规则的包版本，请求体如下
+
+- 请求体
+```json
+  {
+    "pageNumber": 1,
+    "pageSize": 20,
+    "metadata": [
+      {
+        "key": "test",
+        "value": "pass"
+      }
+    ]
+  }
+```
