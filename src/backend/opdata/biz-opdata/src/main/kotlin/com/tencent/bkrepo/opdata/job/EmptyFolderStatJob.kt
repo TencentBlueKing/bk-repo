@@ -85,8 +85,14 @@ class EmptyFolderStatJob(
         val startIds = LinkedBlockingQueue<String>(DEFAULT_ID_QUEUE_SIZE)
         val collectionName = collectionName(shardingIndex)
 
+        val folders = if (submitId(lastId, startIds, collectionName, DEFAULT_BATCH_SIZE)) {
+            doStatFolder(lastId, startIds, collectionName, projectId, repoName, path)
+        } else {
+            emptyMap()
+        }.ifEmpty { return emptyList() }
+
         val folderMetricsList = if (submitId(lastId, startIds, collectionName, DEFAULT_BATCH_SIZE)) {
-            doStat(lastId, startIds, collectionName, projectId, repoName, path)
+            doStat(lastId, startIds, collectionName, projectId, repoName, folders)
         } else {
             emptyList()
         }.ifEmpty { return emptyList() }
@@ -100,12 +106,69 @@ class EmptyFolderStatJob(
         nodeCollectionName: String,
         projectId: String,
         repoName: String,
-        parentPath: String
+        folders: Map<String, EmptyFolderMetric>
     ): List<EmptyFolderMetric> {
         refreshExecutor()
 
         // 统计数据
-        val folderMetrics = ConcurrentHashMap<String, EmptyFolderMetric>()
+        val folderMetrics = ConcurrentHashMap<String, EmptyFolderMetric>(folders)
+        val futures = ArrayList<Future<*>>()
+        while (true) {
+            val startId = startIds.poll(1, TimeUnit.SECONDS)
+                ?: // lastId为null表示id遍历提交未结束，等待新id入队
+                if (lastId.get() == null) {
+                    continue
+                } else {
+                    break
+                }
+
+            val future = executor!!.submit {
+                val query = Query(
+                    Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId))
+                        .and(NodeDetail::projectId.name).`is`(projectId)
+                        .and(NodeDetail::repoName.name).`is`(repoName)
+                        .and(NodeDetail::folder.name).`is`(false)
+                ).with(Sort.by(FIELD_NAME_ID))
+                    .limit(DEFAULT_BATCH_SIZE)
+                query.fields().include(
+                    NodeDetail::path.name, NodeDetail::fullPath.name, FIELD_NAME_DELETED
+                )
+                val nodes = mongoTemplate.find(query, Map::class.java, nodeCollectionName)
+                nodes.forEach {
+                    val deleted = it[FIELD_NAME_DELETED]
+                    if (deleted == null) {
+                        val path = it[NodeDetail::path.name].toString()
+                        val fullPath = it[NodeDetail::fullPath.name].toString()
+
+                        if (folderMetrics.keys.contains(path)) {
+                            resolveAncestor(fullPath).forEach { str ->
+                                folderMetrics.remove(str)
+                            }
+                        }
+                    }
+                }
+            }
+            futures.add(future)
+        }
+
+        // 等待所有任务结束
+        futures.forEach { it.get() }
+        return folderMetrics.values.toList()
+    }
+
+    @Suppress("LoopWithTooManyJumpStatements")
+    private fun doStatFolder(
+        lastId: AtomicReference<String>,
+        startIds: LinkedBlockingQueue<String>,
+        nodeCollectionName: String,
+        projectId: String,
+        repoName: String,
+        parentPath: String
+    ): Map<String, EmptyFolderMetric> {
+        refreshExecutor()
+
+        // 统计数据
+        val folders = ConcurrentHashMap<String, EmptyFolderMetric>()
         val futures = ArrayList<Future<*>>()
 
         while (true) {
@@ -122,12 +185,12 @@ class EmptyFolderStatJob(
                     Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId))
                         .and(NodeDetail::projectId.name).`is`(projectId)
                         .and(NodeDetail::repoName.name).`is`(repoName)
+                        .and(NodeDetail::folder.name).`is`(true)
                 ).with(Sort.by(FIELD_NAME_ID))
                     .limit(DEFAULT_BATCH_SIZE)
                 query.fields().include(
-                    NodeDetail::size.name, NodeDetail::folder.name, NodeDetail::path.name,
-                    NodeDetail::name.name, NodeDetail::fullPath.name, FIELD_NAME_DELETED,
-                    FIELD_NAME_ID
+                    NodeDetail::path.name, NodeDetail::name.name, FIELD_NAME_DELETED,
+                    NodeDetail::fullPath.name, FIELD_NAME_ID
                 )
                 val nodes = mongoTemplate.find(query, Map::class.java, nodeCollectionName)
                 nodes.forEach {
@@ -135,18 +198,12 @@ class EmptyFolderStatJob(
                     if (deleted == null) {
                         val name = it[NodeDetail::name.name].toString()
                         val path = it[NodeDetail::path.name].toString()
-                        val isFolder = it[NodeDetail::folder.name].toString().toBoolean()
                         val fullPath = it[NodeDetail::fullPath.name].toString()
                         val objectId = it[FIELD_NAME_ID].toString()
                         if (fullPath.startsWith(parentPath)) {
-                            if (isFolder) {
-                                folderMetrics.getOrPut(combinePath(path, name)) {
-                                    EmptyFolderMetric(fullPath, objectId)
-                                }
-                            } else {
-                                resolveAncestor(fullPath).forEach { str ->
-                                    folderMetrics.remove(str)
-                                }
+                            val tempPath = combinePath(path, name)
+                            folders.getOrPut(tempPath) {
+                                EmptyFolderMetric(tempPath, objectId)
                             }
                         }
                     }
@@ -157,7 +214,7 @@ class EmptyFolderStatJob(
 
         // 等待所有任务结束
         futures.forEach { it.get() }
-        return folderMetrics.values.toList()
+        return folders
     }
 
     private fun collectionName(shardingIndex: Int): String = "${TABLE_PREFIX}$shardingIndex"
