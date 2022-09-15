@@ -31,9 +31,7 @@ import com.tencent.bkrepo.job.batch.base.BatchJob
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.pojo.JobDetail
 import org.springframework.context.ApplicationContext
-import org.springframework.scheduling.support.CronSequenceGenerator
-import org.springframework.scheduling.support.PeriodicTrigger
-import org.springframework.scheduling.support.SimpleTriggerContext
+import org.springframework.scheduling.support.*
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -112,11 +110,13 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
             }
         }
         // 根据cron表达式
-        val cronGenerator = CronSequenceGenerator(batchJobProperties.cron)
+        val cronTrigger = CronTrigger(batchJobProperties.cron)
         finalNextTime = if (lastBeginTime != null) {
-            cronGenerator.next(Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant()))
+            var lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
+            var lastStartTime = Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant())
+            cronTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
         } else {
-            cronGenerator.next(Date())
+            cronTrigger.nextExecutionTime(SimpleTriggerContext(null,null,null))
         }
         return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
     }

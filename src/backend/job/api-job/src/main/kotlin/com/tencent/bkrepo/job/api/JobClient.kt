@@ -41,7 +41,4 @@ interface JobClient {
 
     @GetMapping("/detail")
     fun detail(): Response<List<JobDetail>>
-
-    @GetMapping("/update/{name}/{status}")
-    fun update(@PathVariable name: String, @PathVariable status:Boolean): Response<Boolean>
 }
