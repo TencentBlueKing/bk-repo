@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.job.pojo.JobDetail
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 
 @FeignClient(JOB_SERVICE_NAME)
