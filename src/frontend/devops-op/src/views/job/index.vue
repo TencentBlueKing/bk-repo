@@ -100,6 +100,7 @@ export default {
           res.data[i].lastBeginTime = res.data[i].lastBeginTime != null ? moment(res.data[i].lastBeginTime).format('YYYY-MM-DD HH:mm:ss') : null
           res.data[i].lastEndTime = res.data[i].lastEndTime != null ? moment(res.data[i].lastEndTime).format('YYYY-MM-DD HH:mm:ss') : null
           res.data[i].nextExecuteTime = res.data[i].nextExecuteTime != null ? moment(res.data[i].nextExecuteTime).format('YYYY-MM-DD HH:mm:ss') : null
+          res.data[i].lastExecuteTime = res.data[i].lastExecuteTime != null ? res.data[i].lastExecuteTime + '毫秒' : null
         }
         this.jobs = res.data
       })
