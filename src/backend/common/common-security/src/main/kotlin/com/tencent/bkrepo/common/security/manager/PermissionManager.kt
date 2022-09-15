@@ -81,7 +81,6 @@ open class PermissionManager(
     private val permissionResource: ServicePermissionResource,
     private val externalPermissionResource: ServiceExternalPermissionResource,
     private val userResource: ServiceUserResource,
-    private val httpAuthProperties: HttpAuthProperties,
     private val nodeClient: NodeClient
 ) {
 
@@ -192,9 +191,6 @@ open class PermissionManager(
      * @param principalType 身份类型
      */
     fun checkPrincipal(userId: String, principalType: PrincipalType) {
-        if (!httpAuthProperties.enabled) {
-            return
-        }
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
@@ -284,10 +280,6 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
-        // 判断是否开启认证
-        if (!httpAuthProperties.enabled) {
-            return
-        }
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
@@ -519,9 +511,6 @@ open class PermissionManager(
         return userResource.detail(userId).data?.admin == true
     }
 
-    fun enableAuth(): Boolean {
-        return httpAuthProperties.enabled
-    }
 
     companion object {
 

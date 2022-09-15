@@ -45,8 +45,7 @@ import org.springframework.stereotype.Component
 class AuthenticationManager(
     private val serviceUserResource: ServiceUserResource,
     private val serviceAccountResource: ServiceAccountResource,
-    private val serviceOauthAuthorizationResource: ServiceOauthAuthorizationResource,
-    private val httpAuthProperties: HttpAuthProperties
+    private val serviceOauthAuthorizationResource: ServiceOauthAuthorizationResource
 ) {
 
     /**
@@ -54,7 +53,6 @@ class AuthenticationManager(
      * @throws AuthenticationException 校验失败
      */
     fun checkUserAccount(uid: String, token: String): String {
-        if (preCheck()) return uid
         val response = serviceUserResource.checkToken(uid, token)
         return if (response.data == true) uid else throw AuthenticationException("Authorization value check failed")
     }
@@ -96,13 +94,6 @@ class AuthenticationManager(
         return serviceOauthAuthorizationResource.getToken(accessToken).data
     }
 
-    private fun preCheck(): Boolean {
-        if (!httpAuthProperties.enabled) {
-            logger.debug("Auth disabled, skip authenticate.")
-            return true
-        }
-        return false
-    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AuthenticationManager::class.java)

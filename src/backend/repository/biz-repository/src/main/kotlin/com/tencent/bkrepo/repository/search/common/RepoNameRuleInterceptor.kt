@@ -116,20 +116,16 @@ class RepoNameRuleInterceptor(
         value: List<*>,
         context: CommonQueryContext
     ): Rule.QueryRule {
-        val repoNameList = if (permissionManager.enableAuth()) {
-            val userId = SecurityUtils.getUserId()
-            repositoryService.listPermissionRepo(
-                userId = userId,
-                projectId = projectId,
-                option = RepoListOption()
-            )
-        } else {
-            repositoryService.listRepo(projectId = projectId)
-        }?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
+        val userId = SecurityUtils.getUserId()
+        val repoNameList = repositoryService.listPermissionRepo(
+            userId = userId,
+            projectId = projectId,
+            option = RepoListOption()
+        )?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
         return if (repoNameList.isNullOrEmpty()) {
             throw PermissionException(
                 "${SecurityUtils.getUserId()} hasn't any PermissionRepo in project [$projectId], " +
-                    "or project [$projectId] hasn't any repo"
+                        "or project [$projectId] hasn't any repo"
             )
         } else if (repoNameList.size == 1) {
             Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)

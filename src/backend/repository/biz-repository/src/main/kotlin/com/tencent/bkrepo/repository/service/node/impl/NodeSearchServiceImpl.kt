@@ -63,8 +63,7 @@ import java.util.Date
 class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter,
-    private val repositoryService: RepositoryService,
-    private val httpAuthProperties: HttpAuthProperties
+    private val repositoryService: RepositoryService
 ) : NodeSearchService {
 
     override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
@@ -78,20 +77,13 @@ class NodeSearchServiceImpl(
         name: String,
         exRepo: String?
     ): List<ProjectPackageOverview> {
-        val repos = if (httpAuthProperties.enabled) {
-            repositoryService.listPermissionRepo(
-                userId = userId,
-                projectId = projectId,
-                option = RepoListOption(
-                    type = RepositoryType.GENERIC.name
-                )
-            ).map { it.name }
-        } else {
-            repositoryService.listRepo(
-                projectId = projectId,
+        val repos = repositoryService.listPermissionRepo(
+            userId = userId,
+            projectId = projectId,
+            option = RepoListOption(
                 type = RepositoryType.GENERIC.name
-            ).map { it.name }
-        }
+            )
+        ).map { it.name }
         val genericRepos = if (exRepo != null && exRepo.isNotBlank()) {
             repos.filter { it !in (exRepo.split(',')) }
         } else repos
