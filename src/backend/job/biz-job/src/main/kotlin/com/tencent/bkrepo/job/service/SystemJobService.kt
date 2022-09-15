@@ -81,14 +81,18 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         // 不根据cron表达式
         if (batchJobProperties.cron.equals("-")) {
             val fixRateStatus = if (batchJobProperties.fixedDelay != 0L) false else true
-            val period = if (batchJobProperties.fixedDelay != 0L) batchJobProperties.fixedDelay else batchJobProperties.fixedRate
+            val period = if (batchJobProperties.fixedDelay != 0L)
+                batchJobProperties.fixedDelay else batchJobProperties.fixedRate
             val periodicTrigger = PeriodicTrigger(period, TimeUnit.MILLISECONDS)
             periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
             periodicTrigger.setFixedRate(fixRateStatus)
             return if (lastBeginTime != null) {
                 val lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
                 val lastStartTime = Date.from(lastBeginTime.atZone(ZoneId.systemDefault()).toInstant())
-                finalNextTime = periodicTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
+                finalNextTime = periodicTrigger.nextExecutionTime(SimpleTriggerContext(
+                        lastFinshTime,
+                        lastFinshTime,
+                        lastStartTime))
                 LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
             } else {
                 finalNextTime = periodicTrigger.nextExecutionTime(SimpleTriggerContext())
