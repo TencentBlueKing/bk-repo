@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-const PREFIX_SERVICES = '/job/service/job'
+const PREFIX_SERVICES = '/job/api/job'
 
 export function jobs() {
   return request({
