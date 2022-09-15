@@ -30,21 +30,18 @@ package com.tencent.bkrepo.job.service
 import com.tencent.bkrepo.job.batch.base.BatchJob
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.pojo.JobDetail
-import org.springframework.context.ApplicationContext
-import org.springframework.scheduling.support.*
+import org.springframework.scheduling.support.CronTrigger
+import org.springframework.scheduling.support.PeriodicTrigger
+import org.springframework.scheduling.support.SimpleTriggerContext
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 import java.util.concurrent.TimeUnit
-import javax.annotation.Resource
 
 
 @Service
 class SystemJobService(val jobs: List<BatchJob<*>>) {
-
-    @Resource
-    private val ctx: ApplicationContext? = null
 
     fun detail() :List<JobDetail>{
         val jobDetails = mutableListOf<JobDetail>()
@@ -80,52 +77,41 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         if (!batchJobProperties.enabled) {
             return null
         }
-        var finalNextTime: Date
+        val finalNextTime: Date
         // 不根据cron表达式
         if (batchJobProperties.cron.equals("-")) {
+            val fixRateStatus = if (batchJobProperties.fixedDelay != 0L) false else true
+            val period = if (batchJobProperties.fixedDelay != 0L) batchJobProperties.fixedDelay else batchJobProperties.fixedRate
+            val periodicTrigger = PeriodicTrigger(period, TimeUnit.MILLISECONDS)
+            periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
+            periodicTrigger.setFixedRate(fixRateStatus)
             return if (lastBeginTime != null) {
-                // 根据trigger和上次调用取下次
-                var lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
-                var lastStartTime = Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant())
-                finalNextTime = if (batchJobProperties.fixedDelay != 0L) {
-                    val periodicTrigger = PeriodicTrigger(batchJobProperties.fixedDelay, TimeUnit.MILLISECONDS)
-                    periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
-                    periodicTrigger.setFixedRate(false)
-                    periodicTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
-                } else {
-                    val periodicTrigger = PeriodicTrigger(batchJobProperties.fixedRate, TimeUnit.MILLISECONDS)
-                    periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
-                    periodicTrigger.setFixedRate(true)
-                    periodicTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
-                }
+                val lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
+                val lastStartTime = Date.from(lastBeginTime.atZone(ZoneId.systemDefault()).toInstant())
+                finalNextTime = periodicTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
                 LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
             } else {
-                // 获取容器启动时间，增加initaldelay
-                finalNextTime = if (ctx != null) {
-                    Date(ctx.startupDate + batchJobProperties.initialDelay)
-                } else {
-                    Date(System.currentTimeMillis() + batchJobProperties.initialDelay)
-                }
+                finalNextTime = periodicTrigger.nextExecutionTime(SimpleTriggerContext())
                 LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
             }
         }
         // 根据cron表达式
         val cronTrigger = CronTrigger(batchJobProperties.cron)
         finalNextTime = if (lastBeginTime != null) {
-            var lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
-            var lastStartTime = Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant())
+            val lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
+            val lastStartTime = Date.from(lastBeginTime.atZone(ZoneId.systemDefault()).toInstant())
             cronTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
         } else {
-            cronTrigger.nextExecutionTime(SimpleTriggerContext(null,null,null))
+            cronTrigger.nextExecutionTime(SimpleTriggerContext())
         }
         return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
     }
 
     fun update(name: String, status: Boolean): Boolean{
         if (status) {
-            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.get(0).start()
+            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().start()
         } else {
-            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.get(0).stop()
+            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().stop()
         }
         return true
     }
