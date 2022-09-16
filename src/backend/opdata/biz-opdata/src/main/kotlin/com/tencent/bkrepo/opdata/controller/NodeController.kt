@@ -31,7 +31,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.opdata.PathStatMetric
 import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
+import com.tencent.bkrepo.opdata.service.FileSystemStorageService
 import com.tencent.bkrepo.opdata.service.NodeService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -44,7 +46,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/nodeOperation")
 @Principal(PrincipalType.ADMIN)
 class NodeController(
-    private val nodeService: NodeService
+    private val nodeService: NodeService,
+    private val fileSystemStorageService: FileSystemStorageService
 ) {
 
     /**
@@ -70,5 +73,13 @@ class NodeController(
     ): Response<Void> {
         nodeService.deleteEmptyFolder(projectId, repoName, parentFolder)
         return ResponseBuilder.success()
+    }
+
+    /**
+     * 挂载分布式文件系统节点统计功能
+     */
+    @GetMapping("/fileSystem/storage/metrics")
+    fun getFileStorageData(): Response<List<PathStatMetric>> {
+        return ResponseBuilder.success(fileSystemStorageService.folderStat())
     }
 }
