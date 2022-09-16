@@ -31,17 +31,6 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolOutput
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
 import com.tencent.bkrepo.analysis.executor.configuration.DockerProperties
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
@@ -49,6 +38,18 @@ import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
 import com.tencent.bkrepo.analysis.executor.util.ImageScanHelper
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolOutput
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.repository.api.NodeClient
+import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import java.io.File
@@ -108,6 +109,7 @@ class StandardScanExecutor(
 
     override fun result(taskWorkDir: File, task: ScanExecutorTask, scanStatus: SubScanTaskStatus): ScanExecutorResult {
         val toolOutput = readJsonString<ToolOutput>(File(taskWorkDir, OUTPUT_FILE))
+        toolOutput?.err?.let { logger.warn("task[${task.taskId}] scan failed, message:\n$it") }
         return if (toolOutput != null) {
             StandardScanExecutorResult(toolOutput)
         } else {
@@ -138,10 +140,14 @@ class StandardScanExecutor(
     }
 
     private fun convertToContainerPath(path: String, taskWorkDir: File): String {
-        return path.replace(taskWorkDir.absolutePath, CONTAINER_WORK_DIR)
+        val subPath = path.substringAfter(
+            "${taskWorkDir.absolutePath.trimEnd(File.separatorChar)}${File.separatorChar}"
+        )
+        return "$CONTAINER_WORK_DIR/$subPath"
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(StandardScanner::class.java)
         private const val INPUT_FILE = "input.json"
         private const val OUTPUT_FILE = "output.json"
         private const val CONTAINER_WORK_DIR = "/bkrepo/workspace"

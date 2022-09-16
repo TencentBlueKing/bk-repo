@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.analyst.component.manager.standard.dao
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScancodeItem
 import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResult
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
@@ -41,7 +41,7 @@ class LicenseResultDao : ResultItemDao<TLicenseResult>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
         require(arguments is StandardLoadResultArguments)
         if (arguments.licenseIds.isNotEmpty()) {
-            criteria.and(dataKey(ScancodeItem::licenseId.name)).inValues(arguments.licenseIds)
+            criteria.and(dataKey(LicenseResult::licenseName.name)).inValues(arguments.licenseIds)
         }
         return criteria
     }

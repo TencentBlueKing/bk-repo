@@ -73,7 +73,7 @@ class ArrowheadConverter(private val licenseService: SpdxLicenseService) : Scann
                 dependentPath = it.path,
                 isFsfLibre = detail?.isFsfLibre
             )
-        }
+        }.distinct()
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)
     }

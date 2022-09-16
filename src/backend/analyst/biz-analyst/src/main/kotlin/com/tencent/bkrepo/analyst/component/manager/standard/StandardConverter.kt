@@ -27,27 +27,28 @@
 
 package com.tencent.bkrepo.analyst.component.manager.standard
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
+import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
+import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
+import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
+import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.analyst.service.SpdxLicenseService
+import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.TOTAL
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
-import com.tencent.bkrepo.analyst.pojo.request.ArrowheadLoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
-import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
-import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
-import com.tencent.bkrepo.analyst.service.SpdxLicenseService
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.stereotype.Component
 
 @Component("${StandardScanner.TYPE}Converter")
@@ -72,7 +73,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 dependentPath = it.path ?: "",
                 isFsfLibre = detail?.isFsfLibre
             )
-        }
+        }.distinct()
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)
     }
@@ -84,7 +85,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         val reports = result.records.mapTo(HashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
                 vulId = it.vulId,
-                severity = it.severity,
+                severity = ScanPlanConverter.convertToLeakLevel(it.severity),
                 pkgName = it.pkgName ?: "",
                 installedVersion = it.pkgVersions,
                 title = it.vulName ?: "",
@@ -99,19 +100,18 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
     }
 
     override fun convertToLoadArguments(request: ArtifactLicensesDetailRequest): LoadResultArguments {
-        return ArrowheadLoadResultArguments(
+        return StandardLoadResultArguments(
             licenseIds = request.licenseId?.let { listOf(it) } ?: emptyList(),
-            riskLevels = request.riskLevel?.let { listOf(it) } ?: emptyList(),
-            reportType = ApplicationItem.TYPE,
+            reportType = ScanType.LICENSE.name,
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
     }
 
     override fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments {
-        return ArrowheadLoadResultArguments(
+        return StandardLoadResultArguments(
             vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
-            reportType = request.reportType,
+            reportType = ScanType.SECURITY.name,
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
     }
@@ -133,7 +133,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         }
 
         val licenseIds = licenseResults.map { it.licenseName.toLowerCase() }.distinct()
-        val licensesInfo = licenseService.listLicenseByIds(licenseIds)
+        val licensesInfo = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.toLowerCase() }
 
         overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseResults.size.toLong()
         for (licenseResult in licenseResults) {

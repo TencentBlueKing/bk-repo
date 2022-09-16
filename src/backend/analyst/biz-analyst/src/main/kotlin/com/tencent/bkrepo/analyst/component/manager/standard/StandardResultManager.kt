@@ -27,17 +27,6 @@
 
 package com.tencent.bkrepo.analyst.component.manager.standard
 
-import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.analyst.component.manager.AbstractScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.Converter
 import com.tencent.bkrepo.analyst.component.manager.knowledgebase.KnowledgeBase
@@ -49,6 +38,17 @@ import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResu
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.stereotype.Component
 
 @Component(StandardScanner.TYPE)

@@ -201,7 +201,9 @@ class ScanServiceImpl @Autowired constructor(
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             logger.info("report result, parentTask[${subScanTask.parentScanTaskId}], subTask[$subTaskId]")
             val scanner = scannerService.get(subScanTask.scanner)
-            val overview = scanExecutorResult?.let { scannerConverters[scanner.type]!!.convertOverview(it) }
+            val overview = scanExecutorResult?.let {
+                scannerConverters[ScannerConverter.name(scanner.type)]!!.convertOverview(it)
+            }
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
                 subScanTask, scanStatus, overview ?: emptyMap()
