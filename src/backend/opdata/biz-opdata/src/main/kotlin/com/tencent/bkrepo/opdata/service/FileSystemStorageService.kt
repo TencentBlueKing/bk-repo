@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.opdata.PathStatMetric
 import com.tencent.bkrepo.opdata.filesystem.StoragePathStatVisitor
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -50,11 +51,13 @@ class FileSystemStorageService(
 ) {
 
     fun folderStat(): List<PathStatMetric> {
+        logger.info("Will start to collect the metrics for folders")
         val paths = when (properties.type) {
             StorageType.FILESYSTEM -> findFileSystemPath(properties)
             StorageType.INNERCOS -> findCfsPath()
             else -> emptyList()
         }
+        logger.info("Metrics of folders $paths will be collected")
         return paths.map {
             val metric = PathStatMetric(it)
             try {
@@ -87,5 +90,9 @@ class FileSystemStorageService(
 
     private fun getLocalPath(cache: CacheProperties, upload: UploadProperties): List<String> {
         return listOf(cache.path, upload.localPath, upload.location)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FileSystemStorageService::class.java)
     }
 }
