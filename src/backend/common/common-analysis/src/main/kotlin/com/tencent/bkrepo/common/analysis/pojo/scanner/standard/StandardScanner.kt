@@ -58,22 +58,6 @@ class StandardScanner(
         val key: String,
         @ApiModelProperty("参数值")
         val value: String? = null,
-        @ApiModelProperty("默认值列表，列表为空时表示无默认值")
-        val default: List<String> = emptyList(),
-        @ApiModelProperty("描述")
-        val des: String = "",
-        @ApiModelProperty("是否必须，是必须的情况下value不能为null")
-        val required: Boolean = false,
-        @ApiModelProperty("选项，仅RADIO，CHECKBOX类型的参数存在")
-        val options: List<Option>? = null
-    )
-
-    @ApiModel("参数选项")
-    data class Option(
-        @ApiModelProperty("值")
-        val value: String,
-        @ApiModelProperty("展示名")
-        val name: String = value,
         @ApiModelProperty("描述")
         val des: String = ""
     )
@@ -81,5 +65,5 @@ class StandardScanner(
     /**
      * 参数类型
      */
-    enum class ArgumentType { NUMBER, STRING, BOOLEAN, RADIO, CHECKBOX; }
+    enum class ArgumentType { NUMBER, STRING, BOOLEAN; }
 }
