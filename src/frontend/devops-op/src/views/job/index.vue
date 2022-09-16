@@ -78,7 +78,7 @@
 <script>
 
 import { jobs, update } from '@/api/job'
-import moment from 'moment'
+import { formatNormalDate } from '@/utils/date'
 
 export default {
   name: 'Jobs',
@@ -97,9 +97,9 @@ export default {
     query() {
       jobs().then(res => {
         for (let i = 0; i < res.data.length; i++) {
-          res.data[i].lastBeginTime = res.data[i].lastBeginTime != null ? moment(res.data[i].lastBeginTime).format('YYYY-MM-DD HH:mm:ss') : null
-          res.data[i].lastEndTime = res.data[i].lastEndTime != null ? moment(res.data[i].lastEndTime).format('YYYY-MM-DD HH:mm:ss') : null
-          res.data[i].nextExecuteTime = res.data[i].nextExecuteTime != null ? moment(res.data[i].nextExecuteTime).format('YYYY-MM-DD HH:mm:ss') : null
+          res.data[i].lastBeginTime = formatNormalDate(res.data[i].lastBeginTime)
+          res.data[i].lastEndTime = formatNormalDate(res.data[i].lastEndTime)
+          res.data[i].nextExecuteTime = formatNormalDate(res.data[i].nextExecuteTime)
           res.data[i].lastExecuteTime = res.data[i].lastExecuteTime != null ? res.data[i].lastExecuteTime + '毫秒' : null
         }
         this.jobs = res.data
