@@ -50,8 +50,10 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
 
     /**
      * 返回任务名称
+     *
+     * 与job在配置中心的配置前缀保持一致，前缀规则为job.[Class.getSimpleName]
      */
-    open fun getJobName(): String = javaClass.simpleName
+    fun getJobName(): String = javaClass.simpleName
 
     abstract fun createJobContext(): C
 
@@ -151,6 +153,20 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * */
     fun stop() {
         stop = true
+    }
+
+    /**
+     * 开始任务
+     */
+    fun startRun() {
+        stop = false
+    }
+
+    /**
+     * 更改启用状态
+     */
+    fun changeEnabled(status: Boolean) {
+        batchJobProperties.enabled = status
     }
 
     /**
