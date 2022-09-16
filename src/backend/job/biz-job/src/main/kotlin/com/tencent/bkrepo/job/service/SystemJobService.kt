@@ -30,20 +30,26 @@ package com.tencent.bkrepo.job.service
 import com.tencent.bkrepo.job.batch.base.BatchJob
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.pojo.JobDetail
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import org.springframework.scheduling.support.CronTrigger
 import org.springframework.scheduling.support.PeriodicTrigger
 import org.springframework.scheduling.support.SimpleTriggerContext
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
-import java.util.concurrent.TimeUnit
+import java.util.Date
 
+import java.util.concurrent.TimeUnit
 
 @Service
 class SystemJobService(val jobs: List<BatchJob<*>>) {
 
-    fun detail() :List<JobDetail>{
+    @Autowired
+    private val ctx: ApplicationContext? = null
+
+    fun detail(): List<JobDetail> {
         val jobDetails = mutableListOf<JobDetail>()
         jobs.forEach {
             with(it.batchJobProperties) {
@@ -69,9 +75,10 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         return jobDetails
     }
 
-    private fun getNextExecuteTime(batchJobProperties: BatchJobProperties,
-                           lastBeginTime: LocalDateTime?,
-                           lastEndTime: LocalDateTime?
+    private fun getNextExecuteTime(
+        batchJobProperties: BatchJobProperties,
+        lastBeginTime: LocalDateTime?,
+        lastEndTime: LocalDateTime?
     ): LocalDateTime? {
         // 没启用，没下次执行执行时间
         if (!batchJobProperties.enabled) {
@@ -79,10 +86,13 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         }
         val finalNextTime: Date
         // 不根据cron表达式
-        if (batchJobProperties.cron.equals("-")) {
+        if (batchJobProperties.cron.equals(ScheduledTaskRegistrar.CRON_DISABLED)) {
             val fixRateStatus = if (batchJobProperties.fixedDelay != 0L) false else true
-            val period = if (batchJobProperties.fixedDelay != 0L)
-                batchJobProperties.fixedDelay else batchJobProperties.fixedRate
+            val period = if (batchJobProperties.fixedDelay != 0L) {
+                batchJobProperties.fixedDelay
+            } else {
+                batchJobProperties.fixedRate
+            }
             val periodicTrigger = PeriodicTrigger(period, TimeUnit.MILLISECONDS)
             periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
             periodicTrigger.setFixedRate(fixRateStatus)
@@ -95,7 +105,11 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
                         lastStartTime))
                 LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
             } else {
-                finalNextTime = periodicTrigger.nextExecutionTime(SimpleTriggerContext())
+                finalNextTime = if (ctx != null) {
+                    Date(ctx.startupDate + batchJobProperties.initialDelay)
+                } else {
+                    periodicTrigger.nextExecutionTime(SimpleTriggerContext())
+                }
                 LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
             }
         }
@@ -104,14 +118,14 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         finalNextTime = if (lastBeginTime != null) {
             val lastFinshTime = Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
             val lastStartTime = Date.from(lastBeginTime.atZone(ZoneId.systemDefault()).toInstant())
-            cronTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime,lastFinshTime,lastStartTime))
+            cronTrigger.nextExecutionTime(SimpleTriggerContext(lastFinshTime, lastFinshTime, lastStartTime))
         } else {
             cronTrigger.nextExecutionTime(SimpleTriggerContext())
         }
         return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
     }
 
-    fun update(name: String, status: Boolean): Boolean{
+    fun update(name: String, status: Boolean): Boolean {
         if (status) {
             jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().start()
         } else {

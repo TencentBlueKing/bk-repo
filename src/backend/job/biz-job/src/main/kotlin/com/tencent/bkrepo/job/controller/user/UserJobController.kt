@@ -50,7 +50,7 @@ class UserJobController(val systemJobService: SystemJobService) {
     }
 
     @PutMapping("/update/{name}/{status}")
-    fun update(@PathVariable name: String, @PathVariable status:Boolean): Response<Boolean> {
+    fun update(@PathVariable name: String, @PathVariable status: Boolean): Response<Boolean> {
         return ResponseBuilder.success(systemJobService.update(name, status))
     }
 }
