@@ -94,8 +94,4 @@ class AuthenticationManager(
         return serviceOauthAuthorizationResource.getToken(accessToken).data
     }
 
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(AuthenticationManager::class.java)
-    }
 }
