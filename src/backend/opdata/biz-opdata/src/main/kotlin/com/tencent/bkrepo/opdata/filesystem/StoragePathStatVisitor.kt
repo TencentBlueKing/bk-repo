@@ -55,7 +55,6 @@ class StoragePathStatVisitor(
         if (dirPath.startsWith(rootPath)) {
             pathStatMetric.totalFolderCount += 1
             pathStatMetric.folders[dirPath.toString()] = FileUtils.sizeOfDirectory(dirPath.toFile())
-            return FileVisitResult.CONTINUE
         }
         return FileVisitResult.CONTINUE
     }
