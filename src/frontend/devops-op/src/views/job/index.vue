@@ -16,7 +16,7 @@
         <template slot-scope="scope">
           <el-switch
             v-model="scope.row.enabled"
-            @change="changeEnabled(scope.row.enabled, scope.row.name)"
+            @change="changeEnabled(scope.row)"
           />
         </template>
       </el-table-column>
@@ -71,6 +71,14 @@
         label="上一次执行耗时"
         width="120"
       />
+      <el-table-column label="操作" min-width="300px">
+        <template v-if="scope.row.runnig === true && scope.row.enabled === true" slot-scope="scope">
+          <el-button size="mini" type="primary" @click="changeRunning(scope.row)">停止</el-button>
+        </template>
+        <template v-if="scope.row.runnig !== true && scope.row.enabled === true" slot-scope="scope">
+          <el-button size="mini" type="primary" @click="changeRunning(scope.row)">启动</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>
@@ -78,6 +86,7 @@
 <script>
 
 import { jobs, update } from '@/api/job'
+import { updateConfig } from '@/api/config'
 import { formatNormalDate } from '@/utils/date'
 
 export default {
@@ -91,8 +100,21 @@ export default {
     this.query()
   },
   methods: {
-    changeEnabled(enabled, name) {
-      update(name, enabled)
+    changeEnabled(job) {
+      update(job.name, job.enabled, job.runnig).then(() => {
+        this.query()
+      })
+      const key = 'job.' + job.name + '.enabled'
+      const values = [{
+        'key': key,
+        'value': job.enabled
+      }]
+      updateConfig(values)
+    },
+    changeRunning(job) {
+      update(job.name, job.enabled, !job.runnig).then(() => {
+        this.query()
+      })
     },
     query() {
       jobs().then(res => {

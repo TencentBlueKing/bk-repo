@@ -9,9 +9,13 @@ export function jobs() {
   })
 }
 
-export function update(name, status) {
+export function update(name, enabled, running) {
   return request({
-    url: `${PREFIX_SERVICES}/update/${name}/${status}`,
-    method: 'get'
+    url: `${PREFIX_SERVICES}/update/${name}`,
+    method: 'put',
+    params: {
+      enabled: enabled,
+      running: running
+    }
   })
 }

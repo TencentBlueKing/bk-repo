@@ -125,9 +125,10 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
     }
 
-    fun update(name: String, status: Boolean): Boolean {
-        if (status) {
-            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().start()
+    fun update(name: String, enabled: Boolean, running: Boolean): Boolean {
+        jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().changeEnabled(enabled)
+        if (running) {
+            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().startRun()
         } else {
             jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().stop()
         }
