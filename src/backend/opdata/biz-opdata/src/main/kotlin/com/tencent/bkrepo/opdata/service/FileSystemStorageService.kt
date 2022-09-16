@@ -36,6 +36,7 @@ import com.tencent.bkrepo.opdata.filesystem.StoragePathStatVisitor
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.stereotype.Service
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 
 /**
@@ -56,7 +57,10 @@ class FileSystemStorageService(
         }
         return paths.map {
             val metric = PathStatMetric(it)
-            Files.walkFileTree(Paths.get(it), StoragePathStatVisitor(it, metric))
+            try {
+                Files.walkFileTree(Paths.get(it), StoragePathStatVisitor(it, metric))
+            } catch (ignore: NoSuchFileException) {
+            }
             metric
         }
     }
