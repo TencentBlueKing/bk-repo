@@ -29,14 +29,19 @@ package com.tencent.bkrepo.job.batch.utils
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.Locale
 
 object TimeUtils {
 
-    fun parseMongoDateTimeStr(dateTimeStr: String): LocalDateTime {
-        return LocalDateTime.parse(
-            dateTimeStr,
-            DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH)
-        )
+    fun parseMongoDateTimeStr(dateTimeStr: String): LocalDateTime? {
+        return try {
+            LocalDateTime.parse(
+                dateTimeStr,
+                DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH)
+            )
+        } catch (ignore: DateTimeParseException) {
+            null
+        }
     }
 }

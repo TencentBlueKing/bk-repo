@@ -38,6 +38,8 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.stream.constant.BinderType
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -75,8 +77,10 @@ abstract class NodeBaseService(
     open val storageCredentialService: StorageCredentialService,
     open val storageService: StorageService,
     open val quotaService: QuotaService,
-    open val repositoryProperties: RepositoryProperties
+    open val repositoryProperties: RepositoryProperties,
+    open val messageSupplier: MessageSupplier
 ) : NodeService, NodeBaseOperation {
+
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -166,9 +170,9 @@ abstract class NodeBaseService(
             doCreate(node)
             if (isGenericRepo(repo)) {
                 publishEvent(buildCreatedEvent(node))
+                messageSupplier.delegateToSupplier(node, topic = TOPIC, binderType = BinderType.KAFKA)
             }
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
-
             return convertToDetail(node)!!
         }
     }
@@ -299,6 +303,7 @@ abstract class NodeBaseService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)
+        private const val TOPIC = "bkbase_bkrepo_artifact_node_created"
 
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
