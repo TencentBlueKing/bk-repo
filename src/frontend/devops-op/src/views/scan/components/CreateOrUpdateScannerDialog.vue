@@ -63,6 +63,15 @@
           <el-option v-for="item in scanTypes" :key="item" :label="item" :value="item" />
         </el-select>
       </el-form-item>
+      <!-- standard -->
+      <el-form-item v-if="scanner.type === SCANNER_TYPE_STANDARD" label="镜像" prop="image" required>
+        <el-input v-model="scanner.image" placeholder="镜像，IMAGE:TAG" />
+      </el-form-item>
+      <el-form-item v-if="scanner.type === SCANNER_TYPE_STANDARD" label="参数" prop="args">
+        <br>
+        <standard-scanner-argument v-for="(arg,index) in scanner.args" :key="index" style="margin-bottom: 10px" :argument="arg" @remove="removeArg(index)" />
+        <el-button size="mini" type="primary" @click="addArg(scanner)">增加参数</el-button>
+      </el-form-item>
       <!-- arrowhead -->
       <el-form-item v-if="scanner.type === SCANNER_TYPE_ARROWHEAD || scanner.type === SCANNER_TYPE_TRIVY || scanner.type === SCANNER_TYPE_SCANCODE" label="镜像" prop="container.image" required>
         <el-input v-model="scanner.container.image" placeholder="镜像，IMAGE:TAG" />
@@ -99,13 +108,15 @@
 import { IMAGE_REGEX, URL_REGEX } from '@/utils/validate'
 import _ from 'lodash'
 import {
-  createScanner, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE,
+  createScanner, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
   SCANNER_TYPE_TRIVY, scanTypes,
   updateScanner
 } from '@/api/scan'
 import { repoTypes } from '@/api/repository'
+import StandardScannerArgument from '@/views/scan/components/StandardScannerArgument'
 export default {
   name: 'CreateOrUpdateScannerDialog',
+  components: { StandardScannerArgument },
   props: {
     visible: Boolean,
     /**
@@ -122,6 +133,7 @@ export default {
   },
   data() {
     return {
+      SCANNER_TYPE_STANDARD: SCANNER_TYPE_STANDARD,
       SCANNER_TYPE_ARROWHEAD: SCANNER_TYPE_ARROWHEAD,
       SCANNER_TYPE_TRIVY: SCANNER_TYPE_TRIVY,
       SCANNER_TYPE_SCANCODE: SCANNER_TYPE_SCANCODE,
@@ -133,9 +145,19 @@ export default {
         ],
         'container.image': [
           { validator: this.validateImage, trigger: 'change' }
+        ],
+        'image': [
+          { validator: this.validateImage, trigger: 'change' }
+        ],
+        'args': [
+          { validator: this.validateArgs, trigger: 'change' }
         ]
       },
       types: [
+        {
+          'value': SCANNER_TYPE_STANDARD,
+          'label': 'Standard'
+        },
         {
           'value': SCANNER_TYPE_ARROWHEAD,
           'label': 'Arrowhead'
@@ -176,6 +198,19 @@ export default {
     },
     validateImage(rule, value, callback) {
       this.regexValidate(rule, value, callback, IMAGE_REGEX)
+    },
+    validateArgs(rule, value, callback) {
+      const keys = new Set()
+      value.forEach(arg => {
+        if (keys.has(arg.key)) {
+          callback(new Error(`存在重复的参数KEY[${arg.key}]`))
+        }
+        if (!arg.key) {
+          callback(new Error(`key不能为空`))
+        }
+        keys.add(arg.key)
+      })
+      callback()
     },
     regexValidate(rule, value, callback, regex) {
       if (regex.test(value)) {
@@ -233,6 +268,16 @@ export default {
         }
       })
     },
+    addArg(scanner) {
+      scanner.args.push({
+        type: 'STRING',
+        key: null,
+        value: null
+      })
+    },
+    removeArg(index) {
+      this.scanner.args.splice(index, 1)
+    },
     resetScanner(type) {
       if (this.createMode) {
         this.scanner = this.newScanner(type)
@@ -265,6 +310,9 @@ export default {
       }
       if (type === SCANNER_TYPE_SCANCODE) {
         scanner.container = {}
+      }
+      if (type === SCANNER_TYPE_STANDARD) {
+        scanner.args = []
       }
       return scanner
     }
