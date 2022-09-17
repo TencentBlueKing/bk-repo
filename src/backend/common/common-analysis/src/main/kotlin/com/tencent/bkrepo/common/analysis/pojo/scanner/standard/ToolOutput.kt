@@ -136,5 +136,5 @@ data class LicenseResult(
     /**
      * 检出License的组件版本
      */
-    val pkgVersion: String? = null,
+    val pkgVersions: Set<String> = emptySet()
 )

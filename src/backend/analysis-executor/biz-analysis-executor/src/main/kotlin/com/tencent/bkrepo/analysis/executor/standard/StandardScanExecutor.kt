@@ -37,6 +37,7 @@ import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorPropert
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
+import com.tencent.bkrepo.analysis.executor.util.FileUtils
 import com.tencent.bkrepo.analysis.executor.util.ImageScanHelper
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
@@ -104,7 +105,12 @@ class StandardScanExecutor(
     override fun workDir() = File(scannerExecutorProperties.workDir)
 
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
-        return File(taskWorkDir, "${task.sha256}.tar")
+        val fileName = if (task.repoType == RepositoryType.DOCKER.name) {
+            "${task.sha256}.tar"
+        } else {
+            FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
+        }
+        return File(taskWorkDir, fileName)
     }
 
     override fun result(taskWorkDir: File, task: ScanExecutorTask, scanStatus: SubScanTaskStatus): ScanExecutorResult {

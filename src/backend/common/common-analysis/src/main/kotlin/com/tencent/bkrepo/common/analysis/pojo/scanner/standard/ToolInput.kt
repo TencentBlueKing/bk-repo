@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.Argument
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.ArgumentType.STRING
 
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.
  * 1. --input /path/to/input.json指定输入文件参数，input.json数据格式与本类相同
  * 2. 分析工具输入参数为--token xxx --taskId xxx --bkrepoBaseUrl xxx时调用分析管理服务接口返回的数据格式与本类相同
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class ToolInput(
     /**
      * 子任务id
