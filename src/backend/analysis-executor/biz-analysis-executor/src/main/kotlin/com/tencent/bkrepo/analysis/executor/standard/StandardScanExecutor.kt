@@ -76,6 +76,7 @@ class StandardScanExecutor(
         val scanner = task.scanner as StandardScanner
         val inputFile = generateInputFile(task, taskWorkDir, scannerInputFile, sha256)
         val args = listOf(
+            scanner.cmd,
             "--input", convertToContainerPath(inputFile.absolutePath, taskWorkDir),
             "--output", "$CONTAINER_WORK_DIR/$OUTPUT_FILE"
         )

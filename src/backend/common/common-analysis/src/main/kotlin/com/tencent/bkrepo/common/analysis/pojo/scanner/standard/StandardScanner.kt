@@ -40,6 +40,8 @@ class StandardScanner(
     override val name: String,
     @ApiModelProperty("扫描器镜像")
     val image: String,
+    @ApiModelProperty("扫描器容器启动CMD")
+    val cmd: String,
     override val version: String = image.substring(image.lastIndexOf(COLON) + 1, image.length),
     @ApiModelProperty("扫描器参数")
     val args: List<Argument> = emptyList(),
