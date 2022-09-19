@@ -23,7 +23,7 @@
       <el-table-column
         prop="cron"
         label="cron表达式"
-        width="180"
+        width="150"
       />
       <el-table-column
         prop="fixedDelay"
@@ -71,7 +71,7 @@
         label="上一次执行耗时"
         width="120"
       />
-      <el-table-column label="操作" min-width="300px">
+      <el-table-column label="操作" min-width="120px">
         <template v-if="scope.row.runnig === true && scope.row.enabled === true" slot-scope="scope">
           <el-button size="mini" type="primary" @click="changeRunning(scope.row)">停止</el-button>
         </template>
@@ -112,6 +112,11 @@ export default {
       updateConfig(values)
     },
     changeRunning(job) {
+      const message = job.runnig !== true ? '启动成功' : '停止成功'
+      this.$message({
+        message: message,
+        type: 'success'
+      })
       update(job.name, job.enabled, !job.runnig).then(() => {
         this.query()
       })
