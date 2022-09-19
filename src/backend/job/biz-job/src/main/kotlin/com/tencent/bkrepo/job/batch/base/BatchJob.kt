@@ -156,17 +156,17 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     }
 
     /**
-     * 开始任务
+     * 启用
      */
-    fun startRun() {
-        stop = false
+    fun enable() {
+        batchJobProperties.enabled = true
     }
 
     /**
-     * 更改启用状态
+     * 停止启用
      */
-    fun changeEnabled(status: Boolean) {
-        batchJobProperties.enabled = status
+    fun disable() {
+        batchJobProperties.enabled = false
     }
 
     /**
