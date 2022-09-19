@@ -25,16 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.model
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class
+@Document("file_system_storage_metrics")
+data class TPathStatMetric(
+    var path: String,
+    var totalFileCount: Long = 0,
+    var totalSize: Long = 0,
+    var totalFolderCount: Long = 0,
+    var rootPath: String? = null,
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )
-class OpConfiguration

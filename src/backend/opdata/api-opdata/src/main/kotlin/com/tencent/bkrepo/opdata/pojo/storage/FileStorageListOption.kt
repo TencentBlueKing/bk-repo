@@ -25,12 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata
+package com.tencent.bkrepo.opdata.pojo.storage
 
-data class PathStatMetric(
-    var path: String,
-    var totalFileCount: Long = 0,
-    var totalSize: Long = 0,
-    var totalFolderCount: Long = 0,
-    var folders: MutableMap<String, Long> = mutableMapOf()
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+
+data class FileStorageListOption(
+    val rootPath: String? = null,
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    val pageSize: Int = DEFAULT_PAGE_SIZE
 )

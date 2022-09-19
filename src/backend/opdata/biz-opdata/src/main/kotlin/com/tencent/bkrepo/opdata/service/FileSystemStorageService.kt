@@ -27,72 +27,64 @@
 
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
-import com.tencent.bkrepo.common.storage.config.UploadProperties
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.credentials.StorageType
-import com.tencent.bkrepo.opdata.PathStatMetric
-import com.tencent.bkrepo.opdata.filesystem.StoragePathStatVisitor
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.opdata.model.TPathStatMetric
+import com.tencent.bkrepo.opdata.pojo.storage.FileStorageListOption
+import com.tencent.bkrepo.opdata.pojo.storage.RootPathStorageMetric
+import com.tencent.bkrepo.opdata.pojo.storage.SubFolderStorageMetric
+import com.tencent.bkrepo.opdata.repository.FileSystemMetricsRepository
 import org.springframework.stereotype.Service
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
 
 /**
  * 统计配置的分布式存储的容量使用情况
  */
 @Service
 class FileSystemStorageService(
-    private val properties: StorageProperties,
-    private val storageCredentialsClient: StorageCredentialsClient
-
+    private val fileSystemMetricsRepository: FileSystemMetricsRepository
 ) {
 
-    fun folderStat(): List<PathStatMetric> {
-        logger.info("Will start to collect the metrics for folders")
-        val paths = when (properties.type) {
-            StorageType.FILESYSTEM -> findFileSystemPath(properties)
-            StorageType.INNERCOS -> findCfsPath()
-            else -> emptyList()
-        }
-        logger.info("Metrics of folders $paths will be collected")
-        return paths.map {
-            val metric = PathStatMetric(it)
-            try {
-                Files.walkFileTree(Paths.get(it), StoragePathStatVisitor(it, metric))
-            } catch (ignore: NoSuchFileException) {
-            }
-            metric
+    fun getFileSystemStorageMetrics(option: FileStorageListOption): Page<RootPathStorageMetric> {
+        with(option) {
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val queryResult = fileSystemMetricsRepository.findByRootPath(pageable = pageRequest, rootPath = rootPath)
+                .map { convertToRootPathStorageMetric(it) }
+            return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
     }
 
-    private fun findFileSystemPath(properties: StorageProperties): Set<String> {
-        val result = mutableSetOf<String>()
-        result.addAll(getLocalPath(properties.filesystem.cache, properties.filesystem.upload))
-        result.add(properties.filesystem.path)
-        return result
-    }
-
-    private fun findCfsPath(): Set<String> {
-        val list = storageCredentialsClient.list().data ?: return emptySet()
-        val default = storageCredentialsClient.findByKey().data
-        val result = mutableSetOf<String>()
-        list.forEach {
-            result.addAll(getLocalPath(it.cache, it.upload))
+    fun getFileSystemStorageMetricDetails(option: FileStorageListOption): Page<SubFolderStorageMetric> {
+        with(option) {
+            if (option.rootPath.isNullOrEmpty())
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, "rootPath")
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val queryResult = fileSystemMetricsRepository.findByRootPath(pageable = pageRequest, rootPath = rootPath)
+                .map { convertToSubFolderStorageMetric(it) }
+            return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
-        default?.let {
-            result.addAll(getLocalPath(default.cache, default.upload))
-        }
-        return result
-    }
-
-    private fun getLocalPath(cache: CacheProperties, upload: UploadProperties): List<String> {
-        return listOf(cache.path, upload.localPath, upload.location)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(FileSystemStorageService::class.java)
+        fun convertToRootPathStorageMetric(tMetric: TPathStatMetric): RootPathStorageMetric {
+            with(tMetric) {
+                return RootPathStorageMetric(
+                    path = this.path,
+                    totalFileCount = this.totalFileCount,
+                    totalFolderCount = this.totalFolderCount,
+                    totalSize = this.totalSize
+                )
+            }
+        }
+
+        fun convertToSubFolderStorageMetric(tMetric: TPathStatMetric): SubFolderStorageMetric {
+            with(tMetric) {
+                return SubFolderStorageMetric(
+                    path = this.path,
+                    totalSize = this.totalSize
+                )
+            }
+        }
     }
 }

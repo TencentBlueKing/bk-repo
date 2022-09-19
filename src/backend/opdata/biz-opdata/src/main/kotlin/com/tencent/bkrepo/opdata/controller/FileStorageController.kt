@@ -27,48 +27,39 @@
 
 package com.tencent.bkrepo.opdata.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
-import com.tencent.bkrepo.opdata.service.NodeService
-import org.springframework.web.bind.annotation.DeleteMapping
+import com.tencent.bkrepo.opdata.pojo.storage.FileStorageListOption
+import com.tencent.bkrepo.opdata.pojo.storage.RootPathStorageMetric
+import com.tencent.bkrepo.opdata.pojo.storage.SubFolderStorageMetric
+import com.tencent.bkrepo.opdata.service.FileSystemStorageService
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/nodeOperation")
+@RequestMapping("/api/fileSystem")
 @Principal(PrincipalType.ADMIN)
-class NodeController(
-    private val nodeService: NodeService
+class FileStorageController(
+    private val fileSystemStorageService: FileSystemStorageService
 ) {
 
     /**
-     * 获取当前仓库目录下的空目录列表
+     * 挂载分布式文件系统节点统计功能
      */
-    @GetMapping("/emptyFolders/{projectId}/{repoName}")
-    fun getEmptyFolder(
-        @PathVariable("projectId")projectId: String,
-        @PathVariable("repoName")repoName: String,
-        @RequestParam parentFolder: String
-    ): Response<List<EmptyFolderMetric>> {
-        return ResponseBuilder.success(nodeService.getEmptyFolder(projectId, repoName, parentFolder))
+    @GetMapping("/storage/metrics")
+    fun list(option: FileStorageListOption): Response<Page<RootPathStorageMetric>> {
+        return ResponseBuilder.success(fileSystemStorageService.getFileSystemStorageMetrics(option))
     }
 
     /**
-     * 获取当前仓库目录下的空目录列表
+     * 统计某个挂载路径下子目录文件大小
      */
-    @DeleteMapping("/emptyFolders/{projectId}/{repoName}")
-    fun deleteEmptyFolders(
-        @PathVariable("projectId")projectId: String,
-        @PathVariable("repoName")repoName: String,
-        @RequestParam parentFolder: String
-    ): Response<Void> {
-        nodeService.deleteEmptyFolder(projectId, repoName, parentFolder)
-        return ResponseBuilder.success()
+    @GetMapping("/storage/metricsDetail")
+    fun listDetails(option: FileStorageListOption): Response<Page<SubFolderStorageMetric>> {
+        return ResponseBuilder.success(fileSystemStorageService.getFileSystemStorageMetricDetails(option))
     }
 }
