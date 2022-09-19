@@ -112,7 +112,11 @@ function _M:verify_ticket(bk_ticket, input_type)
             ngx.exit(401)
             return
         end
-        user_cache_value = result.data.user_id
+        if input_type == "ticket" then
+            user_cache_value = result.data.user_id
+        else
+            user_cache_value = result.data.identity.username
+        end
         user_cache:set(bk_ticket, user_cache_value, 180)
     end
     return user_cache_value
