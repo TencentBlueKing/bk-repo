@@ -32,8 +32,7 @@ import java.time.LocalDateTime
 
 @ConfigurationProperties("job.node-report")
 class NodeReport2BkbaseJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0/1 * * * * ? ",
-    val startDateTime: LocalDateTime = LocalDateTime.MIN,
+    override var enabled: Boolean = false,
+    override var cron: String,
     val endDateTime: LocalDateTime = LocalDateTime.MAX
 ) : MongodbJobProperties(enabled)
