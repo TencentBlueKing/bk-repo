@@ -50,8 +50,10 @@ data class CreateAccountRequest(
     val redirectUri: String?,
     @ApiModelProperty("应用图标地址")
     val avatarUrl: String?,
+    @ApiModelProperty("权限类型")
+    val scopeType: ResourceType?,
     @ApiModelProperty("权限范围")
-    val scope: Set<ResourceType>?,
+    val scope: Set<String>?,
     @ApiModelProperty("简要描述")
     val description: String?
 )

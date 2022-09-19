@@ -469,7 +469,7 @@ open class PermissionServiceImpl constructor(
     }
 
     private fun convActions(actions: List<PermissionAction>): List<String> {
-        var result = mutableListOf<String>()
+        val result = mutableListOf<String>()
         actions.forEach {
             result.add(it.toString())
         }

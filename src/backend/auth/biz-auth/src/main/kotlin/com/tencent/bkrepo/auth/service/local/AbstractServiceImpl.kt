@@ -61,7 +61,7 @@ open class AbstractServiceImpl constructor(
 
     fun checkUserExist(userId: String) {
         userRepository.findFirstByUserId(userId) ?: run {
-            logger.warn("user [$userId]  not exist.")
+            logger.warn("user [$userId] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
     }

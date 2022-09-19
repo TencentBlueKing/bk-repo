@@ -44,8 +44,10 @@ data class UpdateAccountRequest(
     val redirectUri: String? = null,
     @ApiModelProperty("应用图标地址")
     val avatarUrl: String? = null,
+    @ApiModelProperty("权限类型")
+    val scopeType: ResourceType? = null,
     @ApiModelProperty("权限范围")
-    val scope: Set<ResourceType>? = null,
+    val scope: Set<String>? = null,
     @ApiModelProperty("简要描述")
     val description: String? = null
 )

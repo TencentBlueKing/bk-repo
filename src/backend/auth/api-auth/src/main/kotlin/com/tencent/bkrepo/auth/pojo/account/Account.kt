@@ -58,8 +58,10 @@ data class Account(
     var redirectUri: String?,
     @ApiModelProperty("图标地址")
     var avatarUrl: String?,
+    @ApiModelProperty("权限类型")
+    var scopeType: ResourceType?,
     @ApiModelProperty("权限范围")
-    var scope: Set<ResourceType>?,
+    var scope: Set<String>?,
     @ApiModelProperty("描述信息")
     var description: String?,
     @ApiModelProperty("创建时间")
