@@ -25,16 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.pojo.storage
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class
+data class PathStatMetric(
+    var path: String,
+    var totalFileCount: Long = 0,
+    var totalSize: Long = 0,
+    var totalFolderCount: Long = 0,
+    var folders: MutableMap<String, Long> = mutableMapOf()
 )
-class OpConfiguration

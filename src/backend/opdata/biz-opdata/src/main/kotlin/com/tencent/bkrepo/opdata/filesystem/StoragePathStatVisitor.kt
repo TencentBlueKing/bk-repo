@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.opdata.filesystem
 
-import com.tencent.bkrepo.opdata.PathStatMetric
+import com.tencent.bkrepo.opdata.pojo.storage.PathStatMetric
 import org.apache.commons.io.FileUtils
 import java.io.IOException
 import java.nio.file.FileVisitResult
