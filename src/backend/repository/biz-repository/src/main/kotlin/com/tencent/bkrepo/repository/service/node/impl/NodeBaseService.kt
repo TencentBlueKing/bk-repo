@@ -170,10 +170,19 @@ abstract class NodeBaseService(
             doCreate(node)
             if (isGenericRepo(repo)) {
                 publishEvent(buildCreatedEvent(node))
-                messageSupplier.delegateToSupplier(node, topic = TOPIC, binderType = BinderType.KAFKA)
             }
+            reportNode2Bkbase(node)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
+        }
+    }
+
+    /**
+     * 上报节点数据到数据平台
+     */
+    private fun reportNode2Bkbase(node: TNode) {
+        if (!node.folder) {
+            messageSupplier.delegateToSupplier(node, topic = TOPIC, binderType = BinderType.KAFKA)
         }
     }
 

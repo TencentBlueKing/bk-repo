@@ -36,7 +36,6 @@ import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.NodeReport2BkbaseJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -47,7 +46,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(NodeReport2BkbaseJobProperties::class)
 class NodeReport2BkbaseJob(
     val properties: NodeReport2BkbaseJobProperties,
-    val mongoTemplate: MongoTemplate,
     val messageSupplier: MessageSupplier
 ) : DefaultContextMongoDbJob<NodeReport2BkbaseJob.Node>(properties) {
 
@@ -92,10 +90,8 @@ class NodeReport2BkbaseJob(
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
-        if (row.createdDate.isAfter(properties.startDateTime) && row.createdDate.isBefore(properties.endDateTime) && row.deleted == null) {
-            println(row)
+        if (row.createdDate.isBefore(properties.endDateTime) && row.deleted == null) {
             messageSupplier.delegateToSupplier(row, topic = TOPIC, binderType = BinderType.KAFKA)
-
         }
     }
 

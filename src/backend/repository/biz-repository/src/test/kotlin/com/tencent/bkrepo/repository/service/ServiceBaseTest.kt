@@ -129,7 +129,8 @@ open class ServiceBaseTest {
             ResponseBuilder.success()
         )
 
-        whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull())).then {}
+        whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull()))
+            .then {}
     }
 
     fun initRepoForUnitTest(
