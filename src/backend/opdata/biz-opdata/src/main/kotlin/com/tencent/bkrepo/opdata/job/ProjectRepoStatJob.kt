@@ -59,9 +59,8 @@ class ProjectRepoStatJob(
     opJobProperties: OpProjectRepoStatJobProperties
 ) : BaseJob<ProjectMetrics>(mongoTemplate, opJobProperties) {
 
-//    @Scheduled(cron = "00 00 17 * * ?")
-@Scheduled(fixedDelay = 60 * 10000, initialDelay = 90* 1000)
-@SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
+    @Scheduled(cron = "00 00 17 * * ?")
+    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         if (!opJobProperties.enabled) {
             logger.info("stat project repo size job was disabled")
