@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 @EnableConfigurationProperties(RepoRefreshJobProperties::class)
-class RemoteRepoRefreshJob(
+class RepoRefreshJob(
     private val properties: RepoRefreshJobProperties,
     private val helmClient: HelmClient
 ) : DefaultRepoJob(properties) {

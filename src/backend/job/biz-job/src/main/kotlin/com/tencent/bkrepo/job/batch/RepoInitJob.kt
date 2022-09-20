@@ -49,7 +49,7 @@ import java.time.LocalDateTime
  */
 @Component
 @EnableConfigurationProperties(RepoInitJobProperties::class)
-class RemoteRepoInitJob(
+class RepoInitJob(
     private val properties: RepoInitJobProperties,
     private val helmClient: HelmClient
 ) : DefaultRepoJob(properties) {
