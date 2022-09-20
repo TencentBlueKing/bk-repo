@@ -90,8 +90,8 @@
             scannerTip () {
                 const scanner = this.filterScannerList.find(s => s.name === this.scanForm.scanner)
                 let tip = ''
-                if (scanner && scanner.supportFileNameExt) {
-                    tip = `支持${scanner.supportFileNameExt.splice(0, 7).join('、')}等多种常用文件格式`
+                if (scanner && scanner.supportFileNameExt && scanner.supportFileNameExt.length > 0) {
+                    tip = `支持${scanner.supportFileNameExt.slice(0, 7).join('、')}等多种常用文件格式`
                 }
                 return tip
             }
@@ -100,7 +100,7 @@
             'scanForm.type': function (newVal) {
                 let packageType = this.scanForm.type
                 let scanType = SCAN_TYPE_SECURITY
-                if (packageType.contains('_')) {
+                if (packageType.includes('_')) {
                     const splits = packageType.split('_')
                     packageType = splits[0]
                     scanType = splits[1]
