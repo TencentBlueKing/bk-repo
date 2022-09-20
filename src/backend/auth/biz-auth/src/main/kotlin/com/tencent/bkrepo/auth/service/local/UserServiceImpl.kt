@@ -376,7 +376,7 @@ class UserServiceImpl constructor(
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {
-        val query = UserQueryHelper.getUserByIdAndPwd(userId, newPwd)
+        val query = UserQueryHelper.getUserByIdAndPwd(userId, oldPwd)
         val user = mongoTemplate.find(query, TUser::class.java)
         if (user.isNotEmpty()) {
             val updateQuery = UserQueryHelper.getUserById(userId)
