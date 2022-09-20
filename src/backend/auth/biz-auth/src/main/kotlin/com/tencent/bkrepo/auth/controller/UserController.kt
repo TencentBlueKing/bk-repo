@@ -322,7 +322,7 @@ class UserController @Autowired constructor(
     ): Response<Boolean> {
         val decryptOldPwd = RsaUtils.decrypt(oldPwd)
         val decryptNewPwd = RsaUtils.decrypt(newPwd)
-        return ResponseBuilder.success(userService.updatePassword(uid, decryptOldPwd, newPwd))
+        return ResponseBuilder.success(userService.updatePassword(uid, decryptOldPwd, decryptNewPwd))
     }
 
     @ApiOperation("用户info ")
