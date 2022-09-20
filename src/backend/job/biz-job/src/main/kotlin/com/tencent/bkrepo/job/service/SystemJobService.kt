@@ -80,46 +80,77 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         lastBeginTime: LocalDateTime?,
         lastEndTime: LocalDateTime?
     ): LocalDateTime? {
-        // 没启用，没下次执行执行时间
         if (!batchJobProperties.enabled) {
             return null
         }
         val finalNextTime: Date
-        val lastFinshTime = if (lastEndTime != null) {
-            Date.from(lastEndTime!!.atZone(ZoneId.systemDefault()).toInstant())
-        } else { null }
-        val lastStartTime = if (lastBeginTime != null) {
-            Date.from(lastBeginTime!!.atZone(ZoneId.systemDefault()).toInstant())
-        } else { null }
-        val triggerContext = SimpleTriggerContext(lastFinshTime, lastFinshTime, lastStartTime)
-        // 不根据cron表达式
+        val triggerContext = buildTriggerContext(lastBeginTime, lastEndTime)
         if (batchJobProperties.cron.equals(ScheduledTaskRegistrar.CRON_DISABLED)) {
-            val fixRateStatus = if (batchJobProperties.fixedDelay != 0L) false else true
-            val period = if (batchJobProperties.fixedDelay != 0L) {
-                batchJobProperties.fixedDelay
-            } else {
-                batchJobProperties.fixedRate
-            }
-            val periodicTrigger = PeriodicTrigger(period, TimeUnit.MILLISECONDS)
-            periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
-            periodicTrigger.setFixedRate(fixRateStatus)
-            return if (lastBeginTime != null) {
-                finalNextTime = periodicTrigger.nextExecutionTime(triggerContext)
-                LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
-            } else {
-                finalNextTime = if (ctx != null) {
-                    Date(ctx.startupDate + batchJobProperties.initialDelay)
-                } else {
-                    periodicTrigger.nextExecutionTime(triggerContext)
-                }
-                LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
-            }
+            finalNextTime = getNextTimeByPeriodic(batchJobProperties,
+                    triggerContext,
+                    lastBeginTime)
+        } else {
+            finalNextTime = getNextTimeByCron(batchJobProperties, triggerContext)
         }
-        // 根据cron表达式
-        val cronTrigger = CronTrigger(batchJobProperties.cron)
-        finalNextTime = cronTrigger.nextExecutionTime(triggerContext)
         return LocalDateTime.ofInstant(finalNextTime.toInstant(), ZoneId.systemDefault())
     }
+
+    /**
+     * 构建triggerContext
+     */
+    private fun buildTriggerContext(
+        lastBeginTime: LocalDateTime?,
+        lastEndTime: LocalDateTime?
+    ): SimpleTriggerContext {
+        val lastFinshTime = if (lastEndTime != null) {
+            Date.from(lastEndTime.atZone(ZoneId.systemDefault()).toInstant())
+        } else {
+            null
+        }
+        val lastStartTime = if (lastBeginTime != null) {
+            Date.from(lastBeginTime.atZone(ZoneId.systemDefault()).toInstant())
+        } else {
+            null
+        }
+        return SimpleTriggerContext(lastFinshTime, lastFinshTime, lastStartTime)
+    }
+
+    /**
+     * 根据Cron表达式来获取下次任务时间
+     */
+    private fun getNextTimeByCron(
+        batchJobProperties: BatchJobProperties,
+        triggerContext: SimpleTriggerContext
+    ): Date {
+        val cronTrigger = CronTrigger(batchJobProperties.cron)
+        return cronTrigger.nextExecutionTime(triggerContext)
+    }
+
+    /**
+     * 根据Periodic获取下次任务时间
+     */
+    private fun getNextTimeByPeriodic(
+        batchJobProperties: BatchJobProperties,
+        triggerContext: SimpleTriggerContext,
+        lastBeginTime: LocalDateTime?
+    ): Date {
+        val fixRateStatus = if (batchJobProperties.fixedDelay != 0L) false else true
+        val period = if (batchJobProperties.fixedDelay != 0L) {
+            batchJobProperties.fixedDelay
+        } else {
+            batchJobProperties.fixedRate
+        }
+        val periodicTrigger = PeriodicTrigger(period, TimeUnit.MILLISECONDS)
+        periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
+        periodicTrigger.setFixedRate(fixRateStatus)
+        return if (lastBeginTime != null) {
+            periodicTrigger.nextExecutionTime(triggerContext)
+        } else if (ctx != null) {
+                Date(ctx.startupDate + batchJobProperties.initialDelay)
+        } else {
+                periodicTrigger.nextExecutionTime(triggerContext)
+            }
+        }
 
     fun update(name: String, enabled: Boolean, running: Boolean): Boolean {
         if (enabled) {
