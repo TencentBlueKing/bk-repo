@@ -67,6 +67,9 @@
       <el-form-item v-if="scanner.type === SCANNER_TYPE_STANDARD" label="镜像" prop="image" required>
         <el-input v-model="scanner.image" placeholder="镜像，IMAGE:TAG" />
       </el-form-item>
+      <el-form-item v-if="scanner.type === SCANNER_TYPE_STANDARD" label="启动命令" prop="cmd" required>
+        <el-input v-model="scanner.cmd" placeholder="扫描器容器启动命令" />
+      </el-form-item>
       <el-form-item v-if="scanner.type === SCANNER_TYPE_STANDARD" label="参数" prop="args">
         <br>
         <standard-scanner-argument v-for="(arg,index) in scanner.args" :key="index" style="margin-bottom: 10px" :argument="arg" @remove="removeArg(index)" />

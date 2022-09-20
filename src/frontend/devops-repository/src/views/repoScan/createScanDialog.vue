@@ -42,6 +42,7 @@
 <script>
     import { mapActions } from 'vuex'
     import { scanTypeEnum, scannerTypeEnum } from '@repository/store/publicEnum'
+    import { SCAN_TYPE_SECURITY } from '../../store/publicEnum'
     export default {
         name: 'createScan',
         data () {
@@ -56,7 +57,7 @@
                     name: '',
                     description: ''
                 },
-                scannerList: [],
+                filterScannerList: [],
                 rules: {
                     name: [
                         {
@@ -87,11 +88,31 @@
                 return this.$route.params.projectId
             },
             scannerTip () {
-                const scanner = this.scannerList.find(s => s.name === this.scanForm.scanner)
-                return scanner ? this.scannerTypeEnum[scanner.type][this.scanForm.type] : ''
-            },
-            filterScannerList () {
-                return this.scannerList.filter(s => this.scanForm.type in (this.scannerTypeEnum[s.type] || {}))
+                const scanner = this.filterScannerList.find(s => s.name === this.scanForm.scanner)
+                let tip = ''
+                if (scanner && scanner.supportFileNameExt) {
+                    tip = `支持${scanner.supportFileNameExt.splice(0, 7).join('、')}等多种常用文件格式`
+                }
+                return tip
+            }
+        },
+        watch: {
+            'scanForm.type': function (newVal) {
+                let packageType = this.scanForm.type
+                let scanType = SCAN_TYPE_SECURITY
+                if (packageType.contains('_')) {
+                    const splits = packageType.split('_')
+                    packageType = splits[0]
+                    scanType = splits[1]
+                }
+                return this.getScannerList(
+                    {
+                        packageType: packageType,
+                        scanType: scanType
+                    }
+                ).then(res => {
+                    this.filterScannerList = res
+                })
             }
         },
         methods: {
@@ -101,9 +122,6 @@
                     ...this.scanForm,
                     ...data
                 }
-                this.getScannerList().then(res => {
-                    this.scannerList = res
-                })
             },
             cancel () {
                 this.$refs.scanForm.clearError()
