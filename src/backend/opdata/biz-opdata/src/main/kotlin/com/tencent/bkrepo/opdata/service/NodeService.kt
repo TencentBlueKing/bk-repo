@@ -28,13 +28,19 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.opdata.job.EmptyFolderStatJob
 import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
+import com.tencent.bkrepo.opdata.pojo.node.FolderInfo
+import com.tencent.bkrepo.opdata.pojo.node.ListOption
+import com.tencent.bkrepo.opdata.repository.FolderMetricsRepository
 import org.springframework.stereotype.Service
 
 @Service
 class NodeService(
-    private val emptyFolderService: EmptyFolderStatJob
+    private val emptyFolderService: EmptyFolderStatJob,
+    private val folderMetricsRepository: FolderMetricsRepository
 ) {
 
     fun getEmptyFolder(
@@ -49,6 +55,28 @@ class NodeService(
         val emptyFolders = emptyFolderService.statFolderSize(projectId, repoName, parentFolder)
         emptyFolders.forEach {
             emptyFolderService.deleteEmptyFolder(projectId, repoName, it.objectId)
+        }
+    }
+
+    fun getFirstLevelFolders(
+        projectId: String,
+        repoName: String,
+        option: ListOption
+    ): Page<FolderInfo> {
+        with(option) {
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val queryResult = folderMetricsRepository.findByProjectIdAndRepoNameOrderByCapSizeDesc(
+                pageable = pageRequest, projectId = projectId, repoName = repoName
+            ).map {
+                FolderInfo(
+                    projectId = it.projectId,
+                    repoName = it.repoName,
+                    path = it.folderPath,
+                    nodeNum = it.nodeNum,
+                    capSize = it.capSize
+                )
+            }
+            return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
     }
 }

@@ -27,16 +27,15 @@
 
 package com.tencent.bkrepo.opdata.job
 
-import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.opdata.config.OpStatJobProperties
+import com.tencent.bkrepo.opdata.job.pojo.JobContext
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.SynchronousQueue
@@ -108,31 +107,29 @@ open class BaseJob<T>(
 
     fun stat(
         shardingIndex: Int? = null,
-        runConcurrency: Boolean = true,
-        extraInfo: Map<String, String> = emptyMap()
-    ): List<T> {
+        context: JobContext<T>
+    ) {
         val lastId = AtomicReference<String>()
         val startIds = LinkedBlockingQueue<String>(DEFAULT_ID_QUEUE_SIZE)
         val collectionName = collectionName(shardingIndex)
 
-        return if (submitId(lastId, startIds, collectionName, opJobProperties.batchSize)) {
-            if (runConcurrency) {
+        if (submitId(lastId, startIds, collectionName, opJobProperties.batchSize)) {
+            if (context.runConcurrency) {
                 doStatWithExecutor(
                     lastId = lastId,
                     startIds = startIds,
                     collectionName = collectionName,
-                    extraInfo = extraInfo
-                ).values.toList()
+                    context = context
+                )
             } else {
                 doStat(
                     lastId = lastId,
                     startIds = startIds,
-                    collectionName = collectionName
-                ).values.toList()
+                    collectionName = collectionName,
+                    context = context
+                )
             }
-        } else {
-            emptyList()
-        }.ifEmpty { return emptyList() }
+        }
     }
 
     @Suppress("LoopWithTooManyJumpStatements")
@@ -140,12 +137,10 @@ open class BaseJob<T>(
         lastId: AtomicReference<String>,
         startIds: LinkedBlockingQueue<String>,
         collectionName: String,
-        extraInfo: Map<String, String> = emptyMap()
-    ): Map<String, T> {
+        context: JobContext<T>
+    ) {
         refreshExecutor()
         // 统计数据
-        val metrics = ConcurrentHashMap<String, T>()
-        val folderSets = ConcurrentHashSet<String>()
         val futures = ArrayList<Future<*>>()
         while (true) {
             val startId = startIds.poll(1, TimeUnit.SECONDS)
@@ -159,9 +154,7 @@ open class BaseJob<T>(
                 statAction(
                     startId = startId,
                     collectionName = collectionName,
-                    metrics = metrics,
-                    extraInfo = extraInfo,
-                    folderSets = folderSets
+                    context = context
                 )
             }
             futures.add(future)
@@ -169,17 +162,16 @@ open class BaseJob<T>(
 
         // 等待所有任务结束
         futures.forEach { it.get() }
-        return mergeResult(metrics, folderSets)
     }
 
     @Suppress("LoopWithTooManyJumpStatements")
     private fun doStat(
         lastId: AtomicReference<String>,
         startIds: LinkedBlockingQueue<String>,
-        collectionName: String
-    ): Map<String, T> {
+        collectionName: String,
+        context: JobContext<T>
+    ) {
         // 统计数据
-        val metrics = ConcurrentHashMap<String, T>()
         while (true) {
             val startId = startIds.poll(1, TimeUnit.SECONDS)
                 ?: // lastId为null表示id遍历提交未结束，等待新id入队
@@ -191,32 +183,16 @@ open class BaseJob<T>(
             statAction(
                 startId = startId,
                 collectionName = collectionName,
-                metrics = metrics
+                context = context
             )
         }
-        return metrics
     }
 
     open fun statAction(
         startId: String,
         collectionName: String,
-        metrics: ConcurrentHashMap<String, T>,
-        extraInfo: Map<String, String> = emptyMap(),
-        folderSets: ConcurrentHashSet<String> = ConcurrentHashSet()
+        context: JobContext<T>
     ) {
-    }
-
-    open fun mergeResult(
-        metrics: ConcurrentHashMap<String, T>,
-        folderSets: ConcurrentHashSet<String>
-    ): ConcurrentHashMap<String, T> {
-        if (folderSets.isEmpty()) return metrics
-        metrics.keys.forEach {
-            if (folderSets.contains(it)) {
-                metrics.remove(it)
-            }
-        }
-        return metrics
     }
 
     open fun collectionName(shardingIndex: Int? = null): String {

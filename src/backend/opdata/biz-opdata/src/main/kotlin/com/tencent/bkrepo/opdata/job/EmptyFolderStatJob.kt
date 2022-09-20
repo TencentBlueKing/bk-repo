@@ -38,6 +38,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_PATH
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
+import com.tencent.bkrepo.opdata.job.pojo.JobContext
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
@@ -62,10 +63,14 @@ class EmptyFolderStatJob(
             OPDATA_REPO_NAME to repoName,
             OPDATA_PATH to path,
         )
-        return stat(
-            shardingIndex = index,
+        val context = JobContext<EmptyFolderMetric>(
             extraInfo = extraMap
         )
+        stat(
+            shardingIndex = index,
+            context = context
+        )
+        return mergeResult(context.metrics, context.folderSets).values.toList()
     }
 
     fun deleteEmptyFolder(projectId: String, repoName: String, objectId: String) {
@@ -80,14 +85,12 @@ class EmptyFolderStatJob(
     override fun statAction(
         startId: String,
         collectionName: String,
-        metrics: ConcurrentHashMap<String, EmptyFolderMetric>,
-        extraInfo: Map<String, String>,
-        folderSets: ConcurrentHashSet<String>
+        context: JobContext<EmptyFolderMetric>
     ) {
         val query = Query(
             Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId))
-                .and(NodeDetail::projectId.name).`is`(extraInfo[OPDATA_PROJECT_ID])
-                .and(NodeDetail::repoName.name).`is`(extraInfo[OPDATA_REPO_NAME])
+                .and(NodeDetail::projectId.name).`is`(context.extraInfo[OPDATA_PROJECT_ID])
+                .and(NodeDetail::repoName.name).`is`(context.extraInfo[OPDATA_REPO_NAME])
         ).with(Sort.by(FIELD_NAME_ID))
             .limit(opJobProperties.batchSize)
         query.fields().include(
@@ -105,19 +108,32 @@ class EmptyFolderStatJob(
             val objectId = it[FIELD_NAME_ID].toString()
             if (isFolder) {
                 val tempPath = combinePath(path, name)
-                if (!tempPath.startsWith(extraInfo[OPDATA_PATH]!!)) return@forEach
-                metrics.getOrPut(tempPath) {
+                if (!tempPath.startsWith(context.extraInfo[OPDATA_PATH]!!)) return@forEach
+                context.metrics.getOrPut(tempPath) {
                     EmptyFolderMetric(tempPath, objectId)
                 }
                 return@forEach
             }
-            if (!fullPath.startsWith(extraInfo[OPDATA_PATH]!!)) return@forEach
+            if (!fullPath.startsWith(context.extraInfo[OPDATA_PATH]!!)) return@forEach
             resolveAncestor(fullPath).forEach { str ->
-                if (str.startsWith(extraInfo[OPDATA_PATH]!!)) {
-                    folderSets.add(str)
+                if (str.startsWith(context.extraInfo[OPDATA_PATH]!!)) {
+                    context.folderSets.add(str)
                 }
             }
         }
+    }
+
+    private fun mergeResult(
+        metrics: ConcurrentHashMap<String, EmptyFolderMetric>,
+        folderSets: ConcurrentHashSet<String>
+    ): ConcurrentHashMap<String, EmptyFolderMetric> {
+        if (folderSets.isEmpty()) return metrics
+        metrics.keys.forEach {
+            if (folderSets.contains(it)) {
+                metrics.remove(it)
+            }
+        }
+        return metrics
     }
 
     override fun collectionName(shardingIndex: Int?): String = "${TABLE_PREFIX}$shardingIndex"

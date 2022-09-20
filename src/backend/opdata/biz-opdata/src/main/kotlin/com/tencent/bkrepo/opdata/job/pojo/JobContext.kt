@@ -25,19 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.repository
+package com.tencent.bkrepo.opdata.job.pojo
 
-import com.tencent.bkrepo.opdata.model.TFolderMetrics
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
+import java.util.concurrent.ConcurrentHashMap
 
-@Repository
-interface FolderMetricsRepository : MongoRepository<TFolderMetrics, String> {
-    fun findByProjectIdAndRepoNameOrderByCapSizeDesc(
-        projectId: String,
-        repoName: String,
-        pageable: Pageable
-    ): Page<TFolderMetrics>
-}
+class JobContext<T>(
+    var metrics: ConcurrentHashMap<String, T> = ConcurrentHashMap(),
+    var folderSets: ConcurrentHashSet<String> = ConcurrentHashSet(),
+    var extraInfo: Map<String, String> = emptyMap(),
+    var runConcurrency: Boolean = true
+)

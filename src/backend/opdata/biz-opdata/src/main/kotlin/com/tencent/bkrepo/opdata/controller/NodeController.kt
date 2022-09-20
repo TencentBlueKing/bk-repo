@@ -27,11 +27,14 @@
 
 package com.tencent.bkrepo.opdata.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
+import com.tencent.bkrepo.opdata.pojo.node.FolderInfo
+import com.tencent.bkrepo.opdata.pojo.node.ListOption
 import com.tencent.bkrepo.opdata.service.NodeService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -70,5 +73,17 @@ class NodeController(
     ): Response<Void> {
         nodeService.deleteEmptyFolder(projectId, repoName, parentFolder)
         return ResponseBuilder.success()
+    }
+
+    /**
+     * 获取当前仓库目录下的一级目录统计信息
+     */
+    @GetMapping("/firstLevelFolder/{projectId}/{repoName}")
+    fun getFirstLevelFolders(
+        @PathVariable("projectId")projectId: String,
+        @PathVariable("repoName")repoName: String,
+        option: ListOption
+    ): Response<Page<FolderInfo>> {
+        return ResponseBuilder.success(nodeService.getFirstLevelFolders(projectId, repoName, option))
     }
 }

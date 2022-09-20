@@ -25,19 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.repository
+package com.tencent.bkrepo.opdata.pojo.node
 
-import com.tencent.bkrepo.opdata.model.TFolderMetrics
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
-
-@Repository
-interface FolderMetricsRepository : MongoRepository<TFolderMetrics, String> {
-    fun findByProjectIdAndRepoNameOrderByCapSizeDesc(
-        projectId: String,
-        repoName: String,
-        pageable: Pageable
-    ): Page<TFolderMetrics>
-}
+data class FolderInfo(
+    var projectId: String,
+    var repoName: String,
+    var path: String,
+    var nodeNum: Long,
+    var capSize: Long
+)

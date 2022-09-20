@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.opdata.job
 
-import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
@@ -35,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveFirstLevelFolder
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpFolderStatJobProperties
 import com.tencent.bkrepo.opdata.job.pojo.FolderMetric
+import com.tencent.bkrepo.opdata.job.pojo.JobContext
 import com.tencent.bkrepo.opdata.model.RepoModel
 import com.tencent.bkrepo.opdata.model.TFolderMetrics
 import com.tencent.bkrepo.opdata.repository.FolderMetricsRepository
@@ -48,7 +48,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  *统计仓库下一级目录数据
@@ -61,8 +60,9 @@ class FolderOfRepoStatJob(
     opJobProperties: OpFolderStatJobProperties
 ) : BaseJob<FolderMetric>(mongoTemplate, opJobProperties) {
 
-    @Scheduled(cron = "00 00 15 * * ?")
-    @SchedulerLock(name = "FolderStatJob", lockAtMostFor = "PT10H")
+//    @Scheduled(cron = "00 00 15 * * ?")
+@Scheduled(fixedDelay = 60 * 10000, initialDelay = 60 * 1000)
+@SchedulerLock(name = "FolderStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {
             logger.info("The job of folder stat is disabled.")
@@ -72,7 +72,9 @@ class FolderOfRepoStatJob(
         val folderMetricsList = mutableListOf<TFolderMetrics>()
 
         for (i in 0 until SHARDING_COUNT) {
-            folderMetricsList.addAll(convert(stat(i)))
+            val jobContext = JobContext<FolderMetric>()
+            stat(i, jobContext)
+            folderMetricsList.addAll(convert(jobContext.metrics.values.toList()))
         }
 
         // 数据写入mongodb统计表
@@ -96,9 +98,7 @@ class FolderOfRepoStatJob(
     override fun statAction(
         startId: String,
         collectionName: String,
-        metrics: ConcurrentHashMap<String, FolderMetric>,
-        extraInfo: Map<String, String>,
-        folderSets: ConcurrentHashSet<String>
+        context: JobContext<FolderMetric>
     ) {
         val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
             .with(Sort.by(FIELD_NAME_ID))
@@ -126,7 +126,7 @@ class FolderOfRepoStatJob(
             } else {
                 resolveFirstLevelFolder(normalizeFullPath(path))
             }
-            metrics.getOrPut(FOLDER_KEY_FORMAT.format(projectId, repoName, key)) {
+            context.metrics.getOrPut(FOLDER_KEY_FORMAT.format(projectId, repoName, key)) {
                 FolderMetric(projectId, repoName, key)
             }.apply {
                 nodeNum.increment()

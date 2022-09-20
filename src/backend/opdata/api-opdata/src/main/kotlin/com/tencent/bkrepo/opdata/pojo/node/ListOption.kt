@@ -25,19 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.repository
+package com.tencent.bkrepo.opdata.pojo.node
 
-import com.tencent.bkrepo.opdata.model.TFolderMetrics
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 
-@Repository
-interface FolderMetricsRepository : MongoRepository<TFolderMetrics, String> {
-    fun findByProjectIdAndRepoNameOrderByCapSizeDesc(
-        projectId: String,
-        repoName: String,
-        pageable: Pageable
-    ): Page<TFolderMetrics>
-}
+class ListOption(
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    val pageSize: Int = DEFAULT_PAGE_SIZE
+)

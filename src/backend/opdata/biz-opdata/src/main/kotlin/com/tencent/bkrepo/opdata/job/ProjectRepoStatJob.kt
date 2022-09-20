@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.opdata.job
 
-import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpProjectRepoStatJobProperties
+import com.tencent.bkrepo.opdata.job.pojo.JobContext
 import com.tencent.bkrepo.opdata.job.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.model.TFolderMetrics
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
@@ -47,7 +47,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * stat bkrepo running status
@@ -59,15 +58,20 @@ class ProjectRepoStatJob(
     opJobProperties: OpProjectRepoStatJobProperties
 ) : BaseJob<ProjectMetrics>(mongoTemplate, opJobProperties) {
 
-    @Scheduled(cron = "00 00 17 * * ?")
-    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
+//    @Scheduled(cron = "00 00 17 * * ?")
+@Scheduled(fixedDelay = 60 * 10000, initialDelay = 90 * 1000)
+@SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         if (!opJobProperties.enabled) {
             logger.info("stat project repo size job was disabled")
             return
         }
         logger.info("start to stat project metrics")
-        val projectMetricsList = convert(stat(runConcurrency = false))
+        val jobContext = JobContext<ProjectMetrics>(
+            runConcurrency = false
+        )
+        stat(context = jobContext)
+        val projectMetricsList = convert(jobContext.metrics.values.toList())
 
         // 数据写入mongodb统计表
         projectMetricsRepository.deleteAll()
@@ -107,9 +111,7 @@ class ProjectRepoStatJob(
     override fun statAction(
         startId: String,
         collectionName: String,
-        metrics: ConcurrentHashMap<String, ProjectMetrics>,
-        extraInfo: Map<String, String>,
-        folderSets: ConcurrentHashSet<String>
+        context: JobContext<ProjectMetrics>
     ) {
         val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
             .with(Sort.by(FIELD_NAME_ID))
@@ -125,7 +127,7 @@ class ProjectRepoStatJob(
             val size = it[TFolderMetrics::capSize.name].toString().toLong()
             val num = it[TFolderMetrics::nodeNum.name].toString().toLong()
             val credentialsKey = it[TFolderMetrics::credentialsKey.name].toString()
-            metrics
+            context.metrics
                 .getOrPut(projectId) { ProjectMetrics(projectId) }
                 .apply {
                     capSize.add(size)

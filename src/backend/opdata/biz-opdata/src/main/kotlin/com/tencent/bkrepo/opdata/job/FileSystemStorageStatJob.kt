@@ -53,7 +53,8 @@ class FileSystemStorageStatJob(
     private val fileSystemMetricsRepository: FileSystemMetricsRepository
 
 ) {
-    @Scheduled(cron = "00 00 05 * * ?")
+//    @Scheduled(cron = "00 00 05 * * ?")
+    @Scheduled(fixedDelay = 60 * 10000, initialDelay = 60 * 1000)
     @SchedulerLock(name = "FileSystemStorageStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {
