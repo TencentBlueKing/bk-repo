@@ -146,11 +146,11 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         return if (lastBeginTime != null) {
             periodicTrigger.nextExecutionTime(triggerContext)
         } else if (ctx != null) {
-                Date(ctx.startupDate + batchJobProperties.initialDelay)
+            Date(ctx.startupDate + batchJobProperties.initialDelay)
         } else {
-                periodicTrigger.nextExecutionTime(triggerContext)
-            }
+            periodicTrigger.nextExecutionTime(triggerContext)
         }
+    }
 
     fun update(name: String, enabled: Boolean, running: Boolean): Boolean {
         if (enabled) {
