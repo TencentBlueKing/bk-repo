@@ -44,7 +44,8 @@
            "key": "key",
            "value": "value",
            "description": "",
-           "system": false 
+           "system": false,
+           "link": "https://bkrepo.example.com"
          }
       ],
       "createdBy" : "admin",

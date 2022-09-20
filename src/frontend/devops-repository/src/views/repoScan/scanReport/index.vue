@@ -119,7 +119,7 @@
                                 :list="[
                                     viewType === 'OVERVIEW' && { label: '中止', clickEvent: () => stopScanHandler(row), disabled: row.status !== 'INIT' && row.status !== 'RUNNING' },
                                     viewType === 'OVERVIEW' && !baseInfo.readOnly && {
-                                        label: '扫描',
+                                        label: '重新扫描',
                                         clickEvent: () => startScanSingleHandler(row),
                                         disabled: row.status !== 'SUCCESS' && row.status !== 'STOP' && row.status !== 'FAILED'
                                     }

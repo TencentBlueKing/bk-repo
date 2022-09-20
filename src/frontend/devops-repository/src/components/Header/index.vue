@@ -9,7 +9,7 @@
                 >
                     <use xlink:href="#repository" />
                 </svg>
-                <header class="ml10 bkrepo-title">{{ title }}</header>
+                <header class="ml10 bkrepo-title">{{ $t('制品管理') }}</header>
             </router-link>
             <!-- <a class="ml20 link" target="_self" href="/software/repoList">
                 <i class="devops-icon icon-sort"></i>
@@ -45,9 +45,6 @@
             ...mapState(['projectList']),
             projectId () {
                 return this.$route.params.projectId
-            },
-            title () {
-                return document.title
             }
         },
         methods: {

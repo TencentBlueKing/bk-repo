@@ -199,7 +199,7 @@
 - API : GET /generic/batch/{project}/{repo}
 - API名称： batch download
 - 功能说明：
-   - 中文：批量下载通用制品文件
+   - 中文：批量下载通用制品文件,将文件打包成zip压缩包并下载
    - English：batch download generic file
 - 请求body
 ``` json
