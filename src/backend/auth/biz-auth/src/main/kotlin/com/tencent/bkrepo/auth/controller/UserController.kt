@@ -322,7 +322,6 @@ class UserController @Autowired constructor(
     ): Response<Boolean> {
         val decryptOldPwd = RsaUtils.decrypt(oldPwd)
         val decryptNewPwd = RsaUtils.decrypt(newPwd)
-        logger.info("password [$decryptOldPwd, $decryptNewPwd]")
         return ResponseBuilder.success(userService.updatePassword(uid, decryptOldPwd, decryptNewPwd))
     }
 
