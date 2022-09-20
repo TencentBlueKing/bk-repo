@@ -143,9 +143,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         val periodicTrigger = PeriodicTrigger(period, TimeUnit.MILLISECONDS)
         periodicTrigger.setInitialDelay(batchJobProperties.initialDelay)
         periodicTrigger.setFixedRate(fixRateStatus)
-        return if (lastBeginTime != null) {
-            periodicTrigger.nextExecutionTime(triggerContext)
-        } else if (ctx != null) {
+        return if (lastBeginTime == null && ctx != null) {
             Date(ctx.startupDate + batchJobProperties.initialDelay)
         } else {
             periodicTrigger.nextExecutionTime(triggerContext)
