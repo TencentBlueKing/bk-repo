@@ -34,8 +34,6 @@ import com.tencent.bkrepo.job.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
-import java.util.concurrent.CountDownLatch
-import kotlin.system.measureNanoTime
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.bson.types.ObjectId
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,6 +41,8 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import java.util.concurrent.CountDownLatch
+import kotlin.system.measureNanoTime
 
 /**
  * MongoDb抽象批处理作业Job

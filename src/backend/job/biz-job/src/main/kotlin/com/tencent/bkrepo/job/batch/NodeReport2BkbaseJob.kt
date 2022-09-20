@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
@@ -42,6 +41,9 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
+/**
+ * 导出node表至数据平台
+ */
 @Component
 @EnableConfigurationProperties(NodeReport2BkbaseJobProperties::class)
 class NodeReport2BkbaseJob(
@@ -51,7 +53,7 @@ class NodeReport2BkbaseJob(
 
 
     override fun collectionNames(): List<String> {
-        return (0 until SHARDING_COUNT)
+        return (properties.startCollectionNum until properties.endCollectionsNum)
             .map { "${COLLECTION_NAME_PREFIX}$it" }
             .toList()
     }
@@ -90,6 +92,7 @@ class NodeReport2BkbaseJob(
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
+        // 数据平台支持去重，此处不需要处理重复发送的情况
         if (row.createdDate.isBefore(properties.endDateTime) && row.deleted == null) {
             messageSupplier.delegateToSupplier(row, topic = TOPIC, binderType = BinderType.KAFKA)
         }
