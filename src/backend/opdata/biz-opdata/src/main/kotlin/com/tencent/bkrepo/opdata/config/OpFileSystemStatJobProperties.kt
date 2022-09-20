@@ -31,5 +31,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("op.job.file-system-stat")
 data class OpFileSystemStatJobProperties(
-    var enabled: Boolean = true
-)
+    override var enabled: Boolean = true
+) : OpStatJobProperties(enabled)

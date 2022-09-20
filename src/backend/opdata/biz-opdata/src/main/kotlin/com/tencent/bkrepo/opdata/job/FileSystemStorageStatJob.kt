@@ -53,7 +53,8 @@ class FileSystemStorageStatJob(
     private val fileSystemMetricsRepository: FileSystemMetricsRepository
 
 ) {
-    @Scheduled(cron = "00 00 05 * * ?")
+//    @Scheduled(cron = "00 00 05 * * ?")
+    @Scheduled(fixedDelay = 60 * 10000, initialDelay = 60* 1000)
     @SchedulerLock(name = "FileSystemStorageStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {
@@ -116,14 +117,12 @@ class FileSystemStorageStatJob(
 
     private fun findCfsPath(): Set<String> {
         val list = storageCredentialsClient.list().data ?: return emptySet()
-        val default = storageCredentialsClient.findByKey().data
+        val default = properties.defaultStorageCredentials()
         val result = mutableSetOf<String>()
         list.forEach {
             result.addAll(getLocalPath(it.cache, it.upload))
         }
-        default?.let {
-            result.addAll(getLocalPath(default.cache, default.upload))
-        }
+        result.addAll(getLocalPath(default.cache, default.upload))
         return result
     }
 

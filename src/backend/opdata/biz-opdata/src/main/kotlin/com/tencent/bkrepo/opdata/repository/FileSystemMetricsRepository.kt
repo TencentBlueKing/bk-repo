@@ -33,5 +33,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 
 interface FileSystemMetricsRepository : MongoRepository<TPathStatMetric, String> {
-    fun findByRootPath(rootPath: String? = null, pageable: Pageable): Page<TPathStatMetric>
+    fun findByRootPathOrderByTotalSizeDesc(rootPath: String? = null, pageable: Pageable): Page<TPathStatMetric>
+    fun findTPathStatMetricByRootPath(rootPath: String? = null): List<TPathStatMetric>
 }

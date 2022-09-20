@@ -27,11 +27,16 @@
 
 package com.tencent.bkrepo.opdata.job
 
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveAncestor
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.opdata.config.OpEmptyFolderStatJobProperties
+import com.tencent.bkrepo.opdata.constant.OPDATA_PATH
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
+import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.bson.types.ObjectId
@@ -42,27 +47,24 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Future
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 
 @Service
 class EmptyFolderStatJob(
-    private val mongoTemplate: MongoTemplate
-) : BaseJob(mongoTemplate) {
-
-    private var executor: ThreadPoolExecutor? = null
+    private val mongoTemplate: MongoTemplate,
+    opJobProperties: OpEmptyFolderStatJobProperties
+) : BaseJob<EmptyFolderMetric>(mongoTemplate, opJobProperties) {
 
     fun statFolderSize(projectId: String, repoName: String, path: String = StringPool.SLASH): List<EmptyFolderMetric> {
         logger.info("start to stat empty folder record under $path in repo $projectId|$repoName")
         val index = HashShardingUtils.shardingSequenceFor(projectId, 256)
+        val extraMap = mutableMapOf(
+            OPDATA_PROJECT_ID to projectId,
+            OPDATA_REPO_NAME to repoName,
+            OPDATA_PATH to path,
+        )
         return stat(
             shardingIndex = index,
-            projectId = projectId,
-            repoName = repoName,
-            path = path
+            extraInfo = extraMap
         )
     }
 
@@ -75,177 +77,53 @@ class EmptyFolderStatJob(
         mongoTemplate.remove(query, Map::class.java, collectionName)
     }
 
-    private fun stat(
-        shardingIndex: Int,
-        projectId: String,
-        repoName: String,
-        path: String
-    ): List<EmptyFolderMetric> {
-        val lastId = AtomicReference<String>()
-        val startIds = LinkedBlockingQueue<String>(DEFAULT_ID_QUEUE_SIZE)
-        val collectionName = collectionName(shardingIndex)
-
-        val folders = if (submitId(lastId, startIds, collectionName, DEFAULT_BATCH_SIZE)) {
-            doStatFolder(lastId, startIds, collectionName, projectId, repoName, path)
-        } else {
-            emptyMap()
-        }.ifEmpty { return emptyList() }
-
-        val folderMetricsList = if (submitId(lastId, startIds, collectionName, DEFAULT_BATCH_SIZE)) {
-            doStat(lastId, startIds, collectionName, projectId, repoName, folders)
-        } else {
-            emptyList()
-        }.ifEmpty { return emptyList() }
-        return folderMetricsList
-    }
-
-    @Suppress("LoopWithTooManyJumpStatements")
-    private fun doStat(
-        lastId: AtomicReference<String>,
-        startIds: LinkedBlockingQueue<String>,
-        nodeCollectionName: String,
-        projectId: String,
-        repoName: String,
-        folders: Map<String, EmptyFolderMetric>
-    ): List<EmptyFolderMetric> {
-        refreshExecutor()
-
-        // 统计数据
-        val folderMetrics = ConcurrentHashMap<String, EmptyFolderMetric>(folders)
-        val futures = ArrayList<Future<*>>()
-        while (true) {
-            val startId = startIds.poll(1, TimeUnit.SECONDS)
-                ?: // lastId为null表示id遍历提交未结束，等待新id入队
-                if (lastId.get() == null) {
-                    continue
-                } else {
-                    break
+    override fun statAction(
+        startId: String,
+        collectionName: String,
+        metrics: ConcurrentHashMap<String, EmptyFolderMetric>,
+        extraInfo: Map<String, String>,
+        folderSets: ConcurrentHashSet<String>
+    ) {
+        val query = Query(
+            Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId))
+                .and(NodeDetail::projectId.name).`is`(extraInfo[OPDATA_PROJECT_ID])
+                .and(NodeDetail::repoName.name).`is`(extraInfo[OPDATA_REPO_NAME])
+        ).with(Sort.by(FIELD_NAME_ID))
+            .limit(opJobProperties.batchSize)
+        query.fields().include(
+            NodeDetail::path.name, NodeDetail::name.name, FIELD_NAME_DELETED,
+            NodeDetail::fullPath.name, NodeDetail::folder.name, FIELD_NAME_ID
+        )
+        val nodes = mongoTemplate.find(query, Map::class.java, collectionName)
+        nodes.forEach {
+            val deleted = it[FIELD_NAME_DELETED]
+            if (deleted != null) return@forEach
+            val name = it[NodeDetail::name.name].toString()
+            val isFolder = it[NodeDetail::folder.name].toString().toBoolean()
+            val path = it[NodeDetail::path.name].toString()
+            val fullPath = it[NodeDetail::fullPath.name].toString()
+            val objectId = it[FIELD_NAME_ID].toString()
+            if (isFolder) {
+                val tempPath = combinePath(path, name)
+                if (!tempPath.startsWith(extraInfo[OPDATA_PATH]!!)) return@forEach
+                metrics.getOrPut(tempPath) {
+                    EmptyFolderMetric(tempPath, objectId)
                 }
-
-            val future = executor!!.submit {
-                val query = Query(
-                    Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId))
-                        .and(NodeDetail::projectId.name).`is`(projectId)
-                        .and(NodeDetail::repoName.name).`is`(repoName)
-                        .and(NodeDetail::folder.name).`is`(false)
-                ).with(Sort.by(FIELD_NAME_ID))
-                    .limit(DEFAULT_BATCH_SIZE)
-                query.fields().include(
-                    NodeDetail::path.name, NodeDetail::fullPath.name, FIELD_NAME_DELETED
-                )
-                val nodes = mongoTemplate.find(query, Map::class.java, nodeCollectionName)
-                nodes.forEach {
-                    val deleted = it[FIELD_NAME_DELETED]
-                    if (deleted == null) {
-                        val path = it[NodeDetail::path.name].toString()
-                        val fullPath = it[NodeDetail::fullPath.name].toString()
-
-                        if (folderMetrics.keys.contains(path)) {
-                            resolveAncestor(fullPath).forEach { str ->
-                                folderMetrics.remove(str)
-                            }
-                        }
-                    }
+                return@forEach
+            }
+            if (!fullPath.startsWith(extraInfo[OPDATA_PATH]!!)) return@forEach
+            resolveAncestor(fullPath).forEach { str ->
+                if (str.startsWith(extraInfo[OPDATA_PATH]!!)) {
+                    folderSets.add(str)
                 }
             }
-            futures.add(future)
-        }
-
-        // 等待所有任务结束
-        futures.forEach { it.get() }
-        return folderMetrics.values.toList()
-    }
-
-    @Suppress("LoopWithTooManyJumpStatements")
-    private fun doStatFolder(
-        lastId: AtomicReference<String>,
-        startIds: LinkedBlockingQueue<String>,
-        nodeCollectionName: String,
-        projectId: String,
-        repoName: String,
-        parentPath: String
-    ): Map<String, EmptyFolderMetric> {
-        refreshExecutor()
-
-        // 统计数据
-        val folders = ConcurrentHashMap<String, EmptyFolderMetric>()
-        val futures = ArrayList<Future<*>>()
-
-        while (true) {
-            val startId = startIds.poll(1, TimeUnit.SECONDS)
-                ?: // lastId为null表示id遍历提交未结束，等待新id入队
-                if (lastId.get() == null) {
-                    continue
-                } else {
-                    break
-                }
-
-            val future = executor!!.submit {
-                val query = Query(
-                    Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId))
-                        .and(NodeDetail::projectId.name).`is`(projectId)
-                        .and(NodeDetail::repoName.name).`is`(repoName)
-                        .and(NodeDetail::folder.name).`is`(true)
-                ).with(Sort.by(FIELD_NAME_ID))
-                    .limit(DEFAULT_BATCH_SIZE)
-                query.fields().include(
-                    NodeDetail::path.name, NodeDetail::name.name, FIELD_NAME_DELETED,
-                    NodeDetail::fullPath.name, FIELD_NAME_ID
-                )
-                val nodes = mongoTemplate.find(query, Map::class.java, nodeCollectionName)
-                nodes.forEach {
-                    val deleted = it[FIELD_NAME_DELETED]
-                    if (deleted == null) {
-                        val name = it[NodeDetail::name.name].toString()
-                        val path = it[NodeDetail::path.name].toString()
-                        val fullPath = it[NodeDetail::fullPath.name].toString()
-                        val objectId = it[FIELD_NAME_ID].toString()
-                        if (fullPath.startsWith(parentPath)) {
-                            val tempPath = combinePath(path, name)
-                            folders.getOrPut(tempPath) {
-                                EmptyFolderMetric(tempPath, objectId)
-                            }
-                        }
-                    }
-                }
-            }
-            futures.add(future)
-        }
-
-        // 等待所有任务结束
-        futures.forEach { it.get() }
-        return folders
-    }
-
-    private fun collectionName(shardingIndex: Int): String = "${TABLE_PREFIX}$shardingIndex"
-
-    @Synchronized
-    private fun refreshExecutor() {
-        if (executor == null) {
-            executor = ThreadPoolExecutor(
-                DEFAULT_THREAD_POOL_SIZE,
-                DEFAULT_THREAD_POOL_SIZE,
-                DEFAULT_THREAD_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS,
-                LinkedBlockingQueue(DEFAULT_THREAD_POOL_QUEUE_CAPACITY),
-                ThreadPoolExecutor.CallerRunsPolicy()
-            )
-            executor!!.allowCoreThreadTimeOut(true)
-        } else if (executor!!.maximumPoolSize != DEFAULT_THREAD_POOL_SIZE) {
-            executor!!.corePoolSize = DEFAULT_THREAD_POOL_SIZE
-            executor!!.maximumPoolSize = DEFAULT_THREAD_POOL_SIZE
         }
     }
 
-    private
+    override fun collectionName(shardingIndex: Int?): String = "${TABLE_PREFIX}$shardingIndex"
 
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val TABLE_PREFIX = "node_"
-        private const val FIELD_NAME_DELETED = "deleted"
-        private const val DEFAULT_ID_QUEUE_SIZE = 10000
-        private const val DEFAULT_THREAD_POOL_SIZE = 1
-        private const val DEFAULT_THREAD_KEEP_ALIVE_SECONDS = 60L
-        private const val DEFAULT_THREAD_POOL_QUEUE_CAPACITY = 1000
-        private const val DEFAULT_BATCH_SIZE = 50000
     }
 }

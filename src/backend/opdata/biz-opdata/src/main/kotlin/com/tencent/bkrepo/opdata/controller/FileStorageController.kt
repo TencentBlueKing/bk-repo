@@ -56,6 +56,14 @@ class FileStorageController(
     }
 
     /**
+     * 挂载分布式文件系统节点详情下拉列表
+     */
+    @GetMapping("/storage/metrics/list")
+    fun list(): Response<List<String>> {
+        return ResponseBuilder.success(fileSystemStorageService.getFileSystemStorageMetrics())
+    }
+
+    /**
      * 统计某个挂载路径下子目录文件大小
      */
     @GetMapping("/storage/metricsDetail")

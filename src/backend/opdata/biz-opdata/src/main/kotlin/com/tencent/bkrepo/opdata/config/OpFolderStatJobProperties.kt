@@ -30,8 +30,8 @@ package com.tencent.bkrepo.opdata.config
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("op.job.folder-stat")
-data class OpFolderStatJobProperties(
-    var enabled: Boolean = true,
-    var batchSize: Int = 50000,
-    var threadPoolSize: Int = 1
-)
+class OpFolderStatJobProperties(
+    override var enabled: Boolean = true,
+    override var batchSize: Int = 50000,
+    override var threadPoolSize: Int = 1
+) : OpStatJobProperties(enabled, batchSize, threadPoolSize)

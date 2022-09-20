@@ -49,10 +49,16 @@ class FileSystemStorageService(
     fun getFileSystemStorageMetrics(option: FileStorageListOption): Page<RootPathStorageMetric> {
         with(option) {
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val queryResult = fileSystemMetricsRepository.findByRootPath(pageable = pageRequest, rootPath = rootPath)
-                .map { convertToRootPathStorageMetric(it) }
+            val queryResult = fileSystemMetricsRepository.findByRootPathOrderByTotalSizeDesc(
+                pageable = pageRequest, rootPath = rootPath
+            ).map { convertToRootPathStorageMetric(it) }
             return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
+    }
+
+    fun getFileSystemStorageMetrics(): List<String> {
+        return fileSystemMetricsRepository.findTPathStatMetricByRootPath()
+            .map { it.path }
     }
 
     fun getFileSystemStorageMetricDetails(option: FileStorageListOption): Page<SubFolderStorageMetric> {
@@ -60,8 +66,9 @@ class FileSystemStorageService(
             if (option.rootPath.isNullOrEmpty())
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, "rootPath")
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val queryResult = fileSystemMetricsRepository.findByRootPath(pageable = pageRequest, rootPath = rootPath)
-                .map { convertToSubFolderStorageMetric(it) }
+            val queryResult = fileSystemMetricsRepository.findByRootPathOrderByTotalSizeDesc(
+                pageable = pageRequest, rootPath = rootPath
+            ).map { convertToSubFolderStorageMetric(it) }
             return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
     }

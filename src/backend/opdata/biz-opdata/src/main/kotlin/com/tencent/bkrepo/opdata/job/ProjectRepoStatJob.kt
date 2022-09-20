@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.job
 
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpProjectRepoStatJobProperties
 import com.tencent.bkrepo.opdata.job.pojo.ProjectMetrics
@@ -47,9 +48,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * stat bkrepo running status
@@ -58,18 +56,19 @@ import java.util.concurrent.atomic.AtomicReference
 class ProjectRepoStatJob(
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val mongoTemplate: MongoTemplate,
-    private val opJobProperties: OpProjectRepoStatJobProperties
-) : BaseJob(mongoTemplate) {
+    opJobProperties: OpProjectRepoStatJobProperties
+) : BaseJob<ProjectMetrics>(mongoTemplate, opJobProperties) {
 
-    @Scheduled(cron = "00 00 17 * * ?")
-    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
+//    @Scheduled(cron = "00 00 17 * * ?")
+@Scheduled(fixedDelay = 60 * 10000, initialDelay = 90* 1000)
+@SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         if (!opJobProperties.enabled) {
             logger.info("stat project repo size job was disabled")
             return
         }
         logger.info("start to stat project metrics")
-        val projectMetricsList = stat()
+        val projectMetricsList = convert(stat(runConcurrency = false))
 
         // 数据写入mongodb统计表
         projectMetricsRepository.deleteAll()
@@ -78,15 +77,7 @@ class ProjectRepoStatJob(
         logger.info("stat project metrics done")
     }
 
-    private fun stat(): List<TProjectMetrics> {
-        val lastId = AtomicReference<String>()
-        val startIds = LinkedBlockingQueue<String>(DEFAULT_ID_QUEUE_SIZE)
-        val projectMetricsList = if (submitId(lastId, startIds, TABLE_NAME, opJobProperties.batchSize)) {
-            doStat(lastId, startIds)
-        } else {
-            emptyList()
-        }.ifEmpty { return emptyList() }
-
+    private fun convert(projectMetricsList: List<ProjectMetrics>): List<TProjectMetrics> {
         val tProjectMetricsList = ArrayList<TProjectMetrics>(projectMetricsList.size)
         for (projectMetrics in projectMetricsList) {
             val projectNodeNum = projectMetrics.nodeNum.toLong()
@@ -114,57 +105,46 @@ class ProjectRepoStatJob(
         return tProjectMetricsList
     }
 
-    @Suppress("LoopWithTooManyJumpStatements")
-    private fun doStat(
-        lastId: AtomicReference<String>,
-        startIds: LinkedBlockingQueue<String>
-    ): List<ProjectMetrics> {
-
-        // 统计数据
-        val projectMetrics = ConcurrentHashMap<String, ProjectMetrics>()
-
-        while (true) {
-            val startId = startIds.poll(1, TimeUnit.SECONDS)
-                ?: // lastId为null表示id遍历提交未结束，等待新id入队
-                if (lastId.get() == null) {
-                    continue
-                } else {
-                    break
-                }
-            val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
-                .with(Sort.by(FIELD_NAME_ID))
-                .limit(opJobProperties.batchSize)
-            query.fields().include(
-                TFolderMetrics::projectId.name, TFolderMetrics::repoName.name, TFolderMetrics::capSize.name,
-                TFolderMetrics::nodeNum.name, TFolderMetrics::credentialsKey.name
-            )
-            val folders = mongoTemplate.find(query, Map::class.java, TABLE_NAME)
-            folders.forEach {
-                val projectId = it[TFolderMetrics::projectId.name].toString()
-                val repoName = it[TFolderMetrics::repoName.name].toString()
-                val size = it[TFolderMetrics::capSize.name].toString().toLong()
-                val num = it[TFolderMetrics::nodeNum.name].toString().toLong()
-                val credentialsKey = it[TFolderMetrics::credentialsKey.name].toString()
-                projectMetrics
-                    .getOrPut(projectId) { ProjectMetrics(projectId) }
-                    .apply {
-                        capSize.add(size)
-                        nodeNum.add(num)
-                        val repo = repoMetrics.getOrPut(repoName) {
-                            com.tencent.bkrepo.opdata.job.pojo.RepoMetrics(repoName, credentialsKey)
-                        }
-                        repo.size.add(size)
-                        repo.num.add(num)
+    override fun statAction(
+        startId: String,
+        collectionName: String,
+        metrics: ConcurrentHashMap<String, ProjectMetrics>,
+        extraInfo: Map<String, String>,
+        folderSets: ConcurrentHashSet<String>
+    ) {
+        val query = Query(Criteria.where(FIELD_NAME_ID).gte(ObjectId(startId)))
+            .with(Sort.by(FIELD_NAME_ID))
+            .limit(opJobProperties.batchSize)
+        query.fields().include(
+            TFolderMetrics::projectId.name, TFolderMetrics::repoName.name, TFolderMetrics::capSize.name,
+            TFolderMetrics::nodeNum.name, TFolderMetrics::credentialsKey.name
+        )
+        val folders = mongoTemplate.find(query, Map::class.java, collectionName)
+        folders.forEach {
+            val projectId = it[TFolderMetrics::projectId.name].toString()
+            val repoName = it[TFolderMetrics::repoName.name].toString()
+            val size = it[TFolderMetrics::capSize.name].toString().toLong()
+            val num = it[TFolderMetrics::nodeNum.name].toString().toLong()
+            val credentialsKey = it[TFolderMetrics::credentialsKey.name].toString()
+            metrics
+                .getOrPut(projectId) { ProjectMetrics(projectId) }
+                .apply {
+                    capSize.add(size)
+                    nodeNum.add(num)
+                    val repo = repoMetrics.getOrPut(repoName) {
+                        com.tencent.bkrepo.opdata.job.pojo.RepoMetrics(repoName, credentialsKey)
                     }
-            }
+                    repo.size.add(size)
+                    repo.num.add(num)
+                }
         }
-        return projectMetrics.values.toList()
     }
+
+    override fun collectionName(shardingIndex: Int ?): String = TABLE_NAME
 
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val TABLE_NAME = "folder_metrics"
         private const val TOGIGABYTE = 1024 * 1024 * 1024
-        private const val DEFAULT_ID_QUEUE_SIZE = 10000
     }
 }

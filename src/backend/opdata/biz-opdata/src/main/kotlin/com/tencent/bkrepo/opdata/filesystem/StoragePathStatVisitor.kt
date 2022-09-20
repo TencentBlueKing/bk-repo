@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.opdata.filesystem
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.opdata.pojo.storage.PathStatMetric
-import org.apache.commons.io.FileUtils
 import java.io.IOException
 import java.nio.file.FileVisitResult
 import java.nio.file.Path
@@ -47,6 +47,12 @@ class StoragePathStatVisitor(
         val file = filePath.toFile()
         pathStatMetric.totalFileCount += 1
         pathStatMetric.totalSize += file.length()
+        PathUtils.resolveAncestor(filePath.toString()).forEach {
+            if (it.startsWith(rootPath)) {
+                val temp = pathStatMetric.folders[it] ?: 0
+                pathStatMetric.folders[it] = temp.plus(file.length())
+            }
+        }
         return FileVisitResult.CONTINUE
     }
 
@@ -54,7 +60,6 @@ class StoragePathStatVisitor(
     override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
         if (dirPath.startsWith(rootPath)) {
             pathStatMetric.totalFolderCount += 1
-            pathStatMetric.folders[dirPath.toString()] = FileUtils.sizeOfDirectory(dirPath.toFile())
         }
         return FileVisitResult.CONTINUE
     }
