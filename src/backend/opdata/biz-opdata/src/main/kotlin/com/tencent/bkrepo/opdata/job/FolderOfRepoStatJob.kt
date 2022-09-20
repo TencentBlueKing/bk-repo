@@ -60,9 +60,8 @@ class FolderOfRepoStatJob(
     opJobProperties: OpFolderStatJobProperties
 ) : BaseJob<FolderMetric>(mongoTemplate, opJobProperties) {
 
-//    @Scheduled(cron = "00 00 15 * * ?")
-@Scheduled(fixedDelay = 60 * 10000, initialDelay = 60 * 1000)
-@SchedulerLock(name = "FolderStatJob", lockAtMostFor = "PT10H")
+    @Scheduled(cron = "00 00 15 * * ?")
+    @SchedulerLock(name = "FolderStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {
             logger.info("The job of folder stat is disabled.")
