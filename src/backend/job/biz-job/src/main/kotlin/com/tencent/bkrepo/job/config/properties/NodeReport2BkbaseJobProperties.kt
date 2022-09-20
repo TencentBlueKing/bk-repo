@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.config.properties
 
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.LocalDateTime
 
@@ -34,5 +35,7 @@ import java.time.LocalDateTime
 class NodeReport2BkbaseJobProperties(
     override var enabled: Boolean = false,
     override var cron: String,
+    val startCollectionNum: Int = 0,
+    val endCollectionsNum: Int = SHARDING_COUNT,
     val endDateTime: LocalDateTime = LocalDateTime.MAX
 ) : MongodbJobProperties(enabled)
