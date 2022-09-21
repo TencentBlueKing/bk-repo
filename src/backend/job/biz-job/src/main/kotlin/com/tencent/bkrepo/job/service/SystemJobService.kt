@@ -112,7 +112,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         } else {
             null
         }
-        return SimpleTriggerContext(lastFinshTime, lastStartTime, lastFinshTime)
+        return SimpleTriggerContext(lastStartTime, lastStartTime, lastFinshTime)
     }
 
     /**

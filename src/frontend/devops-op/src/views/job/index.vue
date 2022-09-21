@@ -104,7 +104,7 @@ export default {
       update(job.name, job.enabled, job.runnig).then(() => {
         this.query()
       })
-      let jobName;
+      let jobName
       if (job.name.endsWith('Job')) {
         jobName = job.name.substr(0, job.name.length - 3)
       } else {
