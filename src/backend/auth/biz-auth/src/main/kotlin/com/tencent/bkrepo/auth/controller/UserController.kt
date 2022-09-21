@@ -320,11 +320,13 @@ class UserController @Autowired constructor(
         @RequestParam oldPwd: String,
         @RequestParam newPwd: String
     ): Response<Boolean> {
-        return ResponseBuilder.success(userService.updatePassword(uid, oldPwd, newPwd))
+        val decryptOldPwd = RsaUtils.decrypt(oldPwd)
+        val decryptNewPwd = RsaUtils.decrypt(newPwd)
+        return ResponseBuilder.success(userService.updatePassword(uid, decryptOldPwd, decryptNewPwd))
     }
 
     @ApiOperation("用户info ")
-    @GetMapping("/reset/{uid}")
+    @PostMapping("/reset/{uid}")
     fun resetPassword(@PathVariable uid: String): Response<Boolean> {
         return ResponseBuilder.success(userService.resetPassword(uid))
     }

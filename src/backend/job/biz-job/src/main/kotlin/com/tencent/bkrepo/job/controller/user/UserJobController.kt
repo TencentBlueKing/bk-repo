@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.pojo.JobDetail
 import com.tencent.bkrepo.job.service.SystemJobService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -45,5 +47,10 @@ class UserJobController(val systemJobService: SystemJobService) {
     @GetMapping("/detail")
     fun detail(): Response<List<JobDetail>> {
         return ResponseBuilder.success(systemJobService.detail())
+    }
+
+    @PutMapping("/update/{name}")
+    fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
+        return ResponseBuilder.success(systemJobService.update(name, enabled, running))
     }
 }
