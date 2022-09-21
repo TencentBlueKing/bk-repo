@@ -50,8 +50,11 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
 
     /**
      * 返回任务名称
+     *
+     * 与job在配置中心的配置前缀保持一致，前缀规则为job.[Class.getSimpleNameq]去掉最后job的后缀
+     * 例： NodeCopyJob 配置为 job.NodeCopy
      */
-    open fun getJobName(): String = javaClass.simpleName
+    fun getJobName(): String = javaClass.simpleName
 
     abstract fun createJobContext(): C
 
@@ -151,6 +154,20 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * */
     fun stop() {
         stop = true
+    }
+
+    /**
+     * 启用
+     */
+    fun enable() {
+        batchJobProperties.enabled = true
+    }
+
+    /**
+     * 停止启用
+     */
+    fun disable() {
+        batchJobProperties.enabled = false
     }
 
     /**
