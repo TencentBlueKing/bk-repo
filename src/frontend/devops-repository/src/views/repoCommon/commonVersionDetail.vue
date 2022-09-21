@@ -159,6 +159,7 @@
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
+    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'commonVersionDetail',
         components: {
@@ -228,7 +229,7 @@
                 }, {})
             },
             showRepoScan () {
-                return Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
+                return !k8s && Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
             },
             operationBtns () {
                 const basic = this.detail.basic
@@ -240,7 +241,7 @@
                             this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: '扫描制品' }
                         ]
                         : []),
-                    this.showRepoScan && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },
+                    { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }

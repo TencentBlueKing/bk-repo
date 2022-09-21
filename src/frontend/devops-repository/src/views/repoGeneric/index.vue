@@ -100,7 +100,7 @@
                             >{{row.name}}</span>
                             <span v-else>{{ row.name }}</span>
                             <scan-tag class="mr5 table-svg"
-                                v-if="!row.folder && genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1'))"
+                                v-if="showRepoScan(row)"
                                 :status="row.metadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
@@ -150,7 +150,7 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            genericScanFileTypes.includes(row.name.replace(/^.+\.([^.]+)$/, '$1')) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
+                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
@@ -200,6 +200,7 @@
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName, genericScanFileTypes } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
+    import { k8s } from '../../store/publicEnum'
 
     export default {
         name: 'repoGeneric',
@@ -316,6 +317,9 @@
                 'previewCompressedFileList',
                 'forbidMetadata'
             ]),
+            showRepoScan (node) {
+                return !node.folder && !k8s && genericScanFileTypes.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
+            },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {
                     case 'SCANNING':
@@ -385,7 +389,7 @@
             // 获取中间列表数据
             async getArtifactories () {
                 this.isLoading = true
-                
+
                 const metadataLabelList = await this.getMetadataLabelList({
                     projectId: this.projectId
                 })
