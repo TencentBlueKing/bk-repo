@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.account
 
-import com.tencent.bkrepo.auth.pojo.account.ScopeRule
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import com.tencent.bkrepo.common.query.enums.OperationType
+import io.swagger.annotations.ApiModelProperty
+import java.util.StringJoiner
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    val accessToken: String,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scopeType: ResourceType?,
-    var scope: List<ScopeRule>?,
-    val issuedAt: Instant
+data class ScopeRule(
+    @ApiModelProperty("字段名")
+    val field: String,
+    @ApiModelProperty("值")
+    val value: Any,
+    @ApiModelProperty("操作类型")
+    val operation: OperationType = OperationType.DEFAULT
 )

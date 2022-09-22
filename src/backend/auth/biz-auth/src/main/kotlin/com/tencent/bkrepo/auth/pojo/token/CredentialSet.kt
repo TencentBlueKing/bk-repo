@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.token
 
-import com.tencent.bkrepo.auth.pojo.account.ScopeRule
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    val accessToken: String,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scopeType: ResourceType?,
-    var scope: List<ScopeRule>?,
-    val issuedAt: Instant
+@ApiModel("账户认证信息")
+data class CredentialSet(
+    @ApiModelProperty("accessKey")
+    val accessKey: String,
+    @ApiModelProperty("secretKey")
+    var secretKey: String,
+    @ApiModelProperty("创建时间")
+    val createdAt: LocalDateTime,
+    @ApiModelProperty("状态")
+    val status: CredentialStatus,
+    @ApiModelProperty("认证授权方式")
+    val authorizationGrantType: AuthorizationGrantType? = AuthorizationGrantType.PLATFORM
 )

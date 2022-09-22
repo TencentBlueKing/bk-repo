@@ -177,9 +177,9 @@ class UserServiceImpl constructor(
         return if (rids.isEmpty()) {
             // 排除被锁定的用户
             val filter = UserQueryHelper.filterNotLockedUser()
-            mongoTemplate.find(filter, TUser::class.java).map { transferUser(it) }
+            mongoTemplate.find(filter, TUser::class.java).map { transferToUser(it) }
         } else {
-            userRepository.findAllByRolesIn(rids).map { transferUser(it) }
+            userRepository.findAllByRolesIn(rids).map { transferToUser(it) }
         }
     }
 
@@ -325,7 +325,7 @@ class UserServiceImpl constructor(
     override fun getUserById(userId: String): User? {
         logger.debug("get user userId : [$userId]")
         val user = userRepository.findFirstByUserId(userId) ?: return null
-        return transferUser(user)
+        return transferToUser(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
@@ -344,16 +344,16 @@ class UserServiceImpl constructor(
         }
         // password 匹配成功，返回
         if (result.pwd == hashPwd && result.userId == userId) {
-            return transferUser(result)
+            return transferToUser(result)
         }
 
         // token 匹配成功
         result.tokens.forEach {
             // 永久token，校验通过，临时token校验有效期
             if (it.id == pwd && it.expiredAt == null) {
-                return transferUser(result)
+                return transferToUser(result)
             } else if (it.id == pwd && it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())) {
-                return transferUser(result)
+                return transferToUser(result)
             }
         }
 
@@ -366,13 +366,13 @@ class UserServiceImpl constructor(
         val query = UserQueryHelper.getUserByName(userName, admin, locked)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = mongoTemplate.count(query, TUser::class.java)
-        val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map { transferUserInfo(it) }
+        val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map { transferToUserInfo(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     override fun getUserInfoById(userId: String): UserInfo? {
         val tUser = userRepository.findFirstByUserId(userId) ?: return null
-        return transferUserInfo(tUser)
+        return transferToUserInfo(tUser)
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {

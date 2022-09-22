@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth
 
 import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -63,7 +64,8 @@ class AccountServiceTest {
     private val appIdList = listOf(appId, testAppId1, testAppId2)
     private val homepageUrl = "http://localhost"
     private val redirectUri = "http://localhost/redirect"
-    private val scope = setOf(ResourceType.PROJECT, ResourceType.REPO, ResourceType.NODE)
+    private val scopeType = null
+    private val scope = null
     private val allTypes =
         setOf(AuthorizationGrantType.AUTHORIZATION_CODE, AuthorizationGrantType.PLATFORM)
     private val platformType = setOf(AuthorizationGrantType.PLATFORM)
@@ -185,7 +187,8 @@ class AccountServiceTest {
         locked: Boolean = false,
         homepageUrl: String = this.homepageUrl,
         redirectUri: String = this.redirectUri,
-        scope: Set<ResourceType> = this.scope,
+        scopeType: ResourceType? = this.scopeType,
+        scope: List<ScopeRule>? = this.scope,
         authorizationGrantTypes: Set<AuthorizationGrantType> = this.allTypes
     ): CreateAccountRequest {
         return CreateAccountRequest(
@@ -194,6 +197,7 @@ class AccountServiceTest {
             authorizationGrantTypes = authorizationGrantTypes,
             homepageUrl = homepageUrl,
             redirectUri = redirectUri,
+            scopeType = scopeType,
             scope = scope,
             avatarUrl = null,
             description = null
@@ -205,7 +209,8 @@ class AccountServiceTest {
         locked: Boolean = false,
         homepageUrl: String = this.homepageUrl,
         redirectUri: String = this.redirectUri,
-        scope: Set<ResourceType> = this.scope,
+        scopeType: ResourceType? = this.scopeType,
+        scope: List<ScopeRule>? = this.scope,
         authorizationGrantTypes: Set<AuthorizationGrantType> = this.platformType
     ): UpdateAccountRequest {
         return UpdateAccountRequest(
@@ -214,6 +219,7 @@ class AccountServiceTest {
             authorizationGrantTypes = authorizationGrantTypes,
             homepageUrl = homepageUrl,
             redirectUri = redirectUri,
+            scopeType = scopeType,
             scope = scope,
             avatarUrl = null,
             description = null

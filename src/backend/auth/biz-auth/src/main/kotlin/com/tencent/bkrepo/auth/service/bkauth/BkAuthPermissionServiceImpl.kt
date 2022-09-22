@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -51,6 +52,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 class BkAuthPermissionServiceImpl constructor(
     userRepository: UserRepository,
     roleRepository: RoleRepository,
+    accountRepository: AccountRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
     private val bkAuthConfig: BkAuthConfig,
@@ -61,6 +63,7 @@ class BkAuthPermissionServiceImpl constructor(
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
+    accountRepository,
     permissionRepository,
     mongoTemplate,
     repositoryClient,
@@ -180,6 +183,9 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
+
+        // 校验平台账号操作范围
+        if (!super.checkPlatformPermission(request.appId, request)) return false
 
         // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)

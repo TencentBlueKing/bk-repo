@@ -78,10 +78,4 @@ interface ServicePermissionResource {
         @RequestBody request: CheckPermissionRequest
     ): Response<Boolean>
 
-    @ApiOperation("注册资源")
-    @PostMapping("/register")
-    fun registerResource(
-        @ApiParam(value = "注册资源请求")
-        @RequestBody request: RegisterResourceRequest
-    ): Response<Boolean>
 }

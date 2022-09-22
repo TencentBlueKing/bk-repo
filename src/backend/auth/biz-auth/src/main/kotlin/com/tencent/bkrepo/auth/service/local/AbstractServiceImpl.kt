@@ -35,7 +35,10 @@ import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.model.TUser
+import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -46,12 +49,14 @@ import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.query.enums.OperationType
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import java.time.LocalDateTime
 
 open class AbstractServiceImpl constructor(
     private val mongoTemplate: MongoTemplate,
@@ -64,6 +69,13 @@ open class AbstractServiceImpl constructor(
             logger.warn("user [$userId] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
+    }
+
+    fun isUserLocalAdmin(userId: String): Boolean {
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            return false
+        }
+        return user.admin
     }
 
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
@@ -146,7 +158,7 @@ open class AbstractServiceImpl constructor(
         return Query.query(Criteria.where("_id").`is`(id))
     }
 
-    fun transferPermission(permission: TPermission): Permission {
+    fun transferToPermission(permission: TPermission): Permission {
         return Permission(
             id = permission.id,
             resourceType = permission.resourceType,
@@ -165,7 +177,25 @@ open class AbstractServiceImpl constructor(
         )
     }
 
-    fun transferUser(user: TUser): User {
+    fun transferToTPermission(request: CreatePermissionRequest): TPermission {
+        return TPermission(
+            resourceType = request.resourceType.toString(),
+            projectId = request.projectId,
+            permName = request.permName,
+            repos = request.repos,
+            includePattern = request.includePattern,
+            excludePattern = request.excludePattern,
+            users = request.users,
+            roles = request.roles,
+            actions = convActions(request.actions),
+            createBy = request.createBy,
+            createAt = LocalDateTime.now(),
+            updatedBy = request.updatedBy,
+            updateAt = LocalDateTime.now()
+        )
+    }
+
+    fun transferToUser(user: TUser): User {
         return User(
             userId = user.userId,
             name = user.name,
@@ -177,7 +207,7 @@ open class AbstractServiceImpl constructor(
         )
     }
 
-    fun transferUserInfo(user: TUser): UserInfo {
+    fun transferToUserInfo(user: TUser): UserInfo {
         return UserInfo(
             userId = user.userId,
             name = user.name,
@@ -192,6 +222,50 @@ open class AbstractServiceImpl constructor(
     fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
         (repos as MutableList).retainAll(originRepoNames)
         return repos
+    }
+
+    fun checkPlatformProject(projectId: String?, scopeRule: List<ScopeRule>?): Boolean {
+        if (scopeRule == null || projectId == null) return false
+        scopeRule.forEach {
+            when (it.field) {
+                ResourceType.PROJECT.name -> {
+                    if (it.operation == OperationType.EQ) {
+                        if (projectId == it.value) {
+                            return true
+                        }
+                    }
+
+                    if (it.operation == OperationType.IN) {
+                        val valueList = it.value as List<*>
+                        if (valueList.contains(projectId)) {
+                            return true
+                        }
+                    }
+
+                    if (it.operation == OperationType.PREFIX) {
+                        val valuePrefix = it.value as String
+                        if (projectId.startsWith(valuePrefix)) {
+                            return true
+                        }
+                    }
+
+                    if (it.operation == OperationType.SUFFIX) {
+                        val valuePrefix = it.value as String
+                        if (projectId.endsWith(valuePrefix)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        return false
+    }
+    private fun convActions(actions: List<PermissionAction>): List<String> {
+        val result = mutableListOf<String>()
+        actions.forEach {
+            result.add(it.toString())
+        }
+        return result
     }
 
     companion object {

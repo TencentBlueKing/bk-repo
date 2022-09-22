@@ -58,8 +58,4 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.listPermissionProject(userId))
     }
 
-    override fun registerResource(request: RegisterResourceRequest): Response<Boolean> {
-        permissionService.registerResource(request)
-        return ResponseBuilder.success()
-    }
 }

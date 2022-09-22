@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.ResourceBaseRequest
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.SystemCode
+import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -52,14 +53,16 @@ import org.springframework.data.mongodb.core.MongoTemplate
 class BkiamPermissionServiceImpl constructor(
     userRepository: UserRepository,
     roleRepository: RoleRepository,
+    accountRepository: AccountRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
     private val bkiamService: BkiamService,
-    val repositoryClient: RepositoryClient,
-    val projectClient: ProjectClient
+    repositoryClient: RepositoryClient,
+    projectClient: ProjectClient
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
+    accountRepository,
     permissionRepository,
     mongoTemplate,
     repositoryClient,
@@ -72,19 +75,6 @@ class BkiamPermissionServiceImpl constructor(
             return true
         }
         return super.checkPermission(request)
-    }
-
-    override fun registerResource(request: RegisterResourceRequest) {
-        logger.info("registerResource, request: $request")
-        val resourceId = getResourceId(request)
-        bkiamService.createResource(
-            userId = request.uid,
-            systemCode = SystemCode.BK_REPO,
-            projectId = request.projectId!!,
-            resourceType = request.resourceType,
-            resourceId = resourceId,
-            resourceName = resourceId
-        )
     }
 
     private fun checkBkiamPermission(request: CheckPermissionRequest): Boolean {
