@@ -60,7 +60,7 @@ open class MessageSupplier(
             tagKey = tagKey,
             binderType = binderType
         )
-        logger.info("Will send message: $data to topic $sendTopic")
+        logger.debug("Will send message: $data to topic $sendTopic")
         bridge.send(sendTopic, message)
     }
 
