@@ -74,7 +74,7 @@ class NodeReport2BkbaseJob(
             path = map[Node::path.name].toString(),
             name = map[Node::name.name].toString(),
             fullPath = map[Node::fullPath.name].toString(),
-            size = map[Node::size.name].toString().toLong(),
+            size = map[Node::size.name]?.toString()?.toLong() ?: 0L,
             expireDate = TimeUtils.parseMongoDateTimeStr(map[Node::expireDate.name].toString()),
             sha256 = map[Node::sha256.name]?.toString(),
             md5 = map[Node::md5.name]?.toString(),
