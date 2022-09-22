@@ -100,7 +100,7 @@ export function deleteNode(projectId, repoName, fullPath) {
 export function queryEmptyFolder(projectId, repoName, parentPath) {
   return request({
     url: `${PREFIX_NODE_OPERATION}/emptyFolders/${projectId}/${repoName}`,
-    method: 'post',
+    method: 'get',
     params: {
       parentFolder: parentPath
     }
