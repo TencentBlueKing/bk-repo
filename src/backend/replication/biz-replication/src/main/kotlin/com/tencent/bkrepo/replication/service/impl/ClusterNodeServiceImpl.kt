@@ -274,7 +274,7 @@ class ClusterNodeServiceImpl(
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {
                 ClusterNodeInfo(
-                    id = it.id!!,
+                    id = it.id,
                     name = it.name,
                     status = it.status,
                     errorReason = it.errorReason,

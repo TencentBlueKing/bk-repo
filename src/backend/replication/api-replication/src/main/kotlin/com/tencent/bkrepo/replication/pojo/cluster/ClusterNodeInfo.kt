@@ -36,7 +36,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("集群节点信息")
 data class ClusterNodeInfo(
     @ApiModelProperty("集群id")
-    val id: String,
+    val id: String?,
     @ApiModelProperty("集群名称")
     val name: String,
     @ApiModelProperty("集群节点类型")
