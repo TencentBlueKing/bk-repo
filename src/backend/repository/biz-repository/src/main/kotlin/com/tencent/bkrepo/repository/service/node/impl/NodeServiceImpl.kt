@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -63,7 +64,8 @@ class NodeServiceImpl(
     override val storageCredentialService: StorageCredentialService,
     override val storageService: StorageService,
     override val quotaService: QuotaService,
-    override val repositoryProperties: RepositoryProperties
+    override val repositoryProperties: RepositoryProperties,
+    override val messageSupplier: MessageSupplier
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -71,7 +73,8 @@ class NodeServiceImpl(
     storageCredentialService,
     storageService,
     quotaService,
-    repositoryProperties
+    repositoryProperties,
+    messageSupplier
 ) {
 
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {

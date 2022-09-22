@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,14 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream
+package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
-import org.springframework.context.annotation.PropertySource
 
-@Configuration(proxyBeanMethods = false)
-@PropertySource("classpath:common-stream.properties")
-@Import(MessageSupplier::class)
-class StreamAutoConfiguration
+
+@ConditionalOnNotAssembly
+@Configuration
+class HttpAuthConfig(config: AuthConfig) {
+
+    init {
+        config.prefixEnabled = false
+    }
+}

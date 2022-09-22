@@ -70,7 +70,7 @@
                         <bk-table-column :label="$t('value')" prop="value" show-overflow-tooltip></bk-table-column> -->
                         <bk-table-column :label="$t('metadata')">
                             <template #default="{ row }">
-                                <metadata-tag :metadata="row" />
+                                <metadata-tag :metadata="row" :metadata-label-list="detailSlider.metadataLabelList" />
                             </template>
                         </bk-table-column>
 
@@ -106,7 +106,8 @@
                     repoName: '',
                     folder: false,
                     path: '',
-                    data: {}
+                    data: {},
+                    metadataLabelList: []
                 },
                 metadata: {
                     show: false,

@@ -203,6 +203,9 @@ open class PermissionManager(
                 throw PermissionException()
             }
         } else if (principalType == PrincipalType.PLATFORM) {
+            if (userId.isNullOrEmpty()) {
+                logger.warn("platform auth with empty userId[$platformId,$userId]")
+            }
             if (platformId == null && !isAdminUser(userId)) {
                 throw PermissionException()
             }

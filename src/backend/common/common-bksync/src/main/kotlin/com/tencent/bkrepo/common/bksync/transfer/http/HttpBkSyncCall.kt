@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.URLEncoder
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.concurrent.CountDownLatch
@@ -308,7 +309,7 @@ class HttpBkSyncCall(
             val patchRequest = Request.Builder()
                 .url(deltaUrl)
                 .headers(headers)
-                .header(X_BKREPO_OLD_FILE_PATH, oldFilePath)
+                .header(X_BKREPO_OLD_FILE_PATH, URLEncoder.encode(oldFilePath, Charsets.UTF_8.name()))
                 .patch(body)
                 .build()
             val nanos = measureNanoTime {

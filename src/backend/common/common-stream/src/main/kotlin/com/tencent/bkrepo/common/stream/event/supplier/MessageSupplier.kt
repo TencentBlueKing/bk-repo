@@ -31,62 +31,68 @@
 
 package com.tencent.bkrepo.common.stream.event.supplier
 
+import com.tencent.bkrepo.common.stream.constant.BinderType
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.stream.function.StreamBridge
 import org.springframework.integration.support.MessageBuilder
 import org.springframework.messaging.Message
 import org.springframework.scheduling.annotation.Async
 
-open class EventSupplier(
+open class MessageSupplier(
     private val bridge: StreamBridge
 ) {
 
     /**
-     * 将事件发送到消息队列, 将需要依赖该事件的其余模块解耦开
+     * 将消息数据发送到消息队列, 将需要依赖该消息的其余模块解耦开
      */
     @Async
     open fun <T> delegateToSupplier(
-        event: T,
+        data: T,
         key: String? = null,
         topic: String,
-        tagKey: String? = null
+        tagKey: String? = null,
+        binderType: BinderType = BinderType.PULSAR
     ) {
         val (sendTopic, message) = buildMessage(
-            event = event,
+            data = data,
             key = key,
             topic = topic,
-            tagKey = tagKey
+            tagKey = tagKey,
+            binderType = binderType
         )
-        logger.info("Will send message: $event to topic $sendTopic")
+        logger.debug("Will send message: $data to topic $sendTopic")
         bridge.send(sendTopic, message)
     }
 
     /**
      * 构造消息
-     * @param event 消息内容
+     * @param data 消息内容
      * @param key 消息对应key
      * @param topic 消息对应发送topic
      * @param tagKey 消息对应tag
      */
     private fun <T> buildMessage(
-        event: T,
+        data: T,
         key: String? = null,
         topic: String,
-        tagKey: String? = null
+        tagKey: String? = null,
+        binderType: BinderType
     ): Pair<String, Message<T>> {
-        val messageBuilder = MessageBuilder.withPayload(event)
-        key?.let {
-            // 设置key
-            messageBuilder.setHeader("PULSAR_key", key)
-        }
-        tagKey?.let {
-            // 设置tag *如果要使用 Tag 消息，需要在 Producer 侧禁用掉 batch*
-            messageBuilder.setHeader(tagKey, "TAGS")
+        val messageBuilder = MessageBuilder.withPayload(data)
+        if (binderType == BinderType.PULSAR) {
+            key?.let {
+                // 设置key
+                messageBuilder.setHeader("PULSAR_key", key)
+            }
+            tagKey?.let {
+                // 设置tag *如果要使用 Tag 消息，需要在 Producer 侧禁用掉 batch*
+                messageBuilder.setHeader(tagKey, "TAGS")
+            }
         }
         return Pair(topic, messageBuilder.build())
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(EventSupplier::class.java)
+        private val logger = LoggerFactory.getLogger(MessageSupplier::class.java)
     }
 }

@@ -1,0 +1,16 @@
+parameters:
+- name: receivers
+  type: array
+  default: [ "${{ ci.actor }}" ]
+
+gates:
+- name: 日常构建
+  rule:
+  - CodeccCheckAtomDebug.sensitive_defect < 1
+  - CodeccCheckAtomDebug.detekt_all_defect < 1
+  - CodeccCheckAtomDebug.detekt_serious_defect < 1
+  - CodeccCheckAtomDebug.woodpecker_all_defect < 1
+  - CodeccCheckAtomDebug.new_issue < 1
+  notify-on-fail:
+  - type: wework-message
+    receivers: ${{ parameters.receivers }}

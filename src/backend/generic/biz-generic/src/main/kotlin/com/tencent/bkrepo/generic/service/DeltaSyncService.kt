@@ -2,6 +2,7 @@ package com.tencent.bkrepo.generic.service
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.IpUtils
@@ -34,7 +35,6 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
-import com.tencent.bkrepo.generic.config.DeltaProperties
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -55,6 +55,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
+import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpMethod
@@ -99,7 +100,6 @@ class DeltaSyncService(
         repositoryClient.getRepoDetail(signFileProjectId, signFileRepoName).data
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, signFileRepoName)
     }
-    private val fileSizeThreshold = storageProperties.receive.fileSizeThreshold.toBytes()
     private val httpClient = HttpClientBuilderFactory.create().build()
 
     /**
@@ -129,7 +129,11 @@ class DeltaSyncService(
      * */
     fun patch(oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(ArtifactContext()) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, oldFilePath).data
+            val node = nodeClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8)
+            ).data
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
@@ -183,16 +187,20 @@ class DeltaSyncService(
         }
     }
 
-    fun isInWhiteList(clientIp: String): Boolean {
-        deltaProperties.whiteList.forEach {
-            if (it == DeltaProperties.ALL) {
-                return true
-            }
+    fun isInWhiteList(clientIp: String, taskId: String?, fileType: String?): Boolean {
+        if (!deltaProperties.enable) {
+            return false
+        }
+        deltaProperties.ipBlackList.forEach {
             if (IpUtils.isInRange(clientIp, it)) {
-                return true
+                return false
             }
         }
-        return false
+        if (taskId == null || fileType == null) {
+            return true
+        }
+        val key = "$BLACK_LIST_PREFIX${taskId}${StringPool.COLON}${fileType}"
+        return redisOperation.get(key)?.toBoolean() ?: true
     }
 
     fun recordSpeed(ip: String, action: GenericAction, speed: Int) {
@@ -212,6 +220,9 @@ class DeltaSyncService(
             // 增量上传成功的才需要记录历史上传速度，以便计算节省时间
             if (metrics.networkSpeed < deltaProperties.allowUseMaxBandwidth && metrics.genericUploadTime == 0L) {
                 metrics.historyGenericUploadSpeed = getHistoryUploadSpeed(metrics)
+            }
+            if (metrics.historyGenericUploadSpeed > 0) {
+                forbidNegativeSituation(metrics)
             }
             logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
         }
@@ -245,12 +256,26 @@ class DeltaSyncService(
         )
         val requestBody = RequestBody.create(okhttp3.MediaType.parse(MediaTypes.APPLICATION_JSON), query.toJsonString())
         val request = Request.Builder().url(url).post(requestBody).build()
+        return queryHistorySpeed(request, sql, metrics)
+    }
+
+    private fun queryHistorySpeed(
+        request: Request,
+        sql: String,
+        metrics: BkSyncMetrics,
+        retryTime: Int = 3
+    ): Double {
+        if (retryTime == 0) {
+            return 0.0
+        }
         try {
             httpClient.newCall(request).execute().use { response ->
+                val queryResponse = response.body()!!.string().readJsonString<QueryResponse>()
                 if (!response.isSuccessful) {
-                    return 0.0
+                    logger.warn("sql[$sql] query failed: ${queryResponse.code}")
+                    return queryHistorySpeed(request, sql, metrics, retryTime - 1)
                 }
-                val dataList = response.body()!!.string().readJsonString<QueryResponse>().data.list
+                val dataList = queryResponse.data.list
                 if (dataList.isEmpty()) {
                     return 0.0
                 }
@@ -272,9 +297,25 @@ class DeltaSyncService(
                 return fileSize.div(uploadTime)
             }
         } catch (e: Exception) {
-            logger.warn("get [${metrics.projectId}/${metrics.pipelineId}/${metrics.buildId}/${metrics.fileName}]" +
-                "history upload speed failed", e)
-            return 0.0
+            logger.warn(
+                "get [${metrics.projectId}/${metrics.pipelineId}/${metrics.buildId}/${metrics.fileName}]" +
+                    "history upload speed failed", e
+            )
+            return queryHistorySpeed(request, sql, metrics, retryTime - 1)
+        }
+    }
+
+    /**
+     * 加速比率为负反馈时，根据taskId和fileType禁止使用增量上传
+     */
+    private fun forbidNegativeSituation(metrics: BkSyncMetrics) {
+        with(metrics) {
+            val deltaUploadSpeed = fileSize / (diffTime + patchTime)
+            val accelerateRatio = (deltaUploadSpeed / historyGenericUploadSpeed) - 1
+            if (accelerateRatio < 0) {
+                val key = "$BLACK_LIST_PREFIX${taskId}${StringPool.COLON}${fileType}"
+                redisOperation.set(key, false.toString(), deltaProperties.blackListExpired.seconds)
+            }
         }
     }
 
@@ -577,6 +618,7 @@ class DeltaSyncService(
         // 3s patch 回复心跳时间，保持连接存活
         private const val HEART_BEAT_INTERVAL = 3000L
         private const val SPEED_KEY_PREFIX = "delta:speed:"
+        private const val BLACK_LIST_PREFIX = "delta:blacklist:"
         private val heartBeatExecutor = ScheduledThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             ThreadFactoryBuilder().setNameFormat("BkSync-heart-beat-%d").build()
@@ -587,7 +629,7 @@ class DeltaSyncService(
             ThreadFactoryBuilder().setNameFormat("BkSync-patch-%d").build()
         )
         private val metricsExecutor = ThreadPoolExecutor(
-            4,20,60,TimeUnit.SECONDS,
+            4, 20, 60, TimeUnit.SECONDS,
             ArrayBlockingQueue(1024),
             ThreadFactoryBuilder().setNameFormat("BkSync-metrics-%d").build()
         )

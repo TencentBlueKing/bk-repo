@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -68,8 +69,13 @@ object PackageQueryHelper {
         return Query(criteria)
     }
 
-    fun versionListQuery(packageId: String, name: String? = null, stageTag: List<String>? = null): Query {
-        return Query(versionListCriteria(packageId, name, stageTag))
+    fun versionListQuery(
+        packageId: String,
+        name: String? = null,
+        stageTag: List<String>? = null,
+        metadata: List<MetadataModel>? = null
+    ): Query {
+        return Query(versionListCriteria(packageId, name, stageTag, metadata))
             .with(Sort.by(Sort.Order(Sort.Direction.DESC, TPackageVersion::ordinal.name)))
     }
 
@@ -93,13 +99,30 @@ object PackageQueryHelper {
             }
     }
 
-    private fun versionListCriteria(packageId: String, name: String? = null, stageTag: List<String>? = null): Criteria {
+    private fun versionListCriteria(
+        packageId: String,
+        name: String? = null,
+        stageTag: List<String>? = null,
+        metadata: List<MetadataModel>? = null
+    ): Criteria {
         return where(TPackageVersion::packageId).isEqualTo(packageId)
             .apply {
                 name?.let { and(TPackageVersion::name).regex("^$it") }
             }.apply {
                 if (!stageTag.isNullOrEmpty()) {
                     and(TPackageVersion::stageTag).all(stageTag)
+                }
+            }.apply {
+                val criteriaList = mutableListOf<Criteria>()
+                metadata?.forEach {
+                    criteriaList.add(
+                        where(TPackageVersion::metadata).elemMatch(
+                            where(MetadataModel::key).isEqualTo(it.key).and(MetadataModel::value).isEqualTo(it.value)
+                        )
+                    )
+                }
+                if (criteriaList.isNotEmpty()) {
+                    andOperator(criteriaList)
                 }
             }
     }

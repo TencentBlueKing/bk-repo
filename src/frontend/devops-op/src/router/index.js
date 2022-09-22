@@ -11,6 +11,7 @@ export const ROUTER_NAME_NOTIFY_CREDENTIALS = 'NotifyCredentials'
 export const ROUTER_NAME_PLUGIN = 'Plugin'
 export const ROUTER_NAME_SCANNERS = 'Scanners'
 export const ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS = 'ProjectScanConfigurations'
+export const ROUTER_NAME_JOB = 'Job'
 
 Vue.use(Router)
 
@@ -51,7 +52,7 @@ export const constantRoutes = [
 
   {
     path: '/',
-    redirect: '/services',
+    redirect: process.env.VUE_APP_K8S === 'k8s' ? '/nodes' : '/services',
     meta: { title: TITLE_HOME, icon: 'bk' }
   },
 
@@ -70,6 +71,7 @@ export const asyncRoutes = [
   {
     path: '/services',
     component: Layout,
+    hidden: process.env.VUE_APP_K8S === 'k8s',
     children: [
       {
         path: '/',
@@ -129,6 +131,7 @@ export const asyncRoutes = [
   {
     path: '/webhook',
     component: Layout,
+    hidden: process.env.VUE_APP_K8S === 'k8s',
     meta: { title: 'WebHook管理', icon: 'webhook' },
     children: [
       {
@@ -147,6 +150,7 @@ export const asyncRoutes = [
   },
   {
     path: '/scan',
+    hidden: process.env.VUE_APP_K8S === 'k8s',
     alwaysShow: true,
     redirect: '/scan/scanners',
     component: Layout,
@@ -190,6 +194,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PLUGIN,
         meta: { title: '插件管理', icon: 'plugin' },
         component: () => import('@/views/plugin/index')
+      }
+    ]
+  },
+  {
+    path: '/job',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_JOB,
+        meta: { title: '任务管理', icon: 'cc-process' },
+        component: () => import('@/views/job/index')
       }
     ]
   },
