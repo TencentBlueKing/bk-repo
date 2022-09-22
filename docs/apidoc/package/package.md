@@ -343,6 +343,153 @@
   | lastModifiedBy   |string|上次修改者|last modify user|
   | lastModifiedDate |string|上次修改时间|last modify time|
 
+## 查询包版本
+
+- API: POST /repository/api/version/list/{projectId}/{repoName}?packageKey=gav://com.tencent:test
+- API 名称: list_version
+- 功能说明：
+  - 中文：查询版本列表
+  - English：list version
+- 请求体
+```json
+  {
+    "pageNumber": 1,
+    "pageSize": 20,
+    "version": "1.0.0",
+    "stageTag": "release",
+    "metadata": [
+      {
+        "key": "apiVersion",
+        "value": "v1"
+      }
+    ]
+  }
+```
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |projectId|string|是|无|项目名称|project name|
+  |repoName|string|是|无|仓库名称|repo name|
+  |packageKey|string|否|无|包唯一key|package unique key|
+  |version|string|否|无|版本名称，前缀匹配|version name|
+  |stageTag|string|否|无|晋级标签， 逗号分隔|stage tag list|
+  |metadata|List|否|无|版本元数据|package version metadata|
+  |pageNumber|Int|是|无|页码|page number|
+  |pageSize|Int|是|无|每页数量|page size|
+
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "name" : "0.0.9",
+      "size" : 1024,
+      "downloads" : 18,
+      "stageTag" : ["@prerelease", "@release"],
+      "createdBy" : "admin",
+      "createdDate" : "2020-07-27T16:02:31.394",
+      "lastModifiedBy" : "admin",
+      "lastModifiedDate" : "2020-07-27T16:02:31.394",
+      "metadata": {
+        "apiVersion": "v1",
+        "appVersion": "7.0",
+        "description": "Deploy a basic tomcat application server with sidecar as web archive container",
+        "home": "https://github.com/yahavb",
+        "icon": "http://tomcat.apache.org/res/images/tomcat.png",
+        "keywords": [],
+        "maintainers": [
+            {
+                "name": "yahavb",
+                "email": "ybiran@ananware.systems"
+            }
+        ],
+        "name": "tomcat",
+        "sources": [],
+        "urls": [],
+        "version": "0.4.2"
+      },
+      "nodeMetadata": [
+          {
+            "key": "apiVersion",
+            "value": "v1",
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "appVersion",
+            "value": "7.0",
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "description",
+            "value": "Deploy a basic tomcat application server with sidecar as web archive container",
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "home",
+            "value": "https://github.com/yahavb",
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "icon",
+            "value": "http://tomcat.apache.org/res/images/tomcat.png",
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "keywords",
+            "value": [],
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "maintainers",
+            "value": [
+              {
+                "name": "yahavb",
+                "email": "ybiran@ananware.systems"
+              }
+            ],
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "name",
+            "value": "tomcat",
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "sources",
+            "value": [],
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "urls",
+            "value": [],
+            "description": "",
+            "system": false
+          },
+          {
+            "key": "version",
+            "value": "0.4.2",
+            "description": "",
+            "system": false
+          }
+      ]
+    },
+    "traceId":  null
+  }
+  ```
+
 ## 删除版本
 
 - API: DELETE /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1

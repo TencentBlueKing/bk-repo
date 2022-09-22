@@ -41,11 +41,9 @@ class DeltaProperties(
     var patchTimeout: Duration = Duration.ofMinutes(30),
     var projectId: String = "",
     var repoName: String = "",
-    var whiteList: List<String> = listOf(ALL),
+    var enable: Boolean = true,
     var speedTestExpired: Duration = Duration.ofMinutes(10),
-    var allowUseMaxBandwidth: Int = 50
-) {
-    companion object {
-        const val ALL = "all"
-    }
-}
+    var allowUseMaxBandwidth: Int = 50,
+    var blackListExpired: Duration = Duration.ofDays(16),
+    var ipBlackList: List<String> = emptyList()
+)

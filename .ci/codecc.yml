@@ -1,0 +1,40 @@
+version: v2.0
+
+name: bkrepo代码检查
+
+on:
+  mr:
+    target-branches:  [ "develop", "master" ]
+    source-branches-ignore: [ "develop" ]
+
+resources:
+  repositories:
+    - repository: ci_templates/public/codecc
+      name: codecc
+
+stages:
+  - name: "代码分析并进行质量红线检测"
+    check-out:
+      gates:
+        - template: codecc_gate.yml
+    jobs:
+      job1:
+        runs-on:
+          pool-name: docker  #docker-on-devcloud、docker、local、agentless
+          container:
+            image: mirrors.tencent.com/ci/tlinux3_ci:2.0.0
+        steps:
+          - checkout: self
+          - uses: CodeccCheckAtomDebug@4.*
+            name: 腾讯代码分析
+            with:
+              beAutoLang: false # 不自动检测项目语言
+              checkerSetType: "normal" # 规则集类型，normal对应自主配置规则集，openScan对应按开源治理要求配置，epcScan对应按PCG EPC要求配置。选了openScan或epcScan则不需要填写后面的内容
+              toolScanType: "0" # 扫描方式。快速全量扫描[1] | 全量扫描[0] | 差异扫描[6] | MR/PR扫描[2]，默认为1
+              languages: # 工程语言, 必选, 可取值："C_CPP", "JAVA", "C_SHARP", "JS", "OC", "PYTHON", "PHP", "RUBY", "GOLANG", "SWIFT", "TYPESCRIPT", "KOTLIN", "LUA", "OTHERS"
+                - "KOTLIN"
+              languageRuleSetMap: # 规则集, 必选, 需要按照语言来进行填写
+                KOTLIN_RULE:
+                  - "codecc_default_dupc_kotlin"
+                  - "ieg_sensitive_kotlin"
+                  - "bk_ci_kotlin"

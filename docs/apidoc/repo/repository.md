@@ -381,7 +381,7 @@
 
 ## 修改仓库配额
 
-- API： POST /repository/api/repo/quota/{projectId}/{repoName}
+- API： POST /repository/api/repo/quota/{projectId}/{repoName}?quota=102400
 
 - API 名称：update_repo_quota
 
@@ -391,10 +391,7 @@
   - English：update repo quota
 
 - 请求体
-
-  ```
-  quota=102400
-  ```
+  - 此接口无请求体
 
   - 请求字段说明
 
