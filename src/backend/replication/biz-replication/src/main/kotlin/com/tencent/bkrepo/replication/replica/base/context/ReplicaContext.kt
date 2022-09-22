@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
@@ -56,7 +55,6 @@ import okhttp3.Request
 
 class ReplicaContext(
     taskDetail: ReplicaTaskDetail,
-    clusterProperties: ClusterProperties,
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
@@ -101,9 +99,9 @@ class ReplicaContext(
             username = remoteCluster.username,
             password = remoteCluster.password,
             certificate = remoteCluster.certificate,
-            appId = clusterProperties.self.appId,
-            accessKey = clusterProperties.self.accessKey,
-            secretKey = clusterProperties.self.secretKey
+            appId = remoteCluster.appId,
+            accessKey = remoteCluster.accessKey,
+            secretKey = remoteCluster.secretKey
         )
 
         // 远端集群仓库特殊处理, 远端集群走对应制品类型协议传输

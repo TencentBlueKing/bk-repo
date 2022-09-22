@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.replication.replica.base.executor
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
@@ -48,8 +47,7 @@ import java.util.concurrent.ThreadPoolExecutor
 open class AbstractReplicaJobExecutor(
     private val clusterNodeService: ClusterNodeService,
     private val localDataManager: LocalDataManager,
-    private val replicaService: ReplicaService,
-    private val clusterProperties: ClusterProperties
+    private val replicaService: ReplicaService
 ) {
 
     private val threadPoolExecutor: ThreadPoolExecutor = ReplicaThreadPoolExecutor.instance
@@ -84,8 +82,7 @@ open class AbstractReplicaJobExecutor(
                         taskObject = taskObject,
                         taskRecord = taskRecord,
                         localRepo = localRepo,
-                        remoteCluster = clusterNode,
-                        clusterProperties = clusterProperties,
+                        remoteCluster = clusterNode
                     )
                     event?.let { context.event = it }
                     replicaService.replica(context)

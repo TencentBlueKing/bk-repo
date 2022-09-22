@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.security.util.RsaUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -63,8 +62,7 @@ import java.util.regex.Pattern
 
 @Service
 class ClusterNodeServiceImpl(
-    private val clusterNodeDao: ClusterNodeDao,
-    private val clusterProperties: ClusterProperties
+    private val clusterNodeDao: ClusterNodeDao
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
@@ -125,10 +123,13 @@ class ClusterNodeServiceImpl(
                 password = crypto(password, false),
                 certificate = certificate,
                 type = type,
+                appId = appId,
+                accessKey = accessKey,
+                secretKey = secretKey,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
             )
             // 检测远程集群网络连接是否可用
             tryConnect(convert(clusterNode)!!)
@@ -215,9 +216,6 @@ class ClusterNodeServiceImpl(
     fun tryConnectNonRemoteCluster(remoteClusterInfo: ClusterInfo) {
         with(remoteClusterInfo) {
             try {
-                remoteClusterInfo.appId = clusterProperties.self.appId
-                remoteClusterInfo.accessKey = clusterProperties.self.accessKey
-                remoteClusterInfo.secretKey = clusterProperties.self.secretKey
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
                 val authToken = BasicAuthUtils.encode(username.orEmpty(), password.orEmpty())
                 replicationService.ping(authToken)

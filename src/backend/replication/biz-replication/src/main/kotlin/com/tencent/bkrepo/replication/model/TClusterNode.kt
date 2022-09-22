@@ -72,6 +72,21 @@ data class TClusterNode(
      * 集群访问证书, 独立集群需要此字段
      */
     var certificate: String?,
+
+    /**
+     * bkrepo集群需要ak/sk进行签名
+     * appId
+     * */
+    var appId: String? = null,
+    /**
+     * 访问凭证
+     * */
+    var accessKey: String? = null,
+    /**
+     * 密钥
+     * */
+    var secretKey: String? = null,
+
     /**
      * 审计信息
      */
