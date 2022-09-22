@@ -56,5 +56,7 @@ class DfsReadableChannel(
         return blockSize
     }
 
-    override fun setReadAheadBytes(bufferSize: Int) {}
+    override fun setReadAheadBytes(bufferSize: Int) {
+        // empty
+    }
 }

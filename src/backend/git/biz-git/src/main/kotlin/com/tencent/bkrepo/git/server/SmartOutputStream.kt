@@ -35,18 +35,8 @@ open class SmartOutputStream(
             // buffer. Try to use a proper Content-Length header, and also
             // deflate the response with gzip if it will be smaller.
             if (256 < length() && acceptsGzipEncoding(req)) {
-                val gzbuf: TemporaryBuffer = Heap(LIMIT)
-                try {
-                    GZIPOutputStream(gzbuf).use { gzip -> this.writeTo(gzip, null) }
-                    if (gzbuf.length() < length()) {
-                        rsp.setHeader(HttpSupport.HDR_CONTENT_ENCODING, HttpSupport.ENCODING_GZIP)
-                        writeResponse(gzbuf)
-                        return
-                    }
-                } catch (err: IOException) {
-                    // Most likely caused by overflowing the buffer, meaning
-                    // its larger if it were compressed. Discard compressed
-                    // copy and use the original.
+                if (gzipWriteResponse()) {
+                    return
                 }
             }
             writeResponse(this)
@@ -67,6 +57,23 @@ open class SmartOutputStream(
 
     override fun flush() {
         doFlush()
+    }
+
+    private fun gzipWriteResponse(): Boolean {
+        val gzbuf: TemporaryBuffer = Heap(LIMIT)
+        try {
+            GZIPOutputStream(gzbuf).use { gzip -> this.writeTo(gzip, null) }
+            if (gzbuf.length() < length()) {
+                rsp.setHeader(HttpSupport.HDR_CONTENT_ENCODING, HttpSupport.ENCODING_GZIP)
+                writeResponse(gzbuf)
+                return true
+            }
+        } catch (err: IOException) {
+            // Most likely caused by overflowing the buffer, meaning
+            // its larger if it were compressed. Discard compressed
+            // copy and use the original.
+        }
+        return false
     }
 
     private fun acceptsGzipEncoding(req: HttpServletRequest): Boolean {
