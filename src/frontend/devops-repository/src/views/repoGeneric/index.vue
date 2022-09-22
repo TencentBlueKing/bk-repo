@@ -149,7 +149,7 @@
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder ? [
-                                            { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            !k8s && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
                                         ] : [])
                                     ] : []),
@@ -319,6 +319,9 @@
             ]),
             showRepoScan (node) {
                 return !node.folder && !k8s && genericScanFileTypes.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
+            },
+            k8s () {
+                return k8s
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {

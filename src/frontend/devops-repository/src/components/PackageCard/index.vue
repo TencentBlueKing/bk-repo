@@ -37,7 +37,7 @@
                 :list="[
                     { label: '详情', clickEvent: () => detail() },
                     !(cardData.metadata || {}).forbidStatus && { label: '下载', clickEvent: () => download() },
-                    !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
+                    !k8s && !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
@@ -67,6 +67,9 @@
             ...mapGetters(['isEnterprise']),
             showRepoScan () {
                 return this.isEnterprise && !k8s && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+            },
+            k8s () {
+                return k8s
             }
         },
         methods: {
