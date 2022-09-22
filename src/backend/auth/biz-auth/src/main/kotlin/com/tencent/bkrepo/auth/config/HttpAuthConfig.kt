@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,25 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.auth.config
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
+import org.springframework.context.annotation.Configuration
 
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String = "",
-    var repoName: String = "",
-    var enable: Boolean = true,
-    var speedTestExpired: Duration = Duration.ofMinutes(10),
-    var allowUseMaxBandwidth: Int = 50,
-    var blackListExpired: Duration = Duration.ofDays(16),
-    var ipBlackList: List<String> = emptyList()
-)
+
+@ConditionalOnNotAssembly
+@Configuration
+class HttpAuthConfig(config: AuthConfig) {
+
+    init {
+        config.prefixEnabled = false
+    }
+}

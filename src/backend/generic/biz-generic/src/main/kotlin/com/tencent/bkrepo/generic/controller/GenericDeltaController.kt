@@ -57,9 +57,12 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     }
 
     @GetMapping("delta/permit")
-    fun permit(): Response<Boolean> {
+    fun permit(
+        @RequestParam taskId: String?,
+        @RequestParam fileType: String?
+    ): Response<Boolean> {
         val clientIp = HttpContextHolder.getClientAddress()
-        return ResponseBuilder.success(deltaSyncService.isInWhiteList(clientIp))
+        return ResponseBuilder.success(deltaSyncService.isInWhiteList(clientIp, taskId, fileType))
     }
 
     @PutMapping("delta/speed")
