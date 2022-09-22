@@ -281,6 +281,9 @@ class ClusterNodeServiceImpl(
                     username = it.username,
                     password = crypto(it.password, true),
                     certificate = it.certificate,
+                    appId = it.appId,
+                    accessKey = it.accessKey,
+                    secretKey = it.secretKey,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -296,7 +299,10 @@ class ClusterNodeServiceImpl(
                     url = it.url,
                     certificate = it.certificate,
                     username = it.username,
-                    password = crypto(it.password, true)
+                    password = crypto(it.password, true),
+                    appId = it.appId,
+                    accessKey = it.accessKey,
+                    secretKey = it.secretKey
                 )
             }
         }
