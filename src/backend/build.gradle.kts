@@ -51,6 +51,7 @@ allprojects {
             dependency("com.google.code.gson:gson:${Versions.Gson}")
             dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:${Versions.JGit}")
             dependency("org.eclipse.jgit:org.eclipse.jgit:${Versions.JGit}")
+            dependency("org.eclipse.jgit:org.eclipse.jgit.junit:${Versions.JGit}")
             dependency("org.apache.commons:commons-compress:${Versions.CommonsCompress}:")
             dependency("commons-io:commons-io:${Versions.CommonsIO}")
             dependency("com.google.guava:guava:${Versions.Guava}")
@@ -96,14 +97,11 @@ allprojects {
             dependsOn(tasks.named("bootJar"))
         }
     }
-
 }
 
 fun isBootProject(project: Project): Boolean {
     return project.name.startsWith("boot-") || project.findProperty("devops.boot") == "true"
 }
-
-
 
 apply(from = rootProject.file("gradle/publish-api.gradle.kts"))
 apply(from = rootProject.file("gradle/publish-all.gradle.kts"))

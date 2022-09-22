@@ -69,7 +69,7 @@ import kotlin.system.measureTimeMillis
  */
 class ArtifactDataReceiver(
     private val receiveProperties: ReceiveProperties,
-    private val monitorProperties: MonitorProperties,
+    monitorProperties: MonitorProperties,
     private var path: Path,
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
@@ -153,6 +153,12 @@ class ArtifactDataReceiver(
     var finished = false
 
     var trafficHandler: TrafficHandler? = null
+
+    /**
+     * 缓存数组
+     */
+    val cachedByteArray: ByteArray?
+        get() = contentBytes?.toByteArray()
 
     init {
         initPath()
@@ -281,7 +287,7 @@ class ArtifactDataReceiver(
     /**
      * 关闭原始输出流
      */
-    private fun cleanOriginalOutputStream() {
+    fun cleanOriginalOutputStream() {
         try {
             outputStream.flush()
         } catch (ignored: IOException) {

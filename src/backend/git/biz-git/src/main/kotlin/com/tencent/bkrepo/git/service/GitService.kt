@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.git.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.thread.TransmitterExecutorWrapper
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -16,11 +17,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
 import com.tencent.bkrepo.git.artifact.repository.GitRemoteRepository
-import com.tencent.bkrepo.git.constant.DOT_GIT
 import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.constant.REDIS_SET_REPO_TO_UPDATE
 import com.tencent.bkrepo.git.constant.convertorLockKey
-import com.tencent.bkrepo.git.server.BkrepoReceivePackFactory
+import com.tencent.bkrepo.git.internal.CodeRepositoryResolver
+import com.tencent.bkrepo.git.server.DefaultReceivePackFactory
 import com.tencent.bkrepo.git.server.SmartOutputStream
 import org.eclipse.jgit.errors.CorruptObjectException
 import org.eclipse.jgit.errors.PackProtocolException
@@ -33,7 +34,6 @@ import org.eclipse.jgit.http.server.HttpServerText
 import org.eclipse.jgit.http.server.ServletUtils
 import org.eclipse.jgit.http.server.ServletUtils.consumeRequestBody
 import org.eclipse.jgit.http.server.resolver.DefaultUploadPackFactory
-import org.eclipse.jgit.internal.storage.file.FileRepository
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.InternalHttpServerGlue
 import org.eclipse.jgit.transport.PacketLineOut
@@ -59,21 +59,15 @@ import javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR
 import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 import javax.servlet.http.HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE
 import kotlin.system.measureNanoTime
+import org.eclipse.jgit.storage.pack.PackConfig
 
+/**
+ * Git服务
+ * */
 @Service
 class GitService(
-    private val redisOperation: RedisOperation,
-    private val gitCommonService: GitCommonService
+    private val redisOperation: RedisOperation
 ) : ArtifactService() {
-    val uploadPackFactory: DefaultUploadPackFactory = DefaultUploadPackFactory()
-    val receivePackFactory: BkrepoReceivePackFactory = BkrepoReceivePackFactory()
-    val executor: ThreadPoolExecutor = ThreadPoolExecutor(
-        Runtime.getRuntime().availableProcessors() * 2,
-        200, 60, TimeUnit.SECONDS, LinkedBlockingQueue(10000)
-    )
-
-    private val logger = LoggerFactory.getLogger(GitService::class.java)
-
     companion object {
         /*
         * 暂时没有看门狗的锁机制存在，所以暂时设置五分钟同步请求锁时间。
@@ -83,6 +77,16 @@ class GitService(
         * fetch: 每个不同的fetch都有自己的incoming pack文件，不会互相影响
         * */
         private const val expiredTimeInSeconds: Long = 300L
+
+        val uploadPackFactory: DefaultUploadPackFactory = DefaultUploadPackFactory()
+        val receivePackFactory: DefaultReceivePackFactory = DefaultReceivePackFactory()
+        val executor: ThreadPoolExecutor = ThreadPoolExecutor(
+            Runtime.getRuntime().availableProcessors() * 2,
+            200, 60, TimeUnit.SECONDS, LinkedBlockingQueue(10000),
+            ThreadFactoryBuilder().setNameFormat("code-%d").build(),
+        )
+        val transmitterExecutor = TransmitterExecutorWrapper(executor)
+        private val logger = LoggerFactory.getLogger(GitService::class.java)
     }
 
     fun sync(infoRepository: GitRepositoryArtifactInfo) {
@@ -120,49 +124,45 @@ class GitService(
         repository.download(ArtifactDownloadContext())
     }
 
-    fun infoRefs(infoRepository: GitRepositoryArtifactInfo, svc: String) {
-        val context = ArtifactContext()
-        val (db, req, res) = prepare(context)
-        var up: UploadPack? = null
-        val buf = SmartOutputStream(req, res, true)
-        try {
-            up = uploadPackFactory.create(req, db)
-            InternalHttpServerGlue.setPeerUserAgent(
-                up,
-                req.getHeader(HttpSupport.HDR_USER_AGENT)
-            )
-            res.contentType = infoRefsResultType(svc)
-            up.isBiDirectionalPipe = false
-            buf.use {
-                val out = PacketLineOut(buf)
-                up.sendAdvertisedRefs(RefAdvertiser.PacketLineOutRefAdvertiser(out), svc)
-            }
-        } catch (e: ServiceNotAuthorizedException) {
-            res.sendError(SC_UNAUTHORIZED, e.message)
-        } catch (e: ServiceNotEnabledException) {
-            sendError(req, res, SC_FORBIDDEN, e.message)
-        } catch (e: ServiceMayNotContinueException) {
-            if (e.isOutput) buf.close() else sendError(req, res, e.statusCode, e.message)
-        } finally {
-            up?.revWalk?.close()
+    fun infoRefs(svc: String) {
+        with(ArtifactContext()) {
+            val db = CodeRepositoryResolver.open(projectId, repoName, storageCredentials)
+            val up = uploadPackFactory.create(request, db)
+            doInfoRefs(up, request, response, svc)
         }
     }
 
     fun gitUploadPack() {
+        with(ArtifactContext()) {
+            val db = CodeRepositoryResolver.open(projectId, repoName, storageCredentials)
+            val up = uploadPackFactory.create(request, db)
+            val packConfig = PackConfig(db)
+            packConfig.executor = transmitterExecutor
+            up.setPackConfig(packConfig)
+            doUpload(up, request, response)
+        }
+    }
+
+    fun gitReceivePack() {
         val context = ArtifactContext()
-        val (db, req, rsp) = prepare(context)
-        var up: UploadPack? = null
+        with(context) {
+            val db = CodeRepositoryResolver.open(projectId, repoName, storageCredentials)
+            val rp = receivePackFactory.create(request, db, context)
+            doReceive(rp, request, response, this)
+        }
+    }
+
+    private fun doUpload(
+        up: UploadPack,
+        req: HttpServletRequest,
+        rsp: HttpServletResponse
+    ) {
         if (UPLOAD_PACK_REQUEST_TYPE != req.contentType) {
             rsp.sendError(SC_UNSUPPORTED_MEDIA_TYPE)
             return
         }
-        val out = object : SmartOutputStream(req, rsp, false) {
-            override fun flush() {
-                doFlush()
-            }
-        }
+        val out = SmartOutputStream(req, rsp, false)
         try {
-            up = uploadPackFactory.create(req, db)
             up.isBiDirectionalPipe = false
             rsp.contentType = UPLOAD_PACK_RESULT_TYPE
             out.use {
@@ -181,7 +181,7 @@ class GitService(
             logger.error(
                 MessageFormat.format(
                     HttpServerText.get().internalErrorDuringUploadPack,
-                    identify(db)
+                    identify(up.repository)
                 ),
                 e
             )
@@ -195,7 +195,7 @@ class GitService(
             logger.error(
                 MessageFormat.format(
                     HttpServerText.get().internalErrorDuringUploadPack,
-                    identify(db)
+                    identify(up.repository)
                 ),
                 e
             )
@@ -204,14 +204,42 @@ class GitService(
                 val msg = (e as? PackProtocolException)?.message
                 sendError(req, rsp, SC_INTERNAL_SERVER_ERROR, msg)
             }
-        } finally {
-            up?.revWalk?.close()
         }
     }
 
-    fun gitReceivePack() {
-        val context = ArtifactContext()
-        val (db, req, rsp) = prepare(context)
+    private fun doInfoRefs(
+        up: UploadPack,
+        req: HttpServletRequest,
+        res: HttpServletResponse,
+        svc: String
+    ) {
+        val buf = SmartOutputStream(req, res, true)
+        try {
+            InternalHttpServerGlue.setPeerUserAgent(
+                up,
+                req.getHeader(HttpSupport.HDR_USER_AGENT)
+            )
+            res.contentType = infoRefsResultType(svc)
+            up.isBiDirectionalPipe = false
+            buf.use {
+                val out = PacketLineOut(buf)
+                up.sendAdvertisedRefs(RefAdvertiser.PacketLineOutRefAdvertiser(out), svc)
+            }
+        } catch (e: ServiceNotAuthorizedException) {
+            res.sendError(SC_UNAUTHORIZED, e.message)
+        } catch (e: ServiceNotEnabledException) {
+            sendError(req, res, SC_FORBIDDEN, e.message)
+        } catch (e: ServiceMayNotContinueException) {
+            if (e.isOutput) buf.close() else sendError(req, res, e.statusCode, e.message)
+        }
+    }
+
+    private fun doReceive(
+        rp: ReceivePack,
+        req: HttpServletRequest,
+        rsp: HttpServletResponse,
+        context: ArtifactContext
+    ) {
         if (context.repositoryDetail.category == RepositoryCategory.REMOTE) {
             rsp.sendError(
                 SC_FORBIDDEN,
@@ -222,14 +250,8 @@ class GitService(
             logger.info("refuse git push request for remote repository ${context.repoName}")
             return
         }
-        var rp: ReceivePack? = null
-        val out = object : SmartOutputStream(req, rsp, false) {
-            override fun flush() {
-                doFlush()
-            }
-        }
+        val out = SmartOutputStream(req, rsp, false)
         try {
-            rp = receivePackFactory.create(req, db, context)
             rp.isBiDirectionalPipe = false
             rsp.contentType = GitSmartHttpTools.RECEIVE_PACK_RESULT_TYPE
             out.use {
@@ -246,7 +268,7 @@ class GitService(
                 MessageFormat.format(
                     HttpServerText.get().receivedCorruptObject,
                     e.message,
-                    identify(db)
+                    identify(rp.repository)
                 )
             )
             consumeRequestBody(req)
@@ -254,7 +276,7 @@ class GitService(
             logger.error(
                 MessageFormat.format(
                     HttpServerText.get().internalErrorDuringReceivePack,
-                    identify(db)
+                    identify(rp.repository)
                 ),
                 e
             )
@@ -267,24 +289,7 @@ class GitService(
                 rsp.reset()
                 sendError(req, rsp, SC_INTERNAL_SERVER_ERROR)
             }
-        } finally {
-            rp?.revWalk?.close()
         }
-        gitCommonService.storeGitDir(db, context)
-    }
-
-    private fun prepare(context: ArtifactContext): Triple<Repository, HttpServletRequest, HttpServletResponse> {
-        val dir = gitCommonService.generateWorkDir(context)
-        var db: Repository
-        try {
-            db = gitCommonService.createGit(context, dir).repository
-        } catch (e: ErrorCodeException) {
-            db = FileRepository("${dir.canonicalPath}/$DOT_GIT")
-            db.create()
-        }
-        val req = context.request
-        val rsp = context.response
-        return Triple(db, req, rsp)
     }
 
     fun infoRefsResultType(svc: String): String? {
