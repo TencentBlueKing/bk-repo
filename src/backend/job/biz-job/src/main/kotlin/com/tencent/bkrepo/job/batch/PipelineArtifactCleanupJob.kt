@@ -149,7 +149,7 @@ class PipelineArtifactCleanupJob(
             map[Node::id.name].toString(), map[Node::projectId.name].toString(),
             map[Node::repoName.name].toString(), map[Node::path.name].toString(),
             map[Node::fullPath.name].toString(), map[Node::folder.name] as Boolean,
-            TimeUtils.parseMongoDateTimeStr(map[Node::createdDate.name].toString()),
+            TimeUtils.parseMongoDateTimeStr(map[Node::createdDate.name].toString())!!,
             map[Node::deleted.name]?.let { TimeUtils.parseMongoDateTimeStr(it.toString()) }
         )
     }

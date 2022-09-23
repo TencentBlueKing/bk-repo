@@ -56,7 +56,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
@@ -106,7 +106,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
 
     @Autowired
-    lateinit var eventSupplier: EventSupplier
+    lateinit var messageSupplier: MessageSupplier
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -240,7 +240,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
                 resourceKey = context.artifactInfo.getArtifactFullPath(),
                 userId = context.userId
             )
-            eventSupplier.delegateToSupplier(event = event, topic = BINDING_OUT_NAME)
+            messageSupplier.delegateToSupplier(data = event, topic = BINDING_OUT_NAME)
         } else {
             context.artifacts.forEach {
                 val event = ArtifactEvent(
@@ -250,7 +250,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
                     resourceKey = it.getArtifactFullPath(),
                     userId = context.userId
                 )
-                eventSupplier.delegateToSupplier(event = event, topic = BINDING_OUT_NAME)
+                messageSupplier.delegateToSupplier(data = event, topic = BINDING_OUT_NAME)
             }
         }
     }
