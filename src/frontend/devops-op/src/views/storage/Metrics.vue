@@ -5,9 +5,9 @@
         <el-table-column prop="path" label="路径" width="600" />
         <el-table-column prop="totalFileCount" label="文件数量" />
         <el-table-column prop="totalFolderCount" label="文件夹数量" />
-        <el-table-column prop="totalSpace" label="路径总存储" />
+        <el-table-column prop="totalSpace" label="磁盘总存储" />
         <el-table-column prop="totalSize" label="已用存储" />
-        <el-table-column prop="usedPercent" label="已用百分比" />
+        <el-table-column prop="usedPercent" label="磁盘已用百分比" />
       </el-table>
     </div>
     <div style="margin-top:20px">
