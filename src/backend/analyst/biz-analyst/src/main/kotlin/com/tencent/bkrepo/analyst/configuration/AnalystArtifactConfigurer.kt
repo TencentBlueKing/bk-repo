@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class ScannerArtifactConfigurer : ArtifactConfigurerSupport() {
+class AnalystArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NONE
     override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
@@ -46,7 +46,7 @@ class ScannerArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/scanner")
+            httpAuthSecurity.withPrefix("/analyst")
         }
     }
 }
