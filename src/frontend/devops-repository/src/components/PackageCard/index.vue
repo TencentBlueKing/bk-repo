@@ -6,7 +6,7 @@
                 <span class="card-name text-overflow" :title="cardData.name">{{ cardData.name }}</span>
                 <span class="ml10 repo-tag" v-if="['MAVEN'].includes(cardData.type)">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
                 <scan-tag class="ml10"
-                    v-if="isEnterprise && !cardData.type && /\.(ipa)|(apk)|(jar)$/.test(cardData.name)"
+                    v-if="showRepoScan"
                     :status="(cardData.metadata || {}).scanStatus"
                     readonly>
                 </scan-tag>
@@ -37,7 +37,7 @@
                 :list="[
                     { label: '详情', clickEvent: () => detail() },
                     !(cardData.metadata || {}).forbidStatus && { label: '下载', clickEvent: () => download() },
-                    !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
+                    !k8s && !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
@@ -49,6 +49,7 @@
     import { mapGetters } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
+    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'packageCard',
         components: { OperationList, ScanTag, forbidTag },
@@ -63,7 +64,13 @@
             }
         },
         computed: {
-            ...mapGetters(['isEnterprise'])
+            ...mapGetters(['isEnterprise']),
+            showRepoScan () {
+                return this.isEnterprise && !k8s && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+            },
+            k8s () {
+                return k8s
+            }
         },
         methods: {
             convertFileSize,
