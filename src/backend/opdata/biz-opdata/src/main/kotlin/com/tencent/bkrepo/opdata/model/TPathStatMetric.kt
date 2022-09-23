@@ -36,6 +36,8 @@ data class TPathStatMetric(
     var totalFileCount: Long = 0,
     var totalSize: Long = 0,
     var totalFolderCount: Long = 0,
+    var totalSpace: Long = 0,
+    var usedPercent: Double = 0.0,
     var rootPath: String? = null,
     val createdDate: LocalDateTime? = LocalDateTime.now()
 )
