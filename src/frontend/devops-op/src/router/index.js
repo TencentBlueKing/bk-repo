@@ -100,7 +100,7 @@ export const asyncRoutes = [
     redirect: '/nodes/nodes',
     children: [
       {
-        path: 'modes',
+        path: 'nodes',
         name: ROUTER_NAME_NODE,
         meta: { title: '文件管理', icon: 'file' },
         component: () => import('@/views/node/index')
