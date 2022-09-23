@@ -29,13 +29,14 @@ package com.tencent.bkrepo.job.config.properties
 
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.scheduling.annotation.Scheduled
 import java.time.LocalDateTime
 
 @ConfigurationProperties("job.node-report")
 class NodeReport2BkbaseJobProperties(
     override var enabled: Boolean = false,
-    override var cron: String,
-    val startCollectionNum: Int = 0,
-    val endCollectionsNum: Int = SHARDING_COUNT,
-    val endDateTime: LocalDateTime = LocalDateTime.MAX
+    override var cron: String = Scheduled.CRON_DISABLED,
+    var startCollectionNum: Int = 0,
+    var endCollectionsNum: Int = SHARDING_COUNT,
+    var endDateTime: String = LocalDateTime.now().toString()
 ) : MongodbJobProperties(enabled)
