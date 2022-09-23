@@ -41,6 +41,9 @@ import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.io.File
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
@@ -53,7 +56,8 @@ class FileSystemStorageStatJob(
     private val fileSystemMetricsRepository: FileSystemMetricsRepository
 
 ) {
-    @Scheduled(cron = "00 00 05 * * ?")
+//    @Scheduled(cron = "00 00 05 * * ?")
+    @Scheduled(fixedDelay = 60 * 100000, initialDelay = 90 * 1000)
     @SchedulerLock(name = "FileSystemStorageStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {
@@ -70,12 +74,15 @@ class FileSystemStorageStatJob(
         logger.info("Will start to collect the metrics for folders")
         val paths = when (properties.type) {
             StorageType.FILESYSTEM -> findFileSystemPath(properties)
-            StorageType.INNERCOS -> findCfsPath()
+            StorageType.INNERCOS -> findStoragePath()
             else -> emptyList()
         }
         paths.map {
             logger.info("Metrics of folders $it will be collected")
-            val metric = PathStatMetric(it)
+            val metric = PathStatMetric(
+                path = it,
+                totalSpace = File(it).totalSpace
+            )
             try {
                 Files.walkFileTree(Paths.get(it), StoragePathStatVisitor(it, metric))
             } catch (ignore: NoSuchFileException) {
@@ -91,7 +98,14 @@ class FileSystemStorageStatJob(
                 path = metric.path,
                 totalSize = metric.totalSize,
                 totalFileCount = metric.totalFileCount,
-                totalFolderCount = metric.totalFolderCount
+                totalFolderCount = metric.totalFolderCount,
+                totalSpace = metric.totalSpace,
+                usedPercent = if (metric.totalSpace == 0L) {
+                    0.0
+                } else {
+                    BigDecimal(metric.totalSize / metric.totalSpace * 1.0)
+                        .setScale(4, RoundingMode.HALF_UP).toDouble()
+                }
             )
         )
         folderMetricsList.addAll(
@@ -114,7 +128,7 @@ class FileSystemStorageStatJob(
         return result
     }
 
-    private fun findCfsPath(): Set<String> {
+    private fun findStoragePath(): Set<String> {
         val list = storageCredentialsClient.list().data ?: return emptySet()
         val default = properties.defaultStorageCredentials()
         val result = mutableSetOf<String>()

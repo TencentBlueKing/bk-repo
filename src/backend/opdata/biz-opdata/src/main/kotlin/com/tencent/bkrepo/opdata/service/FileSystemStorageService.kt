@@ -80,7 +80,9 @@ class FileSystemStorageService(
                     path = this.path,
                     totalFileCount = this.totalFileCount,
                     totalFolderCount = this.totalFolderCount,
-                    totalSize = this.totalSize
+                    totalSize = this.totalSize,
+                    usedPercent = this.usedPercent,
+                    totalSpace = this.totalSpace
                 )
             }
         }
