@@ -34,8 +34,6 @@ import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 /**

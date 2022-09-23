@@ -63,13 +63,11 @@ import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import java.time.LocalDateTime
-import java.util.StringJoiner
 
 open class PermissionServiceImpl constructor(
     private val userRepository: UserRepository,

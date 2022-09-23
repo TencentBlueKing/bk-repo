@@ -29,7 +29,6 @@ package com.tencent.bkrepo.auth.pojo.account
 
 import com.tencent.bkrepo.common.query.enums.OperationType
 import io.swagger.annotations.ApiModelProperty
-import java.util.StringJoiner
 
 data class ScopeRule(
     @ApiModelProperty("字段名")
