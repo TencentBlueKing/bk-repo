@@ -6,7 +6,7 @@
         <el-table-column prop="totalFileCount" label="文件数量" />
         <el-table-column prop="totalFolderCount" label="文件夹数量" />
         <el-table-column prop="totalSpace" label="磁盘总存储" />
-        <el-table-column prop="totalSize" label="已用存储" />
+        <el-table-column prop="totalSize" label="路径已用存储大小" />
         <el-table-column prop="usedPercent" label="磁盘已用百分比" />
       </el-table>
     </div>
@@ -54,7 +54,7 @@ export default {
         for (let i = 0; i < res.data.records.length; i++) {
           res.data.records[i].totalSize = convertFileSize(res.data.records[i].totalSize)
           res.data.records[i].totalSpace = convertFileSize(res.data.records[i].totalSpace)
-          res.data.records[i].usedPercent = res.data.records[i].usedPercent * 100 + '%'
+          res.data.records[i].usedPercent = (res.data.records[i].usedPercent * 100).toFixed(2) + '%'
         }
         this.tableData = res.data.records
         this.total = res.data.totalRecords
