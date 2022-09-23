@@ -224,9 +224,9 @@ open class AbstractServiceImpl constructor(
         return repos
     }
 
-    fun checkPlatformProject(projectId: String?, scopeRule: List<ScopeRule>?): Boolean {
-        if (scopeRule == null || projectId == null) return false
-        scopeRule.forEach {
+    fun checkPlatformProject(projectId: String?, scope: List<ScopeRule>?): Boolean {
+        if (scope == null || projectId == null) return false
+        scope.forEach {
             when (it.field) {
                 ResourceType.PROJECT.name -> {
                     if (ProjectRuleUtil.check(it, projectId)) return true
