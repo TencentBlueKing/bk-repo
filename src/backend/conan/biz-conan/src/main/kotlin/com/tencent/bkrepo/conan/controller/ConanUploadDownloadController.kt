@@ -34,8 +34,8 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.UPLOAD_FILE_V1
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.UPLOAD_PACKAGE_FILE_V1
 import com.tencent.bkrepo.conan.service.ConanUploadDownloadService
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RestController
@@ -50,7 +50,7 @@ class ConanUploadDownloadController(
     /**
      * 获取文件
      */
-    @GetMapping(UPLOAD_FILE_V1)
+    @GetMapping(UPLOAD_FILE_V1, UPLOAD_PACKAGE_FILE_V1)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getFile(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
@@ -61,7 +61,7 @@ class ConanUploadDownloadController(
     /**
      * 上传文件
      */
-    @PutMapping(UPLOAD_FILE_V1)
+    @PutMapping(UPLOAD_FILE_V1, UPLOAD_PACKAGE_FILE_V1)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun uploadFile(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo,

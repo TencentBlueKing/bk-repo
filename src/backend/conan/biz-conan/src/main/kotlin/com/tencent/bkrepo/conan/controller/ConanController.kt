@@ -32,7 +32,11 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.conan.constant.CONANFILE
+import com.tencent.bkrepo.conan.constant.CONANINFO
 import com.tencent.bkrepo.conan.constant.CONAN_MANIFEST
+import com.tencent.bkrepo.conan.constant.EXPORT_SOURCES_TGZ_NAME
+import com.tencent.bkrepo.conan.constant.PACKAGE_TGZ_NAME
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.GET_CONANFILE_DOWNLOAD_URLS_V1
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.GET_PACKAGE_DOWNLOAD_URLS_V1
@@ -73,7 +77,9 @@ class ConanController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getConanFileDownloadUrls(conanArtifactInfo, mutableListOf(CONAN_MANIFEST))
+            conanService.getConanFileDownloadUrls(
+                conanArtifactInfo, mutableListOf(CONAN_MANIFEST, EXPORT_SOURCES_TGZ_NAME, CONANFILE)
+            )
         )
     }
 
@@ -86,7 +92,7 @@ class ConanController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getConanFileDownloadUrls(conanArtifactInfo, mutableListOf(CONAN_MANIFEST))
+            conanService.getPackageDownloadUrls(conanArtifactInfo, mutableListOf(CONAN_MANIFEST, CONANINFO, PACKAGE_TGZ_NAME))
         )
     }
 

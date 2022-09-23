@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -36,11 +37,14 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.conan.constant.CONANINFO
+import com.tencent.bkrepo.conan.constant.CONANS_URL_TAG
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.constant.MD5
 import com.tencent.bkrepo.conan.constant.PACKAGES_FOLDER
+import com.tencent.bkrepo.conan.constant.UPLOAD_URL_PREFIX
 import com.tencent.bkrepo.conan.constant.URL
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
 import com.tencent.bkrepo.conan.exception.ConanPackageNotFoundException
@@ -51,7 +55,10 @@ import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.utils.ConanInfoLoadUtil
+import com.tencent.bkrepo.conan.utils.PathUtils
+import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
+import com.tencent.bkrepo.conan.utils.PathUtils.buildOriginalConanFileName
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
@@ -89,7 +96,12 @@ class CommonService {
     ): Map<String, String> {
         val latestRef = getLatestRef(projectId, repoName, conanFileReference)
         val path = buildExportFolderPath(latestRef)
-        return getDownloadPath(projectId, repoName, path, subFileset)
+        // TODO 重复代码抽离
+        val result = mutableMapOf<String, String>()
+        val tempMap = getDownloadPath(projectId, repoName, path, subFileset)
+        val prefix = getRequestUrlPrefix(conanFileReference)
+        tempMap.forEach { (t, u) -> result[t] = joinString(prefix, u) }
+        return result
     }
 
     /**
@@ -104,7 +116,11 @@ class CommonService {
     ): Map<String, String> {
         val latestRef = getLatestPackageRef(projectId, repoName, packageReference)
         val path = buildPackageRevisionFolderPath(latestRef)
-        return getDownloadPath(projectId, repoName, path, subFileset)
+        val result = mutableMapOf<String, String>()
+        val tempMap = getDownloadPath(projectId, repoName, path, subFileset)
+        val prefix = getRequestUrlPrefix(packageReference.conRef)
+        tempMap.forEach { (t, u) -> result[t] = joinString(prefix, u) }
+        return result
     }
 
     /**
@@ -186,7 +202,8 @@ class CommonService {
         val latestRef = getLatestRef(projectId, repoName, conanFileReference)
         val path = buildExportFolderPath(latestRef)
         val result = mutableMapOf<String, String>()
-        fileSizes.forEach { (k, _) -> result[k] = joinString(path, k) }
+        val prefix = getRequestUrlPrefix(conanFileReference)
+        fileSizes.forEach { (k, _) -> result[k] = joinString(prefix, path, k) }
         return result
     }
 
@@ -207,7 +224,8 @@ class CommonService {
         }
         val path = buildPackageRevisionFolderPath(latestRef)
         val result = mutableMapOf<String, String>()
-        fileSizes.forEach { (k, _) -> result[k] = joinString(path, k) }
+        val prefix = getRequestUrlPrefix(packageReference.conRef)
+        fileSizes.forEach { (k, _) -> result[k] = joinString(prefix, path, k) }
         return result
     }
 
@@ -226,7 +244,7 @@ class CommonService {
         pathList.forEach { it ->
             nodeClient.getNodeDetail(projectId, repoName, it).data?.let {
                 when (type) {
-                    MD5 -> result[it.fullPath] = it.md5!!
+                    MD5 -> result[it.name] = it.md5!!
                     else -> result[it.name] = it.fullPath
                 }
             }
@@ -265,13 +283,12 @@ class CommonService {
     ): List<String> {
         nodeClient.getNodeDetail(projectId, repoName, path).data
             ?: throw NodeNotFoundException(path)
-        val subFiles =
-            nodeClient.listNode(projectId, repoName, path, includeFolder = false, deep = true).data!!.map {
-                it.fullPath
+        val subFileMap = mutableMapOf<String, String>()
+            nodeClient.listNode(projectId, repoName, path, includeFolder = false, deep = true).data!!.forEach{
+                subFileMap[it.name] = it.fullPath
             }
-        val paths = subFileset.intersect(subFiles)
-        if (paths.isEmpty()) return mutableListOf(path)
-        return paths.toList()
+        if (subFileset.isEmpty()) return  subFileMap.values.toList()
+        return subFileset.intersect(subFileMap.keys).map { subFileMap[it]!! }
     }
 
     fun getLatestPackageRef(
@@ -615,5 +632,19 @@ class CommonService {
             }
         }
         return result
+    }
+
+    /**
+     * 获取请求URL前缀，用于生成上传或者下载路径
+     */
+    private fun getRequestUrlPrefix(conanFileReference: ConanFileReference): String {
+        val requestUrl = HttpContextHolder.getRequest().requestURL.toString()
+        val prefixUrl = requestUrl.substring(
+            0, requestUrl.indexOf(buildOriginalConanFileName(conanFileReference))
+        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG)
+        return joinString(
+            prefixUrl,
+            UPLOAD_URL_PREFIX
+        )
     }
 }

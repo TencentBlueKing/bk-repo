@@ -43,8 +43,8 @@ import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
-@Component
 @Resolver(ConanArtifactInfo::class)
+@Component
 class ConanArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(
         projectId: String,

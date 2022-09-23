@@ -46,11 +46,25 @@ object PathUtils {
         return ConanFileReference(name, version, userName, channel, revision)
     }
 
-    fun joinString(first: String, second: String): String {
-        return StringBuilder(first)
+    fun joinString(first: String, second: String, third: String? = null): String {
+        val sb =  StringBuilder(first.trimEnd(CharPool.SLASH))
             .append(CharPool.SLASH)
             .append(second)
-            .toString()
+        third?.let { sb.append(CharPool.SLASH).append(third) }
+        return sb.toString()
+    }
+
+    fun buildOriginalConanFileName(fileReference: ConanFileReference): String {
+        with(fileReference) {
+            return StringBuilder(name)
+                .append(CharPool.SLASH)
+                .append(version)
+                .append(CharPool.SLASH)
+                .append(userName)
+                .append(CharPool.SLASH)
+                .append(channel)
+                .toString()
+        }
     }
 
     fun buildConanFileName(fileReference: ConanFileReference): String {

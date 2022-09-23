@@ -43,6 +43,8 @@ class ConanArtifactInfo(
     var fileName: String? = null
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
+
+        // TODO 路径优化
         // ping
         const val PING_V1 = "/{projectId}/{repoName}/v1/ping"
 
@@ -63,8 +65,7 @@ class ConanArtifactInfo(
         // get recipe snapshot
         const val GET_RECIPE_SNAPSHOT_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}"
         // get package manifest
-        const val GET_PACKAGE_MANIFEST_V1 = "/{projectId}/{repoName}/v1/conans/" +
-            "{name}/{version}/{username}/{channel}/{packageId}/digest"
+        const val GET_PACKAGE_MANIFEST_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}/packages/{packageId}/digest"
         // get package snapshot
         const val GET_PACKAGE_SNAPSHOT_V1 = "/{projectId}/{repoName}/v1/conans/" +
             "{name}/{version}/{username}/{channel}/packages/{packageId}"
@@ -83,7 +84,9 @@ class ConanArtifactInfo(
             "{name}/{version}/{username}/{channel}/packages/{packageId}/download_urls"
 
         // upload file
-        const val UPLOAD_FILE_V1 = "/{projectId}/{repoName}/v1/files/{path}"
+        const val UPLOAD_FILE_V1 = "/{projectId}/{repoName}/v1/files/{username}/{name}/{version}/{channel}/{revision}/export/{path}"
+        const val UPLOAD_PACKAGE_FILE_V1 = "/{projectId}/{repoName}/v1/files/" +
+            "{username}/{name}/{version}/{channel}/packages/{packageId}/{pRevision}/{path}"
 
         // remove recipe
         const val REMOVE_RECIPE_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}"

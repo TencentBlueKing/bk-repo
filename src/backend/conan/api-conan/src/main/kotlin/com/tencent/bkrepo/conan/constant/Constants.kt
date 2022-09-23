@@ -40,9 +40,13 @@ const val PACKAGE_ID = "packageId"
 const val REVISION = "revision"
 const val PACKAGE_REVISION = "pRevision"
 const val PATH = "path"
+const val UPLOAD_PATH = "uploadPath"
 
 const val DEFAULT_REVISION_V1 = "0"
 const val CONAN_INFOS = "conanInfos"
+const val UPLOAD_URL_PREFIX = "files"
+
+const val CONANS_URL_TAG = "conans"
 
 // Files
 const val CONANFILE = "conanfile.py"

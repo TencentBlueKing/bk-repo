@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.conan.artifact.repository
 
-import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -37,21 +36,51 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.constant.NAME
 import com.tencent.bkrepo.conan.constant.PACKAGE_TGZ_NAME
 import com.tencent.bkrepo.conan.constant.VERSION
+import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil
+import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
+import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageUpdateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionCreateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionUpdateRequest
+import com.tencent.bkrepo.conan.utils.PathUtils
+import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
+import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
+import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
+import com.tencent.bkrepo.conan.utils.PathUtils.joinString
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.stereotype.Component
 
 @Component
 class ConanLocalRepository : LocalRepository() {
+
+
+    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+        with(context) {
+            val fullPath = generateFullPath(context.artifactInfo as ConanArtifactInfo)
+            logger.info("File $fullPath will be stored in $projectId|$repoName")
+            return NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = fullPath,
+                size = getArtifactFile().getSize(),
+                sha256 = getArtifactSha256(),
+                md5 = getArtifactMd5(),
+                operator = userId
+            )
+        }
+    }
 
     /**
      * 上传成功回调
@@ -82,7 +111,7 @@ class ConanLocalRepository : LocalRepository() {
                 val packageVersion = packageClient.findVersionByName(
                     projectId = projectId,
                     repoName = repoName,
-                    packageKey = PackageKeys.ofConan(name),
+                    packageKey = PackageKeys.ofConan(name, userName),
                     version = version
                 ).data
                 if (packageVersion == null) {
@@ -124,8 +153,10 @@ class ConanLocalRepository : LocalRepository() {
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        with(context.artifactInfo) {
-            val node = nodeClient.getNodeDetail(context.projectId, context.repoName, getArtifactFullPath()).data
+        with(context.artifactInfo as ConanArtifactInfo) {
+            val fullPath = generateFullPath(this)
+            logger.info("File $fullPath will be downloaded in repo $projectId|$repoName")
+            val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
             node?.let {
                 node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
                 node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
@@ -155,6 +186,18 @@ class ConanLocalRepository : LocalRepository() {
 
     override fun remove(context: ArtifactRemoveContext) {
 
+    }
+
+    private fun generateFullPath(artifactInfo : ConanArtifactInfo): String {
+        with(artifactInfo) {
+            return if (packageId.isNullOrEmpty()) {
+                val conanFileReference = convertToConanFileReference(this, revision)
+                "/${joinString(buildExportFolderPath(conanFileReference), fileName!!)}"
+            } else {
+                val packageReference = convertToPackageReference(this)
+                "/${joinString(buildPackageRevisionFolderPath(packageReference), fileName!!)}"
+            }
+        }
     }
 
     companion object {
