@@ -40,6 +40,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 导出node表至数据平台
@@ -93,7 +94,10 @@ class NodeReport2BkbaseJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         // 数据平台支持去重，此处不需要处理重复发送的情况
-        if (row.createdDate.isBefore(properties.endDateTime) && row.deleted == null) {
+        if (row.createdDate.isBefore(
+                LocalDateTime.parse(properties.endDateTime, DateTimeFormatter.ISO_DATE_TIME)
+            ) && row.deleted == null
+        ) {
             messageSupplier.delegateToSupplier(row, topic = TOPIC, binderType = BinderType.KAFKA)
         }
     }
