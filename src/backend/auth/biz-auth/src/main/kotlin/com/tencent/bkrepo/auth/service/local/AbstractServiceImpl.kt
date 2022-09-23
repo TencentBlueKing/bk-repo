@@ -48,8 +48,8 @@ import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
+import com.tencent.bkrepo.auth.util.scope.ProjectRuleUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.query.enums.OperationType
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -229,37 +229,13 @@ open class AbstractServiceImpl constructor(
         scopeRule.forEach {
             when (it.field) {
                 ResourceType.PROJECT.name -> {
-                    if (it.operation == OperationType.EQ) {
-                        if (projectId == it.value) {
-                            return true
-                        }
-                    }
-
-                    if (it.operation == OperationType.IN) {
-                        val valueList = it.value as List<*>
-                        if (valueList.contains(projectId)) {
-                            return true
-                        }
-                    }
-
-                    if (it.operation == OperationType.PREFIX) {
-                        val valuePrefix = it.value as String
-                        if (projectId.startsWith(valuePrefix)) {
-                            return true
-                        }
-                    }
-
-                    if (it.operation == OperationType.SUFFIX) {
-                        val valuePrefix = it.value as String
-                        if (projectId.endsWith(valuePrefix)) {
-                            return true
-                        }
-                    }
+                    if (ProjectRuleUtil.check(it, projectId)) return true
                 }
             }
         }
         return false
     }
+
     private fun convActions(actions: List<PermissionAction>): List<String> {
         val result = mutableListOf<String>()
         actions.forEach {
