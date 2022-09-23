@@ -30,13 +30,12 @@ package com.tencent.bkrepo.common.security.util
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import feign.RequestTemplate
-import org.apache.commons.codec.digest.HmacAlgorithms
-import org.apache.commons.codec.digest.HmacUtils
-import java.util.TreeMap
 import javax.servlet.http.HttpServletRequest
 import okhttp3.MultipartBody
 import okhttp3.Request
 import okio.Buffer
+import org.apache.commons.codec.digest.HmacAlgorithms
+import org.apache.commons.codec.digest.HmacUtils
 import org.apache.commons.fileupload.ParameterParser
 
 /**
@@ -60,10 +59,9 @@ object HttpSigner {
      * */
     fun sign(request: HttpServletRequest, uri: String, bodyHash: String, key: String, algorithm: String): String {
         verifyAlgorithm(algorithm)
-        val method = request.method
-        val needSignParameters = request.parameterMap.filter { it.key != SIGN }.toMap()
-        val sortedParameters = sortParameters(needSignParameters)
-        return sign0(uri, method, sortedParameters, bodyHash, key, algorithm)
+        val valueToDigest = getSignatureStr(request, uri, bodyHash)
+        return HmacUtils(algorithm, key.toByteArray())
+            .hmacHex(valueToDigest)
     }
 
     /**
@@ -77,6 +75,7 @@ object HttpSigner {
         verifyAlgorithm(algorithm)
         val uri = requestTemplate.path()
         val method = requestTemplate.method() ?: throw IllegalArgumentException("Missing method parameter.")
+        // queries 已经encode了
         val sortedParameters = sortParametersWithCollection(requestTemplate.queries())
         return sign0(uri, method, sortedParameters, bodyHash, key, algorithm)
     }
@@ -101,6 +100,13 @@ object HttpSigner {
         }
         val sortedParameters = sortParametersWithMap(queries)
         return sign0(uri, method, sortedParameters, bodyHash, key, algorithm)
+    }
+
+    fun getSignatureStr(request: HttpServletRequest, uri: String, bodyHash: String): String {
+        val method = request.method
+        val needSignParameters = request.parameterMap.filter { it.key != SIGN }.toMap()
+        val sortedParameters = sortParameters(needSignParameters)
+        return "$uri$method$sortedParameters$bodyHash".toLowerCase()
     }
 
     private fun addFormParameters(
@@ -143,17 +149,19 @@ object HttpSigner {
         key: String,
         algorithm: String
     ): String {
-        val valueToDigest = "$key$uri$method$sortedParameters$bodyHash".toLowerCase()
+        val valueToDigest = "$uri$method$sortedParameters$bodyHash".toLowerCase()
         return HmacUtils(algorithm, key.toByteArray())
             .hmacHex(valueToDigest)
     }
 
-    private fun sortParameters(parameterMap: Map<String, Array<String>>): String {
+    private fun sortParameters(parameterMap: Map<String, Array<String>>, encode: Boolean = true): String {
         val stringBuilder = StringBuilder()
-        val treeMap = TreeMap<String, String>()
-        parameterMap.forEach { treeMap[it.key] = it.value.joinToString("") }
-        treeMap.forEach { (k, v) ->
-            stringBuilder.append("$k$v".urlEncode())
+        parameterMap.entries.sortedBy { it.key }.forEach {
+            val s1 = "${it.key}${it.value.joinToString("")}"
+            val s2 = if (encode) {
+                s1.urlEncode()
+            } else s1
+            stringBuilder.append(s2)
         }
         return stringBuilder.toString()
     }
@@ -161,15 +169,13 @@ object HttpSigner {
     private fun sortParametersWithCollection(queries: Map<String, Collection<String>>): String {
         val parameterMap = mutableMapOf<String, Array<String>>()
         queries.forEach { (k, v) -> parameterMap[k] = v.toTypedArray() }
-        return sortParameters(parameterMap)
+        return sortParameters(parameterMap, false)
     }
 
     private fun sortParametersWithMap(queries: Map<String, String>): String {
         val stringBuilder = StringBuilder()
-        val treeMap = TreeMap<String, String>()
-        queries.forEach { treeMap[it.key] = it.value }
-        treeMap.forEach { (k, v) ->
-            stringBuilder.append("$k${v.orEmpty()}".urlEncode())
+        queries.entries.sortedBy { it.key }.forEach {
+            stringBuilder.append("${it.key}${it.value}".urlEncode())
         }
         return stringBuilder.toString()
     }

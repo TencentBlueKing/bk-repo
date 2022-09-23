@@ -30,10 +30,14 @@ package com.tencent.bkrepo.replication.replica.base.context
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
+import com.tencent.bkrepo.replication.constant.FILE
+import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -49,6 +53,7 @@ import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import java.io.InputStream
+import java.time.Duration
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -117,10 +122,20 @@ class ReplicaContext(
         }
 
         targetVersions = initImageTargetTag()
-        httpClient = OkHttpClientPool.getHttpClient(
-            cluster,
-            SignInterceptor(cluster)
-        )
+        val readTimeout = Duration.ofMillis(READ_TIMEOUT)
+        httpClient = if (cluster.username != null) {
+            OkHttpClientPool.getHttpClient(
+                cluster,
+                readTimeout,
+                BasicAuthInterceptor(cluster.username!!, cluster.password!!)
+            )
+        } else {
+            OkHttpClientPool.getHttpClient(
+                cluster,
+                readTimeout,
+                SignInterceptor(cluster)
+            )
+        }
     }
 
     /**
@@ -129,9 +144,9 @@ class ReplicaContext(
     fun pushBlob(inputStream: InputStream, size: Long, sha256: String, storageKey: String? = null) {
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("file", sha256, StreamRequestBody(inputStream, size))
-            .addFormDataPart("sha256", sha256).apply {
-                storageKey?.let { addFormDataPart("storageKey", it) }
+            .addFormDataPart(FILE, sha256, StreamRequestBody(inputStream, size))
+            .addFormDataPart(SHA256, sha256).apply {
+                storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
             }.build()
         val httpRequest = Request.Builder()
             .url(pushBlobUrl)
@@ -152,5 +167,9 @@ class ReplicaContext(
         if (taskObject.packageConstraints!!.first().versions.isNullOrEmpty()) return null
         if (taskObject.packageConstraints!!.first().versions!!.size != 1) return null
         return taskObject.packageConstraints!!.first().targetVersions
+    }
+
+    companion object {
+        private const val READ_TIMEOUT = 60 * 60 * 1000L
     }
 }

@@ -32,10 +32,13 @@
 package com.tencent.bkrepo.common.artifact.cluster
 
 import com.google.common.hash.Hashing
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
+import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.util.HttpSigner
 import com.tencent.bkrepo.common.security.util.HttpSigner.ACCESS_KEY
 import com.tencent.bkrepo.common.security.util.HttpSigner.APP_ID
@@ -103,11 +106,13 @@ object FeignClientFactory {
                 val endTime = startTime + REQUEST_TTL
                 it.query(APP_ID, cluster.appId)
                     .query(ACCESS_KEY, cluster.accessKey)
-                    .query(SIGN_TIME, "$startTime$TIME_SPLIT$endTime")
+                    .query(SIGN_TIME, "$startTime$TIME_SPLIT$endTime".urlEncode())
                     .query(SIGN_ALGORITHM, algorithm)
                 val bodyHash = Hashing.sha256().hashBytes(bodyToHash).toString()
                 val sig = HttpSigner.sign(it, bodyHash, cluster.secretKey!!, algorithm)
                 it.query(SIGN, sig)
+            } else {
+                it.header(HttpHeaders.AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
             }
         }
     }

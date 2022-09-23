@@ -34,7 +34,7 @@ import java.time.LocalDateTime
 @ConfigurationProperties("job.node-report")
 class NodeReport2BkbaseJobProperties(
     override var enabled: Boolean = false,
-    override var cron: String,
+    override var cron: String = "",
     val startCollectionNum: Int = 0,
     val endCollectionsNum: Int = SHARDING_COUNT,
     val endDateTime: LocalDateTime = LocalDateTime.MAX

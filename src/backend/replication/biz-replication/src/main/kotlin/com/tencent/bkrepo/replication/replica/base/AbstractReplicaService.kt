@@ -93,6 +93,7 @@ abstract class AbstractReplicaService(
             }
         } catch (throwable: Throwable) {
             setErrorStatus(context, throwable)
+            logger.error("同步仓库失败", throwable)
         } finally {
             completeRecordDetail(context)
         }
@@ -169,6 +170,7 @@ abstract class AbstractReplicaService(
                 updateProgress(executed)
                 return
             } catch (throwable: Throwable) {
+                logger.error("同步文件失败", throwable)
                 progress.failed += 1
                 setErrorStatus(this, throwable)
                 if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {

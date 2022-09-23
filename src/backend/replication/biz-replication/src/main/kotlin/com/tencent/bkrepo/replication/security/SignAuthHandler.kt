@@ -76,7 +76,8 @@ class SignAuthHandler(
         val sig = HttpSigner.sign(request, uri, bodyHash, secretKey, HmacAlgorithms.HMAC_SHA_1.getName())
         if (sig != authCredentials.sig) {
             // 签名未通过
-            throw AuthenticationException("Signature verification error.")
+            val signatureStr = HttpSigner.getSignatureStr(request, uri, bodyHash)
+            throw AuthenticationException("Invalid signature, server signature string: $signatureStr")
         }
         val signTime = request.getParameter(SIGN_TIME)
         val expiredTime = signTime.split(TIME_SPLIT).last().toLong()
