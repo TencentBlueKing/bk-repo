@@ -56,8 +56,7 @@ class FileSystemStorageStatJob(
     private val fileSystemMetricsRepository: FileSystemMetricsRepository
 
 ) {
-//    @Scheduled(cron = "00 00 05 * * ?")
-    @Scheduled(fixedDelay = 60 * 100000, initialDelay = 90 * 1000)
+    @Scheduled(cron = "00 00 05 * * ?")
     @SchedulerLock(name = "FileSystemStorageStatJob", lockAtMostFor = "PT10H")
     fun statFolderSize() {
         if (!opJobProperties.enabled) {
@@ -79,9 +78,11 @@ class FileSystemStorageStatJob(
         }
         paths.map {
             logger.info("Metrics of folders $it will be collected")
+            val file = File(it)
             val metric = PathStatMetric(
                 path = it,
-                totalSpace = File(it).totalSpace
+                totalSpace = file.totalSpace,
+                usableSpace = file.usableSpace
             )
             try {
                 Files.walkFileTree(Paths.get(it), StoragePathStatVisitor(it, metric))
@@ -103,7 +104,7 @@ class FileSystemStorageStatJob(
                 usedPercent = if (metric.totalSpace == 0L) {
                     0.0
                 } else {
-                    BigDecimal(metric.totalSize / metric.totalSpace * 1.0)
+                    BigDecimal((metric.totalSpace - metric.usableSpace) / (metric.totalSpace * 1.0))
                         .setScale(4, RoundingMode.HALF_UP).toDouble()
                 }
             )
@@ -140,7 +141,7 @@ class FileSystemStorageStatJob(
     }
 
     private fun getLocalPath(cache: CacheProperties, upload: UploadProperties): List<String> {
-        return listOf(cache.path, upload.localPath, upload.location)
+        return listOf(cache.path, upload.location)
     }
 
     companion object {
