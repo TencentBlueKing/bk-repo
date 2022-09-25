@@ -39,8 +39,10 @@ import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageIdFolderPath
+import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.PathUtils.buildRevisionPath
 import com.tencent.bkrepo.conan.utils.PathUtils.joinString
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -64,12 +66,13 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 val packageKey = PackageKeys.ofConan(name, userName)
                 packageClient.deleteVersion(projectId, repoName, packageKey, version)
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-                val rootPath = buildReference(conanFileReference)
+                // TODO 路径需要优化
+                val rootPath = "/${buildPackagePath(conanFileReference)}"
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
             } else {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
-                val rootPath = buildReference(conanFileReference)
+                val rootPath = "/${buildRevisionPath(conanFileReference)}"
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
                 // TODO index.json 文件更新时需要防止并发问题
