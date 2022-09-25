@@ -46,6 +46,8 @@ class ConanArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
             httpAuthSecurity.withPrefix("/conan")
+                .excludePattern("/**/v1/ping")
+                .excludePattern("/**/users/authenticate")
         }
     }
 }

@@ -76,7 +76,6 @@ class ConanCommonController(
     }
 
     @GetMapping(AUTHENTICATE_V1, AUTHENTICATE_V2)
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun authenticate(
         @PathVariable projectId: String,
         @PathVariable repoName: String
