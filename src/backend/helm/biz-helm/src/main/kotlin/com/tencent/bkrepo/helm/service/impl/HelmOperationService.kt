@@ -144,7 +144,7 @@ class HelmOperationService(
     fun initPackageInfo(projectId: String, repoName: String, userId: String) {
         val helmIndexYamlMetadata = initIndexYaml(projectId, repoName, userId, helmProperties.domain)
         helmIndexYamlMetadata?.entries?.forEach { element ->
-            element.value.forEach {
+            element.value.reversed().forEach {
                 createVersion(
                     userId = userId,
                     projectId = projectId,
@@ -250,7 +250,7 @@ class HelmOperationService(
         logger.info("Packages will be updated in repo $projectId|$name")
         // 对新增的chart进行插入
         addedSet.forEach { element ->
-            element.value.forEach {
+            element.value.reversed().forEach {
                 createVersion(
                     userId = userId,
                     projectId = projectId,
