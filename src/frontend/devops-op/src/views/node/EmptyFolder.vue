@@ -80,6 +80,9 @@ export default {
       loading: false,
       projects: undefined,
       repoCache: {},
+      preProjectId: '',
+      preRepoName: '',
+      prePath: '',
       nodeQuery: {
         projectId: '',
         repoName: '',
@@ -147,9 +150,13 @@ export default {
       const repoName = this.nodeQuery.repoName
       const parentPath = this.nodeQuery.path
       deleteEmptyFolder(projectId, repoName, parentPath).then(() => {
-        queryEmptyFolder(projectId, repoName, parentPath).then(res => {
-          this.nodes = res.data
-        })
+        if (this.preProjectId === projectId && this.prePath === parentPath && this.preRepoName === repoName) {
+          queryEmptyFolder(projectId, repoName, parentPath).then(res => {
+            this.nodes = res.data
+          })
+        } else {
+          this.changeRouteQueryParams()
+        }
       })
     },
     changeRouteQueryParams(resetPage = false) {
@@ -165,6 +172,9 @@ export default {
       nodeQuery.projectId = query.projectId ? query.projectId : ''
       nodeQuery.repoName = query.repoName ? query.repoName : ''
       nodeQuery.path = query.path ? query.path : ''
+      this.prePath = nodeQuery.path
+      this.preProjectId = nodeQuery.projectId
+      this.preRepoName = nodeQuery.repoName
       this.$nextTick(() => {
         this.queryNodes(nodeQuery)
       })
