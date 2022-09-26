@@ -97,16 +97,10 @@ class EdgeNodeReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             val sha256 = node.sha256.orEmpty()
-            val artifactInputStream = localDataManager.getBlobData(sha256, node.size, localRepo)
-            val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
-//            val file = InputStreamMultipartFile(rateLimitInputStream, node.size)
             if (blobReplicaClient?.check(sha256)?.data != true) {
-                pushBlob(
-                    inputStream = rateLimitInputStream,
-                    size = node.size,
-                    sha256 = sha256
-                )
-//                blobReplicaClient.push(file = file, sha256 = sha256)
+                val artifactInputStream = localDataManager.getBlobData(sha256, node.size, localRepo)
+                val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
+                pushBlob(rateLimitInputStream, node.size, node.sha256!!, localRepo.storageCredentials?.key)
                 return true
             }
             return false

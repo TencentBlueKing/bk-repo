@@ -28,8 +28,7 @@
 package com.tencent.bkrepo.replication.manager
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
+import com.tencent.bkrepo.common.service.cluster.CenterJob
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -42,16 +41,15 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ClusterStatusManager(
-    private val clusterProperties: ClusterProperties,
     private val clusterNodeService: ClusterNodeService
 ) {
     @Scheduled(initialDelay = 30 * 1000L, fixedDelay = 30 * 1000L) // 每隔30s检测一次
+    @CenterJob
     fun start() {
-        if (!shouldExecute()) return
         val clusterNodeList = clusterNodeService.listClusterNodes(name = null, type = null)
         clusterNodeList.forEach {
             try {
-                clusterNodeService.tryConnect(it.name)
+                clusterNodeService.tryConnect(it)
                 if (it.status == ClusterNodeStatus.UNHEALTHY) {
                     // 设置为HEALTHY状态
                     updateClusterNodeStatus(it.name, ClusterNodeStatus.HEALTHY)
@@ -75,12 +73,5 @@ class ClusterStatusManager(
             operator = SYSTEM_USER
         )
         clusterNodeService.updateClusterNodeStatus(request)
-    }
-
-    /**
-     * 只在中心节点执行
-     */
-    fun shouldExecute(): Boolean {
-        return clusterProperties.role == RoleType.CENTER
     }
 }

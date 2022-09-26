@@ -260,6 +260,12 @@ class AccountServiceImpl constructor(
         return result.appId
     }
 
+    override fun findSecretKey(appId: String, accessKey: String): String? {
+        val query = AccountQueryHelper.checkAccessKey(appId, accessKey)
+        val account = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
+        return account.credentials.first { it.accessKey == accessKey }.secretKey
+    }
+
     private fun transferAccount(tAccount: TAccount, displaySecretKey: Boolean = false): Account {
         if (!displaySecretKey) {
             tAccount.credentials = transferCredentials(tAccount.credentials)

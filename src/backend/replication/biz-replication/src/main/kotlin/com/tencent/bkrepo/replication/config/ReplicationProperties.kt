@@ -45,5 +45,9 @@ data class ReplicationProperties(
     /**
      * oci blob文件上传并发数
      */
-    var threadNum: Int = 4
+    var threadNum: Int = 4,
+    /**
+     * 签名过滤器body限制大小
+     * */
+    var bodyLimit: DataSize = DataSize.ofMegabytes(5)
 )

@@ -82,9 +82,10 @@ class StorageManager(
      */
     private val centerClusterInfo = ClusterInfo(
         url = clusterProperties.center.url,
-        username = clusterProperties.center.username.orEmpty(),
-        password = clusterProperties.center.password.orEmpty(),
-        certificate = clusterProperties.center.certificate.orEmpty()
+        certificate = clusterProperties.center.certificate.orEmpty(),
+        appId = clusterProperties.center.appId,
+        accessKey = clusterProperties.center.accessKey,
+        secretKey = clusterProperties.center.secretKey
     )
 
     /**

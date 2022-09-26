@@ -96,6 +96,13 @@ class AuthenticationManager(
         return serviceOauthAuthorizationResource.getToken(accessToken).data
     }
 
+    /**
+     * 根据appId和ak查找sk
+     * */
+    fun findSecretKey(appId: String, accessKey: String): String? {
+        return serviceAccountResource.findSecretKey(appId, accessKey).data
+    }
+
     private fun preCheck(): Boolean {
         if (!httpAuthProperties.enabled) {
             logger.debug("Auth disabled, skip authenticate.")
