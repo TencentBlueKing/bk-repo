@@ -25,17 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.pojo
+package com.tencent.bkrepo.conan.pool
 
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
-data class RevisionInfo(
-    val revision: String,
-    val time: String
-): Comparable<RevisionInfo> {
+object ConanThreadPoolExecutor {
+    /**
+     * 线程池实例
+     */
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
 
-    override fun compareTo(other: RevisionInfo): Int {
-        return convertToLocalTime(this.time).compareTo(convertToLocalTime(other.time))
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("conan-worker-%d").build()
+        return ThreadPoolExecutor(
+            100, 500, 30, TimeUnit.SECONDS,
+            LinkedBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
     }
 }
-

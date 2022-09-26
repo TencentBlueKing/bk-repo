@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
 import com.tencent.bkrepo.conan.exception.ConanRecipeNotFoundException
@@ -54,9 +55,13 @@ class ConanServiceImpl : ConanService {
     ): Map<String, String> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            val urls = commonService.getDownloadConanFileUrls(
-                projectId, repoName, conanFileReference, subFileset
-            )
+            val urls = try {
+                commonService.getDownloadConanFileUrls(
+                    projectId, repoName, conanFileReference, subFileset
+                )
+            } catch (ignore: NodeNotFoundException){
+                emptyMap()
+            }
             if (urls.isEmpty())
                 throw ConanRecipeNotFoundException("Could not find ${buildReference(conanFileReference)}")
             return urls

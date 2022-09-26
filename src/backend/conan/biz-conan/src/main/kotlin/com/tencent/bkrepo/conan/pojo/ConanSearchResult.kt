@@ -28,5 +28,5 @@
 package com.tencent.bkrepo.conan.pojo
 
 data class ConanSearchResult(
-    val result: List<String> = emptyList()
+    val results: List<String> = emptyList()
 )

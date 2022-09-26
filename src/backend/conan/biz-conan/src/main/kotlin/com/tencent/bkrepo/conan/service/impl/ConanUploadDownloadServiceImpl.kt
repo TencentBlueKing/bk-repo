@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanUploadDownloadService
+import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
@@ -40,9 +42,19 @@ import org.springframework.stereotype.Service
  */
 @Service
 class ConanUploadDownloadServiceImpl : ConanUploadDownloadService {
+
+    @Autowired
+    lateinit var commonService: CommonService
+
     override fun uploadFile(conanArtifactInfo: ConanArtifactInfo, artifactFile: ArtifactFile) {
-        val context = ArtifactUploadContext(artifactFile)
-        ArtifactContextHolder.getRepository().upload(context)
+        if (artifactFile.getSize() != 0L) {
+            val context = ArtifactUploadContext(artifactFile)
+            ArtifactContextHolder.getRepository().upload(context)
+        } else {
+            // conan客户端上传文件前会使用同样的请求去确认文件是否存在
+            val fullPath = generateFullPath(conanArtifactInfo)
+            commonService.checkNodeExist(conanArtifactInfo.projectId, conanArtifactInfo.repoName, fullPath)
+        }
     }
 
     override fun downloadFile(conanArtifactInfo: ConanArtifactInfo) {

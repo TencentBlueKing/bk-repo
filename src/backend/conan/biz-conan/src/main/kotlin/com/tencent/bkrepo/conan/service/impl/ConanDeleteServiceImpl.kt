@@ -29,20 +29,22 @@ package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
+import com.tencent.bkrepo.conan.listener.event.ConanRecipeDeleteEvent
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanDeleteService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageIdFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildRevisionPath
+import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.PathUtils.joinString
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -75,15 +77,10 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 val rootPath = "/${buildRevisionPath(conanFileReference)}"
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
-                // TODO index.json 文件更新时需要防止并发问题
-                val revPath = commonService.getRecipeRevisionsFile(conanFileReference)
-                val refStr = buildReference(conanFileReference)
-                commonService.updateIndexJson(
-                    projectId = projectId,
-                    repoName = repoName,
-                    revPath = revPath,
-                    refStr = refStr,
-                    revision = revision!!
+                publishEvent(
+                    ConanRecipeDeleteEvent(
+                        ObjectBuildUtil.buildConanRecipeDeleteRequest(this, SecurityUtils.getUserId())
+                    )
                 )
             }
         }
@@ -98,7 +95,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 nodeClient.deleteNode(request)
                 return
             }
-            val revPath = commonService.getPackageRevisionsFile(conanFileReference)
+            val revPath = getPackageRevisionsFile(conanFileReference)
             val storedPackageIds = commonService.getPackageIdList(projectId, repoName, revPath)
             for (packageId in packageIds) {
                 if (!storedPackageIds.contains(packageId)) {
@@ -123,15 +120,10 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 val rootPath = buildPackageRevisionFolderPath(packageReference)
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
-                // TODO index.json 文件更新时需要防止并发问题
-                val revPath = commonService.getPackageRevisionsFile(packageReference)
-                val refStr = PathUtils.buildPackageReference(packageReference)
-                commonService.updateIndexJson(
-                    projectId = projectId,
-                    repoName = repoName,
-                    revPath = revPath,
-                    refStr = refStr,
-                    revision = revision!!
+                publishEvent(
+                    ConanRecipeDeleteEvent(
+                        ObjectBuildUtil.buildConanRecipeDeleteRequest(this, SecurityUtils.getUserId())
+                    )
                 )
             }
         }

@@ -25,17 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.pojo
+package com.tencent.bkrepo.conan.listener.event
 
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
+import com.tencent.bkrepo.conan.pojo.ConanPackageUploadRequest
 
-data class RevisionInfo(
-    val revision: String,
-    val time: String
-): Comparable<RevisionInfo> {
-
-    override fun compareTo(other: RevisionInfo): Int {
-        return convertToLocalTime(this.time).compareTo(convertToLocalTime(other.time))
-    }
-}
-
+data class ConanPackageUploadEvent(val request: ConanPackageUploadRequest)

@@ -25,17 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.pojo
+package com.tencent.bkrepo.conan.listener.operation
 
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
+import com.tencent.bkrepo.conan.pojo.ConanPackageUploadRequest
+import com.tencent.bkrepo.conan.pojo.IndexInfo
+import com.tencent.bkrepo.conan.pojo.RevisionInfo
+import com.tencent.bkrepo.conan.pojo.RevisionOperationRequest
+import com.tencent.bkrepo.conan.service.impl.CommonService
 
-data class RevisionInfo(
-    val revision: String,
-    val time: String
-): Comparable<RevisionInfo> {
+class ConanPackageUploadOperation(
+    private val request: RevisionOperationRequest,
+    commonService: CommonService
+) : AbstractRevisionOperation(request, commonService) {
 
-    override fun compareTo(other: RevisionInfo): Int {
-        return convertToLocalTime(this.time).compareTo(convertToLocalTime(other.time))
+    override fun handleEvent(indexInfo: IndexInfo) {
+        // TODO 上传事件可以合为一个
+        with(request as ConanPackageUploadRequest) {
+            logger.info("${indexInfo.reference} Package's revision $revision info will be added into index.json")
+            val newRevisions = mutableListOf<RevisionInfo>()
+            newRevisions.addAll(indexInfo.revisions)
+            newRevisions.add(RevisionInfo(revision, dateStr))
+            indexInfo.revisions = newRevisions
+        }
     }
 }
-

@@ -30,13 +30,17 @@ package com.tencent.bkrepo.conan.service.impl
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
+import com.tencent.bkrepo.conan.exception.ConanRecipeNotFoundException
+import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
+import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
+import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
 import com.tencent.bkrepo.repository.api.PackageClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -73,7 +77,11 @@ class ConanSearchServiceImpl : ConanSearchService {
     override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            return commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
+            val result = commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
+            if (result.isEmpty()) {
+                throw ConanSearchNotFoundException("Could not find ${buildReference(conanFileReference)}")
+            }
+            return result
         }
     }
 

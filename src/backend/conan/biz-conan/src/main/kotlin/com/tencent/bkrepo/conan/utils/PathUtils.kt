@@ -28,10 +28,13 @@
 package com.tencent.bkrepo.conan.utils
 
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.conan.constant.CONANINFO
 import com.tencent.bkrepo.conan.constant.EXPORT_FOLDER
+import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.constant.PACKAGES_FOLDER
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.PackageReference
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 
 object PathUtils {
 
@@ -108,7 +111,7 @@ object PathUtils {
 
     fun buildPackageReference(packageReference: PackageReference): String {
         with(packageReference) {
-            return StringBuilder(buildPackagePath(conRef))
+            return StringBuilder(buildReference(conRef))
                 .append(CharPool.HASH_TAG)
                 .append(conRef.revision)
                 .append(CharPool.COLON)
@@ -164,5 +167,39 @@ object PathUtils {
                 .append(revision)
                 .toString()
         }
+    }
+
+    fun generateFullPath(artifactInfo : ConanArtifactInfo): String {
+        with(artifactInfo) {
+            return if (packageId.isNullOrEmpty()) {
+                val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(this, revision)
+                "/${joinString(buildExportFolderPath(conanFileReference), fileName!!)}"
+            } else {
+                val packageReference = ConanArtifactInfoUtil.convertToPackageReference(this)
+                "/${joinString(buildPackageRevisionFolderPath(packageReference), fileName!!)}"
+            }
+        }
+    }
+
+    fun getPackageRevisionsFile(packageReference: PackageReference): String {
+        val temp = buildRevisionPath(packageReference.conRef)
+        val pFolder = joinString(temp, PACKAGES_FOLDER)
+        val pRevison = joinString(pFolder, packageReference.packageId)
+        return joinString(pRevison, INDEX_JSON)
+    }
+
+    fun getPackageRevisionsFile(conanFileReference: ConanFileReference): String {
+        val temp = buildRevisionPath(conanFileReference)
+        return joinString(temp, PACKAGES_FOLDER)
+    }
+
+    fun getRecipeRevisionsFile(conanFileReference: ConanFileReference): String {
+        val recipeFolder = buildPackagePath(conanFileReference)
+        return joinString(recipeFolder, INDEX_JSON)
+    }
+
+    fun getPackageConanInfoFile(packageReference: PackageReference): String {
+        val temp = buildPackageRevisionFolderPath(packageReference)
+        return joinString(temp, CONANINFO)
     }
 }

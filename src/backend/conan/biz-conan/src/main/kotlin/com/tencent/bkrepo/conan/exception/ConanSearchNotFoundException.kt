@@ -25,17 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.pojo
+package com.tencent.bkrepo.conan.exception
 
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
-
-data class RevisionInfo(
-    val revision: String,
-    val time: String
-): Comparable<RevisionInfo> {
-
-    override fun compareTo(other: RevisionInfo): Int {
-        return convertToLocalTime(this.time).compareTo(convertToLocalTime(other.time))
-    }
-}
-
+class ConanSearchNotFoundException(
+    message: String = "Recipe not found."
+) : RuntimeException(message)

@@ -49,16 +49,34 @@ class ConanExceptionHandler {
     @ExceptionHandler(ConanFileNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerConanFileNotFoundException(exception: ConanFileNotFoundException) {
-        val responseObject = ConanErrorResponse(exception.message, HttpStatus.NOT_FOUND.value())
+        val responseObject = ConanResponse.errorResponse(
+            ConanErrorResponse(exception.message, HttpStatus.NOT_FOUND.value())
+        )
         conanResponse(responseObject, exception)
     }
 
+
+    @ExceptionHandler(ConanRecipeNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlerConanRecipeNotFoundException(exception: ConanRecipeNotFoundException) {
+        val responseObject = ConanResponse.errorResponse(
+            ConanErrorResponse(exception.message, HttpStatus.NOT_FOUND.value())
+        )
+        conanResponse(responseObject, exception)
+    }
+
+    @ExceptionHandler(ConanSearchNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlerConanRecipeNotFoundException(exception: ConanSearchNotFoundException) {
+        conanResponse(exception.message!!, exception)
+    }
+
     private fun conanResponse(
-        responseObject: ConanErrorResponse,
+        responseObject: Any,
         exception: Exception
     ) {
         logConanException(exception)
-        val responseString = JsonUtils.objectMapper.writeValueAsString(ConanResponse.errorResponse(responseObject))
+        val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val httpResponse = HttpContextHolder.getResponse()
         httpResponse.contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
         httpResponse.writer.println(responseString)

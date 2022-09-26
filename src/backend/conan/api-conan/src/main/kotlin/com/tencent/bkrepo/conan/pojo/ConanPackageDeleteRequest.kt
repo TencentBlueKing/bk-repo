@@ -27,15 +27,13 @@
 
 package com.tencent.bkrepo.conan.pojo
 
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
-
-data class RevisionInfo(
+data class ConanPackageDeleteRequest(
+    override val projectId: String,
+    override val repoName: String,
+    override val revPath: String,
+    override val refStr: String,
+    override val pRefStr: String? = null,
+    override val pRevPath: String? = null,
+    override val operator: String,
     val revision: String,
-    val time: String
-): Comparable<RevisionInfo> {
-
-    override fun compareTo(other: RevisionInfo): Int {
-        return convertToLocalTime(this.time).compareTo(convertToLocalTime(other.time))
-    }
-}
-
+    ): RevisionOperationRequest

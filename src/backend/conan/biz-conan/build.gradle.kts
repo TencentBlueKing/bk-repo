@@ -32,4 +32,6 @@
 dependencies {
     api(project(":conan:api-conan"))
     api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-lock"))
+
 }
