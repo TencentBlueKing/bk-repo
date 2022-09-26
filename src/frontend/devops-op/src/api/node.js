@@ -107,12 +107,12 @@ export function queryEmptyFolder(projectId, repoName, parentPath) {
   })
 }
 
-export function deleteEmptyFolder(projectId, repoName) {
+export function deleteEmptyFolder(projectId, repoName, parentPath) {
   return request({
     url: `${PREFIX_NODE_OPERATION}/emptyFolders/${projectId}/${repoName}`,
     method: 'delete',
     params: {
-      parentFolder: '/'
+      parentFolder: parentPath
     }
   })
 }
