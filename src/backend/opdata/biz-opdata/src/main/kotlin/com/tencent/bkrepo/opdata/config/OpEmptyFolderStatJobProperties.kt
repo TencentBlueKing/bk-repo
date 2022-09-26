@@ -27,15 +27,11 @@
 
 package com.tencent.bkrepo.opdata.config
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
-)
-class OpConfiguration
+@ConfigurationProperties("op.job.empty-folder-stat")
+class OpEmptyFolderStatJobProperties(
+    override var enabled: Boolean = true,
+    override var batchSize: Int = 50000,
+    override var threadPoolSize: Int = 1
+) : OpStatJobProperties(enabled, batchSize, threadPoolSize)

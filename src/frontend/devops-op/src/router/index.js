@@ -3,8 +3,12 @@ import Router from 'vue-router'
 export const TITLE_HOME = sidebarTitle
 export const ROUTER_NAME_SERVICE = 'Service'
 export const ROUTER_NAME_NODE = 'Node'
+export const ROUTER_NAME_EMPTY_FOLDER = 'EmptyFolder'
+export const ROUTER_NAME_FIRST_LEVEL_FOLDER = 'FirstLevelFolder'
 export const ROUTER_NAME_INSTANCE = 'Instance'
 export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
+export const ROUTER_NAME_STORAGE_METRICS = 'StorageMetrics'
+export const ROUTER_NAME_STORAGE_METRIC_DETAIL = 'StorageMetricDetail'
 export const ROUTER_NAME_EXT_PERMISSION = 'ExtPermission'
 export const ROUTER_NAME_WEBHOOK = 'Webhook'
 export const ROUTER_NAME_NOTIFY_CREDENTIALS = 'NotifyCredentials'
@@ -92,12 +96,26 @@ export const asyncRoutes = [
   {
     path: '/nodes',
     component: Layout,
+    meta: { title: '文件管理', icon: 'file' },
+    redirect: '/nodes/nodes',
     children: [
       {
-        path: '/',
+        path: 'nodes',
         name: ROUTER_NAME_NODE,
         meta: { title: '文件管理', icon: 'file' },
         component: () => import('@/views/node/index')
+      },
+      {
+        path: 'emptyFolder',
+        name: ROUTER_NAME_EMPTY_FOLDER,
+        meta: { title: '清理空目录', icon: 'file' },
+        component: () => import('@/views/node/EmptyFolder')
+      },
+      {
+        path: 'firstLevelFolder',
+        name: ROUTER_NAME_FIRST_LEVEL_FOLDER,
+        meta: { title: '一级目录统计', icon: 'file' },
+        component: () => import('@/views/node/FirstLevelFolder')
       }
     ]
   },
@@ -113,6 +131,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_STORAGE_CREDENTIALS,
         component: () => import('@/views/storage/Credential'),
         meta: { title: '凭据', icon: 'credentials' }
+      },
+      {
+        path: 'metrics',
+        name: ROUTER_NAME_STORAGE_METRICS,
+        component: () => import('@/views/storage/Metrics'),
+        meta: { title: '挂载存储节点统计', icon: 'credentials' }
+      },
+      {
+        path: 'metricsDetail',
+        name: ROUTER_NAME_STORAGE_METRIC_DETAIL,
+        component: () => import('@/views/storage/MetricDetail'),
+        meta: { title: '挂载存储节点详情', icon: 'credentials' }
       }
     ]
   },

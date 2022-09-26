@@ -50,7 +50,7 @@
                                         repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
                                         showRepoScan && { label: '扫描制品', clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    showRepoScan && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
+                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
@@ -79,6 +79,7 @@
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
     import { scanTypeEnum } from '@repository/store/publicEnum'
     import { mapState, mapActions } from 'vuex'
+    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'commonPackageDetail',
         components: { OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
@@ -143,7 +144,7 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
+                return !k8s && Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {

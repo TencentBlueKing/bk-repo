@@ -25,17 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.job.pojo
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
+class EmptyFolderMetric(
+    var fullPath: String,
+    var objectId: String
 )
-class OpConfiguration
