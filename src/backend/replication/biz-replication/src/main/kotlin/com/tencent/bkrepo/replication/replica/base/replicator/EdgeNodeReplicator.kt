@@ -100,7 +100,7 @@ class EdgeNodeReplicator(
             if (blobReplicaClient?.check(sha256)?.data != true) {
                 val artifactInputStream = localDataManager.getBlobData(sha256, node.size, localRepo)
                 val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
-                pushBlob(rateLimitInputStream, node.size, node.sha256!!, null)
+                pushBlob(rateLimitInputStream, node.size, node.sha256!!, localRepo.storageCredentials?.key)
                 return true
             }
             return false
