@@ -27,10 +27,11 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
-import com.tencent.bkrepo.conan.exception.ConanRecipeNotFoundException
 import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
@@ -38,7 +39,6 @@ import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
-import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -77,7 +77,11 @@ class ConanSearchServiceImpl : ConanSearchService {
     override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            val result = commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
+            val result = try {
+                commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
+            } catch (ignore: NodeNotFoundException) {
+                emptyMap()
+            }
             if (result.isEmpty()) {
                 throw ConanSearchNotFoundException("Could not find ${buildReference(conanFileReference)}")
             }
@@ -87,14 +91,12 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     fun searchRecipes(projectId: String, repoName: String): List<String> {
         val result = mutableListOf<String>()
-        val repoDetail = ArtifactContextHolder.getRepoDetail()
-        packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach {
-            val packageKey = PackageKeys.ofName(repoDetail!!.type.name.toLowerCase(), it)
-            packageClient.listAllVersion(projectId, repoName, packageKey).data.orEmpty().forEach { pv ->
-                val conanInfo = pv.packageMetadata.filter {
-                    it.key == CONAN_INFOS
-                }.first().value as List<ConanFileReference>
-                conanInfo.forEach { result.add(buildConanFileName(it)) }
+        packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach { it ->
+            packageClient.listAllVersion(projectId, repoName, it).data.orEmpty().forEach { pv ->
+                val conanInfo = pv.packageMetadata.filter { m ->
+                    m.key == CONAN_INFOS
+                }.first().value.toJsonString().readJsonString<List<ConanFileReference>>()
+                result.add(buildConanFileName(conanInfo.first()))
             }
         }
         return result.sorted()

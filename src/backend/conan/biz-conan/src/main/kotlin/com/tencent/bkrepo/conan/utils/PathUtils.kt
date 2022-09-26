@@ -52,7 +52,7 @@ object PathUtils {
     fun joinString(first: String, second: String, third: String? = null): String {
         val sb =  StringBuilder(first.trimEnd(CharPool.SLASH))
             .append(CharPool.SLASH)
-            .append(second)
+            .append(second.trimStart(CharPool.SLASH))
         third?.let { sb.append(CharPool.SLASH).append(third) }
         return sb.toString()
     }

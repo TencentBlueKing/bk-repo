@@ -269,7 +269,8 @@ class CommonService {
         repoName: String,
         path: String,
     ): ConanInfo {
-        val node = nodeClient.getNodeDetail(projectId, repoName, path).data
+        val fullPath = "/$path"
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
             ?: throw NodeNotFoundException(path)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
@@ -573,16 +574,7 @@ class CommonService {
             nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return emptyMap()
             listOf(RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now())))
         } else {
-            // TODO 当默认获取列表为有序的以后可以删掉
-            indexJson.revisions.sortedWith(
-                kotlin.Comparator { r1, r2 ->
-                    return@Comparator if (convertToLocalTime(r1.time).isAfter(convertToLocalTime(r2.time))) {
-                        1
-                    } else {
-                        0
-                    }
-                }
-            )
+            indexJson.revisions
         }
 
         revisions.forEach {
@@ -599,16 +591,7 @@ class CommonService {
                     revPath = prevPath,
                     refStr = prefStr
                 )
-                // TODO 当默认获取列表为有序的以后可以删掉
-                val lastRevision = packageIndexJson.revisions.sortedWith(
-                    kotlin.Comparator { r1, r2 ->
-                        return@Comparator if (convertToLocalTime(r1.time).isAfter(convertToLocalTime(r2.time))) {
-                            1
-                        } else {
-                            0
-                        }
-                    }
-                ).first()
+                val lastRevision = packageIndexJson.revisions.first()
                 val path = getPackageConanInfoFile(packageReference.copy(revision = lastRevision.revision))
                 result[packageId] = getContentOfConanInfoFile(projectId, repoName, path)
             }
@@ -620,20 +603,20 @@ class CommonService {
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
-//    fun <T> lockAction(projectId: String, repoName: String, revPath:String, action: () -> T): T {
-//        val lockKey = buildRedisKey(projectId, repoName, revPath)
-//        val lock = lockOperation.getLock(lockKey)
-//        return if (lockOperation.getSpinLock(lockKey, lock)) {
-//            logger.info("Lock for key $lockKey has been acquired.")
-//            try {
-//                action()
-//            } finally {
-//                lockOperation.close(lockKey, lock)
-//            }
-//        } else {
-//            action()
-//        }
-//    }
+    fun <T> lockAction(projectId: String, repoName: String, revPath:String, action: () -> T): T {
+        val lockKey = buildRedisKey(projectId, repoName, revPath)
+        val lock = lockOperation.getLock(lockKey)
+        return if (lockOperation.getSpinLock(lockKey, lock)) {
+            logger.info("Lock for key $lockKey has been acquired.")
+            try {
+                action()
+            } finally {
+                lockOperation.close(lockKey, lock)
+            }
+        } else {
+            action()
+        }
+    }
 
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {
         return "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName/$revPath"

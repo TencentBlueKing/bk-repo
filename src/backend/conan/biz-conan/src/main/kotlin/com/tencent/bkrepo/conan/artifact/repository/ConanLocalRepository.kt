@@ -209,12 +209,6 @@ class ConanLocalRepository : LocalRepository() {
         return null
     }
 
-    override fun remove(context: ArtifactRemoveContext) {
-
-    }
-
-
-
     companion object {
         private val logger = LoggerFactory.getLogger(ConanLocalRepository::class.java)
     }
