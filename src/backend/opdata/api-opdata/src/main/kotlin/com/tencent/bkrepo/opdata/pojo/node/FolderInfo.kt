@@ -25,17 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.pojo.node
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
+data class FolderInfo(
+    var projectId: String,
+    var repoName: String,
+    var path: String,
+    var nodeNum: Long,
+    var capSize: Long
 )
-class OpConfiguration

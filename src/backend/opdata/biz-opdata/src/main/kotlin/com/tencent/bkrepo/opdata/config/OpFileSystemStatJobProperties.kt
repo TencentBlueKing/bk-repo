@@ -27,15 +27,9 @@
 
 package com.tencent.bkrepo.opdata.config
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
-)
-class OpConfiguration
+@ConfigurationProperties("op.job.file-system-stat")
+data class OpFileSystemStatJobProperties(
+    override var enabled: Boolean = true
+) : OpStatJobProperties(enabled)

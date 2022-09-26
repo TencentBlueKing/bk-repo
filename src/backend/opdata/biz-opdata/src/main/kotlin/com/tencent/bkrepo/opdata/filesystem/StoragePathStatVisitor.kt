@@ -25,17 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.filesystem
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.opdata.pojo.storage.PathStatMetric
+import java.io.IOException
+import java.nio.file.FileVisitResult
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
-)
-class OpConfiguration
+/**
+ * 遍历目录统计其子目录以及文件相关信息
+ */
+class StoragePathStatVisitor(
+    private val rootPath: String,
+    private val pathStatMetric: PathStatMetric
+) : SimpleFileVisitor<Path>() {
+    @Throws(IOException::class)
+    override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
+        val file = filePath.toFile()
+        pathStatMetric.totalFileCount += 1
+        pathStatMetric.totalSize += file.length()
+        PathUtils.resolveAncestor(filePath.toString()).forEach {
+            if (it.startsWith(rootPath)) {
+                val temp = pathStatMetric.folders[it] ?: 0
+                pathStatMetric.folders[it] = temp.plus(file.length())
+            }
+        }
+        return FileVisitResult.CONTINUE
+    }
+
+    @Throws(IOException::class)
+    override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
+        if (dirPath.startsWith(rootPath)) {
+            pathStatMetric.totalFolderCount += 1
+        }
+        return FileVisitResult.CONTINUE
+    }
+}

@@ -25,17 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.job.pojo
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
+import java.util.concurrent.ConcurrentHashMap
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
+class JobContext<T>(
+    var metrics: ConcurrentHashMap<String, T> = ConcurrentHashMap(),
+    var folderSets: ConcurrentHashSet<String> = ConcurrentHashSet(),
+    var extraInfo: Map<String, String> = emptyMap(),
+    var runConcurrency: Boolean = true
 )
-class OpConfiguration

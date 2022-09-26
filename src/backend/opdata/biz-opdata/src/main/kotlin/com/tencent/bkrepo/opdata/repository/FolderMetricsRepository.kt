@@ -25,17 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.repository
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.opdata.model.TFolderMetrics
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpProjectRepoStatJobProperties::class,
-    OpFolderStatJobProperties::class,
-    OpFileSystemStatJobProperties::class,
-    OpEmptyFolderStatJobProperties::class
-)
-class OpConfiguration
+@Repository
+interface FolderMetricsRepository : MongoRepository<TFolderMetrics, String> {
+    fun findByProjectIdAndRepoNameOrderByCapSizeDesc(
+        projectId: String,
+        repoName: String,
+        pageable: Pageable
+    ): Page<TFolderMetrics>
+}
