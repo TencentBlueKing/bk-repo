@@ -11,6 +11,7 @@ export const ROUTER_NAME_NOTIFY_CREDENTIALS = 'NotifyCredentials'
 export const ROUTER_NAME_PLUGIN = 'Plugin'
 export const ROUTER_NAME_SCANNERS = 'Scanners'
 export const ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS = 'ProjectScanConfigurations'
+export const ROUTER_NAME_JOB = 'Job'
 
 Vue.use(Router)
 
@@ -193,6 +194,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PLUGIN,
         meta: { title: '插件管理', icon: 'plugin' },
         component: () => import('@/views/plugin/index')
+      }
+    ]
+  },
+  {
+    path: '/job',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_JOB,
+        meta: { title: '任务管理', icon: 'cc-process' },
+        component: () => import('@/views/job/index')
       }
     ]
   },

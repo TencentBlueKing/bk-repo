@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 local service_name = ngx.var.service
-if service_name == "docker" then
+if service_name == "docker" and ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
     service_name = "oci"
 end
 

@@ -39,5 +39,6 @@ data class JobDetail(
     val running: Boolean,
     val lastBeginTime: LocalDateTime?,
     val lastEndTime: LocalDateTime?,
-    val lastExecuteTime: Long?
+    val lastExecuteTime: Long?,
+    val nextExecuteTime: LocalDateTime?
 )
