@@ -121,7 +121,7 @@ export default {
     },
     queryPage(pageNum) {
       const query = {
-        page: String(this.folderQuery.pageNumber)
+        page: String(pageNum)
       }
       query.projectId = this.folderQuery.projectId
       query.repoName = this.folderQuery.repoName
