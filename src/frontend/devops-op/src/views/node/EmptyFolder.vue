@@ -147,7 +147,9 @@ export default {
       const repoName = this.nodeQuery.repoName
       const parentPath = this.nodeQuery.path
       deleteEmptyFolder(projectId, repoName, parentPath).then(() => {
-        this.changeRouteQueryParams()
+        queryEmptyFolder(projectId, repoName, parentPath).then(res => {
+          this.nodes = res.data
+        })
       })
     },
     changeRouteQueryParams(resetPage = false) {
@@ -179,7 +181,7 @@ export default {
     doQueryNodes(nodeQuery) {
       this.loading = true
       let promise = null
-      promise = queryEmptyFolder(nodeQuery.projectId, nodeQuery.repoName, nodeQuery.path, nodeQuery.pageNumber, nodeQuery.pageSize)
+      promise = queryEmptyFolder(nodeQuery.projectId, nodeQuery.repoName, nodeQuery.path)
       promise.then(res => {
         this.nodes = res.data
       }).catch(_ => {
