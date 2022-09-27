@@ -82,8 +82,8 @@ import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -105,6 +105,7 @@ import javax.servlet.http.HttpServletRequest
 class OciOperationServiceImpl(
     private val nodeClient: NodeClient,
     private val metadataClient: MetadataClient,
+    private val packageMetadataClient: PackageMetadataClient,
     private val packageClient: PackageClient,
     private val storageService: StorageService,
     private val storageManager: StorageManager,
@@ -464,18 +465,14 @@ class OciOperationServiceImpl(
      */
     private fun buildNodeCreateRequest(
         ociArtifactInfo: OciArtifactInfo,
-        artifactFile: ArtifactFile,
-        proxyUrl: String? = null
+        artifactFile: ArtifactFile
     ): NodeCreateRequest {
-        val metadata = proxyUrl?.let {
-            mapOf(Pair(PROXY_URL, proxyUrl))
-        }
+
         return ObjectBuildUtils.buildNodeCreateRequest(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             artifactFile = artifactFile,
-            fullPath = ociArtifactInfo.getArtifactFullPath(),
-            metadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
+            fullPath = ociArtifactInfo.getArtifactFullPath()
         )
     }
 
@@ -490,8 +487,8 @@ class OciOperationServiceImpl(
         fileInfo: FileInfo?,
         proxyUrl: String?
     ): NodeDetail? {
-        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, proxyUrl)
-        return if (fileInfo != null) {
+        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile)
+        val nodeDetail = if (fileInfo != null) {
             val newNodeRequest = request.copy(
                 size = fileInfo.size,
                 md5 = fileInfo.md5,
@@ -502,6 +499,15 @@ class OciOperationServiceImpl(
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         }
+        proxyUrl?.let {
+            saveMetaData(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                fullPath = request.fullPath,
+                metadata = mutableMapOf(PROXY_URL to proxyUrl)
+            )
+        }
+        return nodeDetail
     }
 
     /**
@@ -766,21 +772,27 @@ class OciOperationServiceImpl(
                     version = ociArtifactInfo.reference,
                     size = size,
                     manifestPath = manifestPath,
-                    metadata = metadata,
                     repoType = repoType
                 )
                 packageClient.createVersion(request)
+
             } else {
                 val request = ObjectBuildUtils.buildPackageVersionUpdateRequest(
                     ociArtifactInfo = this,
                     version = ociArtifactInfo.reference,
                     size = size,
                     manifestPath = manifestPath,
-                    metadata = metadata,
                     packageKey = packageKey
                 )
                 packageClient.updateVersion(request)
             }
+            savePackageMetaData(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = packageKey,
+                version = ociArtifactInfo.reference,
+                metadata = metadata
+            )
 
             // 针对helm chart包，将部分信息放入到package中
             val (appVersion, description) = getMetaDataFromChart(chartYaml)
@@ -791,6 +803,26 @@ class OciOperationServiceImpl(
                 packageKey = packageKey
             )
         }
+    }
+
+    /**
+     * 保存package元数据，元数据存为系统元数据
+     */
+    fun savePackageMetaData(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String,
+        metadata: MutableMap<String, Any>
+    ) {
+        val metadataSaveRequest = ObjectBuildUtils.buildPackageMetadataSaveRequest(
+            projectId = projectId,
+            repoName = repoName,
+            packageKey = packageKey,
+            version = version,
+            metadata = metadata
+        )
+        packageMetadataClient.saveMetadata(metadataSaveRequest)
     }
 
     /**
