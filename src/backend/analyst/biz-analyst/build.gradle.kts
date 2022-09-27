@@ -27,6 +27,7 @@
 
 dependencies {
     implementation(project(":analyst:api-analyst"))
+    implementation(project(":oci:api-oci"))
     implementation(project(":common:common-notify:notify-service"))
     implementation(project(":common:common-service"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.analysis.pojo.scanner
 
+
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
@@ -35,24 +36,24 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.De
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-
 @ApiModel("扫描结果")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrowheadScanExecutorResult::class, name = ArrowheadScanner.TYPE),
     JsonSubTypes.Type(value = DependencyScanExecutorResult::class, name = DependencyScanner.TYPE),
     JsonSubTypes.Type(value = TrivyScanExecutorResult::class, name = TrivyScanner.TYPE),
-    JsonSubTypes.Type(value = ScanCodeToolkitScanExecutorResult::class, name = ScancodeToolkitScanner.TYPE)
+    JsonSubTypes.Type(value = ScanCodeToolkitScanExecutorResult::class, name = ScancodeToolkitScanner.TYPE),
+    JsonSubTypes.Type(value = StandardScanExecutorResult::class, name = StandardScanner.TYPE)
 )
 open class ScanExecutorResult(
     @ApiModelProperty("扫描执行状态")
     open val scanStatus: String,
-    @ApiModelProperty("扫描结果预览")
-    open val overview: Map<String, Any?>,
     @ApiModelProperty("扫描器类型")
     val type: String
 )

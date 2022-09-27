@@ -135,7 +135,7 @@ class ExecutorScheduler @Autowired constructor(
                     "file too large, sha256[$sha256, credentials: [$credentialsKey], subtaskId[$taskId]" +
                         ", size[$packageSize], limit[$fileSizeLimit]"
                 )
-                report(taskId, parentScanTaskId, startTimestamp)
+                report(taskId)
                 return
             }
             val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
@@ -143,7 +143,7 @@ class ExecutorScheduler @Autowired constructor(
             // 加载文件失败，直接返回
             if (artifactInputStream == null) {
                 logger.warn("Load storage file failed: sha256[$sha256, credentials: [$credentialsKey]")
-                report(taskId, parentScanTaskId, startTimestamp)
+                report(taskId)
                 return
             }
             logger.info("load file[$sha256] success, elapse ${System.currentTimeMillis() - startTimestamp}")
@@ -170,7 +170,7 @@ class ExecutorScheduler @Autowired constructor(
                 "scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$packageSize], " +
                     "subtaskId[$taskId], sha256[$sha256], reporting result"
             )
-            report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)
+            report(taskId, result)
         }
     }
 
@@ -197,16 +197,10 @@ class ExecutorScheduler @Autowired constructor(
 
     private fun report(
         subtaskId: String,
-        parentTaskId: String,
-        startTimestamp: Long,
-        finishedTimestamp: Long = System.currentTimeMillis(),
         result: ScanExecutorResult? = null
     ) {
         val request = ReportResultRequest(
             subTaskId = subtaskId,
-            parentTaskId = parentTaskId,
-            startTimestamp = startTimestamp,
-            finishedTimestamp = finishedTimestamp,
             scanStatus = result?.scanStatus ?: SubScanTaskStatus.FAILED.name,
             scanExecutorResult = result
         )

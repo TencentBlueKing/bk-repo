@@ -32,20 +32,13 @@ import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
-import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.analysis.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.incLicenseOverview
 import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
 import com.tencent.bkrepo.analysis.executor.util.ImageScanHelper
 import org.springframework.beans.factory.annotation.Autowired
@@ -61,7 +54,6 @@ class ArrowheadScanExecutor @Autowired constructor(
     dockerClient: DockerClient,
     nodeClient: NodeClient,
     storageService: StorageService,
-    private val scanClient: ScanClient,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) : AbsArrowheadScanExecutor() {
 
@@ -91,7 +83,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         // 执行扫描
         val result = dockerScanHelper.scan(
             containerConfig.image, Binds(tmpBind, bind), listOf(containerConfig.args),
-            taskWorkDir, scannerInputFile, task
+            scannerInputFile, task
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
@@ -99,8 +91,8 @@ class ArrowheadScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
-        if (task.repoType == RepositoryType.DOCKER.name) {
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
+        return if (task.repoType == RepositoryType.DOCKER.name) {
             scannerInputFile.parentFile.mkdirs()
             scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
         } else {
@@ -115,41 +107,6 @@ class ArrowheadScanExecutor @Autowired constructor(
     override fun workDir() = workDir
 
     override fun configTemplate() = configTemplate
-
-    override fun additionalOverview(
-        overview: MutableMap<String, Long>,
-        applicationItems: List<ApplicationItem>,
-        sensitiveItems: List<SensitiveItem>,
-        cveSecItems: List<CveSecItem>
-    ) {
-        val licenseIds = HashSet<String>()
-        val licenses = HashSet<ApplicationItem>()
-        applicationItems.forEach { item ->
-            item.license?.let {
-                licenses.add(item)
-                licenseIds.add(it.name)
-            }
-        }
-        overview[LicenseOverviewKey.overviewKeyOf(LicenseOverviewKey.TOTAL)] = licenses.size.toLong()
-
-        // 获取许可证详情
-        val licenseInfo = scanClient.licenseInfoByIds(licenseIds.toList()).data!!.mapKeys { it.key.toLowerCase() }
-        for (license in licenses) {
-            val detail = licenseInfo[license.license!!.name.toLowerCase()]
-            if (detail == null) {
-                incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
-                continue
-            }
-
-            if (detail.isDeprecatedLicenseId) {
-                incLicenseOverview(overview, LicenseNature.UN_RECOMMEND.natureName)
-            }
-
-            if (!detail.isTrust) {
-                incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
-            }
-        }
-    }
 
     private fun createTmpDir(workDir: File): File {
         val tmpDir = File(workDir, TMP_DIR_NAME)
