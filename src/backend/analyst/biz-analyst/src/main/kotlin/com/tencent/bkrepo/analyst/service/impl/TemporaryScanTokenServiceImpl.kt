@@ -27,9 +27,16 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
+import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
@@ -38,9 +45,6 @@ import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
@@ -50,16 +54,11 @@ import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.analyst.configuration.ScannerProperties
-import com.tencent.bkrepo.analyst.pojo.SubScanTask
-import com.tencent.bkrepo.analyst.service.ScanService
-import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption.UPSERT
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -76,7 +75,7 @@ class TemporaryScanTokenServiceImpl(
         get() = scannerProperties.baseUrl.removeSuffix(SLASH)
 
     override fun createToken(subtaskId: String): String {
-        val token = generateToken()
+        val token = uniqueId()
         redisTemplate.opsForValue().set(tokenKey(subtaskId), token, EXPIRED_SECONDS, TimeUnit.SECONDS)
         return token
     }
@@ -85,7 +84,7 @@ class TemporaryScanTokenServiceImpl(
         val result = HashMap<String, String>(subtaskIds.size)
         redisTemplate.executePipelined { connection ->
             subtaskIds.forEach {
-                val token = generateToken()
+                val token = uniqueId()
                 result[it] = token
                 val expiration = Expiration.from(EXPIRED_SECONDS, TimeUnit.SECONDS)
                 connection.set(tokenKey(it).toByteArray(), token.toByteArray(), expiration, UPSERT)
@@ -170,11 +169,6 @@ class TemporaryScanTokenServiceImpl(
     }
 
     private fun tokenKey(subtaskId: String) = "scanner:token:$subtaskId"
-
-    private fun generateToken(): String {
-        return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()
-    }
-
     private fun convert(subtask: SubScanTask, url: String = "") =
         FileUrl(url, subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size)
 
