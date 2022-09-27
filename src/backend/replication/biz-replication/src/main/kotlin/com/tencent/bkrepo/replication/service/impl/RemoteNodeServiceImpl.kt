@@ -164,7 +164,7 @@ class RemoteNodeServiceImpl(
         val realName = NAME.format(projectId, repoName, name)
         val clusterInfo = clusterNodeService.getByClusterName(realName)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-        clusterNodeService.deleteById(clusterInfo.id)
+        clusterNodeService.deleteById(clusterInfo.id!!)
         val task = replicaTaskService.getByTaskName(realName)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
         replicaTaskService.deleteByTaskKey(task.key)
@@ -277,7 +277,7 @@ class RemoteNodeServiceImpl(
                     replicaTaskObjects = replicaTaskObjects,
                     replicaType = replicaType,
                     setting = setting,
-                    remoteClusterIds = setOf(clusterInfo.id),
+                    remoteClusterIds = setOf(clusterInfo.id!!),
                     description = description,
                     enabled = enable
                 )
@@ -290,7 +290,7 @@ class RemoteNodeServiceImpl(
                     replicaTaskObjects = replicaTaskObjects,
                     replicaObjectType = replicaObjectType,
                     setting = setting,
-                    remoteClusterIds = setOf(clusterInfo.id),
+                    remoteClusterIds = setOf(clusterInfo.id!!),
                     description = description,
                 )
                 replicaTaskService.update(taskUpdateRequest)?.let {

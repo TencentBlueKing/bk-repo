@@ -31,11 +31,23 @@
 
 package com.tencent.bkrepo.common.artifact.cluster
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders.AUTHORIZATION
+import com.google.common.hash.Hashing
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
+import com.tencent.bkrepo.common.security.util.HttpSigner
+import com.tencent.bkrepo.common.security.util.HttpSigner.ACCESS_KEY
+import com.tencent.bkrepo.common.security.util.HttpSigner.APP_ID
+import com.tencent.bkrepo.common.security.util.HttpSigner.MILLIS_PER_SECOND
+import com.tencent.bkrepo.common.security.util.HttpSigner.REQUEST_TTL
+import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN
+import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_ALGORITHM
+import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_TIME
+import com.tencent.bkrepo.common.security.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import feign.Client
@@ -43,6 +55,7 @@ import feign.Feign
 import feign.Logger
 import feign.Request
 import feign.RequestInterceptor
+import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.cloud.openfeign.FeignLoggerFactory
 import java.util.concurrent.TimeUnit
 
@@ -78,8 +91,28 @@ object FeignClientFactory {
 
     private fun createInterceptor(cluster: ClusterInfo): RequestInterceptor {
         return RequestInterceptor {
-            if (!cluster.username.isNullOrBlank()) {
-                it.header(AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
+            if (cluster.appId != null) {
+                // 内部集群请求签名
+                require(cluster.accessKey != null)
+                require(cluster.secretKey != null)
+                // 不要使用feign请求来上传文件，所以这里不存在文件请求，可以完全读取body进行签名
+                val bodyToHash = if (it.body() != null && it.body().isNotEmpty()) {
+                    it.body()
+                } else {
+                    StringPool.EMPTY.toByteArray()
+                }
+                val algorithm = HmacAlgorithms.HMAC_SHA_1.getName()
+                val startTime = System.currentTimeMillis() / MILLIS_PER_SECOND
+                val endTime = startTime + REQUEST_TTL
+                it.query(APP_ID, cluster.appId)
+                    .query(ACCESS_KEY, cluster.accessKey)
+                    .query(SIGN_TIME, "$startTime$TIME_SPLIT$endTime".urlEncode())
+                    .query(SIGN_ALGORITHM, algorithm)
+                val bodyHash = Hashing.sha256().hashBytes(bodyToHash).toString()
+                val sig = HttpSigner.sign(it, bodyHash, cluster.secretKey!!, algorithm)
+                it.query(SIGN, sig)
+            } else {
+                it.header(HttpHeaders.AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
             }
         }
     }

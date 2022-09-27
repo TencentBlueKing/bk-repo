@@ -76,6 +76,7 @@ class ScheduledReplicaJobExecutor(
                 }
             }
         } catch (exception: Exception) {
+            logger.error("提交同步任务失败", exception)
             // 记录异常
             status = ExecutionStatus.FAILED
             errorReason = exception.message.orEmpty()

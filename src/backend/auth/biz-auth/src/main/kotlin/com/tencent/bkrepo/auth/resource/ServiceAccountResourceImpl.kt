@@ -49,10 +49,13 @@ class ServiceAccountResourceImpl @Autowired constructor(
         val result = accountService.checkCredential(accesskey, secretkey)
         return ResponseBuilder.success(result)
     }
+
     override fun checkAccountCredential(accesskey: String, secretkey: String): Response<String?> {
         val result = accountService.checkCredential(accesskey, secretkey)
         return ResponseBuilder.success(result)
     }
-
-
+    override fun findSecretKey(appId: String, accessKey: String): Response<String?> {
+        val result = accountService.findSecretKey(appId, accessKey)
+        return ResponseBuilder.success(result)
+    }
 }

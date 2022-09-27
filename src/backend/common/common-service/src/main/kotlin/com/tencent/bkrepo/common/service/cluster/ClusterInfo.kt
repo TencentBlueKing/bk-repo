@@ -39,6 +39,7 @@ data class ClusterInfo(
      * 集群名称
      */
     var name: String? = null,
+
     /**
      * 集群url
      */
@@ -54,5 +55,18 @@ data class ClusterInfo(
     /**
      * 集群访问证书
      */
-    var certificate: String? = null
+    var certificate: String? = null,
+    /**
+     * bkrepo集群需要ak/sk进行签名
+     * appId
+     * */
+    var appId: String? = null,
+    /**
+     * 访问凭证
+     * */
+    var accessKey: String? = null,
+    /**
+     * 密钥
+     * */
+    var secretKey: String? = null,
 )

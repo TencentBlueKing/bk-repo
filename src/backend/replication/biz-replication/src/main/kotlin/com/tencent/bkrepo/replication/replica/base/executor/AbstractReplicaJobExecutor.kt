@@ -37,6 +37,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.base.ReplicaService
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.service.ClusterNodeService
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -76,7 +77,13 @@ open class AbstractReplicaJobExecutor(
                         taskObject.localRepoName,
                         taskObject.repoType.toString()
                     )
-                    val context = ReplicaContext(taskDetail, taskObject, taskRecord, localRepo, clusterNode)
+                    val context = ReplicaContext(
+                        taskDetail = taskDetail,
+                        taskObject = taskObject,
+                        taskRecord = taskRecord,
+                        localRepo = localRepo,
+                        remoteCluster = clusterNode
+                    )
                     event?.let { context.event = it }
                     replicaService.replica(context)
                     if (context.status == ExecutionStatus.FAILED) {
@@ -86,8 +93,13 @@ open class AbstractReplicaJobExecutor(
                 }
                 ExecutionResult(status = status, errorReason = message)
             } catch (exception: Throwable) {
+                logger.error("同步任务执行失败", exception)
                 ExecutionResult.fail(exception.message)
             }
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AbstractReplicaJobExecutor::class.java)
     }
 }

@@ -64,18 +64,24 @@ class ClusterNodeStartLoader(
             when (role) {
                 RoleType.CENTER -> ClusterNodeCreateRequest(
                     name = center.name.orEmpty(),
-                    url = center.url.orEmpty(),
+                    url = center.url,
                     certificate = center.certificate.orEmpty(),
                     username = center.username.orEmpty(),
                     password = center.password.orEmpty(),
+                    appId = self.appId,
+                    accessKey = self.accessKey,
+                    secretKey = self.secretKey,
                     type = ClusterNodeType.CENTER
                 )
                 RoleType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
-                    url = self.url.orEmpty(),
+                    url = self.url,
                     certificate = self.certificate.orEmpty(),
                     username = self.username.orEmpty(),
                     password = self.password.orEmpty(),
+                    appId = self.appId,
+                    accessKey = self.accessKey,
+                    secretKey = self.secretKey,
                     type = ClusterNodeType.EDGE
                 )
             }

@@ -464,7 +464,6 @@ open class PermissionServiceImpl constructor(
                 else -> return false
             }
         }
-        return false
     }
 
     companion object {

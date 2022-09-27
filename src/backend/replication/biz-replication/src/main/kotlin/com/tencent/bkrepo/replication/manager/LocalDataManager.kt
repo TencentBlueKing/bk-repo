@@ -68,7 +68,7 @@ class LocalDataManager(
     @Throws(IllegalStateException::class)
     fun getBlobData(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {
         val blob = storageService.load(sha256, Range.full(length), repoInfo.storageCredentials)
-        check(blob != null) { "File data[sha256] does not exist" }
+        check(blob != null) { "File data[$sha256] does not exist" }
         return blob
     }
 
@@ -78,7 +78,7 @@ class LocalDataManager(
     @Throws(IllegalStateException::class)
     fun getBlobDataByRange(sha256: String, range: Range, repoInfo: RepositoryDetail): InputStream {
         val blob = storageService.load(sha256, range, repoInfo.storageCredentials)
-        check(blob != null) { "File data[sha256] does not exist" }
+        check(blob != null) { "File data[$sha256] does not exist" }
         return blob
     }
 
