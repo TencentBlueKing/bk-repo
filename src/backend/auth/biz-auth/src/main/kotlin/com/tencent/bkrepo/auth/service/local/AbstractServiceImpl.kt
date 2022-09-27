@@ -237,11 +237,7 @@ open class AbstractServiceImpl constructor(
     }
 
     private fun convActions(actions: List<PermissionAction>): List<String> {
-        val result = mutableListOf<String>()
-        actions.forEach {
-            result.add(it.toString())
-        }
-        return result
+        return actions.map { it.toString() }
     }
 
     companion object {

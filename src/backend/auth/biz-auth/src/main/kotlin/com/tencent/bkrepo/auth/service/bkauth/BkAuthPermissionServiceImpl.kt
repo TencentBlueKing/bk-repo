@@ -185,7 +185,7 @@ class BkAuthPermissionServiceImpl constructor(
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
         // 校验平台账号操作范围
-        if (!super.checkPlatformPermission(request.appId, request)) return false
+        if (!super.checkPlatformPermission(request)) return false
 
         // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)

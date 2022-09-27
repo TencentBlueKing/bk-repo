@@ -447,10 +447,10 @@ open class PermissionServiceImpl constructor(
         )!!
     }
 
-    fun checkPlatformPermission(appId: String?, permission: CheckPermissionRequest): Boolean {
-        if (appId == null) return true
+    fun checkPlatformPermission(permission: CheckPermissionRequest): Boolean {
         with(permission) {
-            val platform = account.findOneByAppId(appId) ?: run {
+            if (appId == null) return true
+            val platform = account.findOneByAppId(appId!!) ?: run {
                 logger.info("can not find platform [$appId]")
                 return false
             }
