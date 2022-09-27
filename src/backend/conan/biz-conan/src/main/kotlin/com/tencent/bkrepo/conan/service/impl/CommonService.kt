@@ -358,29 +358,6 @@ class CommonService {
         )
     }
 
-    fun updateIndexJson(
-        projectId: String,
-        repoName: String,
-        revPath: String,
-        refStr: String,
-        revision: String
-    ) {
-        val indexJson = getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
-        val revisions = indexJson.revisions.filter { it.revision != revision }
-        val newIndexJson = indexJson.copy(revisions = revisions)
-        uploadIndexJson(
-            projectId = projectId,
-            repoName = repoName,
-            fullPath = "/${joinString(revPath, INDEX_JSON)}",
-            indexInfo = newIndexJson
-        )
-    }
-
     fun getLatestRevision(
         projectId: String,
         repoName: String,
@@ -399,15 +376,7 @@ class CommonService {
             nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return null
             return RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now()))
         } else {
-            return indexJson.revisions.sortedWith(
-                kotlin.Comparator { r1, r2 ->
-                    return@Comparator if (convertToLocalTime(r1.time).isAfter(convertToLocalTime(r2.time))) {
-                        1
-                    } else {
-                        0
-                    }
-                }
-            ).first()
+            return indexJson.revisions.first()
         }
     }
 
@@ -417,10 +386,9 @@ class CommonService {
         revPath: String,
         refStr: String
     ): IndexInfo {
+        // TODO 所有加/ 的都需要优化
         val fullPath = "/$revPath"
-        nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return IndexInfo(refStr)
-        val indexNode = nodeClient.getNodeDetail(projectId, repoName, joinString(fullPath, INDEX_JSON)).data
-            ?: return IndexInfo(refStr)
+        val indexNode = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return IndexInfo(refStr)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
         storageManager.loadArtifactInputStream(indexNode, repo.storageCredentials)?.use {
@@ -570,9 +538,10 @@ class CommonService {
             refStr = refStr
         )
         val revisions = if (indexJson.revisions.isEmpty()) {
-            val revisionV1Path = joinString("/$revPath", DEFAULT_REVISION_V1)
-            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return emptyMap()
-            listOf(RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now())))
+//            val revisionV1Path = joinString("/$revPath", DEFAULT_REVISION_V1)
+//            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return emptyMap()
+//            listOf(RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now())))
+            emptyList()
         } else {
             indexJson.revisions
         }

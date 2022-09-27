@@ -84,7 +84,7 @@ abstract class AbstractRevisionOperation(
                 commonService.uploadIndexJson(
                     projectId = projectId,
                     repoName = repoName,
-                    fullPath = "/${joinString(tempRevPath, INDEX_JSON)}",
+                    fullPath = "/$tempRevPath",
                     indexInfo = indexInfo
                 )
                 logger.info(
