@@ -49,7 +49,7 @@ class RemoteEventJobExecutor(
                     EventType.REPO_CREATED -> {
                         {
                             helmOperationService.lockAction(projectId, repoName) {
-                                helmOperationService.initPackageInfo(projectId, repoName, userId)
+                                helmOperationService.updatePackageForRemote(projectId, repoName, userId)
                             }
                         }
                     }
