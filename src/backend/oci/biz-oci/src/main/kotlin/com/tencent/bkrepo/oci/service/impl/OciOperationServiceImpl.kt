@@ -544,6 +544,14 @@ class OciOperationServiceImpl(
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
 
+        try {
+            logger.info("artifactFile path is ${artifactFile.getFile()!!.absolutePath}, " +
+                            "exists ${artifactFile.getFile()!!.exists()}, " +
+                            "${artifactFile.isInMemory()}, size ${artifactFile.getSize()}")
+        } catch (ignore: Exception){
+
+        }
+
         val version = OciUtils.checkVersion(artifactFile.getInputStream())
         val (mediaType, manifest) = if (version.schemaVersion == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
