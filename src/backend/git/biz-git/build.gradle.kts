@@ -31,9 +31,8 @@
 
 dependencies {
     api(project(":git:api-git"))
-    api(project(":common:common-redis"))
+    api(project(":common:common-job"))
     implementation("org.eclipse.jgit:org.eclipse.jgit.http.server")
-    implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("org.eclipse.jgit:org.eclipse.jgit.junit")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }

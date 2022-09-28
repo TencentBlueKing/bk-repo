@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.git.internal.storage
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import net.javacrumbs.shedlock.core.LockProvider
 import org.eclipse.jgit.internal.storage.dfs.DfsReaderOptions
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryBuilder
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription
@@ -13,7 +14,8 @@ class CodeRepositoryBuilder(
     val repoName: String,
     val storageCredentials: StorageCredentials?,
     val dataService: RepositoryDataService,
-    val blockSize: Int
+    val blockSize: Int,
+    val lockProvider: LockProvider
 ) : DfsRepositoryBuilder<CodeRepositoryBuilder, CodeRepository>() {
 
     override fun build(): CodeRepository {
@@ -25,7 +27,8 @@ class CodeRepositoryBuilder(
             storageCredentials = storageCredentials,
             dataService = dataService,
             blockSize = blockSize,
-            builder = this
+            builder = this,
+            lockProvider = lockProvider
         )
     }
 }

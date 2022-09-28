@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.git.controller
+package com.tencent.bkrepo.git.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
-import com.tencent.bkrepo.git.service.GitService
+import com.tencent.bkrepo.git.service.GitApiService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("{projectId}/{repoName}", produces = [MediaTypes.APPLICATION_JSON])
 @RestController
 class GitApiController(
-    private val gitService: GitService
+    private val gitService: GitApiService
 ) {
 
     /**

@@ -31,45 +31,87 @@
 
 package com.tencent.bkrepo.git.artifact.repository
 
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedFileOutputStream
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
+import com.tencent.bkrepo.git.constant.GitMessageCode
+import com.tencent.bkrepo.git.internal.CodeRepositoryResolver
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.treewalk.filter.PathFilter
 import org.springframework.stereotype.Component
 
 @Component
 class GitLocalRepository : LocalRepository() {
 
-    @Autowired
-    lateinit var gitRemoteRepository: GitRemoteRepository
-    override fun onUploadBefore(context: ArtifactUploadContext) {
-        super.onUploadBefore(context)
-        with(context.artifactInfo as GitRepositoryArtifactInfo) {
-            logger.info(
-                "User[${context.userId}] prepare to publish git hub uri [$path] " +
-                    "on ${getRepoIdentify()}"
-            )
-        }
-    }
-
-    override fun onUpload(context: ArtifactUploadContext) {
-        super.onUpload(context)
-        context.response.contentType = MediaTypes.APPLICATION_JSON
-        context.response.writer.println(ResponseBuilder.success().toJsonString())
-    }
-
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(GitLocalRepository::class.java)
-    }
-
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return gitRemoteRepository.onDownload(context)
+        with(context) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val responseName = artifactInfo.getResponseName()
+            storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
+                return ArtifactResource(it, responseName, node, ArtifactChannel.PROXY, useDisposition)
+            }
+            val gitContentArtifactInfo = artifactInfo as GitContentArtifactInfo
+            val db = CodeRepositoryResolver.open(projectId, repoName, storageCredentials)
+            val rw = RevWalk(db)
+            val commitId = ObjectId.fromString(gitContentArtifactInfo.commitId)
+            val commit = rw.parseCommit(commitId)
+            val tree = commit.tree
+            val tw = TreeWalk(db)
+            try {
+                tw.addTree(tree)
+                tw.isRecursive = true
+                tw.filter = PathFilter.create(gitContentArtifactInfo.path)
+                if (!tw.next()) {
+                    throw ErrorCodeException(
+                        GitMessageCode.GIT_PATH_NOT_FOUND,
+                        gitContentArtifactInfo.path,
+                        gitContentArtifactInfo.commitId
+                    )
+                }
+                val objectId = tw.getObjectId(0)
+                val objectLoader = db.open(objectId)
+                val artifactFile = ArtifactFileFactory.buildChunked()
+                val output = ChunkedFileOutputStream(artifactFile)
+                objectLoader.copyTo(output)
+                artifactFile.finish()
+                val nodeCreateRequest = NodeCreateRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    folder = false,
+                    fullPath = artifactInfo.getArtifactFullPath(),
+                    size = artifactFile.getSize(),
+                    sha256 = artifactFile.getFileSha256(),
+                    md5 = artifactFile.getFileMd5(),
+                    overwrite = true,
+                    operator = userId
+                )
+                val nodeDetail = storageManager.storeArtifactFile(
+                    nodeCreateRequest,
+                    artifactFile,
+                    storageCredentials
+                )
+                val inputStream = artifactFile.getInputStream().artifactStream(Range.full(artifactFile.getSize()))
+                return ArtifactResource(
+                    inputStream,
+                    responseName,
+                    nodeDetail,
+                    ArtifactChannel.PROXY,
+                    useDisposition
+                )
+            } finally {
+                tw.close()
+                rw.close()
+            }
+        }
     }
 }
