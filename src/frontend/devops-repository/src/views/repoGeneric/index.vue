@@ -278,6 +278,9 @@
                 })
                 return breadcrumb
             },
+            k8s () {
+                return k8s
+            },
             searchFileName () {
                 return this.$route.query.fileName
             }
@@ -319,9 +322,6 @@
             ]),
             showRepoScan (node) {
                 return !node.folder && !k8s && genericScanFileTypes.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
-            },
-            k8s () {
-                return k8s
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {

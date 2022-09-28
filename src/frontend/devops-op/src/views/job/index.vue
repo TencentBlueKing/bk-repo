@@ -14,10 +14,9 @@
         width="100"
       >
         <template slot-scope="scope">
-          <el-switch
-            v-model="scope.row.enabled"
-            @change="changeEnabled(scope.row)"
-          />
+          <el-tooltip :disabled="!k8s" effect="dark" content="容器环境暂不支持动态启用任务" placement="top">
+            <el-switch v-model="scope.row.enabled" :disabled="k8s" @change="changeEnabled(scope.row)" />
+          </el-tooltip>
         </template>
       </el-table-column>
       <el-table-column
@@ -94,6 +93,11 @@ export default {
   data() {
     return {
       jobs: []
+    }
+  },
+  computed: {
+    k8s() {
+      return process.env.VUE_APP_K8S === 'k8s'
     }
   },
   created() {
