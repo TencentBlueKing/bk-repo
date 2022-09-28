@@ -25,23 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.user
+package com.tencent.bkrepo.auth.util.request
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 
-data class UpdateUserRequest(
-    @ApiModelProperty("用户名")
-    val name: String? = null,
-    @ApiModelProperty("密码")
-    val pwd: String? = null,
-    @ApiModelProperty("绑定用户")
-    val asstUsers: List<String> = emptyList(),
-    @ApiModelProperty("lock状态")
-    val locked: Boolean? = null,
-    @ApiModelProperty("email")
-    val email: String? = null,
-    @ApiModelProperty("联系电话")
-    val phone: String? = null,
-    @ApiModelProperty("是否管理员")
-    val admin: Boolean? = null
-)
+object RoleRequestUtil {
+
+    fun conv2TRole(roleId: String, request: CreateRoleRequest): TRole {
+        return TRole(
+            roleId = roleId,
+            type = request.type,
+            name = request.name,
+            projectId = request.projectId,
+            repoName = request.repoName,
+            admin = request.admin,
+            description = request.description
+        )
+    }
+}

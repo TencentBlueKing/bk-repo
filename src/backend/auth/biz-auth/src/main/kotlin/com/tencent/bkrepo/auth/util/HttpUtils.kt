@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.util
 
+import com.tencent.bkrepo.auth.pojo.ApiResponse
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory

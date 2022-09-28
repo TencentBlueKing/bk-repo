@@ -91,6 +91,9 @@ class UserController @Autowired constructor(
     @ApiOperation("创建用户")
     @PostMapping("/create")
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
+        if (request.admin) {
+            checkPlatformPermission()
+        }
         userService.createUser(request)
         return ResponseBuilder.success(true)
     }
@@ -98,6 +101,9 @@ class UserController @Autowired constructor(
     @ApiOperation("创建项目用户")
     @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
+        if (request.admin) {
+            checkPlatformPermission()
+        }
         checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToProject(request)
         val createRoleRequest = buildProjectAdminRequest(request.projectId)
@@ -109,6 +115,9 @@ class UserController @Autowired constructor(
     @ApiOperation("创建仓库用户")
     @PostMapping("/create/repo")
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
+        if (request.admin) {
+            checkPlatformPermission()
+        }
         checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToRepo(request)
         val createRoleRequest = buildRepoAdminRequest(request.projectId, request.repoName)
@@ -151,6 +160,9 @@ class UserController @Autowired constructor(
     @PutMapping("/{uid}")
     fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         checkUserId(uid)
+        if (request.admin !=null && request.admin) {
+            checkPlatformPermission()
+        }
         userService.updateUserById(uid, request)
         return ResponseBuilder.success(true)
     }

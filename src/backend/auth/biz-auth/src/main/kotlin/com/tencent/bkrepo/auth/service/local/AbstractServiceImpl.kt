@@ -34,18 +34,10 @@ package com.tencent.bkrepo.auth.service.local
 import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
-import com.tencent.bkrepo.auth.pojo.user.User
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.util.scope.ProjectRuleUtil
@@ -56,7 +48,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import java.time.LocalDateTime
 
 open class AbstractServiceImpl constructor(
     private val mongoTemplate: MongoTemplate,
@@ -105,28 +96,6 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    fun transferCreateProjectUserRequest(request: CreateUserToProjectRequest): CreateUserRequest {
-        return CreateUserRequest(
-            request.userId,
-            request.name,
-            request.pwd,
-            request.admin,
-            request.asstUsers,
-            request.group
-        )
-    }
-
-    fun transferCreateRepoUserRequest(request: CreateUserToRepoRequest): CreateUserRequest {
-        return CreateUserRequest(
-            request.userId,
-            request.name,
-            request.pwd,
-            request.admin,
-            request.asstUsers,
-            request.group
-        )
-    }
-
     fun updatePermissionById(id: String, key: String, value: Any): Boolean {
         val update = Update()
         update.set(key, value)
@@ -158,74 +127,18 @@ open class AbstractServiceImpl constructor(
         return Query.query(Criteria.where("_id").`is`(id))
     }
 
-    fun transferToPermission(permission: TPermission): Permission {
-        return Permission(
-            id = permission.id,
-            resourceType = permission.resourceType,
-            projectId = permission.projectId,
-            permName = permission.permName,
-            repos = permission.repos,
-            includePattern = permission.includePattern,
-            excludePattern = permission.excludePattern,
-            users = permission.users,
-            roles = permission.roles,
-            actions = permission.actions,
-            createBy = permission.createBy,
-            createAt = permission.createAt,
-            updatedBy = permission.updatedBy,
-            updateAt = permission.updateAt
-        )
-    }
-
-    fun transferToTPermission(request: CreatePermissionRequest): TPermission {
-        return TPermission(
-            resourceType = request.resourceType.toString(),
-            projectId = request.projectId,
-            permName = request.permName,
-            repos = request.repos,
-            includePattern = request.includePattern,
-            excludePattern = request.excludePattern,
-            users = request.users,
-            roles = request.roles,
-            actions = convActions(request.actions),
-            createBy = request.createBy,
-            createAt = LocalDateTime.now(),
-            updatedBy = request.updatedBy,
-            updateAt = LocalDateTime.now()
-        )
-    }
-
-    fun transferToUser(user: TUser): User {
-        return User(
-            userId = user.userId,
-            name = user.name,
-            pwd = user.pwd,
-            admin = user.admin,
-            locked = user.locked,
-            tokens = user.tokens,
-            roles = user.roles
-        )
-    }
-
-    fun transferToUserInfo(user: TUser): UserInfo {
-        return UserInfo(
-            userId = user.userId,
-            name = user.name,
-            locked = user.locked,
-            email = user.email,
-            phone = user.phone,
-            createdDate = user.createdDate,
-            admin = user.admin
-        )
-    }
 
     fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
         (repos as MutableList).retainAll(originRepoNames)
         return repos
     }
 
-    fun checkPlatformProject(projectId: String?, scope: List<ScopeRule>?): Boolean {
+    fun checkPlatformProject(resourceType: String, projectId: String?, scope: List<ScopeRule>?): Boolean {
+
+        if (resourceType == ResourceType.SYSTEM.name) return false
+
         if (scope == null || projectId == null) return false
+
         scope.forEach {
             when (it.field) {
                 ResourceType.PROJECT.name -> {
@@ -234,10 +147,6 @@ open class AbstractServiceImpl constructor(
             }
         }
         return false
-    }
-
-    private fun convActions(actions: List<PermissionAction>): List<String> {
-        return actions.map { it.toString() }
     }
 
     companion object {

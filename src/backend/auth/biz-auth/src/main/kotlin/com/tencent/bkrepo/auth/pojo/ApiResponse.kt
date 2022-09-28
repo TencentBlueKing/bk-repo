@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.util
+package com.tencent.bkrepo.auth.pojo
 
 data class ApiResponse(
     val code: Int,
