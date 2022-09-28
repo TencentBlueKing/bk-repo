@@ -262,13 +262,6 @@ class OciRegistryLocalRepository(
     private fun putUploadManifest(context: ArtifactUploadContext): Pair<OciDigest, String> {
         val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
         val artifactFile = context.getArtifactFile()
-        try {
-            logger.info("putUploadManifest artifactFile path is ${artifactFile.getFile()!!.absolutePath}, " +
-                            "exists ${artifactFile.getFile()!!.exists()}, " +
-                            "${artifactFile.isInMemory()}, size ${artifactFile.getSize()}")
-        } catch (ignore: Exception){
-
-        }
         val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
         val node = ociOperationService.storeArtifact(
             ociArtifactInfo = artifactInfo,
@@ -283,9 +276,8 @@ class OciRegistryLocalRepository(
         ociOperationService.updateOciInfo(
             ociArtifactInfo = artifactInfo,
             digest = digest,
-            artifactFile = artifactFile,
             storageCredentials = context.storageCredentials,
-            fullPath = node.fullPath
+            nodeDetail = node
         )
         val manifestLocation = OciLocationUtils.manifestLocation(digest, artifactInfo)
         return Pair(digest, manifestLocation)

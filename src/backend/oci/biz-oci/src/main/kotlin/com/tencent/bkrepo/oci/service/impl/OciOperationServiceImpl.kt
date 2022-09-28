@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -534,8 +535,7 @@ class OciOperationServiceImpl(
     override fun updateOciInfo(
         ociArtifactInfo: OciManifestArtifactInfo,
         digest: OciDigest,
-        artifactFile: ArtifactFile,
-        fullPath: String,
+        nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
         sourceType: ArtifactChannel?
     ) {
@@ -543,20 +543,14 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-
-        try {
-            logger.info("artifactFile path is ${artifactFile.getFile()!!.absolutePath}, " +
-                            "exists ${artifactFile.getFile()!!.exists()}, " +
-                            "${artifactFile.isInMemory()}, size ${artifactFile.getSize()}")
-        } catch (ignore: Exception){
-
-        }
-
-        val version = OciUtils.checkVersion(artifactFile.getInputStream())
+        val manifestFile = ArtifactFileFactory.build(
+            storageManager.loadArtifactInputStream(nodeDetail, storageCredentials)!!
+        )
+        val version = OciUtils.checkVersion(manifestFile.getInputStream())
         val (mediaType, manifest) = if (version.schemaVersion == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
-            val manifest = OciUtils.streamToManifestV2(artifactFile.getInputStream())
+            val manifest = OciUtils.streamToManifestV2(manifestFile.getInputStream())
             // 更新manifest文件的metadata
             val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
                 HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
@@ -570,7 +564,7 @@ class OciOperationServiceImpl(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             version = ociArtifactInfo.reference,
-            fullPath = fullPath,
+            fullPath = nodeDetail.fullPath,
             mediaType = mediaType!!
         )
         // 同步blob相关metadata
@@ -579,7 +573,7 @@ class OciOperationServiceImpl(
                 syncBlobInfoV1(
                     ociArtifactInfo = ociArtifactInfo,
                     manifestDigest = digest,
-                    manifestPath = fullPath,
+                    manifestPath = nodeDetail.fullPath,
                     sourceType = sourceType
                 )
             } else {
@@ -588,11 +582,12 @@ class OciOperationServiceImpl(
                     manifest = manifest!!,
                     manifestDigest = digest,
                     storageCredentials = storageCredentials,
-                    manifestPath = fullPath,
+                    manifestPath = nodeDetail.fullPath,
                     sourceType = sourceType
                 )
             }
         }
+        manifestFile.delete()
     }
 
     /**

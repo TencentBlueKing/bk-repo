@@ -106,8 +106,7 @@ interface OciOperationService {
     fun updateOciInfo(
         ociArtifactInfo: OciManifestArtifactInfo,
         digest: OciDigest,
-        artifactFile: ArtifactFile,
-        fullPath: String,
+        nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
         sourceType: ArtifactChannel? = null
     )

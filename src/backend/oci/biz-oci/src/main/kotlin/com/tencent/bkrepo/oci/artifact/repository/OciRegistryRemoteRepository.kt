@@ -418,7 +418,7 @@ class OciRegistryRemoteRepository(
         )
         // 针对manifest文件需要更新metadata
         if (context.artifactInfo is OciManifestArtifactInfo) {
-            updateManifestAndBlob(context, artifactFile)
+            updateManifestAndBlob(context, nodeDetail!!)
             nodeDetail = nodeClient.getNodeDetail(
                 projectId = context.artifactInfo.projectId,
                 repoName = context.artifactInfo.repoName,
@@ -428,15 +428,14 @@ class OciRegistryRemoteRepository(
         return nodeDetail
     }
 
-    private fun updateManifestAndBlob(context: ArtifactDownloadContext, artifactFile: ArtifactFile) {
+    private fun updateManifestAndBlob(context: ArtifactDownloadContext, nodeDetail: NodeDetail) {
         with(context.artifactInfo as OciManifestArtifactInfo) {
-            val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
+            val digest = OciDigest.fromSha256(nodeDetail.sha256!!)
             // 上传manifest文件，同时需要将manifest中对应blob的属性进行补充到blob节点中，同时创建package相关信息
             ociOperationService.updateOciInfo(
                 ociArtifactInfo = this,
                 digest = digest,
-                artifactFile = artifactFile,
-                fullPath = context.artifactInfo.getArtifactFullPath(),
+                nodeDetail = nodeDetail,
                 storageCredentials = context.storageCredentials,
                 sourceType = ArtifactChannel.PROXY
             )
