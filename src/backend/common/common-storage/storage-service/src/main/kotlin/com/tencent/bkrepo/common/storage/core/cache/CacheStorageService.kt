@@ -69,7 +69,17 @@ class CacheStorageService(
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {
+                try {
+                    logger.info("store artifactFile path ${artifactFile.getFile()!!.absolutePath}," +
+                                    " exists ${artifactFile.getFile()!!.exists()} size ${artifactFile.getSize()} ")
+                }catch (ignore: Exception) {
+                }
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
+                try {
+                logger.info("store after artifactFile path ${artifactFile.getFile()!!.absolutePath}," +
+                                " exists ${artifactFile.getFile()!!.exists()} size ${artifactFile.getSize()} ")
+                }catch (ignore: Exception) {
+        }
                 async2Store(cancel, filename, credentials, path, cacheFile)
             }
         }
