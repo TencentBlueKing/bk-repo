@@ -29,6 +29,7 @@ package com.tencent.bkrepo.oci.service.impl
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
@@ -546,12 +547,12 @@ class OciOperationServiceImpl(
             nodeDetail.sha256.orEmpty(),
             Range.full(nodeDetail.size),
             storageCredentials
-        )!!.readBytes()
+        )!!.readText()
         val version = OciUtils.checkVersion(manifestBytes)
-        val (mediaType, manifest) = if (version.schemaVersion == 1) {
+        val (mediaType, manifest) = if (version == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
-            val manifest = OciUtils.streamToManifestV2(manifestBytes)
+            val manifest = OciUtils.stringToManifestV2(manifestBytes)
             // 更新manifest文件的metadata
             val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
                 HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
@@ -570,7 +571,7 @@ class OciOperationServiceImpl(
         )
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
-            if (version.schemaVersion == 1) {
+            if (version == 1) {
                 syncBlobInfoV1(
                     ociArtifactInfo = ociArtifactInfo,
                     manifestDigest = digest,
