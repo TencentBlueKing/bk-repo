@@ -37,5 +37,7 @@ data class ScannerBase(
     @ApiModelProperty("扫描器类型")
     val type: String,
     @ApiModelProperty("扫描器描述信息")
-    val description: String
+    val description: String,
+    @ApiModelProperty("支持扫描的文件名后缀")
+    val supportFileNameExt: List<String>
 )

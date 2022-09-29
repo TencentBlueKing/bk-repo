@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.analysis.image
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.analysis.executor.arrowhead.AbsArrowheadScanExecutor
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
+import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.FileScanResultDao
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
@@ -81,9 +82,8 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Instant
+import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -100,6 +100,7 @@ class ScanServiceImpl @Autowired constructor(
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
+    private val scannerConverters: Map<String, ScannerConverter>,
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val publisher: ApplicationEventPublisher,
@@ -197,11 +198,15 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
-            logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
+            logger.info("report result, parentTask[${subScanTask.parentScanTaskId}], subTask[$subTaskId]")
+            val scanner = scannerService.get(subScanTask.scanner)
+            val overview = scanExecutorResult?.let {
+                scannerConverters[ScannerConverter.name(scanner.type)]!!.convertOverview(it)
+            }
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
-                subScanTask, scanStatus, scanExecutorResult?.overview ?: emptyMap()
+                subScanTask, scanStatus, overview ?: emptyMap()
             )
 
             // 没有扫描任务被更新或子扫描任务失败时直接返回
@@ -210,20 +215,19 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             // 统计任务耗时
-            scannerMetrics.record(
-                subScanTask.fullPath, subScanTask.packageSize, subScanTask.scanner, startTimestamp, finishedTimestamp
-            )
+            val now = LocalDateTime.now()
+            val duration = Duration.between(subScanTask.startDateTime!!, now)
+            scannerMetrics.record(subScanTask.fullPath, subScanTask.packageSize, subScanTask.scanner, duration)
 
             // 更新文件扫描结果
-            val scanner = scannerService.get(subScanTask.scanner)
             fileScanResultDao.upsertResult(
                 subScanTask.credentialsKey,
                 subScanTask.sha256,
-                parentTaskId,
+                subScanTask.parentScanTaskId,
                 scanner,
-                scanExecutorResult!!.overview,
-                toLocalDateTime(startTimestamp),
-                toLocalDateTime(finishedTimestamp)
+                overview!!,
+                subScanTask.startDateTime,
+                now
             )
 
             // 保存详细扫描结果
@@ -350,6 +354,12 @@ class ScanServiceImpl @Autowired constructor(
             return modified
         }
         return false
+    }
+
+    override fun get(subtaskId: String): SubScanTask {
+        return subScanTaskDao.findById(subtaskId)?.let {
+            Converter.convert(it, scannerService.get(it.scanner))
+        } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
     }
 
     // TODO 添加消息队列后开启定时任务
@@ -505,10 +515,6 @@ class ScanServiceImpl @Autowired constructor(
         } else {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
         }
-    }
-
-    private fun toLocalDateTime(timestamp: Long): LocalDateTime {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
     }
 
     companion object {

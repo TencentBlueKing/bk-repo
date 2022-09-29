@@ -46,6 +46,12 @@ class ClusterNodeCreateRequest(
     var username: String? = null,
     @ApiModelProperty("集群认证密码", required = false)
     var password: String? = null,
+    @ApiModelProperty("集群appId", required = false)
+    var appId: String? = null,
+    @ApiModelProperty("集群访问凭证", required = false)
+    var accessKey: String? = null,
+    @ApiModelProperty("集群密钥", required = false)
+    var secretKey: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
     var type: ClusterNodeType
 )

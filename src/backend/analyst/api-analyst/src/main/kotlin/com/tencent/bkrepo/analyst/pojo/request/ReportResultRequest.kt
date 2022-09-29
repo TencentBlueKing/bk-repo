@@ -35,12 +35,6 @@ import io.swagger.annotations.ApiModelProperty
 data class ReportResultRequest(
     @ApiModelProperty("任务id")
     val subTaskId: String,
-    @ApiModelProperty("父任务id")
-    val parentTaskId: String,
-    @ApiModelProperty("扫描执行开始时间")
-    val startTimestamp: Long,
-    @ApiModelProperty("扫描执行结束时间")
-    val finishedTimestamp: Long,
     @ApiModelProperty("扫描执行状态")
     val scanStatus: String,
     @ApiModelProperty("扫描执行器扫描结果")

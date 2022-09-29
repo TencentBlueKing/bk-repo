@@ -48,6 +48,4 @@ class ScancodeItemDao : ResultItemDao<TScancodeItem>() {
         }
         return criteria
     }
-
-    private fun dataKey(name: String) = "${TScancodeItem::data.name}.$name"
 }

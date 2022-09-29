@@ -235,8 +235,16 @@ export default {
         )
     },
     // 获取扫描器列表
-    getScannerList () {
-        return Vue.prototype.$ajax.get('/analyst/api/scanners/base')
+    getScannerList (_, { packageType = null, scanType = null }) {
+        return Vue.prototype.$ajax.get(
+            '/analyst/api/scanners/base',
+            {
+                params: {
+                    packageType,
+                    scanType
+                }
+            }
+        )
     },
     // 获取质量规则
     getQualityRule (_, { type, id }) {

@@ -59,6 +59,17 @@
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
     </script>
     <script>
+        const inIframe = self !== top
+        // iframe外使用saas模式
+        if (MODE_CONFIG === 'ci' && !inIframe) {
+            MODE_CONFIG = 'saas'
+        }
+
+        // iframe内使用ci模式
+        if (MODE_CONFIG === 'saas' && inIframe) {
+            MODE_CONFIG = 'ci'
+        }
+
         window.getLoginUrl = function (cUrl = location.href) {
             if (/\{+curl\}+/i.test(LOGIN_SERVICE_URL)) {
                 return LOGIN_SERVICE_URL.replace(/\{+curl\}+/i, encodeURIComponent(cUrl))
@@ -89,7 +100,7 @@
                     redirectUrl.searchParams.set(key, val)
                 })
             }
-            
+
             const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = function (e) {
                 const { readyState, status } = e.currentTarget
