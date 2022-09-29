@@ -57,10 +57,10 @@ import java.io.InputStream
  */
 object OciUtils {
 
-    fun checkVersion(inputStream: InputStream): SchemaVersion {
+    fun checkVersion(byteArray: ByteArray): SchemaVersion {
         try {
             return JsonUtils.objectMapper.readValue(
-                inputStream, SchemaVersion::class.java
+                byteArray, SchemaVersion::class.java
             )
         } catch (e: Exception) {
             throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)
@@ -86,6 +86,16 @@ object OciUtils {
         try {
             return JsonUtils.objectMapper.readValue(
                 inputStream, ManifestSchema2::class.java
+            )
+        } catch (e: Exception) {
+            throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)
+        }
+    }
+
+    fun streamToManifestV2(byteArray: ByteArray): ManifestSchema2 {
+        try {
+            return JsonUtils.objectMapper.readValue(
+                byteArray, ManifestSchema2::class.java
             )
         } catch (e: Exception) {
             throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)

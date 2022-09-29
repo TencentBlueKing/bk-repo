@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -543,18 +542,16 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-        val manifestFile = ArtifactFileFactory.build(
-            storageService.load(
-                nodeDetail.sha256.orEmpty(),
-                Range.full(nodeDetail.size),
-                storageCredentials
-            )!!
-        )
-        val version = OciUtils.checkVersion(manifestFile.getInputStream())
+        val manifestBytes = storageService.load(
+            nodeDetail.sha256.orEmpty(),
+            Range.full(nodeDetail.size),
+            storageCredentials
+        )!!.readBytes()
+        val version = OciUtils.checkVersion(manifestBytes)
         val (mediaType, manifest) = if (version.schemaVersion == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
-            val manifest = OciUtils.streamToManifestV2(manifestFile.getInputStream())
+            val manifest = OciUtils.streamToManifestV2(manifestBytes)
             // 更新manifest文件的metadata
             val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
                 HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
@@ -591,7 +588,6 @@ class OciOperationServiceImpl(
                 )
             }
         }
-        manifestFile.delete()
     }
 
     /**
