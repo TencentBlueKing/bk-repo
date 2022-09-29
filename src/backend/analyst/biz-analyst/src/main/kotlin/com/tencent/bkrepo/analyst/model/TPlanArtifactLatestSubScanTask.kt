@@ -56,6 +56,7 @@ import java.time.LocalDateTime
         background = true
     )
 )
+@Suppress("LongParameterList")
 class TPlanArtifactLatestSubScanTask(
     id: String? = null,
     createdBy: String,
@@ -65,6 +66,7 @@ class TPlanArtifactLatestSubScanTask(
     startDateTime: LocalDateTime?,
     finishedDateTime: LocalDateTime?,
 
+    triggerType: String? = null,
     parentScanTaskId: String,
     /**
      * 制品最新一次扫描子任务的id，复用扫描结果时为null
@@ -105,6 +107,7 @@ class TPlanArtifactLatestSubScanTask(
     lastModifiedDate = lastModifiedDate,
     startDateTime = startDateTime,
     finishedDateTime = finishedDateTime,
+    triggerType = triggerType,
     parentScanTaskId = parentScanTaskId,
     planId = planId,
     projectId = projectId,
@@ -147,6 +150,7 @@ class TPlanArtifactLatestSubScanTask(
                 lastModifiedDate = now,
                 startDateTime = startDateTime,
                 finishedDateTime = finishedDateTime,
+                triggerType = triggerType,
                 parentScanTaskId = parentScanTaskId,
                 latestSubScanTaskId = id,
                 planId = planId,

@@ -41,6 +41,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(name = "parentScanTaskId_idx", def = "{'parentScanTaskId': 1}", background = true)
 )
+@Suppress("LongParameterList")
 class TArchiveSubScanTask(
     id: String? = null,
     createdBy: String,
@@ -50,6 +51,7 @@ class TArchiveSubScanTask(
     startDateTime: LocalDateTime?,
     finishedDateTime: LocalDateTime?,
 
+    triggerType: String? = null,
     parentScanTaskId: String,
     planId: String?,
 
@@ -90,6 +92,7 @@ class TArchiveSubScanTask(
     lastModifiedDate = lastModifiedDate,
     startDateTime = startDateTime,
     finishedDateTime = finishedDateTime,
+    triggerType = triggerType,
     parentScanTaskId = parentScanTaskId,
     planId = planId,
     projectId = projectId,
@@ -133,6 +136,7 @@ class TArchiveSubScanTask(
                 lastModifiedDate = now,
                 startDateTime = startDateTime,
                 finishedDateTime = finishedDateTime,
+                triggerType = triggerType,
                 parentScanTaskId = parentScanTaskId,
                 planId = planId,
                 projectId = projectId,
