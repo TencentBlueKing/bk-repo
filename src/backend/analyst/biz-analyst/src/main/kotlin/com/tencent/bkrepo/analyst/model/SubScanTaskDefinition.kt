@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.model
 
 import java.time.LocalDateTime
 
+@Suppress("LongParameterList")
 open class SubScanTaskDefinition(
     var id: String? = null,
     val createdBy: String,
@@ -43,6 +44,10 @@ open class SubScanTaskDefinition(
      * 结束扫描时间
      */
     val finishedDateTime: LocalDateTime? = null,
+    /**
+     * 触发方式
+     */
+    val triggerType: String? = null,
     /**
      * 所属扫描任务
      */

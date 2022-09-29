@@ -79,6 +79,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 @Component
+@Suppress("LongParameterList")
 class DefaultScanTaskScheduler @Autowired constructor(
     private val iteratorManager: IteratorManager,
     private val subScanTaskQueue: SubScanTaskQueue,
@@ -327,6 +328,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 lastModifiedBy = scanTask.createdBy,
                 lastModifiedDate = now,
 
+                triggerType = scanTask.triggerType,
                 parentScanTaskId = scanTask.taskId,
                 planId = scanTask.scanPlan?.id,
 
@@ -380,6 +382,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 startDateTime = now,
                 finishedDateTime = now,
 
+                triggerType = scanTask.triggerType,
                 parentScanTaskId = scanTask.taskId,
                 planId = scanTask.scanPlan?.id,
 

@@ -63,6 +63,7 @@ import java.time.LocalDateTime
         background = true
     )
 )
+@Suppress("LongParameterList")
 class TSubScanTask(
     id: String? = null,
     createdDate: LocalDateTime,
@@ -75,6 +76,7 @@ class TSubScanTask(
      */
     val timeoutDateTime: LocalDateTime? = null,
 
+    triggerType: String? = null,
     parentScanTaskId: String,
     planId: String?,
 
@@ -108,6 +110,7 @@ class TSubScanTask(
     lastModifiedDate = lastModifiedDate,
     lastModifiedBy = lastModifiedBy,
     startDateTime = startDateTime,
+    triggerType = triggerType,
     parentScanTaskId = parentScanTaskId,
     planId = planId,
 
