@@ -33,8 +33,10 @@ import com.tencent.bkrepo.analyst.component.manager.knowledgebase.KnowledgeBase
 import com.tencent.bkrepo.analyst.component.manager.knowledgebase.TCve
 import com.tencent.bkrepo.analyst.component.manager.standard.dao.LicenseResultDao
 import com.tencent.bkrepo.analyst.component.manager.standard.dao.SecurityResultDao
+import com.tencent.bkrepo.analyst.component.manager.standard.dao.SensitiveResultDao
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResult
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResult
+import com.tencent.bkrepo.analyst.component.manager.standard.model.TSensitiveResult
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
@@ -55,6 +57,7 @@ import org.springframework.stereotype.Component
 class StandardResultManager(
     private val securityResultDao: SecurityResultDao,
     private val licenseResultDao: LicenseResultDao,
+    private val sensitiveResultDao: SensitiveResultDao,
     private val knowledgeBase: KnowledgeBase
 ) : AbstractScanExecutorResultManager() {
     override fun save(
@@ -78,6 +81,12 @@ class StandardResultManager(
         }?.let {
             replace(credentialsKey, sha256, scanner.name, licenseResultDao, it)
         }
+
+        result.output?.result?.sensitiveResult?.map {
+            TSensitiveResult(credentialsKey = credentialsKey, sha256 = sha256, scanner = scanner.name, data = it)
+        }?.let {
+            replace(credentialsKey, sha256, scanner.name, sensitiveResultDao, it)
+        }
     }
 
     override fun load(
@@ -90,6 +99,12 @@ class StandardResultManager(
         return when (arguments.reportType) {
             ScanType.SECURITY.name -> loadSecurityItems(credentialsKey, sha256, scanner, arguments.pageLimit, arguments)
             ScanType.LICENSE.name -> loadLicenseResults(credentialsKey, sha256, scanner, arguments.pageLimit, arguments)
+            ScanType.SENSITIVE.name -> {
+                sensitiveResultDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments).let {
+                    Page(it.pageNumber, it.pageSize, it.totalRecords, it.records.map { record -> record.data })
+                }
+            }
+
             else -> throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, arguments.reportType)
         }
     }
