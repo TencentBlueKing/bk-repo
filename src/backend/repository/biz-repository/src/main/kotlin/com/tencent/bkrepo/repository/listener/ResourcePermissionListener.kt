@@ -60,7 +60,7 @@ class ResourcePermissionListener(
     @EventListener(ProjectCreatedEvent::class)
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
-            if (isAuthedNormalUser(userId)) {
+            --bug=103893757 修复创建项目慢查询问题            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 permissionManager.registerProject(userId, projectId)
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
@@ -75,7 +75,7 @@ class ResourcePermissionListener(
     @EventListener(RepoCreatedEvent::class)
     fun handle(event: RepoCreatedEvent) {
         with(event) {
-            if (isAuthedNormalUser(userId)) {
+            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 permissionManager.registerRepo(userId, projectId, repoName)
                 val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
                 userResource.addUserRole(userId, repoManagerRoleId)
@@ -89,5 +89,17 @@ class ResourcePermissionListener(
      */
     private fun isAuthedNormalUser(userId: String): Boolean {
         return userId != SYSTEM_USER && userId != ANONYMOUS_USER
+    }
+
+    private fun isNeedLocalPermission(projectId: String): Boolean {
+        if (projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(GIT_PROJECT_PREFIX)) {
+            return false
+        }
+        return true
+    }
+
+    companion object {
+        private const val GIT_PROJECT_PREFIX = "git_"
+        private const val CODE_PROJECT_PREFIX = "CODE_"
     }
 }
