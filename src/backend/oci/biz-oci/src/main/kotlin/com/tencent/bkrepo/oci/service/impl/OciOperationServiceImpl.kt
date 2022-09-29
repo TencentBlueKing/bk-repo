@@ -544,7 +544,11 @@ class OciOperationServiceImpl(
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
         val manifestFile = ArtifactFileFactory.build(
-            storageManager.loadArtifactInputStream(nodeDetail, storageCredentials)!!
+            storageService.load(
+                nodeDetail.sha256.orEmpty(),
+                Range.full(nodeDetail.size),
+                storageCredentials
+            )!!
         )
         val version = OciUtils.checkVersion(manifestFile.getInputStream())
         val (mediaType, manifest) = if (version.schemaVersion == 1) {
@@ -778,7 +782,6 @@ class OciOperationServiceImpl(
                     repoType = repoType
                 )
                 packageClient.createVersion(request)
-
             } else {
                 val request = ObjectBuildUtils.buildPackageVersionUpdateRequest(
                     ociArtifactInfo = this,
