@@ -125,7 +125,7 @@ class ArrowheadConverter(private val licenseService: SpdxLicenseService) : Scann
             overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
         addLicenseOverview(overview, scanExecutorResult.applicationItems)
-        return super.convertOverview(scanExecutorResult)
+        return overview
     }
 
     private fun addLicenseOverview(
