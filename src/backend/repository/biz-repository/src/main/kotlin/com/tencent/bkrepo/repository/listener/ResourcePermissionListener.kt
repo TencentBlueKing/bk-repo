@@ -60,7 +60,7 @@ class ResourcePermissionListener(
     @EventListener(ProjectCreatedEvent::class)
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
-            --bug=103893757 修复创建项目慢查询问题            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
+            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 permissionManager.registerProject(userId, projectId)
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
