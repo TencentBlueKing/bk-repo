@@ -43,23 +43,27 @@ import com.tencent.bkrepo.analysis.executor.pojo.Manifest
 import com.tencent.bkrepo.analysis.executor.pojo.ManifestV1
 import com.tencent.bkrepo.analysis.executor.pojo.ManifestV2
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
+import org.apache.commons.codec.binary.Hex
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.security.DigestOutputStream
+import java.security.MessageDigest
 
 class ImageScanHelper(
     private val nodeClient: NodeClient,
     private val storageService: StorageService
 ) {
-    fun generateScanFile(fileOutputStream: FileOutputStream, task: ScanExecutorTask) {
+    fun generateScanFile(fileOutputStream: FileOutputStream, task: ScanExecutorTask): String {
         val manifest = task.inputStream.readJsonString<ManifestV2>()
         if (logger.isDebugEnabled) {
             logger.debug(CommonUtils.buildLogMsg(task, manifest.toJsonString()))
         }
-        TarArchiveOutputStream(fileOutputStream).use { tos ->
+        val dos = DigestOutputStream(fileOutputStream, MessageDigest.getInstance("SHA-256"))
+        TarArchiveOutputStream(dos).use { tos ->
             // 打包config文件
             loadLayerTo(manifest.config, task, tos)
             val layers = ArrayList<String>()
@@ -76,6 +80,7 @@ class ImageScanHelper(
                 putArchiveEntry(MANIFEST, manifestV1Bytes.size.toLong(), it, tos)
             }
         }
+        return Hex.encodeHexString(dos.messageDigest.digest())
     }
 
     private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream) {

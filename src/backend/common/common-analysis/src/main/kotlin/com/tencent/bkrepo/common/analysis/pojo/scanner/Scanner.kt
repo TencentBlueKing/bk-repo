@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -46,7 +47,8 @@ import kotlin.math.max
     JsonSubTypes.Type(value = ArrowheadScanner::class, name = ArrowheadScanner.TYPE),
     JsonSubTypes.Type(value = DependencyScanner::class, name = DependencyScanner.TYPE),
     JsonSubTypes.Type(value = TrivyScanner::class, name = TrivyScanner.TYPE),
-    JsonSubTypes.Type(value = ScancodeToolkitScanner::class, name = ScancodeToolkitScanner.TYPE)
+    JsonSubTypes.Type(value = ScancodeToolkitScanner::class, name = ScancodeToolkitScanner.TYPE),
+    JsonSubTypes.Type(value = StandardScanner::class, name = StandardScanner.TYPE)
 )
 open class Scanner(
     @ApiModelProperty("扫描器名")

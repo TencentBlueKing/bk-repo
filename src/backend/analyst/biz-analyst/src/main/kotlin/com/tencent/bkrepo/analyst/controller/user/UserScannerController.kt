@@ -83,7 +83,9 @@ class UserScannerController @Autowired constructor(
         } else {
             scannerService.list()
         }
-        return ResponseBuilder.success(scannerBaseList.map { ScannerBase(it.name, it.type, it.description) })
+        return ResponseBuilder.success(
+            scannerBaseList.map { ScannerBase(it.name, it.type, it.description, it.supportFileNameExt) }
+        )
     }
 
     @ApiOperation("获取支持扫描的文件名后缀")
