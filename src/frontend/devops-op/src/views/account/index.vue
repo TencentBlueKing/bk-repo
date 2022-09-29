@@ -46,7 +46,7 @@
         width="180"
       >
         <template slot-scope="scope">
-          <span>{{ scope.row.credentials.status === 'ENABLE' ? '是' : '否' }}</span>
+          <span>{{ scope.row.credentials[0].status === 'ENABLE' ? '是' : '否' }}</span>
         </template>
       </el-table-column>
       <el-table-column align="right">
