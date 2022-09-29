@@ -123,6 +123,7 @@ class OciRegistryRemoteRepository(
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration, false)
         val downloadUrl = createRemoteDownloadUrl(context)
+        logger.info("Remote request $downloadUrl will be sent")
         val request = buildRequest(downloadUrl, remoteConfiguration)
         val response = httpClient.newCall(request).execute()
         var responseWithAuth: Response? = null
@@ -320,6 +321,7 @@ class OciRegistryRemoteRepository(
      * 远程下载响应回调
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
+        logger.info("Remote download response will be processed")
         val artifactFile = createTempFile(response.body()!!)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
@@ -401,6 +403,7 @@ class OciRegistryRemoteRepository(
     }
 
     fun cacheArtifact(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
+        logger.info("Remote artifact will be cached")
         val configuration = context.getRemoteConfiguration()
         if (!configuration.cache.enabled) return null
         val ociArtifactInfo = context.artifactInfo as OciArtifactInfo
