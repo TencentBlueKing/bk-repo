@@ -63,6 +63,11 @@
         </template>
       </el-table-column>
       <el-table-column
+        prop="appId"
+        label="应用ID"
+        width="180"
+      />
+      <el-table-column
         label="创建时间"
         width="250"
         prop="createdDate"
@@ -73,11 +78,6 @@
         </template>
       </el-table-column>
       <el-table-column
-        prop="appId"
-        label="应用ID"
-        width="180"
-      />
-      <el-table-column
         label="locked状态"
         width="180"
       >
@@ -85,16 +85,6 @@
           <span>{{ scope.row.locked ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column
-        prop="homepageUrl"
-        label="账号主页地址"
-        width="350"
-      />
-      <el-table-column
-        prop="description"
-        label="描述"
-        width="300"
-      />
       <el-table-column
         label="最后修改时间"
         width="250"
