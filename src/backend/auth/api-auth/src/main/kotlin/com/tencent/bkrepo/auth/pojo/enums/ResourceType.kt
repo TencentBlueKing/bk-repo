@@ -40,7 +40,7 @@ enum class ResourceType {
     fun id() = this.name.toLowerCase()
 
     companion object {
-        val DEFAULT = SYSTEM
+        val DEFAULT = NODE
 
         fun lookup(value: String): ResourceType {
             val upperCase = value.toUpperCase()
