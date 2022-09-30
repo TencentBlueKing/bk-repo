@@ -85,7 +85,6 @@ class OauthAuthorizationServiceImpl(
                 type = "Bearer",
                 accountId = clientId,
                 userId = userId,
-                scopeType = client.scopeType,
                 scope = client.scope,
                 issuedAt = Instant.now()
             )

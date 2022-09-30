@@ -448,19 +448,21 @@ open class PermissionServiceImpl constructor(
         )!!
     }
 
-    override fun checkPlatformPermission(permission: CheckPermissionRequest): Boolean {
-        with(permission) {
+    override fun checkPlatformPermission(request: CheckPermissionRequest): Boolean {
+        with(request) {
             if (appId == null) return true
             val platform = account.findOneByAppId(appId!!) ?: run {
                 logger.info("can not find platform [$appId]")
                 return false
             }
 
-            when (platform.scopeType) {
-                null -> return true
+            if (platform.scope == null) return true
+            val reqResourceType = ResourceType.lookup(resourceType)
+            if (!platform.scope!!.contains(reqResourceType)) return false
+            when (reqResourceType) {
                 ResourceType.SYSTEM -> return true
                 ResourceType.PROJECT -> {
-                    return checkPlatformProject(resourceType, permission.projectId, platform.scope)
+                    return checkPlatformProject(projectId, platform.scopeDesc)
                 }
                 else -> return false
             }

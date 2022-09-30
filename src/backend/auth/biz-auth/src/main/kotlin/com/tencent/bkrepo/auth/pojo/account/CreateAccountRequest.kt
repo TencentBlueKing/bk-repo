@@ -47,9 +47,9 @@ data class CreateAccountRequest(
     @ApiModelProperty("应用图标地址")
     val avatarUrl: String?,
     @ApiModelProperty("权限类型")
-    val scopeType: ResourceType?,
+    val scopeDesc: List<ScopeRule>?,
     @ApiModelProperty("权限范围")
-    val scope: List<ScopeRule>?,
+    val scope: Set<ResourceType>?,
     @ApiModelProperty("简要描述")
     val description: String?
 )

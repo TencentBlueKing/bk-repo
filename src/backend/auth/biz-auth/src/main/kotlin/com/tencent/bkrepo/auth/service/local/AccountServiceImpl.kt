@@ -100,7 +100,7 @@ class AccountServiceImpl constructor(
                 homepageUrl = request.homepageUrl,
                 redirectUri = request.redirectUri,
                 avatarUrl = request.avatarUrl,
-                scopeType = request.scopeType,
+                scopeDesc = request.scopeDesc,
                 scope = request.scope,
                 description = request.description,
                 createdDate = LocalDateTime.now(),
@@ -173,7 +173,7 @@ class AccountServiceImpl constructor(
             account.homepageUrl = homepageUrl ?: account.homepageUrl
             account.redirectUri = redirectUri ?: account.redirectUri
             account.scope = scope ?: account.scope
-            account.scopeType = scopeType ?: account.scopeType
+            account.scopeDesc = scopeDesc ?: account.scopeDesc
             account.description = description ?: account.description
             account.lastModifiedDate = LocalDateTime.now()
 
@@ -275,7 +275,7 @@ class AccountServiceImpl constructor(
             homepageUrl = tAccount.homepageUrl,
             redirectUri = tAccount.redirectUri,
             avatarUrl = tAccount.avatarUrl,
-            scopeType = tAccount.scopeType,
+            scopeDesc = tAccount.scopeDesc,
             scope = tAccount.scope,
             description = tAccount.description,
             createdDate = tAccount.createdDate,

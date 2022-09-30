@@ -30,7 +30,6 @@ package com.tencent.bkrepo.auth
 import com.tencent.bkrepo.auth.config.RedisTestConfig
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.service.AccountService
@@ -62,8 +61,7 @@ class OauthAuthorizationServiceTest {
     private val appId = "unit-test-app"
     private val homepageUrl = "http://localhost"
     private val redirectUri = "http://localhost/redirect"
-    private val scopeType = ResourceType.PROJECT
-    private val scope = null
+    private val scope = setOf(ResourceType.PROJECT, ResourceType.REPO, ResourceType.NODE)
     private val type = setOf(AuthorizationGrantType.AUTHORIZATION_CODE)
 
     private lateinit var account: Account
@@ -99,8 +97,7 @@ class OauthAuthorizationServiceTest {
         locked: Boolean = false,
         homepageUrl: String = this.homepageUrl,
         redirectUri: String = this.redirectUri,
-        scopeType: ResourceType? = this.scopeType,
-        scope: List<ScopeRule>? = this.scope,
+        scope: Set<ResourceType> = this.scope,
         authorizationGrantTypes: Set<AuthorizationGrantType> = this.type
     ): CreateAccountRequest {
         return CreateAccountRequest(
@@ -109,8 +106,8 @@ class OauthAuthorizationServiceTest {
             authorizationGrantTypes = authorizationGrantTypes,
             homepageUrl = homepageUrl,
             redirectUri = redirectUri,
-            scopeType = scopeType,
             scope = scope,
+            scopeDesc = null,
             avatarUrl = null,
             description = null
         )

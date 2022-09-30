@@ -109,9 +109,9 @@ class AuthInterceptor : HandlerInterceptor {
             val userInfo = userService.getUserInfoById(userId)
             val isAdmin: Boolean
             if (userId.isNotEmpty() && userInfo == null) {
-                val request = CreateUserRequest(userId = userId, name = userId)
+                val createRequest = CreateUserRequest(userId = userId, name = userId)
                 isAdmin = false
-                userService.createUser(request)
+                userService.createUser(createRequest)
             } else {
                 isAdmin = userInfo!!.admin
             }

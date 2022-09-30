@@ -56,8 +56,8 @@ data class TAccount(
     var homepageUrl: String?,
     var redirectUri: String?,
     var avatarUrl: String?,
-    var scopeType: ResourceType?,
-    var scope: List<ScopeRule>?,
+    var scope: Set<ResourceType>?,
+    var scopeDesc: List<ScopeRule>?,
     var description: String?,
     var createdDate: LocalDateTime?,
     var lastModifiedDate: LocalDateTime?
