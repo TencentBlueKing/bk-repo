@@ -57,4 +57,11 @@ interface ServiceAccountResource {
         @ApiParam(value = "secretkey")
         @PathVariable secretkey: String
     ): Response<String?>
+
+    @ApiOperation("查找sk")
+    @GetMapping("/credential/appId/{appId}/accessKey/{accessKey}")
+    fun findSecretKey(
+        @ApiParam @PathVariable appId: String,
+        @ApiParam @PathVariable accessKey: String
+    ): Response<String?>
 }

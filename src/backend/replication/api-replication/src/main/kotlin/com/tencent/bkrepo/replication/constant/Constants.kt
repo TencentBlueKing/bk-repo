@@ -47,6 +47,8 @@ const val NODE_FULL_PATH = "fullPath"
 const val SIZE = "size"
 const val REPOSITORY_INFO = "repo"
 const val SHA256 = "sha256"
+const val FILE = "file"
+const val STORAGE_KEY = "storageKey"
 
 const val PIPELINE_ID = "pipelineId"
 const val BUILD_ID = "buildId"

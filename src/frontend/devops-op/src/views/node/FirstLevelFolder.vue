@@ -40,7 +40,7 @@
       </el-form-item>
     </el-form>
     <div class="app">
-      <el-table :data="tableData" style="width: 100%">
+      <el-table v-loading="loading" :data="tableData" style="width: 100%">
         <el-table-column prop="path" label="路径" width="600" />
         <el-table-column prop="nodeNum" label="节点数" />
         <el-table-column prop="capSize" label="容量大小" />
@@ -69,6 +69,7 @@ export default {
   data() {
     return {
       projectSelect: '',
+      loading: false,
       repoSelect: '',
       tableData: [],
       projectOptions: [],
@@ -83,6 +84,13 @@ export default {
         repoName: ''
       }
     }
+  },
+  mounted() {
+    this.onRouteUpdate(this.$route)
+  },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
   },
   methods: {
     queryProjects(queryStr, cb) {
@@ -112,14 +120,40 @@ export default {
       this.queryPage(val)
     },
     queryPage(pageNum) {
-      const projectId = this.folderQuery.projectId
-      const repoId = this.folderQuery.repoName
-      statisticalFirstLevelFolder(projectId, repoId, pageNum).then(res => {
+      const query = {
+        page: String(pageNum)
+      }
+      query.projectId = this.folderQuery.projectId
+      query.repoName = this.folderQuery.repoName
+      this.$router.push({ path: '/nodes/firstLevelFolder', query: query })
+    },
+    onRouteUpdate(route) {
+      const query = route.query
+      const folderQuery = this.folderQuery
+      folderQuery.projectId = query.projectId ? query.projectId : ''
+      folderQuery.repoName = query.repoName ? query.repoName : ''
+      folderQuery.pageNumber = query.page ? Number(query.page) : 1
+      if (folderQuery.repoName) {
+        this.$nextTick(() => {
+          this.queryFolder(folderQuery)
+        })
+      }
+    },
+    queryFolder(folderQuery) {
+      this.loading = true
+      let promise = null
+      promise = statisticalFirstLevelFolder(folderQuery.projectId, folderQuery.repoName, folderQuery.pageNumber)
+      promise.then(res => {
         for (let i = 0; i < res.data.records.length; i++) {
           res.data.records[i].capSize = convertFileSize(res.data.records[i].capSize)
         }
         this.tableData = res.data.records
         this.total = res.data.totalRecords
+      }).catch(_ => {
+        this.tableData = []
+        this.total = 0
+      }).finally(() => {
+        this.loading = false
       })
     }
   }

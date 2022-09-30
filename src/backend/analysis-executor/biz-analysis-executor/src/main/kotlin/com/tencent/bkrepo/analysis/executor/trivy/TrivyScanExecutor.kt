@@ -40,8 +40,6 @@ import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey.Companion.overviewKeyOf
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.DbSource
@@ -81,7 +79,12 @@ class TrivyScanExecutor @Autowired constructor(
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
     private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
-    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+    override fun doScan(
+        taskWorkDir: File,
+        scannerInputFile: File,
+        sha256: String,
+        task: ScanExecutorTask
+    ): SubScanTaskStatus {
         require(task.scanner is TrivyScanner)
         val containerConfig = task.scanner.container
 
@@ -102,7 +105,7 @@ class TrivyScanExecutor @Autowired constructor(
         val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
         val cmd = buildScanCmds(task, scannerInputFile)
         val result = dockerScanHelper.scan(
-            containerConfig.image, Binds(bind, cacheBind), cmd, taskWorkDir, scannerInputFile, task
+            containerConfig.image, Binds(bind, cacheBind), cmd, scannerInputFile, task
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
@@ -110,9 +113,9 @@ class TrivyScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask) {
+    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
         scannerInputFile.parentFile.mkdirs()
-        scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
+        return scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
     }
 
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
@@ -256,22 +259,13 @@ class TrivyScanExecutor @Autowired constructor(
     private fun result(outputDir: File, scanStatus: SubScanTaskStatus): TrivyScanExecutorResult {
         val scanResult = readJsonString<TrivyScanResults>(File(outputDir, SCAN_RESULT_FILE_NAME))
         val vulnerabilityItems = ArrayList<VulnerabilityItem>()
-        val overview = HashMap<String, Long>()
         // cve count
         scanResult?.results?.forEach { result ->
             result.vulnerabilities?.let { vulnerabilityItems.addAll(it) }
-            result.vulnerabilities?.forEach {
-                if (it.severity == "UNKNOWN") {
-                    it.severity = Level.CRITICAL.levelName.toUpperCase()
-                }
-                val overviewKey = overviewKeyOf(it.severity.toLowerCase())
-                overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-            }
         }
 
         return TrivyScanExecutorResult(
             scanStatus = scanStatus.name,
-            overview = overview,
             vulnerabilityItems = vulnerabilityItems
         )
     }

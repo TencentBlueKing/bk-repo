@@ -115,4 +115,13 @@ interface ScanService {
      * @return 没有可执行的任务时返回null，否则返回一个待执行的任务
      */
     fun pull(): SubScanTask?
+
+    /**
+     * 获取扫描任务
+     *
+     * @param subtaskId 任务id
+     *
+     * @return 扫描任务
+     */
+    fun get(subtaskId: String): SubScanTask
 }

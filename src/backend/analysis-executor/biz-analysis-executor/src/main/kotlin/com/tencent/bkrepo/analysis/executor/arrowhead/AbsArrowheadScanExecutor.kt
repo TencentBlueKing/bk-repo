@@ -29,7 +29,6 @@ package com.tencent.bkrepo.analysis.executor.arrowhead
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
@@ -40,7 +39,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.incLicenseOverview
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.analysis.executor.util.FileUtils
@@ -52,7 +50,12 @@ import java.io.File
 
 abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
-    override fun doScan(taskWorkDir: File, scannerInputFile: File, task: ScanExecutorTask): SubScanTaskStatus {
+    override fun doScan(
+        taskWorkDir: File,
+        scannerInputFile: File,
+        sha256: String,
+        task: ScanExecutorTask
+    ): SubScanTaskStatus {
         val analysisSubType = if (task.repoType == RepositoryType.DOCKER.name) {
             ANALYSIS_SUB_TYPE_DOCKER
         } else {
@@ -203,52 +206,11 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
 
         return ArrowheadScanExecutorResult(
             scanStatus = scanStatus.name,
-            overview = overview(applicationItems, sensitiveItems, cveSecItems),
             checkSecItems = checkSecItems,
             applicationItems = applicationItems,
             sensitiveItems = sensitiveItems,
             cveSecItems = cveSecItems
         )
-    }
-
-    private fun overview(
-        applicationItems: List<ApplicationItem>,
-        sensitiveItems: List<SensitiveItem>,
-        cveSecItems: List<CveSecItem>
-    ): Map<String, Any?> {
-        val overview = HashMap<String, Long>()
-
-        // license risk
-        applicationItems.forEach {
-            it.license?.let { license -> incLicenseOverview(overview, license.risk) }
-        }
-
-        // sensitive count
-        sensitiveItems.forEach {
-            val overviewKey = ArrowheadScanExecutorResult.overviewKeyOfSensitive(it.type)
-            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-        }
-
-        // cve count
-        cveSecItems.forEach {
-            val overviewKey = CveOverviewKey.overviewKeyOf(it.cvssRank)
-            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-        }
-
-        additionalOverview(overview, applicationItems, sensitiveItems, cveSecItems)
-        return overview
-    }
-
-    /**
-     * 添加额外预览数据
-     */
-    protected open fun additionalOverview(
-        overview: MutableMap<String, Long>,
-        applicationItems: List<ApplicationItem>,
-        sensitiveItems: List<SensitiveItem>,
-        cveSecItems: List<CveSecItem>
-    ) {
-        // DO NOTHING
     }
 
     companion object {

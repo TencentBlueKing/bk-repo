@@ -32,16 +32,16 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.constant.FeignResponse
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RequestPart
-import org.springframework.web.multipart.MultipartFile
 
 /**
  * 同一集群不同节点之间的blob数据同步接口
+ *
+ * 注意，不使用feign实现文件推送是因为目前feign对文件上传的实现是基于字节数组，
+ * 当推送大文件或者许多文件推送请求时，容易造成内存不足。
  */
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "BlobReplicaClient")
 interface BlobReplicaClient {
@@ -52,18 +52,6 @@ interface BlobReplicaClient {
      */
     @PostMapping(BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): FeignResponse
-
-    /**
-     * 推送文件数据到远程集群
-     * @param file Multipart格式文件数据
-     * @param sha256 文件sha256，用于校验
-     */
-    @PostMapping(BLOB_PUSH_URI, consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun push(
-        @RequestPart file: MultipartFile,
-        @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null
-    ): Response<Void>
 
     /**
      * 检查文件数据在远程集群是否存在

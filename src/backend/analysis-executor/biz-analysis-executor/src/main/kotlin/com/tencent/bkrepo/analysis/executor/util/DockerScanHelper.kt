@@ -49,7 +49,6 @@ class DockerScanHelper(
         image: String,
         binds: Binds,
         args: List<String>,
-        taskWorkDir: File,
         scannerInputFile: File,
         task: ScanExecutorTask
     ): Boolean {
@@ -60,11 +59,11 @@ class DockerScanHelper(
         val containerId = dockerClient.createContainer(image, hostConfig, args)
 
         taskContainerIdMap[task.taskId] = containerId
-        logger.info(CommonUtils.buildLogMsg(task, "run container instance Id [$taskWorkDir, $containerId]"))
+        logger.info(CommonUtils.buildLogMsg(task, "run container instance Id [$containerId]"))
         try {
             // 启动容器
             val result = dockerClient.startContainer(containerId, maxScanDuration)
-            logger.info(CommonUtils.buildLogMsg(task, "task docker run result[$result], [$taskWorkDir, $containerId]"))
+            logger.info(CommonUtils.buildLogMsg(task, "task docker run result[$result], [$containerId]"))
             return result
         } finally {
             taskContainerIdMap.remove(task.taskId)

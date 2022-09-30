@@ -105,6 +105,8 @@ interface ClusterNodeService {
      * 尝试连接远程集群，连接失败抛[ErrorCodeException]异常
      */
     @Throws(ErrorCodeException::class)
+    fun tryConnect(clusterNodeInfo: ClusterNodeInfo)
+
     fun tryConnect(name: String)
 
     /**

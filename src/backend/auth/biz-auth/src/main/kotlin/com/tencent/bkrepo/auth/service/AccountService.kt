@@ -65,4 +65,6 @@ interface AccountService {
     fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean
 
     fun checkCredential(accessKey: String, secretKey: String): String?
+
+    fun findSecretKey(appId: String, accessKey: String): String?
 }
