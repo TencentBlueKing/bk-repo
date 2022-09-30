@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.auth.model
 
-import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
