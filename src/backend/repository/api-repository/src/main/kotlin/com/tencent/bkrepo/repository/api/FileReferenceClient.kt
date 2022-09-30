@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam
 interface FileReferenceClient {
 
     @PutMapping("/decrement")
-    fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Void>
+    fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Boolean>
 
     @PutMapping("/increment")
-    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Void>
+    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Boolean>
 }

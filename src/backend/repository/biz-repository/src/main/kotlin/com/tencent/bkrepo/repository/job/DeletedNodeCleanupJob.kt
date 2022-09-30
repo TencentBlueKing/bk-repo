@@ -43,7 +43,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
@@ -58,7 +57,6 @@ class DeletedNodeCleanupJob(
     private val fileReferenceService: FileReferenceService
 ) : CenterNodeJob() {
 
-    @Scheduled(cron = "0 0 2/6 * * ?") // 2点开始，6小时执行一次
     override fun start() {
         super.start()
     }

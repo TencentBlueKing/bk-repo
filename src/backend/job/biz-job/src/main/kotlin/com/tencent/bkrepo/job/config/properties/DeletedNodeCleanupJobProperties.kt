@@ -29,8 +29,9 @@ package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("job.share-record-cleanup-job")
-class ShareRecordCleanJobProperties(
-    override var cron: String = "0 0 1 * * ?",
-    var reserveDays: Long = 7L
+
+@ConfigurationProperties(value = "job.deleted-node-cleanup")
+class DeletedNodeCleanupJobProperties(
+    override var cron: String = "0 0 2/6 * * ?",
+    var deletedNodeReserveDays: Long = 15L
 ) : MongodbJobProperties()
