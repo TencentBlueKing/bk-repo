@@ -195,6 +195,7 @@ class AccountServiceTest {
             homepageUrl = homepageUrl,
             redirectUri = redirectUri,
             scope = scope,
+            scopeDesc = null,
             avatarUrl = null,
             description = null
         )

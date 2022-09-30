@@ -41,7 +41,9 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
 @Primary
@@ -51,11 +53,21 @@ interface ServiceAccountResource {
 
     @ApiOperation("校验ak/sk")
     @GetMapping("/credential/{accesskey}/{secretkey}")
+    @Deprecated("删除get方式校验")
     fun checkCredential(
         @ApiParam(value = "accesskey")
         @PathVariable accesskey: String,
         @ApiParam(value = "secretkey")
         @PathVariable secretkey: String
+    ): Response<String?>
+
+    @ApiOperation("校验ak/sk")
+    @PostMapping("/credential")
+    fun checkAccountCredential(
+        @ApiParam(value = "accesskey")
+        @RequestParam accesskey: String,
+        @ApiParam(value = "secretkey")
+        @RequestParam secretkey: String
     ): Response<String?>
 
     @ApiOperation("查找sk")

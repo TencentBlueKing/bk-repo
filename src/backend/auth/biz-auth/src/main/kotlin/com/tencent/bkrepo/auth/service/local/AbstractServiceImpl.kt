@@ -34,17 +34,13 @@ package com.tencent.bkrepo.auth.service.local
 import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.model.TUser
+import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
-import com.tencent.bkrepo.auth.pojo.user.User
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
+import com.tencent.bkrepo.auth.util.scope.ProjectRuleUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -61,9 +57,16 @@ open class AbstractServiceImpl constructor(
 
     fun checkUserExist(userId: String) {
         userRepository.findFirstByUserId(userId) ?: run {
-            logger.warn("user [$userId]  not exist.")
+            logger.warn("user [$userId] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
+    }
+
+    fun isUserLocalAdmin(userId: String): Boolean {
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            return false
+        }
+        return user.admin
     }
 
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
@@ -91,28 +94,6 @@ open class AbstractServiceImpl constructor(
             logger.warn("role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
-    }
-
-    fun transferCreateProjectUserRequest(request: CreateUserToProjectRequest): CreateUserRequest {
-        return CreateUserRequest(
-            request.userId,
-            request.name,
-            request.pwd,
-            request.admin,
-            request.asstUsers,
-            request.group
-        )
-    }
-
-    fun transferCreateRepoUserRequest(request: CreateUserToRepoRequest): CreateUserRequest {
-        return CreateUserRequest(
-            request.userId,
-            request.name,
-            request.pwd,
-            request.admin,
-            request.asstUsers,
-            request.group
-        )
     }
 
     fun updatePermissionById(id: String, key: String, value: Any): Boolean {
@@ -146,52 +127,24 @@ open class AbstractServiceImpl constructor(
         return Query.query(Criteria.where("_id").`is`(id))
     }
 
-    fun transferPermission(permission: TPermission): Permission {
-        return Permission(
-            id = permission.id,
-            resourceType = permission.resourceType,
-            projectId = permission.projectId,
-            permName = permission.permName,
-            repos = permission.repos,
-            includePattern = permission.includePattern,
-            excludePattern = permission.excludePattern,
-            users = permission.users,
-            roles = permission.roles,
-            actions = permission.actions,
-            createBy = permission.createBy,
-            createAt = permission.createAt,
-            updatedBy = permission.updatedBy,
-            updateAt = permission.updateAt
-        )
-    }
-
-    fun transferUser(user: TUser): User {
-        return User(
-            userId = user.userId,
-            name = user.name,
-            pwd = user.pwd,
-            admin = user.admin,
-            locked = user.locked,
-            tokens = user.tokens,
-            roles = user.roles
-        )
-    }
-
-    fun transferUserInfo(user: TUser): UserInfo {
-        return UserInfo(
-            userId = user.userId,
-            name = user.name,
-            locked = user.locked,
-            email = user.email,
-            phone = user.phone,
-            createdDate = user.createdDate,
-            admin = user.admin
-        )
-    }
 
     fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
         (repos as MutableList).retainAll(originRepoNames)
         return repos
+    }
+
+    fun checkPlatformProject(projectId: String?, scopeDesc: List<ScopeRule>?): Boolean {
+        if (scopeDesc == null || projectId == null) return false
+
+        scopeDesc.forEach {
+            when (it.field) {
+                ResourceType.PROJECT.name -> {
+                    if (ProjectRuleUtil.check(it, projectId)) return true
+                }
+                else -> return false
+            }
+        }
+        return false
     }
 
     companion object {

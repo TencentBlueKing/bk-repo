@@ -104,13 +104,14 @@ class AuthInterceptor : HandlerInterceptor {
             val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
             if (userId.isEmpty()) {
                 logger.warn("platform auth with empty userId")
+                throw IllegalArgumentException("userId is empty")
             }
             val userInfo = userService.getUserInfoById(userId)
             val isAdmin: Boolean
             if (userId.isNotEmpty() && userInfo == null) {
-                val request = CreateUserRequest(userId = userId, name = userId)
+                val createRequest = CreateUserRequest(userId = userId, name = userId)
                 isAdmin = false
-                userService.createUser(request)
+                userService.createUser(createRequest)
             } else {
                 isAdmin = userInfo!!.admin
             }

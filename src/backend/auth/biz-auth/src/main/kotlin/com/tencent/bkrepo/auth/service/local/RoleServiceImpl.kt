@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -85,17 +86,7 @@ class RoleServiceImpl constructor(
             RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId)
         }
 
-        val result = roleRepository.insert(
-            TRole(
-                roleId = roleId,
-                type = request.type,
-                name = request.name,
-                projectId = request.projectId,
-                repoName = request.repoName,
-                admin = request.admin,
-                description = request.description
-            )
-        )
+        val result = roleRepository.insert(RoleRequestUtil.conv2TRole(roleId, request))
         return result.id
     }
 

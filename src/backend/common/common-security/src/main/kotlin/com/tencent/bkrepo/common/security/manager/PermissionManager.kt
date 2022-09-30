@@ -37,7 +37,6 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionResource
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
@@ -53,7 +52,6 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -81,7 +79,6 @@ open class PermissionManager(
     private val permissionResource: ServicePermissionResource,
     private val externalPermissionResource: ServiceExternalPermissionResource,
     private val userResource: ServiceUserResource,
-    private val httpAuthProperties: HttpAuthProperties,
     private val nodeClient: NodeClient
 ) {
 
@@ -192,9 +189,6 @@ open class PermissionManager(
      * @param principalType 身份类型
      */
     fun checkPrincipal(userId: String, principalType: PrincipalType) {
-        if (!httpAuthProperties.enabled) {
-            return
-        }
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
@@ -212,15 +206,6 @@ open class PermissionManager(
         }
     }
 
-    fun registerProject(userId: String, projectId: String) {
-        val request = RegisterResourceRequest(userId, ResourceType.PROJECT.toString(), projectId)
-        permissionResource.registerResource(request)
-    }
-
-    fun registerRepo(userId: String, projectId: String, repoName: String) {
-        val request = RegisterResourceRequest(userId, ResourceType.REPO.toString(), projectId, repoName)
-        permissionResource.registerResource(request)
-    }
 
     /**
      * 判断是否为public仓库且为READ操作
@@ -284,10 +269,6 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
-        // 判断是否开启认证
-        if (!httpAuthProperties.enabled) {
-            return
-        }
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
@@ -519,9 +500,6 @@ open class PermissionManager(
         return userResource.detail(userId).data?.admin == true
     }
 
-    fun enableAuth(): Boolean {
-        return httpAuthProperties.enabled
-    }
 
     companion object {
 

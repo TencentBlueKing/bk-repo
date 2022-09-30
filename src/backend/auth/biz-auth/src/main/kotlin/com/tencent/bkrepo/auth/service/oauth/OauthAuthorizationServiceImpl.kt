@@ -85,7 +85,7 @@ class OauthAuthorizationServiceImpl(
                 type = "Bearer",
                 accountId = clientId,
                 userId = userId,
-                scope = client.scope!!,
+                scope = client.scope,
                 issuedAt = Instant.now()
             )
             oauthTokenRepository.insert(tOauthToken)
@@ -132,7 +132,7 @@ class OauthAuthorizationServiceImpl(
     private fun transfer(tOauthToken: TOauthToken) = OauthToken(
         accessToken = tOauthToken.accessToken,
         tokenType = tOauthToken.type,
-        scope = tOauthToken.scope.joinToString(StringPool.COMMA)
+        scope = if (tOauthToken.scope == null) "" else tOauthToken.scope!!.joinToString (StringPool.COMMA)
     )
 
     private fun checkClientSecret(clientId: String, clientSecret: String): TAccount {
@@ -140,9 +140,9 @@ class OauthAuthorizationServiceImpl(
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
 
         if (client.credentials.find {
-            it.secretKey == clientSecret &&
-                it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE
-        } == null
+                it.secretKey == clientSecret &&
+                        it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE
+            } == null
         ) {
             throw ErrorCodeException(AuthMessageCode.AUTH_SECRET_CHECK_FAILED)
         }

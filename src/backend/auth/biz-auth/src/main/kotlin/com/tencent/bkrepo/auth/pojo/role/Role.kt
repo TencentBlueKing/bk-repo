@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,19 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.role
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Document("oauth_token")
-data class TOauthToken(
+@ApiModel("角色")
+data class Role(
     val id: String? = null,
-    val accessToken: String,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scope: Set<ResourceType>?,
-    val issuedAt: Instant
+    @ApiModelProperty("角色ID")
+    val roleId: String,
+    @ApiModelProperty("角色类型")
+    val type: RoleType,
+    @ApiModelProperty("角色名")
+    val name: String,
+    @ApiModelProperty("项目ID")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String? = null,
+    @ApiModelProperty("管理员")
+    val admin: Boolean = false,
+    @ApiModelProperty("绑定的用户")
+    val users: List<String> = listOf(),
+    @ApiModelProperty("描述信息")
+    val description: String? = null
 )

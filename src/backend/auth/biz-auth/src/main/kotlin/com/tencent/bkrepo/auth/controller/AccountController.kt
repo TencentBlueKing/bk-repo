@@ -38,10 +38,13 @@ import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
+import com.tencent.bkrepo.auth.resource.OpenResourceImpl
 import com.tencent.bkrepo.auth.service.AccountService
+import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -54,11 +57,15 @@ import org.springframework.web.bind.annotation.PathVariable
 
 @RestController
 @RequestMapping(AUTH_API_ACCOUNT_PREFIX)
-class AccountController(private val accountService: AccountService) {
+class AccountController @Autowired constructor(
+    private val accountService: AccountService,
+    permissionService: PermissionService
+) : OpenResourceImpl(permissionService) {
 
     @ApiOperation("查询所有账号")
     @GetMapping("/list")
     fun listAccount(): Response<List<Account>> {
+        checkPlatformPermission()
         val accountList = accountService.listAccount()
         return ResponseBuilder.success(accountList)
     }
@@ -80,18 +87,21 @@ class AccountController(private val accountService: AccountService) {
     @ApiOperation("根据appId查询账号")
     @GetMapping("/detail/{appId}")
     fun getAccountDetail(@PathVariable appId: String): Response<Account> {
+        checkPlatformPermission()
         return ResponseBuilder.success(accountService.findAccountByAppId(appId))
     }
 
     @ApiOperation("创建账号")
     @PostMapping("/create")
     fun createAccount(@RequestBody request: CreateAccountRequest): Response<Account> {
+        checkPlatformPermission()
         return ResponseBuilder.success(accountService.createAccount(request))
     }
 
     @ApiOperation("更新账号")
     @PutMapping("/update")
     fun updateAccount(@RequestBody request: UpdateAccountRequest): Response<Boolean> {
+        checkPlatformPermission()
         accountService.updateAccount(request)
         return ResponseBuilder.success(true)
     }
@@ -99,6 +109,7 @@ class AccountController(private val accountService: AccountService) {
     @ApiOperation("删除账号")
     @DeleteMapping("/delete/{appId}")
     fun deleteAccount(@PathVariable appId: String): Response<Boolean> {
+        checkPlatformPermission()
         accountService.deleteAccount(appId)
         return ResponseBuilder.success(true)
     }
@@ -106,6 +117,7 @@ class AccountController(private val accountService: AccountService) {
     @ApiOperation("卸载账号")
     @DeleteMapping("/uninstall/{appId}")
     fun uninstallAccount(@PathVariable appId: String): Response<Boolean> {
+        checkPlatformPermission()
         accountService.uninstallAccount(appId)
         return ResponseBuilder.success(true)
     }
@@ -113,6 +125,7 @@ class AccountController(private val accountService: AccountService) {
     @ApiOperation("获取账户下的ak/sk对")
     @GetMapping("/credential/list/{appId}")
     fun getCredential(@PathVariable appId: String): Response<List<CredentialSet>> {
+        checkPlatformPermission()
         val credential = accountService.listCredentials(appId)
         return ResponseBuilder.success(credential)
     }
@@ -123,6 +136,7 @@ class AccountController(private val accountService: AccountService) {
         @PathVariable appId: String,
         @RequestParam type: AuthorizationGrantType?
     ): Response<CredentialSet> {
+        checkPlatformPermission()
         val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM)
         return ResponseBuilder.success(result)
     }
@@ -130,6 +144,7 @@ class AccountController(private val accountService: AccountService) {
     @ApiOperation("删除ak/sk对")
     @DeleteMapping("/credential/{appId}/{accesskey}")
     fun deleteCredential(@PathVariable appId: String, @PathVariable accesskey: String): Response<Boolean> {
+        checkPlatformPermission()
         val result = accountService.deleteCredential(appId, accesskey)
         return ResponseBuilder.success(result)
     }
@@ -141,6 +156,7 @@ class AccountController(private val accountService: AccountService) {
         @PathVariable accesskey: String,
         @PathVariable status: CredentialStatus
     ): Response<Boolean> {
+        checkPlatformPermission()
         accountService.updateCredentialStatus(appId, accesskey, status)
         return ResponseBuilder.success(true)
     }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,19 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.util.request
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    val accessToken: String,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scope: Set<ResourceType>?,
-    val issuedAt: Instant
-)
+object RoleRequestUtil {
+
+    fun conv2TRole(roleId: String, request: CreateRoleRequest): TRole {
+        return TRole(
+            roleId = roleId,
+            type = request.type,
+            name = request.name,
+            projectId = request.projectId,
+            repoName = request.repoName,
+            admin = request.admin,
+            description = request.description
+        )
+    }
+}

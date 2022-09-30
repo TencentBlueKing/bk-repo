@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,25 +27,14 @@
 
 package com.tencent.bkrepo.auth.pojo.account
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
+import com.tencent.bkrepo.common.query.enums.OperationType
 import io.swagger.annotations.ApiModelProperty
 
-data class UpdateAccountRequest(
-    @ApiModelProperty("系统Id")
-    val appId: String,
-    @ApiModelProperty("是否锁定")
-    val locked: Boolean = false,
-    @ApiModelProperty("授权方式")
-    val authorizationGrantTypes: Set<AuthorizationGrantType>,
-    @ApiModelProperty("应用主页")
-    val homepageUrl: String? = null,
-    @ApiModelProperty("应用回调地址")
-    val redirectUri: String? = null,
-    @ApiModelProperty("应用图标地址")
-    val avatarUrl: String? = null,
-    @ApiModelProperty("权限范围")
-    val scope: Set<ResourceType>? = null,
-    @ApiModelProperty("简要描述")
-    val description: String? = null
+data class ScopeRule(
+    @ApiModelProperty("字段名")
+    val field: String,
+    @ApiModelProperty("值")
+    val value: Any,
+    @ApiModelProperty("操作类型")
+    val operation: OperationType = OperationType.DEFAULT
 )

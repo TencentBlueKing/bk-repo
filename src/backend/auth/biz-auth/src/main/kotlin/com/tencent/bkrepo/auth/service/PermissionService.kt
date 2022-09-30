@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
@@ -43,6 +42,8 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 
 interface PermissionService {
+
+    fun checkPlatformPermission(request: CheckPermissionRequest): Boolean
 
     fun checkPermission(request: CheckPermissionRequest): Boolean
 
@@ -72,5 +73,4 @@ interface PermissionService {
 
     fun updatePermissionAction(request: UpdatePermissionActionRequest): Boolean
 
-    fun registerResource(request: RegisterResourceRequest)
 }

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -58,8 +57,4 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.listPermissionProject(userId))
     }
 
-    override fun registerResource(request: RegisterResourceRequest): Response<Boolean> {
-        permissionService.registerResource(request)
-        return ResponseBuilder.success()
-    }
 }

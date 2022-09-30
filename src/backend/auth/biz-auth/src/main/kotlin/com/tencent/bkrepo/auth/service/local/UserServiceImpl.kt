@@ -50,6 +50,7 @@ import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
+import com.tencent.bkrepo.auth.util.request.UserRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -105,21 +106,7 @@ class UserServiceImpl constructor(
         request.pwd?.let {
             hashPwd = DataDigestUtils.md5FromStr(request.pwd!!)
         }
-        val userRequest = TUser(
-            userId = request.userId,
-            name = request.name,
-            pwd = hashPwd,
-            admin = request.admin,
-            locked = false,
-            tokens = emptyList(),
-            roles = emptyList(),
-            asstUsers = request.asstUsers,
-            group = request.group,
-            email = request.email,
-            phone = request.phone,
-            createdDate = LocalDateTime.now(),
-            lastModifiedDate = LocalDateTime.now()
-        )
+        val userRequest = UserRequestUtil.convToTUser(request, hashPwd)
         try {
             userRepository.insert(userRequest)
         } catch (ignore: DuplicateKeyException) {
@@ -136,7 +123,7 @@ class UserServiceImpl constructor(
         }
         // user not exist, create user
         try {
-            val userResult = createUser(transferCreateRepoUserRequest(request))
+            val userResult = createUser(UserRequestUtil.convToCreateRepoUserRequest(request))
             if (!userResult) {
                 logger.warn("create user fail [$request]")
                 return false
@@ -158,7 +145,7 @@ class UserServiceImpl constructor(
         }
         // user not exist, create user
         try {
-            val userResult = createUser(transferCreateProjectUserRequest(request))
+            val userResult = createUser(UserRequestUtil.convToCreateProjectUserRequest(request))
             if (!userResult) {
                 logger.warn("create user fail [$request]")
                 return false
@@ -177,9 +164,9 @@ class UserServiceImpl constructor(
         return if (rids.isEmpty()) {
             // 排除被锁定的用户
             val filter = UserQueryHelper.filterNotLockedUser()
-            mongoTemplate.find(filter, TUser::class.java).map { transferUser(it) }
+            mongoTemplate.find(filter, TUser::class.java).map { UserRequestUtil.convToUser(it) }
         } else {
-            userRepository.findAllByRolesIn(rids).map { transferUser(it) }
+            userRepository.findAllByRolesIn(rids).map { UserRequestUtil.convToUser(it) }
         }
     }
 
@@ -325,7 +312,7 @@ class UserServiceImpl constructor(
     override fun getUserById(userId: String): User? {
         logger.debug("get user userId : [$userId]")
         val user = userRepository.findFirstByUserId(userId) ?: return null
-        return transferUser(user)
+        return UserRequestUtil.convToUser(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
@@ -344,16 +331,16 @@ class UserServiceImpl constructor(
         }
         // password 匹配成功，返回
         if (result.pwd == hashPwd && result.userId == userId) {
-            return transferUser(result)
+            return UserRequestUtil.convToUser(result)
         }
 
         // token 匹配成功
         result.tokens.forEach {
             // 永久token，校验通过，临时token校验有效期
             if (it.id == pwd && it.expiredAt == null) {
-                return transferUser(result)
+                return UserRequestUtil.convToUser(result)
             } else if (it.id == pwd && it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())) {
-                return transferUser(result)
+                return UserRequestUtil.convToUser(result)
             }
         }
 
@@ -366,13 +353,15 @@ class UserServiceImpl constructor(
         val query = UserQueryHelper.getUserByName(userName, admin, locked)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = mongoTemplate.count(query, TUser::class.java)
-        val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map { transferUserInfo(it) }
+        val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map {
+            UserRequestUtil.convToUserInfo(it)
+        }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     override fun getUserInfoById(userId: String): UserInfo? {
         val tUser = userRepository.findFirstByUserId(userId) ?: return null
-        return transferUserInfo(tUser)
+        return UserRequestUtil.convToUserInfo(tUser)
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {

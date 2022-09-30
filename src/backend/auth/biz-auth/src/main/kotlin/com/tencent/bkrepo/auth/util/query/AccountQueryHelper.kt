@@ -13,7 +13,7 @@ object AccountQueryHelper {
         )
     }
 
-    fun checkAccessKey(appId: String, accessKey: String): Query {
+    fun checkAppAccessKey(appId: String, accessKey: String): Query {
         return Query.query(
             Criteria.where(TAccount::appId.name).`is`(appId)
                 .and("credentials.accessKey").`is`(accessKey)
