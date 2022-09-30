@@ -276,9 +276,8 @@ class OciRegistryLocalRepository(
         ociOperationService.updateOciInfo(
             ociArtifactInfo = artifactInfo,
             digest = digest,
-            artifactFile = artifactFile,
             storageCredentials = context.storageCredentials,
-            fullPath = node.fullPath
+            nodeDetail = node
         )
         val manifestLocation = OciLocationUtils.manifestLocation(digest, artifactInfo)
         return Pair(digest, manifestLocation)
