@@ -31,3 +31,34 @@ export function deleteAccount(appid) {
     method: 'delete'
   })
 }
+
+export function deleteKey(appid, accessKey) {
+  return request({
+    url: `${PREFIX_SERVICES}/credential/${appid}/${accessKey}`,
+    method: 'delete'
+  })
+}
+
+export function createKey(appid, authTypes) {
+  return request({
+    url: `${PREFIX_SERVICES}/credential/${appid}`,
+    method: 'post',
+    params: {
+      type: authTypes
+    }
+  })
+}
+
+export function updateKey(appid, accessKey, status) {
+  return request({
+    url: `${PREFIX_SERVICES}/credential/${appid}/${accessKey}/${status}`,
+    method: 'put'
+  })
+}
+
+export function keyLists(appid) {
+  return request({
+    url: `${PREFIX_SERVICES}/credential/list/${appid}`,
+    method: 'get'
+  })
+}

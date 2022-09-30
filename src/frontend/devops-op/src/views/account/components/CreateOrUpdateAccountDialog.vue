@@ -114,9 +114,6 @@ export default {
         label: 'NODE'
       }],
       rules: {
-        authorizationGrantTypes: [
-          { required: true, message: '请选择认证授权方式' }
-        ],
         avatarUrl: [
           { validator: this.validateUrl, message: '请输入正确的地址', trigger: 'blur' }
         ]
@@ -130,6 +127,12 @@ export default {
         this.showDialog = true
       } else {
         this.close()
+      }
+    },
+    updatingCredentials: function(newVal) {
+      if (newVal) {
+        this.authType = newVal.authorizationGrantTypes
+        this.scopeType = newVal.scope
       }
     }
   },
@@ -176,7 +179,14 @@ export default {
           // 发起请求
           reqPromise.then(res => {
             this.$message.success(msg)
-            this.$emit(eventName, credential.default ? credential : res.data)
+            if (!this.createMode) {
+              this.$emit(eventName, credential)
+            } else {
+              for (let i = 0; i < res.data.credentials.length; i++) {
+                res.data.credentials[i].secretKey = res.data.credentials[i].secretKey.slice(0, -5) + '*****'
+              }
+              this.$emit(eventName, res.data)
+            }
             this.close()
           })
         } else {
