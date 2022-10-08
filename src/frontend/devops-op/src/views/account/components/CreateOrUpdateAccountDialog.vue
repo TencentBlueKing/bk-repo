@@ -162,7 +162,7 @@ export default {
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate(credential) {
-      if (credential.authorizationGrantTypes === '') {
+      if (credential.authorizationGrantTypes === '' || credential.authorizationGrantTypes.length < 1) {
         credential.authorizationGrantTypes = ['PLATFORM']
       }
       if (credential.scope === '') {
@@ -190,7 +190,7 @@ export default {
               this.$emit(eventName, credential)
             } else {
               for (let i = 0; i < res.data.credentials.length; i++) {
-                res.data.credentials[i].secretKey = res.data.credentials[i].secretKey.slice(0, -5) + '*****'
+                res.data.credentials[i].secretKey = res.data.credentials[i].secretKey.substring(0, 8) + '*****'
               }
               this.$emit(eventName, res.data)
             }
