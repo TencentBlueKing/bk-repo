@@ -188,7 +188,6 @@ export default {
     },
     changeStatus(accountIndex, account, index, key) {
       const resStatus = key.status === 'ENABLE' ? 'DISABLE' : 'ENABLE'
-      console.log(key.status)
       updateKey(account.appId, key.accessKey, resStatus).then(() => {
         this.accounts[accountIndex].credentials[index].status = resStatus
       })
