@@ -124,6 +124,8 @@ export default {
     visible: function(newVal) {
       if (newVal) {
         this.resetCredential()
+        this.authType = ''
+        this.scopeType = ''
         this.showDialog = true
       } else {
         this.close()
@@ -161,6 +163,12 @@ export default {
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate(credential) {
+      if (credential.authorizationGrantTypes === '') {
+        credential.authorizationGrantTypes = []
+      }
+      if (credential.scope === '') {
+        credential.scope = []
+      }
       this.$refs['form'].validate((valid) => {
         if (valid) {
           // 根据是否为创建模式发起不同请求
