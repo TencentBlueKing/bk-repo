@@ -136,4 +136,8 @@ class NodeServiceImpl(
     override fun listDeletedPoint(artifact: ArtifactInfo): List<NodeDeletedPoint> {
         return NodeRestoreSupport(this).listDeletedPoint(artifact)
     }
+
+    override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
+        return NodeRestoreSupport(this).restoreNode(restoreContext)
+    }
 }

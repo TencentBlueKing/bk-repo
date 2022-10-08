@@ -129,7 +129,7 @@ open class ServiceBaseTest {
             ResponseBuilder.success()
         )
 
-        whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull()))
+        whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
     }
 

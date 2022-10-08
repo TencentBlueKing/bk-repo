@@ -69,18 +69,7 @@ open class NodeRestoreSupport(
 
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
         with(resolveContext(artifact, nodeRestoreOption)) {
-            findDeletedNode(this)?.let {
-                restore(this, it)
-            }
-
-            val result = NodeRestoreResult(
-                fullPath = rootFullPath,
-                restoreCount = restoreCount,
-                skipCount = skipCount,
-                conflictCount = conflictCount
-            )
-            logger.info("Success to restore $artifact: $result.")
-            return result
+            return restoreNode(this)
         }
     }
 
@@ -103,6 +92,23 @@ open class NodeRestoreSupport(
         with(artifact) {
             val query = nodeDeletedPointListQuery(projectId, repoName, getArtifactFullPath())
             return nodeDao.find(query).map { convert(it) }
+        }
+    }
+
+    override fun restoreNode(restoreContext: RestoreContext): NodeRestoreResult {
+        with(restoreContext) {
+            findDeletedNode(this)?.let {
+                restore(this, it)
+            }
+
+            val result = NodeRestoreResult(
+                fullPath = rootFullPath,
+                restoreCount = restoreCount,
+                skipCount = skipCount,
+                conflictCount = conflictCount
+            )
+            logger.info("Success to restore $rootFullPath: $result.")
+            return result
         }
     }
 
