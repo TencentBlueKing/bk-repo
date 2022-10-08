@@ -124,8 +124,6 @@ export default {
     visible: function(newVal) {
       if (newVal) {
         this.resetCredential()
-        this.authType = ''
-        this.scopeType = ''
         this.showDialog = true
       } else {
         this.close()
@@ -135,6 +133,9 @@ export default {
       if (newVal) {
         this.authType = newVal.authorizationGrantTypes
         this.scopeType = newVal.scope
+      } else {
+        this.authType = ''
+        this.scopeType = ''
       }
     }
   },
@@ -158,13 +159,11 @@ export default {
     },
     close() {
       this.showDialog = false
-      this.authType = ''
-      this.scopeType = ''
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate(credential) {
       if (credential.authorizationGrantTypes === '') {
-        credential.authorizationGrantTypes = []
+        credential.authorizationGrantTypes = ['PLATFORM']
       }
       if (credential.scope === '') {
         credential.scope = []

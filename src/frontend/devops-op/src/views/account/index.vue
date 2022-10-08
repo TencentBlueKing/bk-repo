@@ -178,6 +178,9 @@ export default {
     },
     handleUpdated(credential) {
       this.accounts.splice(this.updatingIndex, 1, credential)
+      keyLists(this.updatingAccount.appId).then(res => {
+        this.accounts[this.updatingIndex].credentials = res.data
+      })
     },
     handleKeyCreated() {
       keyLists(this.updatingAccount.appId).then(res => {
