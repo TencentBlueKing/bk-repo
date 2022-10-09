@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.bksync.BkSyncArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.chunk.RandomAccessArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.common.bksync.BlockChannel
@@ -87,6 +88,12 @@ class ArtifactFileFactory(
          */
         fun buildChunked(): ChunkedArtifactFile {
             return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
+                track(this)
+            }
+        }
+
+        fun buildDfsArtifactFile(): RandomAccessArtifactFile {
+            return RandomAccessArtifactFile(getMonitor(), getStorageCredentials(), properties).apply {
                 track(this)
             }
         }
