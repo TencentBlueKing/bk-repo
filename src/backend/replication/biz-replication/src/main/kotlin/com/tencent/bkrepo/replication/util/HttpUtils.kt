@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
-import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
@@ -125,7 +124,7 @@ object HttpUtils {
             val result = responseCode in 200..399
             connection.disconnect()
             result
-        } catch (exception: IOException) {
+        } catch (exception: Exception) {
             exception.printStackTrace()
             throw exception
         }
