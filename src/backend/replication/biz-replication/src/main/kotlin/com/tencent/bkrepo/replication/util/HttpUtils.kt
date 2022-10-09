@@ -120,6 +120,7 @@ object HttpUtils {
 //            connection.connectTimeout = timeout
 //            connection.readTimeout = timeout
             connection.requestMethod = "HEAD"
+            connection.instanceFollowRedirects = false
             val responseCode = connection.responseCode
             val result = responseCode in 200..399
             connection.disconnect()
