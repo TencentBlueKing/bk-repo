@@ -41,7 +41,6 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.conan.constant.CONANS_URL_TAG
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
-import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.constant.MD5
 import com.tencent.bkrepo.conan.constant.UPLOAD_URL_PREFIX
 import com.tencent.bkrepo.conan.constant.URL
@@ -64,7 +63,6 @@ import com.tencent.bkrepo.conan.utils.PathUtils.getPackageConanInfoFile
 import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.PathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.PathUtils.joinString
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -275,8 +273,9 @@ class CommonService {
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
         val inputStream = storageManager.loadArtifactInputStream(node, repo.storageCredentials)
+        // TODO 需要调整
         val file = ArtifactFileFactory.build(inputStream!!, node.size)
-        return ConanInfoLoadUtil.load(file.getFile()!!)
+        return ConanInfoLoadUtil.load(file.flushToFile())
     }
 
     fun getPaths(
@@ -289,10 +288,10 @@ class CommonService {
         nodeClient.getNodeDetail(projectId, repoName, fullPath).data
             ?: throw NodeNotFoundException(path)
         val subFileMap = mutableMapOf<String, String>()
-            nodeClient.listNode(projectId, repoName, fullPath, includeFolder = false, deep = true).data!!.forEach{
-                subFileMap[it.name] = it.fullPath
-            }
-        if (subFileset.isEmpty()) return  subFileMap.values.toList()
+        nodeClient.listNode(projectId, repoName, fullPath, includeFolder = false, deep = true).data!!.forEach {
+            subFileMap[it.name] = it.fullPath
+        }
+        if (subFileset.isEmpty()) return subFileMap.values.toList()
         return subFileset.intersect(subFileMap.keys).map { subFileMap[it]!! }
     }
 
@@ -404,7 +403,7 @@ class CommonService {
     ): List<String> {
         nodeClient.getNodeDetail(projectId, repoName, revPath).data
             ?: throw NodeNotFoundException(revPath)
-        return nodeClient.listNode(projectId, repoName, revPath, includeFolder = false, deep = false).data!!.map {
+        return nodeClient.listNode(projectId, repoName, revPath, includeFolder = true, deep = false).data!!.map {
             it.name
         }
     }
@@ -568,11 +567,10 @@ class CommonService {
         return result
     }
 
-
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
-    fun <T> lockAction(projectId: String, repoName: String, revPath:String, action: () -> T): T {
+    fun <T> lockAction(projectId: String, repoName: String, revPath: String, action: () -> T): T {
         val lockKey = buildRedisKey(projectId, repoName, revPath)
         val lock = lockOperation.getLock(lockKey)
         return if (lockOperation.getSpinLock(lockKey, lock)) {
@@ -590,7 +588,6 @@ class CommonService {
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {
         return "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName/$revPath"
     }
-
 
     /**
      * 获取请求URL前缀，用于生成上传或者下载路径

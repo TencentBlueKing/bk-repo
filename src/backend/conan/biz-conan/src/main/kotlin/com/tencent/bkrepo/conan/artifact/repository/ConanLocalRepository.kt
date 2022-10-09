@@ -29,53 +29,34 @@ package com.tencent.bkrepo.conan.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.constant.EXPORT_SOURCES_TGZ_NAME
-import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.constant.NAME
 import com.tencent.bkrepo.conan.constant.PACKAGE_TGZ_NAME
 import com.tencent.bkrepo.conan.constant.VERSION
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeUploadEvent
-import com.tencent.bkrepo.conan.pojo.PackageReference
-import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
-import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil
-import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
-import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageUpdateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionCreateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionUpdateRequest
-import com.tencent.bkrepo.conan.utils.PathUtils
-import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
-import com.tencent.bkrepo.conan.utils.PathUtils.joinString
-import com.tencent.bkrepo.conan.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 
 @Component
 class ConanLocalRepository : LocalRepository() {
-
 
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         with(context) {

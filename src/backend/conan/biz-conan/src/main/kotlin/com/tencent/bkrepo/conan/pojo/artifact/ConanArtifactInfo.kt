@@ -65,7 +65,8 @@ class ConanArtifactInfo(
         // get recipe snapshot
         const val GET_RECIPE_SNAPSHOT_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}"
         // get package manifest
-        const val GET_PACKAGE_MANIFEST_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}/packages/{packageId}/digest"
+        const val GET_PACKAGE_MANIFEST_V1 = "/{projectId}/{repoName}/v1/conans/" +
+            "{name}/{version}/{username}/{channel}/packages/{packageId}/digest"
         // get package snapshot
         const val GET_PACKAGE_SNAPSHOT_V1 = "/{projectId}/{repoName}/v1/conans/" +
             "{name}/{version}/{username}/{channel}/packages/{packageId}"
@@ -84,9 +85,10 @@ class ConanArtifactInfo(
             "{name}/{version}/{username}/{channel}/packages/{packageId}/download_urls"
 
         // upload file
-        const val UPLOAD_FILE_V1 = "/{projectId}/{repoName}/v1/files/{username}/{name}/{version}/{channel}/{revision}/export/{path}"
+        const val UPLOAD_FILE_V1 = "/{projectId}/{repoName}/v1/files/" +
+            "{username}/{name}/{version}/{channel}/{revision}/export/{path}"
         const val UPLOAD_PACKAGE_FILE_V1 = "/{projectId}/{repoName}/v1/files/" +
-            "{username}/{name}/{version}/{channel}/packages/{packageId}/{pRevision}/{path}"
+            "{username}/{name}/{version}/{channel}/{revision}/package/{packageId}/{pRevision}/{path}"
 
         // remove recipe
         const val REMOVE_RECIPE_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}"
