@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
@@ -117,16 +118,15 @@ object HttpUtils {
         targetUrl = targetUrl.replaceFirst("^https".toRegex(), "http")
         return try {
             val connection = URL(targetUrl).openConnection() as HttpURLConnection
-//            connection.connectTimeout = timeout
-//            connection.readTimeout = timeout
+            connection.connectTimeout = timeout
+            connection.readTimeout = timeout
             connection.requestMethod = "HEAD"
             connection.instanceFollowRedirects = false
             val responseCode = connection.responseCode
             val result = responseCode in 200..399
             connection.disconnect()
             result
-        } catch (exception: Exception) {
-            exception.printStackTrace()
+        } catch (exception: IOException) {
             throw exception
         }
     }
