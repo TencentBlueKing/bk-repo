@@ -137,6 +137,7 @@ object HttpUtils {
     private fun validateHttpsProtocol(url: URL): Boolean {
         return try {
             val http: HttpURLConnection = url.openConnection() as HttpURLConnection
+            http.instanceFollowRedirects = false
             http.responseCode
             http.disconnect()
             true
