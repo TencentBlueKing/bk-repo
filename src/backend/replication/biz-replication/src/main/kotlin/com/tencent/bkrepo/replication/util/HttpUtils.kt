@@ -121,6 +121,7 @@ object HttpUtils {
             connection.connectTimeout = timeout
             connection.readTimeout = timeout
             connection.requestMethod = "HEAD"
+            connection.instanceFollowRedirects = false
             val responseCode = connection.responseCode
             val result = responseCode in 200..399
             connection.disconnect()
@@ -136,6 +137,7 @@ object HttpUtils {
     private fun validateHttpsProtocol(url: URL): Boolean {
         return try {
             val http: HttpURLConnection = url.openConnection() as HttpURLConnection
+            http.instanceFollowRedirects = false
             http.responseCode
             http.disconnect()
             true
