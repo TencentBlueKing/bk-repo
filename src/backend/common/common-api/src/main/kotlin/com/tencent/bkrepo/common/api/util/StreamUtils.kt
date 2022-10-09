@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.api.util
 
 import java.io.InputStream
+import java.nio.charset.Charset
 
 /**
  * 流工具
@@ -23,5 +24,9 @@ object StreamUtils {
             remain = total - pos
         } while (remain > 0)
         return pos
+    }
+
+    fun InputStream.readText(charset: Charset = Charsets.UTF_8) = this.use {
+        it.reader(charset).use { reader -> reader.readText() }
     }
 }

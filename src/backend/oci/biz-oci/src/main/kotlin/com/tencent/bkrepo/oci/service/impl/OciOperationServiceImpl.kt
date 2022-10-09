@@ -29,6 +29,7 @@ package com.tencent.bkrepo.oci.service.impl
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
@@ -82,8 +83,8 @@ import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -105,6 +106,7 @@ import javax.servlet.http.HttpServletRequest
 class OciOperationServiceImpl(
     private val nodeClient: NodeClient,
     private val metadataClient: MetadataClient,
+    private val packageMetadataClient: PackageMetadataClient,
     private val packageClient: PackageClient,
     private val storageService: StorageService,
     private val storageManager: StorageManager,
@@ -464,18 +466,14 @@ class OciOperationServiceImpl(
      */
     private fun buildNodeCreateRequest(
         ociArtifactInfo: OciArtifactInfo,
-        artifactFile: ArtifactFile,
-        proxyUrl: String? = null
+        artifactFile: ArtifactFile
     ): NodeCreateRequest {
-        val metadata = proxyUrl?.let {
-            mapOf(Pair(PROXY_URL, proxyUrl))
-        }
+
         return ObjectBuildUtils.buildNodeCreateRequest(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             artifactFile = artifactFile,
-            fullPath = ociArtifactInfo.getArtifactFullPath(),
-            metadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
+            fullPath = ociArtifactInfo.getArtifactFullPath()
         )
     }
 
@@ -490,8 +488,8 @@ class OciOperationServiceImpl(
         fileInfo: FileInfo?,
         proxyUrl: String?
     ): NodeDetail? {
-        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, proxyUrl)
-        return if (fileInfo != null) {
+        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile)
+        val nodeDetail = if (fileInfo != null) {
             val newNodeRequest = request.copy(
                 size = fileInfo.size,
                 md5 = fileInfo.md5,
@@ -502,6 +500,15 @@ class OciOperationServiceImpl(
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         }
+        proxyUrl?.let {
+            saveMetaData(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                fullPath = request.fullPath,
+                metadata = mutableMapOf(PROXY_URL to proxyUrl)
+            )
+        }
+        return nodeDetail
     }
 
     /**
@@ -528,8 +535,7 @@ class OciOperationServiceImpl(
     override fun updateOciInfo(
         ociArtifactInfo: OciManifestArtifactInfo,
         digest: OciDigest,
-        artifactFile: ArtifactFile,
-        fullPath: String,
+        nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
         sourceType: ArtifactChannel?
     ) {
@@ -537,12 +543,16 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-
-        val version = OciUtils.checkVersion(artifactFile.getInputStream())
-        val (mediaType, manifest) = if (version.schemaVersion == 1) {
+        val manifestBytes = storageService.load(
+            nodeDetail.sha256.orEmpty(),
+            Range.full(nodeDetail.size),
+            storageCredentials
+        )!!.readText()
+        val version = OciUtils.checkVersion(manifestBytes)
+        val (mediaType, manifest) = if (version == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
-            val manifest = OciUtils.streamToManifestV2(artifactFile.getInputStream())
+            val manifest = OciUtils.stringToManifestV2(manifestBytes)
             // 更新manifest文件的metadata
             val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
                 HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
@@ -556,16 +566,16 @@ class OciOperationServiceImpl(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             version = ociArtifactInfo.reference,
-            fullPath = fullPath,
+            fullPath = nodeDetail.fullPath,
             mediaType = mediaType!!
         )
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
-            if (version.schemaVersion == 1) {
+            if (version == 1) {
                 syncBlobInfoV1(
                     ociArtifactInfo = ociArtifactInfo,
                     manifestDigest = digest,
-                    manifestPath = fullPath,
+                    manifestPath = nodeDetail.fullPath,
                     sourceType = sourceType
                 )
             } else {
@@ -574,7 +584,7 @@ class OciOperationServiceImpl(
                     manifest = manifest!!,
                     manifestDigest = digest,
                     storageCredentials = storageCredentials,
-                    manifestPath = fullPath,
+                    manifestPath = nodeDetail.fullPath,
                     sourceType = sourceType
                 )
             }
@@ -766,7 +776,6 @@ class OciOperationServiceImpl(
                     version = ociArtifactInfo.reference,
                     size = size,
                     manifestPath = manifestPath,
-                    metadata = metadata,
                     repoType = repoType
                 )
                 packageClient.createVersion(request)
@@ -776,11 +785,17 @@ class OciOperationServiceImpl(
                     version = ociArtifactInfo.reference,
                     size = size,
                     manifestPath = manifestPath,
-                    metadata = metadata,
                     packageKey = packageKey
                 )
                 packageClient.updateVersion(request)
             }
+            savePackageMetaData(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = packageKey,
+                version = ociArtifactInfo.reference,
+                metadata = metadata
+            )
 
             // 针对helm chart包，将部分信息放入到package中
             val (appVersion, description) = getMetaDataFromChart(chartYaml)
@@ -791,6 +806,26 @@ class OciOperationServiceImpl(
                 packageKey = packageKey
             )
         }
+    }
+
+    /**
+     * 保存package元数据，元数据存为系统元数据
+     */
+    fun savePackageMetaData(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String,
+        metadata: MutableMap<String, Any>
+    ) {
+        val metadataSaveRequest = ObjectBuildUtils.buildPackageMetadataSaveRequest(
+            projectId = projectId,
+            repoName = repoName,
+            packageKey = packageKey,
+            version = version,
+            metadata = metadata
+        )
+        packageMetadataClient.saveMetadata(metadataSaveRequest)
     }
 
     /**

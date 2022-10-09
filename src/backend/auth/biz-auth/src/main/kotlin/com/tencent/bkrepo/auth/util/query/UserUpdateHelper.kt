@@ -17,7 +17,7 @@ object UserUpdateHelper {
     fun buildUpdateUser(request: UpdateUserRequest): Update {
         val update = Update()
         request.pwd?.let {
-            val pwd = DataDigestUtils.md5FromStr(request.pwd!!)
+            val pwd = DataDigestUtils.md5FromStr(request.pwd)
             update.set(TUser::pwd.name, pwd)
         }
         request.name?.let {

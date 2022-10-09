@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
@@ -56,6 +57,7 @@ data class TAccount(
     var redirectUri: String?,
     var avatarUrl: String?,
     var scope: Set<ResourceType>?,
+    var scopeDesc: List<ScopeRule>?,
     var description: String?,
     var createdDate: LocalDateTime?,
     var lastModifiedDate: LocalDateTime?

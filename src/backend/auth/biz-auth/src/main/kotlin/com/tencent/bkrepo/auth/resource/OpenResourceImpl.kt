@@ -41,18 +41,39 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PathVariable
 
 open class OpenResourceImpl @Autowired constructor(private val permissionService: PermissionService) {
 
+    /**
+     * only admin or user self have the permission
+     */
     fun checkUserId(pathUid: String) {
         val userId = SecurityUtils.getUserId()
         if (!SecurityUtils.isAdmin() && userId.isNotEmpty() && userId != pathUid) {
             logger.warn("user not match [${SecurityUtils.getPrincipal()}, $pathUid]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
 
+    /**
+     * only system scopeType account have the permission
+     */
+    fun checkPlatformPermission() {
+        val request = CheckPermissionRequest(
+            uid = SecurityUtils.getUserId(),
+            appId = SecurityUtils.getPlatformId(),
+            resourceType = ResourceType.SYSTEM.name,
+            action = PermissionAction.MANAGE.name
+        )
+        if (!permissionService.checkPlatformPermission(request)) {
+            logger.warn("account do not have the permission [$request]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
+        }
+    }
+
+    /**
+     * check is the user have project or repo create permission
+     */
     fun checkUserPermission(type: AuthPermissionType, projectId: String, repoName: String?) {
         val checkRequest = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
@@ -71,7 +92,10 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
         }
     }
 
-    fun checkProjectAdmin(@PathVariable projectId: String): Boolean {
+    /**
+     * check is the user is project admin
+     */
+    fun checkProjectAdmin(projectId: String): Boolean {
         val userId = SecurityUtils.getUserId()
         return permissionService.checkPermission(
             CheckPermissionRequest(

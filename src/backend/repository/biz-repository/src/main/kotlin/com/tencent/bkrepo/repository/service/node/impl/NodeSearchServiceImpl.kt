@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -63,8 +62,7 @@ import java.util.Date
 class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter,
-    private val repositoryService: RepositoryService,
-    private val httpAuthProperties: HttpAuthProperties
+    private val repositoryService: RepositoryService
 ) : NodeSearchService {
 
     override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
@@ -78,20 +76,13 @@ class NodeSearchServiceImpl(
         name: String,
         exRepo: String?
     ): List<ProjectPackageOverview> {
-        val repos = if (httpAuthProperties.enabled) {
-            repositoryService.listPermissionRepo(
-                userId = userId,
-                projectId = projectId,
-                option = RepoListOption(
-                    type = RepositoryType.GENERIC.name
-                )
-            ).map { it.name }
-        } else {
-            repositoryService.listRepo(
-                projectId = projectId,
+        val repos = repositoryService.listPermissionRepo(
+            userId = userId,
+            projectId = projectId,
+            option = RepoListOption(
                 type = RepositoryType.GENERIC.name
-            ).map { it.name }
-        }
+            )
+        ).map { it.name }
         val genericRepos = if (exRepo != null && exRepo.isNotBlank()) {
             repos.filter { it !in (exRepo.split(',')) }
         } else repos

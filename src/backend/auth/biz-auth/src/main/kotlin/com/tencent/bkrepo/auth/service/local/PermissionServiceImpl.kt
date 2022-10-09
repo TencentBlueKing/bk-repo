@@ -37,8 +37,12 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -50,11 +54,13 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
+import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
+import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
@@ -66,6 +72,7 @@ import java.time.LocalDateTime
 open class PermissionServiceImpl constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
+    private val account: AccountRepository,
     private val permissionRepository: PermissionRepository,
     private val mongoTemplate: MongoTemplate,
     private val repoClient: RepositoryClient,
@@ -82,23 +89,23 @@ open class PermissionServiceImpl constructor(
         logger.debug("list  permission  projectId: [$projectId], repoName: [$repoName]")
         repoName?.let {
             return permissionRepository.findByResourceTypeAndProjectIdAndRepos(ResourceType.REPO, projectId, repoName)
-                .map { transferPermission(it) }
+                .map { PermRequestUtil.convToPermission(it) }
         }
         return permissionRepository.findByResourceTypeAndProjectId(ResourceType.PROJECT, projectId)
-            .map { transferPermission(it) }
+            .map { PermRequestUtil.convToPermission(it) }
     }
 
     override fun listBuiltinPermission(projectId: String, repoName: String): List<Permission> {
         logger.debug("list  builtin permission  projectId: [$projectId], repoName: [$repoName]")
-        val repoAdmin = getOnePermission(projectId, repoName, AUTH_BUILTIN_ADMIN, listOf(PermissionAction.MANAGE))
+        val repoAdmin = getOnePermission(projectId, repoName, AUTH_BUILTIN_ADMIN, setOf(MANAGE))
         val repoUser = getOnePermission(
             projectId,
             repoName,
             AUTH_BUILTIN_USER,
-            listOf(PermissionAction.WRITE, PermissionAction.READ, PermissionAction.DELETE, PermissionAction.UPDATE)
+            setOf(WRITE, READ, DELETE, UPDATE)
         )
-        val repoViewer = getOnePermission(projectId, repoName, AUTH_BUILTIN_VIEWER, listOf(PermissionAction.READ))
-        return listOf(repoAdmin, repoUser, repoViewer).map { transferPermission(it) }
+        val repoViewer = getOnePermission(projectId, repoName, AUTH_BUILTIN_VIEWER, setOf(READ))
+        return listOf(repoAdmin, repoUser, repoViewer).map { PermRequestUtil.convToPermission(it) }
     }
 
     override fun createPermission(request: CreatePermissionRequest): Boolean {
@@ -111,23 +118,7 @@ open class PermissionServiceImpl constructor(
             logger.warn("create permission  [$request] is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
         }
-        val result = permissionRepository.insert(
-            TPermission(
-                resourceType = request.resourceType.toString(),
-                projectId = request.projectId,
-                permName = request.permName,
-                repos = request.repos,
-                includePattern = request.includePattern,
-                excludePattern = request.excludePattern,
-                users = request.users,
-                roles = request.roles,
-                actions = convActions(request.actions),
-                createBy = request.createBy,
-                createAt = LocalDateTime.now(),
-                updatedBy = request.updatedBy,
-                updateAt = LocalDateTime.now()
-            )
-        )
+        val result = permissionRepository.insert(PermRequestUtil.convToTPermission(request))
         result.id?.let {
             return true
         }
@@ -378,13 +369,6 @@ open class PermissionServiceImpl constructor(
         return repoClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        val user = userRepository.findFirstByUserId(userId) ?: run {
-            return false
-        }
-        return user.admin
-    }
-
     private fun getNoAdminUserProject(userId: String): List<String> {
         val projectList = mutableListOf<String>()
         permissionRepository.findByUsers(userId).forEach {
@@ -429,10 +413,6 @@ open class PermissionServiceImpl constructor(
         return repoList
     }
 
-    override fun registerResource(request: RegisterResourceRequest) {
-        return
-    }
-
     private fun checkPermissionExist(pId: String) {
         permissionRepository.findFirstById(pId) ?: run {
             logger.warn("update permission repos [$pId]  not exist.")
@@ -444,7 +424,7 @@ open class PermissionServiceImpl constructor(
         projectId: String,
         repoName: String,
         permName: String,
-        actions: List<PermissionAction>
+        actions: Set<PermissionAction>
     ): TPermission {
         permissionRepository.findOneByProjectIdAndReposAndPermNameAndResourceType(
             projectId, repoName, permName, ResourceType.REPO
@@ -468,12 +448,25 @@ open class PermissionServiceImpl constructor(
         )!!
     }
 
-    private fun convActions(actions: List<PermissionAction>): List<String> {
-        var result = mutableListOf<String>()
-        actions.forEach {
-            result.add(it.toString())
+    override fun checkPlatformPermission(request: CheckPermissionRequest): Boolean {
+        with(request) {
+            if (appId == null) return true
+            val platform = account.findOneByAppId(appId!!) ?: run {
+                logger.info("can not find platform [$appId]")
+                return false
+            }
+
+            if (platform.scope == null) return true
+            val reqResourceType = ResourceType.lookup(resourceType)
+            if (!platform.scope!!.contains(reqResourceType)) return false
+            when (reqResourceType) {
+                ResourceType.SYSTEM -> return true
+                ResourceType.PROJECT -> {
+                    return checkPlatformProject(projectId, platform.scopeDesc)
+                }
+                else -> return false
+            }
         }
-        return result
     }
 
     companion object {

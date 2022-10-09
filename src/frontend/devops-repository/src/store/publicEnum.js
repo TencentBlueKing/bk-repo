@@ -89,6 +89,18 @@ export const scanTypeEnum = {
     MAVEN_LICENSE: 'Maven仓库许可证扫描'
 }
 
+/**
+ * 安全漏洞扫描
+ * @type {string}
+ */
+export const SCAN_TYPE_SECURITY = 'SECURITY'
+
+/**
+ * License扫描
+ * @type {string}
+ */
+export const SCAN_TYPE_LICENSE = 'LICENSE'
+
 export const scannerTypeEnum = {
     // 科恩
     arrowhead: {
@@ -113,6 +125,12 @@ export const scannerTypeEnum = {
         DOCKER: ''
     }
 }
+
+/**
+ * 是否容器化部署
+ * @type {boolean}
+ */
+export const k8s = process.env.VUE_APP_K8S === 'k8s'
 
 export const genericScanFileTypes = [
     'zip', 'tar', 'tgz', 'jar', 'war', 'exe',

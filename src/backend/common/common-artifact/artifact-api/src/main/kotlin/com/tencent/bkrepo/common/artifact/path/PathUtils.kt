@@ -196,6 +196,17 @@ object PathUtils {
         return if (isRoot(fullPath) || index <= 0) ROOT else fullPath.substring(0, index + 1)
     }
 
+    fun resolveAncestor(fullPath: String): List<String> {
+        if (isRoot(fullPath)) return listOf(ROOT)
+        val result = mutableListOf<String>()
+        var temp = fullPath
+        while (!isRoot(temp)) {
+            temp = resolveParent(temp)
+            result.add(temp)
+        }
+        return result
+    }
+
     /**
      * 根据fullPath解析文件名称，返回格式abc.txt
      *
@@ -210,6 +221,14 @@ object PathUtils {
         } else {
             trimmedPath.substring(trimmedPath.lastIndexOf(UNIX_SEPARATOR) + 1)
         }
+    }
+
+    /**
+     * 提取一级目录
+     */
+    fun resolveFirstLevelFolder(fullPath: String): String {
+        val trimmedPath = fullPath.trimEnd(UNIX_SEPARATOR)
+        return "$UNIX_SEPARATOR${trimmedPath.split(UNIX_SEPARATOR)[1]}"
     }
 
     /**

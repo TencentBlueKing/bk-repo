@@ -53,7 +53,7 @@ import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
@@ -102,7 +102,7 @@ class RepositoryServiceImpl(
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties,
-    private val eventSupplier: EventSupplier,
+    private val messageSupplier: MessageSupplier,
     private val servicePermissionResource: ServicePermissionResource
 ) : RepositoryService {
 
@@ -247,8 +247,8 @@ class RepositoryServiceImpl(
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
                 publishEvent(event)
-                eventSupplier.delegateToSupplier(
-                    event = event,
+                messageSupplier.delegateToSupplier(
+                    data = event,
                     topic = event.topic,
                     key = event.getFullResourceKey()
                 )
@@ -284,8 +284,8 @@ class RepositoryServiceImpl(
         }
         val event = buildUpdatedEvent(repoUpdateRequest)
         publishEvent(event)
-        eventSupplier.delegateToSupplier(
-            event = event,
+        messageSupplier.delegateToSupplier(
+            data = event,
             topic = event.topic,
             key = event.getFullResourceKey()
         )

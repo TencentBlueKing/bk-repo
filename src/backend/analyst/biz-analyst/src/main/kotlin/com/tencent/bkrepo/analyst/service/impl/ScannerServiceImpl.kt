@@ -27,17 +27,16 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
+import com.tencent.bkrepo.analyst.dao.ScannerDao
+import com.tencent.bkrepo.analyst.exception.ScannerNotFoundException
+import com.tencent.bkrepo.analyst.model.TScanner
+import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.analyst.dao.ScannerDao
-import com.tencent.bkrepo.analyst.exception.ScannerNotFoundException
-import com.tencent.bkrepo.analyst.message.ScannerMessageCode
-import com.tencent.bkrepo.analyst.model.TScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.analyst.service.ScannerService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
@@ -50,7 +49,7 @@ class ScannerServiceImpl @Autowired constructor(
     override fun create(scanner: Scanner): Scanner {
         with(scanner) {
             if (scannerDao.existsByName(name)) {
-                throw ErrorCodeException(ScannerMessageCode.SCANNER_EXISTS, name)
+                return update(scanner)
             }
             val now = LocalDateTime.now()
             val userId = SecurityUtils.getUserId()

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.user.BasicInfo
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -89,13 +90,29 @@ object ObjectBuildUtils {
         fullPath: String,
         metadata: Map<String, Any>? = null
     ): MetadataSaveRequest {
-        val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value) }
+        val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
         return MetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
-            nodeMetadata = metadataModels,
-            operator = SecurityUtils.getUserId()
+            nodeMetadata = metadataModels
+        )
+    }
+
+    fun buildPackageMetadataSaveRequest(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String,
+        metadata: Map<String, Any>? = null
+    ): PackageMetadataSaveRequest {
+        val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
+        return PackageMetadataSaveRequest(
+            projectId = projectId,
+            repoName = repoName,
+            packageKey = packageKey,
+            version = version,
+            versionMetadata = metadataModels
         )
     }
 
@@ -105,8 +122,7 @@ object ObjectBuildUtils {
         version: String,
         size: Long,
         manifestPath: String,
-        repoType: String,
-        metadata: Map<String, Any>? = null
+        repoType: String
     ): PackageVersionCreateRequest {
         with(ociArtifactInfo) {
             // 兼容多仓库类型支持
@@ -122,7 +138,6 @@ object ObjectBuildUtils {
                 size = size,
                 artifactPath = manifestPath,
                 manifestPath = manifestPath,
-                packageMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = true,
                 createdBy = SecurityUtils.getUserId()
             )
@@ -134,7 +149,6 @@ object ObjectBuildUtils {
         version: String,
         size: Long,
         manifestPath: String,
-        metadata: Map<String, Any>? = null,
         packageKey: String
     ): PackageVersionUpdateRequest {
         with(ociArtifactInfo) {
@@ -145,8 +159,7 @@ object ObjectBuildUtils {
                 versionName = version,
                 size = size,
                 artifactPath = manifestPath,
-                manifestPath = manifestPath,
-                packageMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
+                manifestPath = manifestPath
             )
         }
     }

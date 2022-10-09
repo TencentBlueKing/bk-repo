@@ -73,7 +73,7 @@ class AccountServiceImpl constructor(
 
         val account = accountRepository.findOneByAppId(request.appId)
         account?.let {
-            logger.warn("create account [${request.appId}]  is exist.")
+            logger.warn("create account [${request.appId}] is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
         }
 
@@ -100,6 +100,7 @@ class AccountServiceImpl constructor(
                 homepageUrl = request.homepageUrl,
                 redirectUri = request.redirectUri,
                 avatarUrl = request.avatarUrl,
+                scopeDesc = request.scopeDesc,
                 scope = request.scope,
                 description = request.description,
                 createdDate = LocalDateTime.now(),
@@ -110,7 +111,6 @@ class AccountServiceImpl constructor(
     }
 
     override fun listAccount(): List<Account> {
-        logger.debug("list account")
         val userId = SecurityUtils.getUserId()
         val admin = userService.getUserInfoById(userId)?.admin ?: false
         if (!admin) {
@@ -138,7 +138,7 @@ class AccountServiceImpl constructor(
     }
 
     override fun deleteAccount(appId: String): Boolean {
-        logger.info("delete account appId : {}", appId)
+        logger.info("delete account appId [$appId]")
         val userId = SecurityUtils.getUserId()
         val account = findAccountAndCheckOwner(appId, userId)
 
@@ -173,6 +173,7 @@ class AccountServiceImpl constructor(
             account.homepageUrl = homepageUrl ?: account.homepageUrl
             account.redirectUri = redirectUri ?: account.redirectUri
             account.scope = scope ?: account.scope
+            account.scopeDesc = scopeDesc ?: account.scopeDesc
             account.description = description ?: account.description
             account.lastModifiedDate = LocalDateTime.now()
 
@@ -204,7 +205,7 @@ class AccountServiceImpl constructor(
     }
 
     override fun listCredentials(appId: String): List<CredentialSet> {
-        logger.debug("list  credential appId : {} ", appId)
+        logger.debug("list  credential appId [$appId] ")
         val userId = SecurityUtils.getUserId()
         val account = findAccountAndCheckOwner(appId, userId)
         return transferCredentials(account.credentials)
@@ -235,16 +236,10 @@ class AccountServiceImpl constructor(
             logger.warn("update account status  [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
-        val accountQuery = Query.query(
-            Criteria.where(TAccount::appId.name).`is`(appId)
-                .and("credentials.accessKey").`is`(accessKey)
-        )
+        val accountQuery = AccountQueryHelper.checkAppAccessKey(appId, accessKey)
         val accountResult = mongoTemplate.findOne(accountQuery, TAccount::class.java)
         accountResult?.let {
-            val query = Query.query(
-                Criteria.where(TAccount::appId.name).`is`(appId)
-                    .and("credentials.accessKey").`is`(accessKey)
-            )
+            val query = AccountQueryHelper.checkAppAccessKey(appId, accessKey)
             val update = Update()
             update.set("credentials.$.status", status.toString())
             val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
@@ -258,6 +253,12 @@ class AccountServiceImpl constructor(
         val query = AccountQueryHelper.checkCredential(accessKey, secretKey)
         val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
         return result.appId
+    }
+
+    override fun findSecretKey(appId: String, accessKey: String): String? {
+        val query = AccountQueryHelper.checkAppAccessKey(appId, accessKey)
+        val account = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
+        return account.credentials.first { it.accessKey == accessKey }.secretKey
     }
 
     private fun transferAccount(tAccount: TAccount, displaySecretKey: Boolean = false): Account {
@@ -274,6 +275,7 @@ class AccountServiceImpl constructor(
             homepageUrl = tAccount.homepageUrl,
             redirectUri = tAccount.redirectUri,
             avatarUrl = tAccount.avatarUrl,
+            scopeDesc = tAccount.scopeDesc,
             scope = tAccount.scope,
             description = tAccount.description,
             createdDate = tAccount.createdDate,

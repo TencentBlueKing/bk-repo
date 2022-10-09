@@ -62,7 +62,7 @@ import java.util.regex.Pattern
 
 @Service
 class ClusterNodeServiceImpl(
-    private val clusterNodeDao: ClusterNodeDao,
+    private val clusterNodeDao: ClusterNodeDao
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
@@ -123,13 +123,16 @@ class ClusterNodeServiceImpl(
                 password = crypto(password, false),
                 certificate = certificate,
                 type = type,
+                appId = appId,
+                accessKey = accessKey,
+                secretKey = secretKey,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
             )
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
+            tryConnect(convert(clusterNode)!!)
             return try {
                 clusterNodeDao.insert(clusterNode)
                     .also { logger.info("Create cluster node [$name] with url [$url] success.") }
@@ -156,7 +159,7 @@ class ClusterNodeServiceImpl(
                 certificate = request.certificate
             }
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(tClusterNode)!!, tClusterNode.type)
+            tryConnect(convert(tClusterNode)!!)
             return try {
                 clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
@@ -175,11 +178,21 @@ class ClusterNodeServiceImpl(
         logger.info("delete cluster node for id [$id] success.")
     }
 
+    override fun tryConnect(clusterNodeInfo: ClusterNodeInfo) {
+        with(clusterNodeInfo) {
+            val clusterInfo = convertRemoteInfo(clusterNodeInfo)
+            if (ClusterNodeType.REMOTE == type) {
+                tryConnectRemoteCluster(clusterInfo)
+            } else {
+                tryConnectNonRemoteCluster(clusterInfo)
+            }
+        }
+    }
+
     override fun tryConnect(name: String) {
-        val clusterNode = clusterNodeDao.findByName(name)
-        val clusterNodeInfo = convertRemoteInfo(clusterNode)
+        val node = clusterNodeDao.findByName(name)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-        tryConnect(clusterNodeInfo, clusterNode!!.type)
+        tryConnect(convert(node)!!)
     }
 
     override fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest) {
@@ -194,17 +207,6 @@ class ClusterNodeServiceImpl(
             )
             clusterNodeDao.save(clusterNode)
             logger.info("update cluster [$name] status from [${tClusterNode.status}] to [$status] success.")
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    fun tryConnect(remoteClusterInfo: ClusterInfo, type: ClusterNodeType) {
-        with(remoteClusterInfo) {
-            if (ClusterNodeType.REMOTE == type) {
-                tryConnectRemoteCluster(this)
-            } else {
-                tryConnectNonRemoteCluster(this)
-            }
         }
     }
 
@@ -270,7 +272,7 @@ class ClusterNodeServiceImpl(
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {
                 ClusterNodeInfo(
-                    id = it.id!!,
+                    id = it.id,
                     name = it.name,
                     status = it.status,
                     errorReason = it.errorReason,
@@ -279,6 +281,9 @@ class ClusterNodeServiceImpl(
                     username = it.username,
                     password = crypto(it.password, true),
                     certificate = it.certificate,
+                    appId = it.appId,
+                    accessKey = it.accessKey,
+                    secretKey = it.secretKey,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -287,14 +292,17 @@ class ClusterNodeServiceImpl(
             }
         }
 
-        private fun convertRemoteInfo(tClusterNode: TClusterNode?): ClusterInfo? {
-            return tClusterNode?.let {
+        private fun convertRemoteInfo(tClusterNode: ClusterNodeInfo): ClusterInfo {
+            return tClusterNode.let {
                 ClusterInfo(
                     name = it.name,
                     url = it.url,
                     certificate = it.certificate,
                     username = it.username,
-                    password = crypto(it.password, true)
+                    password = crypto(it.password, true),
+                    appId = it.appId,
+                    accessKey = it.accessKey,
+                    secretKey = it.secretKey
                 )
             }
         }

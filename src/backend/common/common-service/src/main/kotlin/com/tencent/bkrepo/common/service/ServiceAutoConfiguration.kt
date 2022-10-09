@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterConfiguration
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.exception.ServiceExceptionHandler
 import com.tencent.bkrepo.common.service.feign.ClientConfiguration
+import com.tencent.bkrepo.common.service.feign.CustomFeignClientsConfiguration
 import com.tencent.bkrepo.common.service.log.AccessLogWebServerCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
 import com.tencent.bkrepo.common.service.metrics.UndertowMetrics
@@ -65,7 +66,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
     AccessLogWebServerCustomizer::class,
     UndertowMetrics::class,
     ServiceShutdownConfiguration::class,
-    ClusterConfiguration::class
+    ClusterConfiguration::class,
+    CustomFeignClientsConfiguration::class
 )
 class ServiceAutoConfiguration {
 

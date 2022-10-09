@@ -38,6 +38,6 @@ data class TOauthToken(
     val type: String,
     val accountId: String,
     val userId: String,
-    var scope: Set<ResourceType>,
+    var scope: Set<ResourceType>?,
     val issuedAt: Instant
 )

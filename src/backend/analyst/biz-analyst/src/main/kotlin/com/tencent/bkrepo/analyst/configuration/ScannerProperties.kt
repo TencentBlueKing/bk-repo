@@ -35,7 +35,14 @@ data class ScannerProperties(
      * 默认项目扫描子任务数量限制
      */
     var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    var detailReportUrl: String = "http://localhost"
+    /**
+     * 扫描报告地址
+     */
+    var detailReportUrl: String = "http://localhost",
+    /**
+     * 后端服务baseUrl
+     */
+    var baseUrl: String = "http://localhost"
 ) {
     companion object {
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0

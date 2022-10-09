@@ -14,6 +14,20 @@
 {
   "appId": "string",
   "locked": false,
+  "scopeDesc" : [
+        {
+            "field" : "PROJECT", 
+            "operation" : "IN", 
+            "value" : [
+                "git_123456"
+            ]
+        }, 
+        {
+            "field" : "PROJECT", 
+            "operation" : "PREFIX", 
+            "value" : "git2_"
+        }
+    ],
   "authorizationGrantTypes": ["PLATFORM","AUTHORIZATION_CODE"],
   "homepageUrl":"http://localhost",
   "redirectUri":"http://localhost/redirect",
@@ -22,18 +36,29 @@
   "description": "string"
 }
 ```
+
+scope description
+```json
+{
+	"field" : "PROJECT",
+	"operation" : "IN",
+	"value" : [
+		"git_123456"
+	]
+}
+```
 - input 字段说明
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|appId|string|是|无|应用ID|the application id|
-|locked|bool|否|false|是否锁定|the account status|
-|authorizationGrantTypes|set<enum>|是|无|认证授权方式，[PLATFORM,AUTHORIZATION_CODE]|the account authorization grant types|
-|homepageUrl|string|授权码模式时必须|无|账号主页地址|the account homepage url|
-|redirectUri|string|授权码模式时必须|无|回调地址|the redirect uri|
-|avatarUrl|string|否|无|账号图标地址|the avatar url|
-|scope|set<enum>|授权码模式时必须|无|权限范围[SYSTEM,PROJECT,REPO,NODE]|the account permission scope|
-|description|string|否|无|账号描述信息|the account description|
+| 字段              |类型|是否必须| 默认值   |说明|Description|
+|-----------------|---|---|-------|---|---|
+| appId           |string|是| 无     |应用ID|the application id|
+| locked          |bool|否| false |是否锁定|the account status|
+| authorizationGrantTypes |set<enum>|是| 无     |认证授权方式，[PLATFORM,AUTHORIZATION_CODE]|the account authorization grant types|
+| homepageUrl     |string|授权码模式时必须| 无     |账号主页地址|the account homepage url|
+| redirectUri     |string|授权码模式时必须| 无     |回调地址|the redirect uri|
+| avatarUrl       |string|否| 无     |账号图标地址|the avatar url|
+| scope           |enum|授权码模式时必须| null  |权限范围[SYSTEM,PROJECT,REPO,NODE]|the account permission scope|
+| description     |string|否| 无     |账号描述信息|the account description|
 
 - output:
 
@@ -199,6 +224,20 @@
 {
   "appId": "string",
   "locked": false,
+  "scopeDesc" : [
+        {
+            "field" : "PROJECT", 
+            "operation" : "IN", 
+            "value" : [
+                "git_123456"
+            ]
+        }, 
+        {
+            "field" : "PROJECT", 
+            "operation" : "PREFIX", 
+            "value" : "git2_"
+        }
+    ], 
   "authorizationGrantTypes": ["PLATFORM","AUTHORIZATION_CODE"],
   "homepageUrl":"http://localhost",
   "redirectUri":"http://localhost/redirect",

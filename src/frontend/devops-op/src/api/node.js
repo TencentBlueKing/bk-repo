@@ -1,7 +1,9 @@
 import request from '@/utils/request'
 
 const PREFIX_NODE = '/repository/api/node'
+const PREFIX_NODE_OPERATION = '/opdata/api/nodeOperation'
 export const DEFAULT_PAGE_SIZE = 20
+export const DEFAULT_NODE_OPERATION_PAGE_SIZE = 10
 
 export function searchNodes(projectId, repoName, path, page, size, detail = false, deleted = null) {
   const dir = path.endsWith('/')
@@ -92,5 +94,36 @@ export function deleteNode(projectId, repoName, fullPath) {
   return request({
     url: `${PREFIX_NODE}/delete/${projectId}/${repoName}/${encodedPath}`,
     method: 'delete'
+  })
+}
+
+export function queryEmptyFolder(projectId, repoName, parentPath) {
+  return request({
+    url: `${PREFIX_NODE_OPERATION}/emptyFolders/${projectId}/${repoName}`,
+    method: 'get',
+    params: {
+      parentFolder: parentPath
+    }
+  })
+}
+
+export function deleteEmptyFolder(projectId, repoName, parentPath) {
+  return request({
+    url: `${PREFIX_NODE_OPERATION}/emptyFolders/${projectId}/${repoName}`,
+    method: 'delete',
+    params: {
+      parentFolder: parentPath
+    }
+  })
+}
+
+export function statisticalFirstLevelFolder(projectId, repoName, pageNumber) {
+  return request({
+    url: `${PREFIX_NODE_OPERATION}/firstLevelFolder/${projectId}/${repoName}`,
+    method: 'get',
+    params: {
+      pageNumber: pageNumber,
+      pageSize: DEFAULT_NODE_OPERATION_PAGE_SIZE
+    }
   })
 }

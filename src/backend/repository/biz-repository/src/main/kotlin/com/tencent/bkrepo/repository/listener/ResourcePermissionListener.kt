@@ -61,7 +61,6 @@ class ResourcePermissionListener(
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
             if (isAuthedNormalUser(userId)) {
-                permissionManager.registerProject(userId, projectId)
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
             }
@@ -76,7 +75,6 @@ class ResourcePermissionListener(
     fun handle(event: RepoCreatedEvent) {
         with(event) {
             if (isAuthedNormalUser(userId)) {
-                permissionManager.registerRepo(userId, projectId, repoName)
                 val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
                 userResource.addUserRole(userId, repoManagerRoleId)
             }

@@ -167,7 +167,7 @@ class OciRegistryLocalRepository(
                     OciResponseUtils.buildBlobUploadPatchResponse(
                         domain = domain,
                         uuid = uuid!!,
-                        locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
+                        locationStr = OciLocationUtils.blobUUIDLocation(uuid!!, this),
                         response = HttpContextHolder.getResponse(),
                         range = length.toLong(),
                         status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
@@ -182,8 +182,8 @@ class OciRegistryLocalRepository(
             )
             OciResponseUtils.buildBlobUploadPatchResponse(
                 domain = domain,
-                uuid = uuid,
-                locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
+                uuid = uuid!!,
+                locationStr = OciLocationUtils.blobUUIDLocation(uuid!!, this),
                 response = HttpContextHolder.getResponse(),
                 range = patchLen
             )
@@ -239,7 +239,7 @@ class OciRegistryLocalRepository(
             artifactFile = context.getArtifactFile(),
             storageCredentials = context.repositoryDetail.storageCredentials
         )
-        val fileInfo = storageService.finishAppend(artifactInfo.uuid, context.repositoryDetail.storageCredentials)
+        val fileInfo = storageService.finishAppend(artifactInfo.uuid!!, context.repositoryDetail.storageCredentials)
         val digest = OciDigest.fromSha256(fileInfo.sha256)
         ociOperationService.storeArtifact(
             ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
@@ -276,9 +276,8 @@ class OciRegistryLocalRepository(
         ociOperationService.updateOciInfo(
             ociArtifactInfo = artifactInfo,
             digest = digest,
-            artifactFile = artifactFile,
             storageCredentials = context.storageCredentials,
-            fullPath = node.fullPath
+            nodeDetail = node
         )
         val manifestLocation = OciLocationUtils.manifestLocation(digest, artifactInfo)
         return Pair(digest, manifestLocation)

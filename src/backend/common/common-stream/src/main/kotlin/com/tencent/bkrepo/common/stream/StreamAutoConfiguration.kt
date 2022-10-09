@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.common.stream
 
-import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.PropertySource
 
 @Configuration(proxyBeanMethods = false)
 @PropertySource("classpath:common-stream.properties")
-@Import(EventSupplier::class)
+@Import(MessageSupplier::class)
 class StreamAutoConfiguration

@@ -186,12 +186,6 @@ class ClusterReplicator(
                     sha256 = it.sha256.orEmpty(),
                     storageKey = remoteRepo?.storageCredentials?.key
                 )
-//                val file = InputStreamMultipartFile(rateLimitInputStream, it.size!!)
-//                blobReplicaClient.push(
-//                    file = file,
-//                    sha256 = it.sha256.orEmpty(),
-//                    storageKey = remoteRepo.storageCredentials?.key
-//                )
                 // 2. 同步节点信息
                 artifactReplicaClient!!.replicaNodeCreateRequest(it)
                 true
