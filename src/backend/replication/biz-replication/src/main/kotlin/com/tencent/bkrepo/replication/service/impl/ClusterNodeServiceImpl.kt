@@ -234,7 +234,7 @@ class ClusterNodeServiceImpl(
         with(remoteClusterInfo) {
             try {
                 logger.info("ping url is ${remoteClusterInfo.url}")
-                HttpUtils.pingURL(remoteClusterInfo.url, 60000)
+                HttpUtils.pingURL(remoteClusterInfo.url, 600000)
             } catch (exception: Exception) {
                 exception.printStackTrace()
                 val message = exception.message ?: UNKNOWN

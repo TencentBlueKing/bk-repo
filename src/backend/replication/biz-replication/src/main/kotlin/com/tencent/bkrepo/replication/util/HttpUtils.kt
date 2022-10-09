@@ -116,6 +116,7 @@ object HttpUtils {
         var targetUrl = url
         // Otherwise an exception may be thrown on invalid SSL certificates.
         targetUrl = targetUrl.replaceFirst("^https".toRegex(), "http")
+        println(targetUrl)
         return try {
             val connection = URL(targetUrl).openConnection() as HttpURLConnection
             connection.connectTimeout = timeout
