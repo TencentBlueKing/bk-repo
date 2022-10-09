@@ -126,6 +126,7 @@ object HttpUtils {
             connection.disconnect()
             result
         } catch (exception: IOException) {
+            exception.printStackTrace()
             throw exception
         }
     }
