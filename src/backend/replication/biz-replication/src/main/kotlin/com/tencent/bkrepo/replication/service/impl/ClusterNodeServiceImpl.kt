@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -129,7 +130,9 @@ class ClusterNodeServiceImpl(
                 lastModifiedDate = LocalDateTime.now()
             )
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
+            retry(times = 3, delayInSeconds = 1) {
+                tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
+            }
             return try {
                 clusterNodeDao.insert(clusterNode)
                     .also { logger.info("Create cluster node [$name] with url [$url] success.") }
@@ -156,7 +159,9 @@ class ClusterNodeServiceImpl(
                 certificate = request.certificate
             }
             // 检测远程集群网络连接是否可用
-            tryConnect(convertRemoteInfo(tClusterNode)!!, tClusterNode.type)
+            retry(times = 3, delayInSeconds = 1) {
+                tryConnect(convertRemoteInfo(tClusterNode)!!, tClusterNode.type)
+            }
             return try {
                 clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
