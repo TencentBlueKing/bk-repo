@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.git.config
 
 import com.tencent.bkrepo.git.artifact.GitRepoInterceptor
+import com.tencent.bkrepo.git.interceptor.DfsDataReadersCleanInterceptor
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -15,6 +16,8 @@ class GitWebConfig : WebMvcConfigurer {
         registry.addInterceptor(clientAuthInterceptor())
             .addPathPatterns("/**")
             .order(0)
+        registry.addInterceptor(DfsDataReadersCleanInterceptor())
+            .addPathPatterns("/**/*.git/**")
         super.addInterceptors(registry)
     }
 

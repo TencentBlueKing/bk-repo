@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -236,7 +236,7 @@ class ClusterNodeServiceImpl(
                 HttpUtils.pingURL(remoteClusterInfo.url, 60000)
             } catch (exception: Exception) {
                 val message = exception.message ?: UNKNOWN
-                logger.warn("ping cluster [$name] failed, reason: $message")
+                logger.warn("ping remote cluster [$name] failed, reason: $message")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
             }
         }

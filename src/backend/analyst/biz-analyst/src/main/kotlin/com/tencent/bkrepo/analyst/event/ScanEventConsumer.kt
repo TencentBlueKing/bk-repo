@@ -214,7 +214,7 @@ class ScanEventConsumer(
                     RuleConverter.convert(projectId, repoName, packageKey, packageVersion)
                 }
                 val request = ScanRequest(scanner = scanner, rule = rule)
-                scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT)
+                scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM)
             }
         }
     }
