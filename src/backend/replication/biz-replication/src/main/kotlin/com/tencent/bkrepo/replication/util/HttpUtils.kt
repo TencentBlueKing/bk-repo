@@ -91,7 +91,7 @@ object HttpUtils {
     }
 
     /**
-     * 针对url如果没穿protocol， 则默认以https请求发送
+     * 针对url如果没传protocol， 则默认以https请求发送
      */
     fun addProtocol(registry: String): URL {
         val url = try {
@@ -113,11 +113,8 @@ object HttpUtils {
      * given timeout, otherwise `false`.
      */
     fun pingURL(url: String, timeout: Int): Boolean {
-        var targetUrl = url
-        // Otherwise an exception may be thrown on invalid SSL certificates.
-        targetUrl = targetUrl.replaceFirst("^https".toRegex(), "http")
         return try {
-            val connection = URL(targetUrl).openConnection() as HttpURLConnection
+            val connection = URL(url).openConnection() as HttpURLConnection
             connection.connectTimeout = timeout
             connection.readTimeout = timeout
             connection.requestMethod = "HEAD"
