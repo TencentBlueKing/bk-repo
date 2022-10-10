@@ -56,7 +56,7 @@ import java.util.concurrent.LinkedBlockingQueue
 /**
  * 构件传输事件监听器
  */
-@Component
+@Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ArtifactTransferListener(
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
 ) {

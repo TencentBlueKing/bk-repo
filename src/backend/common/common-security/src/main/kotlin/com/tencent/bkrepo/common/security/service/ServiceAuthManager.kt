@@ -41,7 +41,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 
-@Component
+@Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ServiceAuthManager(
     properties: ServiceAuthProperties
 ) {
