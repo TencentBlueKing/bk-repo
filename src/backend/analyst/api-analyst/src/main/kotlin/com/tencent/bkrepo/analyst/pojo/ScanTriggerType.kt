@@ -49,5 +49,10 @@ enum class ScanTriggerType {
     /**
      * 新构件上传时触发扫描
      */
-    ON_NEW_ARTIFACT;
+    ON_NEW_ARTIFACT,
+
+    /**
+     * 系统级新构件上传时自动扫描
+     */
+    ON_NEW_ARTIFACT_SYSTEM;
 }
