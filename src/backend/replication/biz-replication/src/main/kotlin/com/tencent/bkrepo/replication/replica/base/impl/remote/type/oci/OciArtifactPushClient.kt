@@ -120,7 +120,11 @@ class OciArtifactPushClient(
             futureList.add(
                 submit {
                     try {
-                        retry(times = 3, delayInSeconds = 1) { _ ->
+                        retry(times = 3, delayInSeconds = 1) { retries ->
+                            logger.info(
+                                "Blob $name|$it will be uploaded to the remote cluster ${clusterInfo.name.orEmpty()} " +
+                                    "from repo ${nodes[0].projectId}|${nodes[0].repoName}, try the $retries time"
+                            )
                             uploadBlobInChunks(
                                 token = token,
                                 digest = it,
