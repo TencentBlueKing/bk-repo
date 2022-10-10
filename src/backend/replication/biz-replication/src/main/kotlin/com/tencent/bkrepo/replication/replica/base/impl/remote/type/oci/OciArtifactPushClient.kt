@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
@@ -119,15 +120,17 @@ class OciArtifactPushClient(
             futureList.add(
                 submit {
                     try {
-                        uploadBlobInChunks(
-                            token = token,
-                            digest = it,
-                            name = name,
-                            projectId = nodes[0].projectId,
-                            repoName = nodes[0].repoName,
-                            clusterUrl = clusterInfo.url,
-                            clusterName = clusterInfo.name.orEmpty()
-                        )
+                        retry(times = 3, delayInSeconds = 1) { _ ->
+                            uploadBlobInChunks(
+                                token = token,
+                                digest = it,
+                                name = name,
+                                projectId = nodes[0].projectId,
+                                repoName = nodes[0].repoName,
+                                clusterUrl = clusterInfo.url,
+                                clusterName = clusterInfo.name.orEmpty()
+                            )
+                        }
                     } finally {
                         semaphore.release()
                     }
