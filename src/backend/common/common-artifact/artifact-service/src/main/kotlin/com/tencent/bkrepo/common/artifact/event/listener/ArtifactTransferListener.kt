@@ -42,19 +42,21 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.concurrent.LinkedBlockingQueue
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Scheduled
 
 /**
  * 构件传输事件监听器
  */
+@Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ArtifactTransferListener(
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
 ) {

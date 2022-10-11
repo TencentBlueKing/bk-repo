@@ -35,15 +35,15 @@ import org.springframework.boot.task.TaskExecutorCustomizer
 import org.springframework.boot.task.TaskSchedulerCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.scheduling.annotation.AsyncConfigurerSupport
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 
+
 @EnableAsync
 @EnableScheduling
 @Configuration
-class AsyncConfiguration : AsyncConfigurerSupport() {
+class AsyncConfiguration {
 
     @Bean
     fun taskExecutorCustomizer(): TaskExecutorCustomizer {

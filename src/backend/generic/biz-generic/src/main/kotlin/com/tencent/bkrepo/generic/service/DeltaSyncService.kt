@@ -30,6 +30,7 @@ import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -215,7 +216,7 @@ class DeltaSyncService(
     }
 
     fun recordMetrics(ip: String, metrics: BkSyncMetrics) {
-        metricsExecutor.execute {
+        val runnable = Runnable {
             metrics.ip = ip
             // 增量上传成功的才需要记录历史上传速度，以便计算节省时间
             if (metrics.networkSpeed < deltaProperties.allowUseMaxBandwidth && metrics.genericUploadTime == 0L) {
@@ -225,7 +226,8 @@ class DeltaSyncService(
                 forbidNegativeSituation(metrics)
             }
             logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
-        }
+        }.trace()
+        metricsExecutor.execute(runnable)
     }
 
     /**

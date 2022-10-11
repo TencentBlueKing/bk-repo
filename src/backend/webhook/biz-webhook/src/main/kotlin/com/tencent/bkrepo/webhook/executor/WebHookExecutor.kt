@@ -47,6 +47,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.BeanFactory
 import org.springframework.cloud.endpoint.event.RefreshEvent
 import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
@@ -63,10 +64,11 @@ class WebHookExecutor(
     private val webHookLogDao: WebHookLogDao,
     private val eventPayloadFactory: EventPayloadFactory,
     private val webHookProperties: WebHookProperties,
-    private val webHookMetrics: WebHookMetrics
+    private val webHookMetrics: WebHookMetrics,
+    private val beanFactory: BeanFactory
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory).build()
 
     init {
         httpClient.dispatcher().maxRequests = webHookProperties.maxRequests ?: 200

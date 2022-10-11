@@ -34,7 +34,13 @@ package com.tencent.bkrepo.common.artifact.util.okhttp
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationTrustManager
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
+import okhttp3.internal.Util
+import org.springframework.beans.factory.BeanFactory
+import org.springframework.cloud.sleuth.instrument.async.TraceableExecutorService
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -54,7 +60,11 @@ object HttpClientBuilderFactory {
             .build()
     }
 
-    fun create(certificate: String? = null, neverReadTimeout: Boolean = false): OkHttpClient.Builder {
+    fun create(
+        certificate: String? = null,
+        neverReadTimeout: Boolean = false,
+        beanFactory: BeanFactory? = null
+    ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
             .apply {
                 certificate?.let {
@@ -62,12 +72,27 @@ object HttpClientBuilderFactory {
                     val sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
                     sslSocketFactory(sslSocketFactory, trustManager)
                 }
-            }.apply {
+
                 if (neverReadTimeout) {
                     readTimeout(0, TimeUnit.MILLISECONDS)
                 }
-            }.apply {
+
                 writeTimeout(0, TimeUnit.MILLISECONDS)
+
+                beanFactory?.let {
+                    val traceableExecutorService = TraceableExecutorService(
+                        beanFactory,
+                        ThreadPoolExecutor(
+                            0,
+                            Int.MAX_VALUE,
+                            60L,
+                            TimeUnit.SECONDS,
+                            SynchronousQueue(),
+                            Util.threadFactory("OkHttp Dispatcher", false)
+                        )
+                    )
+                    dispatcher(Dispatcher(traceableExecutorService))
+                }
             }
     }
 }
