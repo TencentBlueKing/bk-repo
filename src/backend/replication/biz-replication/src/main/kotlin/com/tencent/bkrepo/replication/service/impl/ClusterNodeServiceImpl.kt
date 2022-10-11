@@ -130,7 +130,7 @@ class ClusterNodeServiceImpl(
                 lastModifiedDate = LocalDateTime.now()
             )
             // 检测远程集群网络连接是否可用
-            retry(times = 3, delayInSeconds = 1) {
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
                 tryConnect(convertRemoteInfo(clusterNode)!!, clusterNode.type)
             }
             return try {
@@ -159,7 +159,7 @@ class ClusterNodeServiceImpl(
                 certificate = request.certificate
             }
             // 检测远程集群网络连接是否可用
-            retry(times = 3, delayInSeconds = 1) {
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
                 tryConnect(convertRemoteInfo(tClusterNode)!!, tClusterNode.type)
             }
             return try {
@@ -271,6 +271,8 @@ class ClusterNodeServiceImpl(
         private const val CLUSTER_NODE_URL_PATTERN = "[a-zA-z]+://[^\\s]*"
         private const val CLUSTER_NAME_LENGTH_MIN = 2
         private const val CLUSTER_NAME_LENGTH_MAX = 256
+        private const val RETRY_COUNT = 2
+        private const val DELAY_IN_SECONDS: Long = 1
 
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {

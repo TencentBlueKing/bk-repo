@@ -41,7 +41,8 @@ import java.net.MalformedURLException
 import java.net.URL
 
 object HttpUtils {
-
+    private const val RETRY_COUNT = 2
+    private const val DELAY_IN_SECONDS: Long = 1
     /**
      * 封装请求
      */
@@ -101,7 +102,7 @@ object HttpUtils {
         }
         val url = URL("${StringPool.HTTPS}$registry")
         return try {
-            retry(times = 3, delayInSeconds = 1) {
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
                 validateHttpsProtocol(url)
                 url
             }
