@@ -120,7 +120,7 @@ class OciArtifactPushClient(
             futureList.add(
                 submit {
                     try {
-                        retry(times = 3, delayInSeconds = 1) { retries ->
+                        retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retries ->
                             logger.info(
                                 "Blob $name|$it will be uploaded to the remote cluster ${clusterInfo.name.orEmpty()} " +
                                     "from repo ${nodes[0].projectId}|${nodes[0].repoName}, try the $retries time"
@@ -566,5 +566,7 @@ class OciArtifactPushClient(
         const val OCI_BLOB_URL = "%s/blobs/%s"
         const val OCI_MANIFEST_URL = "%s/manifests/%s"
         const val OCI_BLOBS_UPLOAD_FIRST_STEP_URL = "%s/blobs/uploads/"
+        const val RETRY_COUNT = 2
+        const val DELAY_IN_SECONDS: Long = 1
     }
 }
