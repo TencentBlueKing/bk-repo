@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
@@ -94,13 +95,19 @@ object HttpUtils {
      * 针对url如果没传protocol， 则默认以https请求发送
      */
     fun addProtocol(registry: String): URL {
-        val url = try {
-            URL(registry)
-        } catch (e: MalformedURLException) {
-            URL("${StringPool.HTTPS}$registry")
+        try {
+            return URL(registry)
+        } catch (ignore: MalformedURLException) {
         }
-        if (validateHttpsProtocol(url)) return url
-        return URL(url.toString().replaceFirst("^https".toRegex(), "http"))
+        val url = URL("${StringPool.HTTPS}$registry")
+        return try {
+            retry(times = 3, delayInSeconds = 1) {
+                validateHttpsProtocol(url)
+                url
+            }
+        } catch (ignore: Exception) {
+            URL(url.toString().replaceFirst("^https".toRegex(), "http"))
+        }
     }
 
     /**
@@ -139,7 +146,7 @@ object HttpUtils {
             http.disconnect()
             true
         } catch (e: Exception) {
-            false
+            throw e
         }
     }
 }
