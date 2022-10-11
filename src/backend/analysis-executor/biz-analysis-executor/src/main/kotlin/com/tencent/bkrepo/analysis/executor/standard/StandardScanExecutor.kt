@@ -75,11 +75,12 @@ class StandardScanExecutor(
     ): SubScanTaskStatus {
         val scanner = task.scanner as StandardScanner
         val inputFile = generateInputFile(task, taskWorkDir, scannerInputFile, sha256)
-        val args = listOf(
-            scanner.cmd,
-            "--input", convertToContainerPath(inputFile.absolutePath, taskWorkDir),
-            "--output", "$CONTAINER_WORK_DIR/$OUTPUT_FILE"
-        )
+        val args = ArrayList<String>()
+        args.addAll(scanner.cmd.split(" "))
+        args.add("--input")
+        args.add(convertToContainerPath(inputFile.absolutePath, taskWorkDir))
+        args.add("--output")
+        args.add("$CONTAINER_WORK_DIR/$OUTPUT_FILE")
         val result = dockerScanHelper.scan(
             image = scanner.image,
             binds = Binds(Bind(taskWorkDir.absolutePath, Volume(CONTAINER_WORK_DIR))),
