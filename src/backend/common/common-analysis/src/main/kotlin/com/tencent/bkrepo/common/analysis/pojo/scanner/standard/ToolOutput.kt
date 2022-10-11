@@ -27,11 +27,14 @@
 
 package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
 /**
  * 分析工具输出
  * 1. 指定--output output.json参数时输出到本地
  * 2. 指定--token参数时直接通过接口上报分析管理服务
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ToolOutput(
     /**
      * 分析状态，SUCCESS,FAILED,TIMEOUT
@@ -98,6 +101,10 @@ data class SecurityResult(
      * 修复版本
      */
     val fixedVersion: String? = null,
+    /**
+     * 受影响版本
+     */
+    val effectedVersion: String? = null,
     /**
      * 漏洞描述
      */
