@@ -10,13 +10,11 @@ import org.springframework.web.bind.annotation.RestController
 class FileReferenceController(
     private val fileReferenceService: FileReferenceService
 ) : FileReferenceClient {
-    override fun decrement(sha256: String, credentialsKey: String?): Response<Void> {
-        fileReferenceService.decrement(sha256, credentialsKey)
-        return ResponseBuilder.success()
+    override fun decrement(sha256: String, credentialsKey: String?): Response<Boolean> {
+        return ResponseBuilder.success(fileReferenceService.decrement(sha256, credentialsKey))
     }
 
-    override fun increment(sha256: String, credentialsKey: String?): Response<Void> {
-        fileReferenceService.increment(sha256, credentialsKey)
-        return ResponseBuilder.success()
+    override fun increment(sha256: String, credentialsKey: String?): Response<Boolean> {
+        return ResponseBuilder.success(fileReferenceService.increment(sha256, credentialsKey))
     }
 }

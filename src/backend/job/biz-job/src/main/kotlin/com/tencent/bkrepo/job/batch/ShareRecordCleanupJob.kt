@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,48 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job
+package com.tencent.bkrepo.job.batch
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
-import com.tencent.bkrepo.repository.job.base.CenterNodeJob
-import com.tencent.bkrepo.repository.model.TTemporaryToken
-import org.springframework.data.mongodb.core.query.Criteria
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ShareRecordCleanJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 
 /**
- * Temporary token 清理任务
+ * Share record 清理任务
  */
 @Component
-class TemporaryTokenCleanupJob(
-    private val temporaryTokenDao: TemporaryTokenDao
-) : CenterNodeJob() {
+@EnableConfigurationProperties(ShareRecordCleanJobProperties::class)
+class ShareRecordCleanupJob(
+    private val properties: ShareRecordCleanJobProperties,
+    private val mongoTemplate: MongoTemplate
+) : DefaultContextJob(properties) {
 
-    @Scheduled(cron = "0 0 3 * * ?") // 每天凌晨3点执行
-    override fun start() {
-        super.start()
-    }
-
-    override fun run() {
-        val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
-        val criteria = Criteria().orOperator(
-            where(TTemporaryToken::expireDate).lt(expireDate),
-            where(TTemporaryToken::permits).lt(1)
-        )
-        val query = Query.query(criteria)
-        val result = temporaryTokenDao.remove(query)
-        logger.info("[${result.deletedCount}] expired temporary token has been clean up.")
-    }
+    data class ShareRecord(
+        val expireDate: LocalDateTime
+    )
 
     override fun getLockAtMostFor(): Duration = Duration.ofHours(6)
 
-    companion object {
-        private val logger = LoggerHolder.jobLogger
-        private const val RESERVE_DAYS = 7L
+    override fun doStart0(jobContext: JobContext) {
+        val expireDate = LocalDateTime.now().minusDays(properties.reserveDays)
+        val query = Query.query(where(ShareRecord::expireDate).lt(expireDate))
+        val result = mongoTemplate.remove(query, COLLECTION_NAME)
+        jobContext.success.addAndGet(result.deletedCount)
+        jobContext.total.addAndGet(result.deletedCount)
     }
+
+    companion object {
+        private const val COLLECTION_NAME = "share_record"
+    }
+
 }
