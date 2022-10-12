@@ -113,7 +113,7 @@ object ObjectBuildUtil {
         sourceType?.let {
             result.add(MetadataModel(SOURCE_TYPE, sourceType))
         }
-        val oldConInfo = packageMetadata?.filter { it.key == CONAN_INFOS }?.first()?.value
+        val oldConInfo = packageMetadata?.first { it.key == CONAN_INFOS }?.value
         val conanInfo = oldConInfo?.apply { mutableListOf(this).add(convertToConanFileReference(artifactInfo)) }
             ?: listOf(convertToConanFileReference(artifactInfo))
         result.add(MetadataModel(CONAN_INFOS, conanInfo))

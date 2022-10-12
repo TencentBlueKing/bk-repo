@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.conan.utils
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.PackageReference

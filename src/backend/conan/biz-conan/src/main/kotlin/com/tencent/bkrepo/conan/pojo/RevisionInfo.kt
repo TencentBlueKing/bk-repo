@@ -32,10 +32,9 @@ import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToLocalTime
 data class RevisionInfo(
     val revision: String,
     val time: String
-): Comparable<RevisionInfo> {
+) : Comparable<RevisionInfo> {
 
     override fun compareTo(other: RevisionInfo): Int {
         return convertToLocalTime(this.time).compareTo(convertToLocalTime(other.time))
     }
 }
-

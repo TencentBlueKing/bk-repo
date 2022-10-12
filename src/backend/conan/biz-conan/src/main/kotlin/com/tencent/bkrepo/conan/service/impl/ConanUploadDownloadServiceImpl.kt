@@ -51,7 +51,7 @@ class ConanUploadDownloadServiceImpl : ConanUploadDownloadService {
             val context = ArtifactUploadContext(artifactFile)
             ArtifactContextHolder.getRepository().upload(context)
         } else {
-            // conan客户端上传文件前会使用同样的请求去确认文件是否存在
+            // conan客户端上传文件前会使用同样请求去确认文件是否存在
             val fullPath = generateFullPath(conanArtifactInfo)
             commonService.checkNodeExist(conanArtifactInfo.projectId, conanArtifactInfo.repoName, fullPath)
         }

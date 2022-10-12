@@ -46,7 +46,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ConanUploadDownloadController(
     private val conanUploadDownloadService: ConanUploadDownloadService
-){
+) {
     /**
      * 获取文件
      */

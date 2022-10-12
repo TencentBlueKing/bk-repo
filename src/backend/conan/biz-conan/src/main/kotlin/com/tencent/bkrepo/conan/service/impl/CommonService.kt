@@ -391,7 +391,7 @@ class CommonService {
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
         storageManager.loadArtifactInputStream(indexNode, repo.storageCredentials)?.use {
-            return it.readJsonString<IndexInfo>()
+            return it.readJsonString()
         }
         return IndexInfo(refStr)
     }
@@ -536,19 +536,17 @@ class CommonService {
             revPath = revPath,
             refStr = refStr
         )
-        val revisions = if (indexJson.revisions.isEmpty()) {
+        val revisions = indexJson.revisions.ifEmpty {
 //            val revisionV1Path = joinString("/$revPath", DEFAULT_REVISION_V1)
 //            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return emptyMap()
 //            listOf(RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now())))
             emptyList()
-        } else {
-            indexJson.revisions
         }
 
         revisions.forEach {
             val conf = conanFileReference.copy(revision = it.revision)
-            val revPath = getPackageRevisionsFile(conf)
-            val packageIds = getPackageIdList(projectId, repoName, revPath)
+            val tempRevPath = getPackageRevisionsFile(conf)
+            val packageIds = getPackageIdList(projectId, repoName, tempRevPath)
             packageIds.forEach { packageId ->
                 val packageReference = PackageReference(conf, packageId)
                 val prevPath = getPackageRevisionsFile(packageReference)

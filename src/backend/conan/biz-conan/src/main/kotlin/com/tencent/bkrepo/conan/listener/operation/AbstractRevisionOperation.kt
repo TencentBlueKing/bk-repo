@@ -27,11 +27,9 @@
 
 package com.tencent.bkrepo.conan.listener.operation
 
-import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.RevisionOperationRequest
 import com.tencent.bkrepo.conan.service.impl.CommonService
-import com.tencent.bkrepo.conan.utils.PathUtils.joinString
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch

@@ -27,14 +27,12 @@
 
 package com.tencent.bkrepo.conan.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.conan.constant.EXPORT_SOURCES_TGZ_NAME
 import com.tencent.bkrepo.conan.constant.NAME
@@ -52,7 +50,6 @@ import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.stereotype.Component
 
 @Component
@@ -113,47 +110,35 @@ class ConanLocalRepository : LocalRepository() {
         sourceType: ArtifactChannel? = null
     ) {
         with(artifactInfo) {
-            try {
-                val packageVersion = packageClient.findVersionByName(
-                    projectId = projectId,
-                    repoName = repoName,
-                    packageKey = PackageKeys.ofConan(name, userName),
-                    version = version
-                ).data
-                if (packageVersion == null) {
-                    val packageVersionCreateRequest = buildPackageVersionCreateRequest(
-                        userId = userId,
-                        artifactInfo = artifactInfo,
-                        size = size,
-                        sourceType = sourceType
-                    )
-                    // TODO 元数据中要加入对应username与channel，可能存在同一制品版本存在不同username与channel
-                    val packageUpdateRequest = buildPackageUpdateRequest(artifactInfo)
-                    packageClient.createVersion(packageVersionCreateRequest).apply {
-                        logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
-                    }
-                    packageClient.updatePackage(packageUpdateRequest)
-                } else {
-                    val packageVersionUpdateRequest = buildPackageVersionUpdateRequest(
-                        artifactInfo = artifactInfo,
-                        size = size,
-                        sourceType = sourceType,
-                        packageMetadata = packageVersion.packageMetadata
-                    )
-                    packageClient.updateVersion(packageVersionUpdateRequest).apply {
-                        logger.info("user: [$userId] update package version [$packageVersionUpdateRequest] success!")
-                    }
-                }
-            } catch (exception: NoFallbackAvailableException) {
-                val e = exception.cause
-                if (e !is RemoteErrorCodeException || e.errorCode != ArtifactMessageCode.VERSION_EXISTED.getCode()) {
-                    throw exception
-                }
-                // 暂时转换为包存在异常
-                logger.warn(
-                    "$name|$version already existed, " +
-                        "message: ${e.message}"
+            val packageVersion = packageClient.findVersionByName(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = PackageKeys.ofConan(name, userName),
+                version = version
+            ).data
+            if (packageVersion == null) {
+                val packageVersionCreateRequest = buildPackageVersionCreateRequest(
+                    userId = userId,
+                    artifactInfo = artifactInfo,
+                    size = size,
+                    sourceType = sourceType
                 )
+                // TODO 元数据中要加入对应username与channel，可能存在同一制品版本存在不同username与channel
+                val packageUpdateRequest = buildPackageUpdateRequest(artifactInfo)
+                packageClient.createVersion(packageVersionCreateRequest).apply {
+                    logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
+                }
+                packageClient.updatePackage(packageUpdateRequest)
+            } else {
+                val packageVersionUpdateRequest = buildPackageVersionUpdateRequest(
+                    artifactInfo = artifactInfo,
+                    size = size,
+                    sourceType = sourceType,
+                    packageMetadata = packageVersion.packageMetadata
+                )
+                packageClient.updateVersion(packageVersionUpdateRequest).apply {
+                    logger.info("user: [$userId] update package version [$packageVersionUpdateRequest] success!")
+                }
             }
         }
     }

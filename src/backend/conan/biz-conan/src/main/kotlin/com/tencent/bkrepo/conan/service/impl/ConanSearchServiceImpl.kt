@@ -30,7 +30,6 @@ package com.tencent.bkrepo.conan.service.impl
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
 import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
@@ -91,11 +90,11 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     fun searchRecipes(projectId: String, repoName: String): List<String> {
         val result = mutableListOf<String>()
-        packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach { it ->
+        packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach {
             packageClient.listAllVersion(projectId, repoName, it).data.orEmpty().forEach { pv ->
-                val conanInfo = pv.packageMetadata.filter { m ->
+                val conanInfo = pv.packageMetadata.first { m ->
                     m.key == CONAN_INFOS
-                }.first().value.toJsonString().readJsonString<List<ConanFileReference>>()
+                }.value.toJsonString().readJsonString<List<ConanFileReference>>()
                 result.add(buildConanFileName(conanInfo.first()))
             }
         }

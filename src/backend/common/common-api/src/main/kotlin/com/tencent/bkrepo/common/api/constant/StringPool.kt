@@ -34,6 +34,8 @@ package com.tencent.bkrepo.common.api.constant
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import java.util.concurrent.ThreadLocalRandom
+import kotlin.math.abs
 
 object StringPool {
     const val EMPTY = ""
@@ -61,6 +63,15 @@ object StringPool {
 
     fun randomString(size: Int) = List(size) { alphabet.random() }.joinToString(EMPTY)
     fun uniqueId() = UUID.randomUUID().toString().replace(DASH, EMPTY).toLowerCase()
+
+    fun randomStringByLongValue(prefix: String? = null, suffix: String? = null): String {
+        var randomLong = ThreadLocalRandom.current().nextLong()
+        randomLong = if (randomLong == Long.MIN_VALUE) 0 else abs(randomLong)
+        var value = randomLong.toString()
+        prefix?.let { value = prefix + value }
+        suffix?.let { value += suffix }
+        return value
+    }
 }
 
 fun String.ensurePrefix(prefix: CharSequence): String {
