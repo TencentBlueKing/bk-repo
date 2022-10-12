@@ -34,7 +34,6 @@ package com.tencent.bkrepo.repository.listener
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
@@ -48,7 +47,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ResourcePermissionListener(
-    private val permissionManager: PermissionManager,
     private val roleResource: ServiceRoleResource,
     private val userResource: ServiceUserResource
 ) {
@@ -60,7 +58,7 @@ class ResourcePermissionListener(
     @EventListener(ProjectCreatedEvent::class)
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
-            if (isAuthedNormalUser(userId)) {
+            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
             }
@@ -74,7 +72,7 @@ class ResourcePermissionListener(
     @EventListener(RepoCreatedEvent::class)
     fun handle(event: RepoCreatedEvent) {
         with(event) {
-            if (isAuthedNormalUser(userId)) {
+            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
                 userResource.addUserRole(userId, repoManagerRoleId)
             }
@@ -87,5 +85,17 @@ class ResourcePermissionListener(
      */
     private fun isAuthedNormalUser(userId: String): Boolean {
         return userId != SYSTEM_USER && userId != ANONYMOUS_USER
+    }
+
+    private fun isNeedLocalPermission(projectId: String): Boolean {
+        if (projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(GIT_PROJECT_PREFIX)) {
+            return false
+        }
+        return true
+    }
+
+    companion object {
+        private const val GIT_PROJECT_PREFIX = "git_"
+        private const val CODE_PROJECT_PREFIX = "CODE_"
     }
 }
