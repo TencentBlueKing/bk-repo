@@ -65,16 +65,19 @@ class ImageScanHelper(
         val dos = DigestOutputStream(fileOutputStream, MessageDigest.getInstance("SHA-256"))
         TarArchiveOutputStream(dos).use { tos ->
             // 打包config文件
-            loadLayerTo(manifest.config, task, tos)
+            val configFilePath = "${manifest.config.digest.substringAfter(CharPool.COLON)}.json"
+            loadLayerTo(configFilePath, manifest.config, task, tos)
             val layers = ArrayList<String>()
             // 打包layers文件
             manifest.layers.forEach {
-                layers.add(it.digest.replace(CharPool.COLON.toString(), "__"))
-                loadLayerTo(it, task, tos)
+                val layerDir = it.digest.substringAfter(CharPool.COLON)
+                putArchiveEntry("$layerDir/", 0L, null, tos)
+                val layerPath = "$layerDir/layer.tar"
+                layers.add(layerPath)
+                loadLayerTo(layerPath, it, task, tos)
             }
             // 打包manifest.json文件
-            val configFileName = manifest.config.digest.replace(CharPool.COLON.toString(), "__")
-            val manifestV1 = ManifestV1(listOf(Manifest(configFileName, emptyList(), layers)))
+            val manifestV1 = ManifestV1(listOf(Manifest(configFilePath, emptyList(), layers)))
             val manifestV1Bytes = manifestV1.manifests.toJsonString().toByteArray()
             ByteArrayInputStream(manifestV1Bytes).use {
                 putArchiveEntry(MANIFEST, manifestV1Bytes.size.toLong(), it, tos)
@@ -83,15 +86,14 @@ class ImageScanHelper(
         return Hex.encodeHexString(dos.messageDigest.digest())
     }
 
-    private fun loadLayerTo(layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream) {
+    private fun loadLayerTo(filePath: String, layer: Layer, task: ScanExecutorTask, tos: TarArchiveOutputStream) {
         // 获取sha256和fileName
         val digestSplits = layer.digest.split(CharPool.COLON)
         if (digestSplits.size != 2 || digestSplits[0] != "sha256") {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, layer.digest)
         }
         val sha256 = digestSplits[1]
-        val fileName = "${digestSplits[0]}__${digestSplits[1]}"
-        logger.info(CommonUtils.buildLogMsg(task, "load layer [$fileName]"))
+        logger.info(CommonUtils.buildLogMsg(task, "load layer [$filePath]"))
 
         // 获取layer大小
         val nodes = nodeClient.search(
@@ -109,15 +111,15 @@ class ImageScanHelper(
 
         // 加载layer
         storageService.load(sha256, Range.full(size), task.storageCredentials)
-            ?.use { putArchiveEntry(fileName, size, it, tos) }
+            ?.use { putArchiveEntry(filePath, size, it, tos) }
             ?: throw SystemErrorException(CommonMessageCode.RESOURCE_NOT_FOUND, "layer not found sha256[$sha256]")
     }
 
-    private fun putArchiveEntry(name: String, size: Long, inputStream: InputStream, tos: TarArchiveOutputStream) {
+    private fun putArchiveEntry(name: String, size: Long, inputStream: InputStream?, tos: TarArchiveOutputStream) {
         val entry = TarArchiveEntry(name)
         entry.size = size
         tos.putArchiveEntry(entry)
-        inputStream.copyTo(tos)
+        inputStream?.copyTo(tos)
         tos.closeArchiveEntry()
     }
 
