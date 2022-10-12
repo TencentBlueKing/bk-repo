@@ -92,7 +92,9 @@ class ConanController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getPackageDownloadUrls(conanArtifactInfo, mutableListOf(CONAN_MANIFEST, CONANINFO, PACKAGE_TGZ_NAME))
+            conanService.getPackageDownloadUrls(
+                conanArtifactInfo, mutableListOf(CONAN_MANIFEST, CONANINFO, PACKAGE_TGZ_NAME)
+            )
         )
     }
 

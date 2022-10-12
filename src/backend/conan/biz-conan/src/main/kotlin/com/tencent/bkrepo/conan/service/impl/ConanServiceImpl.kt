@@ -59,7 +59,7 @@ class ConanServiceImpl : ConanService {
                 commonService.getDownloadConanFileUrls(
                     projectId, repoName, conanFileReference, subFileset
                 )
-            } catch (ignore: NodeNotFoundException){
+            } catch (ignore: NodeNotFoundException) {
                 emptyMap()
             }
             if (urls.isEmpty())

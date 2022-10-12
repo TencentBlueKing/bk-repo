@@ -55,7 +55,6 @@ class ConanExceptionHandler {
         conanResponse(responseObject, exception)
     }
 
-
     @ExceptionHandler(ConanRecipeNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerConanRecipeNotFoundException(exception: ConanRecipeNotFoundException) {

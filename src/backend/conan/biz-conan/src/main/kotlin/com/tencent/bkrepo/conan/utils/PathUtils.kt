@@ -50,7 +50,7 @@ object PathUtils {
     }
 
     fun joinString(first: String, second: String, third: String? = null): String {
-        val sb =  StringBuilder(first.trimEnd(CharPool.SLASH))
+        val sb = StringBuilder(first.trimEnd(CharPool.SLASH))
             .append(CharPool.SLASH)
             .append(second.trimStart(CharPool.SLASH))
         third?.let { sb.append(CharPool.SLASH).append(third) }
@@ -130,32 +130,26 @@ object PathUtils {
     }
 
     fun buildExportFolderPath(fileReference: ConanFileReference): String {
-        with(fileReference) {
-            return StringBuilder(buildRevisionPath(fileReference))
-                .append(CharPool.SLASH)
-                .append(EXPORT_FOLDER)
-                .toString()
-        }
+        return StringBuilder(buildRevisionPath(fileReference))
+            .append(CharPool.SLASH)
+            .append(EXPORT_FOLDER)
+            .toString()
     }
 
     fun buildPackageFolderPath(fileReference: ConanFileReference): String {
-        with(fileReference) {
-            return StringBuilder(buildRevisionPath(fileReference))
-                .append(CharPool.SLASH)
-                .append(PACKAGES_FOLDER)
-                .toString()
-        }
+        return StringBuilder(buildRevisionPath(fileReference))
+            .append(CharPool.SLASH)
+            .append(PACKAGES_FOLDER)
+            .toString()
     }
 
     fun buildPackageIdFolderPath(fileReference: ConanFileReference, packageId: String): String {
-        with(fileReference) {
-            return StringBuilder(buildRevisionPath(fileReference))
-                .append(CharPool.SLASH)
-                .append(PACKAGES_FOLDER)
-                .append(CharPool.SLASH)
-                .append(packageId)
-                .toString()
-        }
+        return StringBuilder(buildRevisionPath(fileReference))
+            .append(CharPool.SLASH)
+            .append(PACKAGES_FOLDER)
+            .append(CharPool.SLASH)
+            .append(packageId)
+            .toString()
     }
 
     fun buildPackageRevisionFolderPath(packageReference: PackageReference): String {
@@ -169,7 +163,7 @@ object PathUtils {
         }
     }
 
-    fun generateFullPath(artifactInfo : ConanArtifactInfo): String {
+    fun generateFullPath(artifactInfo: ConanArtifactInfo): String {
         with(artifactInfo) {
             return if (packageId.isNullOrEmpty()) {
                 val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(this, revision)

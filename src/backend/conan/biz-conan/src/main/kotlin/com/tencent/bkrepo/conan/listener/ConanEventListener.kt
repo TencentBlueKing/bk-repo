@@ -37,29 +37,24 @@ import com.tencent.bkrepo.conan.listener.operation.ConanRecipeDeleteOperation
 import com.tencent.bkrepo.conan.listener.operation.ConanRecipeUploadOperation
 import com.tencent.bkrepo.conan.pool.ConanThreadPoolExecutor
 import com.tencent.bkrepo.conan.service.impl.CommonService
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
 
 @Component
 class ConanEventListener(
-   val commonService: CommonService
+    val commonService: CommonService
 ) {
 
     val threadPoolExecutor: ThreadPoolExecutor = ConanThreadPoolExecutor.instance
 
-
     /**
-    * 删除conan recipe下的package，更新package下的index.json文件
-    */
+     * 删除conan recipe下的package，更新package下的index.json文件
+     */
     @EventListener(ConanPackageDeleteEvent::class)
     fun handle(event: ConanPackageDeleteEvent) {
-        with(event.request) {
-            val task = ConanPackageDeleteOperation(event.request, commonService)
-            threadPoolExecutor.submit(task)
-        }
+        val task = ConanPackageDeleteOperation(event.request, commonService)
+        threadPoolExecutor.submit(task)
     }
 
     /**
@@ -67,12 +62,8 @@ class ConanEventListener(
      */
     @EventListener(ConanRecipeDeleteEvent::class)
     fun handle(event: ConanRecipeDeleteEvent) {
-        with(event.request) {
-            with(event.request) {
-                val task = ConanRecipeDeleteOperation(event.request, commonService)
-                threadPoolExecutor.submit(task)
-            }
-        }
+        val task = ConanRecipeDeleteOperation(event.request, commonService)
+        threadPoolExecutor.submit(task)
     }
 
     /**
@@ -80,10 +71,8 @@ class ConanEventListener(
      */
     @EventListener(ConanRecipeUploadEvent::class)
     fun handle(event: ConanRecipeUploadEvent) {
-        with(event.request) {
-            val task = ConanRecipeUploadOperation(event.request, commonService)
-            threadPoolExecutor.submit(task)
-        }
+        val task = ConanRecipeUploadOperation(event.request, commonService)
+        threadPoolExecutor.submit(task)
     }
 
     /**
@@ -91,13 +80,7 @@ class ConanEventListener(
      */
     @EventListener(ConanPackageUploadEvent::class)
     fun handle(event: ConanPackageUploadEvent) {
-        with(event.request) {
-            val task = ConanPackageUploadOperation(event.request, commonService)
-            threadPoolExecutor.submit(task)
-        }
-    }
-
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(ConanEventListener::class.java)
+        val task = ConanPackageUploadOperation(event.request, commonService)
+        threadPoolExecutor.submit(task)
     }
 }
