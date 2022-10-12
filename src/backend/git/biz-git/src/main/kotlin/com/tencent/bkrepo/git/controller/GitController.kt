@@ -27,7 +27,7 @@ class GitController(
         infoRepository: GitRepositoryArtifactInfo,
         @RequestParam("service") svc: String
     ) {
-        gitService.infoRefs(infoRepository, svc)
+        gitService.infoRefs(svc)
     }
 
     /**

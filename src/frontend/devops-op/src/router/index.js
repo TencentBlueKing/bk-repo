@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 export const TITLE_HOME = sidebarTitle
+export const ROUTER_NAME_ACCOUNT = 'Account'
 export const ROUTER_NAME_SERVICE = 'Service'
 export const ROUTER_NAME_NODE = 'Node'
 export const ROUTER_NAME_EMPTY_FOLDER = 'EmptyFolder'
@@ -72,6 +73,18 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  {
+    path: '/account',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_ACCOUNT,
+        meta: { title: '平台账户管理', icon: 'user' },
+        component: () => import('@/views/account/index')
+      }
+    ]
+  },
   {
     path: '/services',
     component: Layout,

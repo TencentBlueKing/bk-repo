@@ -59,4 +59,5 @@ object Versions {
     const val DockerJava = "3.2.13"
     const val Mockk = "1.12.2"
     const val Swagger = "1.6.2"
+    const val SleuthOtel = "1.0.0-M13"
 }

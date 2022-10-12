@@ -187,7 +187,7 @@ class UserServiceImpl constructor(
         if (!checkUserRoleBind(userId, roleId)) {
             val query = UserQueryHelper.getUserById(userId)
             val update = Update()
-            update.addToSet(TUser::roles.name, roleId)
+            update.push(TUser::roles.name, roleId)
             mongoTemplate.upsert(query, update, TUser::class.java)
         }
         return getUserById(userId)

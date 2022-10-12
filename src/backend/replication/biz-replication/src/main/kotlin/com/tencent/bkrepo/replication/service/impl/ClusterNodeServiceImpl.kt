@@ -36,8 +36,9 @@ import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -132,7 +133,9 @@ class ClusterNodeServiceImpl(
                 lastModifiedDate = LocalDateTime.now(),
             )
             // 检测远程集群网络连接是否可用
-            tryConnect(convert(clusterNode)!!)
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                tryConnect(convert(clusterNode)!!)
+            }
             return try {
                 clusterNodeDao.insert(clusterNode)
                     .also { logger.info("Create cluster node [$name] with url [$url] success.") }
@@ -159,7 +162,9 @@ class ClusterNodeServiceImpl(
                 certificate = request.certificate
             }
             // 检测远程集群网络连接是否可用
-            tryConnect(convert(tClusterNode)!!)
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                tryConnect(convert(tClusterNode)!!)
+            }
             return try {
                 clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
@@ -236,7 +241,7 @@ class ClusterNodeServiceImpl(
                 HttpUtils.pingURL(remoteClusterInfo.url, 60000)
             } catch (exception: Exception) {
                 val message = exception.message ?: UNKNOWN
-                logger.warn("ping cluster [$name] failed, reason: $message")
+                logger.warn("ping remote cluster [$name] failed, reason: $message")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
             }
         }
@@ -268,6 +273,8 @@ class ClusterNodeServiceImpl(
         private const val CLUSTER_NODE_URL_PATTERN = "[a-zA-z]+://[^\\s]*"
         private const val CLUSTER_NAME_LENGTH_MIN = 2
         private const val CLUSTER_NAME_LENGTH_MAX = 256
+        private const val RETRY_COUNT = 2
+        private const val DELAY_IN_SECONDS: Long = 1
 
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {

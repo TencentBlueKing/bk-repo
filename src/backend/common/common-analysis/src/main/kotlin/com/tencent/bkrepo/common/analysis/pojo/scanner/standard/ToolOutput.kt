@@ -66,7 +66,11 @@ data class Result(
     /**
      * License分析结果
      */
-    val licenseResults: List<LicenseResult>? = null
+    val licenseResults: List<LicenseResult>? = null,
+    /**
+     * 敏感信息分析结果
+     */
+    val sensitiveResult: List<SensitiveResult>? = null
 )
 
 /**
@@ -137,4 +141,22 @@ data class LicenseResult(
      * 检出License的组件版本
      */
     val pkgVersions: Set<String> = emptySet()
+)
+
+/**
+ * 敏感信息
+ */
+data class SensitiveResult(
+    /**
+     * 检出敏感信息的文件在制品包中的路径
+     */
+    val path: String? = null,
+    /**
+     * 敏感信息类型
+     */
+    val type: String? = null,
+    /**
+     * 敏感信息内容
+     */
+    val content: String
 )

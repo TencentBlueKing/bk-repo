@@ -28,9 +28,8 @@
 package com.tencent.bkrepo.repository.listener
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import org.springframework.cloud.stream.function.StreamBridge
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 /**
@@ -38,16 +37,15 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EventStreamListener(
-    private val bridge: StreamBridge
+    private val messageSupplier: MessageSupplier
 ) {
 
     /**
      * 将事件发送到消息队列, 将需要依赖该事件的其余模块解耦开
      */
-    @Async
     @EventListener(ArtifactEvent::class)
     fun handle(event: ArtifactEvent) {
-        bridge.send(BINDING_OUT_NAME, event)
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
     }
 
     companion object {
