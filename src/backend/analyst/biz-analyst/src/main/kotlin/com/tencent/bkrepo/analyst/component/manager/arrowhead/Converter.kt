@@ -192,7 +192,7 @@ object Converter {
             cveId = cve?.cveId,
             path = securityResult.data.path,
             pkgName = securityResult.data.pkgName,
-            pkgVersions = securityResult.data.pkgVersions,
+            pkgVersions = securityResult.data.pkgVersions.toMutableSet(),
             fixedVersion = cve?.versionFixed,
             des = cve?.description,
             solution = cve?.officialSolution,

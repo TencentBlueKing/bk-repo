@@ -55,7 +55,7 @@ data class ToolOutput(
     /**
      * 分析结果
      */
-    val result: Result? = null
+    var result: Result? = null
 )
 
 /**
@@ -96,7 +96,7 @@ data class SecurityResult(
     /**
      * 存在漏洞的组件版本
      */
-    val pkgVersions: Set<String> = emptySet(),
+    val pkgVersions: MutableSet<String> = HashSet(),
     /**
      * 修复版本
      */
@@ -143,5 +143,5 @@ data class LicenseResult(
     /**
      * 检出License的组件版本
      */
-    val pkgVersions: Set<String> = emptySet()
+    val pkgVersions: MutableSet<String> = HashSet()
 )

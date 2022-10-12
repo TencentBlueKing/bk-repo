@@ -35,4 +35,34 @@ data class StandardScanExecutorResult(
     @ApiModelProperty("工具分析结果")
     val output: ToolOutput? = null,
     override val scanStatus: String = output?.status ?: SubScanTaskStatus.FAILED.name
-) : ScanExecutorResult(scanStatus, StandardScanner.TYPE)
+) : ScanExecutorResult(scanStatus, StandardScanner.TYPE) {
+    override fun distinctResult() {
+        if (output?.result == null) {
+            return
+        }
+
+        // 根据（漏洞id-组件id）进行去重
+        val securityResults = HashMap<String, SecurityResult>()
+        output.result?.securityResults?.forEach { securityResult ->
+            securityResults
+                .getOrPut("${securityResult.pkgName}-${securityResult.vulId}") { securityResult }
+                .pkgVersions.addAll(securityResult.pkgVersions)
+        }
+
+        // 去重license
+        val licenseResults = HashMap<String, LicenseResult>()
+        output.result?.licenseResults?.forEach { licenseResult ->
+            licenseResults
+                .getOrPut("${licenseResult.pkgName}-${licenseResult.licenseName}") { licenseResult }
+                .pkgVersions.addAll(licenseResult.pkgVersions)
+        }
+
+        // 替换为去重后的结果
+        output.result?.let {
+            output.result = it.copy(
+                securityResults = securityResults.values.toList(),
+                licenseResults = licenseResults.values.toList()
+            )
+        }
+    }
+}
