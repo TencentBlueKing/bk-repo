@@ -56,4 +56,9 @@ open class ScanExecutorResult(
     open val scanStatus: String,
     @ApiModelProperty("扫描器类型")
     val type: String
-)
+) {
+    /**
+     * 对扫描结果进行去重
+     */
+    open fun distinctResult() {}
+}

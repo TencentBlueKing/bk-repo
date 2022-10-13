@@ -201,6 +201,8 @@ class ScanServiceImpl @Autowired constructor(
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             logger.info("report result, parentTask[${subScanTask.parentScanTaskId}], subTask[$subTaskId]")
             val scanner = scannerService.get(subScanTask.scanner)
+            // 对扫描结果去重
+            scanExecutorResult?.distinctResult()
             val overview = scanExecutorResult?.let {
                 scannerConverters[ScannerConverter.name(scanner.type)]!!.convertOverview(it)
             }
