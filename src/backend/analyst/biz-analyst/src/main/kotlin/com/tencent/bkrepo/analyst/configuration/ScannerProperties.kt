@@ -42,7 +42,11 @@ data class ScannerProperties(
     /**
      * 后端服务baseUrl
      */
-    var baseUrl: String = "http://localhost"
+    var baseUrl: String = "http://localhost",
+    /**
+     * 前端baseUrl
+     */
+    var frontEndBaseUrl: String = "http://localhost/ui"
 ) {
     companion object {
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0

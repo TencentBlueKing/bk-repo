@@ -196,8 +196,15 @@ class ScanTaskStatusChangedEventListener(
     }
 
     @Suppress("MaxLineLength")
-    private fun reportUrl(projectId: String, taskId: String, scanPlan: ScanPlan) =
-        "${scannerProperties.detailReportUrl}/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
+    private fun reportUrl(projectId: String, taskId: String, scanPlan: ScanPlan): String {
+        val baseUrl = if (projectId.startsWith(GIT_PROJECT_PREFIX)) {
+            // 蓝盾Stream的项目鉴权方式不同，需要直接访问制品库前端查看报告
+            scannerProperties.frontEndBaseUrl
+        } else {
+            scannerProperties.detailReportUrl
+        }
+        return "$baseUrl/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
+    }
 
     private fun getWeworkBot(scanTaskId: String): WeworkBot? {
         return redisTemplate.opsForValue().get(weworkBotKey(scanTaskId))?.readJsonString()
@@ -214,6 +221,7 @@ class ScanTaskStatusChangedEventListener(
         )
         private val logger = LoggerFactory.getLogger(ScanTaskStatusChangedEventListener::class.java)
         private const val DEFAULT_EXPIRED_DAY = 1L
+        private const val GIT_PROJECT_PREFIX = "git_"
     }
 
     /**
