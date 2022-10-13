@@ -57,6 +57,8 @@
         // ci: ci模式接入devops平台
         // saas: saas模式接入蓝鲸底座
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+        // 是否显示项目设置菜单
+        var SHOW_PROJECT_CONFIG_MENU = MODE_CONFIG !== 'ci'
     </script>
     <script>
         const inIframe = self !== top

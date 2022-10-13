@@ -19,7 +19,8 @@ module.exports = {
     ],
     globals: {
         MODE_CONFIG: true,
-        DEVOPS_SITE_URL: true
+        DEVOPS_SITE_URL: true,
+        SHOW_PROJECT_CONFIG_MENU: true
     },
     // add your custom rules hered
     rules: {
