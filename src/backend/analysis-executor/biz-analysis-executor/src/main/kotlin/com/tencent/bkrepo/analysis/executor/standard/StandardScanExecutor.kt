@@ -117,7 +117,9 @@ class StandardScanExecutor(
 
     override fun result(taskWorkDir: File, task: ScanExecutorTask, scanStatus: SubScanTaskStatus): ScanExecutorResult {
         val toolOutput = readJsonString<ToolOutput>(File(taskWorkDir, OUTPUT_FILE))
-        toolOutput?.err?.let { logger.warn("task[${task.taskId}] scan failed, message:\n$it") }
+        if (!toolOutput?.err.isNullOrEmpty()) {
+            logger.error("task[${task.taskId}] scan failed, message:\n${toolOutput?.err}")
+        }
         return if (toolOutput != null) {
             StandardScanExecutorResult(toolOutput)
         } else {
