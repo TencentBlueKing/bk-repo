@@ -2,6 +2,7 @@ import request from '@/utils/request'
 
 const PREFIX_NODE = '/repository/api/node'
 const PREFIX_NODE_OPERATION = '/opdata/api/nodeOperation'
+const PREFIX_SHARE = '/repository/api/share'
 export const DEFAULT_PAGE_SIZE = 20
 export const DEFAULT_NODE_OPERATION_PAGE_SIZE = 10
 
@@ -125,5 +126,37 @@ export function statisticalFirstLevelFolder(projectId, repoName, pageNumber) {
       pageNumber: pageNumber,
       pageSize: DEFAULT_NODE_OPERATION_PAGE_SIZE
     }
+  })
+}
+
+export function copyNode(node) {
+  return request({
+    url: `${PREFIX_NODE}/copy`,
+    method: 'post',
+    data: node
+  })
+}
+
+export function renameNode(node) {
+  return request({
+    url: `${PREFIX_NODE}/rename`,
+    method: 'post',
+    data: node
+  })
+}
+
+export function moveNode(node) {
+  return request({
+    url: `${PREFIX_NODE}/move`,
+    method: 'post',
+    data: node
+  })
+}
+
+export function shareNode(node) {
+  return request({
+    url: `${PREFIX_SHARE}/${node.projectId}/${node.repoName}/${node.artifactUri}`,
+    method: 'post',
+    data: node
   })
 }

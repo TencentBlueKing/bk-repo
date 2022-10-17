@@ -75,6 +75,30 @@
           type="primary"
           @click="changeRouteQueryParams(true)"
         >查询</el-button>
+        <el-button
+          size="mini"
+          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
+          type="primary"
+          @click="fileOperation('copy')"
+        >复制</el-button>
+        <el-button
+          size="mini"
+          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
+          type="primary"
+          @click="fileOperation('move')"
+        >移动</el-button>
+        <el-button
+          size="mini"
+          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
+          type="primary"
+          @click="fileOperation('rename')"
+        >重命名</el-button>
+        <el-button
+          size="mini"
+          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
+          type="primary"
+          @click="showShare()"
+        >分享</el-button>
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
@@ -145,6 +169,8 @@
     <file-restore-dialog :visible.sync="showNodeRestoreDialog" :node="nodeToRestore" @restore-success="onRestoreSuccess" />
     <file-delete-dialog :visible.sync="showNodeDeleteDialog" :node="nodeToDelete" @delete-success="onDeleteSuccess" />
     <file-scan-dialog :visible.sync="showFileScanDialog" :node="nodeToScan" />
+    <share-dialog :visible.sync="showShareDialog" :updating-keys="nodeQuery" />
+    <file-operation-dialog :visible.sync="showFileOperationDialog" :create-mode="createMode" :updating-keys="nodeQuery" @complete="queryNodes(nodeQuery)" />
   </div>
 </template>
 <script>
@@ -157,10 +183,12 @@ import FileDeleteDialog from '@/views/node/components/FileDeleteDialog'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import FileScanDialog from '@/views/node/components/FileScanDialog'
+import ShareDialog from '@/views/node/components/ShareDialog'
+import FileOperationDialog from '@/views/node/components/FileOperationDialog'
 
 export default {
   name: 'Node',
-  components: { FileScanDialog, FileDeleteDialog, FileRestoreDialog, FileDetailDialog, FileReferenceDialog },
+  components: { FileScanDialog, FileDeleteDialog, FileRestoreDialog, FileDetailDialog, FileReferenceDialog, ShareDialog, FileOperationDialog },
   data() {
     return {
       rules: {
@@ -191,7 +219,10 @@ export default {
       nodeToDelete: {},
       indexOfNodeToDelete: -1,
       showFileScanDialog: false,
-      nodeToScan: {}
+      nodeToScan: {},
+      showShareDialog: false,
+      showFileOperationDialog: false,
+      createMode: ''
     }
   },
   mounted() {
@@ -380,6 +411,13 @@ export default {
     },
     onDeleteSuccess() {
       this.queryNodes(this.nodeQuery)
+    },
+    showShare() {
+      this.showShareDialog = true
+    },
+    fileOperation(key) {
+      this.createMode = key
+      this.showFileOperationDialog = true
     }
   }
 }
