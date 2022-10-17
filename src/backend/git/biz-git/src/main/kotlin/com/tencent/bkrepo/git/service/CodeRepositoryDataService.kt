@@ -132,16 +132,18 @@ class CodeRepositoryDataService(
             ).data ?: throw NodeNotFoundException(packArtifactInfo.getArtifactFullPath())
             val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
                 ?: throw IllegalStateException("Stream load failed.")
-            if (artifactInputStream is FileArtifactInputStream) {
-                return DfsFileDataReader(artifactInputStream.file)
+            artifactInputStream.use {
+                if (artifactInputStream is FileArtifactInputStream) {
+                    return DfsFileDataReader(artifactInputStream.file)
+                }
+                val file = ArtifactFileFactory.build(artifactInputStream, node.size)
+                file.getFile()?.let {
+                    return DfsFileDataReader(it)
+                }
+                val output = ByteArrayOutputStream(node.size.toInt())
+                file.getInputStream().use { it.copyTo(output) }
+                return DfsByteArrayDataReader(output.toByteArray())
             }
-            val file = ArtifactFileFactory.build(artifactInputStream, node.size)
-            file.getFile()?.let {
-                return DfsFileDataReader(it)
-            }
-            val output = ByteArrayOutputStream(node.size.toInt())
-            file.getInputStream().copyTo(output)
-            return DfsByteArrayDataReader(output.toByteArray())
         }
     }
 
