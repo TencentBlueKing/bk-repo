@@ -83,7 +83,7 @@ class MetadataServiceImpl(
 
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
-            logger.info("Save metadata[$metadata] on node[/$projectId/$repoName$fullPath] success.")
+            logger.info("Save metadata[$newMetadata] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
 
