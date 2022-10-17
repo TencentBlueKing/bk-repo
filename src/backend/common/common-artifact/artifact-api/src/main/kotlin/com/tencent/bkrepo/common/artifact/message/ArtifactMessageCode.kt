@@ -50,7 +50,6 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     NODE_PATH_INVALID("artifact.node.path.invalid"),
     NODE_EXISTED("artifact.node.existed"),
     NODE_CONFLICT("artifact.node.conflict"),
-    NODE_CREATE_TIMEOUT("artifact.node.create.timeout"),
     NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
     STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
     STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
@@ -67,6 +66,7 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     ARTIFACT_SIZE_TOO_LARGE("artifact.size.too-large"),
     ARTIFACT_TYPE_UNSUPPORTED("artifact.type.unsupported"),
     ARTIFACT_FORBIDDEN("artifact.forbidden"),
+    NODE_CREATE_TIMEOUT("artifact.node.create.timeout")
     ;
 
     override fun getBusinessCode() = ordinal + 1
