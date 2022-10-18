@@ -63,7 +63,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient", primary = false)
 @RequestMapping("/service/node")
 interface NodeClient {
 

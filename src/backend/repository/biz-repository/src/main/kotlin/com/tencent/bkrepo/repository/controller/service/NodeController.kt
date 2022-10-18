@@ -49,11 +49,13 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateReque
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 节点服务接口实现类
  */
+@Primary
 @RestController
 class NodeController(
     private val nodeService: NodeService,
