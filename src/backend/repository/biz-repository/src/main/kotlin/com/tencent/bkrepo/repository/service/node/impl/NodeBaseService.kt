@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -45,6 +46,7 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -66,6 +68,9 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 /**
  * 节点基础服务，实现了CRUD基本操作
@@ -78,9 +83,8 @@ abstract class NodeBaseService(
     open val storageService: StorageService,
     open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties,
-    open val messageSupplier: MessageSupplier
+    open val messageSupplier: MessageSupplier,
 ) : NodeService, NodeBaseOperation {
-
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -138,6 +142,7 @@ abstract class NodeBaseService(
     @Transactional(rollbackFor = [Throwable::class])
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
+            val createStart = System.currentTimeMillis()
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
             Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
@@ -145,9 +150,9 @@ abstract class NodeBaseService(
             // 仓库是否存在
             val repo = checkRepo(projectId, repoName)
             // 路径唯一性校验
-            checkConflictAndQuota(createRequest, fullPath)
+            val deletedTime = checkConflictAndQuota(createRequest, fullPath)
             // 判断父目录是否存在，不存在先创建
-            mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
+            val parents = mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
             val node = TNode(
                 projectId = projectId,
@@ -168,12 +173,88 @@ abstract class NodeBaseService(
                 lastAccessDate = LocalDateTime.now()
             )
             doCreate(node)
+            afterCreate(repo, node, createStart, parents, deletedTime)
+            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
+            return convertToDetail(node)!!
+        }
+    }
+
+    private fun afterCreate(
+        repo: TRepository,
+        node: TNode,
+        createStart: Long,
+        parents: List<TNode>,
+        deletedTime: LocalDateTime?
+    ) {
+        with(node) {
             if (isGenericRepo(repo)) {
                 publishEvent(buildCreatedEvent(node))
             }
             reportNode2Bkbase(node)
-            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
-            return convertToDetail(node)!!
+            val createEnd = System.currentTimeMillis()
+            val timeout = createEnd - createStart > repositoryProperties.nodeCreateTimeout
+            if (timeout) {
+                logger.info("Create node[$fullPath] timeout")
+                rollbackCreate(parents, node, deletedTime)
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CREATE_TIMEOUT, fullPath)
+            }
+        }
+    }
+
+    /**
+     * 回滚创建的节点和目录
+     * */
+    private fun rollbackCreate(parents: List<TNode>, newNode: TNode, deletedTime: LocalDateTime?) {
+        val toDeletedDirs = mutableListOf<TNode>()
+        val projectId = newNode.projectId
+        val repoName = newNode.repoName
+        toDeletedDirs.addAll(parents)
+        if (newNode.folder) {
+            toDeletedDirs.add(newNode)
+        } else {
+            // 删除新创建的
+            nodeDao.remove(
+                Query(
+                    Criteria(ID).isEqualTo(newNode.id)
+                        .and(TNode::projectId).isEqualTo(projectId)
+                )
+            )
+            fileReferenceService.decrement(newNode)
+            quotaService.decreaseUsedVolume(projectId, repoName, newNode.size)
+            logger.info("Rollback node [$projectId/$repoName${newNode.fullPath}]")
+        }
+
+        toDeletedDirs.sortByDescending { it.fullPath }
+        for (dir in toDeletedDirs) {
+            val option = NodeListOption(deep = true)
+            val query = NodeQueryHelper.nodeListQuery(dir.projectId, dir.repoName, dir.fullPath, option)
+            val size = nodeDao.find(query).size
+            if (size > 0) {
+                break
+            }
+            nodeDao.remove(
+                Query(
+                    Criteria(ID).isEqualTo(dir.id)
+                        .and(TNode::projectId).isEqualTo(dir.projectId)
+                )
+            )
+            logger.info("Rollback node [$projectId/$repoName${dir.fullPath}]")
+        }
+
+        // 恢复创建前的情况，可能是新创建也可能是被覆盖。deletedTime不为空，则表示是覆盖创建
+        with(newNode) {
+            deletedTime?.let {
+                val restoreContext = NodeRestoreSupport.RestoreContext(
+                    projectId = projectId,
+                    repoName = repoName,
+                    rootFullPath = fullPath,
+                    deletedTime = it,
+                    conflictStrategy = ConflictStrategy.FAILED,
+                    operator = createdBy
+                )
+                restoreNode(restoreContext)
+                logger.info("Restore node [$projectId/$repoName$fullPath]")
+            }
         }
     }
 
@@ -250,7 +331,8 @@ abstract class NodeBaseService(
     /**
      * 递归创建目录
      */
-    fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
+    fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String): List<TNode> {
+        val nodes = mutableListOf<TNode>()
         // 格式化
         val fullPath = PathUtils.toFullPath(path)
         val creatingNode = nodeDao.findNode(projectId, repoName, fullPath)
@@ -260,7 +342,7 @@ abstract class NodeBaseService(
         if (creatingNode == null) {
             val parentPath = PathUtils.resolveParent(fullPath)
             val name = PathUtils.resolveName(fullPath)
-            mkdirs(projectId, repoName, parentPath, createdBy)
+            val creates = mkdirs(projectId, repoName, parentPath, createdBy)
             val node = TNode(
                 folder = true,
                 path = parentPath,
@@ -277,10 +359,13 @@ abstract class NodeBaseService(
                 lastModifiedDate = LocalDateTime.now()
             )
             doCreate(node)
+            nodes.addAll(creates)
+            nodes.add(node)
         }
+        return nodes
     }
 
-    private fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
+    private fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -291,11 +376,12 @@ abstract class NodeBaseService(
                 } else {
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    deleteByPath(projectId, repoName, fullPath, operator)
+                    return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
                 }
             } else {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
             }
+            return null
         }
     }
 

@@ -98,9 +98,11 @@ open class NodeDeleteSupport(
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName$fullPath] by [$operator] error: [${exception.message}]")
         }
-        logger.info("Delete node[/$projectId/$repoName$fullPath] by [$operator] success." +
-            "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}")
-        return NodeDeleteResult(deletedNum, deletedSize)
+        logger.info(
+            "Delete node[/$projectId/$repoName$fullPath] by [$operator] success." +
+                "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}"
+        )
+        return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
     override fun deleteBeforeDate(
@@ -124,9 +126,11 @@ open class NodeDeleteSupport(
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName] created before $date error: [${exception.message}]")
         }
-        logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success. " +
-            "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}")
-        return NodeDeleteResult(deletedNum, deletedSize)
+        logger.info(
+            "Delete node [/$projectId/$repoName] created before $date by [$operator] success. " +
+                "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}"
+        )
+        return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
     companion object {
