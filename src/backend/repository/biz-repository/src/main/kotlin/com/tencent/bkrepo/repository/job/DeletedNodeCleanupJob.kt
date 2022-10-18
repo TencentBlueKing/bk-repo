@@ -95,6 +95,15 @@ class DeletedNodeCleanupJob(
             context.total += deletedNodeList.size
             deletedNodeList = nodeDao.find(query)
         }
+        // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
+        if (repo.deleted != null &&
+            nodeDao.count(Query(
+                where(TNode::projectId).isEqualTo(repo.projectId).and(TNode::repoName).isEqualTo(repo.name))
+            ) == 0L
+        ) {
+            repositoryDao.deleteById(repo.id)
+            logger.info("Clean up deleted repository[${repo.projectId}/${repo.name}] for no nodes remaining")
+        }
     }
 
     private fun cleanUpNode(repo: TRepository, node: TNode) {
