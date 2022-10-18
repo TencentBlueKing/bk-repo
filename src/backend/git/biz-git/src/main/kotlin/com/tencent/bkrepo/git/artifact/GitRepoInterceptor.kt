@@ -18,69 +18,64 @@ import com.tencent.bkrepo.git.constant.X_DEVOPS_PIPELINE_ID
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
-import java.lang.Exception
 import java.lang.IllegalArgumentException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Autowired
 
 class GitRepoInterceptor : HandlerInterceptor {
 
     @Autowired
-    private lateinit var repositoryClient: RepositoryClient
+    lateinit var repositoryClient: RepositoryClient
 
     @Autowired
-    private lateinit var properties: GitProperties
+    lateinit var properties: GitProperties
 
     private val logger = LoggerFactory.getLogger(GitRepoInterceptor::class.java)
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val type = request.getParameter(PARAMETER_HUBTYPE)
-        type?.let {
-            try {
-                val domain = properties.getDomain(HubType.valueOf(type.toUpperCase())) ?: let {
-                    throw ErrorCodeException(GitMessageCode.GIT_HUB_TYPE_NOT_SUPPORT, type)
-                }
-                val owner = request.getParameter(PARAMETER_OWNER)
-                val uriAttribute = request.getAttribute(
-                    HandlerMapping
-                        .URI_TEMPLATE_VARIABLES_ATTRIBUTE
-                ) as MutableMap<Any, Any>
-                val repoName = uriAttribute[REPO_NAME].toString()
-                val realRepoName = "${type}_${owner}_$repoName"
-                val projectId = uriAttribute[PROJECT_ID].toString()
-                val uri = "$domain$owner/$repoName$DOT_GIT"
-                uriAttribute[REPO_NAME] = realRepoName
-
-                if (!request.requestURI.endsWith(PATH_SYNC)) return true
-                logger.info(
-                    "receive $X_DEVOPS_BUILD_ID:${request.getHeader(X_DEVOPS_BUILD_ID)} " +
-                        "$X_DEVOPS_PIPELINE_ID:${request.getHeader(X_DEVOPS_PIPELINE_ID)} " +
-                        "sync request $uri"
-                )
-                repositoryClient.getRepoDetail(projectId, realRepoName).data ?: let {
-                    val req = RepoCreateRequest(
-                        projectId = projectId,
-                        name = realRepoName,
-                        category = RepositoryCategory.REMOTE,
-                        type = RepositoryType.GIT,
-                        public = false,
-                        storageCredentialsKey = properties.storageCredentialsKey,
-                        configuration = RemoteConfiguration(
-                            url = uri
-                        )
-                    )
-                    repositoryClient.createRepo(req)
-                    logger.info("create projectId $projectId repo $realRepoName")
-                }
-            } catch (e: IllegalArgumentException) {
+        type ?: return true
+        try {
+            val domain = properties.getDomain(HubType.valueOf(type.toUpperCase())) ?: let {
                 throw ErrorCodeException(GitMessageCode.GIT_HUB_TYPE_NOT_SUPPORT, type)
-            } catch (e: Exception) {
-                logger.error("pre handle error", e)
-                return false
             }
+            val owner = request.getParameter(PARAMETER_OWNER)
+            val uriAttribute = request.getAttribute(
+                HandlerMapping
+                    .URI_TEMPLATE_VARIABLES_ATTRIBUTE
+            ) as MutableMap<Any, Any>
+            val repoName = uriAttribute[REPO_NAME].toString()
+            val realRepoName = "${type}_${owner}_$repoName"
+            val projectId = uriAttribute[PROJECT_ID].toString()
+            val uri = "$domain$owner/$repoName$DOT_GIT"
+            uriAttribute[REPO_NAME] = realRepoName
+
+            if (!request.requestURI.endsWith(PATH_SYNC)) return true
+            logger.info(
+                "receive $X_DEVOPS_BUILD_ID:${request.getHeader(X_DEVOPS_BUILD_ID)} " +
+                    "$X_DEVOPS_PIPELINE_ID:${request.getHeader(X_DEVOPS_PIPELINE_ID)} " +
+                    "sync request $uri"
+            )
+            repositoryClient.getRepoDetail(projectId, realRepoName).data ?: let {
+                val req = RepoCreateRequest(
+                    projectId = projectId,
+                    name = realRepoName,
+                    category = RepositoryCategory.REMOTE,
+                    type = RepositoryType.GIT,
+                    public = false,
+                    storageCredentialsKey = properties.storageCredentialsKey,
+                    configuration = RemoteConfiguration(
+                        url = uri
+                    )
+                )
+                repositoryClient.createRepo(req)
+                logger.info("create projectId $projectId repo $realRepoName")
+            }
+            return true
+        } catch (e: IllegalArgumentException) {
+            throw ErrorCodeException(GitMessageCode.GIT_HUB_TYPE_NOT_SUPPORT, type)
         }
-        return true
     }
 }

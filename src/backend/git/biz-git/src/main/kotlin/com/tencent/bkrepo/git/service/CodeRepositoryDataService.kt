@@ -6,11 +6,11 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.git.artifact.GitPackFileArtifactInfo
 import com.tencent.bkrepo.git.constant.BLANK
 import com.tencent.bkrepo.git.context.DfsDataReadersHolder
 import com.tencent.bkrepo.git.context.FileId
+import com.tencent.bkrepo.git.context.UserHolder
 import com.tencent.bkrepo.git.internal.storage.CodePackDescription
 import com.tencent.bkrepo.git.internal.storage.CodeRepository
 import com.tencent.bkrepo.git.internal.storage.DfsArtifactOutputStream
@@ -50,7 +50,7 @@ class CodeRepositoryDataService(
         replace: Collection<DfsPackDescription>?
     ) {
         with(repository) {
-            val uid = SecurityUtils.getUserId()
+            val uid = UserHolder.getUser()
             val saveList = desc.map {
                 convert2TDfsPackDescription(
                     it as CodePackDescription,
@@ -113,7 +113,7 @@ class CodeRepositoryDataService(
                         size = artifactFile.getSize(),
                         sha256 = artifactFile.getFileSha256(),
                         md5 = artifactFile.getFileMd5(),
-                        operator = SecurityUtils.getUserId()
+                        operator = UserHolder.getUser()
                     )
                     storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                 }
@@ -132,16 +132,18 @@ class CodeRepositoryDataService(
             ).data ?: throw NodeNotFoundException(packArtifactInfo.getArtifactFullPath())
             val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
                 ?: throw IllegalStateException("Stream load failed.")
-            if (artifactInputStream is FileArtifactInputStream) {
-                return DfsFileDataReader(artifactInputStream.file)
+            artifactInputStream.use {
+                if (artifactInputStream is FileArtifactInputStream) {
+                    return DfsFileDataReader(artifactInputStream.file)
+                }
+                val file = ArtifactFileFactory.build(artifactInputStream, node.size)
+                file.getFile()?.let {
+                    return DfsFileDataReader(it)
+                }
+                val output = ByteArrayOutputStream(node.size.toInt())
+                file.getInputStream().use { it.copyTo(output) }
+                return DfsByteArrayDataReader(output.toByteArray())
             }
-            val file = ArtifactFileFactory.build(artifactInputStream, node.size)
-            file.getFile()?.let {
-                return DfsFileDataReader(it)
-            }
-            val output = ByteArrayOutputStream(node.size.toInt())
-            file.getInputStream().copyTo(output)
-            return DfsByteArrayDataReader(output.toByteArray())
         }
     }
 
@@ -198,7 +200,7 @@ class CodeRepositoryDataService(
         repository: CodeRepository,
         dfsBkCodePackDescription: CodePackDescription
     ) {
-        val userId = SecurityUtils.getUserId()
+        val userId = UserHolder.getUser()
         PackExt.values().forEach {
             if (dfsBkCodePackDescription.hasFileExt(it)) {
                 val projectId = repository.projectId
