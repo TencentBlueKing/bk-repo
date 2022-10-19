@@ -46,7 +46,7 @@ class AnalystArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/analyst")
+            httpAuthSecurity.withPrefix("/analyst").includePattern("/api/**")
         }
     }
 }
