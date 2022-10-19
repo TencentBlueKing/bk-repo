@@ -39,7 +39,6 @@
   - [扫描器管理](/apidoc/scanner/scanner.md)
   - [扫描](/apidoc/scanner/scan.md)
   - [扫描报告](/apidoc/scanner/report.md)
-  - [支持的扫描器](/apidoc/scanner/supported-scanner.md)
 - **WebHook**
   - [webhook接口](/apidoc/webhook/webhook.md)
   - [webhook消息](/apidoc/webhook/payload.md)
