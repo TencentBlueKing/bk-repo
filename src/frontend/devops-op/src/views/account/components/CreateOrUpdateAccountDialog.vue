@@ -45,11 +45,11 @@
         <el-input v-model="credential.avatarUrl" />
       </el-form-item>
       <el-form-item
-        label="scope"
+        label="权限类型"
         prop="scope"
-        :rules="[{ required: authType.includes('AUTHORIZATION_CODE') , message: '请选择Scope'}]"
+        :rules="[{ required: authType.includes('AUTHORIZATION_CODE') , message: '请选择权限类型'}]"
       >
-        <el-select v-model="scopeType" multiple placeholder="请选择" style="width: 350px" clearable :change="credential.scope = scopeType">
+        <el-select v-model="scopeType" multiple placeholder="请选择" style="width: 400px" clearable :change="credential.scope = scopeType">
           <el-option
             v-for="item in scopeOptions"
             :key="item.value"
@@ -57,6 +57,41 @@
             :value="item.value"
           />
         </el-select>
+      </el-form-item>
+      <el-form-item
+        v-for="(item,index) in credential.scopeDesc"
+        :key="index"
+        label="权限范围"
+        prop="scopeDesc"
+        :rules="[{ validator: (val,rule,cb)=>validateJson(index,rule,item.jsonObj,cb), message: '请输入正确的Json', trigger: 'blur' }]"
+      >
+        <el-input
+          v-model="item.jsonObj"
+          placeholder="请输入单属性的Json格式数据"
+          class="input-with-select"
+          style="width: 600px"
+          @input="updateInput()"
+        >
+          <el-select slot="prepend" v-model="item.operation" placeholder="请选择操作类型" style="width: 100px">
+            <el-option
+              v-for="operateType in operationTypeOptions"
+              :key="operateType.value"
+              :label="operateType.label"
+              :value="operateType.value"
+            />
+          </el-select>
+        </el-input>
+        <i
+          class="el-icon-circle-close"
+          style="color: red"
+          @click.prevent="removeDomain(item)"
+        />
+        <i
+          v-if="index == credential.scopeDesc.length - 1"
+          class="el-icon-circle-plus-outline"
+          style="margin: 0px 20px"
+          @click.prevent="addDomain()"
+        />
       </el-form-item>
       <el-form-item label="描述" prop="description">
         <el-input v-model="credential.description" />
@@ -71,6 +106,9 @@
 
 <script>
 import { create, update } from '@/api/account'
+import _ from 'lodash'
+import { URL_REGEX } from '@/utils/validate'
+
 export default {
   name: 'CreateOrUpdateAccountDialog',
   props: {
@@ -113,6 +151,58 @@ export default {
         value: 'NODE',
         label: 'NODE'
       }],
+      operationTypeOptions: [{
+        value: 'EQ',
+        label: 'EQ'
+      }, {
+        value: 'NE',
+        label: 'NE'
+      }, {
+        value: 'LTE',
+        label: 'LTE'
+      }, {
+        value: 'LT',
+        label: 'LT'
+      }, {
+        value: 'GTE',
+        label: 'GTE'
+      }, {
+        value: 'GT',
+        label: 'GT'
+      }, {
+        value: 'BEFORE',
+        label: 'BEFORE'
+      }, {
+        value: 'AFTER',
+        label: 'AFTER'
+      }, {
+        value: 'IN',
+        label: 'IN'
+      }, {
+        value: 'NIN',
+        label: 'NIN'
+      }, {
+        value: 'PREFIX',
+        label: 'PREFIX'
+      }, {
+        value: 'SUFFIX',
+        label: 'SUFFIX'
+      }, {
+        value: 'MATCH',
+        label: 'MATCH'
+      }, {
+        value: 'MATCH_I',
+        label: 'MATCH_I'
+      }, {
+        value: 'REGEX',
+        label: 'REGEX'
+      }, {
+        value: 'NULL',
+        label: 'NULL'
+      }, {
+        value: 'NOT_NULL',
+        label: 'NOT_NULL'
+      }],
       rules: {
         avatarUrl: [
           { validator: this.validateUrl, message: '请输入正确的地址', trigger: 'blur' }
@@ -140,6 +230,49 @@ export default {
     }
   },
   methods: {
+    buildJson(key, value) {
+      const obj = {}
+      obj[key] = value
+      return JSON.stringify(obj)
+    },
+    updateInput() {
+      this.$forceUpdate()
+    },
+    addDomain() {
+      this.credential.scopeDesc.push({
+        field: '',
+        value: '',
+        operation: 'EQ',
+        jsonObj: ''
+      })
+    },
+    removeDomain(item) {
+      const index = this.credential.scopeDesc.indexOf(item)
+      if (index !== -1 && this.credential.scopeDesc.length !== 1) {
+        this.credential.scopeDesc.splice(index, 1)
+        this.$refs['form'].validateField(['scopeDesc'], null)
+      }
+    },
+    validateJson(index, rule, value, callback) {
+      if (value) {
+        try {
+          const checkStatus = typeof JSON.parse(this.credential.scopeDesc[index].jsonObj) === 'object'
+          if (checkStatus) {
+            const obj = JSON.parse(this.credential.scopeDesc[index].jsonObj)
+            const key = Object.keys(obj)[0]
+            this.credential.scopeDesc[index].field = key
+            this.credential.scopeDesc[index].value = obj[key]
+            callback()
+          } else {
+            callback(new Error('格式异常'))
+          }
+        } catch (e) {
+          callback(new Error('格式异常'))
+        }
+      } else {
+        callback()
+      }
+    },
     validateUrl(rule, value, callback) {
       if (value) {
         this.validateUri(rule, value, callback, URL_REGEX)
@@ -159,6 +292,8 @@ export default {
     },
     close() {
       this.showDialog = false
+      this.authType = ''
+      this.scopeType = ''
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate(credential) {
@@ -206,6 +341,11 @@ export default {
         this.credential = this.newCredential()
       } else {
         this.credential = _.cloneDeep(this.updatingCredentials)
+        if (this.credential.scopeDesc !== null && this.credential.scopeDesc.length > 0) {
+          for (let i = 0; i < this.credential.scopeDesc.length; i++) {
+            this.credential.scopeDesc[i].jsonObj = this.buildJson(this.credential.scopeDesc[i].field, this.credential.scopeDesc[i].value)
+          }
+        }
         this.scopeType = this.credential.scope
         this.authType = this.credential.authorizationGrantTypes
       }
@@ -222,16 +362,13 @@ export default {
         redirectUri: '',
         avatarUrl: '',
         scope: [],
+        scopeDesc: [{ field: '', value: '', operation: 'EQ', jsonObj: '' }],
         description: ''
       }
       return credential
     }
   }
-}
-
-import _ from 'lodash'
-import { URL_REGEX } from '@/utils/validate'
-</script>
+}</script>
 
 <style scoped>
 

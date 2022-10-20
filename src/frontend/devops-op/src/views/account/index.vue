@@ -71,7 +71,6 @@
         label="创建时间"
         width="250"
         prop="createdDate"
-        sortable
       >
         <template slot-scope="scope">
           <span>{{ formatNormalDate(scope.row.createdDate) }}</span>
@@ -89,7 +88,6 @@
         label="最后修改时间"
         width="250"
         prop="createdDate"
-        sortable
       >
         <template slot-scope="scope">
           <span>{{ formatNormalDate(scope.row.lastModifiedDate) }}</span>
