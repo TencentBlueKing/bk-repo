@@ -463,21 +463,7 @@ class RemoteNodeServiceImpl(
         repoType: RepositoryType
     ): RemoteConfigCreateRequest {
         with(request) {
-            val packageConstraints = packageName?.let {
-                val packageKey = PackageKeys.ofName(repoType, packageName!!)
-                val targetVersion = if (versions!!.size == 1) {
-                    targetVersions
-                } else {
-                    null
-                }
-                listOf(
-                    PackageConstraint(
-                        packageKey = packageKey,
-                        versions = versions,
-                        targetVersions = targetVersion
-                    )
-                )
-            }
+            val packageConstraints = createPackageConstraint(request, repoType)
             return RemoteConfigCreateRequest(
                 name = name,
                 clusterId = clusterId,
@@ -496,6 +482,35 @@ class RemoteNodeServiceImpl(
         }
     }
 
+    private fun createPackageConstraint(
+        request: RemoteRunOnceTaskCreateRequest,
+        repoType: RepositoryType
+    ): List<PackageConstraint>? {
+        with(request) {
+            if (packageName.isNullOrEmpty()) return null
+            val packageKey = PackageKeys.ofName(repoType, packageName!!)
+            validateParameter(versions, RemoteRunOnceTaskCreateRequest::versions.name)
+            val targetVersion = if (clusterId.isNullOrEmpty()) {
+                // 针对异构集群，推送目标版本,只有当包版本数量为1时才可以设置，仅针对镜像类型
+                if (versions!!.size == 1) {
+                    targetVersions
+                } else {
+                    null
+                }
+            } else {
+                // 当为同构集群时，不支持将源版本包推送为不同版本包到目标仓库
+                versions
+            }
+            return listOf(
+                PackageConstraint(
+                    packageKey = packageKey,
+                    versions = versions,
+                    targetVersions = targetVersion
+                )
+            )
+        }
+    }
+
     private fun validateName(name: String) {
         if (!Pattern.matches(REMOTE_NAME_PATTERN, name)) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
@@ -509,6 +524,11 @@ class RemoteNodeServiceImpl(
     }
 
     private fun validateParameter(param: String?, paramName: String) {
+        if (param.isNullOrEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, paramName)
+        }
+    }
+    private fun validateParameter(param: List<String>?, paramName: String) {
         if (param.isNullOrEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, paramName)
         }
