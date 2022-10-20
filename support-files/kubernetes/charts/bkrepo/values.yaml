@@ -37,6 +37,9 @@ serviceMonitor:
 ## bkDomainScheme配置
 bkDomainScheme: http
 
+## 是否强制跳转https配置
+forceHttps: false
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
@@ -51,7 +54,6 @@ bkLogConfig:
 ingress:
   enabled: true
   tls: false
-  tlsName: ""
   crt: ""
   key: ""
   annotations:
@@ -110,6 +112,14 @@ persistence:
   # ref: https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/
 
 init:
+  mongodb:
+    enabled: true
+    image:
+      registry: hub.bktencent.com
+      repository: blueking/bkrepo-init
+      tag: 1.1.23
+      pullPolicy: IfNotPresent
+      pullSecrets: []
   ## curl镜像地址
   curl:
     image:
@@ -118,14 +128,6 @@ init:
       tag: 7.72.0
       pullPolicy: IfNotPresent
       pullSecrets: [ ]
-  mongodb:
-    enabled: true
-    image:
-      registry: mirrors.tencent.com
-      repository: blueking/bkrepo-init
-      tag: 1.1.0
-      pullPolicy: IfNotPresent
-      pullSecrets: []
   # 初始化bk-ci nav
   entrance:
     enabled: false
@@ -207,17 +209,17 @@ gateway:
   dnsServer: local=on
   ## 网关访问微服务认证信息
   authorization: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
-  ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式 , saas模式: 蓝鲸saas部署模式
+  ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式, saas模式：部署在蓝鲸paas上
   deployMode: standalone
-  ## 网关认证模式，ticket, 校验bk_ticket token ，校验bk_token
+  ## 登陆校验模式，ticket or token or ci
   authMode: token
-  ## bkci 域名
+  ## bkci域名，登陆模式为ci时需要
   bkciHost:
-  ## bkci 端口
+  ## bkci端口，登陆模式为ci时需要
   bkciPort:
-  ## ci模式必填，蓝鲸paas域名
+  ## ci模式必填，蓝鲸paas域名，authMode为ci时配置为ci域名
   bkPaasUrl: paas.example.com
-  ## ci模式必填，登录地址
+  ## ci模式必填，登录地址，authMode为ci时配置为ci域名
   bkLoginUrl: http://paas.example.com/login/
   ## ci模式必填，ssm ip
   ssmIP0:
@@ -238,13 +240,13 @@ gateway:
     type: ClusterIP
     ## 服务类型为`ClusterIP`时端口设置
     port: 80
-    ## 服务类型为`NodePort`时端口设置 
+    ## 服务类型为`NodePort`时端口设置
     nodePort: 30025
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-gateway
-    tag: 1.1.0
+    tag: 1.1.25
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -283,9 +285,9 @@ repository:
     deletedNodeReserveDays: 15
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-repository
-    tag: 1.1.0
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -344,9 +346,9 @@ auth:
     secretKey: ""
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-auth
-    tag: 1.1.0
+    tag: 1.1.23
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -384,9 +386,9 @@ generic:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-generic
-    tag: 1.1.0
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -424,49 +426,9 @@ replication:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-replication
-    tag: 1.1.0
-    pullPolicy: IfNotPresent
-    pullSecrets: []
-  replicaCount: 1
-  hostAliases: []
-  resources:
-    requests:
-      cpu: 100m
-      memory: 1000Mi
-    limits:
-      cpu: 500m
-      memory: 1500Mi
-  containerSecurityContext:
-    enabled: false
-    runAsUser: 1001
-    runAsNonRoot: true
-  podSecurityContext:
-    enabled: false
-    fsGroup: 1001
-  podAffinityPreset: ""
-  podAntiAffinityPreset: ""
-  nodeAffinityPreset:
-    type: ""
-    key: ""
-    values: []
-  affinity: {}
-  nodeSelector: {}
-  tolerations: []
-  podLabels: {}
-  podAnnotations: {}
-  priorityClassName: ""
-
-## opdata服务配置
-opdata:
-  enabled: true
-  config: {}
-  ## Kubernetes 通用配置
-  image:
-    registry: mirrors.tencent.com
-    repository: blueking/bkrepo-opdata
-    tag: 1.1.3
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -500,13 +462,13 @@ opdata:
 
 ## docker registry服务配置
 docker:
-  enabled: false
+  enabled: true
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-oci
-    tag: 1.1.0
+    tag: 1.1.23
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -540,13 +502,13 @@ docker:
 
 ## npm registry服务配置
 npm:
-  enabled: false
+  enabled: true
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-npm
-    tag: 1.1.0
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -580,13 +542,13 @@ npm:
 
 ## pypi registry服务配置
 pypi:
-  enabled: false
+  enabled: true
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-pypi
-    tag: 1.1.0
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -620,13 +582,13 @@ pypi:
 
 ## helm registry服务配置
 helm:
-  enabled: false
+  enabled: true
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-helm
-    tag: 1.1.0
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -663,9 +625,48 @@ job:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
-    repository: blueking/bkrepo-helm
-    tag: 1.1.0
+    registry: hub.bktencent.com
+    repository: blueking/bkrepo-job
+    tag: 1.1.22
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+## job registry服务配置
+opdata:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: hub.bktencent.com
+    repository: blueking/bkrepo-opdata
+    tag: 1.1.22
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -697,19 +698,12 @@ job:
   podAnnotations: {}
   priorityClassName: ""
 ## plugin registry服务配置
-bkstore:
-  enabled: false
-  image:
-    registry: mirrors.tencent.com
-    repository: blueking/bkrepo-plugin-bkstore
-    tag: 1.0.0
-    pullPolicy: IfNotPresent
-    pullSecrets: []
 gitci:
-  enabled: false
+  enabled: true
   image:
-    registry: mirrors.tencent.com
+    registry: hub.bktencent.com
     repository: blueking/bkrepo-plugin-gitci
     tag: 1.0.0
     pullPolicy: IfNotPresent
     pullSecrets: []
+
