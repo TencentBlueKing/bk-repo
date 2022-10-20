@@ -47,7 +47,7 @@
 
 | 字段       | 类型      | 是否必须 | 默认值   | 说明                                                         | Description        |
 |----------|---------|------|-------|------------------------------------------------------------|--------------------|
-| scanner  | string  | 否    | 无     | 要获取的报告使用的扫描器名称                                             | scanner name       |
+| scanner  | string  | 否    | 无     | 要获取的报告使用的扫描器名称，扫描器名称在扫描器注册到制品库后确定，需要联系制品库管理员确认             | scanner name       |
 | planId   | string  | 否    | 无     | 使用的扫描方案id,与scanner至少一个字段存在值                                | plan id            |
 | force    | boolean | 否    | false | 是否强制扫描，为true时即使文件已扫描过也会再次执行扫描                              | force scan         |
 | rule     | object  | 否    | 无     | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule    |
@@ -121,7 +121,7 @@
     "scanned": 0,
     "passed": 0,
     "scanner": "default",
-    "scannerType": "arrowhead",
+    "scannerType": "standard",
     "scannerVersion": "1::1",
     "scanResultOverview": {},
     "force": true,
@@ -162,7 +162,8 @@
 | force              | boolean | 是否为强制扫描                                                    | force scan             |
 | metadata           | array   | 扫描任务元数据                                                    | scan task metadata     |
 
-扫描结果预览字段参考[支持的扫描器](./supported-scanner.md)
+扫描结果预览字段参考[获取扫描报告预览](./report.md?id=获取扫描报告预览)
+
 
 ## 通过流水线创建扫描任务
 
@@ -208,20 +209,20 @@
 
 - 请求字段说明
 
-| 字段           | 类型     | 是否必须 | 默认值 | 说明                                                         | Description            |
-|--------------|--------|------|-----|------------------------------------------------------------|------------------------|
-| projectId    | string | 是    | 无   | 所属项目                                                       | project id             |
-| pid          | string | 否    | 无   | 流水线id                                                      | pipeline id            |
-| bid          | string | 否    | 无   | 构建id                                                       | build id               |
-| buildNo      | string | 否    | 无   | 构建号                                                        | build number           |
-| pipelineName | string | 否    | 无   | 流水线名                                                       | pipeline name          |
-| pluginName   | string | 否    | 无   | 插件名                                                        | plugin name            |
-| planId       | string | 否    | 无   | 使用的扫描方案id                                                  | plan id                |
-| planType     | string | 否    | GENERIC | 扫描方案类型                                                  | plan type                |
-| scanner      | string | 否    | 无   | 扫描方案使用的扫描器                                                  | scanner                |
-| rule         | object | 是    | 无   | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
-| weworkBotUrl | string | 否    | 无   | 企业微信机器人webhook地址                                           | wework bot webhook url |
-| chatIds      | string | 否    | 无   | 企业微信机器人会话id，多个id用"&vert;"分隔                                | wework bot webhook url |
+| 字段           | 类型     | 是否必须 | 默认值     | 说明                                                         | Description            |
+|--------------|--------|------|---------|------------------------------------------------------------|------------------------|
+| projectId    | string | 是    | 无       | 所属项目                                                       | project id             |
+| pid          | string | 否    | 无       | 流水线id                                                      | pipeline id            |
+| bid          | string | 否    | 无       | 构建id                                                       | build id               |
+| buildNo      | string | 否    | 无       | 构建号                                                        | build number           |
+| pipelineName | string | 否    | 无       | 流水线名                                                       | pipeline name          |
+| pluginName   | string | 否    | 无       | 插件名                                                        | plugin name            |
+| planId       | string | 否    | 无       | 使用的扫描方案id                                                  | plan id                |
+| planType     | string | 否    | GENERIC | 扫描方案类型                                                     | plan type              |
+| scanner      | string | 否    | 无       | 扫描方案使用的扫描器                                                 | scanner                |
+| rule         | object | 是    | 无       | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
+| weworkBotUrl | string | 否    | 无       | 企业微信机器人webhook地址                                           | wework bot webhook url |
+| chatIds      | string | 否    | 无       | 企业微信机器人会话id，多个id用"&vert;"分隔                                | wework bot webhook url |
 
 - 响应体
 
