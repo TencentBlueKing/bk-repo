@@ -52,6 +52,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
@@ -464,6 +465,7 @@ class RemoteNodeServiceImpl(
     ): RemoteConfigCreateRequest {
         with(request) {
             val packageConstraints = createPackageConstraint(request, repoType)
+            val pathConstraints = createPathConstraint(request)
             return RemoteConfigCreateRequest(
                 name = name,
                 clusterId = clusterId,
@@ -509,6 +511,13 @@ class RemoteNodeServiceImpl(
                 )
             )
         }
+    }
+
+    private fun createPathConstraint(
+        request: RemoteRunOnceTaskCreateRequest
+    ): List<PathConstraint>? {
+        if (request.pathConstraints.isNullOrEmpty()) return null
+        return request.pathConstraints.orEmpty().map { PathConstraint(path = it) }
     }
 
     private fun validateName(name: String) {

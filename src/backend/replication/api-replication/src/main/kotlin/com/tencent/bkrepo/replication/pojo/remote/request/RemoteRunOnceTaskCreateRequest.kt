@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.replication.pojo.remote.request
 
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -61,7 +60,7 @@ data class RemoteRunOnceTaskCreateRequest(
     @ApiModelProperty("推送目标版本,只有当包版本数量为1时才可以设置，仅针对镜像类型", required = false)
     val targetVersions: List<String>? = null,
     @ApiModelProperty("推送路径")
-    val pathConstraints: List<PathConstraint>? = null,
+    val pathConstraints: List<String>? = null,
     @ApiModelProperty("同步类型", required = false)
     val replicaType: ReplicaType = ReplicaType.RUN_ONCE,
     @ApiModelProperty("任务设置", required = false)
