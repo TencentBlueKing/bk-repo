@@ -74,6 +74,7 @@ class ExpiredCacheFileCleanupJob(
         mongoTemplate.find(Query(), TStorageCredentials::class.java, COLLECTION_NAME)
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
             .map { convert(it) }
+            .forEach { cleanupStorage(it) }
     }
 
     private fun cleanupStorage(storage: StorageCredentials? = null) {
