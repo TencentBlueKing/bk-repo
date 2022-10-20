@@ -19,13 +19,13 @@
                         </card-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'generic'">
-                        <bk-form-item v-for="type in ['mobile', 'web', 'office_network']" :key="type"
+                        <bk-form-item v-for="type in ['mobile', 'web', 'office_network', 'ip_segment']" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
                             <bk-radio-group v-model="repoBaseInfo[type].enable">
                                 <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                                 <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                             </bk-radio-group>
-                            <template v-if="repoBaseInfo[type].enable && type !== 'office_network'">
+                            <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
                                 <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
                                     :property="`${type}.filename`" required error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
@@ -35,6 +35,17 @@
                                     :property="`${type}.metadata`" required error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
                                     <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
+                                </bk-form-item>
+                            </template>
+                            <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
+                                <bk-form-item :label="$t('IP')" :label-width="90" class="mt10"
+                                    :property="`${type}.ipSegment`" required error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')"></bk-input>
+                                    <!-- <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i> -->
+                                </bk-form-item>
+                                <bk-form-item :label="$t('whiteUser')" :label-width="90"
+                                    :property="`${type}.whitelistUser`" error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
                                 </bk-form-item>
                             </template>
                         </bk-form-item>
@@ -122,6 +133,21 @@
                     trigger: 'blur'
                 }
             ]
+            const ipSegmentRule = [
+                {
+                    required: true,
+                    message: this.$t('pleaseIpSegment'),
+                    trigger: 'blur'
+                },
+                {
+                    validator: function (val) {
+                        const ipList = val.split(',')
+                        return ipList.every(ip => /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]|[1-2]\d|3[0-2])?/.test(ip))
+                    },
+                    message: this.$t('ipSegmentRule'),
+                    trigger: 'blur'
+                }
+            ]
             return {
                 tabName: 'baseInfo',
                 isLoading: false,
@@ -147,6 +173,11 @@
                     },
                     office_network: {
                         enable: false
+                    },
+                    ip_segment: {
+                        enable: false,
+                        ipSegment: '',
+                        whitelistUser: ''
                     }
                 },
                 rules: {
@@ -171,7 +202,8 @@
                     'mobile.filename': filenameRule,
                     'mobile.metadata': metadataRule,
                     'web.filename': filenameRule,
-                    'web.metadata': metadataRule
+                    'web.metadata': metadataRule,
+                    'ip_segment.ipSegment': ipSegmentRule
                 }
             }
         },
@@ -254,9 +286,20 @@
                     const { interceptors } = res.configuration.settings
                     if (interceptors instanceof Array) {
                         interceptors.forEach(i => {
-                            this.repoBaseInfo[i.type.toLowerCase()] = {
-                                enable: true,
-                                ...i.rules
+                            if (i.type === 'IP_SEGMENT') {
+                                const curRules = {
+                                    ipSegment: i.rules.ipSegment.join(','),
+                                    whitelistUser: i.rules.whitelistUser.join(',')
+                                }
+                                this.repoBaseInfo[i.type.toLowerCase()] = {
+                                    enable: true,
+                                    ...curRules
+                                }
+                            } else {
+                                this.repoBaseInfo[i.type.toLowerCase()] = {
+                                    enable: true,
+                                    ...i.rules
+                                }
                             }
                         })
                     }
@@ -268,17 +311,25 @@
                 ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
                 const interceptors = []
                 if (this.repoType === 'generic') {
-                    ['mobile', 'web', 'office_network'].forEach(type => {
-                        const { enable, filename, metadata } = this.repoBaseInfo[type]
+                    ['mobile', 'web', 'office_network', 'ip_segment'].forEach(type => {
+                        const { enable, filename, metadata, ipSegment, whitelistUser } = this.repoBaseInfo[type]
                         if (type === 'office_network') {
                             enable && interceptors.push({
                                 type: type.toUpperCase(),
                                 rules: { enable }
                             })
-                        } else {
+                        } else if (['mobile', 'web'].includes(type)) {
                             enable && interceptors.push({
                                 type: type.toUpperCase(),
                                 rules: { filename, metadata }
+                            })
+                        } else {
+                            enable && interceptors.push({
+                                type: type.toUpperCase(),
+                                rules: {
+                                    ipSegment: ipSegment.split(','),
+                                    whitelistUser: whitelistUser.split(',')
+                                }
                             })
                         }
                     })
