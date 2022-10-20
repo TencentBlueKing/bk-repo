@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.job.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.pojo.ShedlockInfo
 import com.tencent.bkrepo.job.service.ShedlockService
@@ -37,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/shedlock")
+@Principal(PrincipalType.ADMIN)
 class ShedlockController(val shelockService: ShedlockService) {
 
     @GetMapping("/list")
