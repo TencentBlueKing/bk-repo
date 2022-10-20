@@ -34,8 +34,8 @@ package com.tencent.bkrepo.repository.service.metadata.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
@@ -78,8 +78,8 @@ class MetadataServiceImpl(
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
 
             val oldMetadata = node.metadata ?: ArrayList()
-            val newMetadata = MetadataUtils.compatibleFromAndCheck(metadata, nodeMetadata, operator)
-            node.metadata = MetadataUtils.checkAndMerge(oldMetadata, newMetadata, operator)
+            val newMetadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata)
+            node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
 
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
@@ -95,12 +95,12 @@ class MetadataServiceImpl(
                 logger.info("forbidMetadata is empty, skip saving[$request]")
                 return
             }
-            saveMetadata(request.copy(metadata = null, nodeMetadata = forbidMetadata, operator = SYSTEM_USER))
+            saveMetadata(request.copy(metadata = null, nodeMetadata = forbidMetadata))
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deleteMetadata(request: MetadataDeleteRequest) {
+    override fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
         with(request) {
             if (keyList.isEmpty()) {
                 logger.info("Metadata key list is empty, skip deleting")
@@ -111,8 +111,8 @@ class MetadataServiceImpl(
 
             // 检查是否有更新权限
             nodeDao.findOne(query)?.metadata?.forEach {
-                if (it.key in keyList) {
-                    MetadataUtils.checkPermission(it, operator)
+                if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
+                    throw PermissionException("No permission to update system metadata[${it.key}]")
                 }
             }
 
