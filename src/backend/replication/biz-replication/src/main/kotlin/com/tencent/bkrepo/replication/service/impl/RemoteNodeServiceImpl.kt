@@ -177,9 +177,9 @@ class RemoteNodeServiceImpl(
     override fun deleteByName(projectId: String, repoName: String, name: String) {
         localDataManager.findRepoByName(projectId, repoName)
         val realName = NAME.format(projectId, repoName, name)
-        val clusterInfo = clusterNodeService.getByClusterName(realName)
-            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-        clusterNodeService.deleteById(clusterInfo.id!!)
+        clusterNodeService.getByClusterName(realName)?.let {
+            clusterNodeService.deleteById(it.id!!)
+        }
         val task = replicaTaskService.getByTaskName(realName)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
         replicaTaskService.deleteByTaskKey(task.key)
@@ -242,8 +242,9 @@ class RemoteNodeServiceImpl(
     }
 
     override fun deleteRunOnceTaskByTaskName(taskName: String) {
-        val tClusterNode = clusterNodeService.getByClusterName(taskName)
-        clusterNodeService.deleteById(tClusterNode!!.id!!)
+        clusterNodeService.getByClusterName(taskName)?.let {
+            clusterNodeService.deleteById(it.id!!)
+        }
         replicaTaskService.deleteByTaskKey(taskName)
     }
 
@@ -262,8 +263,6 @@ class RemoteNodeServiceImpl(
         name: String
     ): ReplicaTaskInfo {
         val realName = NAME.format(projectId, repoName, name)
-        clusterNodeService.getByClusterName(realName)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
         return replicaTaskService.getByTaskName(realName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
     }
