@@ -62,6 +62,7 @@ object ReplicationMetricsRecordUtil {
     ): ReplicationTaskMetricsRecord {
         with(request) {
             val map = splitName(name)
+            val registry: String = registry ?: clusterId!!
             return ReplicationTaskMetricsRecord(
                 projectId = projectId,
                 repoName = repoName,

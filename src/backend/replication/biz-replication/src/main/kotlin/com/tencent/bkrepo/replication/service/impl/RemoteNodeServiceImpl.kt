@@ -48,6 +48,7 @@ import com.tencent.bkrepo.replication.pojo.remote.request.RemoteCreateRequest
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
@@ -85,19 +86,25 @@ class RemoteNodeServiceImpl(
         requests: RemoteCreateRequest
     ): List<ClusterNodeInfo> {
         return requests.configs.map {
-            validateParameter(it.name)
+            validateName(it.name)
             val realName = NAME.format(projectId, repoName, it.name)
-            var tClusterNode = clusterNodeService.getByClusterName(realName)
-            tClusterNode = if (tClusterNode == null) {
-                clusterNodeService.create(
-                    SecurityUtils.getUserId(), buildClusterNodeCreateRequest(projectId, repoName, it)
-                )
+            val tClusterNode = if (it.clusterId.isNullOrEmpty()) {
+                val oldCluster = clusterNodeService.getByClusterName(realName)
+                if (oldCluster == null) {
+                    clusterNodeService.create(
+                        SecurityUtils.getUserId(), buildClusterNodeCreateRequest(projectId, repoName, it)
+                    )
+                } else {
+                    val updateRequest = convertCreateToUpdate(it)
+                    clusterNodeService.update(
+                        buildClusterNodeUpdateRequest(projectId, repoName, it.name, updateRequest)
+                    )
+                }
             } else {
-                val updateRequest = convertCreateToUpdate(it)
-                clusterNodeService.update(
-                    buildClusterNodeUpdateRequest(projectId, repoName, it.name, updateRequest)
-                )
+                clusterNodeService.getByClusterId(it.clusterId!!)
+                    ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, it.clusterId!!)
             }
+
             createOrUpdateTask(
                 projectId = projectId,
                 repoName = repoName,
@@ -114,15 +121,22 @@ class RemoteNodeServiceImpl(
         name: String,
         request: RemoteConfigUpdateRequest
     ) {
-        val clusterInfo = clusterNodeService.update(buildClusterNodeUpdateRequest(projectId, repoName, name, request))
-        replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
-            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
-        createOrUpdateTask(
-            request = convertUpdateToCreate(name, request),
-            clusterInfo = clusterInfo,
-            projectId = projectId,
-            repoName = repoName
-        )
+        with(request) {
+            val clusterInfo = if (clusterId.isNullOrEmpty()) {
+                clusterNodeService.update(buildClusterNodeUpdateRequest(projectId, repoName, name, request))
+            } else {
+                clusterNodeService.getByClusterId(clusterId!!)
+                    ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterId!!)
+            }
+            replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
+                ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, name)
+            createOrUpdateTask(
+                request = convertUpdateToCreate(name, request),
+                clusterInfo = clusterInfo,
+                projectId = projectId,
+                repoName = repoName
+            )
+        }
     }
 
     override fun getByName(projectId: String, repoName: String, name: String?): List<RemoteInfo> {
@@ -217,6 +231,21 @@ class RemoteNodeServiceImpl(
         return record
     }
 
+    override fun deleteRunOnceTask(projectId: String, repoName: String, name: String) {
+        val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
+        if (taskInfo.status!! != ReplicaStatus.COMPLETED) {
+            logger.warn("The name $name of runonce task is still running in repo $projectId|$repoName")
+            throw ErrorCodeException(CommonMessageCode.REQUEST_DENIED, name)
+        }
+        deleteRunOnceTaskByTaskName(taskInfo.name)
+    }
+
+    override fun deleteRunOnceTaskByTaskName(taskName: String) {
+        val tClusterNode = clusterNodeService.getByClusterName(taskName)
+        clusterNodeService.deleteById(tClusterNode!!.id!!)
+        replicaTaskService.deleteByTaskKey(taskName)
+    }
+
     private fun getTaskDetail(
         projectId: String,
         repoName: String,
@@ -232,12 +261,8 @@ class RemoteNodeServiceImpl(
         name: String
     ): ReplicaTaskInfo {
         val realName = NAME.format(projectId, repoName, name)
-        val clusterInfo = clusterNodeService.getByClusterName(realName)
+        clusterNodeService.getByClusterName(realName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
-        // 现只针对远端集群进行特殊指定推送
-        if (clusterInfo.type != ClusterNodeType.REMOTE) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
-        }
         return replicaTaskService.getByTaskName(realName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
     }
@@ -253,18 +278,25 @@ class RemoteNodeServiceImpl(
     ): ReplicaTaskInfo {
         with(request) {
             val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
+            }
             val replicaTaskObjects = listOf(
                 ReplicaObjectInfo(
                     localRepoName = repoName,
                     repoType = repositoryDetail.type,
-                    remoteProjectId = null,
-                    remoteRepoName = null,
+                    remoteProjectId = remoteProjectId,
+                    remoteRepoName = remoteRepoName,
                     packageConstraints = packageConstraints,
                     pathConstraints = pathConstraints
                 )
             )
             val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
-                ReplicaObjectType.PACKAGE
+                if (!pathConstraints.isNullOrEmpty()) {
+                    ReplicaObjectType.PATH
+                } else {
+                    ReplicaObjectType.PACKAGE
+                }
             } else {
                 ReplicaObjectType.REPOSITORY
             }
@@ -333,9 +365,10 @@ class RemoteNodeServiceImpl(
         request: RemoteConfigCreateRequest
     ): ClusterNodeCreateRequest {
         with(request) {
+            validateParameter(registry, RemoteConfigCreateRequest::registry.name)
             return ClusterNodeCreateRequest(
                 name = NAME.format(projectId, repoName, name),
-                url = addProtocol(registry).toString(),
+                url = addProtocol(registry!!).toString(),
                 certificate = certificate,
                 username = username,
                 password = password,
@@ -375,9 +408,10 @@ class RemoteNodeServiceImpl(
         request: RemoteConfigUpdateRequest
     ): ClusterNodeUpdateRequest {
         with(request) {
+            validateParameter(registry, RemoteConfigCreateRequest::registry.name)
             return ClusterNodeUpdateRequest(
                 name = NAME.format(projectId, repoName, name),
-                url = addProtocol(registry).toString(),
+                url = addProtocol(registry!!).toString(),
                 certificate = certificate,
                 username = username,
                 password = password,
@@ -389,10 +423,13 @@ class RemoteNodeServiceImpl(
     private fun convertCreateToUpdate(request: RemoteConfigCreateRequest): RemoteConfigUpdateRequest {
         with(request) {
             return RemoteConfigUpdateRequest(
+                clusterId = clusterId,
                 registry = registry,
                 certificate = certificate,
                 username = username,
                 password = password,
+                remoteProjectId = remoteProjectId,
+                remoteRepoName = remoteRepoName,
                 packageConstraints = packageConstraints,
                 pathConstraints = pathConstraints,
                 replicaType = replicaType,
@@ -426,23 +463,31 @@ class RemoteNodeServiceImpl(
         repoType: RepositoryType
     ): RemoteConfigCreateRequest {
         with(request) {
-            val packageKey = PackageKeys.ofName(repoType, packageName)
-            val targetVersion = if (versions.size == 1) {
-                targetVersions
-            } else {
-                null
+            val packageConstraints = packageName?.let {
+                val packageKey = PackageKeys.ofName(repoType, packageName!!)
+                val targetVersion = if (versions!!.size == 1) {
+                    targetVersions
+                } else {
+                    null
+                }
+                listOf(
+                    PackageConstraint(
+                        packageKey = packageKey,
+                        versions = versions,
+                        targetVersions = targetVersion
+                    )
+                )
             }
-            val packageConstraint = PackageConstraint(
-                packageKey = packageKey,
-                versions = versions,
-                targetVersions = targetVersion
-            )
             return RemoteConfigCreateRequest(
                 name = name,
+                clusterId = clusterId,
                 registry = registry,
                 username = username,
                 password = password,
-                packageConstraints = listOf(packageConstraint),
+                remoteProjectId = remoteProjectId,
+                remoteRepoName = remoteRepoName,
+                packageConstraints = packageConstraints,
+                pathConstraints = pathConstraints,
                 replicaType = replicaType,
                 setting = setting,
                 description = description,
@@ -451,7 +496,7 @@ class RemoteNodeServiceImpl(
         }
     }
 
-    private fun validateParameter(name: String) {
+    private fun validateName(name: String) {
         if (!Pattern.matches(REMOTE_NAME_PATTERN, name)) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
         }
@@ -460,6 +505,12 @@ class RemoteNodeServiceImpl(
             name.length > REMOTE_NAME_LENGTH_MAX
         ) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+    }
+
+    private fun validateParameter(param: String?, paramName: String) {
+        if (param.isNullOrEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, paramName)
         }
     }
 

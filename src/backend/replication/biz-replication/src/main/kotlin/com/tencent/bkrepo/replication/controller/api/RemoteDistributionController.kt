@@ -196,4 +196,20 @@ class RemoteDistributionController(
     ): Response<ReplicaRecordInfo?> {
         return ResponseBuilder.success(remoteNodeService.getRunOnceTaskResult(projectId, repoName, name))
     }
+
+    /**
+     * 删除一次性任务
+     */
+    @Permission(ResourceType.REPO, PermissionAction.DELETE)
+    @DeleteMapping("/delete/runOnceTask/{projectId}/{repoName}")
+    fun deleteRunOnceTaskResult(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String,
+        @RequestParam name: String,
+    ): Response<Void> {
+        remoteNodeService.deleteRunOnceTask(projectId, repoName, name)
+        return ResponseBuilder.success()
+    }
 }
