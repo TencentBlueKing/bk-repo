@@ -9,6 +9,8 @@
     <script src="/ui/libs/vuex.min.js"></script>
     <script src="/ui/libs/vue-router.min.js"></script>
     <script src="/ui/libs/jsencrypt.min.js"></script>
+    <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min-interior.js" />
+    <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min-interior.css" rel="stylesheet">
     <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
     <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
     <link href="/ui/iconfont.css" rel="stylesheet">
@@ -59,6 +61,8 @@
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
         // 是否显示项目设置菜单
         var SHOW_PROJECT_CONFIG_MENU = MODE_CONFIG !== 'ci'
+        // 区分社区版与内部版  community -> 社区   tencent -> 内部
+        var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
     </script>
     <script>
         const inIframe = self !== top
@@ -164,6 +168,17 @@
             )
         }
     </script>
-    <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
+    <script>
+        (function() {
+            var hm = document.createElement("script");
+            if (RELEASE_MODE === 'community') {
+                hm.src = "/ui/libs/bk-magic-vue/bk-magic-vue.min.js";
+            } else {
+                hm.src = "/ui/libs/bk-magic-vue/bk-magic-vue.min-interior.js";
+            }
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
 </body>
 </html>

@@ -19,7 +19,7 @@
                         </card-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'generic'">
-                        <bk-form-item v-for="type in ['mobile', 'web', 'office_network', 'ip_segment']" :key="type"
+                        <bk-form-item v-for="type in ['mobile', 'web', 'ip_segment']" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
                             <bk-radio-group v-model="repoBaseInfo[type].enable">
                                 <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
@@ -38,14 +38,20 @@
                                 </bk-form-item>
                             </template>
                             <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
-                                <bk-form-item :label="$t('IP')" :label-width="90" class="mt10"
-                                    :property="`${type}.ipSegment`" required error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')"></bk-input>
-                                    <!-- <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i> -->
+                                <bk-form-item :label="$t('office_networkDownload')" :label-width="150" class="mt10">
+                                    <bk-radio-group v-model="repoBaseInfo[type].office_network" :property="`${type}.office_network`">
+                                        <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                                        <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                                    </bk-radio-group>
                                 </bk-form-item>
-                                <bk-form-item :label="$t('whiteUser')" :label-width="90"
+                                <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
+                                    :property="`${type}.ipSegment`" required error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('whiteUser')" :label-width="150"
                                     :property="`${type}.whitelistUser`" error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
+                                    <bk-input v-if="isCommunity" class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
+                                    <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="w250" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
                                 </bk-form-item>
                             </template>
                         </bk-form-item>
@@ -171,11 +177,9 @@
                         filename: '',
                         metadata: ''
                     },
-                    office_network: {
-                        enable: false
-                    },
                     ip_segment: {
                         enable: false,
+                        office_network: false,
                         ipSegment: '',
                         whitelistUser: ''
                     }
@@ -230,6 +234,9 @@
                     return `${location.protocol}//${this.domain.docker}/${this.projectId}/${name}/`
                 }
                 return `${location.origin}/${repoType}/${this.projectId}/${name}/`
+            },
+            isCommunity () {
+                return window.RELEASE_MODE === 'community'
             },
             available: {
                 get () {
@@ -289,7 +296,8 @@
                             if (i.type === 'IP_SEGMENT') {
                                 const curRules = {
                                     ipSegment: i.rules.ipSegment.join(','),
-                                    whitelistUser: i.rules.whitelistUser.join(',')
+                                    whitelistUser: this.isCommunity ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
+                                    office_network: i.rules.office_network
                                 }
                                 this.repoBaseInfo[i.type.toLowerCase()] = {
                                     enable: true,
@@ -311,14 +319,9 @@
                 ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
                 const interceptors = []
                 if (this.repoType === 'generic') {
-                    ['mobile', 'web', 'office_network', 'ip_segment'].forEach(type => {
-                        const { enable, filename, metadata, ipSegment, whitelistUser } = this.repoBaseInfo[type]
-                        if (type === 'office_network') {
-                            enable && interceptors.push({
-                                type: type.toUpperCase(),
-                                rules: { enable }
-                            })
-                        } else if (['mobile', 'web'].includes(type)) {
+                    ['mobile', 'web', 'ip_segment'].forEach(type => {
+                        const { enable, filename, metadata, ipSegment, whitelistUser, office_network } = this.repoBaseInfo[type]
+                        if (['mobile', 'web'].includes(type)) {
                             enable && interceptors.push({
                                 type: type.toUpperCase(),
                                 rules: { filename, metadata }
@@ -328,7 +331,8 @@
                                 type: type.toUpperCase(),
                                 rules: {
                                     ipSegment: ipSegment.split(','),
-                                    whitelistUser: whitelistUser.split(',')
+                                    whitelistUser: this.isCommunity ? whitelistUser.split(',') : whitelistUser,
+                                    office_network
                                 }
                             })
                         }
