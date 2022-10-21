@@ -63,6 +63,9 @@ interface MetadataService {
 
     /**
      * 根据请求[request]删除元数据
+     *
+     * @param request 删除元数据请求
+     * @param allowDeleteSystemMetadata 是否允许删除系统元数据
      */
-    fun deleteMetadata(request: MetadataDeleteRequest)
+    fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean = true)
 }
