@@ -56,6 +56,7 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
+import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -80,7 +81,7 @@ class RemoteNodeServiceImpl(
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
     private val manualReplicaJobExecutor: ManualReplicaJobExecutor
 ) : RemoteNodeService {
-
+    private val executors = ManualThreadPoolExecutor.instance
     override fun remoteClusterCreate(
         projectId: String,
         repoName: String,
@@ -218,7 +219,7 @@ class RemoteNodeServiceImpl(
         if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
-        manualReplicaJobExecutor.execute(taskDetail)
+        executors.execute { manualReplicaJobExecutor.execute(taskDetail) }
     }
 
     override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {
