@@ -6,7 +6,7 @@
         prop="appId"
         :rules="[{ required: true, message: '应用ID不能为空'}]"
       >
-        <el-input v-model="credential.appId" />
+        <el-input v-model="credential.appId" :disabled="!createMode" />
       </el-form-item>
       <el-form-item label="lock状态" prop="key">
         <el-switch
@@ -58,29 +58,45 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="权限范围" />
       <el-form-item
         v-for="(item,index) in credential.scopeDesc"
         :key="index"
-        label="权限范围"
         prop="scopeDesc"
-        :rules="[{ validator: (val,rule,cb)=>validateJson(index,rule,item.jsonObj,cb), message: '请输入正确的Json', trigger: 'blur' }]"
       >
+        <span>操作类型：</span>
+        <el-select v-model="item.operation" placeholder="请选择" style="width: 130px" clearable>
+          <el-option
+            v-for="operationType in operationTypeOptions"
+            :key="operationType.value"
+            :label="operationType.label"
+            :value="operationType.value"
+          />
+        </el-select>
+        <span style="margin-left: 10px">字段名：</span>
         <el-input
+          v-model="item.field"
+          placeholder="请输入"
+          style="height: 40px; width: 150px"
+          min="0"
+        />
+        <span v-if="item.operation !== 'NULL'&& item.operation !== 'NOT_NULL'" style="margin-left: 10px">值：</span>
+        <el-input
+          v-if="item.operation !== 'BEFORE'&& item.operation !== 'AFTER' && item.operation !== 'NULL'&& item.operation !== 'NOT_NULL'"
           v-model="item.jsonObj"
-          placeholder="请输入单属性的Json格式数据"
-          class="input-with-select"
-          style="width: 600px"
+          :placeholder="item.operation === 'IN' || item.operation === 'NIN' ? '请输入数据按逗号分割（如1,2,3）': '请输入'"
+          style="height: 40px ; width: 300px;"
+          min="0"
+          :type="item.operation === 'LTE' || item.operation === 'LT'|| item.operation === 'GTE' || item.operation === 'TE'? 'number' : 'text'"
           @input="updateInput()"
-        >
-          <el-select slot="prepend" v-model="item.operation" placeholder="请选择操作类型" style="width: 100px">
-            <el-option
-              v-for="operateType in operationTypeOptions"
-              :key="operateType.value"
-              :label="operateType.label"
-              :value="operateType.value"
-            />
-          </el-select>
-        </el-input>
+        />
+        <el-date-picker
+          v-if="item.operation === 'BEFORE'||item.operation === 'AFTER'"
+          v-model="item.jsonObj"
+          type="datetime"
+          style="height: 40px ; width: 300px;"
+          placeholder="选择日期时间"
+        />
         <i
           class="el-icon-circle-close"
           style="color: red"
@@ -230,10 +246,12 @@ export default {
     }
   },
   methods: {
-    buildJson(key, value) {
-      const obj = {}
-      obj[key] = value
-      return JSON.stringify(obj)
+    buildStr(key, value) {
+      let str = value[0]
+      for (let i = 1; i < value.length; i++) {
+        str = str + ',' + value[i]
+      }
+      return str
     },
     updateInput() {
       this.$forceUpdate()
@@ -242,7 +260,7 @@ export default {
       this.credential.scopeDesc.push({
         field: '',
         value: '',
-        operation: 'EQ',
+        operation: '',
         jsonObj: ''
       })
     },
@@ -251,26 +269,6 @@ export default {
       if (index !== -1 && this.credential.scopeDesc.length !== 1) {
         this.credential.scopeDesc.splice(index, 1)
         this.$refs['form'].validateField(['scopeDesc'], null)
-      }
-    },
-    validateJson(index, rule, value, callback) {
-      if (value) {
-        try {
-          const checkStatus = typeof JSON.parse(this.credential.scopeDesc[index].jsonObj) === 'object'
-          if (checkStatus) {
-            const obj = JSON.parse(this.credential.scopeDesc[index].jsonObj)
-            const key = Object.keys(obj)[0]
-            this.credential.scopeDesc[index].field = key
-            this.credential.scopeDesc[index].value = obj[key]
-            callback()
-          } else {
-            callback(new Error('格式异常'))
-          }
-        } catch (e) {
-          callback(new Error('格式异常'))
-        }
-      } else {
-        callback()
       }
     },
     validateUrl(rule, value, callback) {
@@ -302,6 +300,19 @@ export default {
       }
       if (credential.scope === '') {
         credential.scope = []
+      }
+      if (credential.scopeDesc.length === 1 && credential.scopeDesc[0].operation === '') {
+        credential.scopeDesc = []
+      }
+      for (let i = 0; i < credential.scopeDesc.length; i++) {
+        if (credential.scopeDesc[i].operation === 'IN' || credential.scopeDesc[i].operation === 'NIN') {
+          credential.scopeDesc[i].value = credential.scopeDesc[i].jsonObj.split(',')
+        } else {
+          credential.scopeDesc[i].value = credential.scopeDesc[i].jsonObj
+        }
+        if (this.credential.scopeDesc[i].operation === 'NULL' || this.credential.scopeDesc[i].operation === 'NOT_NULL') {
+          credential.scopeDesc[i].value = ''
+        }
       }
       this.$refs['form'].validate((valid) => {
         if (valid) {
@@ -343,8 +354,15 @@ export default {
         this.credential = _.cloneDeep(this.updatingCredentials)
         if (this.credential.scopeDesc !== null && this.credential.scopeDesc.length > 0) {
           for (let i = 0; i < this.credential.scopeDesc.length; i++) {
-            this.credential.scopeDesc[i].jsonObj = this.buildJson(this.credential.scopeDesc[i].field, this.credential.scopeDesc[i].value)
+            if (this.credential.scopeDesc[i].operation === 'IN' || this.credential.scopeDesc[i].operation === 'NIN') {
+              this.credential.scopeDesc[i].jsonObj = this.buildStr(this.credential.scopeDesc[i].field, this.credential.scopeDesc[i].value)
+            } else {
+              this.credential.scopeDesc[i].jsonObj = this.credential.scopeDesc[i].value
+            }
           }
+        } else {
+          this.credential.scopeDesc = []
+          this.addDomain()
         }
         this.scopeType = this.credential.scope
         this.authType = this.credential.authorizationGrantTypes
@@ -362,7 +380,7 @@ export default {
         redirectUri: '',
         avatarUrl: '',
         scope: [],
-        scopeDesc: [{ field: '', value: '', operation: 'EQ', jsonObj: '' }],
+        scopeDesc: [{ field: '', value: '', operation: '', jsonObj: '' }],
         description: ''
       }
       return credential
