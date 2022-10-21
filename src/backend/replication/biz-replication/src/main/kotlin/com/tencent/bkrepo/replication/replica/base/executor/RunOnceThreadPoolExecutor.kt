@@ -33,9 +33,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * 用于分发event到对应的同步任务的线程池
+ * 用于将一次性分发任务分发到对应执行器的线程池
  */
-object EventConsumerThreadPoolExecutor {
+object RunOnceThreadPoolExecutor {
     /**
      * 线程池实例
      */
@@ -45,10 +45,10 @@ object EventConsumerThreadPoolExecutor {
      * 创建线程池
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("runOnce-worker-%d").build()
         return ThreadPoolExecutor(
             50, 200, 60, TimeUnit.SECONDS,
-            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }

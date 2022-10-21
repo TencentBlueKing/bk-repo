@@ -57,7 +57,7 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
-import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.base.executor.RunOnceThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -82,7 +82,7 @@ class RemoteNodeServiceImpl(
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
     private val manualReplicaJobExecutor: ManualReplicaJobExecutor
 ) : RemoteNodeService {
-    private val executors = ManualThreadPoolExecutor.instance
+    private val executors = RunOnceThreadPoolExecutor.instance
     override fun remoteClusterCreate(
         projectId: String,
         repoName: String,

@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * 用于将手动分发任务分发到对应执行器的线程池
+ * 用于执行manual触发的任务中具体的package或者path的分发
  */
 object ManualThreadPoolExecutor {
     /**
@@ -47,7 +47,7 @@ object ManualThreadPoolExecutor {
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("manual-worker-%d").build()
         return ThreadPoolExecutor(
-            100, 200, 60, TimeUnit.SECONDS,
+            50, 500, 60, TimeUnit.SECONDS,
             ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }

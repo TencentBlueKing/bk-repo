@@ -30,8 +30,10 @@ package com.tencent.bkrepo.replication.replica.manual
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.base.AbstractReplicaService
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
 
 /**
  * 基于手动执行的一次性任务同步器
@@ -41,16 +43,19 @@ class ManualBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager
 ) : AbstractReplicaService(replicaRecordService, localDataManager) {
+    private val executor = ManualThreadPoolExecutor.instance
     override fun replica(context: ReplicaContext) {
         with(context) {
             // 按包同步
+            val futureList = mutableListOf<Future<*>>()
             taskObject.packageConstraints.orEmpty().forEach {
-                replicaByPackageConstraint(this, it)
+                futureList.add(executor.submit { replicaByPackageConstraint(this, it) })
             }
             // 按路径同步
             taskObject.pathConstraints.orEmpty().forEach {
-                replicaByPathConstraint(this, it)
+                futureList.add(executor.submit { replicaByPathConstraint(this, it) })
             }
+            futureList.forEach { it.get() }
         }
     }
 }
