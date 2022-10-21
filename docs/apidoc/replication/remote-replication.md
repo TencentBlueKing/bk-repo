@@ -366,7 +366,7 @@
   }
   ```
   ```json
-  已有同构分发集群
+  已有同构分发集群,同步package
   {
     "name": "xxxx",
     "clusterId":"xxxx",
@@ -374,7 +374,17 @@
     "remoteRepoName":"xxxx",
     "packageName":"nginx",
     "versions": ["1.1"],
-    "pathConstraints": null,
+    "description":"xxxx"
+  }
+  ```
+  ```json
+  已有同构分发集群,同步path
+  {
+    "name": "xxxx",
+    "clusterId":"xxxx",
+    "remoteProjectId":"xxxx",
+    "remoteRepoName":"xxxx",
+    "pathConstraints":["/a.txt"],
     "description":"xxxx"
   }
   ```
