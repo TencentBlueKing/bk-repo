@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 /**
  * 办公网下载拦截器，只允许白名单IP下载
  */
+@Deprecated("已合并到IP段下载拦截器")
 class OfficeNetworkInterceptor<A>(
     rules: Map<String, Any>,
     private val properties: DownloadInterceptorProperties

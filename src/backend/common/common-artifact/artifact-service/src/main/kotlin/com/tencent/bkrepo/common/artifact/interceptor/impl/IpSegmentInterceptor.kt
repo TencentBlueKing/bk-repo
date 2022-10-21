@@ -29,38 +29,40 @@ package com.tencent.bkrepo.common.artifact.interceptor.impl
 
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 /**
  * IP段下载拦截器
- * 1.只允许IP段的客户端下载制品
- * 2.白名单用户不受1的限制
+ * 1.办公网IP段限制
+ * 2.自定义IP段限制
+ * 3.白名单用户不受1、2的限制
  */
 class IpSegmentInterceptor(
-    rules: Map<String, Any>
-): DownloadInterceptor<Map<String,List<String>>, NodeDetail>(
+    rules: Map<String, Any>,
+    private val properties: DownloadInterceptorProperties
+): DownloadInterceptor<Map<String,Any>, NodeDetail>(
     rules
 ) {
-    override fun parseRule(): Map<String, List<String>> {
-        val ipSegment = rules[IP_SEGMENT] as? List<String> ?: emptyList()
-        val whiteListUser = rules[WHITELIST_USER] as? List<String> ?: emptyList()
-        return mapOf(
-            IP_SEGMENT to ipSegment,
-            WHITELIST_USER to whiteListUser
-        )
+    override fun parseRule(): Map<String, Any> {
+        return rules
     }
 
-    override fun matcher(artifact: NodeDetail, rule: Map<String, List<String>>): Boolean {
+    override fun matcher(artifact: NodeDetail, rule: Map<String, Any>): Boolean {
+        val officeNetworkEnabled = rules[OFFICE_NETWORK] as? Boolean ?: true
+        val customIpSegment = rules[IP_SEGMENT] as? List<String> ?: emptyList()
+        val whitelistUser = rules[WHITELIST_USER] as? List<String> ?: emptyList()
+
         val userId = SecurityUtils.getUserId()
-        val whitelistUser = rule[WHITELIST_USER]!!
         if (whitelistUser.contains(userId)) {
             return true
         }
 
         val clientIp = HttpContextHolder.getClientAddress()
-        val ipSegment = rule[IP_SEGMENT]!!
+        val officeNetworkIpSegment = if (officeNetworkEnabled) properties.officeNetwork.whiteList else emptyList()
+        var ipSegment = officeNetworkIpSegment.plus(customIpSegment)
         ipSegment.forEach {
             if (IpUtils.isInRange(clientIp, it)) {
                 return true
@@ -71,6 +73,7 @@ class IpSegmentInterceptor(
     }
 
     companion object {
+        private const val OFFICE_NETWORK = "officeNetwork"
         private const val IP_SEGMENT = "ipSegment"
         private const val WHITELIST_USER = "whitelistUser"
     }
