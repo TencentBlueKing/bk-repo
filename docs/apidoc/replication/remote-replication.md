@@ -355,8 +355,6 @@
   ```json
   新建异构分发集群
   {
-    "configs":[
-    {
     "name": "xxxx",
     "registry":"{registry-host}/{repository}",
     "username":"***",
@@ -364,15 +362,11 @@
     "packageName":"nginx",
     "versions": ["1.1"],
     "targetVersions":["1.2","1.3"]
-   }
-  ]
   }
   ```
   ```json
   已有同构分发集群
   {
-    "configs":[
-    {
     "name": "xxxx",
     "clusterId":"xxxx",
     "remoteProjectId":"xxxx",
@@ -380,8 +374,6 @@
     "packageName":"nginx",
     "versions": ["1.1"],
     "pathConstraints": null
-   }
-  ]
   }
   ```
 
@@ -419,8 +411,8 @@
 
 ## 执行一次性任务
 
-- API: POST  /replication/api/remote/distribution/execute/runOnceTask/{projectId}/{repoName}
-- API 名称:execute_runonce_tasl
+- API: POST  /replication/api/remote/distribution/execute/runOnceTask/{projectId}/{repoName}?name={name}
+- API 名称:execute_runonce_task
 - 功能说明：
 	- 中文：执行一次性任务
 	- English：execute task
@@ -448,7 +440,7 @@
 
 ## 查询一次性任务的执行结果
 
-- API: GET  /replication/api/remote/distribution/get/runOnceTaskStatus/{projectId}/{repoName}
+- API: GET  /replication/api/remote/distribution/get/runOnceTaskStatus/{projectId}/{repoName}?name={name}
 - API 名称:get_runonce_task_status
 - 功能说明：
 	- 中文：获取一次性任务执行结果
