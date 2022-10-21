@@ -177,15 +177,20 @@ class ClusterReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             return buildNodeCreateRequest(this, node)?.let {
-                val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
-                val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
-                // 1. 同步文件数据
-                pushBlob(
-                    inputStream = rateLimitInputStream,
-                    size = it.size!!,
-                    sha256 = it.sha256.orEmpty(),
-                    storageKey = remoteRepo?.storageCredentials?.key
-                )
+                if (artifactReplicaClient!!.compareNodeDigest(
+                        it.projectId, it.repoName, it.fullPath, it.sha256!!
+                    ).data != true
+                ) {
+                    val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
+                    val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
+                    // 1. 同步文件数据
+                    pushBlob(
+                        inputStream = rateLimitInputStream,
+                        size = it.size!!,
+                        sha256 = it.sha256.orEmpty(),
+                        storageKey = remoteRepo?.storageCredentials?.key
+                    )
+                }
                 // 2. 同步节点信息
                 artifactReplicaClient!!.replicaNodeCreateRequest(it)
                 true

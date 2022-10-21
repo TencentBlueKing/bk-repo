@@ -77,6 +77,14 @@ interface ArtifactReplicaClient {
         @RequestParam fullPath: String
     ): Response<Boolean>
 
+    @GetMapping("/node/digest/compare")
+    fun compareNodeDigest(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam fullPath: String,
+        @RequestParam sha256: String,
+    ): Response<Boolean>
+
     @PostMapping("/node/create")
     fun replicaNodeCreateRequest(
         @RequestBody request: NodeCreateRequest

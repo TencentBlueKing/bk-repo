@@ -56,6 +56,7 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
@@ -477,7 +478,7 @@ class RemoteNodeServiceImpl(
                 packageConstraints = packageConstraints,
                 pathConstraints = pathConstraints,
                 replicaType = replicaType,
-                setting = setting,
+                setting = setting.copy(conflictStrategy = ConflictStrategy.OVERWRITE),
                 description = description,
                 enable = enable
             )
