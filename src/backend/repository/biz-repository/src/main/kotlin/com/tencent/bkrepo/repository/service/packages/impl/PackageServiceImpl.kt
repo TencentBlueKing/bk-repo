@@ -195,7 +195,7 @@ class PackageServiceImpl(
                     manifestPath = request.manifestPath
                     artifactPath = request.artifactPath
                     stageTag = request.stageTag.orEmpty()
-                    metadata = MetadataUtils.compatibleFromAndCheck(request.metadata, packageMetadata, createdBy)
+                    metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                     extension = request.extension.orEmpty()
                 }
@@ -215,7 +215,7 @@ class PackageServiceImpl(
                     manifestPath = manifestPath,
                     artifactPath = artifactPath,
                     stageTag = stageTag.orEmpty(),
-                    metadata = MetadataUtils.compatibleFromAndCheck(metadata, packageMetadata, createdBy),
+                    metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
                     extension = request.extension.orEmpty()
                 )
@@ -327,7 +327,7 @@ class PackageServiceImpl(
         val packageKey = request.packageKey
         val versionName = request.versionName
         val newMetadata = if (request.metadata != null || request.packageMetadata != null) {
-            MetadataUtils.compatibleFromAndCheck(request.metadata, request.packageMetadata, operator)
+            MetadataUtils.compatibleConvertAndCheck(request.metadata, request.packageMetadata)
         } else {
             null
         }
@@ -445,7 +445,7 @@ class PackageServiceImpl(
                     manifestPath = it.manifestPath,
                     artifactPath = it.artifactPath,
                     stageTag = it.stageTag.orEmpty(),
-                    metadata = MetadataUtils.compatibleFromAndCheck(it.metadata, it.packageMetadata, it.createdBy),
+                    metadata = MetadataUtils.compatibleConvertAndCheck(it.metadata, it.packageMetadata),
                     extension = it.extension.orEmpty()
                 )
                 packageVersionDao.save(newVersion)

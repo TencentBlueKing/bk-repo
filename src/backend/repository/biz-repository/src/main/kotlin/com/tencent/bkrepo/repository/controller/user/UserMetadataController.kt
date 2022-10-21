@@ -91,7 +91,7 @@ class UserMetadataController(
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),
                 metadata = metadataSaveRequest.metadata,
-                nodeMetadata = metadataSaveRequest.nodeMetadata,
+                nodeMetadata = metadataSaveRequest.nodeMetadata?.map { it.copy(system = false) },
                 operator = SecurityUtils.getUserId()
             )
             metadataService.saveMetadata(request)
@@ -135,7 +135,7 @@ class UserMetadataController(
                 keyList = metadataDeleteRequest.keyList,
                 operator = SecurityUtils.getUserId()
             )
-            metadataService.deleteMetadata(request)
+            metadataService.deleteMetadata(request, false)
             return ResponseBuilder.success()
         }
     }
