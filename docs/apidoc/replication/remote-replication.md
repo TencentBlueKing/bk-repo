@@ -361,7 +361,8 @@
     "password":"****",
     "packageName":"nginx",
     "versions": ["1.1"],
-    "targetVersions":["1.2","1.3"]
+    "targetVersions":["1.2","1.3"],
+    "description":"xxxx"
   }
   ```
   ```json
@@ -373,7 +374,8 @@
     "remoteRepoName":"xxxx",
     "packageName":"nginx",
     "versions": ["1.1"],
-    "pathConstraints": null
+    "pathConstraints": null,
+    "description":"xxxx"
   }
   ```
 
@@ -395,6 +397,8 @@
   |versions|list|否|无|包对应版本列表，必须与packageName一起使用|package versions|
   |targetVersions|list|否|无|推送目标版本,只有当versions数量为1时才可以设置，仅针对镜像类型|target versions|
   |pathConstraints|list|否|无|路径限制|path constraints|
+  |description|sting|否|无|描述，在此填请求来源|description|
+
 
 
 - 响应体
