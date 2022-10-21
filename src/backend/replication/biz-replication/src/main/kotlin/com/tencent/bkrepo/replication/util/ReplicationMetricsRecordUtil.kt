@@ -45,6 +45,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import java.time.LocalDateTime
 
@@ -67,17 +68,20 @@ object ReplicationMetricsRecordUtil {
                 projectId = projectId,
                 repoName = repoName,
                 repoType = repoType,
+                remoteProjectId = remoteProjectId.orEmpty(),
+                remoteRepoName = remoteRepoName.orEmpty(),
                 pipelineId = map[PIPELINE_ID].orEmpty(),
                 buildId = map[BUILD_ID].orEmpty(),
                 pipelineTaskId = map[TASK_ID].orEmpty(),
-                repContent = convertPSToReplicationContent(packageConstraints),
+                repContent = convertReplicationContent(request),
                 name = name,
                 taskKey = replicaTaskInfo.key,
                 registries = listOf(registry),
                 replicaType = replicaType.name,
                 enabled = enable,
                 createDate = replicaTaskInfo.createdDate,
-                modifyDate = replicaTaskInfo.lastModifiedDate
+                modifyDate = replicaTaskInfo.lastModifiedDate,
+                sourceType = description.orEmpty()
             )
         }
     }
@@ -92,11 +96,14 @@ object ReplicationMetricsRecordUtil {
         with(taskDetail) {
             val map = extractName(task.name)
             val pMap = map[NAME]?.let { splitName(it) } ?: emptyMap()
+            val (remoteProjectId, remoteRepo) = getRemoteProjectIdAndRepo(taskDetail)
             return ReplicationTaskDetailMetricsRecord(
                 taskKey = task.key,
                 replicaType = task.replicaType.name,
                 projectId = task.projectId,
                 repoName = map[REPO_NAME].orEmpty(),
+                remoteProjectId = remoteProjectId,
+                remoteRepoName = remoteRepo,
                 name = map[NAME].orEmpty(),
                 pipelineId = pMap[PIPELINE_ID].orEmpty(),
                 buildId = pMap[BUILD_ID].orEmpty(),
@@ -108,7 +115,8 @@ object ReplicationMetricsRecordUtil {
                 executionStartTime = record.startTime.toString(),
                 executionEndTime = if (status == ExecutionStatus.RUNNING) StringPool.EMPTY
                 else LocalDateTime.now().toString(),
-                errorReason = errorReason.orEmpty()
+                errorReason = errorReason.orEmpty(),
+                sourceType = task.description.orEmpty()
             )
         }
     }
@@ -121,14 +129,26 @@ object ReplicationMetricsRecordUtil {
         return this.toJsonString().replace(System.lineSeparator(), "")
     }
 
+    private fun getRemoteProjectIdAndRepo(taskDetail: ReplicaTaskDetail): Pair<String, String> {
+        return Pair(
+            taskDetail.objects.first().remoteProjectId.orEmpty(),
+            taskDetail.objects.first().remoteRepoName.orEmpty()
+        )
+    }
+
     private fun convertToReplicationContent(objects: List<ReplicaObjectInfo>): List<ReplicationContent> {
         if (objects.isEmpty()) return emptyList()
-        return objects.first().packageConstraints?.map {
-            ReplicationContent(
-                packageName = it.packageKey.orEmpty(),
-                versions = it.versions.orEmpty()
-            )
-        }.orEmpty()
+        val contents = mutableListOf<ReplicationContent>()
+        contents.addAll(convertPSToReplicationContent(objects.first().packageConstraints))
+        contents.addAll(convertPathToReplicationContent(objects.first().pathConstraints))
+        return contents
+    }
+
+    private fun convertReplicationContent(request: RemoteConfigCreateRequest): List<ReplicationContent> {
+        val contents = mutableListOf<ReplicationContent>()
+        contents.addAll(convertPSToReplicationContent(request.packageConstraints))
+        contents.addAll(convertPathToReplicationContent(request.pathConstraints))
+        return contents
     }
 
     private fun convertPSToReplicationContent(objects: List<PackageConstraint>?): List<ReplicationContent> {
@@ -137,6 +157,15 @@ object ReplicationMetricsRecordUtil {
             ReplicationContent(
                 packageName = it.packageKey.orEmpty(),
                 versions = it.versions.orEmpty()
+            )
+        }
+    }
+
+    private fun convertPathToReplicationContent(objects: List<PathConstraint>?): List<ReplicationContent> {
+        if (objects.isNullOrEmpty()) return emptyList()
+        return objects.map {
+            ReplicationContent(
+                path = it.path.orEmpty()
             )
         }
     }

@@ -37,6 +37,8 @@ data class ReplicationTaskDetailMetricsRecord(
     var taskKey: String = StringPool.EMPTY,
     var projectId: String = StringPool.EMPTY,
     var repoName: String = StringPool.EMPTY,
+    var remoteProjectId: String = StringPool.EMPTY,
+    var remoteRepoName: String = StringPool.EMPTY,
     var replicaType: String = StringPool.EMPTY,
     var pipelineId: String = StringPool.EMPTY,
     var buildId: String = StringPool.EMPTY,
@@ -49,5 +51,6 @@ data class ReplicationTaskDetailMetricsRecord(
     var executionStatus: String = StringPool.EMPTY,
     var executionStartTime: String = StringPool.EMPTY,
     var executionEndTime: String = StringPool.EMPTY,
-    var errorReason: String = StringPool.EMPTY
+    var errorReason: String = StringPool.EMPTY,
+    var sourceType: String = StringPool.EMPTY
 )

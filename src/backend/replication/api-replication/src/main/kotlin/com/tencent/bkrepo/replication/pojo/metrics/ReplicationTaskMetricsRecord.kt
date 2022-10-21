@@ -44,9 +44,12 @@ data class ReplicationTaskMetricsRecord(
     var name: String = StringPool.EMPTY,
     var taskKey: String = StringPool.EMPTY,
     var registries: List<String> = emptyList(),
+    var remoteProjectId: String = StringPool.EMPTY,
+    var remoteRepoName: String = StringPool.EMPTY,
     var replicaType: String = StringPool.EMPTY,
     var repContent: List<ReplicationContent> = emptyList(),
     var enabled: Boolean = true,
     var createDate: String = StringPool.EMPTY,
     var modifyDate: String = StringPool.EMPTY,
+    var sourceType: String = StringPool.EMPTY,
 )
