@@ -28,8 +28,7 @@
 package com.tencent.bkrepo.analysis.executor.pojo
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.io.InputStream
+import java.io.File
 
 /**
  * 扫描执行器扫描任务
@@ -48,9 +47,9 @@ data class ScanExecutorTask(
      */
     val scanner: Scanner,
     /**
-     * 待扫描文件流，由扫描执行器负责关闭
+     * 待扫描文件
      */
-    val inputStream: InputStream,
+    val file: File,
     /**
      * 文件所属项目
      */
@@ -74,9 +73,5 @@ data class ScanExecutorTask(
     /**
      * 扫描执行器需要的额外信息，用于扩展
      */
-    val extra: Map<String, Any>? = null,
-    /**
-     * 仓库凭证
-     */
-    val storageCredentials: StorageCredentials? = null
+    val extra: Map<String, Any>? = null
 )

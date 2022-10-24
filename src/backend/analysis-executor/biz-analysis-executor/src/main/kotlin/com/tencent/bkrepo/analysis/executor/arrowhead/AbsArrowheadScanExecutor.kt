@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.analysis.executor.arrowhead
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
+import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg
+import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
@@ -37,11 +39,8 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanne
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.SensitiveItem
-import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
-import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
-import com.tencent.bkrepo.analysis.executor.util.FileUtils
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.apache.commons.io.input.ReversedLinesFileReader
 import org.slf4j.LoggerFactory
 import org.springframework.expression.common.TemplateParserContext
@@ -70,14 +69,7 @@ abstract class AbsArrowheadScanExecutor : CommonScanExecutor() {
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
         val scanner = task.scanner
         require(scanner is ArrowheadScanner)
-
-        val fileName = if (task.repoType == RepositoryType.DOCKER.name) {
-            "${task.sha256}.tar"
-        } else {
-            FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
-        }
-
-        return File(File(taskWorkDir, scanner.container.inputDir), fileName)
+        return File(File(taskWorkDir, scanner.container.inputDir), task.file.name)
     }
 
     protected abstract fun configTemplate(): String
