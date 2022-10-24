@@ -131,6 +131,10 @@ class UserServiceImpl constructor(
             }
         } catch (exception: ErrorCodeException) {
             if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
+                request.pwd?.let {
+                    val updateRequest = UpdateUserRequest(pwd = request.pwd)
+                    updateUserById(request.userId, updateRequest)
+                }
                 return true
             }
             throw exception
@@ -153,6 +157,10 @@ class UserServiceImpl constructor(
             }
         } catch (exception: ErrorCodeException) {
             if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
+                request.pwd?.let {
+                    val updateRequest = UpdateUserRequest(pwd = request.pwd)
+                    updateUserById(request.userId, updateRequest)
+                }
                 return true
             }
             throw exception
