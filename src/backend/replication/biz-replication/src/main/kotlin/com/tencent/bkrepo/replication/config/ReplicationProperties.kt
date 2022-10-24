@@ -46,6 +46,12 @@ data class ReplicationProperties(
      * oci blob文件上传并发数
      */
     var threadNum: Int = 4,
+
+    /**
+     * manual分发并行数
+     */
+    var manualConcurrencyNum: Int = 4,
+
     /**
      * 签名过滤器body限制大小
      * */
