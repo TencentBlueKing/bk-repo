@@ -168,17 +168,7 @@
             )
         }
     </script>
-    <script>
-        (function() {
-            var hm = document.createElement("script");
-            if (RELEASE_MODE === 'community') {
-                hm.src = "/ui/libs/bk-magic-vue/bk-magic-vue.min.js";
-            } else {
-                hm.src = "/ui/libs/bk-magic-vue/bk-magic-vue.min-interior.js";
-            }
-            var s = document.getElementsByTagName("script")[0];
-            s.parentNode.insertBefore(hm, s);
-        })();
-    </script>
+    <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
+    <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min-interior.js"></script>
 </body>
 </html>

@@ -45,7 +45,7 @@
                                     </bk-radio-group>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
-                                    :property="`${type}.ipSegment`" required error-display-type="normal">
+                                    :property="`${type}.ipSegment`" :required="repoBaseInfo[type].office_network" error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('whiteUser')" :label-width="150"
@@ -184,31 +184,9 @@
                         whitelistUser: ''
                     }
                 },
-                rules: {
-                    repodataDepth: [
-                        {
-                            regex: /^(0|[1-9][0-9]*)$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    groupXmlSet: [
-                        {
-                            validator: arr => {
-                                return arr.every(v => {
-                                    return /\.xml$/.test(v)
-                                })
-                            },
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
-                            trigger: 'change'
-                        }
-                    ],
-                    'mobile.filename': filenameRule,
-                    'mobile.metadata': metadataRule,
-                    'web.filename': filenameRule,
-                    'web.metadata': metadataRule,
-                    'ip_segment.ipSegment': ipSegmentRule
-                }
+                filenameRule,
+                metadataRule,
+                ipSegmentRule
             }
         },
         computed: {
@@ -255,6 +233,34 @@
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
                     { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
                 ]
+            },
+            rules () {
+                console.log(this.repoBaseInfo.ip_segment.office_network ? this.ipSegmentRule : {}, 'sad')
+                return {
+                    repodataDepth: [
+                        {
+                            regex: /^(0|[1-9][0-9]*)$/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    groupXmlSet: [
+                        {
+                            validator: arr => {
+                                return arr.every(v => {
+                                    return /\.xml$/.test(v)
+                                })
+                            },
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            trigger: 'change'
+                        }
+                    ],
+                    'mobile.filename': this.filenameRule,
+                    'mobile.metadata': this.metadataRule,
+                    'web.filename': this.filenameRule,
+                    'web.metadata': this.metadataRule,
+                    'ip_segment.ipSegment': this.repoBaseInfo.ip_segment.office_network ? this.ipSegmentRule : {}
+                }
             }
         },
         watch: {
