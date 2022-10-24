@@ -60,7 +60,7 @@ import java.security.DigestOutputStream
 import java.security.MessageDigest
 
 /**
- * 待分析制品加载工具类，会
+ * 待分析制品加载工具类，会从制品库实际后端存储中加载待分析的制品，组装docker镜像layer为tar包
  */
 @Component
 class FileLoader(
@@ -86,7 +86,7 @@ class FileLoader(
             val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
 
             // 获取文件
-            val file = File(tempDir, fileName(taskId, fullPath, repoType))
+            val file = File(tempDir, fileName(taskId, fileName(), repoType))
             val fos = DigestOutputStream(file.outputStream(), MessageDigest.getInstance("SHA-256"))
             storageService.load(sha256, Range.full(size), storageCredentials)?.use { artifactInputStream ->
                 fos.use {

@@ -63,10 +63,6 @@ data class ScanExecutorTask(
      */
     val repoType: String,
     /**
-     * 文件完整路径
-     */
-    val fullPath: String,
-    /**
      * 待扫描文件sha256
      */
     val sha256: String,

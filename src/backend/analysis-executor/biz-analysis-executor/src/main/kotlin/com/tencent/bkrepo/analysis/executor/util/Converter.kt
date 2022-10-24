@@ -42,8 +42,8 @@ object Converter {
                 projectId = projectId,
                 repoName = repoName,
                 repoType = repoType,
-                fullPath = fullPath,
-                sha256 = sha256
+                sha256 = sha256,
+                extra = extra
             )
         }
     }
