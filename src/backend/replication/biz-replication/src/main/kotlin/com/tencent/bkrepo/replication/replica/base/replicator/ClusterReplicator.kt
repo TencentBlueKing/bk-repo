@@ -179,9 +179,7 @@ class ClusterReplicator(
         with(context) {
             return buildNodeCreateRequest(this, node)?.let {
                 retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { _ ->
-                    if (artifactReplicaClient!!.compareNodeDigest(
-                            it.projectId, it.repoName, it.fullPath, it.sha256!!
-                        ).data != true
+                    if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
                     ) {
                         val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
                         val rateLimitInputStream = artifactInputStream.rateLimit(

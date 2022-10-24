@@ -86,17 +86,6 @@ class ArtifactReplicaController(
         return nodeClient.checkExist(projectId, repoName, fullPath)
     }
 
-    override fun compareNodeDigest(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        sha256: String
-    ): Response<Boolean> {
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
-            ResponseBuilder.success(it.sha256 == sha256)
-        } ?: ResponseBuilder.success(false)
-    }
-
     override fun checkNodeExistList(
         request: NodeExistCheckRequest
     ): Response<List<String>> {
