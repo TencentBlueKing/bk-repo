@@ -57,6 +57,7 @@
                         <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
                             :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
                             <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
+                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('ipSegmentTips')"></i>
                         </bk-form-item>
                         <bk-form-item :label="$t('whiteUser')" :label-width="150"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
