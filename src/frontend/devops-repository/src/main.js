@@ -10,9 +10,6 @@ import EmptyData from '@repository/components/EmptyData'
 import createLocale from '@locale'
 import { throttleMessage } from '@repository/utils'
 
-import bkMagic from '@tencent/bk-magic-vue'
-Vue.use(bkMagic)
-
 const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 Vue.component('Icon', Icon)
