@@ -39,13 +39,13 @@
                             </template>
                             <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
                                 <bk-form-item :label="$t('office_networkDownload')" :label-width="150" class="mt10">
-                                    <bk-radio-group v-model="repoBaseInfo[type].office_network" :property="`${type}.office_network`">
+                                    <bk-radio-group v-model="repoBaseInfo[type].officeNetwork" :property="`${type}.officeNetwork`">
                                         <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                                         <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                                     </bk-radio-group>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
-                                    :property="`${type}.ipSegment`" :required="repoBaseInfo[type].office_network" error-display-type="normal">
+                                    :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('whiteUser')" :label-width="150"
@@ -179,7 +179,7 @@
                     },
                     ip_segment: {
                         enable: false,
-                        office_network: false,
+                        officeNetwork: false,
                         ipSegment: '',
                         whitelistUser: ''
                     }
@@ -235,7 +235,6 @@
                 ]
             },
             rules () {
-                console.log(this.repoBaseInfo.ip_segment.office_network ? this.ipSegmentRule : {}, 'sad')
                 return {
                     repodataDepth: [
                         {
@@ -259,7 +258,7 @@
                     'mobile.metadata': this.metadataRule,
                     'web.filename': this.filenameRule,
                     'web.metadata': this.metadataRule,
-                    'ip_segment.ipSegment': this.repoBaseInfo.ip_segment.office_network ? this.ipSegmentRule : {}
+                    'ip_segment.ipSegment': this.repoBaseInfo.ip_segment.officeNetwork ? {} : this.ipSegmentRule
                 }
             }
         },
@@ -303,7 +302,7 @@
                                 const curRules = {
                                     ipSegment: i.rules.ipSegment.join(','),
                                     whitelistUser: this.isCommunity ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
-                                    office_network: i.rules.office_network
+                                    officeNetwork: i.rules.officeNetwork
                                 }
                                 this.repoBaseInfo[i.type.toLowerCase()] = {
                                     enable: true,
@@ -326,7 +325,7 @@
                 const interceptors = []
                 if (this.repoType === 'generic') {
                     ['mobile', 'web', 'ip_segment'].forEach(type => {
-                        const { enable, filename, metadata, ipSegment, whitelistUser, office_network } = this.repoBaseInfo[type]
+                        const { enable, filename, metadata, ipSegment, whitelistUser, officeNetwork } = this.repoBaseInfo[type]
                         if (['mobile', 'web'].includes(type)) {
                             enable && interceptors.push({
                                 type: type.toUpperCase(),
@@ -338,7 +337,7 @@
                                 rules: {
                                     ipSegment: ipSegment.split(','),
                                     whitelistUser: this.isCommunity ? whitelistUser.split(',') : whitelistUser,
-                                    office_network
+                                    officeNetwork
                                 }
                             })
                         }
