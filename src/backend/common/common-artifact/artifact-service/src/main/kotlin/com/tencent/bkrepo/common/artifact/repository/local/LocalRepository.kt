@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.local
 
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
@@ -53,13 +54,9 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         }
     }
 
-    override fun onDownloadBefore(context: ArtifactDownloadContext) {
-        super.onDownloadBefore(context)
-    }
-
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = ArtifactContextHolder.getNodeDetail()
             node?.let { downloadIntercept(context, it) }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
