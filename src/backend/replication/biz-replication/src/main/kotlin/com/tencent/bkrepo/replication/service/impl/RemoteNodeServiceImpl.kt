@@ -235,19 +235,26 @@ class RemoteNodeServiceImpl(
     }
 
     override fun deleteRunOnceTask(projectId: String, repoName: String, name: String) {
-        val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
-        if (taskInfo.status!! != ReplicaStatus.COMPLETED) {
-            logger.warn("The name $name of runonce task is still running in repo $projectId|$repoName")
-            throw ErrorCodeException(CommonMessageCode.REQUEST_DENIED, name)
-        }
-        deleteRunOnceTaskByTaskName(taskInfo.name)
+        val taskName = NAME.format(projectId, repoName, name)
+        deleteByTaskName(taskName)
     }
 
     override fun deleteRunOnceTaskByTaskName(taskName: String) {
+        deleteByTaskName(taskName)
+    }
+
+    private fun deleteByTaskName(taskName: String) {
+        logger.info("Task $taskName will be deleted!")
+        val taskInfo = replicaTaskService.getByTaskName(taskName)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskName)
+        if (taskInfo.status!! != ReplicaStatus.COMPLETED && taskInfo.replicaType != ReplicaType.RUN_ONCE) {
+            logger.warn("The name $taskName of runonce task is still running")
+            throw ErrorCodeException(CommonMessageCode.REQUEST_DENIED, taskName)
+        }
         clusterNodeService.getByClusterName(taskName)?.let {
             clusterNodeService.deleteById(it.id!!)
         }
-        replicaTaskService.deleteByTaskKey(taskName)
+        replicaTaskService.deleteByTaskKey(taskInfo.key)
     }
 
     private fun getTaskDetail(
