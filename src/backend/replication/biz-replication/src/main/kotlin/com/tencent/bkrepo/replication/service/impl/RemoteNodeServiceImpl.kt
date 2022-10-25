@@ -502,6 +502,7 @@ class RemoteNodeServiceImpl(
             validateParameter(versions, RemoteRunOnceTaskCreateRequest::versions.name)
             val targetVersion = if (clusterId.isNullOrEmpty()) {
                 // 针对异构集群，推送目标版本,只有当包版本数量为1时才可以设置，仅针对镜像类型
+                // 当包版本为多个时，只能以原有版本分发到远端，不能改变版本号进行分发
                 if (versions!!.size == 1) {
                     targetVersions
                 } else {
