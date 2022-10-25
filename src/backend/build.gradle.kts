@@ -20,7 +20,7 @@
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * THE SOFTWARE IS PROVIDED "   AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -36,7 +36,12 @@ plugins {
 
 allprojects {
     group = Release.Group
-    version = Release.Version
+    version = (System.getProperty("repo_version") ?: Release.Version) +
+            if (System.getProperty("snapshot") == "true") "-SNAPSHOT" else "-RELEASE"
+
+    repositories {
+        maven(url = "https://repo.spring.io/milestone")
+    }
 
     apply(plugin = "com.tencent.devops.boot")
     apply(plugin = "jacoco")
