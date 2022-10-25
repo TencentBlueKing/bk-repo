@@ -29,7 +29,7 @@
                 </card-radio-group>
             </bk-form-item>
             <template v-if="repoBaseInfo.type === 'generic'">
-                <bk-form-item v-for="type in ['mobile', 'web', 'ip_segment']" :key="type"
+                <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
                     <bk-radio-group v-model="repoBaseInfo[type].enable">
                         <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
@@ -52,6 +52,7 @@
                             :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
                             <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
                             <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
+                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
                         </bk-form-item>
                         <bk-form-item :label="$t('whiteUser')" :label-width="150"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
@@ -152,7 +153,11 @@
                 return this.$route.params.projectId
             },
             isCommunity () {
+                // 是否为社区版
                 return window.RELEASE_MODE === 'community'
+            },
+            genericInterceptorsList () {
+                return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
             },
             rules () {
                 const filenameRule = [
