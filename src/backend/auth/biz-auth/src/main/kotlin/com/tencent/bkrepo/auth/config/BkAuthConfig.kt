@@ -49,9 +49,6 @@ class BkAuthConfig {
     @Value("\${auth.devops.ciAuthToken:}")
     private var ciAuthToken: String = ""
 
-    @Value("\${auth.devops.enableSuperAdmin: false}")
-    var enableSuperAdmin: Boolean = false
-
     /**
      * 蓝盾平台appId集合
      */
