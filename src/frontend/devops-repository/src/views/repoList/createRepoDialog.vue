@@ -48,16 +48,10 @@
                         </bk-form-item>
                     </template>
                     <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('office_networkDownload')" :label-width="150" class="mt10">
-                            <bk-radio-group v-model="repoBaseInfo[type].officeNetwork" :property="`${type}.officeNetwork`">
-                                <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                                <bk-radio :value="false">{{ $t('close') }}</bk-radio>
-                            </bk-radio-group>
-                        </bk-form-item>
                         <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
                             :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('ipSegmentTips')"></i>
+                            <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
+                            <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
                         </bk-form-item>
                         <bk-form-item :label="$t('whiteUser')" :label-width="150"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
