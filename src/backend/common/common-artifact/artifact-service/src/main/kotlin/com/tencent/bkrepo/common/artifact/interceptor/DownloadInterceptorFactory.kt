@@ -74,7 +74,7 @@ class DownloadInterceptorFactory(
                 type == DownloadInterceptorType.MOBILE && type == downloadSource -> MobileInterceptor(rules)
                 type == DownloadInterceptorType.OFFICE_NETWORK -> OfficeNetworkInterceptor(rules, properties)
                 type == DownloadInterceptorType.NODE_FORBID -> buildNodeForbidInterceptor()
-                type == DownloadInterceptorType.IP_SEGMENT -> IpSegmentInterceptor(rules)
+                type == DownloadInterceptorType.IP_SEGMENT -> IpSegmentInterceptor(rules, properties)
                 else -> null
             }
         }
