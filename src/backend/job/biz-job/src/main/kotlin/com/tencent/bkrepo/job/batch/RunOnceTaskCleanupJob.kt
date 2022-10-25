@@ -65,7 +65,7 @@ class RunOnceTaskCleanupJob(
     }
 
     override fun buildQuery(): Query {
-        val fromDate = LocalDateTime.now().minusSeconds(properties.fixedDelay)
+        val fromDate = LocalDateTime.now().minusSeconds(properties.fixedDelay / 1000)
         return Query(
             Criteria.where(STATUS).isEqualTo(ReplicaStatus.COMPLETED)
                 .and(REPLICA_TYPE).isEqualTo(ReplicaType.RUN_ONCE)
