@@ -198,7 +198,7 @@ class RemoteDistributionController(
     }
 
     /**
-     * 删除一次性任务
+     * 删除已执行完成的一次性任务
      */
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @DeleteMapping("/delete/runOnceTask/{projectId}/{repoName}")

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.RunOnceTaskCleanupJobProperties
@@ -40,6 +41,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 清除已经执行完成的一次性分发任务
@@ -47,7 +49,7 @@ import org.springframework.stereotype.Component
 @Component
 @EnableConfigurationProperties(RunOnceTaskCleanupJobProperties::class)
 class RunOnceTaskCleanupJob(
-    properties: RunOnceTaskCleanupJobProperties,
+    private val properties: RunOnceTaskCleanupJobProperties,
     private val distributionClient: DistributionClient
 ) : DefaultContextMongoDbJob<RunOnceTaskCleanupJob.TaskData>(properties) {
     override fun start(): Boolean {
@@ -63,9 +65,11 @@ class RunOnceTaskCleanupJob(
     }
 
     override fun buildQuery(): Query {
+        val fromDate = LocalDateTime.now().minusSeconds(properties.fixedDelay)
         return Query(
             Criteria.where(STATUS).isEqualTo(ReplicaStatus.COMPLETED)
                 .and(REPLICA_TYPE).isEqualTo(ReplicaType.RUN_ONCE)
+                .and(LAST_MODIFIED_DATE).lt(fromDate)
         )
     }
 

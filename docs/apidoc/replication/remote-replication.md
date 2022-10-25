@@ -497,3 +497,30 @@
   |errorReason|string|否|无|错误原因| errorReason|
 
 
+
+## 删除已经执行完成的一次性任务
+
+- API: DELETE  /replication/api/remote/distribution/delete/runOnceTask/{projectId}/{repoName}?name={name}
+- API 名称:delete_runonce_task
+- 功能说明：
+	- 中文：删除已经执行完成的一次性任务
+	- English：delete runonce task
+- 请求体:
+
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |name|string|是|无|任务名| name|
+  
+
+- 响应体
+```json
+{
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+}
+```
