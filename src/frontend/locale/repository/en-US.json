@@ -191,7 +191,7 @@
     "whiteUser": "白名单成员",
     "whiteUserPlaceholder": "白名单成员不受此限制",
     "pleaseIpSegment": "请输入IP段",
-    "ipSegmentRule": "多个IP段以英文逗号分割",
+    "ipSegmentRule": "多个IP段以英文逗号分割, eg: 192.168.1.1/24",
     "open": "开启",
     "close": "关闭",
     "pleaseFileName": "请输入文件名",
