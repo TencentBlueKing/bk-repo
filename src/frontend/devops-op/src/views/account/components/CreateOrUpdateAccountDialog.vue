@@ -16,7 +16,7 @@
         />
       </el-form-item>
       <el-form-item label="认证授权方式" prop="authorizationGrantTypes">
-        <el-select v-model="authType" multiple placeholder="请选择" style="width: 350px" :change="credential.authorizationGrantTypes = authType">
+        <el-select v-model="authType" multiple placeholder="请选择" style="width: 350px" :change="changeAuthType(authType)">
           <el-option
             v-for="item in authOptions"
             :key="item.value"
@@ -49,7 +49,7 @@
         prop="scope"
         :rules="[{ required: authType.includes('AUTHORIZATION_CODE') , message: '请选择权限类型'}]"
       >
-        <el-select v-model="scopeType" multiple placeholder="请选择" style="width: 400px" clearable :change="credential.scope = scopeType">
+        <el-select v-model="scopeType" multiple placeholder="请选择" style="width: 400px" clearable :change="changeScope(scopeType)">
           <el-option
             v-for="item in scopeOptions"
             :key="item.value"
@@ -115,7 +115,7 @@
     </el-form>
     <div slot="footer">
       <el-button @click="close">取 消</el-button>
-      <el-button type="primary" @click="handleCreateOrUpdate(credential)">确 定</el-button>
+      <el-button type="primary" @click="handleCreateOrUpdate()">确 定</el-button>
     </div>
   </el-dialog>
 </template>
@@ -145,8 +145,8 @@ export default {
     return {
       showDialog: this.visible,
       credential: this.newCredential(),
-      authType: '',
-      scopeType: '',
+      authType: [],
+      scopeType: [],
       authOptions: [{
         value: 'AUTHORIZATION_CODE',
         label: 'AUTHORIZATION_CODE'
@@ -240,12 +240,26 @@ export default {
         this.authType = newVal.authorizationGrantTypes
         this.scopeType = newVal.scope
       } else {
-        this.authType = ''
-        this.scopeType = ''
+        this.authType = []
+        this.scopeType = []
       }
     }
   },
   methods: {
+    changeScope(scopeType) {
+      if (scopeType !== null && scopeType.length === 0) {
+        this.credential.scope = null
+      } else {
+        this.credential.scope = scopeType
+      }
+    },
+    changeAuthType(authType) {
+      if (authType.length === 0) {
+        this.credential.authorizationGrantTypes = ['PLATFORM']
+      } else {
+        this.credential.authorizationGrantTypes = authType
+      }
+    },
     buildStr(key, value) {
       let str = value[0]
       for (let i = 1; i < value.length; i++) {
@@ -290,42 +304,39 @@ export default {
     },
     close() {
       this.showDialog = false
-      this.authType = ''
-      this.scopeType = ''
+      this.authType = []
+      this.scopeType = []
+      this.$refs['form'].resetFields()
       this.$emit('update:visible', false)
     },
-    handleCreateOrUpdate(credential) {
-      if (credential.authorizationGrantTypes === '' || credential.authorizationGrantTypes.length < 1) {
-        credential.authorizationGrantTypes = ['PLATFORM']
-      }
-      if (credential.scope === '') {
-        credential.scope = []
-      }
-      if (credential.scopeDesc.length === 1 && credential.scopeDesc[0].operation === '') {
-        credential.scopeDesc = []
-      }
-      for (let i = 0; i < credential.scopeDesc.length; i++) {
-        if (credential.scopeDesc[i].operation === 'IN' || credential.scopeDesc[i].operation === 'NIN') {
-          credential.scopeDesc[i].value = credential.scopeDesc[i].jsonObj.split(',')
-        } else {
-          credential.scopeDesc[i].value = credential.scopeDesc[i].jsonObj
-        }
-        if (this.credential.scopeDesc[i].operation === 'NULL' || this.credential.scopeDesc[i].operation === 'NOT_NULL') {
-          credential.scopeDesc[i].value = ''
-        }
-      }
+    handleCreateOrUpdate() {
       this.$refs['form'].validate((valid) => {
         if (valid) {
+          const account = this.credential
+          if (account.scopeDesc.length === 1 && account.scopeDesc[0].operation === '') {
+            account.scopeDesc = null
+          } else {
+            for (let i = 0; i < account.scopeDesc.length; i++) {
+              if (account.scopeDesc[i].operation === 'IN' || account.scopeDesc[i].operation === 'NIN') {
+                account.scopeDesc[i].value = account.scopeDesc[i].jsonObj.split(',')
+              } else {
+                account.scopeDesc[i].value = account.scopeDesc[i].jsonObj
+              }
+              if (account.scopeDesc[i].operation === 'NULL' || account.scopeDesc[i].operation === 'NOT_NULL') {
+                account.scopeDesc[i].value = ''
+              }
+            }
+          }
           // 根据是否为创建模式发起不同请求
           let reqPromise
           let msg
           let eventName
           if (this.createMode) {
-            reqPromise = create(credential)
+            reqPromise = create(account)
             msg = '创建账号成功'
             eventName = 'created'
           } else {
-            reqPromise = update(credential)
+            reqPromise = update(account)
             msg = '更新账号成功'
             eventName = 'updated'
           }
@@ -333,7 +344,7 @@ export default {
           reqPromise.then(res => {
             this.$message.success(msg)
             if (!this.createMode) {
-              this.$emit(eventName, credential)
+              this.$emit(eventName, account)
             } else {
               for (let i = 0; i < res.data.credentials.length; i++) {
                 res.data.credentials[i].secretKey = res.data.credentials[i].secretKey.substring(0, 8) + '*****'
@@ -376,12 +387,12 @@ export default {
         appId: '',
         locked: false,
         authorizationGrantTypes: [],
-        homepageUrl: '',
-        redirectUri: '',
-        avatarUrl: '',
-        scope: [],
+        homepageUrl: null,
+        redirectUri: null,
+        avatarUrl: null,
+        scope: null,
         scopeDesc: [{ field: '', value: '', operation: '', jsonObj: '' }],
-        description: ''
+        description: null
       }
       return credential
     }
