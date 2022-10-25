@@ -57,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import okhttp3.internal.http2.StreamResetException
 import okio.ByteString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -298,9 +299,15 @@ class OciArtifactPushClient(
                 sha256 = sha256,
                 location = sessionIdHandlerResult.location
             )
-        } catch (e: SocketException) {
-            // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
-            DefaultHandlerResult(isFailure = true)
+        } catch (e: Exception) {
+            when (e) {
+                is SocketException, is StreamResetException -> {
+                    // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
+                    // 针对部分tencentyun.com分块上传报okhttp3.internal.http2.StreamResetException: stream was reset: NO_ERROR
+                    DefaultHandlerResult(isFailure = true)
+                }
+                else -> throw e
+            }
         } ?: return false
         // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
         if (chunkedUploadResult.isFailure) {
