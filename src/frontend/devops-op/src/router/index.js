@@ -17,6 +17,7 @@ export const ROUTER_NAME_PLUGIN = 'Plugin'
 export const ROUTER_NAME_SCANNERS = 'Scanners'
 export const ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS = 'ProjectScanConfigurations'
 export const ROUTER_NAME_JOB = 'Job'
+export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 
 Vue.use(Router)
 
@@ -82,6 +83,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_ACCOUNT,
         meta: { title: '平台账户管理', icon: 'user' },
         component: () => import('@/views/account/index')
+      }
+    ]
+  },
+  {
+    path: '/shed-lock',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_SHED_LOCK,
+        meta: { title: '数据库锁管理', icon: 'lock' },
+        component: () => import('@/views/shed-lock/index')
       }
     ]
   },
