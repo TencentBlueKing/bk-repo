@@ -47,9 +47,10 @@ object ReplicaThreadPoolExecutor {
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
         return ThreadPoolExecutor(
-            100, 500, 30, TimeUnit.SECONDS,
-            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            corePoolSize, corePoolSize * 2, 30, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }

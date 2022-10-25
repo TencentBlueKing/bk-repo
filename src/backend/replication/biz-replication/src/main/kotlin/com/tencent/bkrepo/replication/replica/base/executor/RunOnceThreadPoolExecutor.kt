@@ -46,9 +46,10 @@ object RunOnceThreadPoolExecutor {
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("runOnce-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
         return ThreadPoolExecutor(
-            50, 200, 60, TimeUnit.SECONDS,
-            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }
