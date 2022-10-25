@@ -320,6 +320,7 @@ repository:
 ## 认证服务配置
 auth:
   config:
+    allowDefaultPwd: true
     ## 指定realm类型，支持local/devops
     realm: local
     ## realm 指定为devops配置
