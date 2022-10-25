@@ -59,7 +59,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("仓库服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient", primary = false)
 @RequestMapping("/service/repo")
 interface RepositoryClient {
 
