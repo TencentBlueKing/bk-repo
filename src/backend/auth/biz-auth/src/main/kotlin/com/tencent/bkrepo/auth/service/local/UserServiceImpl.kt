@@ -129,6 +129,10 @@ class UserServiceImpl constructor(
                 logger.warn("create user fail [$request]")
                 return false
             }
+            request.pwd?.let {
+                val updateRequest = UpdateUserRequest(pwd = request.pwd)
+                updateUserById(request.userId, updateRequest)
+            }
         } catch (exception: ErrorCodeException) {
             if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
                 return true
@@ -150,6 +154,10 @@ class UserServiceImpl constructor(
             if (!userResult) {
                 logger.warn("create user fail [$request]")
                 return false
+            }
+            request.pwd?.let {
+                val updateRequest = UpdateUserRequest(pwd = request.pwd)
+                updateUserById(request.userId, updateRequest)
             }
         } catch (exception: ErrorCodeException) {
             if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
