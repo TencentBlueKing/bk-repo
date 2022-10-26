@@ -113,6 +113,14 @@ persistence:
   # ref: https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/
 
 init:
+  ## curl镜像地址
+  curl:
+    image:
+      registry: hub.bktencent.com
+      repository: curlimages/curl
+      tag: 7.72.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   mongodb:
     enabled: true
     image:
@@ -128,6 +136,8 @@ init:
   ## bcs repo配置
   bcs:
     enabled: false
+    publicImageUrl: https://hub.bktencent.com/blueking
+    publicChartUrl: https://hub.bktencent.com/chartrepo/blueking
 ## bkrepo公共配置
 common:
   # bkrepo镜像仓库全局配置, 具有最高优先级
@@ -200,8 +210,14 @@ gateway:
   dnsServer: local=on
   ## 网关访问微服务认证信息
   authorization: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
-  ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式
+  ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式 , saas模式: 蓝鲸saas部署模式
   deployMode: standalone
+  ## 网关认证模式，ticket, 校验bk_ticket token ，校验bk_token
+  authMode: token
+  ## bkci 域名
+  bkciHost:
+  ## bkci 端口
+  bkciPort:
   ## ci模式必填，蓝鲸paas域名
   bkPaasUrl: paas.example.com
   ## ci模式必填，登录地址
@@ -683,3 +699,20 @@ job:
   podLabels: {}
   podAnnotations: {}
   priorityClassName: ""
+## plugin registry服务配置
+bkstore:
+  enabled: false
+  image:
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-plugin-bkstore
+    tag: 1.0.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+gitci:
+  enabled: false
+  image:
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-plugin-gitci
+    tag: 1.0.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
