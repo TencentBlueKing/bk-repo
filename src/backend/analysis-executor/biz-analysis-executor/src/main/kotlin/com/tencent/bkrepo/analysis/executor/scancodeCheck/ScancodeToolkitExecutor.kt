@@ -31,11 +31,6 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScancodeItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScancodeToolItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
 import com.tencent.bkrepo.analysis.executor.configuration.DockerProperties
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
@@ -43,7 +38,11 @@ import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
-import com.tencent.bkrepo.analysis.executor.util.FileUtils
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScancodeItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScancodeToolItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import org.apache.commons.io.input.ReversedLinesFileReader
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -107,9 +106,8 @@ class ScancodeToolkitExecutor @Autowired constructor(
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
         val scanner = task.scanner
         require(scanner is ScancodeToolkitScanner)
-        val fileName = FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
         val inputDir = File(taskWorkDir, scanner.container.inputDir)
-        return File(inputDir, fileName)
+        return File(inputDir, task.file.name)
     }
 
     /**

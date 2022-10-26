@@ -29,21 +29,21 @@ package com.tencent.bkrepo.analysis.executor.util
 
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
-import java.io.InputStream
+import java.io.File
 
 object Converter {
-    fun convert(subScanTask: SubScanTask, inputStream: InputStream): ScanExecutorTask {
+    fun convert(subScanTask: SubScanTask, file: File, sha256: String): ScanExecutorTask {
         with(subScanTask) {
             return ScanExecutorTask(
                 taskId = taskId,
                 parentTaskId = parentScanTaskId,
-                inputStream = inputStream,
+                file = file,
                 scanner = scanner,
                 projectId = projectId,
                 repoName = repoName,
                 repoType = repoType,
-                fullPath = fullPath,
-                sha256 = sha256
+                sha256 = sha256,
+                extra = extra
             )
         }
     }

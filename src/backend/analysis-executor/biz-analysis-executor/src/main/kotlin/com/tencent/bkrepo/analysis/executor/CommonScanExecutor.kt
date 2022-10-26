@@ -36,6 +36,7 @@ import com.tencent.bkrepo.analysis.executor.util.CommonUtils
 import com.tencent.bkrepo.analysis.executor.util.FileUtils
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Files
 
 abstract class CommonScanExecutor : ScanExecutor {
     override fun scan(task: ScanExecutorTask): ScanExecutorResult {
@@ -91,13 +92,11 @@ abstract class CommonScanExecutor : ScanExecutor {
     /**
      * 将待扫描文件写入[scannerInputFile]
      */
-    protected open fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
+    private fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
         // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
         scannerInputFile.parentFile.mkdirs()
-        task.inputStream.use { taskInputStream ->
-            scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
-        }
-        logger.info(CommonUtils.buildLogMsg(task, "read file success"))
+        Files.move(task.file.toPath(), scannerInputFile.toPath())
+        logger.info(CommonUtils.buildLogMsg(task, "move file to task work directory success"))
         return task.sha256
     }
 
