@@ -202,7 +202,7 @@ class ScanServiceImpl @Autowired constructor(
             logger.info("report result, parentTask[${subScanTask.parentScanTaskId}], subTask[$subTaskId]")
             val scanner = scannerService.get(subScanTask.scanner)
             // 对扫描结果去重
-            scanExecutorResult?.distinctResult()
+            scanExecutorResult?.normalizeResult()
             val overview = scanExecutorResult?.let {
                 scannerConverters[ScannerConverter.name(scanner.type)]!!.convertOverview(it)
             }
