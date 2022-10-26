@@ -33,9 +33,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * 用于分发event到对应的同步任务的线程池
+ * 用于执行manual触发的任务中具体的package或者path的分发
  */
-object EventConsumerThreadPoolExecutor {
+object ManualThreadPoolExecutor {
     /**
      * 线程池实例
      */
@@ -45,7 +45,7 @@ object EventConsumerThreadPoolExecutor {
      * 创建线程池
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("manual-worker-%d").build()
         val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
         return ThreadPoolExecutor(
             corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,

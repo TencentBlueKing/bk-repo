@@ -25,31 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.executor
+package com.tencent.bkrepo.replication.api
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 /**
- * 用于分发event到对应的同步任务的线程池
+ * 分发服务操作接口
  */
-object EventConsumerThreadPoolExecutor {
-    /**
-     * 线程池实例
-     */
-    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
-
-    /**
-     * 创建线程池
-     */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
-        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
-        return ThreadPoolExecutor(
-            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
-            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
-    }
+@Api("分发服务操作接口")
+@Primary
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "DistributionClient")
+@RequestMapping("/service/distribution")
+interface DistributionClient {
+    @ApiOperation("删除已完成的一次性执行任务")
+    @DeleteMapping("/delete")
+    fun deleteRunonceTask(
+        @RequestParam taskName: String
+    ): Response<Void>
 }

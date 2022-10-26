@@ -25,31 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.executor
+package com.tencent.bkrepo.replication.controller.service
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.DistributionClient
+import com.tencent.bkrepo.replication.service.RemoteNodeService
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 用于分发event到对应的同步任务的线程池
- */
-object EventConsumerThreadPoolExecutor {
-    /**
-     * 线程池实例
-     */
-    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+@RestController
+class DistributionController(
+    private val remoteNodeService: RemoteNodeService
+) : DistributionClient {
 
     /**
-     * 创建线程池
+     * 删除已完成的一次性执行任务
      */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
-        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
-        return ThreadPoolExecutor(
-            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
-            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
+    override fun deleteRunonceTask(taskName: String): Response<Void> {
+        remoteNodeService.deleteRunOnceTaskByTaskName(taskName)
+        return ResponseBuilder.success()
     }
 }

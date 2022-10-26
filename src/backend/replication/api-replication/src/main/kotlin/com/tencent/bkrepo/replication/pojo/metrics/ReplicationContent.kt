@@ -35,4 +35,5 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 data class ReplicationContent(
     var packageName: String = StringPool.EMPTY,
     var versions: List<String> = emptyList(),
+    var path: String = StringPool.EMPTY
 )

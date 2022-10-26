@@ -79,4 +79,14 @@ interface RemoteNodeService {
      * 获取一次性执行任务的结果
      */
     fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo?
+
+    /**
+     * 删除一次性执行任务
+     */
+    fun deleteRunOnceTask(projectId: String, repoName: String, name: String)
+
+    /**
+     * 删除已执行完成的一次性执行任务（定时任务调用）
+     */
+    fun deleteRunOnceTaskByTaskName(taskName: String)
 }

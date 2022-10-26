@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.base.replicator
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -52,7 +53,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * 集群间数据同步类
+ * 集群数据同步类
  * 独立集群 同步到 独立集群 的同步实现类
  */
 @Component
@@ -177,18 +178,25 @@ class ClusterReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             return buildNodeCreateRequest(this, node)?.let {
-                val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
-                val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
-                // 1. 同步文件数据
-                pushBlob(
-                    inputStream = rateLimitInputStream,
-                    size = it.size!!,
-                    sha256 = it.sha256.orEmpty(),
-                    storageKey = remoteRepo?.storageCredentials?.key
-                )
-                // 2. 同步节点信息
-                artifactReplicaClient!!.replicaNodeCreateRequest(it)
-                true
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { _ ->
+                    if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
+                    ) {
+                        val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
+                        val rateLimitInputStream = artifactInputStream.rateLimit(
+                            replicationProperties.rateLimit.toBytes()
+                        )
+                        // 1. 同步文件数据
+                        pushBlob(
+                            inputStream = rateLimitInputStream,
+                            size = it.size!!,
+                            sha256 = it.sha256.orEmpty(),
+                            storageKey = remoteRepo?.storageCredentials?.key
+                        )
+                    }
+                    // 2. 同步节点信息
+                    artifactReplicaClient!!.replicaNodeCreateRequest(it)
+                    true
+                }
             } ?: false
         }
     }
@@ -239,5 +247,7 @@ class ClusterReplicator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
+        private const val RETRY_COUNT = 2
+        private const val DELAY_IN_SECONDS: Long = 1
     }
 }

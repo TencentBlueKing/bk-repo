@@ -56,6 +56,8 @@ data class ReplicaTaskInfo(
     val remoteClusters: Set<ClusterNodeName>,
     @ApiModelProperty("任务描述")
     val description: String? = null,
+    @ApiModelProperty("任务状态")
+    val status: ReplicaStatus? = null,
     @ApiModelProperty("上次执行状态")
     var lastExecutionStatus: ExecutionStatus? = null,
     @ApiModelProperty("上次执行时间")

@@ -25,31 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.executor
+package com.tencent.bkrepo.job.config.properties
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 用于分发event到对应的同步任务的线程池
- */
-object EventConsumerThreadPoolExecutor {
-    /**
-     * 线程池实例
-     */
-    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
-
-    /**
-     * 创建线程池
-     */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
-        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
-        return ThreadPoolExecutor(
-            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
-            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
-    }
-}
+@ConfigurationProperties("job.runonce-task-cleanup")
+data class RunOnceTaskCleanupJobProperties(
+    override var fixedDelay: Long = 3600 * 1000L,
+    override var initialDelay: Long = 120 * 1000L
+) : MongodbJobProperties()

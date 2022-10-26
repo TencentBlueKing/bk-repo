@@ -45,7 +45,7 @@
 - **同步接口**
   - [集群管理接口](/apidoc/replication/cluster-node.md)
   - [集群同步接口](/apidoc/replication/replication.md)
-  - [多源分发特性接口](/apidoc/replication/remote-replication.md)
+  - [分发接口](/apidoc/replication/remote-replication.md)
   - [同步执行日志接口](/apidoc/replication/record.md)
 - **审计日志**
   - [审计日志接口](/apidoc/log/log.md)
