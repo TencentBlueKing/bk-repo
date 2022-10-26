@@ -32,7 +32,6 @@ data:
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI
     plugin.path: /data/workspace/plugin/
-    auth.allowDefaultPwd: false
     cluster:
       region: {{ .Values.common.region }}
       self:
