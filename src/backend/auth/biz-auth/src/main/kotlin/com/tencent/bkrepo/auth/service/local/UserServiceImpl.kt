@@ -317,7 +317,7 @@ class UserServiceImpl constructor(
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
-        logger.debug("find user userId : [$userId]")
+        logger.debug("find user userId : [$userId, $bkAuthConfig]")
         if (pwd == DEFAULT_PASSWORD && !bkAuthConfig.allowDefaultPwd) {
             logger.warn("login with default password [$userId]")
             if (!bkAuthConfig.userIdSet.split(",").contains(userId)) {
