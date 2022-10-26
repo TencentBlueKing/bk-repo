@@ -38,7 +38,7 @@ import io.swagger.annotations.ApiModelProperty
  * 更新远端集群以及相关信息请求
  */
 @ApiModel("更新远端集群以及相关信息请求")
-class RemoteConfigUpdateRequest(
+data class RemoteConfigUpdateRequest(
     // registry与clusterId是二选一
     @ApiModelProperty("集群id", required = false)
     var clusterId: String? = null,

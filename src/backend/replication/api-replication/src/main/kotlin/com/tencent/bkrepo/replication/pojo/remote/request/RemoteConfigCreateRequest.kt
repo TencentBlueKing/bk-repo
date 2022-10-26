@@ -38,7 +38,7 @@ import io.swagger.annotations.ApiModelProperty
  * 添加远端集群以及相关信息请求
  */
 @ApiModel("添加远端集群以及相关信息请求")
-class RemoteConfigCreateRequest(
+data class RemoteConfigCreateRequest(
     @ApiModelProperty("名称", required = true)
     var name: String,
     // registry与clusterId是二选一
