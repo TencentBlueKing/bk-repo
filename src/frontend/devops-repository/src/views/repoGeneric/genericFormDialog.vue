@@ -109,11 +109,12 @@
                     ...data
                 }
                 if (data.type === 'scan') {
-                    Promise.all([
-                        this.getScanAll({ projectId: this.projectId, type: 'GENERIC' }),
-                        this.getScanAll({ projectId: this.projectId, type: 'GENERIC_LICENSE' })
-                    ]).then(([res1, res2]) => {
-                        this.scanList = [...res1, ...res2]
+                    this.getScanAll({
+                        projectId: this.projectId,
+                        type: 'GENERIC',
+                        fileNameExt: this.genericForm.path.substr(this.genericForm.path.lastIndexOf('.') + 1)
+                    }).then(res => {
+                        this.scanList = res
                     })
                 }
             },
