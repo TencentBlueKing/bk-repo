@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.operate.service
 
 import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.service.aop.OperateLogAspect
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
 import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
@@ -51,5 +52,10 @@ class OperateAutoConfiguration {
         permissionManager: PermissionManager
     ): OperateLogService {
         return OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
+    }
+
+    @Bean
+    fun operateLogAspect(operateLogService: OperateLogService): OperateLogAspect {
+        return OperateLogAspect(operateLogService)
     }
 }

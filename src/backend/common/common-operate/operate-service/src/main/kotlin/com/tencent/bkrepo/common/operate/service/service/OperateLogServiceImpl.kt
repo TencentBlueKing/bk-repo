@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
+import com.tencent.bkrepo.common.operate.api.pojo.OperateEvent
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
@@ -81,6 +82,20 @@ open class OperateLogServiceImpl(
             description = event.data,
             userId = event.userId,
             clientAddress = address
+        )
+        operateLogDao.insert(log)
+    }
+
+    @Async
+    override fun saveEventAsync(event: OperateEvent) {
+        val log = TOperateLog(
+            type = EventType.valueOf(event.type),
+            resourceKey = event.resourceKey,
+            projectId = event.projectId,
+            repoName = event.repoName,
+            description = event.data,
+            userId = event.userId,
+            clientAddress = event.address
         )
         operateLogDao.insert(log)
     }

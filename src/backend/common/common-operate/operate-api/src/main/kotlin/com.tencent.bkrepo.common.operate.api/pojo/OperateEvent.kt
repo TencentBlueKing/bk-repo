@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.api
+package com.tencent.bkrepo.common.operate.api.pojo
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateEvent
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
-
-interface OperateLogService {
-
+open class OperateEvent(
     /**
-     * 异步保存事件
-     * @param event 事件
-     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
+     * 事件类型
      */
-    fun saveEventAsync(event: ArtifactEvent, address: String)
-
-    fun saveEventAsync(event: OperateEvent)
-
-    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
-
-    fun listPage(option: OpLogListOption): Page<OperateLog>
-
-    fun page(
-        type: String?,
-        projectId: String?,
-        repoName: String?,
-        operator: String?,
-        startTime: String?,
-        endTime: String?,
-        pageNumber: Int,
-        pageSize: Int
-    ): Page<OperateLogResponse?>
-}
+    open val type: String,
+    /**
+     * 项目id
+     */
+    open val projectId: String,
+    /**
+     * 仓库名称
+     */
+    open val repoName: String,
+    /**
+     * 事件资源key，具有唯一性
+     * ex:
+     * 1. 节点类型对应fullPath
+     * 2. 仓库类型对应仓库名称
+     * 3. 包类型对应包名称
+     */
+    open val resourceKey: String,
+    /**
+     * 操作用户
+     */
+    open val userId: String,
+    /**
+     * ip地址
+     */
+    open val address: String,
+    /**
+     * 附属数据
+     */
+    open val data: Map<String, Any> = mapOf()
+)
