@@ -176,7 +176,7 @@ abstract class AbstractReplicaService(
             val record = ReplicationRecord(
                 path = node.fullPath
             )
-            runActionAndPrintLog(context, record) {replicaContext.replicator.replicaFile(replicaContext, node)}
+            runActionAndPrintLog(context, record) { replicaContext.replicator.replicaFile(replicaContext, node) }
         }
     }
 
@@ -225,20 +225,21 @@ abstract class AbstractReplicaService(
         packageSummary: PackageSummary,
         version: PackageVersion
     ) {
-        with(context){
+        with(context) {
             val record = ReplicationRecord(
                 packageName = packageSummary.name,
                 version = version.name
             )
-            runActionAndPrintLog(context, record)
-            {replicator.replicaPackageVersion(replicaContext, packageSummary, version)}
+            runActionAndPrintLog(context, record) {
+                replicator.replicaPackageVersion(replicaContext, packageSummary, version)
+            }
         }
     }
 
     private fun runActionAndPrintLog(
         context: ReplicaExecutionContext,
         record: ReplicationRecord,
-        action:() -> Boolean
+        action: () -> Boolean
     ) {
         with(context) {
             val startTime = LocalDateTime.now().toString()
@@ -295,7 +296,6 @@ abstract class AbstractReplicaService(
         }
     }
 
-
     /**
      * 记录一次性任务执行package或者path分发的执行记录
      */
@@ -308,16 +308,20 @@ abstract class AbstractReplicaService(
         record: ReplicationRecord
     ) {
         if (task.replicaType != ReplicaType.RUN_ONCE) return
-        logger.info(toJson(convertToReplicationRecordDetailMetricsRecord(
-            task = task,
-            recordId = recordId,
-            startTime = startTime,
-            status = status,
-            errorReason = errorReason,
-            packageName = record.packageName,
-            version = record.version,
-            path = record.path
-        )))
+        logger.info(
+            toJson(
+                convertToReplicationRecordDetailMetricsRecord(
+                    task = task,
+                    recordId = recordId,
+                    startTime = startTime,
+                    status = status,
+                    errorReason = errorReason,
+                    packageName = record.packageName,
+                    version = record.version,
+                    path = record.path
+                )
+            )
+        )
     }
 
     /**
