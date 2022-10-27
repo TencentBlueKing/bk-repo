@@ -62,7 +62,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.InputStream
-import java.net.SocketException
 import java.net.URL
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
@@ -298,11 +297,13 @@ class OciArtifactPushClient(
                 sha256 = sha256,
                 location = sessionIdHandlerResult.location
             )
-        } catch (e: SocketException) {
+        } catch (e: Exception) {
+            // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
             // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
+            // 针对部分tencentyun.com分块上传报okhttp3.internal.http2.StreamResetException: stream was reset: NO_ERROR
+            // 抛出异常后，都进行降级，直接使用单个文件上传进行降级重试
             DefaultHandlerResult(isFailure = true)
         } ?: return false
-        // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
         if (chunkedUploadResult.isFailure) {
             sessionIdHandlerResult = processSessionIdHandler(
                 token = token,

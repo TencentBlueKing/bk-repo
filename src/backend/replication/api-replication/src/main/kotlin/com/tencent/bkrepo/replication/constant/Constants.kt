@@ -78,3 +78,15 @@ const val EVENT_CONSUMER_TASK_ACTIVE_COUNT_DESC = "事件处理任务实时执�
 
 const val EVENT_CONSUMER_TASK_QUEUE_SIZE = "event.consumer.task.queue.size"
 const val EVENT_CONSUMER_TASK_QUEUE_SIZE_DESC = "事件处理任务线程池等待队列大小"
+
+const val RUN_ONCE_EXECUTOR_ACTIVE_COUNT = "runonce.executor.active.count"
+const val RUN_ONCE_EXECUTOR_ACTIVE_COUNT_DESC = "执行一次性任务线程池实时执行数量"
+
+const val RUN_ONCE_EXECUTOR_QUEUE_SIZE = "runonce.executor.queue.size"
+const val RUN_ONCE_EXECUTOR_QUEUE_SIZE_DESC = "执行一次性任务线程池等待队列大小"
+
+const val MANUAL_TASK_ACTIVE_COUNT = "manual.task.active.count"
+const val MANUAL_TASK_ACTIVE_COUNT_DESC = "手动执行具体package或者path分发线程池实时执行数量"
+
+const val MANUAL_TASK_QUEUE_SIZE = "manual.task.queue.size"
+const val MANUAL_TASK_QUEUE_SIZE_DESC = "手动执行具体package或者path分发线程池等待队列大小"

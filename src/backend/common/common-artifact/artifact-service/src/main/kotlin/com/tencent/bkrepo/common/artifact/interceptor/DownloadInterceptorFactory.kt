@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
 import com.tencent.bkrepo.common.artifact.interceptor.impl.FilenameInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.impl.IpSegmentInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.MetadataInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.MobileInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.NodeMetadataInterceptor
@@ -73,6 +74,7 @@ class DownloadInterceptorFactory(
                 type == DownloadInterceptorType.MOBILE && type == downloadSource -> MobileInterceptor(rules)
                 type == DownloadInterceptorType.OFFICE_NETWORK -> OfficeNetworkInterceptor(rules, properties)
                 type == DownloadInterceptorType.NODE_FORBID -> buildNodeForbidInterceptor()
+                type == DownloadInterceptorType.IP_SEGMENT -> IpSegmentInterceptor(rules, properties)
                 else -> null
             }
         }

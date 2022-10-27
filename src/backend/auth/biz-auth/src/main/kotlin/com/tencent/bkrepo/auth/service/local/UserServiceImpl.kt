@@ -102,9 +102,10 @@ class UserServiceImpl constructor(
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
-        var hashPwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
-        request.pwd?.let {
-            hashPwd = DataDigestUtils.md5FromStr(request.pwd!!)
+        val hashPwd = if (request.pwd == null) {
+            DataDigestUtils.md5FromStr(IDUtil.genRandomId())
+        } else {
+            DataDigestUtils.md5FromStr(request.pwd!!)
         }
         val userRequest = UserRequestUtil.convToTUser(request, hashPwd)
         try {
@@ -128,6 +129,10 @@ class UserServiceImpl constructor(
                 logger.warn("create user fail [$request]")
                 return false
             }
+            request.pwd?.let {
+                val updateRequest = UpdateUserRequest(pwd = request.pwd)
+                updateUserById(request.userId, updateRequest)
+            }
         } catch (exception: ErrorCodeException) {
             if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
                 return true
@@ -149,6 +154,10 @@ class UserServiceImpl constructor(
             if (!userResult) {
                 logger.warn("create user fail [$request]")
                 return false
+            }
+            request.pwd?.let {
+                val updateRequest = UpdateUserRequest(pwd = request.pwd)
+                updateUserById(request.userId, updateRequest)
             }
         } catch (exception: ErrorCodeException) {
             if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {

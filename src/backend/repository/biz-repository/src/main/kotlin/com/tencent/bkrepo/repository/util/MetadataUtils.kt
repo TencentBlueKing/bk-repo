@@ -36,9 +36,7 @@ import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
-import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
@@ -56,15 +54,14 @@ object MetadataUtils {
     /**
      * 用于兼容旧逻辑，优先从[metadataModels]取数据，[metadataModels]不存在时从[metadataMap]取
      */
-    fun compatibleFromAndCheck(
+    fun compatibleConvertAndCheck(
         metadataMap: Map<String, Any>?,
-        metadataModels: List<MetadataModel>?,
-        operator: String
+        metadataModels: List<MetadataModel>?
     ): MutableList<TMetadata> {
         return if (!metadataModels.isNullOrEmpty()) {
-            metadataModels.map { convertAndCheck(it, operator) }.toMutableList()
+            metadataModels.map { convertAndCheck(it) }.toMutableList()
         } else {
-            convertAndCheck(metadataMap, operator)
+            convertAndCheck(metadataMap)
         }
     }
 
@@ -86,46 +83,14 @@ object MetadataUtils {
 
     /**
      * 合并[oldMetadata]与[newMetadata]，存在相同的key时[newMetadata]的项会替换[oldMetadata]的元数据项
-     * 系统元数据只有当[operator]为[SYSTEM_USER]时才能修改
      */
-    fun checkAndMerge(
+    fun merge(
         oldMetadata: List<TMetadata>,
-        newMetadata: List<TMetadata>,
-        operator: String
+        newMetadata: List<TMetadata>
     ): MutableList<TMetadata> {
         val metadataMap = oldMetadata.associateByTo(HashMap(oldMetadata.size + newMetadata.size)) { it.key }
-        newMetadata.forEach {
-            metadataMap[it.key]?.apply { checkPermission(this, operator) }
-            val new = it.apply { checkPermission(this, operator) }
-            metadataMap[it.key] = new
-        }
+        newMetadata.forEach { metadataMap[it.key] = it }
         return metadataMap.values.toMutableList()
-    }
-
-    /**
-     * 使用[newMetadata]替换[oldMetadata]
-     * [operator]为[SYSTEM_USER]时才能操作system metadata
-     */
-    fun replace(
-        oldMetadata: List<TMetadata>,
-        newMetadata: List<TMetadata>,
-        operator: String
-    ): MutableList<TMetadata> {
-        if (operator == SYSTEM_USER) {
-            return newMetadata.toMutableList()
-        }
-
-        val oldSystemMetadata = oldMetadata.filter { it.system }.associateBy { it.key }
-
-        val result = HashMap<String, TMetadata>(newMetadata.size + oldSystemMetadata.size)
-        result.putAll(oldSystemMetadata)
-        for (new in newMetadata) {
-            if (!new.system && !oldSystemMetadata.contains(new.key)) {
-                result[new.key] = new
-            }
-        }
-
-        return result.values.toMutableList()
     }
 
     fun extractForbidMetadata(
@@ -147,8 +112,7 @@ object MetadataUtils {
 
     fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
         return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
-            .map { it.getValue("key").toString() to it.getValue("value") }
-            .toMap()
+            .associate { it.getValue("key").toString() to it.getValue("value") }
     }
 
     fun convertToMetadataModel(metadataList: List<Map<String, Any>>): List<MetadataModel> {
@@ -163,13 +127,7 @@ object MetadataUtils {
             }
     }
 
-    fun checkPermission(metadata: TMetadata?, operator: String) {
-        if (metadata?.system == true && operator != SYSTEM_USER) {
-            throw PermissionException("No permission to update system metadata[${metadata.key}]")
-        }
-    }
-
-    fun convertAndCheck(metadata: MetadataModel, operator: String): TMetadata {
+    fun convertAndCheck(metadata: MetadataModel): TMetadata {
         with(metadata) {
             val tMetadata = TMetadata(
                 key = key,
@@ -178,26 +136,25 @@ object MetadataUtils {
                 description = description,
                 link = link
             )
-            checkReservedKey(key, operator)
-            checkPermission(tMetadata, operator)
+            checkReservedKey(key, system)
             return tMetadata
         }
     }
 
-    private fun convertAndCheck(metadataMap: Map<String, Any>?, operator: String): MutableList<TMetadata> {
+    private fun convertAndCheck(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
         return metadataMap
             ?.filter { it.key.isNotBlank() }
             .orEmpty()
             .map {
                 val tMetadata = TMetadata(key = it.key, value = it.value)
-                checkReservedKey(tMetadata.key, operator)
+                checkReservedKey(tMetadata.key)
                 tMetadata
             }
             .toMutableList()
     }
 
-    private fun checkReservedKey(key: String, operator: String) {
-        if (key in RESERVED_KEY && operator != SYSTEM_USER) {
+    private fun checkReservedKey(key: String, system: Boolean = false) {
+        if (key in RESERVED_KEY && !system) {
             throw ErrorCodeException(RepositoryMessageCode.METADATA_KEY_RESERVED, key)
         }
     }

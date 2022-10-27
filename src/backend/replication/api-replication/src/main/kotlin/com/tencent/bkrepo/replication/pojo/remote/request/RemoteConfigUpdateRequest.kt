@@ -39,14 +39,22 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("更新远端集群以及相关信息请求")
 data class RemoteConfigUpdateRequest(
+    // registry与clusterId是二选一
+    @ApiModelProperty("集群id", required = false)
+    var clusterId: String? = null,
     @ApiModelProperty("集群地址", required = false)
-    var registry: String,
+    var registry: String? = null,
     @ApiModelProperty("集群的证书", required = false)
     var certificate: String? = null,
     @ApiModelProperty("集群认证用户名", required = false)
     var username: String? = null,
     @ApiModelProperty("集群认证密码", required = false)
     var password: String? = null,
+    // 异构集群分发时以下remoteProjectId/remoteRepoName不需要
+    @ApiModelProperty("远程项目")
+    val remoteProjectId: String? = null,
+    @ApiModelProperty("远程仓库")
+    val remoteRepoName: String? = null,
     @ApiModelProperty("包限制条件", required = false)
     val packageConstraints: List<PackageConstraint>? = null,
     @ApiModelProperty("路径限制条件", required = false)

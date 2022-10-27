@@ -55,10 +55,9 @@ class NodeDao : HashShardingMongoDao<TNode>() {
      * 查询节点
      */
     fun findNode(projectId: String, repoName: String, fullPath: String): TNode? {
-        if (PathUtils.isRoot(fullPath)) {
-            return buildRootNode(projectId, repoName)
-        }
+        // 系统设计上不保存根目录节点到数据库，但是有用户会手动创建根目录节点
         return this.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
+            ?: if (PathUtils.isRoot(fullPath)) buildRootNode(projectId, repoName) else null
     }
 
     /**

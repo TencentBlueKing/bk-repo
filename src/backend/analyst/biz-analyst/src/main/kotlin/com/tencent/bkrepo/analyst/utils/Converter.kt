@@ -27,10 +27,6 @@
 
 package com.tencent.bkrepo.analyst.utils
 
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
 import com.tencent.bkrepo.analyst.model.TScanPlan
@@ -39,12 +35,21 @@ import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
+import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.api.util.readJsonString
 import java.time.format.DateTimeFormatter
 
 object Converter {
-    fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask = with(subScanTask) {
+    fun convert(
+        subScanTask: TSubScanTask,
+        scanner: Scanner,
+        metadata: List<TaskMetadata> = emptyList()
+    ): SubScanTask = with(subScanTask) {
         SubScanTask(
             taskId = id!!,
             parentScanTaskId = parentScanTaskId,
@@ -56,7 +61,8 @@ object Converter {
             sha256 = sha256,
             size = size,
             packageSize = packageSize,
-            credentialsKey = credentialsKey
+            credentialsKey = credentialsKey,
+            extra = metadata.associate { Pair(it.key, it.value) }
         )
     }
 

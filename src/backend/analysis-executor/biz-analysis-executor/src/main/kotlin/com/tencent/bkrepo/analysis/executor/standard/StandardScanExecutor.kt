@@ -37,8 +37,6 @@ import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorPropert
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
 import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
-import com.tencent.bkrepo.analysis.executor.util.FileUtils
-import com.tencent.bkrepo.analysis.executor.util.ImageScanHelper
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
@@ -47,9 +45,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner.
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolOutput
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
@@ -59,13 +54,10 @@ import java.io.File
 @Component(StandardScanner.TYPE)
 class StandardScanExecutor(
     dockerClient: DockerClient,
-    nodeClient: NodeClient,
-    storageService: StorageService,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) : CommonScanExecutor() {
 
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
-    private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
     override fun doScan(
         taskWorkDir: File,
@@ -95,24 +87,10 @@ class StandardScanExecutor(
         }
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
-        return if (task.repoType == RepositoryType.DOCKER.name) {
-            scannerInputFile.parentFile.mkdirs()
-            scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
-        } else {
-            super.loadFileTo(scannerInputFile, task)
-        }
-    }
-
     override fun workDir() = File(scannerExecutorProperties.workDir)
 
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
-        val fileName = if (task.repoType == RepositoryType.DOCKER.name) {
-            "${task.sha256}.tar"
-        } else {
-            FileUtils.sha256NameWithExt(task.fullPath, task.sha256)
-        }
-        return File(taskWorkDir, fileName)
+        return File(taskWorkDir, task.file.name)
     }
 
     override fun result(taskWorkDir: File, task: ScanExecutorTask, scanStatus: SubScanTaskStatus): ScanExecutorResult {

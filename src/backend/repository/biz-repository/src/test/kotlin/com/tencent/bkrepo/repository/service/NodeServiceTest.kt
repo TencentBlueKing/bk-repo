@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -74,7 +75,8 @@ import org.springframework.context.annotation.Import
 class NodeServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
-    private val nodeService: NodeService
+    private val nodeService: NodeService,
+    private val repositoryProperties: RepositoryProperties
 ) : ServiceBaseTest() {
 
     private val option = NodeListOption(includeFolder = false, deep = false)
@@ -90,6 +92,7 @@ class NodeServiceTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
+        repositoryProperties.nodeCreateTimeout = 5000
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
@@ -740,11 +743,61 @@ class NodeServiceTest @Autowired constructor(
         assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
     }
 
+    @Test
+    @DisplayName("测试创建文件超时")
+    fun testCreateFileNodeTimeout() {
+        // 新创建的文件回滚
+        repositoryProperties.nodeCreateTimeout = 0
+        val fullPath = "/1/2/3.txt"
+        assertThrows<ErrorCodeException> {
+            val request = createRequest(fullPath, folder = false, size = 100)
+            nodeService.createNode(request)
+        }
+        // 回滚创建的新文件和目录
+        assertEquals(false, nodeService.checkExist(node(fullPath)))
+        assertEquals(false, nodeService.checkExist(node("/1/2")))
+        assertEquals(false, nodeService.checkExist(node("/1")))
+
+        // 存在旧文件，使用覆盖创建的文件回滚
+        repositoryProperties.nodeCreateTimeout = 5000
+        // 创建旧文件数据
+        val request1 = createRequest(fullPath, folder = false, size = 10)
+        nodeService.createNode(request1)
+        assertEquals(true, nodeService.checkExist(node(fullPath)))
+
+        assertThrows<ErrorCodeException> {
+            repositoryProperties.nodeCreateTimeout = 0
+            // 覆盖创建
+            val request2 = createRequest(fullPath, folder = false, size = 100, override = true)
+            nodeService.createNode(request2)
+        }
+        // 旧文件还在
+        assertEquals(true, nodeService.checkExist(node(fullPath)))
+        // 恢复的旧文件
+        assertEquals(10, nodeService.getNodeDetail(node(fullPath))?.size)
+    }
+
+    @Test
+    @DisplayName("测试创建目录超时")
+    fun testCreateDirTimeout() {
+        // 新创建的目录回滚
+        repositoryProperties.nodeCreateTimeout = 0
+        val fullPath = "/1/2/3"
+        assertThrows<ErrorCodeException> {
+            val request = createRequest(fullPath, folder = true)
+            nodeService.createNode(request)
+        }
+        assertEquals(false, nodeService.checkExist(node(fullPath)))
+        assertEquals(false, nodeService.checkExist(node("/1/2")))
+        assertEquals(false, nodeService.checkExist(node("/1")))
+    }
+
     private fun createRequest(
         fullPath: String = "/a/b/c",
         folder: Boolean = true,
         size: Long = 1,
-        metadata: Map<String, String>? = null
+        metadata: Map<String, String>? = null,
+        override: Boolean = false
     ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = UT_PROJECT_ID,
@@ -752,7 +805,7 @@ class NodeServiceTest @Autowired constructor(
             folder = folder,
             fullPath = fullPath,
             expires = 0,
-            overwrite = false,
+            overwrite = override,
             size = size,
             sha256 = "sha256",
             md5 = "md5",

@@ -32,21 +32,9 @@ package com.tencent.bkrepo.git.artifact
  */
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.git.constant.BLANK
-import com.tencent.bkrepo.git.constant.DOT_GIT
 
 open class GitRepositoryArtifactInfo(
     projectId: String,
     repoName: String,
     artifactUri: String,
-    open var path: String ? = BLANK
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-
-    override fun getArtifactName(): String {
-        return String.format("%s/%s/%s", projectId, repoName, this.getArtifactFullPath())
-    }
-
-    override fun getArtifactFullPath(): String {
-        return String.format("%s%s", DOT_GIT, path)
-    }
-}
+) : ArtifactInfo(projectId, repoName, artifactUri)

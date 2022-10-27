@@ -342,7 +342,7 @@ class ReplicaTaskServiceImpl(
                 ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
             // 针对ClusterNodeType 为THIRD_PARTY的更新，可以绕过下面那个任务状态限制
             val remoteNode = clusterNodeService.getByClusterId(remoteClusterIds.first())
-            if (remoteNode!!.type != ClusterNodeType.REMOTE) {
+            if (remoteNode!!.type != ClusterNodeType.REMOTE && tReplicaTask.replicaType != ReplicaType.RUN_ONCE) {
                 // 检查任务状态，执行过的任务不让修改
                 if (tReplicaTask.status != ReplicaStatus.WAITING ||
                     tReplicaTask.lastExecutionStatus != null
@@ -452,6 +452,7 @@ class ReplicaTaskServiceImpl(
                     setting = it.setting,
                     remoteClusters = it.remoteClusters,
                     description = it.description,
+                    status = it.status,
                     lastExecutionStatus = it.lastExecutionStatus,
                     lastExecutionTime = it.lastExecutionTime,
                     nextExecutionTime = it.nextExecutionTime,

@@ -31,6 +31,20 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.Volume
+import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
+import com.tencent.bkrepo.analysis.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
+import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
+import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg
+import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
+import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.DbSource
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanResults
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
@@ -40,25 +54,10 @@ import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.DbSource
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanResults
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.analysis.executor.CommonScanExecutor
-import com.tencent.bkrepo.analysis.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
-import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
-import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.buildLogMsg
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.readJsonString
-import com.tencent.bkrepo.analysis.executor.util.DockerScanHelper
-import com.tencent.bkrepo.analysis.executor.util.ImageScanHelper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -77,7 +76,6 @@ class TrivyScanExecutor @Autowired constructor(
 ) : CommonScanExecutor() {
 
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
-    private val imageScanHelper = ImageScanHelper(nodeClient, storageService)
 
     override fun doScan(
         taskWorkDir: File,
@@ -113,15 +111,10 @@ class TrivyScanExecutor @Autowired constructor(
         return scanStatus(task, taskWorkDir)
     }
 
-    override fun loadFileTo(scannerInputFile: File, task: ScanExecutorTask): String {
-        scannerInputFile.parentFile.mkdirs()
-        return scannerInputFile.outputStream().use { imageScanHelper.generateScanFile(it, task) }
-    }
-
     override fun scannerInputFile(taskWorkDir: File, task: ScanExecutorTask): File {
         val scanner = task.scanner
         require(scanner is TrivyScanner)
-        return File(File(taskWorkDir, scanner.container.inputDir), "${task.sha256}.tar")
+        return File(File(taskWorkDir, scanner.container.inputDir), task.file.name)
     }
 
     override fun workDir() = File(scannerExecutorProperties.workDir)

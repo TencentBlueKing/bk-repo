@@ -31,6 +31,10 @@ import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_ACTIVE_COUNT
 import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_ACTIVE_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_QUEUE_SIZE
 import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.replication.constant.MANUAL_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.replication.constant.MANUAL_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.replication.constant.MANUAL_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.replication.constant.MANUAL_TASK_QUEUE_SIZE_DESC
 import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT
 import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_ACTIVE_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.OCI_BLOB_UPLOAD_TASK_QUEUE_SIZE
@@ -41,9 +45,15 @@ import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_COMPLETED_COUNT
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_COMPLETED_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_QUEUE_SIZE
 import com.tencent.bkrepo.replication.constant.REPLICATION_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_ACTIVE_COUNT
+import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_QUEUE_SIZE
+import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_QUEUE_SIZE_DESC
 import com.tencent.bkrepo.replication.replica.base.executor.EventConsumerThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.executor.ReplicaThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.base.executor.RunOnceThreadPoolExecutor
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -87,6 +97,30 @@ class ReplicationMetrics : MeterBinder {
             EVENT_CONSUMER_TASK_QUEUE_SIZE, EventConsumerThreadPoolExecutor.instance
         ) { it.queue.size.toDouble() }
             .description(EVENT_CONSUMER_TASK_QUEUE_SIZE_DESC)
+            .register(registry)
+
+        Gauge.builder(
+            RUN_ONCE_EXECUTOR_ACTIVE_COUNT, RunOnceThreadPoolExecutor.instance
+        ) { it.activeCount.toDouble() }
+            .description(RUN_ONCE_EXECUTOR_ACTIVE_COUNT_DESC)
+            .register(registry)
+
+        Gauge.builder(
+            RUN_ONCE_EXECUTOR_QUEUE_SIZE, RunOnceThreadPoolExecutor.instance
+        ) { it.queue.size.toDouble() }
+            .description(RUN_ONCE_EXECUTOR_QUEUE_SIZE_DESC)
+            .register(registry)
+
+        Gauge.builder(
+            MANUAL_TASK_ACTIVE_COUNT, ManualThreadPoolExecutor.instance
+        ) { it.activeCount.toDouble() }
+            .description(MANUAL_TASK_ACTIVE_COUNT_DESC)
+            .register(registry)
+
+        Gauge.builder(
+            MANUAL_TASK_QUEUE_SIZE, ManualThreadPoolExecutor.instance
+        ) { it.queue.size.toDouble() }
+            .description(MANUAL_TASK_QUEUE_SIZE_DESC)
             .register(registry)
     }
 }

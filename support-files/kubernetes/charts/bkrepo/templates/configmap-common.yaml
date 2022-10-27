@@ -16,6 +16,8 @@ data:
       config: classpath:logback-config.xml
       path: /data/workspace/logs
     spring:
+      sleuth:
+        enabled: false
       data:
         mongodb:
           uri: {{ include "bkrepo.mongodbUri" . }}
@@ -23,7 +25,7 @@ data:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
     oci.domain: {{ .Values.gateway.dockerHost }}
-    {{- if .Values.ingress.tls }}
+    {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ .Values.gateway.host }}/docker/v2/auth
     {{- else }}
     oci.authUrl: http://{{ .Values.gateway.host }}/docker/v2/auth

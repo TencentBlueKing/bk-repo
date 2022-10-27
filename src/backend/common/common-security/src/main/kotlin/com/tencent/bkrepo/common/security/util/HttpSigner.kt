@@ -182,7 +182,7 @@ object HttpSigner {
 
     const val SIGN_TIME = "sign_time"
     const val SIGN_ALGORITHM = "sign_algorithm"
-    const val REQUEST_TTL = 300 // 5min
+    const val REQUEST_TTL = 15 * 60 // 15min
     const val MILLIS_PER_SECOND = 1000
     const val ACCESS_KEY = "access_key"
     const val APP_ID = "app_id"

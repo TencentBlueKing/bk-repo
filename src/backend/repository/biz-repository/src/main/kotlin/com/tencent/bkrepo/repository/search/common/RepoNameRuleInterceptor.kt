@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.search.common
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
@@ -152,6 +153,8 @@ class RepoNameRuleInterceptor(
             )
             true
         } catch (ignored: PermissionException) {
+            false
+        } catch (ignored: RepoNotFoundException) {
             false
         }
     }

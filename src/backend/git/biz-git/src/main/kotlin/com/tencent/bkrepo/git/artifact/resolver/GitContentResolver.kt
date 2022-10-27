@@ -31,11 +31,14 @@
 
 package com.tencent.bkrepo.git.artifact.resolver
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
+import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.constant.REF
-import org.eclipse.jgit.lib.ObjectId
+import com.tencent.bkrepo.git.internal.CodeRepositoryResolver
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -50,11 +53,11 @@ class GitContentResolver : ArtifactInfoResolver {
         request: HttpServletRequest
     ): GitContentArtifactInfo {
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
-        val gitContentArtifactInfo = GitContentArtifactInfo(
-            projectId, repoName, artifactUri, attributes[REF].toString()
-        )
-        if (ObjectId.isId(gitContentArtifactInfo.ref))
-            gitContentArtifactInfo.objectId = gitContentArtifactInfo.ref
-        return gitContentArtifactInfo
+        val repositoryDetail = ArtifactContextHolder.getRepoDetail()
+        val db = CodeRepositoryResolver.open(projectId, repoName, repositoryDetail?.storageCredentials)
+        val ref = attributes[REF].toString()
+        val commitId = db.resolve(ref)
+        commitId ?: throw ErrorCodeException(GitMessageCode.GIT_REF_NOT_FOUND, ref)
+        return GitContentArtifactInfo(projectId, repoName, artifactUri, commitId.name, artifactUri.trim('/'))
     }
 }

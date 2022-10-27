@@ -71,7 +71,9 @@ class OciAuthorizationService : AuthorizationService {
                 // 当无需鉴权时返回""
             } else if (it.code() == HttpStatus.OK.value) {
                 StringPool.EMPTY
-            } else throw ArtifactPushException("Can not get authorization detail ${it.code()}")
+            } else throw ArtifactPushException(
+                "Can not get authorization detail ${it.code()}, please check your distribution host"
+            )
         }
     }
 
@@ -105,7 +107,8 @@ class OciAuthorizationService : AuthorizationService {
             if (!it.isSuccessful) {
                 val error = JsonUtils.objectMapper.readValue(it.body()!!.byteStream(), OciResponse::class.java)
                 throw ArtifactPushException(
-                    "Could not get token from auth service, error is ${error.toJsonString()}"
+                    "Could not get token from auth service," +
+                        " code is ${it.code()} and response is ${error.toJsonString()}"
                 )
             }
             val bearerToken = JsonUtils.objectMapper.readValue(it.body()!!.byteStream(), BearerToken::class.java)

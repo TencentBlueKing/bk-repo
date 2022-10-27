@@ -33,7 +33,6 @@ package com.tencent.bkrepo.repository.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
@@ -64,8 +63,8 @@ class PackageMetadataServiceImpl(
             val tPackage = getPackage(projectId, repoName, packageKey)
             val tPackageVersion = getPackageVersion(tPackage.id!!, version)
             val oldMetadata = tPackageVersion.metadata
-            val newMetadata = versionMetadata!!.map { MetadataUtils.convertAndCheck(it, operator) }
-            tPackageVersion.metadata = MetadataUtils.checkAndMerge(oldMetadata, newMetadata, operator)
+            val newMetadata = versionMetadata!!.map { MetadataUtils.convertAndCheck(it) }
+            tPackageVersion.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
             packageVersionDao.save(tPackageVersion)
             logger.info("Save package metadata [$this] success.")
         }
@@ -79,7 +78,7 @@ class PackageMetadataServiceImpl(
                 logger.info("forbidMetadata is empty, skip saving[$this]")
                 return
             }
-            saveMetadata(request.copy(versionMetadata = forbidMetadata, operator = SYSTEM_USER))
+            saveMetadata(request.copy(versionMetadata = forbidMetadata))
         }
     }
 

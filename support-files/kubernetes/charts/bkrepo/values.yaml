@@ -37,6 +37,9 @@ serviceMonitor:
 ## bkDomainScheme配置
 bkDomainScheme: http
 
+## 是否强制跳转https配置
+forceHttps: false
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
@@ -238,7 +241,7 @@ gateway:
     type: ClusterIP
     ## 服务类型为`ClusterIP`时端口设置
     port: 80
-    ## 服务类型为`NodePort`时端口设置 
+    ## 服务类型为`NodePort`时端口设置
     nodePort: 30025
   ## Kubernetes 通用配置
   image:
@@ -320,6 +323,7 @@ repository:
 ## 认证服务配置
 auth:
   config:
+    allowDefaultPwd: true
     ## 指定realm类型，支持local/devops
     realm: local
     ## realm 指定为devops配置

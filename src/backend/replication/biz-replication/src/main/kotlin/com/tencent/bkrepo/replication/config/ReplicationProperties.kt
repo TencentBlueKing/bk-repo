@@ -41,11 +41,17 @@ data class ReplicationProperties(
     /**
      * oci blob文件上传分块大小
      */
-    var chunkedSize: Long = 1024 * 1024 * 20,
+    var chunkedSize: Long = 1024 * 1024 * 5,
     /**
      * oci blob文件上传并发数
      */
-    var threadNum: Int = 4,
+    var threadNum: Int = 3,
+
+    /**
+     * manual分发并行数
+     */
+    var manualConcurrencyNum: Int = 3,
+
     /**
      * 签名过滤器body限制大小
      * */
