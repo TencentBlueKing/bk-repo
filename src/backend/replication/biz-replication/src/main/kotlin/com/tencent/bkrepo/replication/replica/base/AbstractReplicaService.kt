@@ -120,6 +120,7 @@ abstract class AbstractReplicaService(
             replicaByPackage(context, packageSummary, constraint.versions)
         } catch (throwable: Throwable) {
             setErrorStatus(context, throwable)
+            setRunOnceTaskFailedRecordMetrics(context, throwable, packageConstraint = constraint)
         } finally {
             completeRecordDetail(context)
         }
@@ -140,6 +141,7 @@ abstract class AbstractReplicaService(
         } catch (throwable: Throwable) {
             logger.error("同步指定路径失败${constraint.path}", throwable)
             setErrorStatus(context, throwable)
+            setRunOnceTaskFailedRecordMetrics(context, throwable, pathConstraint = constraint)
         } finally {
             completeRecordDetail(context)
         }
@@ -264,6 +266,32 @@ abstract class AbstractReplicaService(
                     record = record
                 )
             }
+        }
+    }
+
+    /**
+     * 记录因需要分发的package或者path本地不存在而导致的异常，分发中的异常已在实际分发处记录
+     */
+    private fun setRunOnceTaskFailedRecordMetrics(
+        context: ReplicaExecutionContext,
+        throwable: Throwable,
+        packageConstraint: PackageConstraint? = null,
+        pathConstraint: PathConstraint? = null
+    ) {
+        with(context) {
+            if (throwable !is IllegalStateException) return
+            val record = ReplicationRecord(
+                packageName = packageConstraint?.packageKey,
+                path = pathConstraint?.path
+            )
+            setRunOnceTaskRecordMetrics(
+                task = replicaContext.task,
+                recordId = detail.recordId,
+                startTime = LocalDateTime.now().toString(),
+                errorReason = throwable.message.orEmpty(),
+                status = status,
+                record = record
+            )
         }
     }
 
