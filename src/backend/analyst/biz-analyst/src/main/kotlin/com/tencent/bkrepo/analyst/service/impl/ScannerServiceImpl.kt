@@ -116,6 +116,10 @@ class ScannerServiceImpl @Autowired constructor(
         return scannerDao.list().flatMap { it.supportFileNameExt }.toSet()
     }
 
+    override fun supportPackageType(): Set<String> {
+        return scannerDao.list().flatMap { it.supportPackageTypes }.toSet()
+    }
+
     override fun list(): List<Scanner> {
         return scannerDao.list().map { convert(it) }
     }

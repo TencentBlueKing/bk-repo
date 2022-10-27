@@ -94,6 +94,12 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success(scannerService.supportFileNameExt())
     }
 
+    @ApiOperation("获取支持扫描的包类型")
+    @GetMapping("/support/package")
+    fun supportPackageType(): Response<Set<String>> {
+        return ResponseBuilder.success(scannerService.supportPackageType())
+    }
+
     @ApiOperation("获取扫描器")
     @GetMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
