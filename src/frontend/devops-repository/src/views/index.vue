@@ -58,6 +58,7 @@
                         project: [
                             'repoList',
                             'repoSearch',
+                            this.userInfo.admin && 'planManage',
                             MODE_CONFIG === 'ci' && 'repoToken',
                             !k8s && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
                             SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员

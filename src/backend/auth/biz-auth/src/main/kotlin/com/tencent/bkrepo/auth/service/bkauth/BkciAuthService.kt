@@ -179,7 +179,7 @@ class BkciAuthService @Autowired constructor(
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateUserResourcePermission,requestUrl: [$url], result : [${apiResponse.content}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
@@ -199,7 +199,7 @@ class BkciAuthService @Autowired constructor(
                     "action=${action.value}&resourceType=${resourceType.value}"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getUserResourceByPermission, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data

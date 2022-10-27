@@ -18,6 +18,7 @@ import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
+import net.javacrumbs.shedlock.core.LockProvider
 
 /**
  * code git仓库解析器
@@ -25,17 +26,20 @@ import java.util.concurrent.TimeUnit
 @Component
 class CodeRepositoryResolver(
     gitProperties: GitProperties,
-    codeRepositoryDataService: CodeRepositoryDataService
+    codeRepositoryDataService: CodeRepositoryDataService,
+    lockProvider: LockProvider
 ) {
 
     init {
         Companion.gitProperties = gitProperties
+        Companion.lockProvider = lockProvider
         dataService = codeRepositoryDataService
     }
 
     companion object {
         private lateinit var gitProperties: GitProperties
         private lateinit var dataService: CodeRepositoryDataService
+        private lateinit var lockProvider: LockProvider
         private val logger = LoggerFactory.getLogger(CodeRepositoryResolver::class.java)
         private val repositoryCache: LoadingCache<RepositoryKey, CodeRepository> by lazy {
             val cacheLoader = object : CacheLoader<RepositoryKey, CodeRepository>() {
@@ -75,7 +79,8 @@ class CodeRepositoryResolver(
                     repoName = repoName,
                     storageCredentials = credentials,
                     dataService = dataService,
-                    blockSize = DEFAULT_BLOCK_SIZE
+                    blockSize = DEFAULT_BLOCK_SIZE,
+                    lockProvider = lockProvider
                 ).setReaderOptions(readerOptions)
                     .setRepositoryDescription(DfsRepositoryDescription(this.toString()))
                     .build().apply {

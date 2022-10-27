@@ -43,12 +43,14 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 仓库服务接口实现类
  */
 @RestController
+@Primary
 class RepositoryController(
     private val repositoryService: RepositoryService
 ) : RepositoryClient {

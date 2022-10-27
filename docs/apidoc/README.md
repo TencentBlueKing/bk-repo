@@ -7,7 +7,6 @@
   - [项目接口](/apidoc/repo/project.md)
   - [仓库接口](/apidoc/repo/repository.md)
   - [代理源接口](/apidoc/repo/proxy-channel.md)
-  - [仓库同步接口](/apidoc/repo/replication.md)
 - **节点**
   - [节点操作接口](/apidoc/node/node.md)
   - [分享链接接口](/apidoc/node/share.md)
@@ -43,9 +42,13 @@
   - [扫描器管理](/apidoc/scanner/scanner.md)
   - [扫描](/apidoc/scanner/scan.md)
   - [扫描报告](/apidoc/scanner/report.md)
-  - [支持的扫描器](/apidoc/scanner/supported-scanner.md)
 - **WebHook**
   - [webhook接口](/apidoc/webhook/webhook.md)
   - [webhook消息](/apidoc/webhook/payload.md)
+- **同步接口**
+  - [集群管理接口](/apidoc/replication/cluster-node.md)
+  - [集群同步接口](/apidoc/replication/replication.md)
+  - [多源分发特性接口](/apidoc/replication/remote-replication.md)
+  - [同步执行日志接口](/apidoc/replication/record.md)
 - **审计日志**
   - [审计日志接口](/apidoc/log/log.md)

@@ -10,20 +10,6 @@ spring:
   servlet:
     multipart:
       max-request-size: 100MB
-
-scanner:
-  # 支持扫描的文件名后缀
-  supportFileNameExt:
-    - apk
-    - ipa
-    - jar
-  # 用于生成扫描报告路径
-  detailReportUrl: http://localhost
-  spring:
-    data:
-      # 用于存储详细扫描报告
-      mongodb:
-        uri: mongoUri
 ```
 
 ## analysis-executor服务
@@ -54,5 +40,4 @@ scanner:
 ### 依赖
 
 - docker daemon
-- 扫描器依赖容器镜像时机器上要有对应的容器镜像，不存在镜像但是可以拉取到时analysis-executor服务会自动拉取
 - 运行服务器最好是8C/16G 以上的配置，因为扫描器目前还比较消耗资源

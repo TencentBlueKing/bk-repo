@@ -35,12 +35,11 @@ class GitContentArtifactInfo(
     projectId: String,
     repoName: String,
     artifactUri: String,
-    var ref: String
+    val commitId: String,
+    val path: String
 ) : GitRepositoryArtifactInfo(projectId, repoName, artifactUri) {
-    var objectId: String ? = null
-    override var path: String? = artifactUri.substring(1)
 
     override fun getArtifactFullPath(): String {
-        return String.format("objects/%s/%s", objectId, path)
+        return String.format("objects/%s/%s", commitId, path)
     }
 }

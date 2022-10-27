@@ -39,18 +39,28 @@ import io.swagger.annotations.ApiModelProperty
 data class RemoteRunOnceTaskCreateRequest(
     @ApiModelProperty("名称", required = true)
     var name: String,
-    @ApiModelProperty("集群地址", required = true)
-    var registry: String,
+    // registry与clusterId是二选一
+    @ApiModelProperty("集群id", required = false)
+    var clusterId: String? = null,
+    @ApiModelProperty("集群地址", required = false)
+    var registry: String? = null,
     @ApiModelProperty("集群认证用户名", required = false)
     var username: String? = null,
     @ApiModelProperty("集群认证密码", required = false)
     var password: String? = null,
+    // 异构集群分发时以下remoteProjectId/remoteRepoName不需要
+    @ApiModelProperty("远程项目")
+    val remoteProjectId: String? = null,
+    @ApiModelProperty("远程仓库")
+    val remoteRepoName: String? = null,
     @ApiModelProperty("包名", required = false)
-    val packageName: String,
+    val packageName: String? = null,
     @ApiModelProperty("包版本", required = false)
-    val versions: List<String>,
+    val versions: List<String>? = null,
     @ApiModelProperty("推送目标版本,只有当包版本数量为1时才可以设置，仅针对镜像类型", required = false)
     val targetVersions: List<String>? = null,
+    @ApiModelProperty("推送路径")
+    val pathConstraints: List<String>? = null,
     @ApiModelProperty("同步类型", required = false)
     val replicaType: ReplicaType = ReplicaType.RUN_ONCE,
     @ApiModelProperty("任务设置", required = false)

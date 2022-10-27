@@ -35,8 +35,10 @@ enum class DownloadInterceptorType {
     METADATA,
     WEB,
     MOBILE,
+    @Deprecated("已合并到IP_SEGMENT")
     OFFICE_NETWORK,
     NODE_FORBID,
-    PACKAGE_FORBID
+    PACKAGE_FORBID,
+    IP_SEGMENT,
     ;
 }

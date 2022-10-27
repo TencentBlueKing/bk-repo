@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.analyst.pojo
 
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_FILE_NAME
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import java.io.File
 
 /**
  * 提交给扫描执行服务的子扫描任务
@@ -84,5 +86,11 @@ data class SubScanTask(
     /**
      * 用于容器化扫描时，状态、结果上报接口鉴权
      */
-    val token: String? = null
-)
+    val token: String? = null,
+    /**
+     * 扫描执行器需要的额外信息，用于扩展
+     */
+    val extra: Map<String, Any>? = null
+) {
+    fun fileName() = extra?.get(TASK_METADATA_FILE_NAME)?.toString() ?: fullPath.substringAfterLast(File.separatorChar)
+}

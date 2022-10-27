@@ -42,6 +42,7 @@ data class RepositoryProperties(
     var deletedNodeReserveDays: Long = 14,
     var defaultStorageCredentialsKey: String? = null,
     var listCountLimit: Long = 100000L,
+    var nodeCreateTimeout: Long = 10_000,
     @NestedConfigurationProperty
     var job: RepoJobProperties = RepoJobProperties(),
     @NestedConfigurationProperty

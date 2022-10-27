@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.pojo.node
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
 /**
  * 节点删除结果
@@ -38,5 +39,7 @@ data class NodeDeleteResult(
     @ApiModelProperty("删除节点数量")
     val deletedNumber: Long,
     @ApiModelProperty("删除节点大小")
-    val deletedSize: Long
+    val deletedSize: Long,
+    @ApiModelProperty("删除时间")
+    val deletedTime: LocalDateTime
 )

@@ -13,23 +13,23 @@
 
 ```json
 {
-	"scanner": "default",
-	"credentialsKeyFiles": [
-		{
-			"credentialsKey": null,
-			"sha256List":["af5d27f8921339531c5315c0928558f0de9ef1d27d07ff0f487602239cf885b5"]
-		}	
-	]
+  "scanner": "default",
+  "credentialsKeyFiles": [
+    {
+      "credentialsKey": null,
+      "sha256List":["af5d27f8921339531c5315c0928558f0de9ef1d27d07ff0f487602239cf885b5"]
+    }	
+  ]
 }
 ```
 
 - 请求字段说明
 
-| 字段                                      | 类型     | 是否必须 | 默认值 | 说明                      | Description     |
-|-----------------------------------------|--------|------|-----|-------------------------|-----------------|
-| scanner                                 | string | 是    | 无   | 要获取的报告使用的扫描器名称          | scanner name    |
-| credentialsKeyFiles.credentialsKeyFiles | string | 否    | 无   | 被扫描文件所在存储,为null时表示在默认存储 | credentials key |
-| credentialsKeyFiles.sha256List          | array  | 是    | 无   | 要查询报告的文件sha256列表        | sha256 list     |
+| 字段                                 | 类型     | 是否必须 | 默认值 | 说明                      | Description     |
+|------------------------------------|--------|------|-----|-------------------------|-----------------|
+| scanner                            | string | 是    | 无   | 要获取的报告使用的扫描器名称          | scanner name    |
+| credentialsKeyFiles.credentialsKey | string | 否    | 无   | 被扫描文件所在存储,为null时表示在默认存储 | credentials key |
+| credentialsKeyFiles.sha256List     | array  | 是    | 无   | 要查询报告的文件sha256列表        | sha256 list     |
 
 - 响应体
 
@@ -45,15 +45,8 @@
             "overview": {
                 "cveLowCount": 5,
                 "cveCriticalCount": 10,
-                "licenseRiskLowCount": 52,
-                "licenseRiskMidCount": 56,
-                "sensitiveUriCount": 2095,
                 "cveHighCount": 44,
-                "sensitiveIpv4Count": 386,
-                "licenseRiskNotAvailableCount": 30,
-                "licenseRiskHighCount": 24,
-                "cveMidCount": 35,
-                "sensitiveEmailCount": 237
+                "cveMediumCount": 35
             }
         }
     ],
@@ -62,28 +55,16 @@
 ```
 - data字段说明
 
-| 字段                           | 类型     | 说明                    | Description                         |
-|------------------------------|--------|-----------------------|-------------------------------------|
-| status                       | string | 文件扫描状态                | file scan status                    |
-| sha256                       | string | 文件sha256              | file sha256                         |
-| scanDate                     | string | 文件扫描时间                | file scan datetime                  |
-| overview                     | object | 文件扫描结果预览，不同扫描器预览结果不一样 | file scan result overview           |
-| cveLowCount                  | number | 低风险漏洞数                | low risk vulnerabilities count      |
-| cveMidCount                  | number | 中风险漏洞数                | mid risk vulnerabilities count      |
-| cveHighCount                 | number | 高风险漏洞数                | high risk vulnerabilities count     |
-| cveCriticalCount             | number | 严重风险漏洞数               | critical risk vulnerabilities count |
-| licenseRiskLowCount          | number | 制品依赖的库使用的低风险证书数量      | low risk license count              |
-| licenseRiskMidCount          | number | 制品依赖的库使用的中风险证书数量      | mid risk license count              |
-| licenseRiskHighCount         | number | 制品依赖的库使用的高风险证书数量      | high risk license count             |
-| licenseRiskNotAvailableCount | number | 知识库未收录的证书数量           | unknown license count               |
-| sensitiveEmailCount          | number | 敏感邮箱地址数               | sensitive email count               |
-| sensitiveIpv4Count           | number | 敏感ipv4地址数             | sensitive ipv4 address count        |
-| sensitiveIpv6Count           | number | 敏感ipv6地址数             | sensitive ipv6 address count        |
-| sensitiveUriCount            | number | 敏感uri数                | sensitive uri count                 |
-| sensitiveSecretCount         | number | 敏感密钥数                 | sensitive secret count              |
-| sensitiveCryptoObjectCount   | number | 敏感密钥文件数               | sensitive crypto count              |
-
-扫描结果预览字段参考[支持的扫描器](./supported-scanner.md)
+| 字段               | 类型     | 说明                    | Description                         |
+|------------------|--------|-----------------------|-------------------------------------|
+| status           | string | 文件扫描状态                | file scan status                    |
+| sha256           | string | 文件sha256              | file sha256                         |
+| scanDate         | string | 文件扫描时间                | file scan datetime                  |
+| overview         | object | 文件扫描结果预览，不同扫描器预览结果不一样 | file scan result overview           |
+| cveLowCount      | number | 低风险漏洞数                | low risk vulnerabilities count      |
+| cveMediumCount   | number | 中风险漏洞数                | mid risk vulnerabilities count      |
+| cveHighCount     | number | 高风险漏洞数                | high risk vulnerabilities count     |
+| cveCriticalCount | number | 严重风险漏洞数               | critical risk vulnerabilities count |
 
 ## 获取扫描报告详情
 
@@ -98,33 +79,30 @@
 {
   "scanner": "default",
   "arguments": {
-    "type": "arrowhead",
-    "vulIds": ["CVE-2022-22965"],
-    "vulnerabilityLevels": ["critical"],
-    "reportType": "CVE_SEC_ITEM",
+    "type": "standard",
+    "reportType": "SECURITY",
     "pageLimit": {
       "pageNumber": 1,
       "pageSize": 10
     }
   }
-
 }
 ```
 
 - 请求字段说明
 
-| 字段                            | 类型     | 是否必须 | 默认值 | 说明                                                                                     | Description     |
-|-------------------------------|--------|------|-----|----------------------------------------------------------------------------------------|-----------------|
-| projectId                     | string | 是    | 无   | 文件所属项目id                                                                               | project id      |
-| repoName                      | string | 是    | 无   | 文件所属仓库名                                                                                | repository name |
-| fullPath                      | string | 是    | 无   | 文件完整路径                                                                                 | file path       |
-| scanner                       | string | 是    | 无   | 扫描器名                                                                                   | scanner name    |
-| arguments.type                | string | 是    | 无   | 参数类型，目前支持arrowhead                                                                     | arg type        |
-| arguments.reportType          | string | 是    | 无   | 扫描报告类型，arrowhead有CHECK_SEC_ITEM,APPLICATION_ITEM,CVE_SEC_ITEM,SENSITIVE_ITEM，4种类型的扫描报告 | report type     |
-| arguments.vulIds              | array  | 否    | 无   | 查询的漏洞列表                                                                                | cve id          |
-| arguments.vulnerabilityLevels | array  | 否    | 无   | 筛选漏洞等级                                                                                 | vul level       |
-| pageLimit.pageNumber          | number | 否    | 1   | 分页页码                                                                                   | page number     |
-| pageLimit.pageSize            | number | 否    | 20  | 分页大小                                                                                   | page size       |
+| 字段                            | 类型     | 是否必须 | 默认值 | 说明                                    | Description     |
+|-------------------------------|--------|------|-----|---------------------------------------|-----------------|
+| projectId                     | string | 是    | 无   | 文件所属项目id                              | project id      |
+| repoName                      | string | 是    | 无   | 文件所属仓库名                               | repository name |
+| fullPath                      | string | 是    | 无   | 文件完整路径                                | file path       |
+| scanner                       | string | 是    | 无   | 扫描器名                                  | scanner name    |
+| arguments.type                | string | 是    | 无   | 参数类型，固定为standard                      | arg type        |
+| arguments.reportType          | string | 是    | 无   | 扫描报告类型，目前支持SECURITY，LICENSE，SENSITIVE | report type     |
+| arguments.vulIds              | array  | 否    | 无   | 查询的漏洞列表                               | cve id          |
+| arguments.vulnerabilityLevels | array  | 否    | 无   | 筛选漏洞等级                                | vul level       |
+| pageLimit.pageNumber          | number | 否    | 1   | 分页页码                                  | page number     |
+| pageLimit.pageSize            | number | 否    | 20  | 分页大小                                  | page size       |
 
 - 响应体
 
@@ -134,61 +112,71 @@
   "message": null,
   "data": {
     "status": "SUCCESS",
-    "sha256": "a5c9f2b2250d8ef4a8d19b153404861d0db41fc24913b20f4fcad59c155bceda",
+    "sha256": "dc435b35b5923eb05afe30a24f04e9a0a5372da8e76f986efe8508b96101c4ff",
     "detail": {
       "pageNumber": 1,
-      "pageSize": 10,
-      "totalRecords": 1,
-      "totalPages": 1,
+      "pageSize": 1,
+      "totalRecords": 4,
+      "totalPages": 4,
       "records": [
         {
-          "path": "/BOOT-INF/lib/spring-aop-5.2.12.RELEASE.jar",
-          "component": "spring-aop",
-          "version": "5.2.12.RELEASE",
-          "versions": [
-            "5.2.12.RELEASE"
+          "vulId": "pcmgr-333682",
+          "vulName": "Apache Log4j安全漏洞",
+          "cveId": "CVE-2021-45046",
+          "path": "/dc435b35b5923eb05afe30a24f04e9a0a5372da8e76f986efe8508b96101c4ff.jar",
+          "pkgName": "org.apache.logging.log4j:log4j-core",
+          "pkgVersions": ["2.9.1"],
+          "fixedVersion": "2.16.0",
+          "des": "ApacheLog4j是美国阿帕奇（Apache）基金会的一款基于Java的开源日志记录工具。Log4j2.16.0之前的版本(不包括2.3.1, 2.12.2)存在安全漏洞，该漏洞源于当日志配置使用非默认模式布局和上下文查找或线程上下文映射模式使用JNDI查找模式制作恶意输入数据，从而导致拒绝服务攻击。",
+          "solution": "目前厂商已发布升级补丁以修复漏洞，补丁获取链接：https://logging.apache.org/log4j/2.x/security.html。",
+          "references": [
+            "http://www.openwall.com/lists/oss-security/2021/12/14/4",
+            "https://logging.apache.org/log4j/2.x/security.html",
+            "https://www.cve.org/CVERecord?id=CVE-2021-44228",
+            "https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00646.html",
+            "https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd",
+            "http://www.openwall.com/lists/oss-security/2021/12/15/3",
+            "https://cert-portal.siemens.com/productcert/pdf/ssa-661247.pdf",
+            "https://www.kb.cert.org/vuls/id/930724",
+            "https://cert-portal.siemens.com/productcert/pdf/ssa-714170.pdf",
+            "https://www.debian.org/security/2021/dsa-5022"
           ],
-          "versionEffected": "",
-          "versionFixed": "",
-          "name": "",
-          "category": "",
-          "categoryType": "",
-          "description": "",
-          "officialSolution": "",
-          "defenseSolution": "",
-          "references": [],
-          "cveYear": "",
-          "pocId": "",
-          "cveId": "CVE-2022-22965",
-          "cnvdId": "",
-          "cnnvdId": "",
-          "cweId": "",
-          "cvssRank": "critical",
-          "cvss": 0,
-          "cvssV3": null,
-          "cvssV2": null
+          "cvss": 9.0,
+          "severity": "CRITICAL"
         }
       ],
-      "page": 1,
-      "count": 1
+      "count": 4,
+      "page": 1
     }
   },
-  "traceId": ""
+  "traceId": null
 }
 ```
 
  data字段说明
 
-| 字段                     | 类型     | 说明       | Description             |
-|------------------------|--------|----------|-------------------------|
-| status                 | string | 文件扫描状态   | file scan status        |
-| sha256                 | string | 文件sha256 | file sha256             |
-| detail.pageNumber      | number | 页码       | page number             |
-| detail.pageSize        | number | 页大小      | page size               |
-| detail.totalRecords    | number | 总记录数量    | total records           |
-| detail.totalPage       | number | 总页数      | total page              |
-
-扫描结果详情detail字段参考[支持的扫描器](./supported-scanner.md)
+| 字段              | 类型     | 说明                               | Description               |
+|-----------------|--------|----------------------------------|---------------------------|
+| status          | string | 文件扫描状态                           | file scan status          |
+| sha256          | string | 文件sha256                         | file sha256               |
+| pageNumber      | number | 页码                               | page number               |
+| pageSize        | number | 页大小                              | page size                 |
+| totalRecords    | number | 总记录数量                            | total records             |
+| totalPage       | number | 总页数                              | total page                |
+| vulId           | string | 漏洞id                             | vul id                    |
+| vulName         | string | 漏洞名                              | vul Name                  |
+| cveId           | string | 漏洞cve id                         | total page                |
+| path            | string | 当被扫描的制品是压缩包时，表示存在漏洞的文件的在被扫描包中的路径 | path                      |
+| pkgName         | string | 存在漏洞的组件名                         | package name              |
+| pkgVersions     | array  | 存在漏洞的组件版本                        | package versions          |
+| fixedVersion    | string | 修复版本                             | fixed version             |
+| effectedVersion | string | 影响版本                             | effected version          |
+| des             | string | 漏洞描述                             | vulnerability description |
+| solution        | string | 漏洞解决方案                           | solution                  |
+| references      | array  | 漏洞相关引用                           | references                |
+| cvss            | number | 漏洞cvss                           | cvss                      |
+| severity        | string | 漏洞评级,取值CRITICAL,HIGH,MEDIUM,LOW  | severity                  |
+| licenseName     | string | 许可证名                             | license name              |
 
 ## 获取子任务扫描报告详情
 

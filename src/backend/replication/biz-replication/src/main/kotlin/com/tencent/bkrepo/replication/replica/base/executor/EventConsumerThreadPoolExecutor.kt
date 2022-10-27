@@ -46,8 +46,9 @@ object EventConsumerThreadPoolExecutor {
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
         return ThreadPoolExecutor(
-            100, 200, 60, TimeUnit.SECONDS,
+            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
             ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }

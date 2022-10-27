@@ -23,6 +23,9 @@
         </el-dropdown-menu>
       </el-dropdown>
     </div>
+    <div class="right-menu" style="margin-right: 10px">
+      <span>{{ userName }}</span>
+    </div>
   </div>
 </template>
 
@@ -37,6 +40,11 @@ export default {
     Breadcrumb,
     Hamburger
   },
+  data() {
+    return {
+      userName: localStorage.getItem('userName')
+    }
+  },
   computed: {
     ...mapGetters([
       'sidebar',
@@ -48,6 +56,7 @@ export default {
       this.$store.dispatch('app/toggleSideBar')
     },
     async logout() {
+      localStorage.removeItem('userName')
       await this.$store.dispatch('user/logout')
       toLoginPage(this.$route.fullPath)
     }

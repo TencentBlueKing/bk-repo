@@ -1,18 +1,20 @@
 package com.tencent.bkrepo.git.interceptor
 
-import com.tencent.bkrepo.git.context.DfsDataReadersHolder
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.git.context.DfsDataReaders
-import java.lang.Exception
+import com.tencent.bkrepo.git.context.DfsDataReadersHolder
+import com.tencent.bkrepo.git.context.UserHolder
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import org.springframework.web.servlet.HandlerInterceptor
 
 /**
- * DfsDataReaders清理拦截器，负责DfsDataReaders的清理
+ * 上下文拦截器,设置请求上下文
  * */
-class DfsDataReadersCleanInterceptor : HandlerInterceptor {
+class ContextSettingInterceptor : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         DfsDataReadersHolder.setDfsReader(DfsDataReaders())
+        UserHolder.setUser(SecurityUtils.getUserId())
         return true
     }
 
@@ -23,5 +25,6 @@ class DfsDataReadersCleanInterceptor : HandlerInterceptor {
         ex: Exception?
     ) {
         DfsDataReadersHolder.reset()
+        UserHolder.reset()
     }
 }

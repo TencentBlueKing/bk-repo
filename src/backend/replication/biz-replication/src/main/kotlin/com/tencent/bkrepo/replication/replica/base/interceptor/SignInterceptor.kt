@@ -23,7 +23,7 @@ class SignInterceptor(private val clusterInfo: ClusterInfo) : Interceptor {
         with(clusterInfo) {
             val request = chain.request()
             val startTime = System.currentTimeMillis() / HttpSigner.MILLIS_PER_SECOND
-            val endTime = startTime + HttpSigner.REQUEST_TTL
+            var endTime = startTime + HttpSigner.REQUEST_TTL
             val urlBuilder = request.url().newBuilder()
             val body = request.body()
             /*
@@ -35,6 +35,8 @@ class SignInterceptor(private val clusterInfo: ClusterInfo) : Interceptor {
                 body.writeTo(buffer)
                 buffer.readByteArray()
             } else {
+                // 文件请求TTL不限制
+                endTime = startTime + Int.MAX_VALUE
                 StringPool.EMPTY.toByteArray()
             }
             // 添加签名必要参数

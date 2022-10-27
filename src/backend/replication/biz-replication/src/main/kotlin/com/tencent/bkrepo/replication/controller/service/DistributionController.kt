@@ -25,17 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-plugins {
-    application
-}
+package com.tencent.bkrepo.replication.controller.service
 
-application {
-    mainClass.set("com.tencent.bkrepo.scanner.image.ScanRunner")
-}
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.DistributionClient
+import com.tencent.bkrepo.replication.service.RemoteNodeService
+import org.springframework.web.bind.annotation.RestController
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":analysis-executor:biz-analysis-executor"))
-    implementation("com.squareup.okhttp3:okhttp")
-    implementation("commons-io:commons-io")
+@RestController
+class DistributionController(
+    private val remoteNodeService: RemoteNodeService
+) : DistributionClient {
+
+    /**
+     * 删除已完成的一次性执行任务
+     */
+    override fun deleteRunonceTask(taskName: String): Response<Void> {
+        remoteNodeService.deleteRunOnceTaskByTaskName(taskName)
+        return ResponseBuilder.success()
+    }
 }

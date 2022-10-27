@@ -319,7 +319,8 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun pull(): SubScanTask? {
         return pullSubScanTask()?.let {
-            return Converter.convert(it, scannerService.get(it.scanner))
+            val parentTask = scanTaskDao.findById(it.parentScanTaskId)!!
+            return Converter.convert(it, scannerService.get(it.scanner), parentTask.metadata)
         }
     }
 

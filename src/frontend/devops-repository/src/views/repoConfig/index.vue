@@ -19,13 +19,13 @@
                         </card-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'generic'">
-                        <bk-form-item v-for="type in ['mobile', 'web', 'office_network']" :key="type"
+                        <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
                             <bk-radio-group v-model="repoBaseInfo[type].enable">
                                 <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                                 <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                             </bk-radio-group>
-                            <template v-if="repoBaseInfo[type].enable && type !== 'office_network'">
+                            <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
                                 <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
                                     :property="`${type}.filename`" required error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
@@ -35,6 +35,19 @@
                                     :property="`${type}.metadata`" required error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
                                     <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
+                                </bk-form-item>
+                            </template>
+                            <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
+                                <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
+                                    :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
+                                    <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
+                                    <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
+                                    <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('whiteUser')" :label-width="150"
+                                    :property="`${type}.whitelistUser`" error-display-type="normal">
+                                    <bk-input v-if="isCommunity" class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
+                                    <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="w250" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
                                 </bk-form-item>
                             </template>
                         </bk-form-item>
@@ -122,6 +135,21 @@
                     trigger: 'blur'
                 }
             ]
+            const ipSegmentRule = [
+                {
+                    required: true,
+                    message: this.$t('pleaseIpSegment'),
+                    trigger: 'blur'
+                },
+                {
+                    validator: function (val) {
+                        const ipList = val.split(',')
+                        return ipList.every(ip => /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]|[1-2]\d|3[0-2])?/.test(ip))
+                    },
+                    message: this.$t('ipSegmentRule'),
+                    trigger: 'blur'
+                }
+            ]
             return {
                 tabName: 'baseInfo',
                 isLoading: false,
@@ -145,34 +173,16 @@
                         filename: '',
                         metadata: ''
                     },
-                    office_network: {
-                        enable: false
+                    ip_segment: {
+                        enable: false,
+                        officeNetwork: false,
+                        ipSegment: '',
+                        whitelistUser: ''
                     }
                 },
-                rules: {
-                    repodataDepth: [
-                        {
-                            regex: /^(0|[1-9][0-9]*)$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    groupXmlSet: [
-                        {
-                            validator: arr => {
-                                return arr.every(v => {
-                                    return /\.xml$/.test(v)
-                                })
-                            },
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
-                            trigger: 'change'
-                        }
-                    ],
-                    'mobile.filename': filenameRule,
-                    'mobile.metadata': metadataRule,
-                    'web.filename': filenameRule,
-                    'web.metadata': metadataRule
-                }
+                filenameRule,
+                metadataRule,
+                ipSegmentRule
             }
         },
         computed: {
@@ -199,6 +209,12 @@
                 }
                 return `${location.origin}/${repoType}/${this.projectId}/${name}/`
             },
+            isCommunity () {
+                return window.RELEASE_MODE === 'community'
+            },
+            genericInterceptorsList () {
+                return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
+            },
             available: {
                 get () {
                     if (this.repoBaseInfo.public) return 'public'
@@ -216,6 +232,33 @@
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
                     { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
                 ]
+            },
+            rules () {
+                return {
+                    repodataDepth: [
+                        {
+                            regex: /^(0|[1-9][0-9]*)$/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    groupXmlSet: [
+                        {
+                            validator: arr => {
+                                return arr.every(v => {
+                                    return /\.xml$/.test(v)
+                                })
+                            },
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            trigger: 'change'
+                        }
+                    ],
+                    'mobile.filename': this.filenameRule,
+                    'mobile.metadata': this.metadataRule,
+                    'web.filename': this.filenameRule,
+                    'web.metadata': this.metadataRule,
+                    'ip_segment.ipSegment': this.repoBaseInfo.ip_segment.officeNetwork ? {} : this.ipSegmentRule
+                }
             }
         },
         watch: {
@@ -254,9 +297,21 @@
                     const { interceptors } = res.configuration.settings
                     if (interceptors instanceof Array) {
                         interceptors.forEach(i => {
-                            this.repoBaseInfo[i.type.toLowerCase()] = {
-                                enable: true,
-                                ...i.rules
+                            if (i.type === 'IP_SEGMENT') {
+                                const curRules = {
+                                    ipSegment: i.rules.ipSegment.join(','),
+                                    whitelistUser: this.isCommunity ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
+                                    officeNetwork: i.rules.officeNetwork
+                                }
+                                this.repoBaseInfo[i.type.toLowerCase()] = {
+                                    enable: true,
+                                    ...curRules
+                                }
+                            } else {
+                                this.repoBaseInfo[i.type.toLowerCase()] = {
+                                    enable: true,
+                                    ...i.rules
+                                }
                             }
                         })
                     }
@@ -268,17 +323,21 @@
                 ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
                 const interceptors = []
                 if (this.repoType === 'generic') {
-                    ['mobile', 'web', 'office_network'].forEach(type => {
-                        const { enable, filename, metadata } = this.repoBaseInfo[type]
-                        if (type === 'office_network') {
+                    ['mobile', 'web', 'ip_segment'].forEach(type => {
+                        const { enable, filename, metadata, ipSegment, whitelistUser, officeNetwork } = this.repoBaseInfo[type]
+                        if (['mobile', 'web'].includes(type)) {
                             enable && interceptors.push({
                                 type: type.toUpperCase(),
-                                rules: { enable }
+                                rules: { filename, metadata }
                             })
                         } else {
                             enable && interceptors.push({
                                 type: type.toUpperCase(),
-                                rules: { filename, metadata }
+                                rules: {
+                                    ipSegment: ipSegment.split(','),
+                                    whitelistUser: this.isCommunity ? whitelistUser.split(',') : whitelistUser,
+                                    officeNetwork
+                                }
                             })
                         }
                     })

@@ -39,9 +39,13 @@
   - [扫描器管理](/apidoc/scanner/scanner.md)
   - [扫描](/apidoc/scanner/scan.md)
   - [扫描报告](/apidoc/scanner/report.md)
-  - [支持的扫描器](/apidoc/scanner/supported-scanner.md)
 - **WebHook**
   - [webhook接口](/apidoc/webhook/webhook.md)
   - [webhook消息](/apidoc/webhook/payload.md)
+- **同步接口**
+  - [集群管理接口](/apidoc/replication/cluster-node.md)
+  - [集群同步接口](/apidoc/replication/replication.md)
+  - [分发接口](/apidoc/replication/remote-replication.md)
+  - [同步执行日志接口](/apidoc/replication/record.md)
 - **审计日志**
   - [审计日志接口](/apidoc/log/log.md)

@@ -28,18 +28,16 @@
 package com.tencent.bkrepo.analysis.executor
 
 import com.sun.management.OperatingSystemMXBean
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import com.tencent.bkrepo.analyst.api.ScanClient
+import com.tencent.bkrepo.analysis.executor.component.FileLoader
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
-import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.analysis.executor.util.Converter
+import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
@@ -52,9 +50,8 @@ import java.util.concurrent.ConcurrentHashMap
 @Component
 class ExecutorScheduler @Autowired constructor(
     private val scanExecutorFactory: ScanExecutorFactory,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val fileLoader: FileLoader,
     private val scanClient: ScanClient,
-    private val storageService: StorageService,
     private val executor: ThreadPoolTaskExecutor,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) {
@@ -122,37 +119,16 @@ class ExecutorScheduler @Autowired constructor(
         return executingCount < scannerExecutorProperties.maxTaskCount && memAvailable && diskAvailable
     }
 
-    private fun doScan(subScanTask: SubScanTask) {
-        with(subScanTask) {
+    @Suppress("TooGenericExceptionCaught")
+    private fun doScan(subtask: SubScanTask) {
+        with(subtask) {
             val startTimestamp = System.currentTimeMillis()
-
-            // 1. 加载文件
-            logger.info("start load file[$sha256]")
-            // 文件大小超过限制直接返回
-            val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
-            if (packageSize > fileSizeLimit) {
-                logger.warn(
-                    "file too large, sha256[$sha256, credentials: [$credentialsKey], subtaskId[$taskId]" +
-                        ", size[$packageSize], limit[$fileSizeLimit]"
-                )
-                report(taskId)
-                return
-            }
-            val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
-            val artifactInputStream = storageService.load(sha256, Range.full(size), storageCredentials)
-            // 加载文件失败，直接返回
-            if (artifactInputStream == null) {
-                logger.warn("Load storage file failed: sha256[$sha256, credentials: [$credentialsKey]")
-                report(taskId)
-                return
-            }
-            logger.info("load file[$sha256] success, elapse ${System.currentTimeMillis() - startTimestamp}")
-
-            // 2. 执行扫描任务
+            // 执行扫描任务
             val result = try {
+                val (file, sha256) = loadFile(subtask)
                 logger.info("start to scan file[$sha256]")
-                val executorTask = convert(subScanTask, artifactInputStream, storageCredentials)
-                val executor = scanExecutorFactory.get(subScanTask.scanner.type)
+                val executorTask = Converter.convert(subtask, file, sha256)
+                val executor = scanExecutorFactory.get(subtask.scanner.type)
                 executor.scan(executorTask)
             } catch (e: Exception) {
                 logger.error(
@@ -163,7 +139,7 @@ class ExecutorScheduler @Autowired constructor(
                 null
             }
 
-            // 3. 上报扫描结果
+            // 上报扫描结果
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
             logger.info(
@@ -174,24 +150,20 @@ class ExecutorScheduler @Autowired constructor(
         }
     }
 
-    private fun convert(
-        subScanTask: SubScanTask,
-        artifactInputStream: ArtifactInputStream,
-        storageCredentials: StorageCredentials?
-    ): ScanExecutorTask {
-        with(subScanTask) {
-            return ScanExecutorTask(
-                taskId = taskId,
-                parentTaskId = parentScanTaskId,
-                inputStream = artifactInputStream,
-                scanner = scanner,
-                projectId = projectId,
-                repoName = repoName,
-                repoType = repoType,
-                fullPath = fullPath,
-                sha256 = sha256,
-                storageCredentials = storageCredentials
-            )
+    private fun loadFile(subtask: SubScanTask): Pair<File, String> {
+        with(subtask) {
+            // 1. 加载文件
+            logger.info("start load file[$sha256]")
+            // 判断文件大小是否超过限制
+            val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
+            if (packageSize > fileSizeLimit) {
+                throw SystemErrorException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    "file too large, sha256[$sha256, credentials: [$credentialsKey], subtaskId[$taskId]" +
+                        ", size[$packageSize], limit[$fileSizeLimit]"
+                )
+            }
+            return fileLoader.load(subtask)
         }
     }
 
