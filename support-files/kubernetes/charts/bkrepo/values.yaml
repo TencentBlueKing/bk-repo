@@ -116,7 +116,7 @@ init:
   ## curl镜像地址
   curl:
     image:
-      registry: hub.bktencent.com
+      registry: mirrors.tencent.com
       repository: curlimages/curl
       tag: 7.72.0
       pullPolicy: IfNotPresent
@@ -124,7 +124,7 @@ init:
   mongodb:
     enabled: true
     image:
-      registry: mirrors.tencent.com
+      registry: registry.hub.docker.com
       repository: bkrepo/bkrepo-init
       tag: 1.1.0
       pullPolicy: IfNotPresent
@@ -245,7 +245,7 @@ gateway:
     nodePort: 30025
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-gateway
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -286,7 +286,7 @@ repository:
     deletedNodeReserveDays: 15
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-repository
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -348,7 +348,7 @@ auth:
     secretKey: ""
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-auth
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -388,7 +388,7 @@ generic:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-generic
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -428,7 +428,7 @@ replication:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-replication
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -468,7 +468,7 @@ opdata:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-opdata
     tag: 1.1.3
     pullPolicy: IfNotPresent
@@ -508,7 +508,7 @@ docker:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-oci
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -548,7 +548,7 @@ npm:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-npm
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -588,7 +588,7 @@ pypi:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-pypi
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -628,7 +628,7 @@ helm:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
+    registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-helm
     tag: 1.1.0
     pullPolicy: IfNotPresent
@@ -667,8 +667,8 @@ job:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com
-    repository: bkrepo/bkrepo-helm
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-job
     tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
