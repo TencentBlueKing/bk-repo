@@ -246,6 +246,15 @@ export default {
             }
         )
     },
+    // 获取系统支持的所有文件名后缀列表
+    refreshSupportFileNameExtList ({ commit }) {
+        Vue.prototype.$ajax.get('/analyst/api/scanners/support/ext').then(fileNameExtList => {
+            commit('SET_SCANNER_SUPPORT_FILE_NAME_EXT_LIST', fileNameExtList)
+        }).catch(e => {
+            console.log('get support file name extension failed')
+            console.error(e)
+        })
+    },
     // 获取质量规则
     getQualityRule (_, { type, id }) {
         return Vue.prototype.$ajax.get(`/analyst/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`)

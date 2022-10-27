@@ -24,6 +24,7 @@ const storeObject = {
         ],
         projectList: [],
         repoListAll: [],
+        scannerSupportFileNameExt: [],
         userList: {
             anonymous: {
                 id: 'anonymous',
@@ -111,6 +112,9 @@ const storeObject = {
         },
         SHOW_LOGIN_DIALOG (state, show = true) {
             state.showLoginDialog = show
+        },
+        SET_SCANNER_SUPPORT_FILE_NAME_EXT_LIST (state, data) {
+            state.scannerSupportFileNameExt = data
         }
     },
     actions
