@@ -1,20 +1,26 @@
 # Where component owners are known, add them here.
-/CODEOWNERS             @owenlxu @felixncheng
+/CODEOWNERS             @owenlxu
 /docs                   @owenlxu
 /scripts                @owenlxu
 /support-files          @owenlxu
-/support-files          @owenlxu
 /src/gateway            @owenlxu
 /src/backend/auth       @owenlxu
-/src/backend/oci        @zacyanliu
-/src/backend/rds        @zacyanliu
-/src/backend/helm       @zacyanliu
-/src/backend/rpm        @zacyanliu
-/src/backend/maven      @zacyanliu
-/src/backend/generic    @felixncheng
-/src/backend/common     @felixncheng
-/src/backend/repository @felixncheng
+/src/backend/oci        @zacYL
+/src/backend/rds        @zacYL
+/src/backend/helm       @zacYL
+/src/backend/rpm        @zacYL
+/src/backend/maven      @zacYL
+/src/backend/replication      @zacYL @felixncheng
+/src/backend/boot-assembly    @felixncheng
+/src/backend/buildSrc   @felixncheng
+/src/backend/generic    @felixncheng @yaoxuwan
+/src/backend/common     @felixncheng @yaoxuwan @cnlkl
+/src/backend/repository @felixncheng @yaoxuwan
 /src/backend/npm        @felixncheng
 /src/backend/webhook    @yaoxuwan
-/src/backend/scanner    @kunlongli
-/src/backend/opdata     @kunlongli
+/src/backend/pypi       @yaoxuwan
+/src/backend/composer       @yaoxuwan
+/src/backend/analysis-executor    @cnlkl
+/src/backend/analysis   @cnlkl
+/src/backend/opdata     @cnlkl
+/src/frontend           @cnlkl

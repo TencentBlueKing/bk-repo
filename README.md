@@ -43,7 +43,7 @@ bk-repo是一个基于微服务架构设计的制品管理平台
 * [使用Helm部署BKREPO到K8S环境](support-files/kubernetes/README.md)
 
 ## Support
-1. [GitHub讨论区](https://github.com/Tencent/bk-ci/discussions)
+1. [GitHub讨论区](https://github.com/TencentBlueKing/bk-repo/discussions)
 2. QQ群：495299374
 
 ## BlueKing Community
@@ -52,5 +52,15 @@ bk-repo是一个基于微服务架构设计的制品管理平台
 - [BK-JOB](https://github.com/Tencent/bk-job)：蓝鲸作业平台(Job)是一套运维脚本管理系统，具备海量任务并发处理能力。
 - [BK-PaaS](https://github.com/Tencent/bk-PaaS)：蓝鲸PaaS平台是一个开放式的开发平台，让开发者可以方便快捷地创建、开发、部署和管理SaaS应用。
 - [BK-SOPS](https://github.com/Tencent/bk-sops)：蓝鲸标准运维（SOPS）是通过可视化的图形界面进行任务流程编排和执行的系统，是蓝鲸体系中一款轻量级的调度编排类SaaS产品。
+
+## Contributing
+- 关于 bk-repo 分支管理、issue 以及 pr 规范，请阅读 [Contributing](CONTRIBUTING.md)
+- [腾讯开源激励计划](https://opensource.tencent.com/contribution) 鼓励开发者的参与和贡献，期待你的加入
+
+
+## License
+BK-CI/BK-REPO 是基于 MIT 协议， 详细请参考 [LICENSE](LICENSE.txt)
+
+我们承诺未来不会更改适用于交付给任何人的当前项目版本的开源许可证（MIT 协议）。
 
 
