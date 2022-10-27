@@ -132,12 +132,6 @@ export const scannerTypeEnum = {
  */
 export const k8s = process.env.VUE_APP_K8S === 'k8s'
 
-export const genericScanFileTypes = [
-    'zip', 'tar', 'tgz', 'jar', 'war', 'exe',
-    'apk', 'ear', 'sar', 'nupkg', 'gz', 'bz2',
-    'tbz2', 'rpm', 'ipa', 'aab'
-]
-
 // 扫描方案执行状态
 export const scanStatusEnum = {
     INIT: '等待扫描',
