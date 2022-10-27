@@ -71,7 +71,6 @@
         label="创建时间"
         width="250"
         prop="createdDate"
-        sortable
       >
         <template slot-scope="scope">
           <span>{{ formatNormalDate(scope.row.createdDate) }}</span>
@@ -88,8 +87,7 @@
       <el-table-column
         label="最后修改时间"
         width="250"
-        prop="createdDate"
-        sortable
+        prop="lastModifiedDate"
       >
         <template slot-scope="scope">
           <span>{{ formatNormalDate(scope.row.lastModifiedDate) }}</span>
@@ -177,9 +175,10 @@ export default {
       this.accounts.splice(this.accounts.length, 0, credential)
     },
     handleUpdated(credential) {
-      this.accounts.splice(this.updatingIndex, 1, credential)
-      keyLists(this.updatingAccount.appId).then(res => {
-        this.accounts[this.updatingIndex].credentials = res.data
+      list().then(res => {
+        this.accounts = res.data
+        this.defaultAccount = res.data
+        this.$forceUpdate()
       })
     },
     handleKeyCreated() {
