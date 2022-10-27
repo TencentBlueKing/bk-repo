@@ -48,7 +48,7 @@ class OperateLogAspect(
     private val operateLogService: OperateLogService
 ) {
     @Pointcut("execution(* com.tencent.bkrepo..controller..*.*(..))")
-    fun operateLog() {}
+    fun operateLog() { return }
 
     @Around("operateLog()")
     fun doAfterReturning(joinPoint: ProceedingJoinPoint): Any? {
