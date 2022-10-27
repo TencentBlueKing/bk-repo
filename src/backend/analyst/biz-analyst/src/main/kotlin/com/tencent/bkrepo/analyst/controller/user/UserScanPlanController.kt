@@ -119,7 +119,7 @@ class UserScanPlanController(
         @ApiParam(value = "projectId", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "方案类型(DEPENDENT/MOBILE)")
+        @ApiParam(value = "方案类型")
         @RequestParam
         type: String?,
         @ApiParam(value = "方案名")

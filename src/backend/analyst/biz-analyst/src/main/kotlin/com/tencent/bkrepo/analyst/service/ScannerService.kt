@@ -71,7 +71,7 @@ interface ScannerService {
      * @param packageType 包类型
      * @param scanType 扫描类型
      */
-    fun find(packageType: String, scanType: String): List<Scanner>
+    fun find(packageType: String?, scanType: String?): List<Scanner>
 
     /**
      * 获取支持扫描的文件名后缀
