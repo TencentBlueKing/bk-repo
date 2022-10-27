@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import org.springframework.core.MethodParameter
 import org.springframework.web.bind.support.WebDataBinderFactory
@@ -65,6 +66,8 @@ class ArtifactFileMapMethodArgumentResolver : HandlerMethodArgumentResolver {
         if (request is MultipartHttpServletRequest) {
             try {
                 request.fileMap.forEach { (key, value) -> artifactFileMap[key] = resolveMultipartFile(value) }
+            } catch (e: RepoNotFoundException) {
+                throw e
             } catch (e: Exception) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "multipart file")
             }

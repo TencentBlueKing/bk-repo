@@ -36,10 +36,12 @@ object CharPool {
     const val COMMA = ','
     const val SLASH = '/'
     const val BACKSLASH = '\\'
+    const val HASH_TAG = '#'
     const val COLON = ':'
     const val DASH = '-'
     const val AT = '@'
     const val QUESTION = '?'
     const val AND = "&"
     const val EQUAL = "="
+    const val LEFT_SQUARE_BRACKET = '['
 }
