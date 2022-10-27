@@ -36,6 +36,7 @@ import com.tencent.bkrepo.replication.constant.NAME
 import com.tencent.bkrepo.replication.constant.PIPELINE_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationContent
+import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationTaskDetailMetricsRecord
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationTaskMetricsRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -121,12 +122,35 @@ object ReplicationMetricsRecordUtil {
         }
     }
 
-    fun ReplicationTaskMetricsRecord.toJson(): String {
-        return this.toJsonString().replace(System.lineSeparator(), "")
+    fun convertToReplicationRecordDetailMetricsRecord(
+        task: ReplicaTaskInfo,
+        recordId: String,
+        packageName: String? = null,
+        version: String? = null,
+        path: String? = null,
+        startTime: String,
+        status: ExecutionStatus,
+        errorReason: String? = null
+    ): ReplicationRecordDetailMetricsRecord {
+        val map = extractName(task.name)
+        return ReplicationRecordDetailMetricsRecord(
+            taskKey = task.key,
+            projectId = task.projectId,
+            repoName = map[REPO_NAME].orEmpty(),
+            recordId = recordId,
+            errorReason = errorReason.orEmpty(),
+            sourceType = task.description.orEmpty(),
+            packageName = packageName.orEmpty(),
+            version = version.orEmpty(),
+            path = path.orEmpty(),
+            status = status.name,
+            startTime = startTime,
+            endTime = LocalDateTime.now().toString()
+        )
     }
 
-    fun ReplicationTaskDetailMetricsRecord.toJson(): String {
-        return this.toJsonString().replace(System.lineSeparator(), "")
+    fun toJson(any: Any): String {
+        return any.toJsonString().replace(System.lineSeparator(), "")
     }
 
     private fun getRemoteProjectIdAndRepo(taskDetail: ReplicaTaskDetail): Pair<String, String> {

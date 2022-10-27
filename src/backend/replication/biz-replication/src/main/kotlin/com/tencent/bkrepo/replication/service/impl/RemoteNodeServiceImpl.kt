@@ -339,13 +339,13 @@ class RemoteNodeServiceImpl(
                 }
             }
             logger.info(
-                convertToReplicationTaskMetricsRecord(
+                toJson(convertToReplicationTaskMetricsRecord(
                     projectId = projectId,
                     repoName = repoName,
                     repoType = repositoryDetail.type.name,
                     request = request,
                     replicaTaskInfo = task!!
-                ).toJson()
+                ))
             )
             return task!!
         }

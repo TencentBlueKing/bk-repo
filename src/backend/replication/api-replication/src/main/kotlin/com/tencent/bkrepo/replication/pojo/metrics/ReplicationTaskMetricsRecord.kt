@@ -30,7 +30,7 @@ package com.tencent.bkrepo.replication.pojo.metrics
 import com.tencent.bkrepo.common.api.constant.StringPool
 
 /**
- * remote类型分发任务指标
+ * 一次性分发任务指标
  */
 data class ReplicationTaskMetricsRecord(
     var tag: String = "CreateTaskTag",
