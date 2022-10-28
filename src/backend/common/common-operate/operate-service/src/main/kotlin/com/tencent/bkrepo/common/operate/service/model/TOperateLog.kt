@@ -48,7 +48,7 @@ data class TOperateLog(
     var id: String? = null,
     @ShardingKey
     var createdDate: LocalDateTime = LocalDateTime.now(),
-    var type: EventType,
+    var type: String,
     var projectId: String?,
     var repoName: String?,
     var resourceKey: String,

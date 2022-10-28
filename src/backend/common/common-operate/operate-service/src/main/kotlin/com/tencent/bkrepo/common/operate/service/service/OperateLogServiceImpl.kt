@@ -75,7 +75,7 @@ open class OperateLogServiceImpl(
             return
         }
         val log = TOperateLog(
-            type = event.type,
+            type = event.type.name,
             resourceKey = event.resourceKey,
             projectId = event.projectId,
             repoName = event.repoName,
@@ -89,7 +89,7 @@ open class OperateLogServiceImpl(
     @Async
     override fun saveEventAsync(event: OperateEvent) {
         val log = TOperateLog(
-            type = EventType.valueOf(event.type),
+            type = event.type,
             resourceKey = event.resourceKey,
             projectId = event.projectId,
             repoName = event.repoName,
@@ -109,7 +109,7 @@ open class OperateLogServiceImpl(
             }
             logs.add(
                 TOperateLog(
-                    type = it.type,
+                    type = it.type.name,
                     resourceKey = it.resourceKey,
                     projectId = it.projectId,
                     repoName = it.repoName,
@@ -284,7 +284,7 @@ open class OperateLogServiceImpl(
         }
         return OperateLogResponse(
             createdDate = tOperateLog.createdDate,
-            operate = tOperateLog.type.nick,
+            operate = tOperateLog.type,
             userId = tOperateLog.userId,
             clientAddress = tOperateLog.clientAddress,
             result = true,

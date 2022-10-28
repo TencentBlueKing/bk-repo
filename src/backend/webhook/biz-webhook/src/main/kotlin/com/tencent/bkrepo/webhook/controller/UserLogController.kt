@@ -29,6 +29,7 @@ package com.tencent.bkrepo.webhook.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.webhook.pojo.ListWebHookLogOption
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
@@ -49,6 +50,7 @@ class UserLogController(
 
     @ApiOperation("查询WebHook日志列表")
     @GetMapping("/list/{webHookId}")
+    @OperateLog(name = "WEBHOOK_LOG_LIST")
     fun listWebHookLog(
         @PathVariable webHookId: String,
         option: ListWebHookLogOption

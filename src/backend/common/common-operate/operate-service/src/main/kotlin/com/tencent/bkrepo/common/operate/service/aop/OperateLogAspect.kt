@@ -27,16 +27,19 @@
 
 package com.tencent.bkrepo.common.operate.service.aop
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OperateEvent
+import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
-import org.aspectj.lang.annotation.Pointcut
+import org.aspectj.lang.reflect.MethodSignature
+import org.springframework.core.DefaultParameterNameDiscoverer
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
@@ -47,51 +50,47 @@ import javax.servlet.http.HttpServletRequest
 class OperateLogAspect(
     private val operateLogService: OperateLogService
 ) {
-    @Pointcut("execution(* com.tencent.bkrepo..controller..*.*(..))")
-    fun operateLog() { return }
-
-    @Around("operateLog()")
-    fun doAfterReturning(joinPoint: ProceedingJoinPoint): Any? {
+    @Around(
+        "@within(com.tencent.bkrepo.common.operate.service.annotation.OperateLog) " +
+            "|| @annotation(com.tencent.bkrepo.common.operate.service.annotation.OperateLog)"
+    )
+    @Throws(Throwable::class)
+    fun around(joinPoint: ProceedingJoinPoint): Any? {
         var obj: Any? = null
         val servletRequestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         val httpServletRequest: HttpServletRequest = servletRequestAttributes.request
-        val userName = httpServletRequest.getAttribute("userId")
+        val signature = joinPoint.signature as MethodSignature
+        val method = signature.method
+        val discoverer = DefaultParameterNameDiscoverer()
+        val parameterNames = discoverer.getParameterNames(method)
+        val annotation = method.getAnnotation(OperateLog::class.java)
+        val userId = httpServletRequest.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
         val map = HashMap<String, Any>()
-        map.put("requestParam", joinPoint.args)
+        if (parameterNames != null && parameterNames.isNotEmpty()) {
+            val paramMap = HashMap<String, Any>()
+            for (i in parameterNames.indices) {
+                paramMap[parameterNames.get(i)] = joinPoint.args.get(i)
+            }
+            map["requestParam"] = paramMap
+        } else {
+            map["requestParam"] = joinPoint.args
+        }
         try {
             obj = joinPoint.proceed()
-            map.put("messageCode", CommonMessageCode.SUCCESS.getCode())
-        } catch (throwable: Throwable) {
-            var code = (throwable as ErrorCodeException).messageCode.getCode()
-            map.put("messageCode", code)
+            map["messageCode"] = CommonMessageCode.SUCCESS.getCode()
+        } catch (errorCodeException: ErrorCodeException) {
+            map["messageCode"] = errorCodeException.messageCode.getCode()
         }
-        for (event in EventType.values()) {
-            if (checkURI(httpServletRequest.requestURI, event.requestURI) &&
-                event.method.equals(httpServletRequest.method)) {
-                val eventDetail = OperateEvent(
-                    type = event.name,
+        val eventDetail = OperateEvent(
+                    type = annotation.name,
                     projectId = "",
                     repoName = "",
                     resourceKey = "",
-                    userId = userName as String,
+                    userId = userId,
                     address = HttpContextHolder.getClientAddress(httpServletRequest),
                     data = map
                 )
-                operateLogService.saveEventAsync(eventDetail)
-                break
-            }
-        }
+        operateLogService.saveEventAsync(eventDetail)
         return obj
-    }
-
-    fun checkURI(uri: String, list: List<String>): Boolean {
-        var result = true
-        for (param in list) {
-            if (!uri.contains(param)) {
-                result = false
-                break
-            }
-        }
-        return result
     }
 }

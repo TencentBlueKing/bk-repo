@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -45,11 +46,13 @@ import org.springframework.web.bind.annotation.RestController
 class UserJobController(val systemJobService: SystemJobService) {
 
     @GetMapping("/detail")
+    @OperateLog(name = "JOB_LIST")
     fun detail(): Response<List<JobDetail>> {
         return ResponseBuilder.success(systemJobService.detail())
     }
 
     @PutMapping("/update/{name}")
+    @OperateLog(name = "JOB_STATUS_UPDATE")
     fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
         return ResponseBuilder.success(systemJobService.update(name, enabled, running))
     }

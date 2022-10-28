@@ -27,12 +27,11 @@
 
 package com.tencent.bkrepo.common.operate.api.pojo
 
-import com.tencent.bkrepo.common.artifact.event.base.EventType
 import java.time.LocalDateTime
 
 data class OperateLog(
     val createdDate: LocalDateTime,
-    val type: EventType,
+    val type: String,
     val projectId: String?,
     val repoName: String?,
     val resourceKey: String,

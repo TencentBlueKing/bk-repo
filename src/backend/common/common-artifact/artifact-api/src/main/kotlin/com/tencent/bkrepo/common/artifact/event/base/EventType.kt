@@ -30,94 +30,112 @@ package com.tencent.bkrepo.common.artifact.event.base
 /**
  * 事件类型
  */
-enum class EventType(val nick: String, val requestURI: List<String>, val method: String) {
+enum class EventType(val nick: String) {
     // PROJECT
-    PROJECT_CREATED("创建项目", listOf(), ""),
+    PROJECT_CREATED("创建项目"),
 
     // REPOSITORY
-    REPO_CREATED("创建仓库", listOf(), ""),
-    REPO_UPDATED("更新仓库", listOf(), ""),
-    REPO_DELETED("删除仓库", listOf(), ""),
+    REPO_CREATED("创建仓库"),
+    REPO_UPDATED("更新仓库"),
+    REPO_DELETED("删除仓库"),
     // 主要针对代理仓库需要定时从远程将相关信息同步到本地
-    REPO_REFRESHED("刷新仓库信息", listOf(), ""),
+    REPO_REFRESHED("刷新仓库信息"),
 
     // NODE
-    NODE_CREATED("创建节点", listOf(), ""),
-    NODE_RENAMED("重命名节点", listOf(), ""),
-    NODE_MOVED("移动节点", listOf(), ""),
-    NODE_COPIED("复制节点", listOf(), ""),
-    NODE_DELETED("删除节点", listOf(), ""),
-    NODE_DOWNLOADED("下载节点", listOf(), ""),
+    NODE_CREATED("创建节点"),
+    NODE_RENAMED("重命名节点"),
+    NODE_MOVED("移动节点"),
+    NODE_COPIED("复制节点"),
+    NODE_DELETED("删除节点"),
+    NODE_DOWNLOADED("下载节点"),
 
     // METADATA
-    METADATA_DELETED("删除元数据", listOf(), ""),
-    METADATA_SAVED("添加元数据", listOf(), ""),
+    METADATA_DELETED("删除元数据"),
+    METADATA_SAVED("添加元数据"),
 
     // VERSION
-    VERSION_CREATED("创建制品", listOf(), ""),
-    VERSION_DELETED("删除制品", listOf(), ""),
-    VERSION_DOWNLOAD("下载制品", listOf(), ""),
-    VERSION_UPDATED("更新制品", listOf(), ""),
-    VERSION_STAGED("晋级制品", listOf(), ""),
+    VERSION_CREATED("创建制品"),
+    VERSION_DELETED("删除制品"),
+    VERSION_DOWNLOAD("下载制品"),
+    VERSION_UPDATED("更新制品"),
+    VERSION_STAGED("晋级制品"),
 
     // ADMIN
-    ADMIN_ADD("添加管理员", listOf(), ""),
-    ADMIN_DELETE("移除管理员", listOf(), ""),
+    ADMIN_ADD("添加管理员"),
+    ADMIN_DELETE("移除管理员"),
 
     // WebHook
-    WEBHOOK_TEST("webhook测试", listOf(), ""),
-    WEBHOOK_LIST("webhook查询", listOf("/api/webhook/list"), "GET"),
-    WEBHOOK_CREATE("webhook创建", listOf("/api/webhook/create"), "POST"),
-    WEBHOOK_UPDATE("webhook更新", listOf("/api/webhook/update"), "PUT"),
-    WEBHOOK_DETELE("webhook删除", listOf("/api/webhook/detele"), "DELETE"),
-    WEBHOOK_LOG_LIST("webhook日志查询", listOf("/api/log/list"), "GET"),
+    WEBHOOK_TEST("webhook测试"),
+    WEBHOOK_LIST("webhook查询"),
+    WEBHOOK_CREATE("webhook创建"),
+    WEBHOOK_UPDATE("webhook更新"),
+    WEBHOOK_DELETE("webhook删除"),
+    WEBHOOK_LOG_LIST("webhook日志查询"),
 
     // ACCOUNT
-    ACCOUNT_ADD("平台账户添加", listOf("/api/account/create"), "POST"),
-    ACCOUNT_DELETE("平台账户删除", listOf("/api/account/delete"), "DELETE"),
-    ACCOUNT_UPDATE("平台账户修改", listOf("/api/account/update"), "PUT"),
-    ACCOUNT_LIST("平台账户查询", listOf("/api/account/list"), "GET"),
+    ACCOUNT_ADD("平台账户添加"),
+    ACCOUNT_DELETE("平台账户删除"),
+    ACCOUNT_UPDATE("平台账户修改"),
+    ACCOUNT_LIST("平台账户查询"),
 
     // AK/SK
-    KEYS_CREATE("账户AK/SK新增", listOf("/api/account/credential"), "POST"),
-    KEYS_DETELE("账户AK/SK删除", listOf("/api/account/credential"), "DELETE"),
-    KEYS_STATUS_UPDATE("账户AK/SK状态修改", listOf("/api/account/credential"), "PUT"),
+    KEYS_CREATE("账户AK/SK新增"),
+    KEYS_DELETE("账户AK/SK删除"),
+    KEYS_STATUS_UPDATE("账户AK/SK状态修改"),
 
     // OPDATA_SERVICE(顺序不能乱)
-    OPDATA_SERVICE_DOWN("opdata服务下线", listOf("/api/services", "/instances", "/down"), "POST"),
-    OPDATA_SERVICE_UP("opdata服务上线", listOf("/api/services", "/instances", "/up"), "POST"),
-    OPDATA_SERVICE_DETAIL("opdata服务详情", listOf("/api/services", "/instances"), "GET"),
-    OPDATA_SERVICE_LIST("opdata服务查询", listOf("/api/services"), "GET"),
+    OPDATA_SERVICE_DOWN("opdata服务下线"),
+    OPDATA_SERVICE_UP("opdata服务上线"),
+    OPDATA_SERVICE_DETAIL("opdata服务详情"),
+    OPDATA_SERVICE_LIST("opdata服务查询"),
 
     // EXT-PERMISSION
-    EXT_PERMISSION_LIST("外部权限查询", listOf("/api/ext-permission"), "GET"),
-    EXT_PERMISSION_CREAT("外部权限创建", listOf("/api/ext-permission"), "POST"),
-    EXT_PERMISSION_UPDATE("外部权限修改", listOf("/api/ext-permission"), "PUT"),
-    EXT_PERMISSION_DETELE("外部权限删除", listOf("/api/ext-permission"), "DETELE"),
+    EXT_PERMISSION_LIST("外部权限查询"),
+    EXT_PERMISSION_CREAT("外部权限创建"),
+    EXT_PERMISSION_UPDATE("外部权限修改"),
+    EXT_PERMISSION_DELETE("外部权限删除"),
 
     // JOB
-    JOB_LIST("任务管理查询", listOf("/api/job/detail"), "GET"),
-    JOB_STATUS_UPDATE("任务状态更改", listOf("/api/job/update"), "PUT"),
+    JOB_LIST("任务管理查询"),
+    JOB_STATUS_UPDATE("任务状态更改"),
 
     // SHED_LOCK
-    SHED_LOCK_LIST("数据库锁查询", listOf("/api/shedlock/list"), "GET"),
+    SHED_LOCK_LIST("数据库锁查询"),
 
     // OPDATA_PLUGIN
-    OPDATE_PLUGIN_LIST("opdata插件查询", listOf("/api/plugin"), "GET"),
-    OPDATE_PLUGIN_CREATE("opdata插件新建", listOf("/api/plugin"), "POST"),
-    OPDATE_PLUGIN_DETELE("opdata插件删除", listOf("/api/plugin"), "DETELE"),
-    OPDATE_PLUGIN_UPDATE("opdata插件更新", listOf("/api/plugin"), "PUT"),
-    OPDATE_PLUGIN_LOAD("opdata插件加载", listOf("/api/plugin/load"), "POST"),
-    OPDATE_PLUGIN_UNLOAD("opdata插件卸载", listOf("/api/plugin/unload"), "DELETE"),
+    OPDATA_PLUGIN_LIST("opdata插件查询"),
+    OPDATA_PLUGIN_CREATE("opdata插件新建"),
+    OPDATA_PLUGIN_DELETE("opdata插件删除"),
+    OPDATA_PLUGIN_UPDATE("opdata插件更新"),
+    OPDATA_PLUGIN_LOAD("opdata插件加载"),
+    OPDATA_PLUGIN_UNLOAD("opdata插件卸载"),
 
     // OPDATA_FILESYSTEM
-    OPDATE_FILE_SYSTEM_METRICS("挂载分布式文件系统节点统计功能", listOf("/api/fileSystem/storage/metrics"), "GET"),
-    OPDATE_FILE_SYSTEM_METRICS_DETAIL("统计某个挂载路径下子目录文件大小", listOf("/api/fileSystem/storage/metricsDetail"), "GET"),
+    OPDATA_FILE_SYSTEM_METRICS("挂载分布式文件系统节点统计功能"),
+    OPDATA_FILE_SYSTEM_METRICS_DETAIL("统计某个挂载路径下子目录文件大小"),
 
     // OPDATA_EMPLTY_FOLDER
-    EMPTY_FOLDER_LIST("空目录查询", listOf("/api/nodeOperation/emptyFolders"), "GET"),
-    EMPTY_FOLDER_DELETE("清空空目录", listOf("/api/nodeOperation/emptyFolders"), "DETELE"),
+    EMPTY_FOLDER_LIST("空目录查询"),
+    EMPTY_FOLDER_DELETE("清空空目录"),
 
     // FIRST_FOLDER
-    FIRST_LEVEL_FOLDER_STATISTICS("一级目录统计", listOf("/api/nodeOperation/firstLevelFolder"), "GET")
+    FIRST_LEVEL_FOLDER_STATISTICS("一级目录统计"),
+
+    // OPDATA_NOTIFY
+    OPDATA_NOTIFY_LIST("op系统通知凭证查询"),
+    OPDATA_NOTIFY_CREATE("op系统通知凭证新增"),
+    OPDATA_NOTIFY_UPDATE("op系统通知凭证修改"),
+    OPDATA_NOTIFY_DELETE("op系统通知凭证删除"),
+
+    // OPDATA_SCAN
+    SCANNER_CREATE("制品扫描器新增"),
+    SCANNER_UPDATE("制品扫描器修改"),
+    SCANNER_DELETE("制品扫描器删除"),
+    SCANNER_LIST("制品扫描器查询"),
+
+    // OPDATA_CONFIG
+    PROJECT_SCAN_CONFIG_CREATE("制品项目配置新增"),
+    PROJECT_SCAN_CONFIG_UPDATE("制品项目配置修改"),
+    PROJECT_SCAN_CONFIG_DELETE("制品项目配置删除"),
+    PROJECT_SCAN_CONFIG_LIST("制品项目配置查询")
 }

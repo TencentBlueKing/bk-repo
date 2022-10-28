@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.resource.OpenResourceImpl
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -64,12 +65,12 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("查询所有账号")
     @GetMapping("/list")
+    @OperateLog(name = "ACCOUNT_LIST")
     fun listAccount(): Response<List<Account>> {
         checkPlatformPermission()
         val accountList = accountService.listAccount()
         return ResponseBuilder.success(accountList)
     }
-
 
     @ApiOperation("查询拥有的账号")
     @GetMapping("/own/list")
@@ -93,6 +94,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("创建账号")
     @PostMapping("/create")
+    @OperateLog(name = "ACCOUNT_CREATE")
     fun createAccount(@RequestBody request: CreateAccountRequest): Response<Account> {
         checkPlatformPermission()
         return ResponseBuilder.success(accountService.createAccount(request))
@@ -100,6 +102,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("更新账号")
     @PutMapping("/update")
+    @OperateLog(name = "ACCOUNT_UPDATE")
     fun updateAccount(@RequestBody request: UpdateAccountRequest): Response<Boolean> {
         checkPlatformPermission()
         accountService.updateAccount(request)
@@ -108,6 +111,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("删除账号")
     @DeleteMapping("/delete/{appId}")
+    @OperateLog(name = "ACCOUNT_DELETE")
     fun deleteAccount(@PathVariable appId: String): Response<Boolean> {
         checkPlatformPermission()
         accountService.deleteAccount(appId)
@@ -132,6 +136,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("创建ak/sk对")
     @PostMapping("/credential/{appId}")
+    @OperateLog(name = "KEYS_CREATE")
     fun createCredential(
         @PathVariable appId: String,
         @RequestParam type: AuthorizationGrantType?
@@ -143,6 +148,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("删除ak/sk对")
     @DeleteMapping("/credential/{appId}/{accesskey}")
+    @OperateLog(name = "KEYS_DELETE")
     fun deleteCredential(@PathVariable appId: String, @PathVariable accesskey: String): Response<Boolean> {
         checkPlatformPermission()
         val result = accountService.deleteCredential(appId, accesskey)
@@ -151,6 +157,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("更新ak/sk对状态")
     @PutMapping("/credential/{appId}/{accesskey}/{status}")
+    @OperateLog(name = "KEYS_UPDATE")
     fun updateCredential(
         @PathVariable appId: String,
         @PathVariable accesskey: String,

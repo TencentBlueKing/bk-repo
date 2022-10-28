@@ -29,6 +29,7 @@ package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -51,6 +52,7 @@ class FileStorageController(
      * 挂载分布式文件系统节点统计功能
      */
     @GetMapping("/storage/metrics")
+    @OperateLog(name = "OPDATA_FILE_SYSTEM_METRICS")
     fun list(option: FileStorageListOption): Response<Page<RootPathStorageMetric>> {
         return ResponseBuilder.success(fileSystemStorageService.getFileSystemStorageMetrics(option))
     }
@@ -67,6 +69,7 @@ class FileStorageController(
      * 统计某个挂载路径下子目录文件大小
      */
     @GetMapping("/storage/metricsDetail")
+    @OperateLog(name = "OPDATA_FILE_SYSTEM_METRICS_DETAIL")
     fun listDetails(option: FileStorageListOption): Response<Page<SubFolderStorageMetric>> {
         return ResponseBuilder.success(fileSystemStorageService.getFileSystemStorageMetricDetails(option))
     }
