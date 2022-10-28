@@ -41,13 +41,12 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import { scanTypeEnum, scannerTypeEnum } from '@repository/store/publicEnum'
+    import { scanTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'createScan',
         data () {
             return {
                 scanTypeEnum,
-                scannerTypeEnum,
                 scanForm: {
                     show: false,
                     loading: false,

@@ -106,31 +106,6 @@ export const scanTypes = {
     }
 }
 
-export const scannerTypeEnum = {
-    // 科恩
-    arrowhead: {
-        GENERIC: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
-        MAVEN: '',
-        DOCKER: '',
-        GENERIC_LICENSE: '支持apk、ipa、aab、jar格式的文件',
-        MAVEN_LICENSE: ''
-    },
-    // DependencyCheck
-    DependencyCheck: {
-        GENERIC: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
-        MAVEN: '',
-        NPM: '',
-        PYPI: ''
-    },
-    scancodeToolkit: {
-        GENERIC_LICENSE: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
-        MAVEN_LICENSE: ''
-    },
-    trivy: {
-        DOCKER: ''
-    }
-}
-
 /**
  * 是否容器化部署
  * @type {boolean}

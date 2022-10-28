@@ -174,7 +174,6 @@
                         planId: id
                     },
                     query: {
-                        scanType: planType,
                         scanName: name
                     }
                 })
