@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.operate.service.model
 
-import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog.Companion.RESOURCE_KEY_IDX
