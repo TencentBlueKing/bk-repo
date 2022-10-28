@@ -1,5 +1,12 @@
 ![LOGO](docs/resource/logo.png)
 
+---
+
+[![license](https://img.shields.io/badge/license-mit-brightgreen.svg?style=flat)](https://github.com/TencentBlueKing/bk-repo/blob/master/LICENSE.txt)
+[![Release Version](https://img.shields.io/github/v/release/TencentBlueKing/bk-repo?include_prereleases)](https://github.com/TencentBlueKing/bk-repo/releases)
+[![Backend CI](https://github.com/TencentBlueKing/bk-repo/actions/workflows/backend.yml/badge.svg)](https://github.com/TencentBlueKing/bk-repo/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/TencentBlueKing/bk-repo/actions/workflows/frontend.yml/badge.svg)](https://github.com/TencentBlueKing/bk-repo/actions/workflows/frontend.yml)
+
 > **重要提示**: `master` 分支在开发过程中可能处于 *不稳定或者不可用状态* 。
 请通过[releases](https://github.com/TencentBlueKing/bk-repo/releases) 而非 `master` 去获取稳定的二进制文件。
 
