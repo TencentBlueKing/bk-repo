@@ -26,7 +26,7 @@ class StorageHealthMonitorHelperTest {
         countDownLatch.await()
         Assertions.assertEquals(1, monitorHelper.all().size)
         val otherStorageCredentials = StorageCredentials(
-            upload = UploadProperties(location = storageCredentials.upload.location.plus("temp")),
+            upload = UploadProperties(location = storageCredentials.upload.location.plus("/temp")),
             cache = storageCredentials.cache
         )
         val m1 = monitorHelper.getMonitor(storageProperties, otherStorageCredentials)

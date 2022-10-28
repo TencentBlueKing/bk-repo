@@ -34,7 +34,8 @@ class CodeRepositoryTest {
             repoName = "ut-repo",
             storageCredentials = null,
             dataService = dataService,
-            blockSize = 1024
+            blockSize = 1024,
+            lockProvider = EmptyLockProvider()
         ).build()
     }
 }
