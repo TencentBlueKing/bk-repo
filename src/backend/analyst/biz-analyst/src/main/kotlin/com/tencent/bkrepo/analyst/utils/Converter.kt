@@ -63,8 +63,7 @@ object Converter {
     fun convert(
         scanTask: TScanTask,
         scanPlan: TScanPlan? = null,
-        force: Boolean = false,
-        compatible: Boolean = true
+        force: Boolean = false
     ): ScanTask = with(scanTask) {
         ScanTask(
             name = scanTask.name,
@@ -77,7 +76,7 @@ object Converter {
             finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
             triggerType = triggerType,
             status = status,
-            scanPlan = scanPlan?.let { ScanPlanConverter.convert(it, compatible) },
+            scanPlan = scanPlan?.let { ScanPlanConverter.convert(it) },
             rule = scanTask.rule?.readJsonString(),
             total = total,
             scanning = scanning,

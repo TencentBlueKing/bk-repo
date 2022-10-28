@@ -89,6 +89,10 @@ class ScanPlanServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "invalid scan plan type[$type]")
             }
 
+            if (scanTypes.isNullOrEmpty()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "scanTypes must not be empty")
+            }
+
             if (scanPlanDao.existsByProjectIdAndName(projectId!!, name!!)) {
                 logger.error("scan plan [$name] is exist.")
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name.toString())
