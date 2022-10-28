@@ -99,7 +99,7 @@ abstract class AbstractReplicaService(
             }
         } catch (throwable: Throwable) {
             setErrorStatus(context, throwable)
-            logger.error("同步仓库失败", throwable)
+            logger.error("同步仓库失败 ${throwable.message}")
         } finally {
             completeRecordDetail(context)
         }
@@ -139,7 +139,7 @@ abstract class AbstractReplicaService(
             ).nodeInfo
             replicaByPath(context, nodeInfo)
         } catch (throwable: Throwable) {
-            logger.error("同步指定路径失败${constraint.path}", throwable)
+            logger.error("同步指定路径失败${constraint.path} ${throwable.message}")
             setErrorStatus(context, throwable)
             setRunOnceTaskFailedRecordMetrics(context, throwable, pathConstraint = constraint)
         } finally {
@@ -249,9 +249,9 @@ abstract class AbstractReplicaService(
                 val executed = action()
                 updateProgress(executed)
             } catch (throwable: Throwable) {
-                logger.error("同步文件失败", throwable)
                 status = ExecutionStatus.FAILED
                 errorReason = throwable.message.orEmpty()
+                logger.error("同步文件失败 $errorReason")
                 progress.failed += 1
                 setErrorStatus(this, throwable)
                 if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
