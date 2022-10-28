@@ -53,9 +53,6 @@ class TraceCommandListener(
         }
 
         val parent = tracer.currentSpan()
-        if (logger.isDebugEnabled) {
-            logger.debug("Found the parent span [$parent]")
-        }
         if (parent == null) {
             return
         }
