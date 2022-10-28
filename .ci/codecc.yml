@@ -1,40 +1,52 @@
-version: v2.0
-
-name: bkrepo代码检查
+version: "v2.0"
+name: "PR CHECK"
 
 on:
   mr:
-    target-branches:  [ "develop", "master" ]
-    source-branches-ignore: [ "develop" ]
-
-resources:
-  repositories:
-    - repository: ci_templates/public/codecc
-      name: codecc
+    target-branches:  [ "master" ]
 
 stages:
-  - name: "代码分析并进行质量红线检测"
-    check-out:
-      gates:
-        - template: codecc_gate.yml
-    jobs:
-      job1:
-        runs-on:
-          pool-name: docker  #docker-on-devcloud、docker、local、agentless
-          container:
-            image: mirrors.tencent.com/ci/tlinux3_ci:2.0.0
-        steps:
-          - checkout: self
-          - uses: CodeccCheckAtomDebug@4.*
-            name: 腾讯代码分析
-            with:
-              beAutoLang: false # 不自动检测项目语言
-              checkerSetType: "normal" # 规则集类型，normal对应自主配置规则集，openScan对应按开源治理要求配置，epcScan对应按PCG EPC要求配置。选了openScan或epcScan则不需要填写后面的内容
-              toolScanType: "0" # 扫描方式。快速全量扫描[1] | 全量扫描[0] | 差异扫描[6] | MR/PR扫描[2]，默认为1
-              languages: # 工程语言, 必选, 可取值："C_CPP", "JAVA", "C_SHARP", "JS", "OC", "PYTHON", "PHP", "RUBY", "GOLANG", "SWIFT", "TYPESCRIPT", "KOTLIN", "LUA", "OTHERS"
-                - "KOTLIN"
-              languageRuleSetMap: # 规则集, 必选, 需要按照语言来进行填写
-                KOTLIN_RULE:
-                  - "codecc_default_dupc_kotlin"
-                  - "ieg_sensitive_kotlin"
-                  - "bk_ci_kotlin"
+- name: "PR检查"
+  label:
+    - "Build"
+  check-out:
+    gates:
+      - template: codecc_pr_check.yml
+      
+  jobs:
+    job_1:
+      name: "源代码规范性检查"
+      runs-on:
+        needs:
+          jdk: "1.8.0_161"
+      steps:
+        - checkout: self
+        - name: "kotlin代码规范检查"
+          run: |
+            cd src/backend/
+            wget https://github.com/pinterest/ktlint/releases/download/0.29.0/ktlint -O ktlint
+            java -jar ktlint "**/src/**/*.kt" --reporter=plain,output=report/ktlint-report.txt
+        
+        - uses: uploadReport@1.*
+          name: 归档报告
+          with:
+            fileDir: src/backend/report
+            indexFile: ktlint-report.txt
+            indexFileCharset: UTF-8
+            reportName: ktlint-report
+            isParallel: false
+            isSendEmail: false
+
+        - name: "腾讯代码分析(最新)"
+          uses: "CodeCCCheckAtom@1.*"
+          with:
+            languages:
+            - "JAVA"
+            - "KOTLIN"
+            languageRuleSetMap:
+              JAVA_RULE:
+              - "codecc_default_java"
+              KOTLIN_RULE:
+              - "codecc_default_kotlin"
+            path:
+            - "src/backend"
