@@ -24,36 +24,19 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Set up GPG
-        run: |
-          echo ${{ github.workspace }}
-          # gpg init
-          mkdir ~/.gnupg && echo use-agent >> ~/.gnupg/gpg.conf
-          echo pinentry-mode loopback >> ~/.gnupg/gpg.conf
-          echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
-          echo RELOADAGENT | gpg-connect-agent
-          echo ${SIGNING_KEY} | awk '{gsub(/\\n/,"\n")}1'| gpg --dearmor > ${{ github.workspace }}/secretKeyRingFile.gpg
-          gpg --import  --pinentry-mode loopback --batch --passphrase '${SIGNING_PASSWORD}' ${{ github.workspace }}/secretKeyRingFile.gpg
-          ls -al ${{ github.workspace }}
-          ls -al ~/.gnupg/
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-        working-directory:
       - name: Gradle Build
         working-directory: src/backend
         env:
-          build_mavenRepoDeployUrl: "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-          build_mavenRepoUsername: ${{ secrets.SONATYPE_USERNAME }}
-          build_mavenRepoPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}        
         run: |
           echo "GITHUB_REF=${GITHUB_REF}"
           repo_version=${GITHUB_REF##*/v}
           echo "repo_version=${repo_version}"
-          ./gradlew publish -Drepo_version=${repo_version} \
-          -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} \
-          -Psigning.password='${{ secrets.SIGNING_PASSWORD }}' \
-          -Psigning.secretKeyRingFile=${{ github.workspace }}/secretKeyRingFile.gpg
+          ./gradlew publishAllPublicationsToAllJarRepository -Drepo_version=${repo_version}
       - name: Clean Up
         if: ${{ always() }}
         working-directory:
