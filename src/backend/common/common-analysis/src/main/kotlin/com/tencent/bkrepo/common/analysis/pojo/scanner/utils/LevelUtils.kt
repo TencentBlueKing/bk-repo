@@ -38,6 +38,6 @@ fun normalizedLevel(level: String): String {
         "高危", "high" -> Level.HIGH.levelName
         "中危", "mid", "middle", "medium" -> Level.MEDIUM.levelName
         "低危", "low" -> Level.LOW.levelName
-        else -> level
+        else -> Level.CRITICAL.levelName
     }
 }
