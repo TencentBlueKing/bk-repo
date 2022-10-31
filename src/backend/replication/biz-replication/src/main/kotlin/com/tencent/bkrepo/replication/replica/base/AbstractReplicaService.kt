@@ -230,7 +230,8 @@ abstract class AbstractReplicaService(
         with(context) {
             val record = ReplicationRecord(
                 packageName = packageSummary.name,
-                version = version.name
+                version = version.name,
+                size = version.size.toString()
             )
             runActionAndPrintLog(context, record) {
                 replicator.replicaPackageVersion(replicaContext, packageSummary, version)
