@@ -174,7 +174,9 @@ abstract class AbstractReplicaService(
     private fun replicaFile(context: ReplicaExecutionContext, node: NodeInfo) {
         with(context) {
             val record = ReplicationRecord(
-                path = node.fullPath
+                path = node.fullPath,
+                sha256 = node.sha256,
+                size = node.size.toString()
             )
             runActionAndPrintLog(context, record) { replicaContext.replicator.replicaFile(replicaContext, node) }
         }
@@ -318,7 +320,9 @@ abstract class AbstractReplicaService(
                     errorReason = errorReason,
                     packageName = record.packageName,
                     version = record.version,
-                    path = record.path
+                    path = record.path,
+                    sha256 = record.sha256,
+                    size = record.size
                 )
             )
         )

@@ -33,5 +33,7 @@ package com.tencent.bkrepo.replication.pojo.metrics
 data class ReplicationRecord(
     var packageName: String? = null,
     var version: String? = null,
-    var path: String? = null
+    var path: String? = null,
+    var size: String? = null,
+    var sha256: String? = null
 )

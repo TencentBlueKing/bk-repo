@@ -128,6 +128,8 @@ object ReplicationMetricsRecordUtil {
         packageName: String? = null,
         version: String? = null,
         path: String? = null,
+        sha256: String? = null,
+        size: String? = null,
         startTime: String,
         status: ExecutionStatus,
         errorReason: String? = null
@@ -143,6 +145,8 @@ object ReplicationMetricsRecordUtil {
             packageName = packageName.orEmpty(),
             version = version.orEmpty(),
             path = path.orEmpty(),
+            sha256 = sha256.orEmpty(),
+            size = size.orEmpty(),
             status = status.name,
             startTime = startTime,
             endTime = LocalDateTime.now().toString()

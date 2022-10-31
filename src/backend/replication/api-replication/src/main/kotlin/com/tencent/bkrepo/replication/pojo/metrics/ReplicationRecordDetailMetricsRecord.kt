@@ -41,6 +41,8 @@ data class ReplicationRecordDetailMetricsRecord(
     var packageName: String = StringPool.EMPTY,
     var version: String = StringPool.EMPTY,
     var path: String = StringPool.EMPTY,
+    var sha256: String = StringPool.EMPTY,
+    var size: String = StringPool.EMPTY,
     var status: String = StringPool.EMPTY,
     var startTime: String = StringPool.EMPTY,
     var endTime: String = StringPool.EMPTY,
