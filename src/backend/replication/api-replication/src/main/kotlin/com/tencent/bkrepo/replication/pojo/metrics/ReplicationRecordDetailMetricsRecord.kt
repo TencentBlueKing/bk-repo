@@ -30,27 +30,22 @@ package com.tencent.bkrepo.replication.pojo.metrics
 import com.tencent.bkrepo.common.api.constant.StringPool
 
 /**
- * 一次性分发任务执行详情指标
+ * 一次性分发任务具体package或者path同步执行记录
  */
-data class ReplicationTaskDetailMetricsRecord(
-    var tag: String = "ExecutionTaskTag",
+data class ReplicationRecordDetailMetricsRecord(
+    var tag: String = "TaskRecordDetailTag",
     var taskKey: String = StringPool.EMPTY,
+    var recordId: String = StringPool.EMPTY,
     var projectId: String = StringPool.EMPTY,
     var repoName: String = StringPool.EMPTY,
-    var remoteProjectId: String = StringPool.EMPTY,
-    var remoteRepoName: String = StringPool.EMPTY,
-    var replicaType: String = StringPool.EMPTY,
-    var pipelineId: String = StringPool.EMPTY,
-    var buildId: String = StringPool.EMPTY,
-    // 流水线中的任务id，非分发任务id
-    var pipelineTaskId: String = StringPool.EMPTY,
-    var name: String = StringPool.EMPTY,
-    var repContent: List<ReplicationContent> = emptyList(),
-    var recordId: String = StringPool.EMPTY,
-    var taskStatus: String = StringPool.EMPTY,
-    var executionStatus: String = StringPool.EMPTY,
-    var executionStartTime: String = StringPool.EMPTY,
-    var executionEndTime: String = StringPool.EMPTY,
+    var packageName: String = StringPool.EMPTY,
+    var version: String = StringPool.EMPTY,
+    var path: String = StringPool.EMPTY,
+    var sha256: String = StringPool.EMPTY,
+    var size: String = StringPool.EMPTY,
+    var status: String = StringPool.EMPTY,
+    var startTime: String = StringPool.EMPTY,
+    var endTime: String = StringPool.EMPTY,
     var errorReason: String = StringPool.EMPTY,
     var sourceType: String = StringPool.EMPTY
 )
