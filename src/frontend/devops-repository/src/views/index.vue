@@ -66,7 +66,7 @@
                         global: [
                             !(MODE_CONFIG === 'ci') && 'projectManage',
                             'userManage',
-                            !k8s && 'nodeManage',
+                            'nodeManage',
                             // 'securityConfig',
                             this.isMasterNode && 'planManage',
                             'repoAudit'
