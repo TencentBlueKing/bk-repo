@@ -166,6 +166,7 @@ open class PermissionServiceImpl constructor(
 
                 addUserToRoleBatchCommon(addUserList, roleId!!)
                 removeUserFromRoleBatchCommon(removeUserList, roleId!!)
+                return true
             } else {
                 checkPermissionExist(permissionId)
                 return updatePermissionById(permissionId, TPermission::users.name, userId)
