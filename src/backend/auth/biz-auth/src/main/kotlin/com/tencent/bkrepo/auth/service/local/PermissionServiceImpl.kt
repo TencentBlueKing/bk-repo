@@ -157,7 +157,7 @@ open class PermissionServiceImpl constructor(
         with(request) {
             // update project admin
             if (permissionId == PROJECT_MANAGE_ID) {
-                val createRoleRequest = RequestUtil.buildProjectAdminRequest(request.projectId)
+                val createRoleRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
                 val roleId = createRoleCommon(createRoleRequest)
 
                 val users = getProjectAdminUser(projectId)
