@@ -151,7 +151,7 @@ open class AbstractServiceImpl constructor(
     fun getProjectAdminUser(projectId: String): List<String> {
         var roleIdArray = mutableListOf<String>()
         roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
-            roleIdArray.add(it.roleId)
+            roleIdArray.add(it.id!!)
         }
         return userRepository.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
     }
