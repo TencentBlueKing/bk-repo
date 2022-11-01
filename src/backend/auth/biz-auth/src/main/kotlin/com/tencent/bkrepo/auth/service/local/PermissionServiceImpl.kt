@@ -475,6 +475,7 @@ open class PermissionServiceImpl constructor(
         val projectManager = Permission(
             id = PROJECT_MANAGE_ID,
             resourceType = ResourceType.PROJECT.toString(),
+            projectId = projectId,
             permName = "project_manage_permission",
             users = getProjectAdminUser(projectId),
             createBy = SecurityUtils.getUserId(),
