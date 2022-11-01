@@ -35,7 +35,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -473,8 +473,9 @@ open class PermissionServiceImpl constructor(
 
     override fun listProjectBuiltinPermission(projectId: String): List<Permission> {
         val projectManager = Permission(
+            id = PROJECT_MANAGE_ID,
             resourceType = ResourceType.PROJECT.toString(),
-            permName = PROJECT_MANAGE_NAME,
+            permName = PROJECT_MANAGE_ID,
             users = getProjectAdminUser(projectId),
             createBy = SecurityUtils.getUserId(),
             updatedBy = SecurityUtils.getUserId(),
