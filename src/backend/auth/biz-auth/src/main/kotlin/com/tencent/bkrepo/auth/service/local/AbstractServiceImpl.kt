@@ -37,6 +37,7 @@ import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -145,6 +146,14 @@ open class AbstractServiceImpl constructor(
             }
         }
         return false
+    }
+
+    fun getProjectAdminUser(projectId: String): List<String> {
+        var roleIdArray = mutableListOf<String>()
+        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
+            roleIdArray.add(it.roleId)
+        }
+        return userRepository.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
     }
 
     companion object {

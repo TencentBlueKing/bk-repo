@@ -162,6 +162,6 @@ class PermissionController @Autowired constructor(
     fun listProjectBuiltinPermission(
         @RequestParam projectId: String
     ): Response<List<Permission>> {
-        return ResponseBuilder.success(emptyList())
+        return ResponseBuilder.success(permissionService.listProjectBuiltinPermission(projectId))
     }
 }
