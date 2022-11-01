@@ -140,7 +140,7 @@
             ]),
             initProjectConfig () {
                 this.getProjectPermission({ projectId: this.currentProject.id }).then(data => {
-                    const manage = data.find(p => p.permName === 'project_manage') || {}
+                    const manage = data.find(p => p.permName === 'project_manage_permission') || {}
                     const view = data.find(p => p.permName === 'project_view_permission') || {}
                     this.manage = {
                         ...this.manage,
