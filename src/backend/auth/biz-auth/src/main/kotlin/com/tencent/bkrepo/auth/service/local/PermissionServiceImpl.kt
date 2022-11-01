@@ -162,13 +162,15 @@ open class PermissionServiceImpl constructor(
 
                 val users = getProjectAdminUser(projectId)
                 val addUserList = userId.filter { !users.contains(it) }
-                var removeUserList = users.filter { !userId.contains(it) }
+                val removeUserList = users.filter { !userId.contains(it) }
 
                 addUserToRoleBatchCommon(addUserList, roleId!!)
                 removeUserFromRoleBatchCommon(removeUserList, roleId!!)
+            } else {
+                checkPermissionExist(permissionId)
+                return updatePermissionById(permissionId, TPermission::users.name, userId)
             }
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::users.name, userId)
+
         }
     }
 
