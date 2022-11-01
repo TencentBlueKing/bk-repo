@@ -178,6 +178,7 @@
                     return ({ user: this.setUserPermission, role: this.setRolePermission })[tab.type]({
                         body: {
                             permissionId: tab.id,
+                            projectId: this.currentProject.id,
                             [key]: value
                         }
                     }).then(() => {

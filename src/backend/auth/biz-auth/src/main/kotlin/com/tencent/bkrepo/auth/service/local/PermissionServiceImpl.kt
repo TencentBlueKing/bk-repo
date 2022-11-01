@@ -60,6 +60,7 @@ import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
+import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
@@ -154,6 +155,18 @@ open class PermissionServiceImpl constructor(
     override fun updatePermissionUser(request: UpdatePermissionUserRequest): Boolean {
         logger.info("update permission user request:[$request]")
         with(request) {
+            // update project admin
+            if (permissionId == PROJECT_MANAGE_ID) {
+                val createRoleRequest = RequestUtil.buildProjectAdminRequest(request.projectId)
+                val roleId = createRoleCommon(createRoleRequest)
+
+                val users = getProjectAdminUser(projectId)
+                val addUserList = userId.filter { !users.contains(it) }
+                var removeUserList = users.filter { !userId.contains(it) }
+
+                addUserToRoleBatchCommon(addUserList, roleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, roleId!!)
+            }
             checkPermissionExist(permissionId)
             return updatePermissionById(permissionId, TPermission::users.name, userId)
         }
