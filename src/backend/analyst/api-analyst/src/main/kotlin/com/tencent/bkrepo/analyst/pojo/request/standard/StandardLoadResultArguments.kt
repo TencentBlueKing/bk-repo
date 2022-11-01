@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import io.swagger.annotations.ApiModelProperty
 
+@Suppress("LongParameterList")
 class StandardLoadResultArguments(
     @ApiModelProperty("需要的cve列表")
     val vulIds: List<String> = emptyList(),
@@ -39,6 +40,10 @@ class StandardLoadResultArguments(
     val vulnerabilityLevels: List<String> = emptyList(),
     @ApiModelProperty("需要的许可id列表")
     val licenseIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的许可id列表")
+    val sensitiveContent: String? = null,
+    @ApiModelProperty("需要的许可id列表")
+    val sensitiveType: String? = null,
     @ApiModelProperty("扫描结果类型")
     val reportType: String,
     @ApiModelProperty("分页参数")
