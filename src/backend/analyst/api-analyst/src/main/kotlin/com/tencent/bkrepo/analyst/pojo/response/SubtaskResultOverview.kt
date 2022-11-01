@@ -37,6 +37,10 @@ data class SubtaskResultOverview(
     val recordId: String,
     @ApiModelProperty("子扫描任务id")
     val subTaskId: String,
+    @ApiModelProperty("扫描器")
+    val scanner: String,
+    @ApiModelProperty("扫描器类型")
+    val scannerType: String,
 
     @ApiModelProperty("制品名")
     val name: String,

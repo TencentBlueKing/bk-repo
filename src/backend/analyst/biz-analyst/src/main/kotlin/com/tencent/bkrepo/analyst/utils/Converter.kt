@@ -146,6 +146,8 @@ object Converter {
             SubtaskResultOverview(
                 recordId = subScanTask.id!!,
                 subTaskId = subScanTask.id!!,
+                scanner = scanner,
+                scannerType = scannerType,
                 name = artifactName,
                 packageKey = packageKey,
                 version = version,
