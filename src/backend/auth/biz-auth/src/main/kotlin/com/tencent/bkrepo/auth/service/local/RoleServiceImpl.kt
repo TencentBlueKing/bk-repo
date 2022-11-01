@@ -43,8 +43,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.util.IDUtil
-import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
