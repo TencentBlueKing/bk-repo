@@ -92,15 +92,15 @@ export const SCAN_TYPE_LICENSE = 'LICENSE'
 export const SCAN_TYPE_SENSITIVE = 'SENSITIVE'
 // 扫描类型
 export const scanTypes = {
-    SCAN_TYPE_SECURITY: {
+    [SCAN_TYPE_SECURITY]: {
         key: SCAN_TYPE_SECURITY,
         name: '漏洞扫描'
     },
-    SCAN_TYPE_LICENSE: {
+    [SCAN_TYPE_LICENSE]: {
         key: SCAN_TYPE_LICENSE,
         name: '许可证扫描'
     },
-    SCAN_TYPE_SENSITIVE: {
+    [SCAN_TYPE_SENSITIVE]: {
         key: SCAN_TYPE_SENSITIVE,
         name: '敏感信息扫描'
     }

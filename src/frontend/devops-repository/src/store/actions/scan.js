@@ -155,6 +155,13 @@ export default {
             }
         )
     },
+    // 获取扫描报告
+    getReports (_, { projectId, repoName, fullPath, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/reports/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
     // 批量扫描
     startScan (_, body) {
         return Vue.prototype.$ajax.post(
