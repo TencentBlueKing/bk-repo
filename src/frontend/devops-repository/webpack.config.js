@@ -2,7 +2,6 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const webpackBaseConfig = require('../webpack.base')
-const { EnvironmentPlugin } = require('webpack')
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production'
@@ -21,9 +20,6 @@ module.exports = (env, argv) => {
     config.plugins.pop()
     config.plugins = [
         ...config.plugins,
-        new EnvironmentPlugin({
-            VUE_APP_K8S: ''
-        }),
         new HtmlWebpackPlugin({
             filename: isProd ? `${dist}/frontend#ui#index.html` : `${dist}/index.html`,
             template: 'index.html',
