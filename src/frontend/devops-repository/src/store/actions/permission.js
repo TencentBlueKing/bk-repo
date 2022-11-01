@@ -137,13 +137,13 @@ export default {
     // 查询所有角色
     getRoleList () {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/sys/role/list`
+            `${authPrefix}/role/sys/list`
         )
     },
     // 查询项目下角色
     getProjectRoleList (_, { projectId }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/sys/role/list/${projectId}`
+            `${authPrefix}/role/sys/list/${projectId}`
         )
     },
     // 查询所有部门
