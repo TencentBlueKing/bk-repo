@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.common.service.otel.web
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.undertow.servlet.spec.HttpServletRequestImpl
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -36,6 +40,7 @@ import javax.servlet.Filter
 import javax.servlet.FilterChain
 import javax.servlet.ServletRequest
 import javax.servlet.ServletResponse
+import javax.servlet.http.HttpServletResponse
 
 class OtelWebFilter : Filter {
 
@@ -52,10 +57,20 @@ class OtelWebFilter : Filter {
                 URI.create(url)
             } catch (ignore: IllegalArgumentException) {
                 logger.warn("illegal url: $url, request method: ${request.method}")
-                request.exchange.requestURI = URLEncoder.encode(
-                    URLDecoder.decode(request.exchange.requestURI.replace("+",  "%2b"), Charsets.UTF_8.name()),
-                    Charsets.UTF_8.name()
-                ).replace("+", "%20").replace("%2f", "/")
+                try {
+                    request.exchange.requestURI = URLEncoder.encode(
+                        URLDecoder.decode(request.exchange.requestURI.replace("+",  "%2b"), Charsets.UTF_8.name()),
+                        Charsets.UTF_8.name()
+                    ).replace("+", "%20").replace("%2f", "/")
+                } catch (e: Exception) {
+                    require(response is HttpServletResponse)
+                    response.status = HttpStatus.BAD_REQUEST.value
+                    response.contentType = MediaTypes.APPLICATION_JSON
+                    response.writer.println(
+                        ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, e.message).toJsonString()
+                    )
+                    return
+                }
             }
         }
         chain.doFilter(request, response)
