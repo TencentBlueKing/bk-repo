@@ -43,7 +43,7 @@ interface ScannerService {
      * 获取扫描器
      *
      * @param name 扫描器名
-     * @throws com.tencent.bkrepo.scanner.exception.ScannerNotFoundException 找不到指定扫描器时抛出异常
+     * @throws com.tencent.bkrepo.analyst.exception.ScannerNotFoundException 找不到指定扫描器时抛出异常
      */
     fun get(name: String): Scanner
 
@@ -71,12 +71,17 @@ interface ScannerService {
      * @param packageType 包类型
      * @param scanType 扫描类型
      */
-    fun find(packageType: String, scanType: String): List<Scanner>
+    fun find(packageType: String?, scanType: String?): List<Scanner>
 
     /**
      * 获取支持扫描的文件名后缀
      */
     fun supportFileNameExt(): Set<String>
+
+    /**
+     * 获取支持扫描的包类型
+     */
+    fun supportPackageType(): Set<String>
 
     /**
      * 获取所有扫描器

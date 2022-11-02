@@ -31,8 +31,7 @@
     </canway-dialog>
 </template>
 <script>
-    import { mapActions } from 'vuex'
-    import { scanTypeEnum } from '@repository/store/publicEnum'
+    import { mapActions, mapState } from 'vuex'
     export default {
         name: 'commonForm',
         data () {
@@ -68,6 +67,7 @@
             }
         },
         computed: {
+            ...mapState(['scannerSupportPackageType']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -94,7 +94,7 @@
                 }
                 if (data.type === 'scan') {
                     Promise.all(
-                        Object.keys(scanTypeEnum)
+                        this.scannerSupportPackageType
                             .filter(key => key.includes(this.repoType.toUpperCase()))
                             .map(type => this.getScanAll({ projectId: this.projectId, type }))
                     ).then(res => {

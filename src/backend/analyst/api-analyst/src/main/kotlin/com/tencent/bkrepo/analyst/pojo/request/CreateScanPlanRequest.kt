@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -42,7 +41,7 @@ data class CreateScanPlanRequest(
     @ApiModelProperty("方案类型")
     val type: String,
     @ApiModelProperty("扫描类型")
-    val scanTypes: List<String> = listOf(ScanType.SECURITY.name),
+    val scanTypes: List<String> = emptyList(),
     @ApiModelProperty("使用的扫描器")
     val scanner: String = "default",
     @ApiModelProperty("描述")

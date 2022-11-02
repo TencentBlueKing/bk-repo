@@ -25,7 +25,8 @@
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
             </bk-tab-panel>
             <bk-tab-panel render-directive="if" name="qualityRule" label="质量规则">
-                <scan-quality-rule></scan-quality-rule>
+                <scan-quality-rule :project-id="projectId" :plan-id="planId" :scan-types="scanBaseInfo.scanTypes">
+                </scan-quality-rule>
             </bk-tab-panel>
         </bk-tab>
     </div>
@@ -48,6 +49,7 @@
                 scanBaseInfo: {
                     name: '',
                     type: '',
+                    scanTypes: [],
                     scanner: '',
                     description: '',
                     scanOnNewArtifact: false,

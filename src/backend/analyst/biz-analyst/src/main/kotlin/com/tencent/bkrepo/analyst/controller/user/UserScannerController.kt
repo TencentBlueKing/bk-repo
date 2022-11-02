@@ -78,20 +78,24 @@ class UserScannerController @Autowired constructor(
         @RequestParam(required = false) packageType: String? = null,
         @RequestParam(required = false) scanType: String? = null
     ): Response<List<ScannerBase>> {
-        val scannerBaseList = if (packageType != null && scanType != null) {
-            scannerService.find(packageType, scanType)
-        } else {
-            scannerService.list()
-        }
-        return ResponseBuilder.success(
-            scannerBaseList.map { ScannerBase(it.name, it.type, it.description, it.supportFileNameExt) }
-        )
+        val scannerBaseList = scannerService.find(packageType, scanType)
+        return ResponseBuilder.success(scannerBaseList.map {
+            ScannerBase(
+                it.name, it.type, it.description, it.supportFileNameExt, it.supportPackageTypes, it.supportScanTypes
+            )
+        })
     }
 
     @ApiOperation("获取支持扫描的文件名后缀")
     @GetMapping("/support/ext")
     fun supportFileNameExt(): Response<Set<String>> {
         return ResponseBuilder.success(scannerService.supportFileNameExt())
+    }
+
+    @ApiOperation("获取支持扫描的包类型")
+    @GetMapping("/support/package")
+    fun supportPackageType(): Response<Set<String>> {
+        return ResponseBuilder.success(scannerService.supportPackageType())
     }
 
     @ApiOperation("获取扫描器")

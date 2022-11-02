@@ -27,15 +27,6 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.pojo.ScanPlan
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
@@ -50,6 +41,15 @@ import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -119,7 +119,7 @@ class UserScanPlanController(
         @ApiParam(value = "projectId", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "方案类型(DEPENDENT/MOBILE)")
+        @ApiParam(value = "方案类型")
         @RequestParam
         type: String?,
         @ApiParam(value = "方案名")
@@ -151,7 +151,7 @@ class UserScanPlanController(
         @ApiParam(value = "待扫描文件名后缀，该参数尽在type为GENERIC时有效")
         @RequestParam(required = false)
         fileNameExt: String? = null
-        ): Response<List<ScanPlan>> {
+    ): Response<List<ScanPlan>> {
         val planList = scanPlanService.list(projectId, type, fileNameExt)
         planList.forEach { ScanPlanConverter.keepProps(it, KEEP_PROPS) }
         return ResponseBuilder.success(planList)
@@ -181,6 +181,7 @@ class UserScanPlanController(
     ): Response<List<ArtifactPlanRelation>> {
         return ResponseBuilder.success(scanPlanService.artifactPlanList(artifactRequest))
     }
+
     @ApiOperation("方案详情-许可-统计数据")
     @GetMapping("/license/count")
     fun planLicenseDetailCount(countRequest: PlanCountRequest): Response<ScanLicensePlanInfo?> {
