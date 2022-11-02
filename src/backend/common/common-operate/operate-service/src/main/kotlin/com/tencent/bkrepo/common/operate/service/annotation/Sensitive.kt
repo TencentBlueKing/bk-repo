@@ -25,12 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+
 package com.tencent.bkrepo.common.operate.service.annotation
 
 import java.lang.annotation.Retention
 import java.lang.annotation.RetentionPolicy
 
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER)
-@MustBeDocumented
-annotation class OperateLog(val name: String = "")
+/**
+ * 此注解标记参数脱敏方法（方法需写在ParamHandler里面,requestBody中使用样例@field:Sensitive()）
+ */
+annotation class Sensitive(val handler: String)

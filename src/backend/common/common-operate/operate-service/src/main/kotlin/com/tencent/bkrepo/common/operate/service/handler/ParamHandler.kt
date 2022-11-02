@@ -25,12 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.service.annotation
+package com.tencent.bkrepo.common.operate.service.handler
 
-import java.lang.annotation.Retention
-import java.lang.annotation.RetentionPolicy
+/**
+ * 此方法专门处理参数的脱敏，自行添加对应方法
+ */
+class ParamHandler
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER)
-@MustBeDocumented
-annotation class OperateLog(val name: String = "")

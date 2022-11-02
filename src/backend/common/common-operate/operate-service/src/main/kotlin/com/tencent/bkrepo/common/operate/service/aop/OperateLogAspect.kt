@@ -27,13 +27,15 @@
 
 package com.tencent.bkrepo.common.operate.service.aop
 
+import com.google.gson.Gson
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OperateEvent
 import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
+import com.tencent.bkrepo.common.operate.service.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.service.handler.ParamHandler
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
@@ -43,6 +45,9 @@ import org.springframework.core.DefaultParameterNameDiscoverer
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -56,41 +61,123 @@ class OperateLogAspect(
     )
     @Throws(Throwable::class)
     fun around(joinPoint: ProceedingJoinPoint): Any? {
+        asynRecord(joinPoint)
         var obj: Any? = null
-        val servletRequestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
-        val httpServletRequest: HttpServletRequest = servletRequestAttributes.request
-        val signature = joinPoint.signature as MethodSignature
-        val method = signature.method
-        val discoverer = DefaultParameterNameDiscoverer()
-        val parameterNames = discoverer.getParameterNames(method)
-        val annotation = method.getAnnotation(OperateLog::class.java)
-        val userId = httpServletRequest.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val map = HashMap<String, Any>()
-        if (parameterNames != null && parameterNames.isNotEmpty()) {
-            val paramMap = HashMap<String, Any>()
-            for (i in parameterNames.indices) {
-                paramMap[parameterNames.get(i)] = joinPoint.args.get(i)
-            }
-            map["requestParam"] = paramMap
-        } else {
-            map["requestParam"] = joinPoint.args
-        }
-        try {
-            obj = joinPoint.proceed()
-            map["messageCode"] = CommonMessageCode.SUCCESS.getCode()
-        } catch (errorCodeException: ErrorCodeException) {
-            map["messageCode"] = errorCodeException.messageCode.getCode()
-        }
-        val eventDetail = OperateEvent(
+        obj = joinPoint.proceed()
+        return obj
+    }
+
+    fun asynRecord(joinPoint: ProceedingJoinPoint) {
+        val runnable = Runnable {
+            run {
+                val servletRequestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
+                val httpServletRequest: HttpServletRequest = servletRequestAttributes.request
+                val signature = joinPoint.signature as MethodSignature
+                val method = signature.method
+                val annotation = method.getAnnotation(OperateLog::class.java)
+                val map = HashMap<String, Any>()
+                map["requestParam"] = buildParamData(joinPoint)
+                val eventDetail = OperateEvent(
                     type = annotation.name,
                     projectId = "",
                     repoName = "",
                     resourceKey = "",
-                    userId = userId,
+                    userId = httpServletRequest.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER,
                     address = HttpContextHolder.getClientAddress(httpServletRequest),
                     data = map
                 )
-        operateLogService.saveEventAsync(eventDetail)
-        return obj
+                operateLogService.saveEventAsync(eventDetail)
+            }
+        }
+    Thread(runnable).run()
+    }
+
+    /**
+     * 构建参数的map数据
+     */
+    fun buildParamData(joinPoint: ProceedingJoinPoint): Map<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        val signature = joinPoint.signature as MethodSignature
+        val method = signature.method
+        val annotations = method.parameterAnnotations
+
+        for (i in annotations.indices) {
+            val anos = annotations[i]
+            if (anos.any() {
+                    it.annotationClass.java.name.equals("org.springframework.web.bind.annotation.RequestBody") }) {
+                map.putAll(handleBodyParam(joinPoint.args) as MutableMap<String, Any>)
+            } else {
+                map.putAll(handleFunctionParam(anos, method, i, joinPoint))
+            }
+        }
+        return map
+    }
+
+    /**
+     * 方法参数中的注解处理
+     */
+    fun handleFunctionParam(
+        anos: Array<Annotation>,
+        method: Method,
+        i: Int,
+        joinPoint: ProceedingJoinPoint
+    ): Map<String, Any> {
+        val discoverer = DefaultParameterNameDiscoverer()
+        val parameterNames = discoverer.getParameterNames(method)
+        val map = mutableMapOf<String, Any>()
+        if (anos.any() {
+                it.annotationClass.java.name.equals(
+                    "com.tencent.bkrepo.common.operate.service.annotation.Sensitive")
+            }) {
+            val sensitive = anos.first { it.annotationClass.java.name.equals(
+                "com.tencent.bkrepo.common.operate.service.annotation.Sensitive") } as Sensitive
+            val handleMethodName: String = sensitive.handler
+            val handleMethod: Method = ParamHandler::class.java.getMethod(handleMethodName, method.parameterTypes[i])
+            val res = handleMethod.invoke(ParamHandler::class.java.newInstance(), joinPoint.args[i])
+            map[parameterNames[i]] = res
+        } else {
+            map[parameterNames[i]] = if (joinPoint.args[i] == null) "" else joinPoint.args[i]
+        }
+        return map
+    }
+
+    /**
+     * body中的参数处理
+     */
+    @Throws(NoSuchMethodException::class, IllegalAccessException::class, InvocationTargetException::class)
+    fun handleBodyParam(objs: Array<Any>): Map<String, Any> {
+        var map = mutableMapOf<String, Any>()
+        for (obj in objs) {
+            if (obj != null) {
+                val fields = obj.javaClass.declaredFields
+                val gson = Gson()
+                val objMap = gson.fromJson(obj.toJsonString(), MutableMap::class.java)
+                map.putAll(handleBodyField(fields, objMap))
+            }
+        }
+        return map
+    }
+
+    /**
+     * body中的属性注解处理
+     */
+    @Throws(NoSuchMethodException::class, IllegalAccessException::class, InvocationTargetException::class)
+    fun handleBodyField(fields: Array<Field>, objMap: MutableMap<*, *>): Map<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        for (field in fields) {
+            if (field.annotations.any() {
+                    it.annotationClass.java.name.equals(
+                        "com.tencent.bkrepo.common.operate.service.annotation.Sensitive")
+            }) {
+                val sensitive = field.getAnnotation(Sensitive::class.java)
+                val handleMethodName: String = sensitive.handler
+                val handlerMethod: Method = ParamHandler::class.java.getMethod(handleMethodName, field.type)
+                val res = handlerMethod.invoke(ParamHandler::class.java, objMap.get(field.name))
+                map.put(field.name, res)
+            } else {
+                objMap.get(field.name)?.let { map.put(field.name, it) }
+            }
+        }
+        return map
     }
 }
