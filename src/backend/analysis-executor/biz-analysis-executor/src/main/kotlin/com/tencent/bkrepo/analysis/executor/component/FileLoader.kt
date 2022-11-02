@@ -192,11 +192,13 @@ class FileLoader(
      * 部分扫描器依赖文件名后缀，因此生成的文件名需要保留后缀
      */
     private fun fileName(subtaskId: String, rawFileName: String, repoType: String): String {
+        val rawFileNameExt = rawFileName.substringAfterLast(CharPool.DOT, "")
         return if (repoType == RepositoryType.DOCKER.name) {
             "${subtaskId}.tar"
+        } else if (rawFileNameExt.isNotEmpty()) {
+            "${subtaskId}.$rawFileNameExt"
         } else {
-            val fileExtension = rawFileName.substringAfterLast(CharPool.DOT, "")
-            "${subtaskId}.$fileExtension"
+            subtaskId
         }
     }
 

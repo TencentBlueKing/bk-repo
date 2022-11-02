@@ -58,7 +58,7 @@ open class ScanExecutorResult(
     val type: String
 ) {
     /**
-     * 对扫描结果进行去重
+     * 标准化扫描结果
      */
-    open fun distinctResult() {}
+    open fun normalizeResult() {}
 }
