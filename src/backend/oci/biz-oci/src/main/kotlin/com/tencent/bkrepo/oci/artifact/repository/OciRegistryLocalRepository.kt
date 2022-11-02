@@ -33,6 +33,7 @@ package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -347,10 +348,10 @@ class OciRegistryLocalRepository(
     }
 
     private fun getNodeDetail(artifactInfo: OciArtifactInfo, fullPath: String): NodeDetail? {
-        return nodeClient.getNodeDetail(artifactInfo.projectId, artifactInfo.repoName, fullPath).data ?: run {
+        return ArtifactContextHolder.getNodeDetail(fullPath) ?: run {
             val oldDockerPath = ociOperationService.getDockerNode(artifactInfo)
                 ?: return null
-            nodeClient.getNodeDetail(artifactInfo.projectId, artifactInfo.repoName, oldDockerPath).data
+            ArtifactContextHolder.getNodeDetail(oldDockerPath)
         }
     }
 
