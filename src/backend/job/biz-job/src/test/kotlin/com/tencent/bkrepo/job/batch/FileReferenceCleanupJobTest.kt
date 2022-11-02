@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.mockkObject
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
@@ -50,6 +51,8 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.util.concurrent.atomic.AtomicInteger
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 
 @DisplayName("文件引用清理Job测试")
 @DataMongoTest
@@ -69,6 +72,10 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
+        val tracer = mockk<OtelTracer>()
+        mockkObject(SpringContextUtils.Companion)
+        every { SpringContextUtils.getBean<Tracer>() } returns tracer
+        every { tracer.currentSpan() } returns null
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
         val credentials = InnerCosCredentials()
         Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(

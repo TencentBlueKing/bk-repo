@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_CONFIGURER
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.constant.NODE_DETAIL_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
@@ -47,7 +48,9 @@ import com.tencent.bkrepo.common.artifact.repository.composite.CompositeReposito
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.web.servlet.HandlerMapping
@@ -59,6 +62,7 @@ class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
     repositoryClient: RepositoryClient,
+    nodeClient: NodeClient,
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 ) {
 
@@ -66,6 +70,7 @@ class ArtifactContextHolder(
         Companion.artifactConfigurers = artifactConfigurers
         Companion.compositeRepository = compositeRepository
         Companion.repositoryClient = repositoryClient
+        Companion.nodeClient = nodeClient
         Companion.httpAuthSecurity = httpAuthSecurity
         require(artifactConfigurers.isNotEmpty()) { "No ArtifactConfigurer found!" }
         artifactConfigurers.forEach {
@@ -77,6 +82,7 @@ class ArtifactContextHolder(
         private lateinit var artifactConfigurers: List<ArtifactConfigurer>
         private lateinit var compositeRepository: CompositeRepository
         private lateinit var repositoryClient: RepositoryClient
+        private lateinit var nodeClient: NodeClient
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 
         private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
@@ -247,6 +253,24 @@ class ArtifactContextHolder(
                 }
             }
             return otherRepo ?: throw RepoNotFoundException(repoName)
+        }
+
+        fun getNodeDetail(fullPath: String? = null): NodeDetail? {
+            val request = HttpContextHolder.getRequestOrNull() ?: return null
+            val nodeDetailAttribute = request.getAttribute(NODE_DETAIL_KEY)
+            if (nodeDetailAttribute != null) {
+                require(nodeDetailAttribute is NodeDetail)
+                return nodeDetailAttribute
+            }
+
+            val artifactInfo = getArtifactInfo(request) ?: return null
+            val nodeDetail = nodeClient.getNodeDetail(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = fullPath ?: artifactInfo.getArtifactFullPath()
+            ).data
+            nodeDetail?.let { request.setAttribute(NODE_DETAIL_KEY, nodeDetail) }
+            return nodeDetail
         }
     }
 

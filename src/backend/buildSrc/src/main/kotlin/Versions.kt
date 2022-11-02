@@ -26,8 +26,8 @@
  */
 
 object Release {
-    const val Group = "com.tencent.bkrepo"
-    const val Version = "1.0.0-SNAPSHOT"
+    const val Group = "com.tencent.bk.repo"
+    const val Version = "1.0.0"
 }
 
 object Versions {
