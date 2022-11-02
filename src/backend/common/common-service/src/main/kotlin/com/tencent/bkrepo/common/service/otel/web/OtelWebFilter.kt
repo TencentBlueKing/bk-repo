@@ -27,13 +27,15 @@
 
 package com.tencent.bkrepo.common.service.otel.web
 
+import io.undertow.servlet.spec.HttpServletRequestImpl
 import org.slf4j.LoggerFactory
 import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
 import javax.servlet.Filter
 import javax.servlet.FilterChain
 import javax.servlet.ServletRequest
 import javax.servlet.ServletResponse
-import javax.servlet.http.HttpServletRequest
 
 class OtelWebFilter : Filter {
 
@@ -44,20 +46,16 @@ class OtelWebFilter : Filter {
      * 使用了[java.net.URI.create],在有未编码的特殊字符时会导致500
      */
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
-        if (request is HttpServletRequest) {
+        if (request is HttpServletRequestImpl) {
             val url = request.requestURL.toString()
             try {
                 URI.create(url)
             } catch (ignore: IllegalArgumentException) {
-                // 此处先打印日志记录，后续修改完调用方时返回400
                 logger.warn("illegal url: $url, request method: ${request.method}")
-//                require(response is HttpServletResponse)
-//                response.status = HttpStatus.BAD_REQUEST.value()
-//                response.contentType = MediaTypes.APPLICATION_JSON
-//                response.writer.println(
-//                    ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value(), "illegal url").toJsonString()
-//                )
-//                return
+                request.exchange.requestURI = URLEncoder.encode(
+                    URLDecoder.decode(request.exchange.requestURI.replace("+",  "%2b"), Charsets.UTF_8.name()),
+                    Charsets.UTF_8.name()
+                ).replace("+", "%20").replace("%2f", "/")
             }
         }
         chain.doFilter(request, response)
