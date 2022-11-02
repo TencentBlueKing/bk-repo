@@ -65,7 +65,7 @@ class DownloadService(
 
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+            val node = ArtifactContextHolder.getNodeDetail()
                 ?: throw NodeNotFoundException(getArtifactFullPath())
             val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
             val context = ArtifactDownloadContext()

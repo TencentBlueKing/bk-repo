@@ -2,7 +2,7 @@ FROM bkrepo/bkrepo-base
 
 LABEL maintainer="Tencent BlueKing Devops"
 
-ENV BK_REPO_HOME=/data/workspace \
+ENV BK_REPO_HOME=/data/workspace/bkrepo \
     BK_REPO_LOGS_DIR=/bkrepo-data/logs \
     BK_REPO_DATA_PATH=/bkrepo-data/store \
     BK_REPO_MONGO_PATH=/bkrepo-data/mongo \
@@ -17,10 +17,10 @@ ENV BK_REPO_HOME=/data/workspace \
 
 COPY ./bkrepo-slim.tar.gz /data/workspace/bkrepo-slim.tar.gz
 
-RUN tar -xvf $BK_REPO_HOME/bkrepo-slim.tar.gz -C $BK_REPO_HOME && \
-    rm -rf $BK_REPO_HOME/bkrepo-slim.tar.gz && \
-    chmod +x /data/workspace/scripts/render_tpl && \
-    chmod +x /data/workspace/scripts/bk-repo-all-in-one-startup.sh
+RUN tar -xvf /data/workspace/bkrepo-slim.tar.gz -C /data/workspace && \
+    rm -rf /data/workspace/bkrepo-slim.tar.gz && \
+    chmod +x $BK_REPO_HOME/scripts/render_tpl && \
+    chmod +x $BK_REPO_HOME/scripts/bk-repo-all-in-one-startup.sh
 
-WORKDIR /data/workspace
-CMD /data/workspace/scripts/bk-repo-all-in-one-startup.sh 
+WORKDIR $BK_REPO_HOME
+CMD $BK_REPO_HOME/scripts/bk-repo-all-in-one-startup.sh

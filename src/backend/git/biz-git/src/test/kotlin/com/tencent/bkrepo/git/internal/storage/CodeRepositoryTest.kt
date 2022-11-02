@@ -2,18 +2,10 @@ package com.tencent.bkrepo.git.internal.storage
 
 import org.eclipse.jgit.junit.TestRepository
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 
-@DataMongoTest
 class CodeRepositoryTest {
-
-    @BeforeEach
-    private fun init() {
-        println("init")
-    }
 
     @DisplayName("常用操作测试")
     @Test
@@ -42,7 +34,8 @@ class CodeRepositoryTest {
             repoName = "ut-repo",
             storageCredentials = null,
             dataService = dataService,
-            blockSize = 1024
+            blockSize = 1024,
+            lockProvider = EmptyLockProvider()
         ).build()
     }
 }
