@@ -61,35 +61,26 @@ class OperateLogAspect(
     )
     @Throws(Throwable::class)
     fun around(joinPoint: ProceedingJoinPoint): Any? {
-        asynRecord(joinPoint)
-        var obj: Any? = null
-        obj = joinPoint.proceed()
-        return obj
+        record(joinPoint)
+        return joinPoint.proceed()
     }
 
-    fun asynRecord(joinPoint: ProceedingJoinPoint) {
-        val runnable = Runnable {
-            run {
-                val servletRequestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
-                val httpServletRequest: HttpServletRequest = servletRequestAttributes.request
-                val signature = joinPoint.signature as MethodSignature
-                val method = signature.method
-                val annotation = method.getAnnotation(OperateLog::class.java)
-                val map = HashMap<String, Any>()
-                map["requestParam"] = buildParamData(joinPoint)
-                val eventDetail = OperateEvent(
-                    type = annotation.name,
-                    projectId = "",
-                    repoName = "",
-                    resourceKey = "",
-                    userId = httpServletRequest.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER,
-                    address = HttpContextHolder.getClientAddress(httpServletRequest),
-                    data = map
-                )
-                operateLogService.saveEventAsync(eventDetail)
-            }
-        }
-    Thread(runnable).run()
+    fun record(joinPoint: ProceedingJoinPoint) {
+        val servletRequestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
+        val httpServletRequest: HttpServletRequest = servletRequestAttributes.request
+        val signature = joinPoint.signature as MethodSignature
+        val method = signature.method
+        val annotation = method.getAnnotation(OperateLog::class.java)
+        val eventDetail = OperateEvent(
+            type = annotation.name,
+            projectId = "",
+            repoName = "",
+            resourceKey = "",
+            userId = httpServletRequest.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER,
+            address = HttpContextHolder.getClientAddress(httpServletRequest),
+            data = buildParamData(joinPoint)
+        )
+        operateLogService.saveEventAsync(eventDetail)
     }
 
     /**
