@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.operate.service.aop
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -141,8 +141,7 @@ class OperateLogAspect(
         for (obj in objs) {
             if (obj != null) {
                 val fields = obj.javaClass.declaredFields
-                val gson = Gson()
-                val objMap = gson.fromJson(obj.toJsonString(), MutableMap::class.java)
+                val objMap = jacksonObjectMapper().readValue(obj.toJsonString(), MutableMap::class.java)
                 map.putAll(handleBodyField(fields, objMap))
             }
         }
@@ -163,7 +162,7 @@ class OperateLogAspect(
                 val sensitive = field.getAnnotation(Sensitive::class.java)
                 val handleMethodName: String = sensitive.handler
                 val handlerMethod: Method = ParamHandler::class.java.getMethod(handleMethodName, field.type)
-                val res = handlerMethod.invoke(ParamHandler::class.java, objMap.get(field.name))
+                val res = handlerMethod.invoke(ParamHandler::class.java.newInstance(), objMap.get(field.name))
                 map.put(field.name, res)
             } else {
                 objMap.get(field.name)?.let { map.put(field.name, it) }
