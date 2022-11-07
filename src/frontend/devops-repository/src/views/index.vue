@@ -41,7 +41,6 @@
 <script>
     import Breadcrumb from '@repository/components/Breadcrumb/topBreadcrumb'
     import { mapState, mapGetters, mapActions } from 'vuex'
-    import { k8s } from '../store/publicEnum'
     export default {
         components: { Breadcrumb },
         data () {
@@ -60,13 +59,13 @@
                             'repoSearch',
                             this.userInfo.admin && 'planManage',
                             MODE_CONFIG === 'ci' && 'repoToken',
-                            !k8s && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
+                            RELEASE_MODE !== 'community' && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
                             SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                         ].filter(Boolean),
                         global: [
                             !(MODE_CONFIG === 'ci') && 'projectManage',
                             'userManage',
-                            !k8s && 'nodeManage',
+                            'nodeManage',
                             // 'securityConfig',
                             this.isMasterNode && 'planManage',
                             'repoAudit'

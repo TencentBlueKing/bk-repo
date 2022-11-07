@@ -58,7 +58,7 @@ export const constantRoutes = [
 
   {
     path: '/',
-    redirect: process.env.VUE_APP_K8S === 'k8s' ? '/nodes' : '/services',
+    redirect: process.env.VUE_APP_RELEASE_MODE === 'community' ? '/nodes' : '/services',
     meta: { title: TITLE_HOME, icon: 'bk' }
   },
 
@@ -101,7 +101,7 @@ export const asyncRoutes = [
   {
     path: '/services',
     component: Layout,
-    hidden: process.env.VUE_APP_K8S === 'k8s',
+    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
     children: [
       {
         path: '/',
@@ -187,7 +187,7 @@ export const asyncRoutes = [
   {
     path: '/webhook',
     component: Layout,
-    hidden: process.env.VUE_APP_K8S === 'k8s',
+    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
     meta: { title: 'WebHook管理', icon: 'webhook' },
     children: [
       {
@@ -206,7 +206,7 @@ export const asyncRoutes = [
   },
   {
     path: '/scan',
-    hidden: process.env.VUE_APP_K8S === 'k8s',
+    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
     alwaysShow: true,
     redirect: '/scan/scanners',
     component: Layout,

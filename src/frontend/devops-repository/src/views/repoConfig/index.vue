@@ -210,7 +210,7 @@
                 return `${location.origin}/${repoType}/${this.projectId}/${name}/`
             },
             isCommunity () {
-                return window.RELEASE_MODE === 'community'
+                return RELEASE_MODE === 'community'
             },
             genericInterceptorsList () {
                 return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
@@ -293,7 +293,7 @@
                         ...res.configuration.settings,
                         repoType: res.type.toLowerCase()
                     }
-                    
+
                     const { interceptors } = res.configuration.settings
                     if (interceptors instanceof Array) {
                         interceptors.forEach(i => {

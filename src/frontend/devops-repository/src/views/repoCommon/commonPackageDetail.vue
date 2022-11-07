@@ -79,7 +79,6 @@
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
     import { scanTypeEnum } from '@repository/store/publicEnum'
     import { mapState, mapActions } from 'vuex'
-    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'commonPackageDetail',
         components: { OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
@@ -144,7 +143,7 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return !k8s && Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community' && Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {

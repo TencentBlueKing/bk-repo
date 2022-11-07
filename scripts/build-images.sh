@@ -156,7 +156,7 @@ fi
 if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
     log "编译frontend..."
     yarn --cwd $FRONTEND_DIR install
-    env VUE_APP_K8S=k8s yarn --cwd $FRONTEND_DIR run public
+    yarn --cwd $FRONTEND_DIR run public
 
     # 打包gateway镜像
     log "构建gateway镜像..."

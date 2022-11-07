@@ -126,12 +126,6 @@ export const scannerTypeEnum = {
     }
 }
 
-/**
- * 是否容器化部署
- * @type {boolean}
- */
-export const k8s = process.env.VUE_APP_K8S === 'k8s'
-
 export const genericScanFileTypes = [
     'zip', 'tar', 'tgz', 'jar', 'war', 'exe',
     'apk', 'ear', 'sar', 'nupkg', 'gz', 'bz2',

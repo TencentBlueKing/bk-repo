@@ -14,8 +14,8 @@
         width="100"
       >
         <template slot-scope="scope">
-          <el-tooltip :disabled="!k8s" effect="dark" content="容器环境暂不支持动态启用任务" placement="top">
-            <el-switch v-model="scope.row.enabled" :disabled="k8s" @change="changeEnabled(scope.row)" />
+          <el-tooltip :disabled="!community" effect="dark" content="容器环境暂不支持动态启用任务" placement="top">
+            <el-switch v-model="scope.row.enabled" :disabled="community" @change="changeEnabled(scope.row)" />
           </el-tooltip>
         </template>
       </el-table-column>
@@ -96,8 +96,8 @@ export default {
     }
   },
   computed: {
-    k8s() {
-      return process.env.VUE_APP_K8S === 'k8s'
+    community() {
+      return process.env.VUE_APP_RELEASE_MODE === 'community'
     }
   },
   created() {
