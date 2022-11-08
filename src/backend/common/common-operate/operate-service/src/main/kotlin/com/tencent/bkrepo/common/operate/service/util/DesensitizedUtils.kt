@@ -39,19 +39,37 @@ import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.isSubclassOf
 
 object DesensitizedUtils {
     private val handlerMap = ConcurrentHashMap<KClass<*>, Any>()
     private val parameterNameDiscoverer: ParameterNameDiscoverer = DefaultParameterNameDiscoverer()
 
+    fun toString(obj: Any): String {
+        val desensitizeObj = desensitizeObject(obj)
+        val stringBuilder = StringBuilder("${obj.javaClass.simpleName}=[")
+        var start = true
+        ReflectionUtils.doWithFields(obj.javaClass) {
+            if (!Modifier.isStatic(it.modifiers)) {
+                if (!start) {
+                    stringBuilder.append(", ")
+                }
+                start = false
+                stringBuilder.append("${it.name}=${it.get(desensitizeObj)}")
+            }
+        }
+        stringBuilder.append("]")
+        return stringBuilder.toString()
+    }
+
     /**
      * 获取方法参数详情，对参数进行脱敏
      */
-    fun convertMethodArgsToMap(method: Method, args: Array<Any?>, desensitize: Boolean = false): Map<String, Any> {
+    fun convertMethodArgsToMap(method: Method, args: Array<Any?>, desensitize: Boolean = false): Map<String, Any?> {
         val parameters = method.parameters
         val parameterNames = parameterNameDiscoverer.getParameterNames(method)
 
-        val argsMap: MutableMap<String, Any> = HashMap(args.size)
+        val argsMap: MutableMap<String, Any?> = HashMap(args.size)
         for (i in parameters.indices) {
             val parameter = parameters[i]
             val parameterName = parameterNames?.get(i) ?: parameter.name
@@ -65,7 +83,7 @@ object DesensitizedUtils {
                 }
             } else {
                 arg
-            } ?: "null"
+            }
         }
         return argsMap
     }
@@ -117,6 +135,7 @@ object DesensitizedUtils {
     }
 
     private fun handleSensitive(annotation: Sensitive, arg: Any): Any? {
+        require(annotation.handler.isSubclassOf(SensitiveHandler::class))
         val handler = handlerMap.getOrPut(annotation.handler) { annotation.handler.createInstance() }
         require(handler is SensitiveHandler)
         return handler.desensitize(arg)

@@ -27,18 +27,12 @@
 
 package com.tencent.bkrepo.common.operate.api.handler
 
-abstract class AbsSensitiveHandler: SensitiveHandler {
-
-    override fun desensitize(sensitiveObj: Any): Any? {
-        val supportTypes = supportTypes()
-        check(supportTypes == null || sensitiveObj.javaClass in supportTypes)
-        return doDesensitize(sensitiveObj)
+class MaskString: AbsSensitiveHandler() {
+    override fun doDesensitize(sensitiveObj: Any): Any {
+        return "******"
     }
 
-    abstract fun doDesensitize(sensitiveObj: Any): Any?
-
-    /**
-     * 支持处理的类型，返回NULL表示所有类型都支持，返回空列表表示所有类型都不支持
-     */
-    open fun supportTypes(): List<Class<*>>? = null
+    override fun supportTypes(): List<Class<*>> {
+        return listOf(String::class.java)
+    }
 }

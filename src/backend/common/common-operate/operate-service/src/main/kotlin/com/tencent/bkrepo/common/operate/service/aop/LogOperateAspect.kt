@@ -86,7 +86,8 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
     /**
      * 保存操作日志到[operateLogBuffer]中，[operateLogBuffer]会定时或者在容量已满时保存到数据库
      */
-    fun saveOperateLog(type: String, userId: String, clientAddr: String, descriptions: Map<String, Any>) {
+    @Suppress("UNCHECKED_CAST")
+    fun saveOperateLog(type: String, userId: String, clientAddr: String, descriptions: Map<String, Any?>) {
         val operateLog = OperateLog(
             type = type,
             projectId = "",
@@ -94,7 +95,7 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
             resourceKey = "",
             userId = userId,
             clientAddress = clientAddr,
-            description = descriptions
+            description = descriptions.filterValues { it != null } as Map<String, Any>
         )
         if (operateLogBuffer.size >= LOG_BUFFER_SIZE) {
             flush()

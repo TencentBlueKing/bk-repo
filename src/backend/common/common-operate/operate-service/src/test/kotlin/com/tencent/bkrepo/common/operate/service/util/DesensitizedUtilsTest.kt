@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.common.operate.service.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.api.handler.MaskString
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
@@ -42,7 +44,7 @@ internal class DesensitizedUtilsTest {
     fun testConvertMethodArgsToMap() {
         val method1 = DesensitizedUtilsTest::class.java.getDeclaredMethod("testMethod1", Child::class.java)
         val desensitizedMap = DesensitizedUtils.convertMethodArgsToMap(method1, arrayOf(create()), true)
-        Assertions.assertEquals(desensitizedMap["child"], "null")
+        Assertions.assertNull(desensitizedMap["child"])
 
         val method2 = DesensitizedUtilsTest::class.java.getDeclaredMethod("testMethod2", Child::class.java)
         val desensitizedMap2 = DesensitizedUtils.convertMethodArgsToMap(method2, arrayOf(create()), true)
@@ -56,10 +58,18 @@ internal class DesensitizedUtilsTest {
         Assertions.assertEquals(child.card.cardPassword, "card-pwd-123-1")
     }
 
+    @Test
+    fun testToString() {
+        val result = "[normal=normal, password=******, nullPassword=null, emptyPassword=******, elements=[123, 456]]"
+        Assertions.assertEquals(DesensitizedUtils.toString(TestDataClass()), "TestDataClass=${result}")
+        Assertions.assertEquals(DesensitizedUtils.toString(TestNormalClass()), "TestNormalClass=${result}")
+    }
+
     @Suppress("UnusedPrivateMember")
     private fun testMethod1(@Sensitive child: Child) {
         // do nothing
     }
+
     @Suppress("UnusedPrivateMember")
     private fun testMethod2(child: Child) {
         // do nothing
@@ -112,3 +122,25 @@ class ChildCard(
     @field:Sensitive
     val cardPassword: String
 ) : Card("id-ccc-1")
+
+data class TestDataClass(
+    val normal: String = "normal",
+    @field:Sensitive(MaskString::class)
+    val password: String = "123456",
+    @field:Sensitive(MaskString::class)
+    val nullPassword: String? = null,
+    @field:Sensitive(MaskString::class)
+    val emptyPassword: String = StringPool.EMPTY,
+    val elements: List<String> = listOf("123", "456")
+)
+
+class TestNormalClass(
+    val normal: String = "normal",
+    @field:Sensitive(MaskString::class)
+    val password: String = "123456",
+    @field:Sensitive(MaskString::class)
+    val nullPassword: String? = null,
+    @field:Sensitive(MaskString::class)
+    val emptyPassword: String = StringPool.EMPTY,
+    val elements: List<String> = listOf("123", "456")
+)
