@@ -25,10 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.service.handler
+package com.tencent.bkrepo.common.operate.api.handler
 
 /**
- * 此方法专门处理参数的脱敏，自行添加对应方法
+ * 敏感信息处理器
  */
-class ParamHandler
-
+interface SensitiveHandler{
+    /**
+     * 处理敏感信息
+     *
+     * @param sensitiveObj 敏感信息
+     *
+     * @return 脱敏后的对象
+     */
+    fun desensitize(sensitiveObj: Any): Any?
+}

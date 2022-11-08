@@ -137,5 +137,21 @@ enum class EventType(val nick: String) {
     PROJECT_SCAN_CONFIG_CREATE("制品项目配置新增"),
     PROJECT_SCAN_CONFIG_UPDATE("制品项目配置修改"),
     PROJECT_SCAN_CONFIG_DELETE("制品项目配置删除"),
-    PROJECT_SCAN_CONFIG_LIST("制品项目配置查询")
+    PROJECT_SCAN_CONFIG_LIST("制品项目配置查询");
+
+    companion object {
+        /**
+         * 获取事件名称
+         *
+         * @param type 事件类型
+         * @return [type]对应的名称，没有对应名称时返回[type]
+         */
+        fun nick(type: String): String {
+            return try {
+                EventType.valueOf(type).nick
+            } catch (_: IllegalArgumentException) {
+                type
+            }
+        }
+    }
 }

@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateEvent
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
@@ -71,7 +70,7 @@ open class OperateLogServiceImpl(
 
     @Async
     override fun saveEventAsync(event: ArtifactEvent, address: String) {
-        if (notNeedRecord(event)) {
+        if (notNeedRecord(event.type.name, event.projectId, event.repoName)) {
             return
         }
         val log = TOperateLog(
@@ -86,25 +85,34 @@ open class OperateLogServiceImpl(
         operateLogDao.insert(log)
     }
 
-    @Async
-    override fun saveEventAsync(event: OperateEvent) {
-        val log = TOperateLog(
-            type = event.type,
-            resourceKey = event.resourceKey,
-            projectId = event.projectId,
-            repoName = event.repoName,
-            description = event.data,
-            userId = event.userId,
-            clientAddress = event.address
-        )
-        operateLogDao.insert(log)
+    override fun save(operateLog: OperateLog) {
+        with(operateLog) {
+            if (notNeedRecord(type, projectId, repoName)) {
+                return
+            }
+            operateLogDao.insert(convert(operateLog))
+        }
+    }
+
+    override fun save(operateLogs: Collection<OperateLog>) {
+        val logs = ArrayList<TOperateLog>(operateLogs.size)
+        for (operateLog in operateLogs) {
+            if (notNeedRecord(operateLog.type, operateLog.projectId, operateLog.repoName)) {
+                continue
+            }
+            logs.add(convert(operateLog))
+        }
+
+        if (logs.isNotEmpty()) {
+            operateLogDao.insert(logs)
+        }
     }
 
     @Async
     override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
         val logs = mutableListOf<TOperateLog>()
         eventList.forEach {
-            if (notNeedRecord(it)) {
+            if (notNeedRecord(it.type.name, it.projectId, it.repoName)) {
                 return@forEach
             }
             logs.add(
@@ -170,10 +178,9 @@ open class OperateLogServiceImpl(
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    private fun notNeedRecord(event: ArtifactEvent): Boolean {
-        val eventType = event.type.name
-        val projectRepoKey = "${event.projectId}/${event.repoName}"
-        if (match(operateProperties.eventType, eventType)) {
+    private fun notNeedRecord(type: String, projectId: String?, repoName: String?): Boolean {
+        val projectRepoKey = "$projectId/$repoName"
+        if (match(operateProperties.eventType, type)) {
             return true
         }
         if (match(operateProperties.projectRepoKey, projectRepoKey)) {
@@ -232,7 +239,7 @@ open class OperateLogServiceImpl(
         return Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())
     }
 
-    private fun getEventList(resourceType: String): List<EventType> {
+    private fun getEventList(resourceType: String): List<String> {
         return when (resourceType) {
             "PROJECT" -> repositoryEvent
             "PACKAGE" -> packageEvent
@@ -284,7 +291,7 @@ open class OperateLogServiceImpl(
         }
         return OperateLogResponse(
             createdDate = tOperateLog.createdDate,
-            operate = tOperateLog.type,
+            operate = EventType.nick(tOperateLog.type),
             userId = tOperateLog.userId,
             clientAddress = tOperateLog.clientAddress,
             result = true,
@@ -307,19 +314,33 @@ open class OperateLogServiceImpl(
         }
     }
 
+    private fun convert(operateLog: OperateLog) = with(operateLog) {
+        TOperateLog(
+            type = type,
+            resourceKey = resourceKey,
+            projectId = projectId,
+            repoName = repoName,
+            description = description,
+            userId = userId,
+            clientAddress = clientAddress
+        )
+    }
+
     companion object {
-        private val repositoryEvent = listOf(EventType.REPO_CREATED, EventType.REPO_UPDATED, EventType.REPO_DELETED)
+        private val repositoryEvent = listOf(
+            EventType.REPO_CREATED.name, EventType.REPO_UPDATED.name, EventType.REPO_DELETED.name
+        )
         private val packageEvent = listOf(
-            EventType.VERSION_CREATED, EventType.VERSION_DELETED,
-            EventType.VERSION_DOWNLOAD, EventType.VERSION_UPDATED, EventType.VERSION_STAGED
+            EventType.VERSION_CREATED.name, EventType.VERSION_DELETED.name,
+            EventType.VERSION_DOWNLOAD.name, EventType.VERSION_UPDATED.name, EventType.VERSION_STAGED.name
         )
         private val nodeEvent = listOf(
-            EventType.NODE_CREATED, EventType.NODE_DELETED, EventType.NODE_MOVED,
-            EventType.NODE_RENAMED, EventType.NODE_COPIED
+            EventType.NODE_CREATED.name, EventType.NODE_DELETED.name, EventType.NODE_MOVED.name,
+            EventType.NODE_RENAMED.name, EventType.NODE_COPIED.name
         )
-        private val adminEvent = listOf(EventType.ADMIN_ADD, EventType.ADMIN_DELETE)
-        private val projectEvent = listOf(EventType.PROJECT_CREATED)
-        private val metadataEvent = listOf(EventType.METADATA_SAVED, EventType.METADATA_DELETED)
+        private val adminEvent = listOf(EventType.ADMIN_ADD.name, EventType.ADMIN_DELETE.name)
+        private val projectEvent = listOf(EventType.PROJECT_CREATED.name)
+        private val metadataEvent = listOf(EventType.METADATA_SAVED.name, EventType.METADATA_DELETED.name)
         private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSz")
         private val antPathMatcher = AntPathMatcher()
     }

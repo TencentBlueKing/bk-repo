@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,15 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+package com.tencent.bkrepo.common.operate.api.pojo
 
-package com.tencent.bkrepo.common.operate.service.annotation
+import java.time.LocalDateTime
 
-import java.lang.annotation.Retention
-import java.lang.annotation.RetentionPolicy
-
-@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
-/**
- * 此注解标记参数脱敏方法（方法需写在ParamHandler里面,requestBody中使用样例@field:Sensitive()）
- */
-annotation class Sensitive(val handler: String)
+data class OperateLog(
+    val createdDate: LocalDateTime? = null,
+    val type: String,
+    val projectId: String?,
+    val repoName: String?,
+    val resourceKey: String,
+    val userId: String,
+    val clientAddress: String,
+    val description: Map<String, Any>
+)

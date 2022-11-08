@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.api.pojo
+package com.tencent.bkrepo.common.operate.api.handler
 
-import java.time.LocalDateTime
+abstract class AbsSensitiveHandler: SensitiveHandler {
 
-data class OperateLog(
-    val createdDate: LocalDateTime,
-    val type: String,
-    val projectId: String?,
-    val repoName: String?,
-    val resourceKey: String,
-    val userId: String,
-    val clientAddress: String,
-    val description: Map<String, Any>
-)
+    override fun desensitize(sensitiveObj: Any): Any? {
+        val supportTypes = supportTypes()
+        check(supportTypes == null || sensitiveObj in supportTypes)
+        return doDesensitize(sensitiveObj)
+    }
+
+    abstract fun doDesensitize(sensitiveObj: Any): Any?
+
+    /**
+     * 支持处理的类型，返回NULL表示所有类型都支持，返回空列表表示所有类型都不支持
+     */
+    open fun supportTypes(): List<Class<*>>? = null
+}

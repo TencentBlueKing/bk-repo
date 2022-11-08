@@ -35,7 +35,7 @@ import com.tencent.bkrepo.auth.pojo.externalPermission.UpdateExtPermissionReques
 import com.tencent.bkrepo.auth.service.ExternalPermissionService
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.service.annotation.OperateLog
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -57,7 +57,7 @@ class ExternalPermissionController(
 
     @ApiOperation("创建外部权限")
     @PostMapping
-    @OperateLog(name = "EXT_PERMISSION_CREAT")
+    @LogOperate(type = "EXT_PERMISSION_CREAT")
     fun createExtPermission(
         @RequestBody request: CreateExtPermissionRequest
     ): Response<Void> {
@@ -67,7 +67,7 @@ class ExternalPermissionController(
 
     @ApiOperation("更新外部权限")
     @PutMapping
-    @OperateLog(name = "EXT_PERMISSION_UPDATE")
+    @LogOperate(type = "EXT_PERMISSION_UPDATE")
     fun updateExtPermission(
         @RequestBody request: UpdateExtPermissionRequest
     ): Response<Void> {
@@ -77,7 +77,7 @@ class ExternalPermissionController(
 
     @ApiOperation("删除外部权限")
     @DeleteMapping("/{id}")
-    @OperateLog(name = "EXT_PERMISSION_DELETE")
+    @LogOperate(type = "EXT_PERMISSION_DELETE")
     fun deleteExtPermission(
         @PathVariable id: String
     ): Response<Void> {
@@ -87,7 +87,7 @@ class ExternalPermissionController(
 
     @ApiOperation("分页查询外部权限")
     @GetMapping
-    @OperateLog(name = "EXT_PERMISSION_LIST")
+    @LogOperate(type = "EXT_PERMISSION_LIST")
     fun listExtPermissionPage(
         listExtPermissionOption: ListExtPermissionOption
     ): Response<Page<ExternalPermission>> {

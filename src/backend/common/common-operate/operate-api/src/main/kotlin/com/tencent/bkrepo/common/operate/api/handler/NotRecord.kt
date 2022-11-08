@@ -25,39 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.api.pojo
+package com.tencent.bkrepo.common.operate.api.handler
 
-open class OperateEvent(
-    /**
-     * 事件类型
-     */
-    open val type: String,
-    /**
-     * 项目id
-     */
-    open val projectId: String,
-    /**
-     * 仓库名称
-     */
-    open val repoName: String,
-    /**
-     * 事件资源key，具有唯一性
-     * ex:
-     * 1. 节点类型对应fullPath
-     * 2. 仓库类型对应仓库名称
-     * 3. 包类型对应包名称
-     */
-    open val resourceKey: String,
-    /**
-     * 操作用户
-     */
-    open val userId: String,
-    /**
-     * ip地址
-     */
-    open val address: String,
-    /**
-     * 附属数据
-     */
-    open val data: Map<String, Any> = mapOf()
-)
+/**
+ * 不记录敏感信息
+ */
+class NotRecord : AbsSensitiveHandler() {
+    override fun doDesensitize(sensitiveObj: Any): Any? {
+        return defaultValue(sensitiveObj::class.java)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> defaultValue(type: Class<T>): T? {
+        return when (type) {
+            java.lang.Boolean::class.java -> java.lang.Boolean.FALSE as T
+            java.lang.Character::class.java -> Character.valueOf('\u0000') as T
+            java.lang.Byte::class.java -> java.lang.Byte.valueOf(0.toByte()) as T
+            java.lang.Short::class.java -> 0.toShort() as T
+            java.lang.Integer::class.java -> Integer.valueOf(0) as T
+            java.lang.Long::class.java -> java.lang.Long.valueOf(0L) as T
+            java.lang.Float::class.java -> 0.0 as T
+            java.lang.Double::class.java -> 0f as T
+            else -> null
+        }
+    }
+}

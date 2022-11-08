@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.api
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateEvent
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
+package com.tencent.bkrepo.common.operate.api.annotation
 
-interface OperateLogService {
+import com.tencent.bkrepo.common.operate.api.handler.NotRecord
+import java.lang.annotation.Inherited
+import kotlin.reflect.KClass
 
-    /**
-     * 异步保存事件
-     * @param event 事件
-     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
-     */
-    fun saveEventAsync(event: ArtifactEvent, address: String)
-
-    fun saveEventAsync(event: OperateEvent)
-
-    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
-
-    fun listPage(option: OpLogListOption): Page<OperateLog>
-
-    fun page(
-        type: String?,
-        projectId: String?,
-        repoName: String?,
-        operator: String?,
-        startTime: String?,
-        endTime: String?,
-        pageNumber: Int,
-        pageSize: Int
-    ): Page<OperateLogResponse?>
-}
+/**
+ * 用于标记敏感信息字段的注解，当对象本身与其字段都包含该注解时，仅对象本身的注解生效
+ * 例如下方的例子中，仅User类上的Sensitive注解会生效
+ *
+ * @Sensitive(handler = UserHandler::class)
+ * class User {
+ *     @field:Sensitive(handler = PasswordHandler::class)
+ *     val password: String
+ * }
+ *
+ * 方法参数与参数类型都有Sensitive注解时，方法参数的注解生效，如下方例子中create方法的Sensitive注解会生效
+ *
+ * fun create(@Sensitive(handler = CreateHandler::class) user: User) {}
+ */
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD, AnnotationTarget.CLASS)
+@Inherited
+@MustBeDocumented
+annotation class Sensitive(val handler: KClass<*> = NotRecord::class)
