@@ -57,7 +57,7 @@ class ExternalPermissionController(
 
     @ApiOperation("创建外部权限")
     @PostMapping
-    @LogOperate(type = "EXT_PERMISSION_CREAT")
+    @LogOperate(type = "EXT_PERMISSION_CREAT", desensitize = true)
     fun createExtPermission(
         @RequestBody request: CreateExtPermissionRequest
     ): Response<Void> {
@@ -67,7 +67,7 @@ class ExternalPermissionController(
 
     @ApiOperation("更新外部权限")
     @PutMapping
-    @LogOperate(type = "EXT_PERMISSION_UPDATE")
+    @LogOperate(type = "EXT_PERMISSION_UPDATE", desensitize = true)
     fun updateExtPermission(
         @RequestBody request: UpdateExtPermissionRequest
     ): Response<Void> {

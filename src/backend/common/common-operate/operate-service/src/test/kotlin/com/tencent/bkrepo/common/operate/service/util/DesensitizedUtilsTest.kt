@@ -56,8 +56,14 @@ internal class DesensitizedUtilsTest {
         Assertions.assertEquals(child.card.cardPassword, "card-pwd-123-1")
     }
 
-    private fun testMethod1(@Sensitive child: Child) {}
-    private fun testMethod2(child: Child) {}
+    @Suppress("UnusedPrivateMember")
+    private fun testMethod1(@Sensitive child: Child) {
+        // do nothing
+    }
+    @Suppress("UnusedPrivateMember")
+    private fun testMethod2(child: Child) {
+        // do nothing
+    }
 
     private fun assert(desensitizedChild: Child) {
         Assertions.assertNull(desensitizedChild.password)

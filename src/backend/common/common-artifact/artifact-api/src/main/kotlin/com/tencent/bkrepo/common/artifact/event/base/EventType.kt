@@ -73,7 +73,7 @@ enum class EventType(val nick: String) {
     WEBHOOK_LOG_LIST("webhook日志查询"),
 
     // ACCOUNT
-    ACCOUNT_ADD("平台账户添加"),
+    ACCOUNT_CREATE("平台账户创建"),
     ACCOUNT_DELETE("平台账户删除"),
     ACCOUNT_UPDATE("平台账户修改"),
     ACCOUNT_LIST("平台账户查询"),

@@ -58,7 +58,7 @@ class UserWebHookController(
 
     @ApiOperation("创建WebHook")
     @PostMapping("/create")
-    @LogOperate(type = "WEBHOOK_CREATE")
+    @LogOperate(type = "WEBHOOK_CREATE", desensitize = true)
     fun createWebHook(
         @RequestAttribute userId: String,
         @RequestBody request: CreateWebHookRequest
@@ -69,7 +69,7 @@ class UserWebHookController(
 
     @ApiOperation("更新WebHook")
     @PutMapping("/update")
-    @LogOperate(type = "WEBHOOK_UPDATE")
+    @LogOperate(type = "WEBHOOK_UPDATE", desensitize = true)
     fun updateWebHook(
         @RequestAttribute userId: String,
         @RequestBody request: UpdateWebHookRequest
