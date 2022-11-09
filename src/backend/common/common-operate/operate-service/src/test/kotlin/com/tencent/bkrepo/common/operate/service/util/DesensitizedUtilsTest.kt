@@ -36,21 +36,24 @@ import org.junit.jupiter.api.Test
 internal class DesensitizedUtilsTest {
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun testDesensitizeObject() {
-        assert(DesensitizedUtils.desensitizeObject(create()) as Child)
+        assert(DesensitizedUtils.desensitizeObject(create()) as Map<String, Any?>)
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun testConvertMethodArgsToMap() {
-        val method1 = DesensitizedUtilsTest::class.java.getDeclaredMethod("testMethod1", Child::class.java)
+        val method1 = TestMethod::class.java.getDeclaredMethod("testMethod1", Child::class.java)
         val desensitizedMap = DesensitizedUtils.convertMethodArgsToMap(method1, arrayOf(create()), true)
         Assertions.assertNull(desensitizedMap["child"])
-
-        val method2 = DesensitizedUtilsTest::class.java.getDeclaredMethod("testMethod2", Child::class.java)
+//
+        val method2 = TestMethod::class.java.getDeclaredMethod("testMethod2", Child::class.java)
         val desensitizedMap2 = DesensitizedUtils.convertMethodArgsToMap(method2, arrayOf(create()), true)
-        assert(desensitizedMap2["child"] as Child)
-
+        assert(desensitizedMap2["child"] as Map<String, Any?>)
+//
         val desensitizedMap3 = DesensitizedUtils.convertMethodArgsToMap(method1, arrayOf(create()), false)
+        println(desensitizedMap3)
         val child = desensitizedMap3["child"] as Child
         Assertions.assertEquals(child.nickName, "mk")
         Assertions.assertEquals(child.age, 100)
@@ -60,26 +63,22 @@ internal class DesensitizedUtilsTest {
 
     @Test
     fun testToString() {
-        val result = "[normal=normal, password=******, nullPassword=null, emptyPassword=******, elements=[123, 456]]"
-        Assertions.assertEquals(DesensitizedUtils.toString(TestDataClass()), "TestDataClass=${result}")
-        Assertions.assertEquals(DesensitizedUtils.toString(TestNormalClass()), "TestNormalClass=${result}")
+        val testDataClass = TestDataClass()
+        val result = "{normal=normal, password=******, nullPassword=null, emptyPassword=******, elements=[123, 456]}"
+        Assertions.assertEquals("TestDataClass=${result}", DesensitizedUtils.toString(testDataClass))
+        Assertions.assertEquals("TestNormalClass=${result}", DesensitizedUtils.toString(TestNormalClass()))
+        Assertions.assertEquals("SingletonList=[${result}]", DesensitizedUtils.toString(listOf(testDataClass)))
     }
 
-    @Suppress("UnusedPrivateMember")
-    private fun testMethod1(@Sensitive child: Child) {
-        // do nothing
-    }
-
-    @Suppress("UnusedPrivateMember")
-    private fun testMethod2(child: Child) {
-        // do nothing
-    }
-
-    private fun assert(desensitizedChild: Child) {
-        Assertions.assertNull(desensitizedChild.password)
-        Assertions.assertEquals(desensitizedChild.age, 0)
-        desensitizedChild.credentials.forEach { Assertions.assertNull(it) }
-        Assertions.assertNull(desensitizedChild.card)
+    @Suppress("UnusedPrivateMember", "UNCHECKED_CAST")
+    private fun assert(result: Map<String, Any?>) {
+        Assertions.assertEquals(listOf(1, 2, 3), result[Child::no.name])
+        Assertions.assertNull(result[Child::password.name])
+        Assertions.assertEquals(listOf(null, null, null, null), result[Child::credentials.name])
+        Assertions.assertEquals("mk", result[Child::nickName.name])
+        Assertions.assertEquals("mike", result[Child::name.name])
+        Assertions.assertNull((result[Child::card.name] as Map<String, Any?>)[ChildCard::cardPassword.name])
+        Assertions.assertEquals(0, result[Child::age.name])
     }
 
     private fun create(): Child {
@@ -89,7 +88,19 @@ internal class DesensitizedUtilsTest {
             Credential("appId-12345-3", "secret-88888-3"),
             Credential("appId-12345-4", "secret-88888-4")
         )
-        return Child("mk", "pwd-666666", credentials, ChildCard("card-pwd-123-1"))
+        return Child("mk", "pwd-666666", credentials, listOf(1, 2, 3), ChildCard("card-pwd-123-1"))
+    }
+}
+
+class TestMethod {
+    @Suppress("UnusedPrivateMember")
+    private fun testMethod1(@Sensitive child: Child) {
+        // do nothing
+    }
+
+    @Suppress("UnusedPrivateMember")
+    private fun testMethod2(child: Child) {
+        // do nothing
     }
 }
 
@@ -104,6 +115,7 @@ data class Child(
     @field:Sensitive
     val password: String,
     val credentials: List<Credential>,
+    val no: List<Int>,
     val card: ChildCard
 ) : Parent("mike", 100)
 
@@ -113,7 +125,6 @@ data class Credential(
     val secret: String,
 )
 
-@Sensitive
 open class Card(
     val id: String
 )
