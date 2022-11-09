@@ -113,7 +113,6 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         if (operateLogBuffer.isEmpty()) {
             return
         }
-        // copy on write
         val current = operateLogBuffer
         operateLogBuffer = ConcurrentHashMap.newKeySet(LOG_BUFFER_SIZE)
         operateLogService.save(current)

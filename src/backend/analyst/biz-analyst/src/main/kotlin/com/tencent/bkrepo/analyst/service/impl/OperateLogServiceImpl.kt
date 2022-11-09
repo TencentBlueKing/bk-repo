@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,45 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller.service
+package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 import com.tencent.bkrepo.repository.api.OperateLogClient
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.stereotype.Service
 
-@RestController
-class OperateLogController(
-    private val operateLogService: OperateLogService
-) : OperateLogClient {
-    override fun record(event: ArtifactEvent): Response<Void> {
-        operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
-        return ResponseBuilder.success()
+@Service
+class OperateLogServiceImpl(private val operateLogClient: OperateLogClient): OperateLogService {
+    override fun saveEventAsync(event: ArtifactEvent, address: String) {
+        throw UnsupportedOperationException()
     }
 
-    override fun batchRecord(eventList: List<ArtifactEvent>): Response<Void> {
-        operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
-        return ResponseBuilder.success()
+    override fun save(operateLog: OperateLog) {
+        operateLogClient.save(operateLog)
     }
 
-    override fun save(log: OperateLog): Response<Void> {
-        operateLogService.save(log)
-        return ResponseBuilder.success()
+    override fun save(operateLogs: Collection<OperateLog>) {
+        operateLogClient.batchSave(operateLogs.toList())
     }
 
-    override fun batchSave(logs: List<OperateLog>): Response<Void> {
-        operateLogService.save(logs)
-        return ResponseBuilder.success()
+    override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
+        throw UnsupportedOperationException()
     }
 
-    override fun list(option: OpLogListOption): Response<Page<OperateLog>> {
-        return ResponseBuilder.success(operateLogService.listPage(option))
+    override fun listPage(option: OpLogListOption): Page<OperateLog> {
+        throw UnsupportedOperationException()
     }
 
+    override fun page(
+        type: String?,
+        projectId: String?,
+        repoName: String?,
+        operator: String?,
+        startTime: String?,
+        endTime: String?,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<OperateLogResponse?> {
+        throw UnsupportedOperationException()
+    }
 }

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.operate.service.config.OperateProperties
 import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Import
 class OperateAutoConfiguration {
 
     @Bean
+    @ConditionalOnMissingBean
     fun operateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,

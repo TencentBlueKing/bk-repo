@@ -25,10 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    api(project(":common:common-operate:operate-api"))
-    implementation("org.apache.commons:commons-lang3")
+package com.tencent.bkrepo.common.operate.api.handler
+
+/**
+ * 对字符串部分打码
+ */
+class MaskPartString: AbsSensitiveHandler() {
+    override fun doDesensitize(sensitiveObj: Any): Any {
+        require(sensitiveObj is String)
+        return if (sensitiveObj.length < SHOW_LENGTH * 4) {
+            "******"
+        } else {
+            val prefix = sensitiveObj.substring(0, SHOW_LENGTH)
+            val suffix = sensitiveObj.substring(sensitiveObj.length - SHOW_LENGTH, sensitiveObj.length)
+            "$prefix***$suffix"
+        }
+    }
+
+    override fun supportTypes(): List<Class<*>> {
+        return listOf(String::class.java)
+    }
+
+    companion object {
+        private const val SHOW_LENGTH = 3
+    }
 }
