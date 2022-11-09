@@ -111,9 +111,9 @@ class ViewModelService(
                         val escapedItem = StringEscapeUtils.escapeXml11(item)
                         // 不对末尾的'/'进行URLEncode，避免在访问目录链接时触发重定向
                         val encodedItem = if (item.endsWith(UNIX_SEPARATOR)) {
-                            encode(item.substring(0, item.length - 1), Charsets.UTF_8.name()) + UNIX_SEPARATOR
+                            urlEncode(item.substring(0, item.length - 1)) + UNIX_SEPARATOR
                         } else {
-                            encode(item, Charsets.UTF_8.name())
+                            urlEncode(item)
                         }
                         writer.print("""<a href="$encodedItem">$escapedItem</a>""")
                         writer.print(" ".repeat(headerList[columnIndex].width!! - item.length))
@@ -137,6 +137,10 @@ class ViewModelService(
             }
         }
         return maxLength
+    }
+
+    private fun urlEncode(str: String?): String {
+        return encode(str, Charsets.UTF_8.name()).replace("+", "%20")
     }
 
     companion object {

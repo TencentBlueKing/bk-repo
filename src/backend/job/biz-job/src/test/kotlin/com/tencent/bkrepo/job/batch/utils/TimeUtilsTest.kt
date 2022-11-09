@@ -37,7 +37,7 @@ class TimeUtilsTest {
     fun parseMongoDateTimeStr() {
         val dateTimeStr = "Thu Jul 29 11:57:28 CST 2021"
         val dateTime = TimeUtils.parseMongoDateTimeStr(dateTimeStr)
-        Assertions.assertEquals(dateTime.dayOfWeek.value, 4)
+        Assertions.assertEquals(dateTime!!.dayOfWeek.value, 4)
         Assertions.assertEquals(dateTime.monthValue, 7)
         Assertions.assertEquals(dateTime.dayOfMonth, 29)
         Assertions.assertEquals(dateTime.hour, 11)

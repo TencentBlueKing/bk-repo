@@ -33,6 +33,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -111,7 +112,7 @@ class ArtifactDownloadListener(
         val repoName = event.context.repoName
         val fullPath = event.context.artifactInfo.getArtifactFullPath()
         val userId = event.context.userId
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = ArtifactContextHolder.getNodeDetail()
         if (node == null) {
             val downloadedEvent = NodeDownloadedEvent(
                 projectId = projectId,

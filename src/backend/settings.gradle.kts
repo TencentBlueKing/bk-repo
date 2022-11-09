@@ -33,12 +33,15 @@ rootProject.name = "bk-repo-backend"
 
 pluginManagement {
     repositories {
-        mavenLocal()
-        maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
-        maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
-        maven(url = "https://repo.spring.io/milestone")
-        gradlePluginPortal()
-        mavenCentral()
+        if (System.getenv("GITHUB_WORKFLOW") == null) {
+            maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
+            maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
+            maven(url = "https://repo.spring.io/milestone")
+        } else {
+            mavenCentral()
+            maven(url = "https://repo.spring.io/milestone")
+            gradlePluginPortal()
+        }
     }
 }
 
