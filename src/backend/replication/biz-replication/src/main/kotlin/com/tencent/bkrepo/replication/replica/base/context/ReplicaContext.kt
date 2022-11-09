@@ -172,7 +172,7 @@ class ReplicaContext(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
+        private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
         private const val READ_TIMEOUT = 60 * 60 * 1000L
     }
 }
