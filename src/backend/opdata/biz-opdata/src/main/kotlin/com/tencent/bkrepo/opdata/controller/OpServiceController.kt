@@ -65,7 +65,7 @@ class OpServiceController @Autowired constructor(
      * 获取服务实例信息
      */
     @GetMapping("/{serviceName}/instances")
-    @LogOperate(type = "SERVICE_INSTANCE_LIST")
+    @LogOperate(type = "SERVICE_INSTANCE")
     fun instances(@PathVariable("serviceName") serviceName: String): Response<List<InstanceInfo>> {
         return success(opServiceService.instances(serviceName))
     }

@@ -83,11 +83,11 @@ enum class EventType(val nick: String) {
     KEYS_DELETE("账户AK/SK删除"),
     KEYS_STATUS_UPDATE("账户AK/SK状态修改"),
 
-    // OPDATA_SERVICE(顺序不能乱)
-    OPDATA_SERVICE_DOWN("opdata服务下线"),
-    OPDATA_SERVICE_UP("opdata服务上线"),
-    OPDATA_SERVICE_DETAIL("opdata服务详情"),
-    OPDATA_SERVICE_LIST("opdata服务查询"),
+    // OPDATA_SERVICE
+    SERVICE_INSTANCE_DOWN("服务下线"),
+    SERVICE_INSTANCE_UP("服务上线"),
+    SERVICE_INSTANCE("服务详情"),
+    SERVICE_LIST("服务查询"),
 
     // EXT-PERMISSION
     EXT_PERMISSION_LIST("外部权限查询"),
