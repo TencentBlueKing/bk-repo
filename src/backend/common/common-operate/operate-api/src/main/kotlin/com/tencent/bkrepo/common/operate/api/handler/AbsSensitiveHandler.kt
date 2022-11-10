@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.common.operate.api.handler
 
-abstract class AbsSensitiveHandler: SensitiveHandler {
+abstract class AbsSensitiveHandler : SensitiveHandler {
 
     override fun desensitize(sensitiveObj: Any): Any? {
         val supportTypes = supportTypes()
-        check(supportTypes == null || sensitiveObj.javaClass in supportTypes)
+        check(supportTypes == null || supportTypes.any { it.isAssignableFrom(sensitiveObj.javaClass) })
         return doDesensitize(sensitiveObj)
     }
 
