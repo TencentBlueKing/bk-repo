@@ -31,5 +31,5 @@
 
 dependencies {
     api(project(":common:common-api"))
-    implementation(project(":common:common-operate:operate-api"))
+    implementation(project(":common:common-operate:operate-annotation"))
 }

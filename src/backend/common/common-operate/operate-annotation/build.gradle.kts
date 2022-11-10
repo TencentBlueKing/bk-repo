@@ -28,8 +28,3 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-dependencies {
-    implementation(project(":common:common-api"))
-    implementation(project(":common:common-operate:operate-annotation"))
-}
