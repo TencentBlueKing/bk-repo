@@ -31,5 +31,6 @@
 
 dependencies {
     implementation(project(":common:common-api"))
+    implementation(project(":common:common-operate:operate-api"))
     compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
 }

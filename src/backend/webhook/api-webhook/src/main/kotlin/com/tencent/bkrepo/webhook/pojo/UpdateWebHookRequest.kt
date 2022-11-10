@@ -29,6 +29,7 @@ package com.tencent.bkrepo.webhook.pojo
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.api.handler.MaskPartMapValue
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -39,7 +40,7 @@ data class UpdateWebHookRequest(
     @ApiModelProperty("回调地址")
     val url: String? = null,
     @ApiModelProperty("请求头")
-    @field:Sensitive
+    @field:Sensitive(handler = MaskPartMapValue::class)
     val headers: Map<String, String>? = null,
     @ApiModelProperty("触发事件")
     val triggers: List<EventType>? = null,

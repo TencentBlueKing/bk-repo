@@ -25,23 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.weworkbot
+package com.tencent.bkrepo.opdata.handler
 
-import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.api.handler.AbsSensitiveHandler
 import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
 
-@ApiModel("企业微信机器人")
-data class WeworkBotChannelCredential(
-    override var name: String = "",
-    override var default: Boolean = false,
-    @ApiModelProperty("企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
-    @field:Sensitive(handler = MaskPartString::class)
-    var key: String
-) : NotifyChannelCredential(name, type, default) {
+class MaskConfigItem : AbsSensitiveHandler() {
+    private val maskPartString = MaskPartString()
+
+    override fun doDesensitize(sensitiveObj: Any): Any {
+        require(sensitiveObj is ConfigItem)
+        return if (shouldMask(sensitiveObj)) {
+            sensitiveObj.copy(value = sensitiveObj.value?.let { maskPartString.desensitize(it) })
+        } else {
+            sensitiveObj.copy()
+        }
+    }
+
+    override fun supportTypes(): List<Class<*>> {
+        return listOf(ConfigItem::class.java)
+    }
+
+    private fun shouldMask(configItem: ConfigItem): Boolean {
+        return KEYS.any { configItem.key.contains(it, ignoreCase = true) }
+    }
+
     companion object {
-        const val type = "wework-bot"
+        private val KEYS = arrayOf("token", "auth", "password", "pwd", "secret", "sasl", "mongodb.uri", "privateKey")
     }
 }

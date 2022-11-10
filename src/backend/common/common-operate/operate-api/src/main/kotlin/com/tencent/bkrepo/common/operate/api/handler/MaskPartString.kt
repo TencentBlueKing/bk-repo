@@ -28,22 +28,18 @@
 package com.tencent.bkrepo.common.operate.api.handler
 
 /**
- * 对字符串部分打码
+ * 转换对象为字符串后进行部分打码
  */
 class MaskPartString: AbsSensitiveHandler() {
     override fun doDesensitize(sensitiveObj: Any): Any {
-        require(sensitiveObj is String)
-        return if (sensitiveObj.length < SHOW_LENGTH * 4) {
+        val str = sensitiveObj.toString()
+        return if (str.length < SHOW_LENGTH * 4) {
             "******"
         } else {
-            val prefix = sensitiveObj.substring(0, SHOW_LENGTH)
-            val suffix = sensitiveObj.substring(sensitiveObj.length - SHOW_LENGTH, sensitiveObj.length)
+            val prefix = str.substring(0, SHOW_LENGTH)
+            val suffix = str.substring(str.length - SHOW_LENGTH, str.length)
             "$prefix***$suffix"
         }
-    }
-
-    override fun supportTypes(): List<Class<*>> {
-        return listOf(String::class.java)
     }
 
     companion object {

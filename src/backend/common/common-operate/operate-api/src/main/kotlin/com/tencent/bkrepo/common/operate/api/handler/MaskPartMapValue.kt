@@ -25,23 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.notify.api.weworkbot
+package com.tencent.bkrepo.common.operate.api.handler
 
-import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+/**
+ * 将Map的value转换为String后部分打码
+ */
+class MaskPartMapValue : AbsSensitiveHandler() {
+    private val maskPartString = MaskPartString()
 
-@ApiModel("企业微信机器人")
-data class WeworkBotChannelCredential(
-    override var name: String = "",
-    override var default: Boolean = false,
-    @ApiModelProperty("企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
-    @field:Sensitive(handler = MaskPartString::class)
-    var key: String
-) : NotifyChannelCredential(name, type, default) {
-    companion object {
-        const val type = "wework-bot"
+    override fun doDesensitize(sensitiveObj: Any): Any {
+        require(sensitiveObj is Map<*, *>)
+        val result = LinkedHashMap<Any?, Any?>(sensitiveObj.size)
+        sensitiveObj.forEach { entry ->
+            result[entry.key] = entry.value?.let { maskPartString.desensitize(it) as String }
+        }
+        return result
+    }
+
+    override fun supportTypes(): List<Class<*>> {
+        return listOf(Map::class.java)
     }
 }

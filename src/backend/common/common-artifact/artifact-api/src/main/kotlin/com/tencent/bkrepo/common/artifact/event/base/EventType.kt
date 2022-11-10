@@ -83,11 +83,12 @@ enum class EventType(val nick: String) {
     KEYS_DELETE("账户AK/SK删除"),
     KEYS_STATUS_UPDATE("账户AK/SK状态修改"),
 
-    // OPDATA_SERVICE
-    SERVICE_INSTANCE_DOWN("服务下线"),
-    SERVICE_INSTANCE_UP("服务上线"),
-    SERVICE_INSTANCE("服务详情"),
-    SERVICE_LIST("服务查询"),
+    // SERVICE
+    SERVICE_INSTANCE_DOWN("服务实例下线"),
+    SERVICE_INSTANCE_UP("服务实例上线"),
+    SERVICE_INSTANCE("服务实例详情查询"),
+    SERVICE_INSTANCE_LIST("服务实例列表查询"),
+    SERVICE_LIST("服务列表查询"),
 
     // EXT-PERMISSION
     EXT_PERMISSION_LIST("外部权限查询"),
@@ -102,42 +103,45 @@ enum class EventType(val nick: String) {
     // SHED_LOCK
     SHED_LOCK_LIST("数据库锁查询"),
 
-    // OPDATA_PLUGIN
-    OPDATA_PLUGIN_LIST("opdata插件查询"),
-    OPDATA_PLUGIN_CREATE("opdata插件新建"),
-    OPDATA_PLUGIN_DELETE("opdata插件删除"),
-    OPDATA_PLUGIN_UPDATE("opdata插件更新"),
-    OPDATA_PLUGIN_LOAD("opdata插件加载"),
-    OPDATA_PLUGIN_UNLOAD("opdata插件卸载"),
+    // PLUGIN
+    PLUGIN_LIST("插件查询"),
+    PLUGIN_CREATE("插件新建"),
+    PLUGIN_DELETE("插件删除"),
+    PLUGIN_UPDATE("插件更新"),
+    PLUGIN_LOAD("插件加载"),
+    PLUGIN_UNLOAD("插件卸载"),
 
-    // OPDATA_FILESYSTEM
-    OPDATA_FILE_SYSTEM_METRICS("挂载分布式文件系统节点统计功能"),
-    OPDATA_FILE_SYSTEM_METRICS_DETAIL("统计某个挂载路径下子目录文件大小"),
+    // FILESYSTEM
+    FILE_SYSTEM_METRICS("挂载分布式文件系统节点统计功能"),
+    FILE_SYSTEM_METRICS_DETAIL("统计某个挂载路径下子目录文件大小"),
 
-    // OPDATA_EMPLTY_FOLDER
+    // EMPLTY_FOLDER
     EMPTY_FOLDER_LIST("空目录查询"),
     EMPTY_FOLDER_DELETE("清空空目录"),
 
     // FIRST_FOLDER
     FIRST_LEVEL_FOLDER_STATISTICS("一级目录统计"),
 
-    // OPDATA_NOTIFY
-    OPDATA_NOTIFY_LIST("op系统通知凭证查询"),
-    OPDATA_NOTIFY_CREATE("op系统通知凭证新增"),
-    OPDATA_NOTIFY_UPDATE("op系统通知凭证修改"),
-    OPDATA_NOTIFY_DELETE("op系统通知凭证删除"),
+    // NOTIFY
+    NOTIFY_LIST("op系统通知凭证查询"),
+    NOTIFY_CREATE("op系统通知凭证新增"),
+    NOTIFY_UPDATE("op系统通知凭证修改"),
+    NOTIFY_DELETE("op系统通知凭证删除"),
 
-    // OPDATA_SCAN
+    // SCAN
     SCANNER_CREATE("制品扫描器新增"),
     SCANNER_UPDATE("制品扫描器修改"),
     SCANNER_DELETE("制品扫描器删除"),
     SCANNER_LIST("制品扫描器查询"),
 
-    // OPDATA_CONFIG
+    // SCAN CONFIG
     PROJECT_SCAN_CONFIG_CREATE("制品项目配置新增"),
     PROJECT_SCAN_CONFIG_UPDATE("制品项目配置修改"),
     PROJECT_SCAN_CONFIG_DELETE("制品项目配置删除"),
-    PROJECT_SCAN_CONFIG_LIST("制品项目配置查询");
+    PROJECT_SCAN_CONFIG_LIST("制品项目配置查询"),
+
+    // CONFIG
+    CONFIG_UPDATE("配置更新");
 
     companion object {
         /**
