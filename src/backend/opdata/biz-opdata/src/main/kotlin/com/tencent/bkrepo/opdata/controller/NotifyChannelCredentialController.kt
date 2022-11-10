@@ -30,6 +30,7 @@ package com.tencent.bkrepo.opdata.controller
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
 import com.tencent.bkrepo.common.notify.service.NotifyChannelCredentialService
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -52,12 +53,14 @@ class NotifyChannelCredentialController(
 ) {
     @ApiOperation("创建通知渠道凭据")
     @PostMapping
+    @LogOperate(type = "NOTIFY_CREATE")
     fun create(@RequestBody credential: NotifyChannelCredential): Response<NotifyChannelCredential> {
         return ResponseBuilder.success(notifyChannelCredentialService.create(SecurityUtils.getUserId(), credential))
     }
 
     @ApiOperation("删除通知渠道凭据")
     @DeleteMapping("/{name}")
+    @LogOperate(type = "NOTIFY_DELETE")
     fun delete(@PathVariable name: String): Response<Void> {
         notifyChannelCredentialService.delete(name)
         return ResponseBuilder.success()
@@ -65,6 +68,7 @@ class NotifyChannelCredentialController(
 
     @ApiOperation("更新通知渠道凭据")
     @PutMapping("/{name}")
+    @LogOperate(type = "SCANNER_UPDATE")
     fun update(
         @PathVariable name: String,
         @RequestBody credential: NotifyChannelCredential
@@ -74,6 +78,7 @@ class NotifyChannelCredentialController(
 
     @ApiOperation("获取通知渠道凭据列表")
     @GetMapping
+    @LogOperate(type = "NOTIFY_LIST")
     fun list(): Response<List<NotifyChannelCredential>> {
         return ResponseBuilder.success(notifyChannelCredentialService.list())
     }

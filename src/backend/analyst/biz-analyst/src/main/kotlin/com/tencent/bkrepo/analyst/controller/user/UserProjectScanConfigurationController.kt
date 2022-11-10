@@ -81,6 +81,7 @@ class UserProjectScanConfigurationController(
 
     @ApiOperation("分页获取项目扫描配置")
     @GetMapping
+    @LogOperate(type = "PROJECT_SCAN_CONFIG_LIST")
     fun page(request: ProjectScanConfigurationPageRequest): Response<Page<ProjectScanConfiguration>> {
         val page = projectScanConfigurationService.page(request)
         return ResponseBuilder.success(page)
