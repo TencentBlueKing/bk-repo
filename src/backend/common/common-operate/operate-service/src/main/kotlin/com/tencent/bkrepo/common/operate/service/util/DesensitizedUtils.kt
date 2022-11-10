@@ -33,7 +33,6 @@ import org.springframework.beans.BeanUtils
 import org.springframework.core.DefaultParameterNameDiscoverer
 import org.springframework.core.ParameterNameDiscoverer
 import org.springframework.util.ReflectionUtils
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
@@ -46,20 +45,7 @@ object DesensitizedUtils {
     private val parameterNameDiscoverer: ParameterNameDiscoverer = DefaultParameterNameDiscoverer()
 
     fun toString(obj: Any): String {
-        val desensitizeObj = desensitizeObject(obj)
-        val stringBuilder = StringBuilder("${obj.javaClass.simpleName}=[")
-        var start = true
-        ReflectionUtils.doWithFields(obj.javaClass) {
-            if (!Modifier.isStatic(it.modifiers)) {
-                if (!start) {
-                    stringBuilder.append(", ")
-                }
-                start = false
-                stringBuilder.append("${it.name}=${it.get(desensitizeObj)}")
-            }
-        }
-        stringBuilder.append("]")
-        return stringBuilder.toString()
+        return "${obj.javaClass.simpleName}=${desensitizeObject(obj)}"
     }
 
     /**
@@ -69,18 +55,13 @@ object DesensitizedUtils {
         val parameters = method.parameters
         val parameterNames = parameterNameDiscoverer.getParameterNames(method)
 
-        val argsMap: MutableMap<String, Any?> = HashMap(args.size)
+        val argsMap: MutableMap<String, Any?> = LinkedHashMap(args.size)
         for (i in parameters.indices) {
             val parameter = parameters[i]
             val parameterName = parameterNames?.get(i) ?: parameter.name
             val arg = args[i]
-            val sensitiveAnnotation = parameter.getAnnotation(Sensitive::class.java)
             argsMap[parameterName] = if (arg != null && desensitize) {
-                if (sensitiveAnnotation == null) {
-                    desensitizeObject(arg)
-                } else {
-                    handleSensitive(sensitiveAnnotation, arg)
-                }
+                desensitizeObject(arg, parameter.getAnnotation(Sensitive::class.java)?.handler)
             } else {
                 arg
             }
@@ -89,55 +70,67 @@ object DesensitizedUtils {
     }
 
     /**
-     * 对[obj]内部字段进行脱敏
+     * 对指定对象内容进行脱敏操作，返回脱敏后的结果
+     *
+     * @param obj 需要脱敏的对象
+     * @param handlerClass 脱敏方式，会使用[handlerClass]对应的对象对[obj]进行脱敏，未指定时会遍历[obj]所有字段根据其注解进行脱敏
+     * @return 传入的obj是列表或数组时返回List，传入的是普通对象时返回Map
      */
-    fun desensitizeObject(obj: Any): Any? {
-        if (BeanUtils.isSimpleProperty(obj.javaClass) || obj.javaClass == String::class.java) {
+    @Suppress("ReturnCount")
+    fun desensitizeObject(obj: Any, handlerClass: KClass<*>? = null): Any? {
+        // 指定handler，直接使用handler脱敏后返回结果
+        val handler = handlerClass ?: obj.javaClass.getAnnotation(Sensitive::class.java)?.handler
+        handler?.let { return desensitize(it, obj) }
+
+        // 不支持遍历字段的类型直接返回
+        if (!shouldTravel(obj.javaClass)) {
             return obj
         }
 
-        val sensitiveAnnotation = obj.javaClass.getAnnotation(Sensitive::class.java)
-        return if (sensitiveAnnotation != null) {
-            handleSensitive(sensitiveAnnotation, obj)
-        } else if (obj is Map<*, *>) {
-            obj.entries.associate { entry ->
-                entry.key?.let { desensitizeObject(it) } to entry.value?.let { desensitizeObject(it) }
+        // 未指定handler，遍历所有字段
+        return when (obj) {
+            is Map<*, *> -> {
+                val result = LinkedHashMap<Any?, Any?>()
+                obj.entries.forEach { entry ->
+                    result[entry.key?.let { desensitizeObject(it) }] = entry.value?.let { desensitizeObject(it) }
+                }
+                result
             }
-        } else if (obj is Iterable<*>) {
-            obj.filterNotNull().map { desensitizeObject(it) }
-        } else if (obj is Array<*>) {
-            obj.filterNotNull().map { desensitizeObject(it) }
-        } else {
-            ReflectionUtils.doWithFields(obj.javaClass) { desensitizeFieldOfObject(obj, it) }
-            obj
+            is Iterable<*> -> obj.filterNotNull().map { desensitizeObject(it) }
+            is Array<*> -> obj.filterNotNull().map { desensitizeObject(it) }
+            else -> {
+                val result = LinkedHashMap<String, Any?>()
+                ReflectionUtils.doWithFields(obj.javaClass) { field ->
+                    // 不对静态变量进行脱敏
+                    if (!Modifier.isStatic(field.modifiers)) {
+                        ReflectionUtils.makeAccessible(field)
+                        result[field.name] = field.get(obj)?.let {
+                            // 递归脱敏所有字段
+                            desensitizeObject(it, field.getAnnotation(Sensitive::class.java)?.handler)
+                        }
+                    }
+                }
+                result
+            }
         }
     }
 
-    /**
-     * 对对象[obj]的[field]字段进行脱敏
-     */
-    private fun desensitizeFieldOfObject(obj: Any, field: Field) {
-        if (Modifier.isStatic(field.modifiers)) {
-            // 不对静态变量进行脱敏
-            return
-        }
-        val annotation = field.getAnnotation(Sensitive::class.java)
-        ReflectionUtils.makeAccessible(field)
-        field.get(obj)?.let { fieldValue ->
-            val desensitizedFieldValue = if (annotation == null) {
-                // 递归脱敏所有字段
-                desensitizeObject(fieldValue)
-            } else {
-                handleSensitive(annotation, fieldValue)
-            }
-            field.set(obj, desensitizedFieldValue)
-        }
-    }
-
-    private fun handleSensitive(annotation: Sensitive, arg: Any): Any? {
-        require(annotation.handler.isSubclassOf(SensitiveHandler::class))
-        val handler = handlerMap.getOrPut(annotation.handler) { annotation.handler.createInstance() }
+    private fun desensitize(handlerClass: KClass<*>, arg: Any): Any? {
+        require(handlerClass.isSubclassOf(SensitiveHandler::class))
+        val handler = handlerMap.getOrPut(handlerClass) { handlerClass.createInstance() }
         require(handler is SensitiveHandler)
         return handler.desensitize(arg)
     }
+
+    /**
+     * 是否需要遍历[clazz]的所有字段
+     */
+    private fun shouldTravel(clazz: Class<*>): Boolean {
+        return !BeanUtils.isSimpleProperty(clazz) && clazz !in ignoredClasses
+    }
+
+    /**
+     * 脱敏时需要忽略的类型，不会递归遍历这些类型的字段
+     */
+    private val ignoredClasses = arrayOf(String::class.java)
 }
