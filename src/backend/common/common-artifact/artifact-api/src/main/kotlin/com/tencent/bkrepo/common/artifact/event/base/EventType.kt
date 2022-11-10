@@ -123,10 +123,10 @@ enum class EventType(val nick: String) {
     FIRST_LEVEL_FOLDER_STATISTICS("一级目录统计"),
 
     // NOTIFY
-    NOTIFY_LIST("op系统通知凭证查询"),
-    NOTIFY_CREATE("op系统通知凭证新增"),
-    NOTIFY_UPDATE("op系统通知凭证修改"),
-    NOTIFY_DELETE("op系统通知凭证删除"),
+    NOTIFY_LIST("通知凭证查询"),
+    NOTIFY_CREATE("通知凭证新增"),
+    NOTIFY_UPDATE("通知凭证修改"),
+    NOTIFY_DELETE("通知凭证删除"),
 
     // SCAN
     SCANNER_CREATE("制品扫描器新增"),
