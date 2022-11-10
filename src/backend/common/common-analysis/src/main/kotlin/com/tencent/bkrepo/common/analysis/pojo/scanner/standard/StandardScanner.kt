@@ -61,7 +61,7 @@ class StandardScanner(
         @ApiModelProperty("参数名")
         val key: String,
         @ApiModelProperty("参数值")
-        @field:Sensitive(handler = MaskPartString::class)
+        @Sensitive(handler = MaskPartString::class)
         val value: String? = null,
         @ApiModelProperty("描述")
         val des: String = ""

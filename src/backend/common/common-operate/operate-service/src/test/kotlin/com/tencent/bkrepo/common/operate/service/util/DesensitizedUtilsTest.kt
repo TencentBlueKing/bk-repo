@@ -76,7 +76,7 @@ internal class DesensitizedUtilsTest {
         Assertions.assertNull(result[Child::password.name])
         Assertions.assertEquals(listOf(null, null, null, null), result[Child::credentials.name])
         Assertions.assertEquals("mk", result[Child::nickName.name])
-        Assertions.assertEquals("mike", result[Child::name.name])
+        Assertions.assertEquals("******", result[Child::name.name])
         Assertions.assertNull((result[Child::card.name] as Map<String, Any?>)[ChildCard::cardPassword.name])
         Assertions.assertEquals(0, result[Child::age.name])
     }
@@ -88,7 +88,7 @@ internal class DesensitizedUtilsTest {
             Credential("appId-12345-3", "secret-88888-3"),
             Credential("appId-12345-4", "secret-88888-4")
         )
-        return Child("mk", "pwd-666666", credentials, listOf(1, 2, 3), ChildCard("card-pwd-123-1"))
+        return Child("mike", "mk", "pwd-666666", credentials, listOf(1, 2, 3), ChildCard("card-pwd-123-1"))
     }
 }
 
@@ -105,19 +105,24 @@ class TestMethod {
 }
 
 open class Parent(
-    val name: String,
-    @field:Sensitive
+    @Sensitive
+    open val name: String,
+    @Sensitive
+    open val nickName: String,
+    @Sensitive
     val age: Int
 )
 
 data class Child(
-    val nickName: String,
-    @field:Sensitive
+    @Sensitive(handler = MaskString::class)
+    override val name: String,
+    override val nickName: String,
+    @Sensitive
     val password: String,
     val credentials: List<Credential>,
     val no: List<Int>,
     val card: ChildCard
-) : Parent("mike", 100)
+) : Parent(name, nickName, 100)
 
 @Sensitive
 data class Credential(
@@ -130,28 +135,28 @@ open class Card(
 )
 
 class ChildCard(
-    @field:Sensitive
+    @Sensitive
     val cardPassword: String
 ) : Card("id-ccc-1")
 
 data class TestDataClass(
     val normal: String = "normal",
-    @field:Sensitive(MaskString::class)
+    @Sensitive(MaskString::class)
     val password: String = "123456",
-    @field:Sensitive(MaskString::class)
+    @Sensitive(MaskString::class)
     val nullPassword: String? = null,
-    @field:Sensitive(MaskString::class)
+    @Sensitive(MaskString::class)
     val emptyPassword: String = StringPool.EMPTY,
     val elements: List<String> = listOf("123", "456")
 )
 
 class TestNormalClass(
     val normal: String = "normal",
-    @field:Sensitive(MaskString::class)
+    @Sensitive(MaskString::class)
     val password: String = "123456",
-    @field:Sensitive(MaskString::class)
+    @Sensitive(MaskString::class)
     val nullPassword: String? = null,
-    @field:Sensitive(MaskString::class)
+    @Sensitive(MaskString::class)
     val emptyPassword: String = StringPool.EMPTY,
     val elements: List<String> = listOf("123", "456")
 )

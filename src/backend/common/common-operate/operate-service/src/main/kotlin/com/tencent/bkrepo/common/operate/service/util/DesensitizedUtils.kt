@@ -32,17 +32,24 @@ import com.tencent.bkrepo.common.operate.api.handler.SensitiveHandler
 import org.springframework.beans.BeanUtils
 import org.springframework.core.DefaultParameterNameDiscoverer
 import org.springframework.core.ParameterNameDiscoverer
+import org.springframework.util.ConcurrentReferenceHashMap
 import org.springframework.util.ReflectionUtils
+import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
-import java.util.concurrent.ConcurrentHashMap
+import java.lang.reflect.Parameter
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.isSubclassOf
 
 object DesensitizedUtils {
-    private val handlerMap = ConcurrentHashMap<KClass<*>, Any>()
+    private val handlerCache = ConcurrentReferenceHashMap<KClass<*>, Any>()
     private val parameterNameDiscoverer: ParameterNameDiscoverer = DefaultParameterNameDiscoverer()
+
+    /**
+     * 缓存类所有字段的注解
+     */
+    private val classFieldsAnnotationCache = ConcurrentReferenceHashMap<Class<*>, Map<String, Sensitive?>>()
 
     fun toString(obj: Any): String {
         return "${obj.javaClass.simpleName}=${desensitizeObject(obj)}"
@@ -96,17 +103,21 @@ object DesensitizedUtils {
                 }
                 result
             }
+
             is Iterable<*> -> obj.filterNotNull().map { desensitizeObject(it) }
             is Array<*> -> obj.filterNotNull().map { desensitizeObject(it) }
             else -> {
                 val result = LinkedHashMap<String, Any?>()
+                val fieldsAnnotationMap = classFieldsAnnotationCache.getOrPut(obj.javaClass) {
+                    getAllFieldsAnnotation(obj.javaClass, Sensitive::class.java)
+                }
                 ReflectionUtils.doWithFields(obj.javaClass) { field ->
-                    // 不对静态变量进行脱敏
-                    if (!Modifier.isStatic(field.modifiers)) {
+                    // 不对静态变量进行脱敏，跳过子类存在的field
+                    if (!Modifier.isStatic(field.modifiers) || result.contains(field.name)) {
                         ReflectionUtils.makeAccessible(field)
                         result[field.name] = field.get(obj)?.let {
                             // 递归脱敏所有字段
-                            desensitizeObject(it, field.getAnnotation(Sensitive::class.java)?.handler)
+                            desensitizeObject(it, fieldsAnnotationMap[field.name]?.handler)
                         }
                     }
                 }
@@ -117,9 +128,65 @@ object DesensitizedUtils {
 
     private fun desensitize(handlerClass: KClass<*>, arg: Any): Any? {
         require(handlerClass.isSubclassOf(SensitiveHandler::class))
-        val handler = handlerMap.getOrPut(handlerClass) { handlerClass.createInstance() }
+        val handler = handlerCache.getOrPut(handlerClass) { handlerClass.createInstance() }
         require(handler is SensitiveHandler)
         return handler.desensitize(arg)
+    }
+
+    private fun <T : Annotation> getAllFieldsAnnotation(clazz: Class<*>, annotationClass: Class<T>): Map<String, T?> {
+        val result = LinkedHashMap<String, T?>()
+        var targetClass: Class<*>? = clazz
+        while (targetClass != null && targetClass != Object::class.java) {
+            val fields = targetClass.declaredFields
+            val constructors = targetClass.constructors
+            val ctorParamMap = constructors.associateWith {
+                Pair(it.parameters, parameterNameDiscoverer.getParameterNames(it))
+            }
+
+            for (fieldIndex in fields.indices) {
+                val field = fields[fieldIndex]
+                // 子类的field优先级最高，跳过后续搜索，即使子类field的注解为null也会使用
+                if (result.contains(field.name) || Modifier.isStatic(field.modifiers)) {
+                    continue
+                }
+
+                // field上的注解存在时直接使用，否则遍历所有构造方法，判断是否有与field同名的参数带有注解
+                result[field.name] = field.getAnnotation(annotationClass)
+                    ?: getFieldAnnotationFromConstructor(constructors, ctorParamMap, annotationClass, field.name)
+            }
+            // 遍历所有父类
+            targetClass = targetClass.superclass
+        }
+        return result
+    }
+
+    private fun <T : Annotation> getFieldAnnotationFromConstructor(
+        constructors: Array<Constructor<*>>,
+        constructorsParamMap: Map<Constructor<*>, Pair<Array<out Parameter>, Array<out String>?>>,
+        annotationClass: Class<T>,
+        fieldName: String
+    ): T? {
+        var result: T? = null
+        for (constructIndex in constructors.indices) {
+            val constructor = constructors[constructIndex]
+            val constructorParams = constructorsParamMap[constructor]!!.first
+            val paramNames = constructorsParamMap[constructor]!!.second ?: continue
+            // 比哪里构造函数的所有参数
+            for (paramIndex in constructorParams.indices) {
+                val parameter = constructorParams[paramIndex]
+                val paramName = paramNames[paramIndex]
+                if (paramName == fieldName) {
+                    // 存在同名参数，不再遍历后续参数
+                    result = parameter.getAnnotation(annotationClass)
+                    break
+                }
+            }
+            // 找到注解后不再遍历后续构造方法
+            if (result != null) {
+                return result
+            }
+        }
+        return result
     }
 
     /**

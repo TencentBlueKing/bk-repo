@@ -37,7 +37,7 @@ data class CreateExtPermissionRequest(
     @ApiModelProperty("外部权限回调地址")
     val url: String,
     @ApiModelProperty("请求头")
-    @field:Sensitive(handler = MaskPartMapValue::class)
+    @Sensitive(handler = MaskPartMapValue::class)
     val headers: Map<String, String>? = emptyMap(),
     @ApiModelProperty("项目id")
     val projectId: String,

@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
  */
 data class InnerCosCredentials(
     var secretId: String = "",
-    @field:Sensitive(handler = MaskPartString::class)
+    @Sensitive(handler = MaskPartString::class)
     var secretKey: String = "",
     var region: String = "",
     var bucket: String = "",

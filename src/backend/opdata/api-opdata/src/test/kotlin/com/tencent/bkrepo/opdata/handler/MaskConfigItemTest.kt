@@ -27,31 +27,36 @@
 
 package com.tencent.bkrepo.opdata.handler
 
-import com.tencent.bkrepo.common.operate.api.handler.AbsSensitiveHandler
-import com.tencent.bkrepo.common.operate.api.handler.MaskString
+import com.tencent.bkrepo.common.operate.service.util.DesensitizedUtils
 import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-class MaskConfigItem : AbsSensitiveHandler() {
-    private val maskString = MaskString()
-
-    override fun doDesensitize(sensitiveObj: Any): Any {
-        require(sensitiveObj is ConfigItem)
-        return if (shouldMask(sensitiveObj)) {
-            sensitiveObj.copy(value = sensitiveObj.value?.let { maskString.desensitize(it) })
-        } else {
-            sensitiveObj.copy()
-        }
-    }
-
-    override fun supportTypes(): List<Class<*>> {
-        return listOf(ConfigItem::class.java)
-    }
-
-    private fun shouldMask(configItem: ConfigItem): Boolean {
-        return KEYS.any { configItem.key.contains(it, ignoreCase = true) }
-    }
-
-    companion object {
-        private val KEYS = arrayOf("token", "auth", "password", "pwd", "secret", "sasl", "mongodb.uri", "privateKey")
+internal class MaskConfigItemTest {
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun test() {
+        val configItems = listOf(
+            ConfigItem("token", "ttookkeenn"),
+            ConfigItem("test.secret", "sseeccrreett"),
+            ConfigItem("other", "other"),
+            ConfigItem(
+                "spring.mongodb.uri", "http://hqwoiudhaosuhd:adhiuashdiahds@" +
+                "aushdiuqwhdoiuahsd.ashgdiuasohdoiad.asdhiaushd?ahdiuasd=whdgakjsdg"
+            ),
+            ConfigItem("expired", 1000),
+            ConfigItem("auth", 666666)
+        )
+        val result = DesensitizedUtils.desensitizeObject(configItems) as List<ConfigItem>
+        Assertions.assertEquals("token", result[0].key)
+        Assertions.assertEquals("******", result[0].value)
+        Assertions.assertEquals("test.secret", result[1].key)
+        Assertions.assertEquals("******", result[1].value)
+        Assertions.assertEquals(configItems[2], result[2])
+        Assertions.assertEquals("spring.mongodb.uri", result[3].key)
+        Assertions.assertEquals("******", result[3].value)
+        Assertions.assertEquals(configItems[4], result[4])
+        Assertions.assertEquals("auth", result[5].key)
+        Assertions.assertEquals("******", result[5].value)
     }
 }

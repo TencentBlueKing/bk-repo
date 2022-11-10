@@ -78,9 +78,9 @@ data class KnowledgeBase(
     @ApiModelProperty("漏洞知识库地址，例如http://127.0.0.1:1234")
     val endpoint: String,
     @ApiModelProperty("漏洞知识库认证id")
-    @field:Sensitive(handler = MaskPartString::class)
+    @Sensitive(handler = MaskPartString::class)
     val secretId: String = "",
     @ApiModelProperty("漏洞知识库认证密钥")
-    @field:Sensitive(handler = MaskPartString::class)
+    @Sensitive(handler = MaskPartString::class)
     val secretKey: String = ""
 )

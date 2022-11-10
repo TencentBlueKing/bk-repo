@@ -31,8 +31,4 @@ class MaskString: AbsSensitiveHandler() {
     override fun doDesensitize(sensitiveObj: Any): Any {
         return "******"
     }
-
-    override fun supportTypes(): List<Class<*>> {
-        return listOf(String::class.java)
-    }
 }

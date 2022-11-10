@@ -39,7 +39,7 @@ data class CreateWebHookRequest(
     @ApiModelProperty("回调地址")
     val url: String,
     @ApiModelProperty("自定义请求头")
-    @field:Sensitive(handler = MaskPartMapValue::class)
+    @Sensitive(handler = MaskPartMapValue::class)
     val headers: Map<String, String> = emptyMap(),
     @ApiModelProperty("触发事件")
     val triggers: List<EventType>,

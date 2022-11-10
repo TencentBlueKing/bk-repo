@@ -38,7 +38,7 @@ data class WeworkBotChannelCredential(
     override var name: String = "",
     override var default: Boolean = false,
     @ApiModelProperty("企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
-    @field:Sensitive(handler = MaskPartString::class)
+    @Sensitive(handler = MaskPartString::class)
     var key: String
 ) : NotifyChannelCredential(name, type, default) {
     companion object {

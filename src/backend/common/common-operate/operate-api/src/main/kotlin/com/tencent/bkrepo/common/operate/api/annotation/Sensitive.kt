@@ -38,7 +38,7 @@ import kotlin.reflect.KClass
  *
  * @Sensitive(handler = UserHandler::class)
  * class User {
- *     @field:Sensitive(handler = PasswordHandler::class)
+ *     @Sensitive(handler = PasswordHandler::class)
  *     val password: String
  * }
  *
