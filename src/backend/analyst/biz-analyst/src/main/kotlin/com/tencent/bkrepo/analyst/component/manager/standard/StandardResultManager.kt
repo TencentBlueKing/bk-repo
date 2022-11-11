@@ -82,7 +82,7 @@ class StandardResultManager(
             replace(credentialsKey, sha256, scanner.name, licenseResultDao, it)
         }
 
-        result.output?.result?.sensitiveResult?.map {
+        result.output?.result?.sensitiveResults?.map {
             TSensitiveResult(credentialsKey = credentialsKey, sha256 = sha256, scanner = scanner.name, data = it)
         }?.let {
             replace(credentialsKey, sha256, scanner.name, sensitiveResultDao, it)

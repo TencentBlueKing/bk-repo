@@ -128,7 +128,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         }
 
         // sensitive统计
-        scanExecutorResult.output?.result?.sensitiveResult?.let {
+        scanExecutorResult.output?.result?.sensitiveResults?.let {
             overview[OVERVIEW_KEY_SENSITIVE_TOTAL] = it.size.toLong()
         }
 
