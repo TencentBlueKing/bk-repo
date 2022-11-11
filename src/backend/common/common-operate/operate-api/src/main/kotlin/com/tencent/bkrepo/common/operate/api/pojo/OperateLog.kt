@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.operate.api.pojo
 import java.time.LocalDateTime
 
 data class OperateLog(
-    val createdDate: LocalDateTime? = null,
+    val createdDate: LocalDateTime = LocalDateTime.now(),
     val type: String,
     val projectId: String?,
     val repoName: String?,

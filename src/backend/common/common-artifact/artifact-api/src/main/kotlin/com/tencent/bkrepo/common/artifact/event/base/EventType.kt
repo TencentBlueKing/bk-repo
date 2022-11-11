@@ -114,6 +114,10 @@ enum class EventType(val nick: String) {
     // FILESYSTEM
     FILE_SYSTEM_METRICS("挂载分布式文件系统节点统计功能"),
     FILE_SYSTEM_METRICS_DETAIL("统计某个挂载路径下子目录文件大小"),
+    STORAGE_CREDENTIALS_LIST("存储管理凭证查询"),
+    STORAGE_CREDENTIALS_CREATE("存储管理凭证创建"),
+    STORAGE_CREDENTIALS_DELETE("存储管理凭证删除"),
+    STORAGE_CREDENTIALS_UPDATE("存储管理凭证更新"),
 
     // EMPLTY_FOLDER
     EMPTY_FOLDER_LIST("空目录查询"),
