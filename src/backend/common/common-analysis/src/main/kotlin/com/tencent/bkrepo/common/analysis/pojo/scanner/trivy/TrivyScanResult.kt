@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModelProperty
 data class TrivyScanResults(
     @ApiModelProperty("扫描结果")
     @JsonAlias("Results")
-    val results: List<TrivyScanResult>
+    val results: List<TrivyScanResult> = emptyList()
 )
 
 @ApiModel("制品漏洞信息")
