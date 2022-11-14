@@ -114,7 +114,6 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
      * @param force 是否[operateLogBuffer]未满时也强制保存到数据库
      */
     @Synchronized
-    @Scheduled(fixedRate = FLUSH_LOG_RATE)
     fun flush(force: Boolean = true) {
         if (operateLogBuffer.isEmpty() || !force && operateLogBuffer.size < LOG_BUFFER_SIZE) {
             return
@@ -125,6 +124,11 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         if (logger.isDebugEnabled) {
             logger.debug("save ${current.size} operate logs success.")
         }
+    }
+
+    @Scheduled(fixedRate = FLUSH_LOG_RATE)
+    fun forceFlush() {
+        flush()
     }
 
     companion object {
