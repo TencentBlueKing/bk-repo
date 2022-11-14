@@ -98,8 +98,9 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
             description = descriptions.filterValues { it != null } as Map<String, Any>
         )
         if (operateLogBuffer.size >= LOG_BUFFER_SIZE) {
-            flush()
+            flush(false)
         }
+        // 不加锁控制元素的添加，并发量较大时，允许buffer size少量超过限制的大小
         operateLogBuffer.add(operateLog)
 
         if (logger.isDebugEnabled) {
@@ -107,15 +108,20 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         }
     }
 
+    /**
+     * 将[operateLogBuffer]的数据保存到数据库
+     *
+     * @param force 是否[operateLogBuffer]未满时也强制保存到数据库
+     */
     @Synchronized
     @Scheduled(fixedRate = FLUSH_LOG_RATE)
-    fun flush() {
-        if (operateLogBuffer.isEmpty()) {
+    fun flush(force: Boolean = true) {
+        if (operateLogBuffer.isEmpty() || !force && operateLogBuffer.size < LOG_BUFFER_SIZE) {
             return
         }
         val current = operateLogBuffer
         operateLogBuffer = ConcurrentHashMap.newKeySet(LOG_BUFFER_SIZE)
-        operateLogService.save(current)
+        operateLogService.saveAsync(current)
         if (logger.isDebugEnabled) {
             logger.debug("save ${current.size} operate logs success.")
         }

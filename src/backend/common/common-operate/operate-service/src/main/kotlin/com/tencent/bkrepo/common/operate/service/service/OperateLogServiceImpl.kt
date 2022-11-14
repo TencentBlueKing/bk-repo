@@ -109,6 +109,16 @@ open class OperateLogServiceImpl(
     }
 
     @Async
+    override fun saveAsync(operateLog: OperateLog) {
+        save(operateLog)
+    }
+
+    @Async
+    override fun saveAsync(operateLogs: Collection<OperateLog>) {
+        save(operateLogs)
+    }
+
+    @Async
     override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
         val logs = mutableListOf<TOperateLog>()
         eventList.forEach {
