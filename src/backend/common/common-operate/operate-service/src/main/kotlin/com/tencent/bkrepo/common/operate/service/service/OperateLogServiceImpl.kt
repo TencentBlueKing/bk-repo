@@ -143,11 +143,7 @@ open class OperateLogServiceImpl(
     }
 
     override fun listPage(option: OpLogListOption): Page<OperateLog> {
-        try {
-            permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
-        } catch (e: PermissionException) {
-            permissionManager.checkProjectPermission(PermissionAction.MANAGE, option.projectId)
-        }
+        checkPermission(option.projectId)
         with(option) {
             val escapeValue = EscapeUtils.escapeRegexExceptWildcard(resourceKey)
             val regexPattern = escapeValue.replace("*", ".*")
@@ -181,11 +177,20 @@ open class OperateLogServiceImpl(
         pageNumber: Int,
         pageSize: Int
     ): Page<OperateLogResponse?> {
+        checkPermission(projectId)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val query = buildOperateLogPageQuery(type, projectId, repoName, operator, startTime, endTime)
         val totalRecords = operateLogDao.count(query)
         val records = operateLogDao.find(query.with(pageRequest)).map { convert(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    private fun checkPermission(projectId: String?) {
+        try {
+            permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } catch (e: PermissionException) {
+            projectId?.let { permissionManager.checkProjectPermission(PermissionAction.MANAGE, it) }
+        }
     }
 
     private fun notNeedRecord(type: String, projectId: String?, repoName: String?): Boolean {
