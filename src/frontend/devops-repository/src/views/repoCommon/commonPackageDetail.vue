@@ -142,7 +142,7 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community'  && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {
