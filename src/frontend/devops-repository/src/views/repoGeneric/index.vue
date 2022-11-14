@@ -297,7 +297,7 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initPage()
-            if (!community) {
+            if (!this.community) {
                 this.refreshSupportFileNameExtList()
             }
         },
