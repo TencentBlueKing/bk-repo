@@ -106,12 +106,6 @@ export const scanTypes = {
     }
 }
 
-/**
- * 是否容器化部署
- * @type {boolean}
- */
-export const k8s = process.env.VUE_APP_K8S === 'k8s'
-
 // 扫描方案执行状态
 export const scanStatusEnum = {
     INIT: '等待扫描',

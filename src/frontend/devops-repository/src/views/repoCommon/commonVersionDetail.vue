@@ -158,7 +158,6 @@
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
-    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'commonVersionDetail',
         components: {
@@ -228,7 +227,7 @@
                 }, {})
             },
             showRepoScan () {
-                return !k8s && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             },
             operationBtns () {
                 const basic = this.detail.basic

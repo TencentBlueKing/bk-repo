@@ -78,7 +78,6 @@
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
     import { mapState, mapActions } from 'vuex'
-    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'commonPackageDetail',
         components: { OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
@@ -143,13 +142,13 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return !k8s && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community'  && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {
             this.getPackageInfoHandler()
             this.handlerPaginationChange()
-            if (!k8s) {
+            if (RELEASE_MODE !== 'community') {
                 this.refreshSupportPackageTypeList()
             }
         },

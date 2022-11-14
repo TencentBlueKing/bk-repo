@@ -59,7 +59,7 @@ jobs:
       - name: Create artifact - Step2:make package
         id: create-artifact
         run: |
-          version="$(basename $GITHUB_REF)"
+          version="$(basename ${GITHUB_REF##*/v})"
           echo "::set-output name=version::$version"
           ci_pkg_dir=/dev/shm/bkrepo ./scripts/packager-repo.sh "$version" bkrepo-slim.tar.gz
       - uses: actions/upload-artifact@v1
@@ -85,7 +85,7 @@ jobs:
       - name: Create Docker Image -- CLOUD NATIVE
         working-directory: scripts
         run: |
-          version="$(basename $GITHUB_REF)"
+          version="$(basename ${GITHUB_REF##*/v})"
           ./build-images.sh  -v $version --username ${{ secrets.DOCKER_USER }} \
           --password ${{ secrets.DOCKER_PASS }} -n ${{ secrets.DOCKER_NAMESPACE }} \
           -r ${{ secrets.DOCKER_HOST }} -p
@@ -96,7 +96,7 @@ jobs:
       - name: Package Helm Chart -- CLOUD NATIVE
         working-directory: support-files/kubernetes/charts
         run: |
-          version="$(basename $GITHUB_REF)"
+          version="$(basename ${GITHUB_REF##*/v})"
           ./build.sh --version $version --app-version $version
           mv bkrepo-$version.tgz bkrepo-charts.tgz
       - uses: actions/upload-artifact@v1
@@ -121,7 +121,7 @@ jobs:
       - name: Create Docker Image
         working-directory: scripts
         run: |
-          version="$(basename $GITHUB_REF)"
+          version="$(basename ${GITHUB_REF##*/v})"
           ./build-images.sh --all-in-one -v $version --username ${{ secrets.DOCKER_USER }} \
           --password ${{ secrets.DOCKER_PASS }} -n ${{ secrets.DOCKER_NAMESPACE }} \
           -r ${{ secrets.DOCKER_HOST }} --slim-package-path ../bkrepo-slim.tar.gz -p

@@ -111,7 +111,7 @@ class CacheStorageService(
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
-            cacheClient.load(path, filename)?.artifactStream(range)?.let { return it }
+            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let { return it }
         }
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
@@ -163,6 +163,34 @@ class CacheStorageService(
             throw IllegalStateException("Cache storage is unhealthy: ${monitor.fallBackReason}")
         }
         super.doCheckHealth(credentials)
+    }
+
+    /**
+     * 从缓存中加载构件。
+     *
+     * 生成一个构件流需要两个步骤,判断文件是否存在，存在则新建一个文件流。
+     * 因为两个步骤所以存在可能，判断时文件存在，但是新建一个文件流时，文件被移除。
+     * 所以这里需要将两个步骤合在一起，以是否成功新建文件流为最终结果，如果这过程中文件被移除，
+     * 则认为加载失败，返回null。
+     *
+     * @param cacheClient 缓存客户端
+     * @param path 文件路径
+     * @param filename 文件名
+     * @param range 加载文件范围
+     * @return 成功返回构件流，否则返回null
+     * */
+    private fun loadArtifactStreamFromCache(
+        cacheClient: FileSystemClient,
+        path: String,
+        filename: String,
+        range: Range
+    ): ArtifactInputStream? {
+        try {
+            return cacheClient.load(path, filename)?.artifactStream(range)
+        } catch (e: Exception) {
+            logger.warn("Can't load file from cache.", e)
+        }
+        return null
     }
 
     /**
