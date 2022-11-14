@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.operate.service.aop
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
@@ -42,10 +41,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 /**
  * 记录被[LogOperate]注解的类或方法操作日志
@@ -60,6 +55,7 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         "@within(com.tencent.bkrepo.common.operate.api.annotation.LogOperate) " +
             "|| @annotation(com.tencent.bkrepo.common.operate.api.annotation.LogOperate)"
     )
+    @Suppress("TooGenericExceptionCaught")
     fun around(joinPoint: ProceedingJoinPoint): Any? {
         val signature = joinPoint.signature as MethodSignature
         val method = signature.method
@@ -73,12 +69,10 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         val userId = SecurityUtils.getUserId()
         val clientAddr = HttpContextHolder.getClientAddress()
         try {
-            executor.execute {
-                val descriptions = convertMethodArgsToMap(method, args, desensitize)
-                saveOperateLog(operateType, userId, clientAddr, descriptions)
-            }
-        } catch (e: RejectedExecutionException) {
-            logger.warn("user[$userId] invoke method[$methodName] logging failed.", e)
+            val descriptions = convertMethodArgsToMap(method, args, desensitize)
+            saveOperateLog(operateType, userId, clientAddr, descriptions)
+        } catch (e: Exception) {
+            logger.error("save audit log failed, user[$userId] invoke method[$methodName]", e)
         }
         return joinPoint.proceed()
     }
@@ -135,14 +129,5 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         private const val FLUSH_LOG_RATE = 60L * 1000L
         private const val LOG_BUFFER_SIZE = 1000
         private val logger = LoggerFactory.getLogger(LogOperateAspect::class.java)
-        private val executor = ThreadPoolExecutor(
-            0,
-            Runtime.getRuntime().availableProcessors(),
-            60,
-            TimeUnit.SECONDS,
-            LinkedBlockingQueue(1000),
-            ThreadFactoryBuilder().setNameFormat("log-operate-%d").build(),
-            ThreadPoolExecutor.AbortPolicy()
-        )
     }
 }
