@@ -37,7 +37,7 @@
                 :list="[
                     { label: '详情', clickEvent: () => detail() },
                     !(cardData.metadata || {}).forbidStatus && { label: '下载', clickEvent: () => download() },
-                    !k8s && !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
+                    !community && !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
@@ -49,7 +49,6 @@
     import { mapGetters } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
-    import { k8s } from '../../store/publicEnum'
     export default {
         name: 'packageCard',
         components: { OperationList, ScanTag, forbidTag },
@@ -65,12 +64,12 @@
         },
         computed: {
             ...mapGetters(['isEnterprise']),
-            showRepoScan () {
-                return this.isEnterprise && !k8s && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+            community() {
+                return RELEASE_MODE === 'community'
             },
-            k8s () {
-                return k8s
-            }
+            showRepoScan () {
+                return this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+            },
         },
         methods: {
             convertFileSize,

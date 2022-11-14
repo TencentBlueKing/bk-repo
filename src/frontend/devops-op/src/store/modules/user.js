@@ -50,7 +50,11 @@ const actions = {
     formData.append('uid', username)
     formData.append('token', password)
     return new Promise((resolve, reject) => {
-      login(formData).then(() => {
+      login(formData).then(res => {
+        if (!res.data) {
+          reject(new Error('username or password is incorrect'))
+          return
+        }
         const token = getToken()
         commit('SET_TOKEN', token)
         setToken(token)

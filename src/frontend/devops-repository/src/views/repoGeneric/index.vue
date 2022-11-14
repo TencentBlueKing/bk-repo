@@ -149,7 +149,7 @@
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder ? [
-                                            !k8s && { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            !community && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
                                         ] : [])
                                     ] : []),
@@ -200,7 +200,6 @@
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
-    import { k8s } from '../../store/publicEnum'
 
     export default {
         name: 'repoGeneric',
@@ -277,8 +276,8 @@
                 })
                 return breadcrumb
             },
-            k8s () {
-                return k8s
+            community () {
+                return RELEASE_MODE === 'community'
             },
             searchFileName () {
                 return this.$route.query.fileName
@@ -298,7 +297,7 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initPage()
-            if (!k8s) {
+            if (!community) {
                 this.refreshSupportFileNameExtList()
             }
         },
@@ -324,7 +323,7 @@
                 'refreshSupportFileNameExtList'
             ]),
             showRepoScan (node) {
-                return !node.folder && !k8s && this.scannerSupportFileNameExt.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
+                return !node.folder && !this.community && this.scannerSupportFileNameExt.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {

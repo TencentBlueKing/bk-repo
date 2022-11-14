@@ -96,11 +96,11 @@ export default {
             this.$router.push({ path: this.redirect || '/' })
             localStorage.setItem('userName', this.loginForm.username)
             this.loading = false
-          }).catch(() => {
+          }).catch(err => {
             this.loading = false
+            this.$message.error(err.message)
           })
         } else {
-          console.log('error submit!!')
           return false
         }
       })

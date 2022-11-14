@@ -67,10 +67,10 @@ packager_ci (){
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 VERSION CI_PKG_PATH CI_CODE_DIR  -- make install package"
-  echo " VERSION      version string. example: v1.X.X-desc"
+  echo " VERSION      version string. example: 1.X.X-desc"
   echo " CI_PKG_PATH  generated install package path."
   echo " CI_CODE_DIR  source code with compiled binaries."
-  echo "Example: $0 v1.5.0-RELEASE workspace/bkci-slim.tar.gz workspace/bk-ci-v1.5.0"
+  echo "Example: $0 1.5.0-RELEASE workspace/bkci-slim.tar.gz workspace/bk-ci-v1.5.0"
   echo "ENV:"
   echo " ci_pkg_dir   temp dir contains ci package files, should end with /ci/."
   exit 0

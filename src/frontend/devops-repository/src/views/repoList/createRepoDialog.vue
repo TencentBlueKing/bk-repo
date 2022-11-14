@@ -154,7 +154,7 @@
             },
             isCommunity () {
                 // 是否为社区版
-                return window.RELEASE_MODE === 'community'
+                return RELEASE_MODE === 'community'
             },
             genericInterceptorsList () {
                 return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
