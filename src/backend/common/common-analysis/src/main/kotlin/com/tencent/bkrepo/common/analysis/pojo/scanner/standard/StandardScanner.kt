@@ -29,6 +29,8 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -59,6 +61,7 @@ class StandardScanner(
         @ApiModelProperty("参数名")
         val key: String,
         @ApiModelProperty("参数值")
+        @Sensitive(handler = MaskPartString::class)
         val value: String? = null,
         @ApiModelProperty("描述")
         val des: String = ""

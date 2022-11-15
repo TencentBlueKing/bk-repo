@@ -29,6 +29,7 @@ package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -58,12 +59,14 @@ class PluginController(
 
     @ApiOperation("插件列表")
     @GetMapping
+    @LogOperate(type = "PLUGIN_LIST")
     fun list(option: PluginListOption): Response<Page<PluginDetail>> {
         return ResponseBuilder.success(pluginService.list(option))
     }
 
     @ApiOperation("创建插件")
     @PostMapping
+    @LogOperate(type = "PLUGIN_CREATE")
     fun create(@RequestBody request: PluginCreateRequest): Response<Void> {
         pluginService.create(request)
         return ResponseBuilder.success()
@@ -71,6 +74,7 @@ class PluginController(
 
     @ApiOperation("更新插件")
     @PutMapping
+    @LogOperate(type = "PLUGIN_UPDATE")
     fun update(@RequestBody request: PluginUpdateRequest): Response<Void> {
         pluginService.update(request)
         return ResponseBuilder.success()
@@ -78,6 +82,7 @@ class PluginController(
 
     @ApiOperation("删除插件")
     @DeleteMapping("/{pluginId}")
+    @LogOperate(type = "PLUGIN_DELETE")
     fun delete(@PathVariable pluginId: String): Response<Void> {
         pluginService.delete(pluginId)
         return ResponseBuilder.success()
@@ -85,6 +90,7 @@ class PluginController(
 
     @ApiOperation("加载插件")
     @PostMapping("/load/{pluginId}")
+    @LogOperate(type = "PLUGIN_LOAD")
     fun load(
         @PathVariable pluginId: String,
         host: String
@@ -95,6 +101,7 @@ class PluginController(
 
     @ApiOperation("卸载插件")
     @DeleteMapping("/unload/{pluginId}")
+    @LogOperate(type = "PLUGIN_UNLOAD")
     fun unload(
         @PathVariable pluginId: String,
         host: String

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -56,6 +57,7 @@ class UserProjectScanConfigurationController(
 
     @ApiOperation("创建项目扫描配置")
     @PostMapping
+    @LogOperate(type = "PROJECT_SCAN_CONFIG_CREATE")
     fun create(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
         val configuration = projectScanConfigurationService.create(request)
         return ResponseBuilder.success(configuration)
@@ -63,6 +65,7 @@ class UserProjectScanConfigurationController(
 
     @ApiOperation("删除项目扫描配置")
     @DeleteMapping("/{projectId}")
+    @LogOperate(type = "PROJECT_SCAN_CONFIG_DELETE")
     fun delete(@PathVariable projectId: String): Response<Void> {
         projectScanConfigurationService.delete(projectId)
         return ResponseBuilder.success()
@@ -70,6 +73,7 @@ class UserProjectScanConfigurationController(
 
     @ApiOperation("更新项目扫描配置")
     @PutMapping
+    @LogOperate(type = "PROJECT_SCAN_CONFIG_UPDATE")
     fun update(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
         val configuration = projectScanConfigurationService.update(request)
         return ResponseBuilder.success(configuration)
@@ -77,6 +81,7 @@ class UserProjectScanConfigurationController(
 
     @ApiOperation("分页获取项目扫描配置")
     @GetMapping
+    @LogOperate(type = "PROJECT_SCAN_CONFIG_LIST")
     fun page(request: ProjectScanConfigurationPageRequest): Response<Page<ProjectScanConfiguration>> {
         val page = projectScanConfigurationService.page(request)
         return ResponseBuilder.success(page)
