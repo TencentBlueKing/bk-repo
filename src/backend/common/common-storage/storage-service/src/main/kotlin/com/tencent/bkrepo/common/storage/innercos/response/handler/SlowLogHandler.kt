@@ -48,7 +48,7 @@ class SlowLogHandler<T>(
                 return handler.handle(response)
             }
             val endTime = System.currentTimeMillis()
-            val request = response.request()
+            val request = response.request
             // 时间定义慢日志
             if (slowLogTime > 0 && endTime - beginTime > slowLogTime) {
                 val requestTime = HumanReadable.time(Duration.ofMillis(endTime - beginTime).toNanos())
@@ -79,19 +79,19 @@ class SlowLogHandler<T>(
     }
 
     private fun buildMessage(request: Request, response: Response? = null): String {
-        val requestTitle = "${request.method()} ${request.url()} ${response?.protocol()}"
+        val requestTitle = "${request.method} ${request.url} ${response?.protocol}"
 
         val builder = StringBuilder()
             .append("\n>>>> ")
-            .appendln(requestTitle)
-            .appendln(request.headers())
+            .appendLine(requestTitle)
+            .appendLine(request.headers)
 
         if (response != null) {
             builder.append("<<<< ")
                 .append(requestTitle)
-                .append(response.code())
-                .appendln("[${response.message()}]")
-                .appendln(response.headers())
+                .append(response.code)
+                .appendLine("[${response.message}]")
+                .appendLine(response.headers)
         }
         return builder.toString()
     }

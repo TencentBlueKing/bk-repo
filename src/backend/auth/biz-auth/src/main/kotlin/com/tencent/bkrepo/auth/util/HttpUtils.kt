@@ -46,13 +46,13 @@ object HttpUtils {
     ): ApiResponse {
         try {
             val response = okHttpClient.newBuilder().build().newCall(request).execute()
-            val responseCode = response.code()
-            val responseContent = response.body()!!.string()
+            val responseCode = response.code
+            val responseContent = response.body!!.string()
             if (response.isSuccessful || acceptCode.contains(responseCode)) {
                 return ApiResponse(responseCode, responseContent)
             }
             throw RuntimeException(
-                "http request url ${request.url()} failed, " +
+                "http request url ${request.url} failed, " +
                     "code: $responseCode, responseContent: $responseContent"
             )
         } catch (e: Exception) {

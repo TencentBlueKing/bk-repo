@@ -64,6 +64,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.Headers
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -427,19 +428,19 @@ open class PermissionManager(
     ) {
         try {
             httpClient.newCall(request).execute().use {
-                val content = it.body()?.string()
+                val content = it.body?.string()
                 if (it.isSuccessful && checkResponse(content)) {
                     return
                 }
                 logger.info(
-                    "check external permission error, url[${request.url()}], project[$projectId], repo[$repoName]," +
-                        " nodes$paths, code[${it.code()}], response[$content]"
+                    "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
+                        " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
-                "check external permission error," + "url[${request.url()}], project[$projectId], " +
+                "check external permission error," + "url[${request.url}], project[$projectId], " +
                     "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
@@ -488,7 +489,7 @@ open class PermissionManager(
             }
             requestData[NODES] = nodeMaps
         }
-        val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), requestData.toJsonString())
+        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), requestData.toJsonString())
         logger.debug("request data: ${requestData.toJsonString()}")
         return Request.Builder().url(externalPermission.url).headers(headersBuilder.build()).post(requestBody).build()
     }

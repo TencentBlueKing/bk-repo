@@ -50,6 +50,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -102,7 +103,7 @@ class PypiRemoteRepository : RemoteRepository() {
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val build: Request = Request.Builder().get().url(listUri).build()
-        val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
+        val htmlContent = okHttpClient.newCall(build).execute().body?.string()
         return htmlContent
     }
 
@@ -151,7 +152,7 @@ class PypiRemoteRepository : RemoteRepository() {
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val build: Request = Request.Builder().get().url(listUri).build()
-        val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
+        val htmlContent = okHttpClient.newCall(build).execute().body?.string()
         htmlContent?.let { storeCacheHtml(context, it) }
     }
 
@@ -176,12 +177,12 @@ class PypiRemoteRepository : RemoteRepository() {
         val xmlString = context.request.reader.readXml()
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
-        val body = RequestBody.create(MediaType.parse("text/xml"), xmlString)
+        val body = RequestBody.create("text/xml".toMediaTypeOrNull(), xmlString)
         val build: Request = Request.Builder().url("${remoteConfiguration.url}$XML_RPC_URI")
             .addHeader("Connection", "keep-alive")
             .post(body)
             .build()
-        val htmlContent: String = okHttpClient.newCall(build).execute().body()?.string()
+        val htmlContent: String = okHttpClient.newCall(build).execute().body?.string()
             ?: throw PypiRemoteSearchException("search from ${remoteConfiguration.url} error")
         val methodResponse = XmlConvertUtil.xml2MethodResponse(htmlContent)
         return methodResponse.params.paramList[0].value.array?.data?.valueList ?: mutableListOf()

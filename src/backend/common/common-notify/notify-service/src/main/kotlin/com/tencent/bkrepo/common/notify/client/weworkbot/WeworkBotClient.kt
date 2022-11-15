@@ -38,7 +38,9 @@ import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
 import com.tencent.bkrepo.common.notify.client.NotifyClient
 import com.tencent.bkrepo.common.notify.config.NotifyProperties
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -60,11 +62,11 @@ class WeworkBotClient(
             put("msgtype", message.body.type())
             put(message.body.type(), message.body)
         }
-        val body = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), bodyMap.toJsonString())
+        val body = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), bodyMap.toJsonString())
 
         // 构造url
         val host = notifyProperties.weworkApiHost.ifEmpty { DEFAULT_API_HOST }
-        val url = HttpUrl.parse("$host$API_SEND_MESSAGE")!!
+        val url = "$host$API_SEND_MESSAGE".toHttpUrlOrNull()!!
             .newBuilder()
             .addQueryParameter("key", credential.key)
             .build()
@@ -72,7 +74,7 @@ class WeworkBotClient(
         // 发送请求
         val request = Request.Builder().url(url).post(body).build()
         okHttpClient.newCall(request).execute().use {
-            val bodyContent = it.body()?.string()
+            val bodyContent = it.body?.string()
             if (!it.isSuccessful || bodyContent?.readJsonString<WeworkBotResponse>()?.errCode != 0) {
                 logger.error(
                     "send wework bot message failed, " +

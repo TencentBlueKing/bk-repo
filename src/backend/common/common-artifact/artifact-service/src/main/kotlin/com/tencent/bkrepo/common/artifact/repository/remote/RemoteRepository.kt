@@ -167,7 +167,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 远程下载响应回调
      */
     open fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
-        val artifactFile = createTempFile(response.body()!!)
+        val artifactFile = createTempFile(response.body!!)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         val node = cacheArtifactFile(context, artifactFile)
@@ -245,7 +245,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val password = configuration?.password
         return if (username != null && password != null) {
             Authenticator { _, response ->
-                response.request()
+                response.request
                     .newBuilder()
                     .header(HttpHeaders.PROXY_AUTHORIZATION, Credentials.basic(username, password))
                     .build()
@@ -269,7 +269,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     protected fun checkResponse(response: Response): Boolean {
         if (!response.isSuccessful) {
-            logger.warn("Download artifact from remote failed: [${response.code()}]")
+            logger.warn("Download artifact from remote failed: [${response.code}]")
             return false
         }
         return true

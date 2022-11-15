@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.notify.pojo.RtxNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.SmsNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.WechatNotifyMessage
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -118,12 +119,12 @@ class DevopsNotify constructor(
 
     private fun postMessage(url: String, message: BaseMessage) {
         val requestContent = JsonUtils.objectMapper.writeValueAsString(message)
-        val requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), requestContent)
+        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), requestContent)
         val request = Request.Builder().url(url).post(requestBody).build()
         okHttpClient.newCall(request).execute().use { response ->
-            val responseContent = response.body()!!.string()
+            val responseContent = response.body!!.string()
             if (!response.isSuccessful) {
-                logger.warn("send message failed code ${response.code()}, response $responseContent")
+                logger.warn("send message failed code ${response.code}, response $responseContent")
                 throw RuntimeException("send message failed")
             }
             val resultData = JsonUtils.objectMapper.readValue<DevopsResult<Boolean>>(responseContent)

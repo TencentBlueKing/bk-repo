@@ -32,8 +32,9 @@
 package com.tencent.bkrepo.common.storage.innercos.http
 
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
-import okhttp3.internal.Util.checkOffsetAndCount
+import okhttp3.internal.checkOffsetAndCount
 import okio.BufferedSink
 import java.io.Closeable
 import java.nio.charset.Charset
@@ -73,7 +74,7 @@ fun ByteArray.toRequestBody(
 
 fun String.toMediaTypeOrNull(): MediaType? {
     return try {
-        MediaType.parse(this)
+        this.toMediaTypeOrNull()
     } catch (_: IllegalArgumentException) {
         null
     }

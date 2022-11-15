@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook.WebHo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
@@ -49,7 +50,7 @@ open class WebHookService {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
 
-    private val jsonMediaType = MediaType.parse(MediaTypes.APPLICATION_JSON)
+    private val jsonMediaType = MediaTypes.APPLICATION_JSON.toMediaTypeOrNull()
 
     @Async
     open fun hook(context: ArtifactContext, type: ArtifactEventType) {
