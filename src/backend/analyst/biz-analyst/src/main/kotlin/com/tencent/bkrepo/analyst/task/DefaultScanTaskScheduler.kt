@@ -33,8 +33,6 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -67,6 +65,7 @@ import com.tencent.bkrepo.analyst.task.ScanTaskSchedulerConfiguration.Companion.
 import com.tencent.bkrepo.analyst.task.iterator.IteratorManager
 import com.tencent.bkrepo.analyst.task.queue.SubScanTaskQueue
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -94,10 +93,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
     @Qualifier(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
     private val executor: ThreadPoolTaskExecutor,
     private val scannerMetrics: ScannerMetrics,
-    private val redisOperation: RedisOperation,
     private val publisher: ApplicationEventPublisher,
     private val scannerProperties: ScannerProperties,
-    private val scanQualityService: ScanQualityService
+    private val scanQualityService: ScanQualityService,
+    private val lockOperation: LockOperation
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -125,14 +124,11 @@ class DefaultScanTaskScheduler @Autowired constructor(
         // 加锁避免多个进程唤醒项目子任务导致唤醒的任务数量超过配额
         // 此处不要求锁绝对可靠，极端情况下有两个进程同时持有锁时只会导致project执行的任务数量超过配额
         val lockKey = notifySubtaskLockKey(projectId)
-        val lock = RedisLock(redisOperation, lockKey, DEFAULT_NOTIFY_SUBTASK_LOCK_TIMEOUT_SECONDS)
-
-        lock.use {
-            it.lock()
+        return lockOperation.doWithLock(lockKey) {
             val subtaskCountLimit = projectScanConfigurationDao.findByProjectId(projectId)?.subScanTaskCountLimit
                 ?: scannerProperties.defaultProjectSubScanTaskCountLimit
             val countToUpdate = (subtaskCountLimit - subScanTaskDao.scanningCount(projectId)).toInt()
-            return if (countToUpdate > 0) {
+            if (countToUpdate > 0) {
                 val notifiedCount = subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
                 scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, notifiedCount.toLong())
                 scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toLong())
@@ -146,6 +142,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
@@ -158,22 +155,19 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
         // 加锁避免有其他任务正在提交这个project的任务，导致project执行中的任务数量统计错误
         // 此处不要求锁绝对可靠，极端情况下有两个进程同时持有锁时只会导致project执行的任务数量超过配额
-        val lock = scanTask.scanPlan?.projectId?.let {
-            val lockKey = submitScanTaskLockKey(it)
-            RedisLock(redisOperation, lockKey, DEFAULT_SUBMIT_PROJECT_SUBTASK_LOCK_TIMEOUT_SECONDS)
-        }
-
+        val lockKey = scanTask.scanPlan?.projectId?.let { submitScanTaskLockKey(it) }
         val (submittedSubTaskCount, reuseResultTaskCount) = try {
-            lock?.lock()
-            submit(scanTask)
+            if (lockKey == null) {
+                submit(scanTask)
+            } else {
+                lockOperation.doWithLock(lockKey){ submit(scanTask) }
+            }
         } catch (e: TaskSubmitInterruptedException) {
             logger.info("task[${e.taskId}] has been stopped")
             return
         } catch (e: Exception) {
             logger.warn("submit task[${scanTask.taskId}] failed", e)
             throw e
-        } finally {
-            lock?.unlock()
         }
 
         // 更新任务状态为所有子任务已提交
@@ -503,8 +497,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
         private const val REPO_SPLIT = "::repo::"
         private const val DEFAULT_REPO_INFO_CACHE_SIZE = 1000L
         private const val DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES = 60L
-        private const val DEFAULT_SUBMIT_PROJECT_SUBTASK_LOCK_TIMEOUT_SECONDS = 1200L
-        private const val DEFAULT_NOTIFY_SUBTASK_LOCK_TIMEOUT_SECONDS = 30L
 
         /**
          * 批量提交子任务数量

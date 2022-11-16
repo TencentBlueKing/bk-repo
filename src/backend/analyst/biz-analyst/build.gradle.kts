@@ -37,5 +37,6 @@ dependencies {
     implementation(project(":common:common-mongo"))
     implementation(project(":common:common-query:query-mongo"))
     implementation(project(":common:common-stream"))
+    implementation(project(":common:common-lock"))
     testImplementation("org.mockito.kotlin:mockito-kotlin")
 }
