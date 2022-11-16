@@ -25,37 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.configuration
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory.Companion.DISTRIBUTED_COUNT_REDIS
-import org.springframework.boot.context.properties.ConfigurationProperties
+/**
+ * 分布式计数器
+ */
+interface DistributedCount {
 
-@ConfigurationProperties("scanner")
-data class ScannerProperties(
-    /**
-     * 默认项目扫描子任务数量限制
-     */
-    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    /**
-     * 扫描报告地址
-     */
-    var detailReportUrl: String = "http://localhost",
-    /**
-     * 后端服务baseUrl
-     */
-    var baseUrl: String = "http://localhost",
-    /**
-     * 前端baseUrl
-     */
-    var frontEndBaseUrl: String = "http://localhost/ui",
-    /**
-     * 用于监控数据统计的分布式计数器使用的存储类型
-     */
-    var distributedCountType: String = DISTRIBUTED_COUNT_REDIS
-) {
-    companion object {
-        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
-        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
-        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
-    }
+    fun incrementAndGet(): Double
+
+    fun decrementAndGet(): Double
+
+    fun set(value: Double)
+
+    fun addAndGet(delta: Double): Double
+
+    fun get(): Double
+
+    fun toLong(): Long
 }

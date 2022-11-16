@@ -25,36 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.metrics
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.common.redis.RedisOperation
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 
-class RedisAtomicLong(
-    private val redisOperation: RedisOperation,
-    private val key: String
-) {
-
-    fun incrementAndGet(): Long {
-        return addAndGet(1L)
-    }
-
-    fun decrementAndGet(): Long {
-        return addAndGet(-1L)
-    }
-
-    fun set(value: Long) {
-        redisOperation.set(key, value.toString())
-    }
-
-    fun addAndGet(delta: Long): Long {
-        return redisOperation.increment(key, delta)!!
-    }
-
-    fun get(): Long {
-        return redisOperation.get(key)?.toLong() ?: 0L
-    }
-
-    fun toDouble(): Double {
-        return get().toDouble()
-    }
-}
+/**
+ * 分布式计数器，用于收集不同服务实例数据进行统计
+ */
+@Document("distributed_count")
+@CompoundIndexes(
+    CompoundIndex(name = "key_idx", def = "{'key': 1}", unique = true)
+)
+data class TDistributedCount(
+    val id: String? = null,
+    val key: String,
+    val count: Double
+)

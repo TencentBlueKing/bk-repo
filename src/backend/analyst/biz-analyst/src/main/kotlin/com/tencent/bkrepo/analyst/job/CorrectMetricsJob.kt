@@ -27,19 +27,19 @@
 
 package com.tencent.bkrepo.analyst.job
 
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCKED
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.CREATED
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.PENDING
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.SCANNING_SUBMITTED
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.SCANNING_SUBMITTING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCKED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.CREATED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -68,13 +68,13 @@ class CorrectMetricsJob(
         // 由于扫描任务数量统计使用了redis，状态变更时涉及多个非原子的任务状态数量增减操作，需要与数据库的数据同步
         CORRECT_SUBTASK_STATUS.forEach {
             val count = subScanTaskDao.countStatus(it)
-            scannerMetrics.setSubtaskCount(it, count)
+            scannerMetrics.setSubtaskCount(it, count.toDouble())
             logger.info("correct subtaskStatus[$it] count[$count] success")
         }
 
         CORRECT_TASK_STATUS.forEach {
             val count = scanTaskDao.countStatus(it)
-            scannerMetrics.setTaskCount(it, count)
+            scannerMetrics.setTaskCount(it, count.toDouble())
             logger.info("correct taskStatus[$it] count[$count] success")
         }
     }

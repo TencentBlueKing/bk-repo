@@ -25,37 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.configuration
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory.Companion.DISTRIBUTED_COUNT_REDIS
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.stereotype.Component
 
-@ConfigurationProperties("scanner")
-data class ScannerProperties(
-    /**
-     * 默认项目扫描子任务数量限制
-     */
-    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    /**
-     * 扫描报告地址
-     */
-    var detailReportUrl: String = "http://localhost",
-    /**
-     * 后端服务baseUrl
-     */
-    var baseUrl: String = "http://localhost",
-    /**
-     * 前端baseUrl
-     */
-    var frontEndBaseUrl: String = "http://localhost/ui",
-    /**
-     * 用于监控数据统计的分布式计数器使用的存储类型
-     */
-    var distributedCountType: String = DISTRIBUTED_COUNT_REDIS
+@Component
+class DistributedCountFactory(
+    private val distributedCountDao: ObjectProvider<DistributedCountDao>,
+    private val redisTemplate: ObjectProvider<RedisTemplate<String, Double?>>
 ) {
+    fun create(key: String, type: String = DISTRIBUTED_COUNT_REDIS): DistributedCount {
+        return when (type) {
+            DISTRIBUTED_COUNT_MONGODB -> MongoDistributedCount(key, distributedCountDao.getObject())
+            DISTRIBUTED_COUNT_REDIS -> RedisDistributedCount(key, redisTemplate.getObject())
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, type)
+        }
+    }
+
     companion object {
-        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
-        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
-        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
+        const val DISTRIBUTED_COUNT_MONGODB = "mongodb"
+        const val DISTRIBUTED_COUNT_REDIS = "redis"
     }
 }

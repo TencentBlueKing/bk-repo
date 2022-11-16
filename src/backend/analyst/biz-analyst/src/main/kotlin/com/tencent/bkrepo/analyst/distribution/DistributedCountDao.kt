@@ -25,37 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.configuration
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory.Companion.DISTRIBUTED_COUNT_REDIS
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.analyst.dao.ScannerSimpleMongoDao
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-@ConfigurationProperties("scanner")
-data class ScannerProperties(
-    /**
-     * 默认项目扫描子任务数量限制
-     */
-    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    /**
-     * 扫描报告地址
-     */
-    var detailReportUrl: String = "http://localhost",
-    /**
-     * 后端服务baseUrl
-     */
-    var baseUrl: String = "http://localhost",
-    /**
-     * 前端baseUrl
-     */
-    var frontEndBaseUrl: String = "http://localhost/ui",
-    /**
-     * 用于监控数据统计的分布式计数器使用的存储类型
-     */
-    var distributedCountType: String = DISTRIBUTED_COUNT_REDIS
-) {
-    companion object {
-        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
-        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
-        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
+@Repository
+class DistributedCountDao : ScannerSimpleMongoDao<TDistributedCount>() {
+    fun setCount(key: String, count: Double) {
+        val query = Query(TDistributedCount::key.isEqualTo(key))
+        val update = Update.update(TDistributedCount::count.name, count)
+        updateFirst(query, update)
+    }
+
+    fun incAndGet(key: String, inc: Double = 1.0): Double {
+        val query = Query(TDistributedCount::key.isEqualTo(key))
+        val update = Update().inc(TDistributedCount::count.name, inc)
+        val options = FindAndModifyOptions().returnNew(true).upsert(true)
+        return determineMongoTemplate().findAndModify(query, update, options, TDistributedCount::class.java)!!.count
+    }
+
+    fun get(key: String): Double {
+        val query = Query(TDistributedCount::key.isEqualTo(key))
+        return findOne(query)?.count ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
     }
 }

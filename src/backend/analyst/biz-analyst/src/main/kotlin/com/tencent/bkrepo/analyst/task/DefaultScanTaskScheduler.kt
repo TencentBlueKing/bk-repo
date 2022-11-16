@@ -130,8 +130,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
             val countToUpdate = (subtaskCountLimit - subScanTaskDao.scanningCount(projectId)).toInt()
             if (countToUpdate > 0) {
                 val notifiedCount = subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
-                scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, notifiedCount.toLong())
-                scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toLong())
+                scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, notifiedCount.toDouble())
+                scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toDouble())
                 notifiedCount
             } else {
                 0
@@ -240,7 +240,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             // 批量保存重用扫描结果的任务
             if (finishedSubScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
                 self.save(finishedSubScanTasks)
-                scannerMetrics.incReuseResultSubtaskCount(finishedSubScanTasks.size.toLong())
+                scannerMetrics.incReuseResultSubtaskCount(finishedSubScanTasks.size.toDouble())
                 reuseResultTaskCount += finishedSubScanTasks.size
                 finishedSubScanTasks.clear()
             }
@@ -270,8 +270,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
         if (enqueuedTasks.isNotEmpty()) {
             subScanTaskDao.updateStatus(enqueuedTasks, SubScanTaskStatus.ENQUEUED)
-            scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.CREATED, enqueuedTasks.size.toLong())
-            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED, enqueuedTasks.size.toLong())
+            scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.CREATED, enqueuedTasks.size.toDouble())
+            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED, enqueuedTasks.size.toDouble())
         }
     }
 
@@ -303,7 +303,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         scanTaskDao.updateScanResult(
             task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true, passCount = passCount
         )
-        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toLong())
+        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toDouble())
     }
 
     fun createSubTask(
@@ -430,9 +430,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val createdTasks = tasks.filter { it.status == SubScanTaskStatus.CREATED.name }
         val blockedTaskCount = tasks.size - createdTasks.size
         if (blockedTaskCount != 0) {
-            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, blockedTaskCount.toLong())
+            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, blockedTaskCount.toDouble())
         }
-        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, createdTasks.size.toLong())
+        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, createdTasks.size.toDouble())
         logger.info("${createdTasks.size} created subtasks and $blockedTaskCount blocked subtasks saved")
 
         return createdTasks
