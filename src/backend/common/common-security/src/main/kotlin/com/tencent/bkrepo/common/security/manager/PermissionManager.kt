@@ -66,7 +66,7 @@ import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -488,7 +488,7 @@ open class PermissionManager(
             }
             requestData[NODES] = nodeMaps
         }
-        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), requestData.toJsonString())
+        val requestBody = requestData.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
         logger.debug("request data: ${requestData.toJsonString()}")
         return Request.Builder().url(externalPermission.url).headers(headersBuilder.build()).post(requestBody).build()
     }

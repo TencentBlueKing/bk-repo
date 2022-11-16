@@ -23,6 +23,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.internal.sse.RealEventSource
 import okhttp3.sse.EventSource
@@ -106,7 +107,7 @@ class HttpBkSyncCall(
     private fun reportMetrics(url: String) {
         try {
             metrics.reportTimeStamp = System.currentTimeMillis()
-            val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), metrics.toJsonString())
+            val requestBody = metrics.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
             val request = Request.Builder().url(url).post(requestBody).build()
             client.newCall(request).execute().use {
                 if (!it.isSuccessful) {
