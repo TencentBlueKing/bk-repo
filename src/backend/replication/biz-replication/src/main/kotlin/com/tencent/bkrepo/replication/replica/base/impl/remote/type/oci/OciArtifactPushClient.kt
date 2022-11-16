@@ -43,9 +43,12 @@ import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
@@ -67,6 +70,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
+import kotlin.math.ceil
 
 /**
  * oci类型制品推送到远端仓库
@@ -103,13 +107,12 @@ class OciArtifactPushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: ClusterInfo,
-        targetVersions: List<String>?
+        context: ReplicaContext
     ): Boolean {
         val manifestInput = localDataManager.loadInputStream(nodes[0])
         val manifestInfo = ManifestParser.parseManifest(manifestInput)
             ?: throw ArtifactNotFoundException("Can not read manifest info from content")
-        logger.info("$name|$version's artifact will be pushed to the third party cluster ${clusterInfo.name}")
+        logger.info("$name|$version's artifact will be pushed to the third party cluster ${context.cluster.name}")
         // 上传layer, 每次并发执行5个
         val semaphore = Semaphore(replicationProperties.threadNum)
         var result = true
@@ -121,8 +124,9 @@ class OciArtifactPushClient(
                     try {
                         retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retries ->
                             logger.info(
-                                "Blob $name|$it will be uploaded to the remote cluster ${clusterInfo.name.orEmpty()} " +
-                                    "from repo ${nodes[0].projectId}|${nodes[0].repoName}, try the $retries time"
+                                "Blob $name|$it will be uploaded to the remote cluster " +
+                                    "${context.cluster.name.orEmpty()} from repo " +
+                                    "${nodes[0].projectId}|${nodes[0].repoName}, try the $retries time"
                             )
                             uploadBlobInChunks(
                                 token = token,
@@ -130,8 +134,7 @@ class OciArtifactPushClient(
                                 name = name,
                                 projectId = nodes[0].projectId,
                                 repoName = nodes[0].repoName,
-                                clusterUrl = clusterInfo.url,
-                                clusterName = clusterInfo.name.orEmpty()
+                                context = context
                             )
                         }
                     } finally {
@@ -151,10 +154,10 @@ class OciArtifactPushClient(
         }
         // 同步manifest
         if (result) {
-            val targetList = if (targetVersions.isNullOrEmpty()) {
+            val targetList = if (context.targetVersions.isNullOrEmpty()) {
                 listOf(version)
             } else {
-                targetVersions
+                context.targetVersions!!
             }
             targetList.forEach {
                 val input = localDataManager.loadInputStream(nodes[0])
@@ -164,13 +167,13 @@ class OciArtifactPushClient(
                     version = it,
                     input = Pair(input, nodes[0].size),
                     mediaType = manifestInfo.mediaType,
-                    clusterUrl = clusterInfo.url
+                    clusterUrl = context.cluster.url
                 ).isSuccess
             }
         }
         logger.info(
             "The result of uploading $name|$version's artifact " +
-                "to remote cluster ${clusterInfo.name} is $result"
+                "to remote cluster ${context.cluster.name} is $result"
         )
         return result
     }
@@ -250,9 +253,10 @@ class OciArtifactPushClient(
         name: String,
         projectId: String,
         repoName: String,
-        clusterUrl: String,
-        clusterName: String
+        context: ReplicaContext
     ): Boolean {
+        val clusterUrl = context.cluster.url
+        val clusterName = context.cluster.name.orEmpty()
         logger.info(
             "Will try to upload $name's blob $digest " +
                 "in repo $projectId|$repoName to remote cluster $clusterName."
@@ -295,7 +299,8 @@ class OciArtifactPushClient(
                 repoName = repoName,
                 projectId = projectId,
                 sha256 = sha256,
-                location = sessionIdHandlerResult.location
+                location = sessionIdHandlerResult.location,
+                context = context
             )
         } catch (e: Exception) {
             // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
@@ -319,7 +324,8 @@ class OciArtifactPushClient(
                 sha256 = sha256,
                 projectId = projectId,
                 repoName = repoName,
-                location = sessionIdHandlerResult.location
+                location = sessionIdHandlerResult.location,
+                context = context
             )
         }
 
@@ -399,7 +405,8 @@ class OciArtifactPushClient(
         sha256: String,
         projectId: String,
         repoName: String,
-        location: String?
+        location: String?,
+        context: ReplicaContext
     ): DefaultHandlerResult? {
         var startPosition: Long = 0
         var chunkedHandlerResult: DefaultHandlerResult? = null
@@ -425,12 +432,23 @@ class OciArtifactPushClient(
                 .add(HttpHeaders.CONTENT_RANGE, contentRange)
                 .add(HttpHeaders.CONTENT_LENGTH, "$byteCount")
                 .build()
+            val requestTag = if (context.task.replicaType == ReplicaType.RUN_ONCE) {
+                RequestTag(
+                    task = context.task,
+                    objectCount = ceil(context.task.totalBytes!!.toDouble()/replicationProperties.chunkedSize).toInt(),
+                    key = sha256 + range,
+                    size = byteCount
+                )
+            } else {
+                null
+            }
             val property = RequestProperty(
                 requestBody = patchBody,
                 authorizationCode = token,
                 requestMethod = RequestMethod.PATCH,
                 headers = patchHeader,
-                requestUrl = location
+                requestUrl = location,
+                requestTag = requestTag
             )
             chunkedHandlerResult = DefaultHandler.process(
                 httpClient = httpClient,
@@ -457,7 +475,8 @@ class OciArtifactPushClient(
         sha256: String,
         projectId: String,
         repoName: String,
-        location: String?
+        location: String?,
+        context: ReplicaContext
     ): DefaultHandlerResult {
         logger.info("Will upload blob $sha256 in a single patch request")
         val patchBody = StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
@@ -468,12 +487,23 @@ class OciArtifactPushClient(
             .add(SHA256, sha256)
             .add(HttpHeaders.CONTENT_LENGTH, "$size")
             .build()
+        val requestTag = if (context.task.replicaType == ReplicaType.RUN_ONCE) {
+            RequestTag(
+                task = context.task,
+                objectCount = context.objectCount,
+                key = sha256,
+                size = size
+            )
+        } else {
+            null
+        }
         val property = RequestProperty(
             requestBody = patchBody,
             authorizationCode = token,
             requestMethod = RequestMethod.PATCH,
             headers = patchHeader,
-            requestUrl = location
+            requestUrl = location,
+            requestTag = requestTag
         )
         return DefaultHandler.process(
             httpClient = httpClient,

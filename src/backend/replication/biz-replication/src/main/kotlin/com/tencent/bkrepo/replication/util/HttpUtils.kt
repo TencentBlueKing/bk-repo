@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
@@ -58,6 +59,9 @@ object HttpUtils {
             headers?.let { builder = builder.headers(headers!!) }
             authorizationCode?.let {
                 builder = builder.header(HttpHeaders.AUTHORIZATION, authorizationCode!!)
+            }
+            requestTag?.let {
+                builder = builder.tag(RequestTag::class.java, requestTag)
             }
             return when (requestMethod) {
                 RequestMethod.POST -> builder.post(requestBody!!)
