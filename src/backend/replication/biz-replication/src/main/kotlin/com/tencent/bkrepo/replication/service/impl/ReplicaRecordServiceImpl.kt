@@ -29,8 +29,8 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
@@ -112,6 +112,9 @@ class ReplicaRecordServiceImpl(
         tReplicaTask.lastExecutionStatus = status
         tReplicaTask.status = if (isCronJob(tReplicaTask.setting, tReplicaTask.replicaType))
             ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
+        if (status == ExecutionStatus.SUCCESS) {
+            tReplicaTask.replicatedBytes = tReplicaTask.totalBytes
+        }
         replicaRecordDao.save(record)
         replicaTaskDao.save(tReplicaTask)
         logger.info("complete record [$recordId], status from [${replicaRecordInfo.status}] to [$status].")
