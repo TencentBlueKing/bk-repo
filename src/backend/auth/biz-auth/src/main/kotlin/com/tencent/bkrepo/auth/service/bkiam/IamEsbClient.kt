@@ -37,7 +37,6 @@ import com.tencent.bkrepo.auth.pojo.iam.IamCreateApiReq
 import com.tencent.bkrepo.auth.pojo.iam.IamPermissionUrlReq
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody

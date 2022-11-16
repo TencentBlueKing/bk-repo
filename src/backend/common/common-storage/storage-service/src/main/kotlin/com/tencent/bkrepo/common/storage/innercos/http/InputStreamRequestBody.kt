@@ -34,7 +34,6 @@ package com.tencent.bkrepo.common.storage.innercos.http
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import okio.BufferedSink
-import okio.Okio
 import okio.source
 import java.io.IOException
 import java.io.InputStream

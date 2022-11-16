@@ -66,7 +66,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.overviewKeyOf
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener

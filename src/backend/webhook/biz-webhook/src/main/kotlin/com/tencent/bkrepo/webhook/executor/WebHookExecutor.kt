@@ -42,7 +42,6 @@ import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody

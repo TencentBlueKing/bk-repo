@@ -41,7 +41,6 @@ import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandl
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
 import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody

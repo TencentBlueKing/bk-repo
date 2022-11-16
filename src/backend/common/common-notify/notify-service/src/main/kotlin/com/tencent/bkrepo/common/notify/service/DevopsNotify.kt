@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.notify.pojo.EmailNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.RtxNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.SmsNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.WechatNotifyMessage
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request

@@ -55,7 +55,6 @@ import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okio.ByteString

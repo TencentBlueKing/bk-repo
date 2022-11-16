@@ -41,7 +41,6 @@ import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
 import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.devops.plugin.api.PluginInfo
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request

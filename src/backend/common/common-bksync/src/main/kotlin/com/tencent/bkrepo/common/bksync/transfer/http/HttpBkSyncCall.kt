@@ -16,10 +16,8 @@ import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.ReportSpeedException
 import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient

@@ -37,9 +37,7 @@ import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
 import com.tencent.bkrepo.common.notify.client.NotifyClient
 import com.tencent.bkrepo.common.notify.config.NotifyProperties
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request

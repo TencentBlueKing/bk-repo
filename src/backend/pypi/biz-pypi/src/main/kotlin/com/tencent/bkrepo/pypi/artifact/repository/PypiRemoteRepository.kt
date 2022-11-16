@@ -49,7 +49,6 @@ import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
