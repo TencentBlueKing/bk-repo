@@ -55,7 +55,7 @@ import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Headers
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okio.ByteString
 import org.slf4j.LoggerFactory
@@ -374,7 +374,7 @@ class OciArtifactPushClient(
         val postPath = OCI_BLOBS_UPLOAD_FIRST_STEP_URL.format(name)
         val postUrl = buildUrl(clusterUrl, postPath)
         val postBody: RequestBody = RequestBody.create(
-            MediaType.parse("application/json"), StringPool.EMPTY
+            "application/json".toMediaTypeOrNull(), StringPool.EMPTY
         )
         val property = RequestProperty(
             requestBody = postBody,
@@ -418,7 +418,7 @@ class OciArtifactPushClient(
             val range = Range(startPosition, startPosition + byteCount - 1, size)
             val input = localDataManager.loadInputStreamByRange(sha256, range, projectId, repoName)
             val patchBody: RequestBody = RequestBody.create(
-                MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM), input.readBytes()
+                MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull(), input.readBytes()
             )
             val patchHeader = Headers.Builder()
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
@@ -530,7 +530,7 @@ class OciArtifactPushClient(
         val putUrl = buildUrl(clusterUrl, path)
         val type = mediaType ?: "application/vnd.oci.image.manifest.v1+json"
         val manifestBody: RequestBody = RequestBody.create(
-            MediaType.parse(type), input.first.readBytes()
+            type.toMediaTypeOrNull(), input.first.readBytes()
         )
         val manifestHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, type)

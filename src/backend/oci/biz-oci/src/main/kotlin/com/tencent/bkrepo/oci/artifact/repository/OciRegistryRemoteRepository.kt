@@ -145,8 +145,8 @@ class OciRegistryRemoteRepository(
                 onResponse(context, responseWithAuth)
             } else null
         } finally {
-            response.body()?.close()
-            responseWithAuth?.body()?.close()
+            response.body?.close()
+            responseWithAuth?.body?.close()
         }
     }
 
@@ -248,7 +248,7 @@ class OciRegistryRemoteRepository(
         configuration: RemoteConfiguration,
         httpClient: OkHttpClient
     ): String? {
-        if (response.code() != HttpStatus.UNAUTHORIZED.value) {
+        if (response.code != HttpStatus.UNAUTHORIZED.value) {
             return null
         }
         val wwwAuthenticate = response.header(WWW_AUTHENTICATE)
@@ -266,7 +266,7 @@ class OciRegistryRemoteRepository(
         val tokenResponse = httpClient.newCall(request).execute()
         try {
             if (!tokenResponse.isSuccessful) return null
-            val body = tokenResponse.body()!!
+            val body = tokenResponse.body!!
             val artifactFile = createTempFile(body)
             val size = artifactFile.getSize()
             val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
@@ -274,7 +274,7 @@ class OciRegistryRemoteRepository(
             val bearerToken = JsonUtils.objectMapper.readValue(artifactStream, BearerToken::class.java)
             return "Bearer ${bearerToken.token}"
         } finally {
-            tokenResponse.body()?.close()
+            tokenResponse.body?.close()
         }
     }
 
@@ -322,7 +322,7 @@ class OciRegistryRemoteRepository(
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         logger.info("Remote download response will be processed")
-        val artifactFile = createTempFile(response.body()!!)
+        val artifactFile = createTempFile(response.body!!)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         val node = cacheArtifact(context, artifactFile)
@@ -449,7 +449,7 @@ class OciRegistryRemoteRepository(
      * 远程下载响应回调
      */
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): Any? {
-        val body = response.body()!!
+        val body = response.body!!
         val artifactFile = createTempFile(body)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))

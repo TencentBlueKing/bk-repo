@@ -91,7 +91,7 @@ class HelmRemoteRepository(
      */
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): Any? {
         logger.info("on remote query response...")
-        val body = response.body()!!
+        val body = response.body!!
         val tempFile = createTempFile(body)
         val artifactFile = buildNewIndex(context, tempFile)
         val size = artifactFile.getSize()
@@ -167,7 +167,7 @@ class HelmRemoteRepository(
      * 远程下载响应回调
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
-        val tempFile = createTempFile(response.body()!!)
+        val tempFile = createTempFile(response.body!!)
         val artifactFile = buildNewIndex(context, tempFile)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
