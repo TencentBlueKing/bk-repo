@@ -71,13 +71,6 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        val user = userRepository.findFirstByUserId(userId) ?: run {
-            return false
-        }
-        return user.admin
-    }
-
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
         userRepository.findFirstByUserIdAndRoles(userId, roleId) ?: run {
             logger.warn("user [$userId,$roleId]  not exist.")
@@ -103,6 +96,13 @@ open class AbstractServiceImpl constructor(
             logger.warn("role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
+    }
+
+    fun isUserLocalAdmin(userId: String): Boolean {
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            return false
+        }
+        return user.admin
     }
 
     fun updatePermissionById(id: String, key: String, value: Any): Boolean {
@@ -165,7 +165,7 @@ open class AbstractServiceImpl constructor(
     }
 
     fun createRoleCommon(request: CreateRoleRequest): String? {
-        logger.info("create  role  request : [$request] ")
+        logger.info("create role request:[$request] ")
         val role: TRole? = if (request.type == RoleType.REPO) {
             roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
                 request.roleId!!,
@@ -181,7 +181,7 @@ open class AbstractServiceImpl constructor(
         }
 
         role?.let {
-            logger.warn("create role [${request.roleId} , ${request.projectId} ]  is exist.")
+            logger.warn("create role [${request.roleId} , ${request.projectId} ] is exist.")
             return role.id
         }
 
@@ -200,25 +200,24 @@ open class AbstractServiceImpl constructor(
         addUserToRoleBatchCommon(idList, roleId!!)
     }
 
-    fun addUserToRoleBatchCommon(idList: List<String>, roleId: String): Boolean {
-        logger.info("add user to role batch userId : [$idList], roleId : [$roleId]")
-        checkUserExistBatch(idList)
+    fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
+        logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
+        checkUserExistBatch(userIdList)
         checkRoleExist(roleId)
-        val query = UserQueryHelper.getUserByIdList(idList)
+        val query = UserQueryHelper.getUserByIdList(userIdList)
         val update = UserUpdateHelper.buildAddRole(roleId)
         mongoTemplate.updateMulti(query, update, TUser::class.java)
         return true
     }
 
-    fun removeUserFromRoleBatchCommon(idList: List<String>, roleId: String): Boolean {
-        logger.info("remove user from role  batch userId : [$idList], roleId : [$roleId]")
-        checkUserExistBatch(idList)
+    fun removeUserFromRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
+        logger.info("remove user from role  batch userId : [$userIdList], roleId : [$roleId]")
+        checkUserExistBatch(userIdList)
         checkRoleExist(roleId)
-        val query = UserQueryHelper.getUserByIdListAndRoleId(idList, roleId)
+        val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
         val update = UserUpdateHelper.buildUnsetRoles()
-        val result = mongoTemplate.updateMulti(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) return true
-        return false
+        mongoTemplate.updateMulti(query, update, TUser::class.java)
+        return true
     }
 
 
