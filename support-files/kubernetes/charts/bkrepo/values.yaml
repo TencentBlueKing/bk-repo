@@ -206,6 +206,8 @@ common:
 gateway:
   ## bkrepo 地址
   host: bkrepo.example.com
+  ## bkrepo static 文件地址
+  staticHost: static.bkrepo.example.com
   ## bkrepo docker仓库地址
   dockerHost: docker.bkrepo.example.com
   ## bkrepo helm仓库地址
