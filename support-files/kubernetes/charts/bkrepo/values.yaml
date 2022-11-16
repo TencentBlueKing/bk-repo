@@ -59,7 +59,11 @@ ingress:
   key: ""
   annotations:
     kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/proxy-body-size: "10240m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20480m"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/use-http2: "false"
 
 ## nginx-ingress-controller 配置
 ## ref: https://github.com/bitnami/charts/tree/master/bitnami/nginx-ingress-controller
