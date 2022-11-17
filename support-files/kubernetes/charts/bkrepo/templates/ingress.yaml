@@ -23,6 +23,7 @@ spec:
         - {{ .Values.gateway.host }}
         - {{ .Values.gateway.dockerHost }}
         - {{ .Values.gateway.helmHost }}
+        - {{ .Values.gateway.staticHost }}
       secretName: {{ .Values.ingress.tlsName }}
   {{- end }}
   rules:
@@ -35,6 +36,14 @@ spec:
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
     - host: {{ .Values.gateway.helmHost }}
+      http:
+        paths:
+          - path: /
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
+    - host: {{ .Values.gateway.staticHost }}
       http:
         paths:
           - path: /
