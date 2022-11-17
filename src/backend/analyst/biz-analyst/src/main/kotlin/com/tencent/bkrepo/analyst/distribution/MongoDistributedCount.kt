@@ -48,7 +48,7 @@ class MongoDistributedCount(
     }
 
     override fun get(): Double {
-        return distributedCountDao.get(key)
+        return distributedCountDao.get(key) ?: 0.0
     }
 
     override fun toLong(): Long {
