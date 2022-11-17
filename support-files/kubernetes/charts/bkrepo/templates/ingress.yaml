@@ -23,7 +23,6 @@ spec:
         - {{ .Values.gateway.host }}
         - {{ .Values.gateway.dockerHost }}
         - {{ .Values.gateway.helmHost }}
-        - {{ .Values.gateway.staticHost }}
       secretName: {{ .Values.ingress.tlsName }}
   {{- end }}
   rules:
