@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.util
-
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import okio.BufferedSink
-import okio.source
-import java.io.InputStream
+package com.tencent.bkrepo.analyst.distribution
 
 /**
- * 数据流请求体
+ * 分布式计数器
  */
-class StreamRequestBody(
-    private val inputStream: InputStream,
-    private val length: Long
-) : RequestBody() {
+interface DistributedCount {
 
-    override fun contentLength(): Long {
-        return length
-    }
+    fun incrementAndGet(): Double
 
-    override fun contentType(): MediaType? {
-        return MEDIA_TYPE_STREAM
-    }
+    fun decrementAndGet(): Double
 
-    override fun writeTo(sink: BufferedSink) {
-        inputStream.source().use {
-            sink.writeAll(it)
-        }
-    }
+    fun set(value: Double)
 
-    companion object {
-        private val MEDIA_TYPE_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull()
-    }
+    fun addAndGet(delta: Double): Double
+
+    fun get(): Double
+
+    fun toLong(): Long
 }

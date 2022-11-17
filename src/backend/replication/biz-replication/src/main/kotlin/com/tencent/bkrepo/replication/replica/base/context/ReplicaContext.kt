@@ -155,7 +155,7 @@ class ReplicaContext(
             .post(requestBody)
             .build()
         httpClient.newCall(httpRequest).execute().use {
-            check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
+            check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
         }
     }
 

@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 import com.tencent.bkrepo.repository.api.OperateLogClient
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
 @Service
@@ -47,6 +48,16 @@ class OperateLogServiceImpl(private val operateLogClient: OperateLogClient): Ope
     }
 
     override fun save(operateLogs: Collection<OperateLog>) {
+        operateLogClient.batchSave(operateLogs.toList())
+    }
+
+    @Async
+    override fun saveAsync(operateLog: OperateLog) {
+        operateLogClient.save(operateLog)
+    }
+
+    @Async
+    override fun saveAsync(operateLogs: Collection<OperateLog>) {
         operateLogClient.batchSave(operateLogs.toList())
     }
 

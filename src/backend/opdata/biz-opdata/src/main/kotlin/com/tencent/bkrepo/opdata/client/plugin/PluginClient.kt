@@ -41,7 +41,7 @@ import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
 import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.devops.plugin.api.PluginInfo
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -66,12 +66,12 @@ class PluginClient @Autowired constructor(
             val req = buildRequest(url, HttpMethod.GET.name)
             httpClient.newCall(req).execute().use { res ->
                 if (res.isSuccessful) {
-                    val plugins = res.body()!!.string().readJsonString<Map<String, PluginInfo>>()
+                    val plugins = res.body!!.string().readJsonString<Map<String, PluginInfo>>()
                     return plugins.keys.toList()
                 }
 
-                val resCode = res.code()
-                val logMsg = "request plugins actuator failed, code: $resCode, message: ${res.message()}"
+                val resCode = res.code
+                val logMsg = "request plugins actuator failed, code: $resCode, message: ${res.message}"
                 if (resCode == HttpStatus.NOT_FOUND.value ||
                     resCode == HttpStatus.UNAUTHORIZED.value ||
                     resCode == HttpStatus.FORBIDDEN.value) {
@@ -91,7 +91,7 @@ class PluginClient @Autowired constructor(
     fun load(id: String, host: String) {
         val url = "$ACTUATOR_SCHEME://$host/$ACTUATOR_ENDPOINT_PLUGIN/$id"
         val requestBody = RequestBody.create(
-            MediaType.parse(MediaTypes.APPLICATION_JSON),
+            MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(),
             mapOf("id" to id).toJsonString()
         )
         val request = buildRequest(url, HttpMethod.POST.name, requestBody)

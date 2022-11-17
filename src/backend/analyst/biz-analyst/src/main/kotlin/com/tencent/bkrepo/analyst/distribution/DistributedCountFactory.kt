@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.util
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import okio.BufferedSink
-import okio.source
-import java.io.InputStream
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.stereotype.Component
 
-/**
- * 数据流请求体
- */
-class StreamRequestBody(
-    private val inputStream: InputStream,
-    private val length: Long
-) : RequestBody() {
-
-    override fun contentLength(): Long {
-        return length
-    }
-
-    override fun contentType(): MediaType? {
-        return MEDIA_TYPE_STREAM
-    }
-
-    override fun writeTo(sink: BufferedSink) {
-        inputStream.source().use {
-            sink.writeAll(it)
+@Component
+class DistributedCountFactory(
+    private val distributedCountDao: ObjectProvider<DistributedCountDao>,
+    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
+) {
+    fun create(key: String, type: String = DISTRIBUTED_COUNT_REDIS): DistributedCount {
+        return when (type) {
+            DISTRIBUTED_COUNT_MONGODB -> MongoDistributedCount(key, distributedCountDao.getObject())
+            DISTRIBUTED_COUNT_REDIS -> RedisDistributedCount(key, redisTemplate.getObject())
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, type)
         }
     }
 
     companion object {
-        private val MEDIA_TYPE_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull()
+        const val DISTRIBUTED_COUNT_MONGODB = "mongodb"
+        const val DISTRIBUTED_COUNT_REDIS = "redis"
     }
 }

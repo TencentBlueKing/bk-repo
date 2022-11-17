@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.util
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import okio.BufferedSink
-import okio.source
-import java.io.InputStream
-
-/**
- * 数据流请求体
- */
-class StreamRequestBody(
-    private val inputStream: InputStream,
-    private val length: Long
-) : RequestBody() {
-
-    override fun contentLength(): Long {
-        return length
+class MongoDistributedCount(
+    private val key: String,
+    private val distributedCountDao: DistributedCountDao
+) : DistributedCount {
+    override fun incrementAndGet(): Double {
+        return addAndGet(1.0)
     }
 
-    override fun contentType(): MediaType? {
-        return MEDIA_TYPE_STREAM
+    override fun decrementAndGet(): Double {
+        return addAndGet(-1.0)
     }
 
-    override fun writeTo(sink: BufferedSink) {
-        inputStream.source().use {
-            sink.writeAll(it)
-        }
+    override fun set(value: Double) {
+        distributedCountDao.setCount(key, value)
     }
 
-    companion object {
-        private val MEDIA_TYPE_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull()
+    override fun addAndGet(delta: Double): Double {
+        return distributedCountDao.incAndGet(key, delta)
+    }
+
+    override fun get(): Double {
+        return distributedCountDao.get(key)
+    }
+
+    override fun toLong(): Long {
+        return get().toLong()
     }
 }

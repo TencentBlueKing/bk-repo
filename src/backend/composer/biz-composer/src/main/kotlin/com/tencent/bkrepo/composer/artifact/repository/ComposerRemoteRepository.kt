@@ -65,7 +65,7 @@ class ComposerRemoteRepository : RemoteRepository() {
         val request = Request.Builder().url(remotePackagesUri)
             .addHeader("Connection", "keep-alive")
             .get().build()
-        val result = okHttpClient.newCall(request).execute().body()?.string()
+        val result = okHttpClient.newCall(request).execute().body?.string()
         try {
             JsonParser.parseString(result).asJsonObject
         } catch (e: IllegalStateException) {

@@ -24,8 +24,8 @@ class SignInterceptor(private val clusterInfo: ClusterInfo) : Interceptor {
             val request = chain.request()
             val startTime = System.currentTimeMillis() / HttpSigner.MILLIS_PER_SECOND
             var endTime = startTime + HttpSigner.REQUEST_TTL
-            val urlBuilder = request.url().newBuilder()
-            val body = request.body()
+            val urlBuilder = request.url.newBuilder()
+            val body = request.body
             /*
             * 文件请求使用multipart/form-data，为避免读取文件，这里使用空串。表单参数应该包含文件的sha256。
             * 通过对表单参数的签名，来实现对文件请求的签名。
@@ -45,7 +45,7 @@ class SignInterceptor(private val clusterInfo: ClusterInfo) : Interceptor {
                 .addQueryParameter(SIGN_TIME, "$startTime$TIME_SPLIT$endTime")
             val newRequest = request.newBuilder().url(urlBuilder.build()).build()
             val bodyHash = Hashing.sha256().hashBytes(bodyToHash).toString()
-            val realPath = request.url().uri().path
+            val realPath = request.url.toUri().path
             val signPath = if (realPath.startsWith("/$SERVICE_NAME")) {
                 realPath.removePrefix("/$SERVICE_NAME")
             } else {

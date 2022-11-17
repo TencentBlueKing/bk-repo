@@ -32,4 +32,5 @@
 dependencies {
     api(project(":common:common-mongo"))
     api(project(":common:common-redis"))
+    api(project(":common:common-api"))
 }

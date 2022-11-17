@@ -155,4 +155,13 @@ class PermissionController @Autowired constructor(
     fun updatePermissionAction(@RequestBody request: UpdatePermissionActionRequest): Response<Boolean> {
         return ResponseBuilder.success(permissionService.updatePermissionAction(request))
     }
+
+
+    @ApiOperation("获取项目内置权限列表")
+    @GetMapping("/list/inproject")
+    fun listProjectBuiltinPermission(
+        @RequestParam projectId: String
+    ): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listProjectBuiltinPermission(projectId))
+    }
 }

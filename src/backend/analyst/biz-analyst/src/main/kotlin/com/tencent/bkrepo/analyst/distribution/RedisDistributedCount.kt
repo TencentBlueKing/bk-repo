@@ -25,36 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.metrics
+package com.tencent.bkrepo.analyst.distribution
 
-import com.tencent.bkrepo.common.redis.RedisOperation
+import org.springframework.data.redis.core.RedisTemplate
 
-class RedisAtomicLong(
-    private val redisOperation: RedisOperation,
-    private val key: String
-) {
-
-    fun incrementAndGet(): Long {
-        return addAndGet(1L)
+class RedisDistributedCount(
+    private val key: String,
+    private val redisTemplate: RedisTemplate<String, String>
+) : DistributedCount {
+    override fun incrementAndGet(): Double {
+        return addAndGet(1.0)
     }
 
-    fun decrementAndGet(): Long {
-        return addAndGet(-1L)
+    override fun decrementAndGet(): Double {
+        return addAndGet(-1.0)
     }
 
-    fun set(value: Long) {
-        redisOperation.set(key, value.toString())
+    override fun set(value: Double) {
+        redisTemplate.opsForValue().set(key, value.toString())
     }
 
-    fun addAndGet(delta: Long): Long {
-        return redisOperation.increment(key, delta)!!
+    override fun addAndGet(delta: Double): Double {
+        return redisTemplate.opsForValue().increment(key, delta)!!
     }
 
-    fun get(): Long {
-        return redisOperation.get(key)?.toLong() ?: 0L
+    override fun get(): Double {
+        return redisTemplate.opsForValue().get(key)?.toDouble() ?: 0.0
     }
 
-    fun toDouble(): Double {
-        return get().toDouble()
+    override fun toLong(): Long {
+        return redisTemplate.opsForValue().get(key)?.toLong() ?: 0L
     }
 }

@@ -89,11 +89,11 @@ object HttpSigner {
      * @param algorithm 签名使用的算法
      * */
     fun sign(request: Request, uri: String, bodyHash: String, key: String, algorithm: String): String {
-        val httpUrl = request.url()
-        val method = request.method()
+        val httpUrl = request.url
+        val method = request.method
         val parser = ParameterParser()
-        val queries = parser.parse(httpUrl.query(), '&')
-        val body = request.body()
+        val queries = parser.parse(httpUrl.query, '&')
+        val body = request.body
         // 将表单参数加入签名
         if (body is MultipartBody) {
             addFormParameters(body, parser, queries)
@@ -114,15 +114,15 @@ object HttpSigner {
         parser: ParameterParser,
         queries: MutableMap<String, String>
     ) {
-        body.parts().forEach { part ->
-            part.headers()?.let {
+        body.parts.forEach { part ->
+            part.headers?.let {
                 // form-data; name=""; filename=""
                 val params = parser.parse(it.get(HttpHeaders.CONTENT_DISPOSITION), ';')
                 val fileName = params["filename"]
                 if (fileName == null) {
                     // k-v参数
                     val buffer = Buffer()
-                    part.body().writeTo(buffer)
+                    part.body.writeTo(buffer)
                     queries[params["name"]!!] = buffer.readByteArray().decodeToString()
                 }
             }

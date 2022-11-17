@@ -73,4 +73,6 @@ interface PermissionService {
 
     fun updatePermissionAction(request: UpdatePermissionActionRequest): Boolean
 
+    fun listProjectBuiltinPermission(projectId: String): List<Permission>
+
 }

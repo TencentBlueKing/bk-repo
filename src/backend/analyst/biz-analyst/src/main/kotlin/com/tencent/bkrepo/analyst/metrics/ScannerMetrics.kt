@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.analyst.metrics
 
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.distribution.DistributedCount
+import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
-import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.analyst.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
@@ -45,23 +47,24 @@ import java.util.concurrent.ConcurrentHashMap
  * 扫描服务数据统计
  */
 @Component
+@Suppress("TooManyFunctions")
 class ScannerMetrics(
     private val meterRegistry: MeterRegistry,
-    // 一个任务可能被不同的服务实例处理，统计数据需要放到公共存储上才能保证数据准确
-    private val redisOperation: RedisOperation,
+    private val scannerProperties: ScannerProperties,
     @Qualifier(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
-    private val scanTaskSchedulerThreadPool: ThreadPoolTaskExecutor
+    private val scanTaskSchedulerThreadPool: ThreadPoolTaskExecutor,
+    private val distributedCountFactory: DistributedCountFactory
 ) : MeterBinder {
 
     /**
      * 记录各状态任务数量的Map，key为状态，value为任务数量
      */
-    private val taskCountMap = ConcurrentHashMap<String, RedisAtomicLong>(ScanTaskStatus.values().size)
+    private val taskCountMap = ConcurrentHashMap<String, DistributedCount>(ScanTaskStatus.values().size)
 
     /**
      * 记录各状态子任务数量的Map，key为状态，value为任务数量
      */
-    private val subtaskCounterMap = ConcurrentHashMap<String, RedisAtomicLong>(SubScanTaskStatus.values().size)
+    private val subtaskCounterMap = ConcurrentHashMap<String, DistributedCount>(SubScanTaskStatus.values().size)
 
     /**
      * 记录各文件类型扫描速率的Map，key为文件类型（参考[speedSummaryCacheKey]），value为速率统计信息
@@ -71,12 +74,12 @@ class ScannerMetrics(
     /**
      * 重用扫描结果的任务数量统计
      */
-    private val reuseResultSubtaskCounters: RedisAtomicLong by lazy {
+    private val reuseResultSubtaskCounters: DistributedCount by lazy {
         // 统计重用扫描结果的子任务数量
-        val atomicLong = RedisAtomicLong(redisOperation, SCANNER_SUBTASK_REUSE_RESULT_COUNT)
-        Gauge.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT, atomicLong, RedisAtomicLong::toDouble)
+        val distributedCount = createDistributedCount(SCANNER_SUBTASK_REUSE_RESULT_COUNT)
+        Gauge.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT, distributedCount, DistributedCount::get)
             .register(meterRegistry)
-        atomicLong
+        distributedCount
     }
 
     override fun bindTo(registry: MeterRegistry) {
@@ -98,7 +101,7 @@ class ScannerMetrics(
     /**
      * 处于[status]状态的任务数量增加[count]个
      */
-    fun incTaskCountAndGet(status: ScanTaskStatus, count: Long = 1): Long {
+    fun incTaskCountAndGet(status: ScanTaskStatus, count: Double = 1.0): Double {
         if (status == ScanTaskStatus.SCANNING_SUBMITTING) {
             taskCounter(ScanTaskStatus.PENDING).addAndGet(-count)
         }
@@ -123,21 +126,21 @@ class ScannerMetrics(
     /**
      * 设置[status]状态的任务数量为[count]
      */
-    fun setTaskCount(status: ScanTaskStatus, count: Long) {
+    fun setTaskCount(status: ScanTaskStatus, count: Double) {
         taskCounter(status).set(count)
     }
 
     /**
      * 处于[status]状态的任务数量增加[count]个
      */
-    fun incSubtaskCountAndGet(status: SubScanTaskStatus, count: Long = 1): Long {
+    fun incSubtaskCountAndGet(status: SubScanTaskStatus, count: Double = 1.0): Double {
         return subtaskCounter(status).addAndGet(count)
     }
 
     /**
      * 处于[status]状态的任务数量减少[count]个
      */
-    fun decSubtaskCountAndGet(status: SubScanTaskStatus, count: Long = 1): Long {
+    fun decSubtaskCountAndGet(status: SubScanTaskStatus, count: Double = 1.0): Double {
         return subtaskCounter(status).addAndGet(-count)
     }
 
@@ -149,14 +152,14 @@ class ScannerMetrics(
         subtaskCounter(next).incrementAndGet()
     }
 
-    fun setSubtaskCount(status: SubScanTaskStatus, count: Long) {
+    fun setSubtaskCount(status: SubScanTaskStatus, count: Double) {
         subtaskCounter(status).set(count)
     }
 
     /**
      * 重用扫描结果的子任务数量加1
      */
-    fun incReuseResultSubtaskCount(count: Long = 1) {
+    fun incReuseResultSubtaskCount(count: Double = 1.0) {
         reuseResultSubtaskCounters.addAndGet(count)
     }
 
@@ -172,26 +175,26 @@ class ScannerMetrics(
         summary.record(fileSize / elapsedSeconds)
     }
 
-    private fun subtaskCounter(status: SubScanTaskStatus): RedisAtomicLong {
+    private fun subtaskCounter(status: SubScanTaskStatus): DistributedCount {
         return subtaskCounterMap.getOrPut(status.name) {
             // 统计不同状态扫描任务数量
             val key = metricsKey(SCANNER_SUBTASK_COUNT, "status", status.name)
-            val atomicLong = RedisAtomicLong(redisOperation, key)
-            Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
+            val distributedCount = createDistributedCount(key)
+            Gauge.builder(SCANNER_SUBTASK_COUNT, distributedCount, DistributedCount::get)
                 .description("${status.name} subtask count")
                 .tag("status", status.name)
                 .register(meterRegistry)
-            atomicLong
+            distributedCount
         }
     }
 
-    private fun taskCounter(status: ScanTaskStatus): RedisAtomicLong {
+    private fun taskCounter(status: ScanTaskStatus): DistributedCount {
         return taskCountMap.getOrPut(status.name) {
             // 统计不同状态子任务数量
             val key = metricsKey(SCANNER_TASK_COUNT, "status", status.name)
-            val atomicLong = RedisAtomicLong(redisOperation, key)
-            taskGauge(atomicLong, RedisAtomicLong::toDouble, status).register(meterRegistry)
-            atomicLong
+            val distributedCount = createDistributedCount(key)
+            taskGauge(distributedCount, DistributedCount::get, status).register(meterRegistry)
+            distributedCount
         }
     }
 
@@ -224,6 +227,11 @@ class ScannerMetrics(
     private fun metricsKey(meterName: String, vararg tags: String): String {
         val newMeterName = meterName.removePrefix("scanner.").replace(".", ":")
         return "metrics:scanner:$newMeterName:${tags.joinToString(":")}"
+    }
+
+    private fun createDistributedCount(key: String): DistributedCount {
+        // 一个任务可能被不同的服务实例处理，统计数据需要放到公共存储上才能保证数据准确
+        return distributedCountFactory.create(key, scannerProperties.distributedCountType)
     }
 
     companion object {
