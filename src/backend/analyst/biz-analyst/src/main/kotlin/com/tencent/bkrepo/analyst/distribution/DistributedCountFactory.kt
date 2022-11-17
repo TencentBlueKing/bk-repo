@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component
 @Component
 class DistributedCountFactory(
     private val distributedCountDao: ObjectProvider<DistributedCountDao>,
-    private val redisTemplate: ObjectProvider<RedisTemplate<String, Double?>>
+    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
 ) {
     fun create(key: String, type: String = DISTRIBUTED_COUNT_REDIS): DistributedCount {
         return when (type) {

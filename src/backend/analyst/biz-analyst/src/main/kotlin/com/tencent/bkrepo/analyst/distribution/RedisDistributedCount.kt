@@ -31,7 +31,7 @@ import org.springframework.data.redis.core.RedisTemplate
 
 class RedisDistributedCount(
     private val key: String,
-    private val redisTemplate: RedisTemplate<String, Double?>
+    private val redisTemplate: RedisTemplate<String, String>
 ) : DistributedCount {
     override fun incrementAndGet(): Double {
         return addAndGet(1.0)
@@ -42,7 +42,7 @@ class RedisDistributedCount(
     }
 
     override fun set(value: Double) {
-        redisTemplate.opsForValue().set(key, value)
+        redisTemplate.opsForValue().set(key, value.toString())
     }
 
     override fun addAndGet(delta: Double): Double {
@@ -50,7 +50,7 @@ class RedisDistributedCount(
     }
 
     override fun get(): Double {
-        return redisTemplate.opsForValue().get(key) ?: 0.0
+        return redisTemplate.opsForValue().get(key)?.toDouble() ?: 0.0
     }
 
     override fun toLong(): Long {
