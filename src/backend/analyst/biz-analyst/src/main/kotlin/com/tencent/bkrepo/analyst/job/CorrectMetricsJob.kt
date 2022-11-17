@@ -38,33 +38,33 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.CREATED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 /**
  * 矫正metric中的数据
  */
 @Component
 class CorrectMetricsJob(
-    private val redisOperation: RedisOperation,
     private val subScanTaskDao: SubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
-    private val scannerMetrics: ScannerMetrics
-) {
-    private val jobLock by lazy {
-        RedisLock(redisOperation, JOB_LOCK_KEY, FIXED_DELAY / 1000L)
-    }
+    private val scannerMetrics: ScannerMetrics,
+    private val lockingTaskExecutor: LockingTaskExecutor
+) : Runnable {
 
     @Scheduled(fixedDelay = FIXED_DELAY)
     fun correct() {
-        // 不释放锁，等待锁过期，避免其他服务实例重复执行任务
-        if (!jobLock.tryLock()) {
-            return
-        }
+        // 设置最小持有时间与最大持有时间相等，不释放锁，等待锁过期，避免其他服务实例重复执行任务
+        val duration = Duration.ofMillis(FIXED_DELAY)
+        val lockConfiguration = LockConfiguration(javaClass.simpleName, duration, duration)
+        lockingTaskExecutor.executeWithLock(this, lockConfiguration)
+    }
 
+    override fun run() {
         // 由于扫描任务数量统计使用了redis，状态变更时涉及多个非原子的任务状态数量增减操作，需要与数据库的数据同步
         CORRECT_SUBTASK_STATUS.forEach {
             val count = subScanTaskDao.countStatus(it)
@@ -81,7 +81,6 @@ class CorrectMetricsJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CorrectMetricsJob::class.java)
-        private val JOB_LOCK_KEY = "job:lock:${CorrectMetricsJob::class.java.name}"
         private val CORRECT_SUBTASK_STATUS = listOf(BLOCKED, CREATED, PULLED, ENQUEUED, EXECUTING)
         private val CORRECT_TASK_STATUS = listOf(PENDING, SCANNING_SUBMITTING, SCANNING_SUBMITTED)
         private const val FIXED_DELAY = 60 * 60 * 1000L
