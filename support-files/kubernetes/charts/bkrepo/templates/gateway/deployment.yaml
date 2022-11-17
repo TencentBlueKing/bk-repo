@@ -65,6 +65,8 @@ spec:
               value: {{ .Release.Namespace }}
             - name: BK_REPO_SERVICE_PREFIX
               value: {{ include "common.names.fullname" . }}-
+            - name: BK_REPO_STATIC_HOST
+              value: {{ .Values.gateway.staticHost }}
             - name: BK_REPO_HOST
               value: {{ .Values.gateway.host }}
             - name: BK_REPO_HTTP_PORT
