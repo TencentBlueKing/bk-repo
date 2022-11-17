@@ -203,13 +203,7 @@ class UserServiceImpl constructor(
     }
 
     override fun addUserToRoleBatch(idList: List<String>, roleId: String): Boolean {
-        logger.info("add user to role batch userId : [$idList], roleId : [$roleId]")
-        checkUserExistBatch(idList)
-        checkRoleExist(roleId)
-        val query = UserQueryHelper.getUserByIdList(idList)
-        val update = UserUpdateHelper.buildAddRole(roleId)
-        mongoTemplate.updateMulti(query, update, TUser::class.java)
-        return true
+        return addUserToRoleBatchCommon(idList, roleId)
     }
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
@@ -225,14 +219,7 @@ class UserServiceImpl constructor(
     }
 
     override fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean {
-        logger.info("remove user from role  batch userId : [$idList], roleId : [$roleId]")
-        checkUserExistBatch(idList)
-        checkRoleExist(roleId)
-        val query = UserQueryHelper.getUserByIdListAndRoleId(idList, roleId)
-        val update = UserUpdateHelper.buildUnsetRoles()
-        val result = mongoTemplate.updateMulti(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) return true
-        return false
+        return removeUserFromRoleBatchCommon(idList, roleId)
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {

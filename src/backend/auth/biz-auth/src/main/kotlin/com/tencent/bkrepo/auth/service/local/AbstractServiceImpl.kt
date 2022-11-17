@@ -34,12 +34,21 @@ package com.tencent.bkrepo.auth.service.local
 import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
+import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
+import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.auth.util.RequestUtil
+import com.tencent.bkrepo.auth.util.query.UserQueryHelper
+import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
+import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.auth.util.scope.ProjectRuleUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
@@ -62,13 +71,6 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        val user = userRepository.findFirstByUserId(userId) ?: run {
-            return false
-        }
-        return user.admin
-    }
-
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
         userRepository.findFirstByUserIdAndRoles(userId, roleId) ?: run {
             logger.warn("user [$userId,$roleId]  not exist.")
@@ -78,7 +80,7 @@ open class AbstractServiceImpl constructor(
     }
 
     // check user is exist
-    fun checkUserExistBatch(idList: List<String>) {
+    private fun checkUserExistBatch(idList: List<String>) {
         idList.forEach {
             userRepository.findFirstByUserId(it) ?: run {
                 logger.warn(" user not  exist.")
@@ -94,6 +96,13 @@ open class AbstractServiceImpl constructor(
             logger.warn("role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
+    }
+
+    fun isUserLocalAdmin(userId: String): Boolean {
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            return false
+        }
+        return user.admin
     }
 
     fun updatePermissionById(id: String, key: String, value: Any): Boolean {
@@ -145,6 +154,79 @@ open class AbstractServiceImpl constructor(
             }
         }
         return false
+    }
+
+    fun getProjectAdminUser(projectId: String): List<String> {
+        val roleIdArray = mutableListOf<String>()
+        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
+            roleIdArray.add(it.id!!)
+        }
+        return userRepository.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
+    }
+
+    fun createRoleCommon(request: CreateRoleRequest): String? {
+        logger.info("create role request:[$request] ")
+        val role: TRole? = if (request.type == RoleType.REPO) {
+            roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
+                request.roleId!!,
+                request.projectId,
+                request.repoName!!
+            )
+        } else {
+            roleRepository.findFirstByProjectIdAndTypeAndName(
+                projectId = request.projectId,
+                type = RoleType.PROJECT,
+                name = request.name
+            )
+        }
+
+        role?.let {
+            logger.warn("create role [${request.roleId} , ${request.projectId} ] is exist.")
+            return role.id
+        }
+
+        val roleId = when (request.type) {
+            RoleType.REPO -> request.roleId!!
+            RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId)
+        }
+
+        val result = roleRepository.insert(RoleRequestUtil.conv2TRole(roleId, request))
+        return result.id
+    }
+
+    fun addProjectUserAdmin(projectId: String, idList: List<String>) {
+        val createRoleRequest = RequestUtil.buildProjectAdminRequest(projectId)
+        val roleId = createRoleCommon(createRoleRequest)
+        addUserToRoleBatchCommon(idList, roleId!!)
+    }
+
+    fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
+        logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
+        checkUserExistBatch(userIdList)
+        checkRoleExist(roleId)
+        val query = UserQueryHelper.getUserByIdList(userIdList)
+        val update = UserUpdateHelper.buildAddRole(roleId)
+        mongoTemplate.updateMulti(query, update, TUser::class.java)
+        return true
+    }
+
+    fun removeUserFromRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
+        logger.info("remove user from role  batch userId : [$userIdList], roleId : [$roleId]")
+        checkUserExistBatch(userIdList)
+        checkRoleExist(roleId)
+        val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
+        val update = UserUpdateHelper.buildUnsetRoles()
+        mongoTemplate.updateMulti(query, update, TUser::class.java)
+        return true
+    }
+
+
+    private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
+        var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"
+        while (true) {
+            val role = roleRepository.findFirstByRoleIdAndProjectId(tempRoleId, projectId)
+            if (role == null) return tempRoleId else tempRoleId = "${projectId}_role_${IDUtil.shortUUID()}"
+        }
     }
 
     companion object {
