@@ -25,19 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.analyst.distribution
+
+import com.tencent.bkrepo.analyst.dao.ScannerSimpleMongoDao
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
+
+@Repository
+class DistributedCountDao : ScannerSimpleMongoDao<TDistributedCount>() {
+    fun setCount(key: String, count: Double) {
+        val query = Query(TDistributedCount::key.isEqualTo(key))
+        val update = Update.update(TDistributedCount::count.name, count)
+        updateFirst(query, update)
+    }
+
+    fun incAndGet(key: String, inc: Double = 1.0): Double {
+        val query = Query(TDistributedCount::key.isEqualTo(key))
+        val update = Update().inc(TDistributedCount::count.name, inc)
+        val options = FindAndModifyOptions().returnNew(true).upsert(true)
+        return determineMongoTemplate().findAndModify(query, update, options, TDistributedCount::class.java)!!.count
+    }
+
+    fun get(key: String): Double {
+        val query = Query(TDistributedCount::key.isEqualTo(key))
+        return findOne(query)?.count ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
+    }
 }

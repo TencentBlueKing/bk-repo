@@ -25,19 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.analyst.distribution
+
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.stereotype.Component
+
+@Component
+class DistributedCountFactory(
+    private val distributedCountDao: ObjectProvider<DistributedCountDao>,
+    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
+) {
+    fun create(key: String, type: String = DISTRIBUTED_COUNT_REDIS): DistributedCount {
+        return when (type) {
+            DISTRIBUTED_COUNT_MONGODB -> MongoDistributedCount(key, distributedCountDao.getObject())
+            DISTRIBUTED_COUNT_REDIS -> RedisDistributedCount(key, redisTemplate.getObject())
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, type)
+        }
+    }
+
+    companion object {
+        const val DISTRIBUTED_COUNT_MONGODB = "mongodb"
+        const val DISTRIBUTED_COUNT_REDIS = "redis"
+    }
 }

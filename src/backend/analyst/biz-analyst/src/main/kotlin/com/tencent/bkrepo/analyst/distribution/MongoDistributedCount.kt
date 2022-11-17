@@ -25,19 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.analyst.distribution
+
+class MongoDistributedCount(
+    private val key: String,
+    private val distributedCountDao: DistributedCountDao
+) : DistributedCount {
+    override fun incrementAndGet(): Double {
+        return addAndGet(1.0)
+    }
+
+    override fun decrementAndGet(): Double {
+        return addAndGet(-1.0)
+    }
+
+    override fun set(value: Double) {
+        distributedCountDao.setCount(key, value)
+    }
+
+    override fun addAndGet(delta: Double): Double {
+        return distributedCountDao.incAndGet(key, delta)
+    }
+
+    override fun get(): Double {
+        return distributedCountDao.get(key)
+    }
+
+    override fun toLong(): Long {
+        return get().toLong()
+    }
 }

@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.lock.service
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -72,6 +74,27 @@ interface LockOperation {
      * 释放锁
      */
     fun close(lockKey: String, lock: Any)
+
+    /**
+     * 获取锁并执行[action]，返回[action]的执行结果，获取锁失败时抛出异常
+     */
+    fun <T> doWithLock(lockKey: String, action: () -> T): T {
+        val lock = getLock(lockKey)
+        var locked = false
+        try {
+            locked = getSpinLock(lockKey, lock, Int.MAX_VALUE)
+            logger.info("get lock[$lockKey]: $locked")
+            if (locked) {
+                return action()
+            }
+        } finally {
+            if (locked) {
+                close(lockKey, lock)
+            }
+        }
+        logger.error("get lock[$lockKey] failed")
+        throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR)
+    }
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(LockOperation::class.java)
