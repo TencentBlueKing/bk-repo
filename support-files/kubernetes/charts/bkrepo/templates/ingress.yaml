@@ -42,6 +42,14 @@ spec:
             pathType: Prefix
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
+    - host: {{ .Values.gateway.staticHost }}
+      http:
+        paths:
+          - path: /
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
     - host: {{ .Values.gateway.host }}
       http:
         paths:
