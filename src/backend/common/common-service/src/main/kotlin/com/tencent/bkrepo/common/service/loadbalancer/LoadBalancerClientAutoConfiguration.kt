@@ -27,9 +27,7 @@ import java.net.URI
  */
 @Configuration(proxyBeanMethods = false)
 @LoadBalancerClients
-@AutoConfigureAfter(
-    LoadBalancerAutoConfiguration::class
-)
+@AutoConfigureAfter(LoadBalancerAutoConfiguration::class)
 @AutoConfigureBefore(
     org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration::class,
     AsyncLoadBalancerAutoConfiguration::class,
@@ -46,19 +44,16 @@ class LoadBalancerClientAutoConfiguration {
         properties: LoadBalancerProperties?
     ): LoadBalancerClient {
         logger.info("Init JobLoadBalancerClient.")
-        return JobLoadBalancerClient(loadBalancerClientFactory, properties)
+        return CustomLoadBalancerClient(loadBalancerClientFactory, properties)
     }
 
-    private class JobLoadBalancerClient(
+    private class CustomLoadBalancerClient(
         loadBalancerClientFactory: LoadBalancerClientFactory?,
         properties: LoadBalancerProperties?
-    ) :
-        BlockingLoadBalancerClient(loadBalancerClientFactory, properties) {
+    ) : BlockingLoadBalancerClient(loadBalancerClientFactory, properties) {
         override fun reconstructURI(serviceInstance: ServiceInstance, original: URI): URI {
             return LoadBalancerUriTools.reconstructURI(
-                Ipv6CapableDelegatingServiceInstance(serviceInstance),
-                original
-            )
+                Ipv6CapableDelegatingServiceInstance(serviceInstance), original)
         }
     }
 
