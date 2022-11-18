@@ -91,7 +91,7 @@ class NpmRemoteRepository(
             val request = Request.Builder().url(downloadUri).build()
             val response = httpClient.newCall(request).execute()
             if (checkResponse(response)) {
-                val artifactFile = createTempFile(response.body()!!)
+                val artifactFile = createTempFile(response.body!!)
                 context.putAttribute(NPM_FILE_FULL_PATH, versionMetadataFullPath)
                 cacheArtifactFile(context, artifactFile)
                 logger.info("cache version metadata [$versionMetadataFullPath] success.")
@@ -129,7 +129,7 @@ class NpmRemoteRepository(
 
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream? {
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val body = response.body()!!
+        val body = response.body!!
         val artifactFile = createTempFile(body)
         val sha256 = artifactFile.getFileSha256()
         with(context) {
@@ -163,7 +163,7 @@ class NpmRemoteRepository(
 
     override fun onSearchResponse(context: ArtifactSearchContext, response: Response): List<NpmSearchInfoMap> {
         val npmSearchResponse =
-            JsonUtils.objectMapper.readValue(response.body()!!.byteStream(), NpmSearchResponse::class.java)
+            JsonUtils.objectMapper.readValue(response.body!!.byteStream(), NpmSearchResponse::class.java)
         return npmSearchResponse.objects
     }
 

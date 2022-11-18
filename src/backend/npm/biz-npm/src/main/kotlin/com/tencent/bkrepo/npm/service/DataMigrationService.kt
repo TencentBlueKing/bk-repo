@@ -85,7 +85,7 @@ class DataMigrationService(
             response = okHttpUtil.doGet(url)
             if (checkResponse(response)) {
                 val pkgNameData =
-                    response.body()!!.byteStream().use { JsonUtils.objectMapper.readValue<Map<String, Boolean>>(it) }
+                    response.body!!.byteStream().use { JsonUtils.objectMapper.readValue<Map<String, Boolean>>(it) }
                 totalDataSet =
                     pkgNameData.entries.stream().filter { it.value }.map { it.key }.collect(Collectors.toSet())
             }
@@ -93,7 +93,7 @@ class DataMigrationService(
             logger.error("http send [$url] for get all migration package name data failed, {}", exception.message)
             throw exception
         } finally {
-            response?.body()?.close()
+            response?.body?.close()
         }
         return totalDataSet
     }
@@ -176,7 +176,7 @@ class DataMigrationService(
 
     fun checkResponse(response: Response): Boolean {
         if (!response.isSuccessful) {
-            logger.warn("Download file from remote failed: [${response.code()}]")
+            logger.warn("Download file from remote failed: [${response.code}]")
             return false
         }
         return true

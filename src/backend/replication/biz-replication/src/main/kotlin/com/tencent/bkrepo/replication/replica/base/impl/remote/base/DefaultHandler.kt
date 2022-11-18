@@ -65,7 +65,7 @@ object DefaultHandler {
                 else -> {
                     val error = convertErrorMsg(it, responseType)
                     throw ArtifactPushException(
-                        "invalid response  ${it.code()} for request ${it.request().url()}, error is $error"
+                        "invalid response  ${it.code} for request ${it.request.url}, error is $error"
                     )
                 }
             }
@@ -76,19 +76,19 @@ object DefaultHandler {
      * 判断请求是否成功
      */
     private fun isSuccess(response: Response, extraSuccessCode: List<Int>): Boolean {
-        return response.isSuccessful || extraSuccessCode.contains(response.code())
+        return response.isSuccessful || extraSuccessCode.contains(response.code)
     }
 
     /**
      * 针对特殊code做判断
      */
     private fun isFailure(response: Response, ignoredFailureCode: List<Int>, responseType: Class<*>): Boolean {
-        if (ignoredFailureCode.contains(response.code()))
+        if (ignoredFailureCode.contains(response.code))
             return true
         val repMsg = convertErrorMsg(response, responseType)
         throw ArtifactPushException(
-            "Response error for request ${response.request().url()}: " +
-                "code is ${response.code()} and response is $repMsg"
+            "Response error for request ${response.request.url}: " +
+                "code is ${response.code} and response is $repMsg"
         )
     }
 
@@ -116,9 +116,9 @@ object DefaultHandler {
 
     private fun convertErrorMsg(response: Response, responseType: Class<*>): String? {
         return try {
-            response.body()?.let {
+            response.body?.let {
                 JsonUtils.objectMapper.readValue(
-                    response.body()!!.byteStream(), responseType
+                    response.body!!.byteStream(), responseType
                 )?.toJsonString()
             }
         } catch (e: Exception) {

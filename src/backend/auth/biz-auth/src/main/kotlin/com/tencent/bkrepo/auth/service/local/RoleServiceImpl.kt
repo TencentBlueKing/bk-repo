@@ -43,8 +43,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.util.IDUtil
-import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -58,45 +56,12 @@ class RoleServiceImpl constructor(
     private val userService: UserService,
     private val userRepository: UserRepository,
     private val mongoTemplate: MongoTemplate
-) : RoleService {
+) : RoleService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
     override fun createRole(request: CreateRoleRequest): String? {
-        logger.info("create  role  request : [$request] ")
-        val role: TRole? = if (request.type == RoleType.REPO) {
-            roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
-                request.roleId!!,
-                request.projectId,
-                request.repoName!!
-            )
-        } else {
-            roleRepository.findFirstByProjectIdAndTypeAndName(
-                projectId = request.projectId,
-                type = RoleType.PROJECT,
-                name = request.name
-            )
-        }
-
-        role?.let {
-            logger.warn("create role [${request.roleId} , ${request.projectId} ]  is exist.")
-            return role.id
-        }
-
-        val roleId = when (request.type) {
-            RoleType.REPO -> request.roleId!!
-            RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId)
-        }
-
-        val result = roleRepository.insert(RoleRequestUtil.conv2TRole(roleId, request))
-        return result.id
+        return  createRoleCommon(request)
     }
 
-    private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
-        var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"
-        while (true) {
-            val role = roleRepository.findFirstByRoleIdAndProjectId(tempRoleId, projectId)
-            if (role == null) return tempRoleId else tempRoleId = "${projectId}_role_${IDUtil.shortUUID()}"
-        }
-    }
 
     override fun detail(id: String): Role? {
         logger.debug("get role detail : [$id] ")

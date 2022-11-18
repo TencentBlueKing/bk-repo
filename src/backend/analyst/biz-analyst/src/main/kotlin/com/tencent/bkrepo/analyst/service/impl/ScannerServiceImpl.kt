@@ -108,12 +108,16 @@ class ScannerServiceImpl @Autowired constructor(
         return scannerDao.findByNames(names).map { convert(it) }
     }
 
-    override fun find(packageType: String, scanType: String): List<Scanner> {
+    override fun find(packageType: String?, scanType: String?): List<Scanner> {
         return scannerDao.find(packageType, scanType).map { convert(it) }
     }
 
     override fun supportFileNameExt(): Set<String> {
         return scannerDao.list().flatMap { it.supportFileNameExt }.toSet()
+    }
+
+    override fun supportPackageType(): Set<String> {
+        return scannerDao.list().flatMap { it.supportPackageTypes }.toSet()
     }
 
     override fun list(): List<Scanner> {

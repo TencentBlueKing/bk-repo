@@ -315,11 +315,11 @@ class PermissionServiceTest {
     fun updateUserPermissionTest() {
         userService.createUser(createUserRequest())
         assertThrows<ErrorCodeException> {
-            permissionService.updatePermissionUser(UpdatePermissionUserRequest("test_test", listOf(userId)))
+            permissionService.updatePermissionUser(UpdatePermissionUserRequest("test_test", "dev", listOf(userId)))
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
         permissionService.listPermission("test", null).forEach {
-            val request = UpdatePermissionUserRequest(it.id!!, listOf(userId))
+            val request = UpdatePermissionUserRequest(it.id!!, "dev", listOf(userId))
             val updateStatus = permissionService.updatePermissionUser(request)
             Assertions.assertTrue(updateStatus)
         }

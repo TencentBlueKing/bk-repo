@@ -68,10 +68,10 @@ object RemoteDownloadUtil {
         val request = Request.Builder().url(downloadUrl).build()
         val response = httpClient.newCall(request).execute()
         return if (response.isSuccessful) {
-            val artifactFile = ArtifactFileFactory.build(response.body()!!.byteStream())
+            val artifactFile = ArtifactFileFactory.build(response.body!!.byteStream())
             val size = artifactFile.getSize()
             artifactFile.getInputStream().artifactStream(Range.full(size))
-        } else throw HelmBadRequestException("The response of request $downloadUrl is ${response.code()}")
+        } else throw HelmBadRequestException("The response of request $downloadUrl is ${response.code}")
     }
 
     /**
@@ -89,7 +89,7 @@ object RemoteDownloadUtil {
         val password = configuration?.password
         return if (username != null && password != null) {
             Authenticator { _, response ->
-                response.request()
+                response.request
                     .newBuilder()
                     .header(HttpHeaders.PROXY_AUTHORIZATION, Credentials.basic(username, password))
                     .build()

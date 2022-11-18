@@ -16,11 +16,14 @@ import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.ReportSpeedException
 import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
-import okhttp3.HttpUrl
-import okhttp3.MediaType
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.internal.sse.RealEventSource
 import okhttp3.sse.EventSource
@@ -104,11 +107,11 @@ class HttpBkSyncCall(
     private fun reportMetrics(url: String) {
         try {
             metrics.reportTimeStamp = System.currentTimeMillis()
-            val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), metrics.toJsonString())
+            val requestBody = metrics.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
             val request = Request.Builder().url(url).post(requestBody).build()
             client.newCall(request).execute().use {
                 if (!it.isSuccessful) {
-                    logger.warn("report metrics failed, ${it.body()!!.string()}")
+                    logger.warn("report metrics failed, ${it.body!!.string()}")
                 }
             }
         } catch (ignore: Exception) {
@@ -162,7 +165,7 @@ class HttpBkSyncCall(
 
     private fun reportSpeed(url: String, speed: Int) {
         try {
-            val reportUrl = HttpUrl.get(url).newBuilder()
+            val reportUrl = url.toHttpUrl().newBuilder()
                 .addQueryParameter("speed", "$speed")
                 .addQueryParameter("action", UPLOAD_ACTION).build()
             val request = Request.Builder()
@@ -172,7 +175,7 @@ class HttpBkSyncCall(
             val response = client.newCall(request).execute()
             response.use {
                 if (!it.isSuccessful) {
-                    throw ReportSpeedException("Report speed failed:${response.message()}")
+                    throw ReportSpeedException("Report speed failed:${response.message}")
                 }
             }
         } catch (e: Exception) {
@@ -181,13 +184,13 @@ class HttpBkSyncCall(
     }
 
     private fun getSpeed(url: String): Int {
-        val reportUrl = HttpUrl.get(url).newBuilder()
+        val reportUrl = url.toHttpUrl().newBuilder()
             .addQueryParameter("action", UPLOAD_ACTION).build()
         val request = Request.Builder().url(reportUrl).build()
         val response = client.newCall(request).execute()
         response.use {
             if (it.isSuccessful) {
-                val byteStream = it.body()?.byteStream()!!
+                val byteStream = it.body?.byteStream()!!
                 val result = JsonUtils.objectMapper.readValue(
                     byteStream,
                     object : TypeReference<com.tencent.bkrepo.common.api.pojo.Response<Int>>() {}
@@ -212,8 +215,8 @@ class HttpBkSyncCall(
             logger.info("Request sign")
             val signResponse = downloadSign()
             signResponse.use {
-                val signStream = signResponse.body()?.byteStream() ?: let {
-                    throw SignRequestException("Sign stream broken: ${signResponse.message()}.")
+                val signStream = signResponse.body?.byteStream() ?: let {
+                    throw SignRequestException("Sign stream broken: ${signResponse.message}.")
                 }
                 patch(signStream.buffered(), context)
             }
@@ -226,8 +229,8 @@ class HttpBkSyncCall(
     private fun uploadNewSignFile(request: UploadRequest, signData: ByteArray) {
         with(request) {
             logger.info("Start upload sign file.")
-            val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), signData)
-            val uploadUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
+            val signFileBody = RequestBody.create(APPLICATION_OCTET_STREAM.toMediaType(), signData)
+            val uploadUrl = newFileSignUrl.toHttpUrlOrNull()!!.newBuilder().addQueryParameter(
                 QUERY_PARAM_MD5, headers[HEADER_MD5]
             ).build()
             val signRequest = Request.Builder()
@@ -238,7 +241,7 @@ class HttpBkSyncCall(
             val response = client.newCall(signRequest).execute()
             response.use {
                 if (!it.isSuccessful) {
-                    throw UploadSignFileException(response.message())
+                    throw UploadSignFileException(response.message)
                 }
             }
             logger.info("Upload[$file] sign file success.")
@@ -250,7 +253,7 @@ class HttpBkSyncCall(
      * */
     private fun existNewFileSign(request: UploadRequest): Boolean {
         with(request) {
-            val getUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
+            val getUrl = newFileSignUrl.toHttpUrlOrNull()!!.newBuilder().addQueryParameter(
                 QUERY_PARAM_MD5, headers[HEADER_MD5]
             ).build()
             val req = Request.Builder()
@@ -280,7 +283,7 @@ class HttpBkSyncCall(
         val response = client.newCall(signRequest).execute()
         if (!response.isSuccessful) {
             response.close()
-            throw SignRequestException("Request sign error: ${response.message()}.")
+            throw SignRequestException("Request sign error: ${response.message}.")
         }
         return response
     }
@@ -305,7 +308,7 @@ class HttpBkSyncCall(
                 }
             }
             logger.info("Start upload delta file.")
-            val body = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), deltaFile)
+            val body = RequestBody.create(APPLICATION_OCTET_STREAM.toMediaType(), deltaFile)
             val patchRequest = Request.Builder()
                 .url(deltaUrl)
                 .headers(headers)
@@ -367,7 +370,7 @@ class HttpBkSyncCall(
         val request = context.request
         with(request) {
             logger.info("Start use generic upload.")
-            val body = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), file)
+            val body = RequestBody.create(APPLICATION_OCTET_STREAM.toMediaType(), file)
             val commonRequest = Request.Builder()
                 .url(genericUrl)
                 .put(body)

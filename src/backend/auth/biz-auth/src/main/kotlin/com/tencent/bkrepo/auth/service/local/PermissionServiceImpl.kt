@@ -32,9 +32,10 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
-import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
+import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -59,10 +60,12 @@ import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
+import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -152,8 +155,23 @@ open class PermissionServiceImpl constructor(
     override fun updatePermissionUser(request: UpdatePermissionUserRequest): Boolean {
         logger.info("update permission user request:[$request]")
         with(request) {
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::users.name, userId)
+            // update project admin
+            if (permissionId == PROJECT_MANAGE_ID) {
+                val createRoleRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
+                val roleId = createRoleCommon(createRoleRequest)
+
+                val users = getProjectAdminUser(projectId)
+                val addUserList = userId.filter { !users.contains(it) }
+                val removeUserList = users.filter { !userId.contains(it) }
+
+                addUserToRoleBatchCommon(addUserList, roleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, roleId!!)
+                return true
+            } else {
+                checkPermissionExist(permissionId)
+                return updatePermissionById(permissionId, TPermission::users.name, userId)
+            }
+
         }
     }
 
@@ -467,6 +485,21 @@ open class PermissionServiceImpl constructor(
                 else -> return false
             }
         }
+    }
+
+    override fun listProjectBuiltinPermission(projectId: String): List<Permission> {
+        val projectManager = Permission(
+            id = PROJECT_MANAGE_ID,
+            resourceType = ResourceType.PROJECT.toString(),
+            projectId = projectId,
+            permName = "project_manage_permission",
+            users = getProjectAdminUser(projectId),
+            createBy = SecurityUtils.getUserId(),
+            updatedBy = SecurityUtils.getUserId(),
+            createAt = LocalDateTime.now(),
+            updateAt = LocalDateTime.now()
+        )
+        return listOf(projectManager)
     }
 
     companion object {

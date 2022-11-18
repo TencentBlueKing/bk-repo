@@ -29,5 +29,6 @@ dependencies {
     api(project(":common:common-api"))
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-checker:api-checker"))
+    api(project(":common:common-operate:operate-annotation"))
     implementation("org.apache.commons:commons-lang3")
 }

@@ -77,7 +77,7 @@ class NugetRemoteRepository(
     }
 
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream {
-        val artifactFile = createTempFile(response.body()!!)
+        val artifactFile = createTempFile(response.body!!)
         return artifactFile.getInputStream()
     }
 

@@ -49,6 +49,7 @@ object PackageKeys {
     private const val NUGET = "nuget"
     private const val MAVEN = "gav"
     private const val OCI = "oci"
+    private const val CONAN = "conan"
     private const val SEPARATOR = "://"
 
     /**
@@ -58,6 +59,18 @@ object PackageKeys {
         return StringBuilder(MAVEN).append(SEPARATOR).append(groupId)
             .append(StringPool.COLON)
             .append(artifactId)
+            .toString()
+    }
+
+    /**
+     * 生成conan格式key
+     *
+     * 例子: conan://username:name
+     */
+    fun ofConan(name: String, userName: String): String {
+        return StringBuilder(CONAN).append(SEPARATOR).append(userName)
+            .append(StringPool.COLON)
+            .append(name)
             .toString()
     }
 
@@ -187,6 +200,15 @@ object PackageKeys {
      */
     fun resolveDocker(dockerKey: String): String {
         return resolveName(DOCKER, dockerKey)
+    }
+
+    /**
+     * 解析conan格式的key
+     *
+     * 例子: conan://test  ->  test
+     */
+    fun resolveConan(conanKey: String): String {
+        return resolveName(CONAN, conanKey)
     }
 
     /**

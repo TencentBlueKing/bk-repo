@@ -86,7 +86,7 @@ class PackageDependentService {
             val request = Request.Builder().url(url).get().build()
             response = okHttpClient.newCall(request).execute()
             if (checkResponse(response)) {
-                val use = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
+                val use = response.body!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
                 totalDataSet =
                     use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
             }
@@ -96,7 +96,7 @@ class PackageDependentService {
                 exception.message
             )
         } finally {
-            response?.body()?.close()
+            response?.body?.close()
         }
         return totalDataSet
     }
@@ -201,7 +201,7 @@ class PackageDependentService {
 
     fun checkResponse(response: Response): Boolean {
         if (!response.isSuccessful) {
-            logger.warn("Download file from remote failed: [${response.code()}]")
+            logger.warn("Download file from remote failed: [${response.code}]")
             return false
         }
         return true

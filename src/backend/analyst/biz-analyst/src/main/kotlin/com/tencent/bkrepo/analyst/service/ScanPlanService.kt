@@ -101,14 +101,14 @@ interface ScanPlanService {
      *
      * @param projectId 所属项目
      * @param type 默认扫描方案类型
-     * @param scanner 默认扫描方案使用的扫描器
+     * @param scannerName 默认扫描方案使用的扫描器
      *
      * @return 默认扫描方案
      */
     fun getOrCreateDefaultPlan(
         projectId: String,
         type: String = RepositoryType.GENERIC.name,
-        scanner: String? = null
+        scannerName: String? = null
     ): ScanPlan
 
     /**

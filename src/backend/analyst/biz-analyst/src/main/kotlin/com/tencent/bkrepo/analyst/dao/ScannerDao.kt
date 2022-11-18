@@ -55,10 +55,10 @@ class ScannerDao : ScannerSimpleMongoDao<TScanner>() {
         return find(query)
     }
 
-    fun find(packageType: String, scanType: String): List<TScanner> {
+    fun find(packageType: String?, scanType: String?): List<TScanner> {
         val criteria = TScanner::deleted.isEqualTo(null)
-            .and(TScanner::supportPackageTypes.name).inValues(packageType)
-            .and(TScanner::supportScanTypes.name).inValues(scanType)
+        packageType?.let { criteria.and(TScanner::supportPackageTypes.name).inValues(it) }
+        scanType?.let { criteria.and(TScanner::supportScanTypes.name).inValues(it) }
         return find(Query(criteria))
     }
 

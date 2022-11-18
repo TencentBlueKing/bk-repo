@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController
 class ShedlockController(val shelockService: ShedlockService) {
 
     @GetMapping("/list")
+    @LogOperate(type = "SHED_LOCK_LIST")
     fun listShelock(): Response<List<ShedlockInfo>> {
         return ResponseBuilder.success(shelockService.listShelock())
     }

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -68,6 +69,7 @@ class UserStorageCredentialsController(
 
     @ApiOperation("创建凭据")
     @PostMapping
+    @LogOperate(type = "STORAGE_CREDENTIALS_CREATE", desensitize = true)
     fun create(
         @RequestAttribute userId: String,
         @RequestBody storageCredentialsCreateRequest: StorageCredentialsCreateRequest
@@ -78,6 +80,7 @@ class UserStorageCredentialsController(
 
     @ApiOperation("更新凭据")
     @PutMapping("/{credentialsKey}")
+    @LogOperate(type = "STORAGE_CREDENTIALS_UPDATE", desensitize = true)
     fun update(
         @RequestAttribute userId: String,
         @PathVariable("credentialsKey") credentialKey: String,
@@ -103,12 +106,14 @@ class UserStorageCredentialsController(
 
     @ApiOperation("获取默认凭据")
     @GetMapping("/default")
+    @LogOperate(type = "STORAGE_CREDENTIALS_LIST")
     fun default(): Response<StorageCredentials> {
         return ResponseBuilder.buildTyped(mask(storageCredentialService.default()))
     }
 
     @ApiOperation("删除凭据")
     @DeleteMapping("/{credentialKey}")
+    @LogOperate(type = "STORAGE_CREDENTIALS_DELETE")
     fun delete(@PathVariable("credentialKey") credentialKey: String): Response<Void> {
         storageCredentialService.delete(credentialKey)
         return ResponseBuilder.success()

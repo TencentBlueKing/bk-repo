@@ -25,12 +25,16 @@ export default {
         )
     },
     // 所有扫描方案
-    getScanAll (_, { projectId, type }) {
+    getScanAll (_, { projectId, type, fileNameExt = null }) {
+        if (!fileNameExt) {
+            fileNameExt = null
+        }
         return Vue.prototype.$ajax.get(
             `${prefix}/plan/all/${projectId}`,
             {
                 params: {
-                    type
+                    type,
+                    fileNameExt
                 }
             }
         )
@@ -151,6 +155,13 @@ export default {
             }
         )
     },
+    // 获取扫描报告
+    getReports (_, { projectId, repoName, fullPath, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/reports/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
     // 批量扫描
     startScan (_, body) {
         return Vue.prototype.$ajax.post(
@@ -245,6 +256,24 @@ export default {
                 }
             }
         )
+    },
+    // 获取系统支持的所有文件名后缀列表
+    refreshSupportFileNameExtList ({ commit }) {
+        Vue.prototype.$ajax.get('/analyst/api/scanners/support/ext').then(fileNameExtList => {
+            commit('SET_SCANNER_SUPPORT_FILE_NAME_EXT_LIST', fileNameExtList)
+        }).catch(e => {
+            console.log('get support file name extension failed')
+            console.error(e)
+        })
+    },
+    // 获取系统支持的所有文件名后缀列表
+    refreshSupportPackageTypeList ({ commit }) {
+        Vue.prototype.$ajax.get('/analyst/api/scanners/support/package').then(packageTypeList => {
+            commit('SET_SCANNER_SUPPORT_PACKAGE_TYPE_LIST', packageTypeList)
+        }).catch(e => {
+            console.log('get support package type failed')
+            console.error(e)
+        })
     },
     // 获取质量规则
     getQualityRule (_, { type, id }) {

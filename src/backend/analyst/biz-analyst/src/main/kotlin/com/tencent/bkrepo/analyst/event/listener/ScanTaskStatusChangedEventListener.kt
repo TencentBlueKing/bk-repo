@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.event.listener
 
+import com.tencent.bkrepo.analyst.component.manager.ScannerConverter.Companion.OVERVIEW_KEY_SENSITIVE_TOTAL
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -46,6 +47,10 @@ import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_LOW
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_MEDIUM
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_UNKNOWN
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_DEPRECATED
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_UNTRUSTED
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE_TOTAL
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_DETAIL
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_FAILED
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_SCANNED
@@ -57,9 +62,11 @@ import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.overviewKeyOf
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.data.redis.core.RedisTemplate
@@ -126,7 +133,7 @@ class ScanTaskStatusChangedEventListener(
     private fun weworkBotNotify(scanTask: ScanTask, message: String) {
         val weworkBot = getWeworkBot(scanTask.taskId)
         if (weworkBot != null) {
-            val webhookKey = HttpUrl.parse(weworkBot.webhookUrl)?.queryParameter("key")
+            val webhookKey = weworkBot.webhookUrl.toHttpUrlOrNull()?.queryParameter("key")
             if (webhookKey.isNullOrEmpty()) {
                 logger.warn("get webhook key failed[${weworkBot.webhookUrl}]")
                 return
@@ -175,9 +182,10 @@ class ScanTaskStatusChangedEventListener(
         )
 
         // 扫描结果预览
-        cveMessageCodeMap.forEach {
-            val count = task.scanResultOverview?.get(it.key.key) ?: 0L
-            summary.append(getLocalizedMessage(it.value, arrayOf(count)))
+        task.scanResultOverview?.forEach { (overviewKey, count) ->
+            overviewKeyMessageCodeMap[overviewKey]?.let { messageCode ->
+                summary.append(getLocalizedMessage(messageCode, arrayOf(count)))
+            }
         }
 
         //详细报告地址
@@ -213,11 +221,15 @@ class ScanTaskStatusChangedEventListener(
     private fun weworkBotKey(scanTaskId: String) = "scanner:taskId:${scanTaskId}:wework:bot"
 
     companion object {
-        private val cveMessageCodeMap = mapOf(
-            CveOverviewKey.CVE_LOW_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_LOW,
-            CveOverviewKey.CVE_MEDIUM_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_MEDIUM,
-            CveOverviewKey.CVE_HIGH_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH,
-            CveOverviewKey.CVE_CRITICAL_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_CRITICAL
+        private val overviewKeyMessageCodeMap = mapOf(
+            CveOverviewKey.CVE_LOW_COUNT.key to SCAN_REPORT_NOTIFY_MESSAGE_CVE_LOW,
+            CveOverviewKey.CVE_MEDIUM_COUNT.key to SCAN_REPORT_NOTIFY_MESSAGE_CVE_MEDIUM,
+            CveOverviewKey.CVE_HIGH_COUNT.key to SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH,
+            CveOverviewKey.CVE_CRITICAL_COUNT.key to SCAN_REPORT_NOTIFY_MESSAGE_CVE_CRITICAL,
+            overviewKeyOf(LicenseNature.UNKNOWN.natureName) to SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_UNKNOWN,
+            overviewKeyOf(LicenseNature.UN_RECOMMEND.natureName) to SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_DEPRECATED,
+            overviewKeyOf(LicenseNature.UN_COMPLIANCE.natureName) to SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_UNTRUSTED,
+            OVERVIEW_KEY_SENSITIVE_TOTAL to SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE_TOTAL
         )
         private val logger = LoggerFactory.getLogger(ScanTaskStatusChangedEventListener::class.java)
         private const val DEFAULT_EXPIRED_DAY = 1L

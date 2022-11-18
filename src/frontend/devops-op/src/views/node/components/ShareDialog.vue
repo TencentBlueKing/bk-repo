@@ -149,7 +149,7 @@ export default {
         this.showShareDialog = true
         this.key.projectId = this.updatingKeys.projectId
         this.key.repoName = this.updatingKeys.repoName
-        this.key.artifactUri = this.updatingKeys.path
+        this.key.artifactUri = this.updatingKeys.fullPath
       } else {
         this.close()
       }

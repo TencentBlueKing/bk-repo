@@ -36,6 +36,7 @@ dependencies {
     api(project(":common:common-security"))
     api(project(":repository:api-repository"))
     implementation("com.google.guava:guava")
+    implementation(project(":common:common-operate:operate-service"))
     api(project(":common:common-redis"))
     implementation("org.apache.httpcomponents:httpclient")
 }

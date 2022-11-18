@@ -1,18 +1,16 @@
 <template>
     <bk-form style="max-width: 1080px;" :label-width="120" :model="rule" :rules="rules" ref="ruleForm">
-        <template v-if="scanType.includes('LICENSE')">
-            <bk-form-item label="质量规则">
+        <template>
+            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_LICENSE)" label="许可证规则">
                 <div style="color:var(--fontSubsidiaryColor);">当许可证中出现不符合以下规则的许可证时，则不通过质量规则</div>
                 <div class="mt10"><bk-checkbox v-model="rule.recommend">仅有推荐使用的许可证</bk-checkbox></div>
                 <div class="mt10"><bk-checkbox v-model="rule.compliance">仅有合规的许可证</bk-checkbox></div>
                 <div class="mt10"><bk-checkbox v-model="rule.unknown">无未知许可证</bk-checkbox></div>
             </bk-form-item>
-        </template>
-        <template v-else>
-            <bk-form-item label="质量规则">
+            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" label="安全规则">
                 <div style="color:var(--fontSubsidiaryColor);">当扫描的制品漏洞超过下方任意一条规则中设定的数量，则制品未通过质量规则</div>
             </bk-form-item>
-            <bk-form-item label="" v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id"
+            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" label="" v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id"
                 :property="id.toLowerCase()" error-display-type="normal">
                 <div class="flex-align-center">
                     <div :class="`status-sign ${id}`" :data-name="`${name}漏洞≦`"></div>
@@ -34,8 +32,14 @@
 <script>
     import { mapActions } from 'vuex'
     import { leakLevelEnum } from '@repository/store/publicEnum'
+    import { SCAN_TYPE_LICENSE, SCAN_TYPE_SECURITY } from '../../../store/publicEnum'
     export default {
         name: 'scanQualityRule',
+        props: {
+            projectId: String,
+            planId: String,
+            scanTypes: Array
+        },
         data () {
             const validate = [
                 {
@@ -45,8 +49,13 @@
                 }
             ]
             return {
+                SCAN_TYPE_SECURITY: SCAN_TYPE_SECURITY,
+                SCAN_TYPE_LICENSE: SCAN_TYPE_LICENSE,
                 leakLevelEnum,
                 rule: {
+                    recommend: false,
+                    compliance: false,
+                    unknown: false,
                     critical: '',
                     high: '',
                     medium: '',
@@ -63,33 +72,30 @@
             }
         },
         computed: {
-            projectId () {
-                return this.$route.params.projectId
-            },
-            scanType () {
-                return this.$route.query.scanType
-            },
-            planId () {
-                return this.$route.params.planId
+            ruleTypes () {
+                return this.scanTypes.filter(scanType => scanType === SCAN_TYPE_SECURITY || scanType === SCAN_TYPE_LICENSE)
             }
         },
         created () {
-            if (this.scanType.includes('LICENSE')) {
-                this.rule = {
-                    recommend: false,
-                    compliance: false,
-                    unknown: false,
-                    forbidQualityUnPass: false
-                }
-            }
             this.getRules()
         },
         methods: {
             ...mapActions(['getQualityRule', 'saveQualityRule']),
             async save () {
                 await this.$refs.ruleForm.validate()
-                this.saveQualityRule({
-                    type: this.scanType,
+                Promise
+                    .all(this.ruleTypes.map(type => this.doSave(type)))
+                    .then(() => {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: this.$t('save') + this.$t('success')
+                        })
+                        this.getRules()
+                    })
+            },
+            doSave (ruleType) {
+                return this.saveQualityRule({
+                    type: ruleType,
                     id: this.planId,
                     body: Object.keys(this.rule).reduce((target, key) => {
                         const value = this.rule[key]
@@ -101,21 +107,16 @@
                         }
                         return target
                     }, {})
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('save') + this.$t('success')
-                    })
-                    this.getRules()
                 })
             },
             getRules () {
-                this.getQualityRule({
-                    type: this.scanType,
-                    id: this.planId
-                }).then(res => {
-                    Object.keys(res).forEach(k => {
-                        res[k] !== null && (this.rule[k] = res[k])
+                Promise.all(
+                    this.ruleTypes.map(type => this.getQualityRule({ type: type, id: this.planId }))
+                ).then(qualityRules => {
+                    qualityRules.forEach(qualityRule => {
+                        Object.keys(qualityRule).forEach(k => {
+                            qualityRule[k] !== null && (this.rule[k] = qualityRule[k])
+                        })
                     })
                 })
             }

@@ -44,7 +44,7 @@ abstract class HttpResponseHandler<T> {
         private val xmlMapper: XmlMapper = XmlMapper()
 
         fun readXmlValue(response: Response): Map<*, *> {
-            return xmlMapper.readValue(response.body()?.string(), Map::class.java)
+            return xmlMapper.readValue(response.body?.string(), Map::class.java)
         }
     }
 }

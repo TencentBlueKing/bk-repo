@@ -73,7 +73,7 @@ data class Result(
     /**
      * 敏感信息分析结果
      */
-    val sensitiveResult: List<SensitiveResult>? = null
+    val sensitiveResults: List<SensitiveResult>? = null
 )
 
 /**

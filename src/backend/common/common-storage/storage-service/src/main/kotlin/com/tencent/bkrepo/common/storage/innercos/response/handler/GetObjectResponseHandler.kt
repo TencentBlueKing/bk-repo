@@ -39,7 +39,7 @@ import okhttp3.Response
 class GetObjectResponseHandler : HttpResponseHandler<CosObject>() {
     override fun handle(response: Response): CosObject {
         val eTag = response.header(Headers.ETAG)!!.trim('"')
-        val inputStream = response.body()?.byteStream()
+        val inputStream = response.body?.byteStream()
         return CosObject(eTag, inputStream)
     }
 

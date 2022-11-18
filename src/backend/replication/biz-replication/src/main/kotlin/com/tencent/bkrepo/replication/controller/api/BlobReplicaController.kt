@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -89,6 +90,7 @@ class BlobReplicaController(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null
     ): Response<Void> {
+        logger.info("The file with sha256 [$sha256] will be handled!")
         val credentials = credentialsCache.get(storageKey.orEmpty())
         if (storageService.exist(sha256, credentials)) {
             return ResponseBuilder.success()
@@ -97,6 +99,7 @@ class BlobReplicaController(
         if (artifactFile.getFileSha256() != sha256) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
         }
+        logger.info("The file with sha256 [$sha256] will be stored!")
         storageService.store(sha256, artifactFile, credentials)
         return ResponseBuilder.success()
     }
@@ -118,6 +121,7 @@ class BlobReplicaController(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(BlobReplicaController::class.java)
         private const val MAX_CACHE_COUNT = 10L
         private const val CACHE_EXPIRE_MINUTES = 5L
     }
