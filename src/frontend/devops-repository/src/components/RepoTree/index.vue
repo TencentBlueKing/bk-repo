@@ -5,7 +5,7 @@
                 <div class="repo-tree-title"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
                     :style="{ 'padding-left': 20 * computedDepth(item) + 'px' }"
-                    v-bk-tooltips="{ content: item.name, placements: ['top'], disabled: item.name.toString().length < 19 }"
+                    v-bk-tooltips="{ content: item.name, placements: ['top'], disabled: item.name.toString().length < 19 || openType !== '' }"
                     @click.stop="itemClickHandler(item)">
                     <i v-if="item.loading" class="mr5 loading spin-icon"></i>
                     <i v-else-if="!item.leaf" class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
@@ -46,6 +46,10 @@
             openList: {
                 type: Array,
                 default: () => []
+            },
+            openType: {
+                type: String,
+                default: ''
             }
         },
         data () {
