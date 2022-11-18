@@ -74,8 +74,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
     CustomFeignClientsConfiguration::class,
     OtelMongoConfiguration::class,
     OtelResourceConfiguration::class,
-    OtelWebConfiguration::class,
-    LoadBalancerClientAutoConfiguration::class
+    OtelWebConfiguration::class
 )
 class ServiceAutoConfiguration {
 
