@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
@@ -124,6 +126,22 @@ abstract class PushClient(
      */
     open fun querySyncNodeList(name: String, version: String, projectId: String, repoName: String): List<NodeDetail> {
         return emptyList()
+    }
+
+    protected fun buildRequestTag(
+        context: ReplicaContext,
+        key: String,
+        size: Long
+    ): RequestTag? {
+        return if (context.task.replicaType == ReplicaType.RUN_ONCE) {
+            RequestTag(
+                task = context.task,
+                key = key,
+                size = size
+            )
+        } else {
+            null
+        }
     }
 
     private fun buildClient(): OkHttpClient {

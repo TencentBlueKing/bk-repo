@@ -49,6 +49,7 @@ import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialReq
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
@@ -62,7 +63,8 @@ class ReplicaRecordServiceImpl(
     private val replicaRecordDao: ReplicaRecordDao,
     private val replicaRecordDetailDao: ReplicaRecordDetailDao,
     private val replicaTaskDao: ReplicaTaskDao,
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    private val progressListener: ProgressListener
 ) : ReplicaRecordService {
 
     override fun startNewRecord(key: String): ReplicaRecordInfo {
@@ -115,6 +117,7 @@ class ReplicaRecordServiceImpl(
         if (status == ExecutionStatus.SUCCESS) {
             tReplicaTask.replicatedBytes = tReplicaTask.totalBytes
         }
+        progressListener.onFinish(tReplicaTask.id!!)
         replicaRecordDao.save(record)
         replicaTaskDao.save(tReplicaTask)
         logger.info("complete record [$recordId], status from [${replicaRecordInfo.status}] to [$status].")
