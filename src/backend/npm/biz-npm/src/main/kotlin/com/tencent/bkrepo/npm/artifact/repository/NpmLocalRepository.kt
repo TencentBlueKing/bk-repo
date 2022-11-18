@@ -257,7 +257,7 @@ class NpmLocalRepository(
         var response: Response? = null
         try {
             response = okHttpUtil.doGet(url)
-            return response.body()!!.byteStream()
+            return response.body!!.byteStream()
                 .use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
         } catch (exception: IOException) {
             logger.error(
@@ -266,7 +266,7 @@ class NpmLocalRepository(
             )
             throw exception
         } finally {
-            response?.body()?.close()
+            response?.body?.close()
         }
     }
 
@@ -552,7 +552,7 @@ class NpmLocalRepository(
                 measureTimeMillis {
                     response = okHttpUtil.doGet(tarball)
                     if (checkResponse(response!!)) {
-                        val artifactFile = ArtifactFileFactory.build(response?.body()!!.byteStream())
+                        val artifactFile = ArtifactFileFactory.build(response?.body!!.byteStream())
                         val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
                         storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                         size = artifactFile.getSize()
@@ -567,7 +567,7 @@ class NpmLocalRepository(
                 logger.error("http send url [$tarball] for artifact [$fullPath] failed : $exception")
                 throw exception
             } finally {
-                response?.body()?.close()
+                response?.body?.close()
             }
             return size
         }
@@ -612,7 +612,7 @@ class NpmLocalRepository(
      */
     private fun checkResponse(response: Response): Boolean {
         if (!response.isSuccessful) {
-            logger.warn("Download file from remote failed: [${response.code()}]")
+            logger.warn("Download file from remote failed: [${response.code}]")
             return false
         }
         return true

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.component.manager.standard
 
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
+import com.tencent.bkrepo.analyst.component.manager.ScannerConverter.Companion.OVERVIEW_KEY_SENSITIVE_TOTAL
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
@@ -124,6 +125,11 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         scanExecutorResult.output?.result?.securityResults?.forEach { securityResult ->
             val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
             overview[key] = overview.getOrDefault(key, 0L) + 1
+        }
+
+        // sensitive统计
+        scanExecutorResult.output?.result?.sensitiveResults?.let {
+            overview[OVERVIEW_KEY_SENSITIVE_TOTAL] = it.size.toLong()
         }
 
         // license统计

@@ -44,7 +44,7 @@ import com.tencent.bkrepo.opdata.util.requestBuilder
 import com.tencent.bkrepo.opdata.util.throwExceptionOnRequestFailed
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.internal.Util.EMPTY_REQUEST
+import okhttp3.internal.EMPTY_REQUEST
 import org.springframework.cloud.consul.ConsulProperties
 
 class ConsulRegistryClient constructor(
@@ -58,7 +58,7 @@ class ConsulRegistryClient constructor(
         val res = httpClient.newCall(req).execute()
         return res.use {
             parseResAndThrowExceptionOnRequestFailed(res) { res ->
-                res.body()!!.string().readJsonString<Map<String, List<String>>>().map {
+                res.body!!.string().readJsonString<Map<String, List<String>>>().map {
                     ServiceInfo(it.key, emptyList())
                 }
             }
@@ -145,7 +145,7 @@ class ConsulRegistryClient constructor(
         // 解析请求结果
         res.use {
             val consulInstances = parseResAndThrowExceptionOnRequestFailed<List<ConsulInstanceHealth>>(res) { res ->
-                res.body()!!.string().readJsonString()
+                res.body!!.string().readJsonString()
             }
             if (consulInstanceId == null) {
                 return consulInstances

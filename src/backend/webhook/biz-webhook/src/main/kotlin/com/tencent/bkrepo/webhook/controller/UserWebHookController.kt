@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.webhook.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
@@ -57,6 +58,7 @@ class UserWebHookController(
 
     @ApiOperation("创建WebHook")
     @PostMapping("/create")
+    @LogOperate(type = "WEBHOOK_CREATE", desensitize = true)
     fun createWebHook(
         @RequestAttribute userId: String,
         @RequestBody request: CreateWebHookRequest
@@ -67,6 +69,7 @@ class UserWebHookController(
 
     @ApiOperation("更新WebHook")
     @PutMapping("/update")
+    @LogOperate(type = "WEBHOOK_UPDATE", desensitize = true)
     fun updateWebHook(
         @RequestAttribute userId: String,
         @RequestBody request: UpdateWebHookRequest
@@ -77,6 +80,7 @@ class UserWebHookController(
 
     @ApiOperation("删除WebHook")
     @DeleteMapping("/delete/{id}")
+    @LogOperate(type = "WEBHOOK_DELETE")
     fun deleteWebHook(
         @RequestAttribute userId: String,
         @PathVariable id: String
@@ -96,6 +100,7 @@ class UserWebHookController(
 
     @ApiOperation("查询WebHook列表")
     @GetMapping("/list")
+    @LogOperate(type = "WEBHOOK_LIST")
     fun listWebHook(
         @RequestAttribute userId: String,
         @RequestParam associationType: AssociationType,

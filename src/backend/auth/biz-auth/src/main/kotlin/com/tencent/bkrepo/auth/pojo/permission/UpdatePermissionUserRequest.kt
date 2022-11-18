@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.auth.pojo.permission
 
+
 data class UpdatePermissionUserRequest(
     val permissionId: String,
+    val projectId: String?,
     val userId: List<String>
 )

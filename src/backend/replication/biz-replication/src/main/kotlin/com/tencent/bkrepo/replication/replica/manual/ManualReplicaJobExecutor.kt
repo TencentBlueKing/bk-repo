@@ -64,12 +64,12 @@ class ManualReplicaJobExecutor(
             .copy(startTime = LocalDateTime.now())
         try {
             logger.info(
-                convertToReplicationTaskDetailMetricsRecord(
+                toJson(convertToReplicationTaskDetailMetricsRecord(
                     taskDetail = taskDetail,
                     record = taskRecord,
                     status = ExecutionStatus.RUNNING,
                     taskStatus = ReplicaStatus.REPLICATING
-                ).toJson()
+                ))
             )
             val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
             result.forEach {
@@ -89,13 +89,13 @@ class ManualReplicaJobExecutor(
             val taskStatus = if (isCronJob(taskDetail.task.setting, taskDetail.task.replicaType))
                 ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
             logger.info(
-                convertToReplicationTaskDetailMetricsRecord(
-                    taskDetail = taskDetail,
-                    record = taskRecord,
-                    status = status,
-                    taskStatus = taskStatus,
-                    errorReason = errorReason
-                ).toJson()
+                toJson(convertToReplicationTaskDetailMetricsRecord(
+                taskDetail = taskDetail,
+                record = taskRecord,
+                status = status,
+                taskStatus = taskStatus,
+                errorReason = errorReason
+            ))
             )
             logger.info("Run once replica task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }

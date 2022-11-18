@@ -55,6 +55,14 @@ interface OperateLogClient {
     @PostMapping("/record/batch")
     fun batchRecord(@RequestBody eventList: List<ArtifactEvent>): Response<Void>
 
+    @ApiOperation("记录操作日志")
+    @PostMapping("/save")
+    fun save(@RequestBody log: OperateLog): Response<Void>
+
+    @ApiOperation("批量记录操作日志")
+    @PostMapping("/save/batch")
+    fun batchSave(@RequestBody logs: List<OperateLog>): Response<Void>
+
     @ApiOperation("操作日志列表")
     @PostMapping("/list")
     fun list(@RequestBody option: OpLogListOption): Response<Page<OperateLog>>

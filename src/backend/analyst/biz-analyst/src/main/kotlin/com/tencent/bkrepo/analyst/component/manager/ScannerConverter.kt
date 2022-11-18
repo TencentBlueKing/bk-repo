@@ -64,5 +64,6 @@ interface ScannerConverter {
 
     companion object {
         fun name(scannerType: String) = "${scannerType}Converter"
+        const val OVERVIEW_KEY_SENSITIVE_TOTAL = "sensitiveTotalCount"
     }
 }

@@ -42,7 +42,7 @@ import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -71,8 +71,8 @@ class WebHookExecutor(
     private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory).build()
 
     init {
-        httpClient.dispatcher().maxRequests = webHookProperties.maxRequests ?: 200
-        httpClient.dispatcher().maxRequestsPerHost = webHookProperties.maxRequestsPerHost ?: 100
+        httpClient.dispatcher.maxRequests = webHookProperties.maxRequests ?: 200
+        httpClient.dispatcher.maxRequestsPerHost = webHookProperties.maxRequestsPerHost ?: 100
     }
 
     /**
@@ -81,10 +81,10 @@ class WebHookExecutor(
     @EventListener(RefreshEvent::class)
     @Order
     fun refresh(event: RefreshEvent) {
-        webHookProperties.maxRequests?.let { httpClient.dispatcher().maxRequests = it }
-        webHookProperties.maxRequestsPerHost?.let { httpClient.dispatcher().maxRequestsPerHost = it }
-        logger.info("refresh httpClient config maxRequests: ${httpClient.dispatcher().maxRequests}," +
-                "maxRequestsPerHost: ${httpClient.dispatcher().maxRequestsPerHost}")
+        webHookProperties.maxRequests?.let { httpClient.dispatcher.maxRequests = it }
+        webHookProperties.maxRequestsPerHost?.let { httpClient.dispatcher.maxRequestsPerHost = it }
+        logger.info("refresh httpClient config maxRequests: ${httpClient.dispatcher.maxRequests}," +
+                "maxRequestsPerHost: ${httpClient.dispatcher.maxRequestsPerHost}")
     }
 
     fun execute(event: ArtifactEvent, webHook: TWebHook): TWebHookLog {
@@ -159,7 +159,7 @@ class WebHookExecutor(
             webHookId = webHook.id!!,
             webHookUrl = webHook.url,
             triggeredEvent = payload.eventType,
-            requestHeaders = request.headers().toMap(),
+            requestHeaders = request.headers.toMap(),
             requestPayload = payload.toJsonString(),
             requestDuration = 0L,
             requestTime = LocalDateTime.now(),
@@ -184,8 +184,8 @@ class WebHookExecutor(
     private fun buildWebHookSuccessLog(log: TWebHookLog, startTimestamp: Long, response: Response) {
         log.requestDuration = System.currentTimeMillis() - startTimestamp
         log.status = WebHookRequestStatus.SUCCESS
-        log.responseHeaders = response.headers().toMap()
-        log.responseBody = response.body()?.string()
+        log.responseHeaders = response.headers.toMap()
+        log.responseBody = response.body?.string()
     }
 
     private fun buildWebHookFailedLog(log: TWebHookLog, startTimestamp: Long, errorMsg: String?) {
@@ -198,7 +198,7 @@ class WebHookExecutor(
         webHook: TWebHook,
         payload: CommonEventPayload
     ): Request {
-        val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), payload.toJsonString())
+        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), payload.toJsonString())
         val builder = Request.Builder().url(webHook.url).post(requestBody)
         builder.addHeader(WEBHOOK_EVENT_HEADER, payload.eventType.name)
         webHook.headers?.forEach { (k, v) ->

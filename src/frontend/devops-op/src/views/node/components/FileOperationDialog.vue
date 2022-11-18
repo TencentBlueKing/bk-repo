@@ -116,7 +116,7 @@ export default {
         this.showFileOperationDialog = true
         this.key.srcProjectId = this.updatingKeys.projectId
         this.key.srcRepoName = this.updatingKeys.repoName
-        this.key.srcFullPath = this.updatingKeys.path
+        this.key.srcFullPath = this.updatingKeys.fullPath
       } else {
         this.close()
       }
@@ -170,14 +170,18 @@ export default {
     },
     queryRepositories(queryStr, cb) {
       let repositories = this.repoCache[this.key.destProjectId]
-      if (!repositories) {
-        listRepositories(this.key.destProjectId).then(res => {
-          repositories = res.data
-          this.repoCache[this.key.destProjectId] = repositories
+      if (this.key.destProjectId !== null && this.key.destProjectId !== '') {
+        if (!repositories) {
+          listRepositories(this.key.destProjectId).then(res => {
+            repositories = res.data
+            this.repoCache[this.key.destProjectId] = repositories
+            cb(this.doFilter(repositories, queryStr))
+          })
+        } else {
           cb(this.doFilter(repositories, queryStr))
-        })
+        }
       } else {
-        cb(this.doFilter(repositories, queryStr))
+        cb([])
       }
     },
     selectRepo(repo) {

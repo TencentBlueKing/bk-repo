@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
 import io.swagger.annotations.ApiModelProperty
 
 data class StandardScanExecutorResult(
@@ -36,7 +37,7 @@ data class StandardScanExecutorResult(
     val output: ToolOutput? = null,
     override val scanStatus: String = output?.status ?: SubScanTaskStatus.FAILED.name
 ) : ScanExecutorResult(scanStatus, StandardScanner.TYPE) {
-    override fun distinctResult() {
+    override fun normalizeResult() {
         if (output?.result == null) {
             return
         }
@@ -44,9 +45,9 @@ data class StandardScanExecutorResult(
         // 根据（漏洞id-组件id）进行去重
         val securityResults = HashMap<String, SecurityResult>()
         output.result?.securityResults?.forEach { securityResult ->
-            securityResults
-                .getOrPut("${securityResult.pkgName}-${securityResult.vulId}") { securityResult }
-                .pkgVersions.addAll(securityResult.pkgVersions)
+            securityResults.getOrPut("${securityResult.pkgName}-${securityResult.vulId}") {
+                securityResult.copy(severity = normalizedLevel(securityResult.severity))
+            }.pkgVersions.addAll(securityResult.pkgVersions)
         }
 
         // 去重license

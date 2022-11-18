@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.trivy
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -36,4 +37,8 @@ data class TrivyScanExecutorResult(
     override val scanStatus: String,
     @ApiModelProperty("cve审计结果")
     val vulnerabilityItems: List<VulnerabilityItem>
-) : ScanExecutorResult(scanStatus, TrivyScanner.TYPE)
+) : ScanExecutorResult(scanStatus, TrivyScanner.TYPE) {
+    override fun normalizeResult() {
+        vulnerabilityItems.forEach { it.severity = normalizedLevel(it.severity) }
+    }
+}

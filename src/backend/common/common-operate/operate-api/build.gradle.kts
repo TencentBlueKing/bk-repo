@@ -33,4 +33,5 @@
 dependencies {
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-query:query-api"))
+    api(project(":common:common-operate:operate-annotation"))
 }

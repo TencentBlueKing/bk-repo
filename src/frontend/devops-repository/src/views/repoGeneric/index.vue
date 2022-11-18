@@ -198,7 +198,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
-    import { getIconName, genericScanFileTypes } from '@repository/store/publicEnum'
+    import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
 
     export default {
@@ -221,7 +221,6 @@
         data () {
             return {
                 MODE_CONFIG,
-                genericScanFileTypes,
                 sideBarWidth: 300,
                 moveBarWidth: 10,
                 isLoading: false,
@@ -250,7 +249,7 @@
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree']),
+            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -298,6 +297,9 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initPage()
+            if (!this.community) {
+                this.refreshSupportFileNameExtList()
+            }
         },
         methods: {
             convertFileSize,
@@ -317,10 +319,11 @@
                 'previewBasicFile',
                 'previewCompressedBasicFile',
                 'previewCompressedFileList',
-                'forbidMetadata'
+                'forbidMetadata',
+                'refreshSupportFileNameExtList'
             ]),
             showRepoScan (node) {
-                return !node.folder && !this.community && genericScanFileTypes.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
+                return !node.folder && !this.community && this.scannerSupportFileNameExt.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {

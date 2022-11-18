@@ -155,7 +155,6 @@
     import ScanTag from '@repository/views/repoScan/scanTag'
     import forbidTag from '@repository/components/ForbidTag'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
-    import { scanTypeEnum } from '@repository/store/publicEnum'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
@@ -205,7 +204,7 @@
             }
         },
         computed: {
-            ...mapState(['userList', 'permission']),
+            ...mapState(['userList', 'permission', 'scannerSupportPackageType']),
             detailInfoMap () {
                 return [
                     { name: 'version', label: this.$t('version') },
@@ -228,7 +227,7 @@
                 }, {})
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             },
             operationBtns () {
                 const basic = this.detail.basic

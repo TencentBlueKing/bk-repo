@@ -144,7 +144,10 @@
                 {
                     validator: function (val) {
                         const ipList = val.split(',')
-                        return ipList.every(ip => /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]|[1-2]\d|3[0-2])?/.test(ip))
+                        return ipList.every(ip => {
+                            if (!ip) return true
+                            return /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\b\/([0-9]|[1-2][0-9]|3[0-2])\b)/.test(ip)
+                        })
                     },
                     message: this.$t('ipSegmentRule'),
                     trigger: 'blur'

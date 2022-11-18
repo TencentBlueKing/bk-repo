@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.pojo.user
 
-import com.tencent.bkrepo.common.api.sensitive.Sensitive
-import com.tencent.bkrepo.common.api.sensitive.SensitiveType
+import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.api.handler.MaskString
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -43,7 +43,7 @@ data class CreateUserToRepoRequest(
     @ApiModelProperty("用户名")
     val name: String,
     @ApiModelProperty("密码")
-    @Sensitive(SensitiveType.PASSWORD)
+    @Sensitive(MaskString::class)
     var pwd: String? = null,
     @ApiModelProperty("管理员")
     val admin: Boolean = false,

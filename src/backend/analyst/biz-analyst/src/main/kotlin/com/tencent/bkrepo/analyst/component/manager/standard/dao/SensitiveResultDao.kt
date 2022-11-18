@@ -29,7 +29,23 @@ package com.tencent.bkrepo.analyst.component.manager.standard.dao
 
 import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSensitiveResult
+import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SensitiveResult
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class SensitiveResultDao : ResultItemDao<TSensitiveResult>()
+class SensitiveResultDao : ResultItemDao<TSensitiveResult>() {
+    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
+        require(arguments is StandardLoadResultArguments)
+        if (!arguments.sensitiveType.isNullOrEmpty()) {
+            criteria.and(dataKey(SensitiveResult::type.name)).isEqualTo(arguments.sensitiveType)
+        }
+        if (!arguments.sensitiveContent.isNullOrEmpty()) {
+            criteria.and(dataKey(SensitiveResult::content.name)).regex(arguments.sensitiveContent!!)
+        }
+        return criteria
+    }
+}

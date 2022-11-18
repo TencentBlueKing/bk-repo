@@ -16,6 +16,24 @@ db.user.updateOne(
     { upsert: true }
 );
 
+db.user.updateOne(
+    { userId: "system" },
+    {
+        $setOnInsert: {
+            userId: "system",
+            name: "system",
+            pwd: "5f4dcc3b5aa765d61d8327deb882cf99",
+            admin: true,
+            locked: false,
+            tokens: [],
+            roles: [],
+            asstUsers: [],
+            group: false
+        }
+    },
+    { upsert: true }
+);
+
 db.account.updateOne(
     { appId: "bkdevops" },
     {
