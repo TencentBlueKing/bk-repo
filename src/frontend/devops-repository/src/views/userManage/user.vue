@@ -111,11 +111,12 @@
                 <bk-form-item label="电话">
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
-                <bk-form-item v-if="editUserDialog.group" label="关联用户">
+                <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" label="关联用户">
                     <bk-tag-input
                         v-model="editUserDialog.asstUsers"
                         placeholder="请输入，按Enter键确认"
                         trigger="focus"
+                        :create-tag-validator="tag => validateUser(tag)"
                         allow-create>
                     </bk-tag-input>
                 </bk-form-item>
@@ -191,6 +192,13 @@
                         {
                             regex: /^\w[-_.\w]*@\w[-_\w]*\.\w[-_.\w]*$/,
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('email'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    asstUsers: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + '关联账户',
                             trigger: 'blur'
                         }
                     ]
@@ -442,6 +450,9 @@
                 }).finally(() => {
                     this.getUserListHandler()
                 })
+            },
+            validateUser (tag) {
+                return Object.keys(this.userList).includes(tag) && tag !== 'anonymous'
             }
         }
     }
