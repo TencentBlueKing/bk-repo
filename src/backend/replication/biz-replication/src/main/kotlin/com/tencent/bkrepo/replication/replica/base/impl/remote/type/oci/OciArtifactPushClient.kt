@@ -43,11 +43,9 @@ import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
@@ -70,7 +68,6 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
-import kotlin.math.ceil
 
 /**
  * oci类型制品推送到远端仓库
@@ -432,16 +429,11 @@ class OciArtifactPushClient(
                 .add(HttpHeaders.CONTENT_RANGE, contentRange)
                 .add(HttpHeaders.CONTENT_LENGTH, "$byteCount")
                 .build()
-            val requestTag = if (context.task.replicaType == ReplicaType.RUN_ONCE) {
-                RequestTag(
-                    task = context.task,
-                    objectCount = ceil(context.task.totalBytes!!.toDouble()/replicationProperties.chunkedSize).toInt(),
-                    key = sha256 + range,
-                    size = byteCount
-                )
-            } else {
-                null
-            }
+            val requestTag = buildRequestTag(
+                context = context,
+                key = sha256 + range,
+                size = byteCount,
+            )
             val property = RequestProperty(
                 requestBody = patchBody,
                 authorizationCode = token,
@@ -487,16 +479,7 @@ class OciArtifactPushClient(
             .add(SHA256, sha256)
             .add(HttpHeaders.CONTENT_LENGTH, "$size")
             .build()
-        val requestTag = if (context.task.replicaType == ReplicaType.RUN_ONCE) {
-            RequestTag(
-                task = context.task,
-                objectCount = context.objectCount,
-                key = sha256,
-                size = size
-            )
-        } else {
-            null
-        }
+        val requestTag = buildRequestTag(context, sha256, size)
         val property = RequestProperty(
             requestBody = patchBody,
             authorizationCode = token,

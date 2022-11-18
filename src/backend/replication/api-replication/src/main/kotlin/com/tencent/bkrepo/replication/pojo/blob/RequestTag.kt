@@ -31,7 +31,6 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 
 data class RequestTag(
     val task: ReplicaTaskInfo,
-    val objectCount: Int,
     val key: String,
     val size: Long
 )

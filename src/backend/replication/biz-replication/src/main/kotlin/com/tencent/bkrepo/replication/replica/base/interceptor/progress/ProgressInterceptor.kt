@@ -27,15 +27,17 @@
 
 package com.tencent.bkrepo.replication.replica.base.interceptor.progress
 
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 
 class ProgressInterceptor : Interceptor {
 
-    private val listener = ProgressListener()
+    private val listener by lazy { SpringContextUtils.getBean<ProgressListener>() }
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -43,7 +45,7 @@ class ProgressInterceptor : Interceptor {
         if (tag != null) {
             val task = tag.task
             val key = tag.key
-            listener.onStart(task, key,request.body()!!.contentLength() - tag.size, tag.objectCount)
+            listener.onStart(task, key,request.body()!!.contentLength() - tag.size)
             val response = chain.proceed(wrapRequest(request, task, key))
             if (response.isSuccessful) {
                 listener.onSuccess(task)

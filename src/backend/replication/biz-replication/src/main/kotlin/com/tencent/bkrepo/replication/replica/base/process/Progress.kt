@@ -25,15 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.interceptor.progress
+package com.tencent.bkrepo.replication.replica.base.process
 
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 data class Progress(
-    val objectCount: AtomicInteger,
     val replicatedBytes: ConcurrentHashMap<String, AtomicLong>,
     val totalBytes: AtomicLong,
     var lastRecordTime: LocalDateTime

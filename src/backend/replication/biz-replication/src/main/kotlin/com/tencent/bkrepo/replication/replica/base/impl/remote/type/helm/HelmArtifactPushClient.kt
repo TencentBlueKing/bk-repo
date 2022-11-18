@@ -35,10 +35,8 @@ import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
@@ -210,16 +208,7 @@ class HelmArtifactPushClient(
         val postBody = RequestBody.create(
             MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull(), input.readBytes()
         )
-        val requestTag = if (context.task.replicaType == ReplicaType.RUN_ONCE) {
-            RequestTag(
-                task = context.task,
-                objectCount = context.objectCount,
-                key = fileName,
-                size = size
-            )
-        } else {
-            null
-        }
+        val requestTag = buildRequestTag(context, fileName, size)
         return RequestProperty(
             requestBody = postBody,
             requestUrl = requestUrl,
@@ -249,16 +238,7 @@ class HelmArtifactPushClient(
             )
             .addFormDataPart("force", "true")
             .build()
-        val requestTag = if (context.task.replicaType == ReplicaType.RUN_ONCE) {
-            RequestTag(
-                task = context.task,
-                objectCount = context.objectCount,
-                key = fileName,
-                size = size
-            )
-        } else {
-            null
-        }
+        val requestTag = buildRequestTag(context, fileName, size)
         return RequestProperty(
             requestBody = postBody,
             requestUrl = context.cluster.url,

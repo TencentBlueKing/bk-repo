@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.interceptor.progress
+package com.tencent.bkrepo.replication.replica.base.process
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
@@ -36,17 +36,18 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
+@Component
 class ProgressListener {
 
     private val replicaTaskDao by lazy { SpringContextUtils.getBean<ReplicaTaskDao>() }
     private val contextMap = ConcurrentHashMap<String, Progress>()
 
-    fun onStart(task: ReplicaTaskInfo, key: String, miscLength: Long, objectCount: Int) {
+    fun onStart(task: ReplicaTaskInfo, key: String, miscLength: Long) {
         if (task.replicaType != ReplicaType.RUN_ONCE) {
             return
         }
@@ -56,7 +57,6 @@ class ProgressListener {
             progress.replicatedBytes[key] = AtomicLong(0)
         } else {
             contextMap[task.id] = Progress(
-                objectCount = AtomicInteger(objectCount),
                 replicatedBytes = ConcurrentHashMap(mapOf(key to AtomicLong(0))),
                 totalBytes = AtomicLong(task.totalBytes!! + miscLength),
                 lastRecordTime = LocalDateTime.now()
@@ -81,11 +81,6 @@ class ProgressListener {
             return
         }
         updateProgress(task)
-        val progress = contextMap[task.id]!!
-        val remainingCount = progress.objectCount.decrementAndGet()
-        if (remainingCount == 0) {
-            contextMap.remove(task.id)
-        }
     }
 
     fun onFailed(task: ReplicaTaskInfo, key: String) {
@@ -95,6 +90,10 @@ class ProgressListener {
         val progress = contextMap[task.id]!!
         progress.replicatedBytes[key] = AtomicLong(0)
         updateProgress(task)
+    }
+
+    fun onFinish(taskId: String) {
+        contextMap.remove(taskId)
     }
 
     private fun updateProgress(task: ReplicaTaskInfo) {
