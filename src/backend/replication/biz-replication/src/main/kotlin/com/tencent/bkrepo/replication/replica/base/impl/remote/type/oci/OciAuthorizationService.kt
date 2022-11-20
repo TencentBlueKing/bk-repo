@@ -111,8 +111,14 @@ class OciAuthorizationService : AuthorizationService {
                         " code is ${it.code()} and response is ${error.toJsonString()}"
                 )
             }
-            val bearerToken = JsonUtils.objectMapper.readValue(it.body()!!.byteStream(), BearerToken::class.java)
-            return "Bearer ${bearerToken.token}"
+            try {
+                val bearerToken = JsonUtils.objectMapper.readValue(it.body()!!.byteStream(), BearerToken::class.java)
+                return "Bearer ${bearerToken.token}"
+            } catch (e: Exception) {
+                throw ArtifactPushException(
+                    "Could not get token from auth service, please check your distribution address!"
+                )
+            }
         }
     }
 
