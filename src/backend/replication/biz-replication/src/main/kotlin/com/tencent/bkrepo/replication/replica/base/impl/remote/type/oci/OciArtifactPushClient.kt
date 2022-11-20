@@ -296,7 +296,7 @@ class OciArtifactPushClient(
                 repoName = repoName,
                 projectId = projectId,
                 sha256 = sha256,
-                location = sessionIdHandlerResult.location,
+                location = buildLocationUrl(clusterUrl, sessionIdHandlerResult.location),
                 context = context
             )
         } catch (e: Exception) {
@@ -321,7 +321,7 @@ class OciArtifactPushClient(
                 sha256 = sha256,
                 projectId = projectId,
                 repoName = repoName,
-                location = sessionIdHandlerResult.location,
+                location = buildLocationUrl(clusterUrl, sessionIdHandlerResult.location),
                 context = context
             )
         }
@@ -334,7 +334,7 @@ class OciArtifactPushClient(
         val sessionCloseHandlerResult = processSessionCloseHandler(
             token = token,
             digest = digest,
-            location = chunkedUploadResult.location
+            location = buildLocationUrl(clusterUrl, chunkedUploadResult.location)
         )
         return sessionCloseHandlerResult.isSuccess
     }
@@ -573,6 +573,26 @@ class OciArtifactPushClient(
         val baseUrl = URL(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return HttpUtils.buildUrl(v2Url.toString(), path, params)
+    }
+
+    /**
+     * 获取上传blob的location
+     * 如返回location不带host，需要补充完整
+     */
+    private fun buildLocationUrl(
+        url: String,
+        location: String?
+    ): String? {
+        return location?.let {
+            try {
+                URL(location)
+                location
+            } catch (e: Exception) {
+                val baseUrl = URL(url)
+                val host = URL(baseUrl.protocol, baseUrl.host, StringUtils.EMPTY).toString()
+                HttpUtils.buildUrl(host, location.removePrefix("/"))
+            }
+        }
     }
 
     companion object {
