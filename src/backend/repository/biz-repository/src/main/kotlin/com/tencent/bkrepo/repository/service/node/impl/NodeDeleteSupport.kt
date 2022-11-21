@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
@@ -66,6 +68,21 @@ open class NodeDeleteSupport(
                 throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Can't delete root node.")
             }
             return deleteByPath(projectId, repoName, fullPath, operator)
+        }
+    }
+
+    override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
+        with(nodesDeleteRequest) {
+            if (fullPaths.isEmpty()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, "fullPaths is empty.")
+            }
+            fullPaths.forEach {
+                // 不允许直接删除根目录
+                if (PathUtils.isRoot(it)) {
+                    throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Can't delete root node.")
+                }
+            }
+            return deleteByPaths(projectId, repoName, fullPaths, operator)
         }
     }
 
@@ -100,6 +117,45 @@ open class NodeDeleteSupport(
         }
         logger.info(
             "Delete node[/$projectId/$repoName$fullPath] by [$operator] success." +
+                "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}"
+        )
+        return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
+    }
+
+    override fun deleteByPaths(
+        projectId: String,
+        repoName: String,
+        fullPaths: List<String>,
+        operator: String
+    ): NodeDeleteResult {
+        val deletedSize: Long
+        var deletedNum = 0L
+        val normalizedFullPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
+        val orOperation = mutableListOf(
+            where(TNode::fullPath).inValues(normalizedFullPaths)
+        )
+        normalizedFullPaths.forEach {
+            val normalizedPath = PathUtils.toPath(it)
+            val escapedPath = PathUtils.escapeRegex(normalizedPath)
+            orOperation.add(where(TNode::fullPath).regex("^$escapedPath"))
+        }
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(null)
+            .orOperator(*orOperation.toTypedArray())
+        val query = Query(criteria)
+        val deleteTime = LocalDateTime.now()
+        deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
+        try {
+            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+            deletedNum = updateResult.modifiedCount
+            quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
+            publishEvent(buildDeletedEvent(projectId, repoName, fullPaths, operator))
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("Delete node[/$projectId/$repoName$fullPaths] by [$operator] error: [${exception.message}]")
+        }
+        logger.info(
+            "Delete node[/$projectId/$repoName$fullPaths] by [$operator] success." +
                 "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}"
         )
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
