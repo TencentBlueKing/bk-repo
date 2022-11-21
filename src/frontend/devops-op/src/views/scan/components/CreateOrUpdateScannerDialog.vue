@@ -21,6 +21,11 @@
       <el-form-item label="扫描结束后是否清理" prop="cleanWorkDir" required>
         <el-switch v-model="scanner.cleanWorkDir" />
       </el-form-item>
+      <el-form-item label="执行扫描所需内存" prop="memory" required>
+        <el-input v-model.number="scanner.memory" type="number">
+          <template slot="append">Byte</template>
+        </el-input>
+      </el-form-item>
       <el-form-item label="1MB最大允许扫描时间" prop="maxScanDurationPerMb" required>
         <el-input v-model.number="scanner.maxScanDurationPerMb" type="number">
           <template slot="append">ms</template>
@@ -297,6 +302,7 @@ export default {
         description: '',
         rootPath: type,
         cleanWorkDir: true,
+        memory: 32 * 1024 * 1024 * 1024,
         maxScanDurationPerMb: 6000,
         supportFileNameExt: [],
         supportPackageTypes: [],
