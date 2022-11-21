@@ -6,10 +6,6 @@
                 <div class="repo-title text-overflow" :title="replaceRepoName(repoName)">
                     {{ replaceRepoName(repoName) }}
                 </div>
-                <!-- <div class="repo-description text-overflow"
-                    :title="currentRepo.description">
-                    {{ currentRepo.description || '【仓库描述】' }}
-                </div> -->
             </div>
         </header>
         <div class="repo-generic-main flex-align-center"
@@ -67,11 +63,11 @@
                     </bk-input>
                     <breadcrumb v-else :list="breadcrumb"></breadcrumb>
                     <div class="repo-generic-actions bk-button-group">
-                        <!-- <bk-button
+                        <bk-button
                             v-if="multiSelect.length"
                             @click="handlerMultiDelete()">
                             批量删除
-                        </bk-button> -->
+                        </bk-button>
                         <bk-button class="ml10"
                             @click="getArtifactories">
                             {{ $t('refresh') }}
@@ -89,7 +85,7 @@
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
-                    <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
+                    <bk-table-column type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
                             <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
@@ -395,9 +391,7 @@
             async getArtifactories () {
                 this.isLoading = true
 
-                const metadataLabelList = await this.getMetadataLabelList({
-                    projectId: this.projectId
-                })
+                const metadataLabelList = []
                 this.metadataLabelList = metadataLabelList
 
                 this.getArtifactoryList({
