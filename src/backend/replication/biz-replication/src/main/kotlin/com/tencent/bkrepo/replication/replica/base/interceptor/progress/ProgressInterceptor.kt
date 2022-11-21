@@ -45,7 +45,7 @@ class ProgressInterceptor : Interceptor {
         if (tag != null) {
             val task = tag.task
             val key = tag.key
-            listener.onStart(task, key,request.body()!!.contentLength() - tag.size)
+            listener.onStart(task, key,request.body!!.contentLength() - tag.size)
             val response = chain.proceed(wrapRequest(request, task, key))
             if (response.isSuccessful) {
                 listener.onSuccess(task)
@@ -60,7 +60,7 @@ class ProgressInterceptor : Interceptor {
 
     private fun wrapRequest(request: Request, task: ReplicaTaskInfo, key: String): Request {
         return request.newBuilder()
-            .method(request.method(), ProgressRequestBody(request.body()!!, listener, task, key))
+            .method(request.method, ProgressRequestBody(request.body!!, listener, task, key))
             .build()
     }
 }

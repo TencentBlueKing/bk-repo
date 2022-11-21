@@ -34,8 +34,8 @@ import okhttp3.RequestBody
 import okio.Buffer
 import okio.BufferedSink
 import okio.ForwardingSink
-import okio.Okio
 import okio.Sink
+import okio.buffer
 
 internal class ProgressRequestBody(
     private val delegate: RequestBody,
@@ -49,7 +49,7 @@ internal class ProgressRequestBody(
 
     override fun writeTo(sink: BufferedSink) {
         val countingSink = CountingSink(sink)
-        val bufferedSink: BufferedSink = Okio.buffer(countingSink)
+        val bufferedSink: BufferedSink = countingSink.buffer()
         delegate.writeTo(bufferedSink)
         bufferedSink.flush()
     }
