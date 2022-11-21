@@ -229,7 +229,8 @@
                 'resetPwd',
                 'checkUserId',
                 'getUserInfo',
-                'importUsers'
+                'importUsers',
+                'validateEntityUser'
             ]),
             asynCheckUserId () {
                 return !this.editUserDialog.add || !(this.editUserDialog.userId in this.userList)
@@ -451,8 +452,11 @@
                     this.getUserListHandler()
                 })
             },
-            validateUser (tag) {
-                return Object.keys(this.userList).includes(tag) && tag !== 'anonymous'
+            async validateUser (tag) {
+                const res = await this.validateEntityUser(tag)
+                if (!res) {
+                    this.editUserDialog.asstUsers.splice(this.editUserDialog.asstUsers.indexOf(tag), 1)
+                }
             }
         }
     }
