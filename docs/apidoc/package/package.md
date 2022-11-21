@@ -190,7 +190,7 @@
 
 ## 分页查询包版本
 
-- API: GET /repository/api/version/page/{projectId}/{repoName}?packageKey=gav://com.tencent:test&version=0.0.1&stageTag=release&pageNumber=0&pageSize=20
+- API: GET /repository/api/version/page/{projectId}/{repoName}?packageKey=gav://com.tencent:test&version=0.0.1&stageTag=release&pageNumber=0&pageSize=20&sortProperty=lastModifiedDate&direction=DESC
 - API 名称: list_version_page
 - 功能说明：
   - 中文：分页查询版本列表
@@ -208,6 +208,8 @@
   |stageTag|string|否|无|晋级标签， 逗号分隔|stage tag list|
   |pageNumber|Int|是|无|页码|page number|
   |pageSize|Int|是|无|每页数量|page size|
+  |sortProperty|string|否|无|排序字段|sort property|
+  |direction|string|否|DESC|排序方向(ASC、DESC)|sort direction|
 
 - 响应体
 
@@ -362,7 +364,9 @@
         "key": "apiVersion",
         "value": "v1"
       }
-    ]
+    ],
+    "sortProperty": "lastModifiedDate",
+    "direction": "DESC"
   }
 ```
 - 请求字段说明
@@ -377,6 +381,8 @@
   |metadata|List|否|无|版本元数据|package version metadata|
   |pageNumber|Int|是|无|页码|page number|
   |pageSize|Int|是|无|每页数量|page size|
+  |sortProperty|string|否|无|排序字段|sort property|
+  |direction|string|否|DESC|排序方向(ASC、DESC)|sort direction|
 
 
 - 响应体

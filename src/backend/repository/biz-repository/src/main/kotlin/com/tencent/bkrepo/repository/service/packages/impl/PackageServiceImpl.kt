@@ -67,6 +67,7 @@ import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -152,7 +153,13 @@ class PackageServiceImpl(
         return if (tPackage == null) {
             Pages.ofResponse(pageRequest, 0, emptyList())
         } else {
-            val query = PackageQueryHelper.versionListQuery(tPackage.id!!, option.version, stageTag)
+            val query = PackageQueryHelper.versionListQuery(
+                packageId = tPackage.id!!,
+                name = option.version,
+                stageTag = stageTag,
+                sortProperty = option.sortProperty,
+                direction = Sort.Direction.fromOptionalString(option.direction.toString()).orElse(Sort.Direction.DESC)
+            )
             val totalRecords = packageVersionDao.count(query)
             val records = packageVersionDao.find(query.with(pageRequest)).map { convert(it)!! }
             Pages.ofResponse(pageRequest, totalRecords, records)
@@ -167,7 +174,14 @@ class PackageServiceImpl(
     ): List<PackageVersion> {
         val stageTag = option.stageTag?.split(StringPool.COMMA)
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
-        val query = PackageQueryHelper.versionListQuery(tPackage.id!!, option.version, stageTag, option.metadata)
+        val query = PackageQueryHelper.versionListQuery(
+            packageId = tPackage.id!!,
+            name = option.version,
+            stageTag = stageTag,
+            metadata = option.metadata,
+            sortProperty = option.sortProperty,
+            direction = Sort.Direction.fromOptionalString(option.direction.toString()).orElse(Sort.Direction.DESC)
+        )
         return packageVersionDao.find(query).map { convert(it)!! }
     }
 
