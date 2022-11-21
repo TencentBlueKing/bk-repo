@@ -43,7 +43,7 @@ class LoadBalancerClientAutoConfiguration {
         loadBalancerClientFactory: LoadBalancerClientFactory?,
         properties: LoadBalancerProperties?
     ): LoadBalancerClient {
-        logger.info("Init JobLoadBalancerClient.")
+        logger.info("Init LoadBalancerClient.")
         return CustomLoadBalancerClient(loadBalancerClientFactory, properties)
     }
 
