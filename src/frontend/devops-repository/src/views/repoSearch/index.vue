@@ -26,7 +26,8 @@
                         :clearable="false"
                         @change="changeSortType">
                         <bk-option id="name" name="名称排序"></bk-option>
-                        <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
+                        <bk-option id="lastModifiedDate" name="最后修改时间排序"></bk-option>
+                        <bk-option id="createdDate" name="最初创建时间排序"></bk-option>
                         <bk-option id="downloads" name="下载量排序"></bk-option>
                     </bk-select>
                     <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
