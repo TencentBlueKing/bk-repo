@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.replica.base.interceptor.progress
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import okio.Buffer
+import okio.BufferedSink
+import okio.ForwardingSink
+import okio.Sink
+import okio.buffer
 
-@ApiModel("同步任务执行记录")
-data class ReplicaRecordInfo(
-    @ApiModelProperty("记录唯一id")
-    val id: String,
-    @ApiModelProperty("关联任务key")
-    val taskKey: String,
-    @ApiModelProperty("任务状态")
-    var status: ExecutionStatus,
-    @ApiModelProperty("开始时间")
-    var startTime: LocalDateTime,
-    @ApiModelProperty("结束时间")
-    var endTime: LocalDateTime? = null,
-    @ApiModelProperty("错误原因，未执行或执行成功则为null")
-    var errorReason: String? = null,
-    @ApiModelProperty("已同步字节数")
-    var replicatedBytes: Long? = 0,
-    @ApiModelProperty("总字节数")
-    var totalBytes: Long? = 0
-)
+internal class ProgressRequestBody(
+    private val delegate: RequestBody,
+    private val listener: ProgressListener,
+    private val task: ReplicaTaskInfo,
+    private val sha256: String
+) : RequestBody() {
+
+    override fun contentType(): MediaType? = delegate.contentType()
+    override fun contentLength(): Long = delegate.contentLength()
+
+    override fun writeTo(sink: BufferedSink) {
+        val countingSink = CountingSink(sink)
+        val bufferedSink: BufferedSink = countingSink.buffer()
+        delegate.writeTo(bufferedSink)
+        bufferedSink.flush()
+    }
+
+    inner class CountingSink(delegate: Sink) : ForwardingSink(delegate) {
+        override fun write(source: Buffer, byteCount: Long) {
+            super.write(source, byteCount)
+            listener.onProgress(task, sha256, byteCount)
+        }
+    }
+}
