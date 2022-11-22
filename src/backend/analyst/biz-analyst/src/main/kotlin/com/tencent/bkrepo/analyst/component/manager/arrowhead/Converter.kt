@@ -198,7 +198,7 @@ object Converter {
             solution = cve?.officialSolution,
             references = cve?.references ?: emptyList(),
             cvss = cve?.cvss,
-            severity = cve?.cvssRank ?: ""
+            severity = securityResult.data.severity
         )
     }
 
