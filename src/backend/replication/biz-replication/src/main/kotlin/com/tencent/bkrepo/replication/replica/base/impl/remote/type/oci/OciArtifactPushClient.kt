@@ -589,7 +589,7 @@ class OciArtifactPushClient(
                 location
             } catch (e: Exception) {
                 val baseUrl = URL(url)
-                val host = URL(baseUrl.protocol, baseUrl.host, StringUtils.EMPTY).toString()
+                val host = URL(baseUrl.protocol, baseUrl.host, StringPool.EMPTY).toString()
                 HttpUtils.buildUrl(host, location.removePrefix("/"))
             }
         }
