@@ -47,6 +47,8 @@ allprojects {
     apply(plugin = "jacoco")
 
     dependencyManagement {
+        applyMavenExclusions(false)
+
         imports {
             mavenBom("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
         }
