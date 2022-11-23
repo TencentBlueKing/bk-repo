@@ -549,6 +549,8 @@ class OciOperationServiceImpl(
             storageCredentials
         )!!.readText()
         val version = OciUtils.checkVersion(manifestBytes)
+        // 将该版本对应的blob sha256放到manifest节点的元数据中
+        var digestList: List<String>? = null
         val (mediaType, manifest) = if (version == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
@@ -559,15 +561,16 @@ class OciOperationServiceImpl(
             } else {
                 manifest.mediaType
             }
+            digestList = OciUtils.manifestIteratorDigest(manifest)
             Pair(mediaTypeV2, manifest)
         }
-
         updateNodeMetaData(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             version = ociArtifactInfo.reference,
             fullPath = nodeDetail.fullPath,
-            mediaType = mediaType!!
+            mediaType = mediaType!!,
+            digestList = digestList
         )
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
@@ -600,13 +603,15 @@ class OciOperationServiceImpl(
         version: String? = null,
         fullPath: String,
         mediaType: String,
-        chartYaml: Map<String, Any>? = null
+        chartYaml: Map<String, Any>? = null,
+        digestList: List<String>? = null
     ) {
         // 将基础信息存储到metadata中
         val metadata = ObjectBuildUtils.buildMetadata(
             mediaType = mediaType,
             version = version,
-            yamlData = chartYaml
+            yamlData = chartYaml,
+            digestList = digestList
         )
         saveMetaData(
             projectId = projectId,

@@ -110,16 +110,16 @@ object OciUtils {
         return list
     }
 
-    fun manifestIteratorDegist(manifest: ManifestSchema2): List<String> {
+    fun manifestIteratorDigest(manifest: ManifestSchema2): List<String> {
         val list = mutableListOf<String>()
-        list.add(manifest.config.digest)
+        list.add(manifest.config.filename)
         manifest.layers.forEach {
-            list.add(it.digest)
+            list.add(it.filename)
         }
         return list
     }
 
-    fun manifestIteratorDegist(manifest: ManifestSchema1): List<String> {
+    fun manifestIteratorDigest(manifest: ManifestSchema1): List<String> {
         val list = mutableListOf<String>()
         manifest.fsLayers.forEach {
             list.add(it.blobSum)

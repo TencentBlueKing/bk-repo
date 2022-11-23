@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.oci.constant.DIGEST_LIST
 import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
@@ -72,12 +73,14 @@ object ObjectBuildUtils {
     fun buildMetadata(
         mediaType: String,
         version: String?,
-        yamlData: Map<String, Any>? = null
+        yamlData: Map<String, Any>? = null,
+        digestList: List<String>? = null
     ): MutableMap<String, Any> {
         return mutableMapOf<String, Any>(
             MEDIA_TYPE to mediaType
         ).apply {
             version?.let { this.put(IMAGE_VERSION, version) }
+            digestList?.let { this.put(DIGEST_LIST, digestList) }
             yamlData?.let {
                 this.putAll(yamlData)
             }
