@@ -94,11 +94,13 @@
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.url" :disabled="!editNodeDialog.add"></bk-input>
                 </bk-form-item>
+                <bk-form-item label="证书" property="certificate" error-display-type="normal">
+                    <bk-input v-model.trim="editNodeDialog.certificate"></bk-input>
+                </bk-form-item>
                 <bk-form-item label="认证方式">
                     <bk-radio-group v-model="createType" :change="changeValidateType()">
                         <bk-radio class="mr20" value="user">用户名/密码</bk-radio>
                         <bk-radio class="mr20" value="appId">AppID/AK/SK</bk-radio>
-                        <bk-radio class="mr20" value="certificate">证书</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item v-if="createType === 'user'" :label="$t('account')" :required="true" property="username" error-display-type="normal">
@@ -115,9 +117,6 @@
                 </bk-form-item>
                 <bk-form-item v-if="createType === 'appId'" label="secretKey" :required="true" property="secretKey" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.secretKey"></bk-input>
-                </bk-form-item>
-                <bk-form-item v-if="createType === 'certificate'" label="证书" :required="true" property="certificate" error-display-type="normal">
-                    <bk-input v-model.trim="editNodeDialog.certificate"></bk-input>
                 </bk-form-item>
             </bk-form>
             <template #footer>
@@ -304,19 +303,10 @@
                     this.editNodeDialog.appId = null
                     this.editNodeDialog.accessKey = null
                     this.editNodeDialog.secretKey = null
-                    this.editNodeDialog.certificate = null
                 }
                 if (this.createType === 'appId') {
                     this.editNodeDialog.username = null
                     this.editNodeDialog.password = null
-                    this.editNodeDialog.certificate = null
-                }
-                if (this.createType === 'certificate') {
-                    this.editNodeDialog.username = null
-                    this.editNodeDialog.password = null
-                    this.editNodeDialog.appId = null
-                    this.editNodeDialog.accessKey = null
-                    this.editNodeDialog.secretKey = null
                 }
                 const { type, name, url, username, password, appId, accessKey, secretKey, certificate } = this.editNodeDialog
                 this.createCluster({
