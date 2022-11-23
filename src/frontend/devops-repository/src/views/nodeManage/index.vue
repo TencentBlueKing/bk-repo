@@ -94,11 +94,11 @@
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.url" :disabled="!editNodeDialog.add"></bk-input>
                 </bk-form-item>
-                <bk-form-item label="创建类型">
+                <bk-form-item label="认证方式">
                     <bk-radio-group v-model="createType" :change="changeValidateType()">
                         <bk-radio class="mr20" value="user">用户名/密码</bk-radio>
-                        <bk-radio class="mr20" value="appId">appId</bk-radio>
-                        <bk-radio class="mr20" value="keys">AK/SK</bk-radio>
+                        <bk-radio class="mr20" value="appId">AppID/AK/SK</bk-radio>
+                        <bk-radio class="mr20" value="certificate">证书</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item v-if="createType === 'user'" :label="$t('account')" :required="true" property="username" error-display-type="normal">
@@ -110,11 +110,14 @@
                 <bk-form-item v-if="createType === 'appId'" label="appId" :required="true" property="appId" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.appId"></bk-input>
                 </bk-form-item>
-                <bk-form-item v-if="createType === 'keys'" label="accessKey" :required="true" property="accessKey" error-display-type="normal">
+                <bk-form-item v-if="createType === 'appId'" label="accessKey" :required="true" property="accessKey" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.accessKey"></bk-input>
                 </bk-form-item>
-                <bk-form-item v-if="createType === 'keys'" label="secretKey" :required="true" property="secretKey" error-display-type="normal">
+                <bk-form-item v-if="createType === 'appId'" label="secretKey" :required="true" property="secretKey" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.secretKey"></bk-input>
+                </bk-form-item>
+                <bk-form-item v-if="createType === 'certificate'" label="证书" :required="true" property="certificate" error-display-type="normal">
+                    <bk-input v-model.trim="editNodeDialog.certificate"></bk-input>
                 </bk-form-item>
             </bk-form>
             <template #footer>
@@ -153,7 +156,8 @@
                     password: null,
                     appId: null,
                     accessKey: null,
-                    secretKey: null
+                    secretKey: null,
+                    certificate: null
                 },
                 rules: {
                     name: [
@@ -214,8 +218,14 @@
                             message: '请输入secretKey',
                             trigger: 'blur'
                         }
+                    ],
+                    certificate: [
+                        {
+                            required: true,
+                            message: '请输入证书',
+                            trigger: 'blur'
+                        }
                     ]
-
                 },
                 pagination: {
                     current: 1,
@@ -273,7 +283,8 @@
                     password: null,
                     appId: null,
                     accessKey: null,
-                    secretKey: null
+                    secretKey: null,
+                    certificate: null
                 }
             },
             showEditNode (row) {
@@ -293,19 +304,21 @@
                     this.editNodeDialog.appId = null
                     this.editNodeDialog.accessKey = null
                     this.editNodeDialog.secretKey = null
+                    this.editNodeDialog.certificate = null
                 }
                 if (this.createType === 'appId') {
                     this.editNodeDialog.username = null
                     this.editNodeDialog.password = null
-                    this.editNodeDialog.accessKey = null
-                    this.editNodeDialog.secretKey = null
+                    this.editNodeDialog.certificate = null
                 }
-                if (this.createType === 'keys') {
+                if (this.createType === 'certificate') {
                     this.editNodeDialog.username = null
                     this.editNodeDialog.password = null
                     this.editNodeDialog.appId = null
+                    this.editNodeDialog.accessKey = null
+                    this.editNodeDialog.secretKey = null
                 }
-                const { type, name, url, username, password, appId, accessKey, secretKey } = this.editNodeDialog
+                const { type, name, url, username, password, appId, accessKey, secretKey, certificate } = this.editNodeDialog
                 this.createCluster({
                     body: {
                         type,
@@ -315,7 +328,8 @@
                         password,
                         appId,
                         accessKey,
-                        secretKey
+                        secretKey,
+                        certificate
                     }
                 }).then(res => {
                     this.$bkMessage({
