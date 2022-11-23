@@ -32,7 +32,9 @@ import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResu
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResultData
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
 
@@ -47,5 +49,10 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
             criteria.and(dataKey(TSecurityResultData::vulId.name)).inValues(arguments.vulIds)
         }
         return criteria
+    }
+
+    override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
+        query.with(Sort.by(Sort.Direction.DESC, dataKey(TSecurityResultData::severityLevel.name)))
+        return query
     }
 }

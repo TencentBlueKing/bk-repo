@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.analyst.component.manager
 
 import com.mongodb.client.result.DeleteResult
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.analyst.dao.ScannerSimpleMongoDao
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -52,12 +52,15 @@ abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
         arguments: LoadResultArguments
     ): Page<T> {
         val pageable = PageRequest.of(pageLimit.pageNumber - 1, pageLimit.pageSize)
-        val criteria = buildCriteria(credentialsKey, sha256, scanner)
-        customizePageBy(criteria, arguments)
-        val query = Query(criteria).with(pageable)
+        val criteria = customizePageBy(buildCriteria(credentialsKey, sha256, scanner), arguments)
+        val query = customizeQuery(Query(criteria).with(pageable), arguments)
         val total = count(Query.of(query).limit(0).skip(0))
         val data = find(query)
         return Page(pageLimit.pageNumber, pageLimit.pageSize, total, data)
+    }
+
+    protected open fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
+        return query
     }
 
     protected open fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
