@@ -736,6 +736,7 @@ class OciOperationServiceImpl(
                     repoName = repoName,
                     fullPath = it.fullPath,
                     mediaType = descriptor.mediaType,
+                    version = ociArtifactInfo.reference,
                     chartYaml = yamlMap
                 )
             }
