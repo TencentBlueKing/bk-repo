@@ -217,13 +217,6 @@
                             message: '请输入secretKey',
                             trigger: 'blur'
                         }
-                    ],
-                    certificate: [
-                        {
-                            required: true,
-                            message: '请输入证书',
-                            trigger: 'blur'
-                        }
                     ]
                 },
                 pagination: {
