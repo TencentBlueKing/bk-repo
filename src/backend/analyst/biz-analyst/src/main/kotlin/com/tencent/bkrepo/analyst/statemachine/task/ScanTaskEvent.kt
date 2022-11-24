@@ -25,20 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.analyst.statemachine.task
+
+enum class ScanTaskEvent {
+    CREATE,
+    SUBMIT,
+    FINISH_SUBMIT,
+    STOP,
+    FINISH_STOP,
+    FINISH,
+
+    /**
+     * 重置任务状态为PENDING，并移除所有子任务，重新提交子任务执行
+     */
+    RESET;
 }

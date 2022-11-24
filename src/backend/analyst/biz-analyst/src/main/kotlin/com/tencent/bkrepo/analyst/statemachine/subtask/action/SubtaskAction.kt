@@ -25,20 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-}
+package com.tencent.bkrepo.analyst.statemachine.subtask.action
+
+import com.tencent.bkrepo.analyst.statemachine.StateAction
+import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
+import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+
+interface SubtaskAction : StateAction<SubScanTaskStatus, SubtaskEvent, SubtaskContext>

@@ -25,20 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-}
+package com.tencent.bkrepo.analyst.statemachine.task.context
+
+import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
+import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
+
+data class CreateTaskContext(
+    val scanRequest: ScanRequest,
+    val triggerType: ScanTriggerType,
+    val userId: String?,
+    val weworkBotUrl: String? = null,
+    val chatIds: String? = null,
+    var createdScanTask: ScanTask? = null
+) : TaskContext()

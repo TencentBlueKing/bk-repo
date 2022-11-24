@@ -25,46 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.task
+package com.tencent.bkrepo.analyst.statemachine.utils
 
-import com.tencent.bkrepo.analyst.pojo.ScanTask
-import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import java.util.concurrent.ConcurrentHashMap
 
-/**
- * 扫描任务调度器
- */
-interface ScanTaskScheduler {
-    /**
-     * 开始调度扫描任务
-     */
-    fun schedule(scanTask: ScanTask)
+class FlushableBuffer<T>(
+    private val bufferSize: Int,
+    private val flushAction: ((buffer: Collection<T>) -> Unit)
+) {
+    @Volatile
+    private var buffer = ConcurrentHashMap.newKeySet<T>(bufferSize)
 
-    /**
-     * 调度子任务
-     *
-     * @return 调度是否成功
-     */
-    fun schedule(subScanTask: SubScanTask): Boolean
+    fun add(element: T) {
+        if (buffer.size >= bufferSize) {
+            flush(false)
+        }
+        // 为buffer添加元素时不加锁，允许buffer大小少量超过bufferSize
+        buffer.add(element)
+    }
 
-    /**
-     * 唤醒项目[projectId]处于BLOCKED状态的扫描的子任务
-     *
-     * @return 唤醒的任务数量
-     */
-    fun notify(projectId: String): Int
-
-    /**
-     * 恢复执行扫描任务
-     */
-    fun resume(scanTask: ScanTask)
-
-    /**
-     * 暂停扫描任务
-     */
-    fun pause(scanTask: ScanTask)
-
-    /**
-     * 停止扫描任务
-     */
-    fun stop(scanTask: ScanTask)
+    @Synchronized
+    fun flush(force: Boolean = true) {
+        if ((force || buffer.size >= bufferSize) && buffer.isNotEmpty()) {
+            val current = buffer
+            buffer = ConcurrentHashMap.newKeySet()
+            flushAction(current)
+        }
+    }
 }
