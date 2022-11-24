@@ -59,7 +59,9 @@ class OciServiceController(
             projectId, repoName, packageName, "", tag, false
         )
         val nodeInfo = nodeClient.getNodeDetail(projectId, repoName, ociArtifactInfo.getArtifactFullPath()).data
-            ?: throw NodeNotFoundException("${ociArtifactInfo.getArtifactFullPath()} not found in repo in $projectId|$repoName")
+            ?: throw NodeNotFoundException(
+                "${ociArtifactInfo.getArtifactFullPath()} not found in repo in $projectId|$repoName"
+            )
         val ociDigest = OciDigest.fromSha256(sha256)
         val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
