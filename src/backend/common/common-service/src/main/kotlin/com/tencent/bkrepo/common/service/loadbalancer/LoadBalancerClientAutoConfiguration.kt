@@ -53,7 +53,7 @@ class LoadBalancerClientAutoConfiguration {
     ) : BlockingLoadBalancerClient(loadBalancerClientFactory, properties) {
         override fun reconstructURI(serviceInstance: ServiceInstance, original: URI): URI {
             return LoadBalancerUriTools.reconstructURI(
-                serviceInstance, original)
+                Ipv6CapableDelegatingServiceInstance(serviceInstance), original)
         }
     }
 
