@@ -29,6 +29,8 @@ package com.tencent.bkrepo.oci.util
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.oci.constant.DIGEST_LIST
@@ -74,13 +76,15 @@ object ObjectBuildUtils {
         mediaType: String,
         version: String?,
         yamlData: Map<String, Any>? = null,
-        digestList: List<String>? = null
+        digestList: List<String>? = null,
+        sourceType: ArtifactChannel? = null
     ): MutableMap<String, Any> {
         return mutableMapOf<String, Any>(
             MEDIA_TYPE to mediaType
         ).apply {
             version?.let { this.put(IMAGE_VERSION, version) }
             digestList?.let { this.put(DIGEST_LIST, digestList) }
+            sourceType?.let { this.put(SOURCE_TYPE, sourceType) }
             yamlData?.let {
                 this.putAll(yamlData)
             }

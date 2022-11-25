@@ -570,7 +570,8 @@ class OciOperationServiceImpl(
             version = ociArtifactInfo.reference,
             fullPath = nodeDetail.fullPath,
             mediaType = mediaType!!,
-            digestList = digestList
+            digestList = digestList,
+            sourceType = sourceType
         )
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
@@ -604,14 +605,16 @@ class OciOperationServiceImpl(
         fullPath: String,
         mediaType: String,
         chartYaml: Map<String, Any>? = null,
-        digestList: List<String>? = null
+        digestList: List<String>? = null,
+        sourceType: ArtifactChannel? = null
     ) {
         // 将基础信息存储到metadata中
         val metadata = ObjectBuildUtils.buildMetadata(
             mediaType = mediaType,
             version = version,
             yamlData = chartYaml,
-            digestList = digestList
+            digestList = digestList,
+            sourceType = sourceType
         )
         saveMetaData(
             projectId = projectId,
