@@ -41,9 +41,9 @@ fun <T> parseResAndThrowExceptionOnRequestFailed(res: Response, block: (res: Res
         return block.invoke(res)
     }
     throw HttpRequestException(
-        "http request url: ${res.request().url()}," +
-            " response code: ${res.code()}," +
-            " error message: ${res.message()}"
+        "http request url: ${res.request.url}," +
+            " response code: ${res.code}," +
+            " error message: ${res.message}"
     )
 }
 

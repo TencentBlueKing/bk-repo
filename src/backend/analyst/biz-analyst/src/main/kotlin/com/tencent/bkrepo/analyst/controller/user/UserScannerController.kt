@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.pojo.response.ScannerBase
 import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -59,6 +60,7 @@ class UserScannerController @Autowired constructor(
     @ApiOperation("创建扫描器接口")
     @PostMapping
     @Principal(PrincipalType.ADMIN)
+    @LogOperate(type = "SCANNER_CREATE", desensitize = true)
     fun create(
         @RequestBody scanner: Scanner
     ): Response<Scanner> {
@@ -68,6 +70,7 @@ class UserScannerController @Autowired constructor(
     @ApiOperation("获取扫描器列表")
     @GetMapping
     @Principal(PrincipalType.ADMIN)
+    @LogOperate(type = "SCANNER_LIST")
     fun list(): Response<List<Scanner>> {
         return ResponseBuilder.success(scannerService.list())
     }
@@ -78,14 +81,12 @@ class UserScannerController @Autowired constructor(
         @RequestParam(required = false) packageType: String? = null,
         @RequestParam(required = false) scanType: String? = null
     ): Response<List<ScannerBase>> {
-        val scannerBaseList = if (packageType != null && scanType != null) {
-            scannerService.find(packageType, scanType)
-        } else {
-            scannerService.list()
-        }
-        return ResponseBuilder.success(
-            scannerBaseList.map { ScannerBase(it.name, it.type, it.description, it.supportFileNameExt) }
-        )
+        val scannerBaseList = scannerService.find(packageType, scanType)
+        return ResponseBuilder.success(scannerBaseList.map {
+            ScannerBase(
+                it.name, it.type, it.description, it.supportFileNameExt, it.supportPackageTypes, it.supportScanTypes
+            )
+        })
     }
 
     @ApiOperation("获取支持扫描的文件名后缀")
@@ -94,9 +95,16 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success(scannerService.supportFileNameExt())
     }
 
+    @ApiOperation("获取支持扫描的包类型")
+    @GetMapping("/support/package")
+    fun supportPackageType(): Response<Set<String>> {
+        return ResponseBuilder.success(scannerService.supportPackageType())
+    }
+
     @ApiOperation("获取扫描器")
     @GetMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
+    @LogOperate(type = "SCANNER_GET")
     fun get(@PathVariable("name") name: String): Response<Scanner> {
         return ResponseBuilder.success(scannerService.get(name))
     }
@@ -104,6 +112,7 @@ class UserScannerController @Autowired constructor(
     @ApiOperation("删除扫描器")
     @DeleteMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
+    @LogOperate(type = "SCANNER_DELETE")
     fun delete(@PathVariable("name") name: String): Response<Void> {
         scannerService.delete(name)
         return ResponseBuilder.success()
@@ -112,6 +121,7 @@ class UserScannerController @Autowired constructor(
     @ApiOperation("更新扫描器")
     @PutMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
+    @LogOperate(type = "SCANNER_UPDATE", desensitize = true)
     fun update(
         @PathVariable("name") name: String,
         @RequestBody scanner: Scanner

@@ -185,6 +185,10 @@ class ClusterReplicator(
                         val rateLimitInputStream = artifactInputStream.rateLimit(
                             replicationProperties.rateLimit.toBytes()
                         )
+                        logger.info(
+                            "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
+                                "will be pushed to the remote server!"
+                        )
                         // 1. 同步文件数据
                         pushBlob(
                             inputStream = rateLimitInputStream,
@@ -193,6 +197,9 @@ class ClusterReplicator(
                             storageKey = remoteRepo?.storageCredentials?.key
                         )
                     }
+                    logger.info(
+                        "The node [${node.fullPath}] will be pushed to the remote server!"
+                    )
                     // 2. 同步节点信息
                     artifactReplicaClient!!.replicaNodeCreateRequest(it)
                     true

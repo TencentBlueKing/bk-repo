@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.dao.ReplicaObjectDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
+import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
@@ -80,7 +81,8 @@ class ReplicaTaskServiceImpl(
     private val replicaObjectDao: ReplicaObjectDao,
     private val replicaRecordService: ReplicaRecordService,
     private val clusterNodeService: ClusterNodeService,
-    private val replicaTaskScheduler: ReplicaTaskScheduler
+    private val replicaTaskScheduler: ReplicaTaskScheduler,
+    private val localDataManager: LocalDataManager
 ) : ReplicaTaskService {
     override fun getByTaskId(taskId: String): ReplicaTaskInfo? {
         return replicaTaskDao.findById(taskId)?.let { convert(it) }
@@ -162,6 +164,12 @@ class ReplicaTaskServiceImpl(
                     ReplicaType.SCHEDULED -> ReplicaStatus.WAITING
                     else -> ReplicaStatus.REPLICATING
                 },
+                totalBytes = computeSize(
+                    localProjectId = localProjectId,
+                    replicaType = replicaType,
+                    replicaObjectType = replicaObjectType,
+                    replicaTaskObjects = replicaTaskObjects
+                ),
                 description = description,
                 lastExecutionStatus = when (replicaType) {
                     ReplicaType.REAL_TIME -> ExecutionStatus.RUNNING
@@ -197,6 +205,43 @@ class ReplicaTaskServiceImpl(
                 logger.warn("Insert task[$name] error: [${exception.message}]")
                 getByTaskKey(key)
             }
+        }
+    }
+
+    private fun computeSize(
+        localProjectId: String,
+        replicaType: ReplicaType,
+        replicaObjectType: ReplicaObjectType,
+        replicaTaskObjects: List<ReplicaObjectInfo>
+    ): Long {
+        if (replicaType != ReplicaType.RUN_ONCE) {
+            return -1
+        }
+        return when (replicaObjectType) {
+            ReplicaObjectType.PACKAGE -> computePackageSize(localProjectId, replicaTaskObjects)
+            ReplicaObjectType.PATH -> computeNodeSize(localProjectId, replicaTaskObjects)
+            else -> -1
+        }
+    }
+
+    private fun computePackageSize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
+        val taskObject = replicaTaskObjects.first()
+        return taskObject.packageConstraints!!.sumOf {
+            it.versions!!.sumOf { version ->
+                localDataManager.findPackageVersion(
+                    localProjectId,
+                    taskObject.localRepoName,
+                    it.packageKey!!,
+                    version
+                ).size
+            }
+        }
+    }
+
+    private fun computeNodeSize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
+        val taskObject = replicaTaskObjects.first()
+        return taskObject.pathConstraints!!.sumOf {
+            localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!).size
         }
     }
 
@@ -368,6 +413,13 @@ class ReplicaTaskServiceImpl(
                     ReplicaType.SCHEDULED -> ReplicaStatus.WAITING
                     else -> ReplicaStatus.REPLICATING
                 },
+                replicatedBytes = 0,
+                totalBytes = computeSize(
+                    localProjectId = tReplicaTask.projectId,
+                    replicaType = tReplicaTask.replicaType,
+                    replicaObjectType = replicaObjectType,
+                    replicaTaskObjects = replicaTaskObjects
+                ),
                 description = description,
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now()
@@ -453,6 +505,8 @@ class ReplicaTaskServiceImpl(
                     remoteClusters = it.remoteClusters,
                     description = it.description,
                     status = it.status,
+                    replicatedBytes = it.replicatedBytes,
+                    totalBytes = it.totalBytes,
                     lastExecutionStatus = it.lastExecutionStatus,
                     lastExecutionTime = it.lastExecutionTime,
                     nextExecutionTime = it.nextExecutionTime,

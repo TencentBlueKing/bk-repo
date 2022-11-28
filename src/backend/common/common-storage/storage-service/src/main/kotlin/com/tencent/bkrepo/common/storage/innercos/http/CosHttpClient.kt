@@ -68,7 +68,7 @@ object CosHttpClient {
             try {
                 if (it.isSuccessful) {
                     return handler.handle(it)
-                } else if (it.code() == HTTP_NOT_FOUND) {
+                } else if (it.code == HTTP_NOT_FOUND) {
                     val handle404Result = handler.handle404()
                     if (handle404Result != null) {
                         return handle404Result
@@ -83,20 +83,20 @@ object CosHttpClient {
     }
 
     private fun buildMessage(request: Request, response: Response? = null): String {
-        val requestTitle = "${request.method()} ${request.url()} ${response?.protocol()}"
+        val requestTitle = "${request.method} ${request.url} ${response?.protocol}"
 
         val builder = StringBuilder()
             .append("\n>>>> ")
-            .appendln(requestTitle)
-            .appendln(request.headers())
+            .appendLine(requestTitle)
+            .appendLine(request.headers)
 
         if (response != null) {
             builder.append("<<<< ")
                 .append(requestTitle)
-                .append(response.code())
-                .appendln("[${response.message()}]")
-                .appendln(response.headers())
-                .appendln(response.body()?.bytes()?.toString(Charset.forName("GB2312")))
+                .append(response.code)
+                .appendLine("[${response.message}]")
+                .appendLine(response.headers)
+                .appendLine(response.body?.bytes()?.toString(Charset.forName("GB2312")))
         }
         val message = builder.toString()
         logger.warn(message)

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.pojo.remote
 
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import okhttp3.Headers
 import okhttp3.RequestBody
 import org.springframework.web.bind.annotation.RequestMethod
@@ -50,5 +51,7 @@ data class RequestProperty(
     // 用户名
     var userName: String? = null,
     // 申请授权的范围
-    var scope: String? = null
+    var scope: String? = null,
+    // 请求标签
+    var requestTag: RequestTag? = null
 )

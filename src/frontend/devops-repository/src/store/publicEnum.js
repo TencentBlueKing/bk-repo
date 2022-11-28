@@ -80,57 +80,31 @@ export const asyncPlanStatusEnum = {
 
 // 扫描方案类型
 export const scanTypeEnum = {
-    GENERIC: 'Generic仓库漏洞扫描',
-    DOCKER: 'Docker仓库漏洞扫描',
-    MAVEN: 'Maven仓库漏洞扫描',
-    // NPM: 'Npm仓库漏洞扫描',
-    // PYPI: 'Pypi仓库漏洞扫描',
-    GENERIC_LICENSE: 'Generic仓库许可证扫描',
-    MAVEN_LICENSE: 'Maven仓库许可证扫描'
+    GENERIC: 'Generic制品分析',
+    DOCKER: 'Docker制品分析',
+    MAVEN: 'Maven制品分析'
+    // NPM: 'Npm制品分析',
+    // PYPI: 'Pypi制品分析'
 }
 
-/**
- * 安全漏洞扫描
- * @type {string}
- */
 export const SCAN_TYPE_SECURITY = 'SECURITY'
-
-/**
- * License扫描
- * @type {string}
- */
 export const SCAN_TYPE_LICENSE = 'LICENSE'
-
-export const scannerTypeEnum = {
-    // 科恩
-    arrowhead: {
-        GENERIC: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
-        MAVEN: '',
-        DOCKER: '',
-        GENERIC_LICENSE: '支持apk、ipa、aab、jar格式的文件',
-        MAVEN_LICENSE: ''
+export const SCAN_TYPE_SENSITIVE = 'SENSITIVE'
+// 扫描类型
+export const scanTypes = {
+    [SCAN_TYPE_SECURITY]: {
+        key: SCAN_TYPE_SECURITY,
+        name: '漏洞扫描'
     },
-    // DependencyCheck
-    DependencyCheck: {
-        GENERIC: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
-        MAVEN: '',
-        NPM: '',
-        PYPI: ''
+    [SCAN_TYPE_LICENSE]: {
+        key: SCAN_TYPE_LICENSE,
+        name: '许可证扫描'
     },
-    scancodeToolkit: {
-        GENERIC_LICENSE: '支持zip、tar、tgz、jar、war、exe、apk等多种常用文件格式',
-        MAVEN_LICENSE: ''
-    },
-    trivy: {
-        DOCKER: ''
+    [SCAN_TYPE_SENSITIVE]: {
+        key: SCAN_TYPE_SENSITIVE,
+        name: '敏感信息扫描'
     }
 }
-
-export const genericScanFileTypes = [
-    'zip', 'tar', 'tgz', 'jar', 'war', 'exe',
-    'apk', 'ear', 'sar', 'nupkg', 'gz', 'bz2',
-    'tbz2', 'rpm', 'ipa', 'aab'
-]
 
 // 扫描方案执行状态
 export const scanStatusEnum = {

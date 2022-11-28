@@ -227,6 +227,8 @@ class RemoteNodeServiceImpl(
         val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
         val record = replicaRecordService.findLatestRecord(taskInfo.key)
         record?.let {
+            record.replicatedBytes = taskInfo.replicatedBytes
+            record.totalBytes = taskInfo.totalBytes
             if (record.endTime == null) return record.copy(status = ExecutionStatus.RUNNING)
             val taskCreateTime = LocalDateTime.parse(taskInfo.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             if (record.endTime!!.isBefore(taskCreateTime)) return record.copy(status = ExecutionStatus.RUNNING)
@@ -339,13 +341,15 @@ class RemoteNodeServiceImpl(
                 }
             }
             logger.info(
-                convertToReplicationTaskMetricsRecord(
-                    projectId = projectId,
-                    repoName = repoName,
-                    repoType = repositoryDetail.type.name,
-                    request = request,
-                    replicaTaskInfo = task!!
-                ).toJson()
+                toJson(
+                    convertToReplicationTaskMetricsRecord(
+                        projectId = projectId,
+                        repoName = repoName,
+                        repoType = repositoryDetail.type.name,
+                        request = request,
+                        replicaTaskInfo = task!!
+                    )
+                )
             )
             return task!!
         }

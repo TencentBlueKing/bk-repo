@@ -32,14 +32,14 @@
         "value": "/",
         "operation": "PREFIX"
       }
-    ],
-    "metadata": [
-      {
-        "key": "buildNumber",
-        "value": "32"
-      }
     ]
-  }
+  },
+  "metadata": [
+    {
+      "key": "buildNumber",
+      "value": "32"
+    }
+  ]
 }
 ```
 

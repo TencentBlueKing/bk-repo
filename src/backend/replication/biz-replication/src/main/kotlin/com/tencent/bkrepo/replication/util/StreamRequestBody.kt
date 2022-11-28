@@ -29,9 +29,10 @@ package com.tencent.bkrepo.replication.util
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okio.BufferedSink
-import okio.Okio
+import okio.source
 import java.io.InputStream
 
 /**
@@ -51,12 +52,12 @@ class StreamRequestBody(
     }
 
     override fun writeTo(sink: BufferedSink) {
-        Okio.source(inputStream).use {
+        inputStream.source().use {
             sink.writeAll(it)
         }
     }
 
     companion object {
-        private val MEDIA_TYPE_STREAM = MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM)
+        private val MEDIA_TYPE_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull()
     }
 }

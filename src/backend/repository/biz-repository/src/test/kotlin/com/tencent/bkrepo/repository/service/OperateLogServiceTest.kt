@@ -105,7 +105,7 @@ class OperateLogServiceTest @Autowired constructor(
             sequences.add(sequence)
             val log = TOperateLog(
                 createdDate = createdDate,
-                type = EventType.values()[abs(Random().nextInt() % EventType.values().size)],
+                type = EventType.values()[abs(Random().nextInt() % EventType.values().size)].name,
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
                 resourceKey = RandomStringUtils.randomAlphabetic(5),

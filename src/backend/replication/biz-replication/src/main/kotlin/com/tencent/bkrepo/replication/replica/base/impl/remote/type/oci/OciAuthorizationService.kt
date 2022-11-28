@@ -60,7 +60,7 @@ class OciAuthorizationService : AuthorizationService {
         val authProperty = property.copy(authorizationCode = null)
         val httpRequest = HttpUtils.wrapperRequest(authProperty)
         httpClient.newCall(httpRequest).execute().use {
-            return if (it.code() == HttpStatus.UNAUTHORIZED.value) {
+            return if (it.code == HttpStatus.UNAUTHORIZED.value) {
                 getAuthenticationCode(
                     response = it,
                     authorizationCode = authorizationCode,
@@ -69,10 +69,10 @@ class OciAuthorizationService : AuthorizationService {
                     httpClient = httpClient
                 )
                 // 当无需鉴权时返回""
-            } else if (it.code() == HttpStatus.OK.value) {
+            } else if (it.code == HttpStatus.OK.value) {
                 StringPool.EMPTY
             } else throw ArtifactPushException(
-                "Can not get authorization detail ${it.code()}, please check your distribution host"
+                "Can not get authorization detail ${it.code}, please check your distribution host"
             )
         }
     }
@@ -105,14 +105,14 @@ class OciAuthorizationService : AuthorizationService {
         val httpRequest = HttpUtils.wrapperRequest(property)
         httpClient.newCall(httpRequest).execute().use {
             if (!it.isSuccessful) {
-                val error = JsonUtils.objectMapper.readValue(it.body()!!.byteStream(), OciResponse::class.java)
+                val error = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), OciResponse::class.java)
                 throw ArtifactPushException(
                     "Could not get token from auth service," +
-                        " code is ${it.code()} and response is ${error.toJsonString()}"
+                        " code is ${it.code} and response is ${error.toJsonString()}"
                 )
             }
             try {
-                val bearerToken = JsonUtils.objectMapper.readValue(it.body()!!.byteStream(), BearerToken::class.java)
+                val bearerToken = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), BearerToken::class.java)
                 return "Bearer ${bearerToken.token}"
             } catch (e: Exception) {
                 throw ArtifactPushException(

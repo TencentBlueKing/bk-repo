@@ -53,6 +53,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
@@ -256,7 +257,7 @@ class DeltaSyncService(
             token = bkBaseProperties.token,
             sql = sql
         )
-        val requestBody = RequestBody.create(okhttp3.MediaType.parse(MediaTypes.APPLICATION_JSON), query.toJsonString())
+        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), query.toJsonString())
         val request = Request.Builder().url(url).post(requestBody).build()
         return queryHistorySpeed(request, sql, metrics)
     }
@@ -272,7 +273,7 @@ class DeltaSyncService(
         }
         try {
             httpClient.newCall(request).execute().use { response ->
-                val queryResponse = response.body()!!.string().readJsonString<QueryResponse>()
+                val queryResponse = response.body!!.string().readJsonString<QueryResponse>()
                 if (!response.isSuccessful) {
                     logger.warn("sql[$sql] query failed: ${queryResponse.code}")
                     return queryHistorySpeed(request, sql, metrics, retryTime - 1)

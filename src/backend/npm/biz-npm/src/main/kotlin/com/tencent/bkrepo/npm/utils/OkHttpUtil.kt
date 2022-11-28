@@ -78,7 +78,7 @@ class OkHttpUtil {
      */
     private fun checkResponse(response: Response): Boolean {
         if (!response.isSuccessful) {
-            logger.warn("Download file from remote failed: [${response.code()}]")
+            logger.warn("Download file from remote failed: [${response.code}]")
             return false
         }
         return true

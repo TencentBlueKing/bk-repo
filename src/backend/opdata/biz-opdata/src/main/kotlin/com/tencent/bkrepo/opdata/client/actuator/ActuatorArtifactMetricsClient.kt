@@ -80,13 +80,13 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
             val req = buildRequest(instanceInfo, metricsName)
             httpClient.newCall(req).execute().use { res ->
                 if (res.isSuccessful) {
-                    val metrics = res.body()!!.string().readJsonString<Metrics>()
+                    val metrics = res.body!!.string().readJsonString<Metrics>()
                     require(metrics.measurements.size == 1)
                     return metrics.measurements[0].value.toLong()
                 }
 
-                val resCode = res.code()
-                val logMsg = "request metrics actuator $metricsName failed, code: $resCode, message: ${res.message()}"
+                val resCode = res.code
+                val logMsg = "request metrics actuator $metricsName failed, code: $resCode, message: ${res.message}"
                 if (resCode == NOT_FOUND.value || resCode == UNAUTHORIZED.value || resCode == FORBIDDEN.value) {
                     logger.warn(logMsg)
                 } else {

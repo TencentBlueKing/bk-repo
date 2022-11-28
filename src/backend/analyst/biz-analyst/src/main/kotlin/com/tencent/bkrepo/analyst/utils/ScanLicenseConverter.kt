@@ -59,7 +59,7 @@ object ScanLicenseConverter {
             return ScanLicensePlanInfo(
                 id = id!!,
                 name = name,
-                planType = ScanPlanConverter.compatiblePlanType(type, scanTypes),
+                planType = type,
                 projectId = projectId,
                 status = "",
                 artifactCount = subScanTasks.size.toLong(),
@@ -96,7 +96,7 @@ object ScanLicenseConverter {
             return ScanLicensePlanInfo(
                 id = id!!,
                 name = name,
-                planType = ScanPlanConverter.compatiblePlanType(type, scanTypes),
+                planType = type,
                 projectId = projectId,
                 status = status,
                 artifactCount = artifactCount,

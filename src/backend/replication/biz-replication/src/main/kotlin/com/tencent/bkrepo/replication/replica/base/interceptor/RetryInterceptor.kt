@@ -53,22 +53,22 @@ class RetryInterceptor(
             try {
                 response = chain.proceed(request)
                 // 针对429返回需要做延时重试
-                responseOK = if (response.code() == 429) {
+                responseOK = if (response.code == 429) {
                     Thread.sleep(500)
                     false
                 } else {
-                    response.code() in 200..499
+                    response.code in 200..499
                 }
             } catch (e: Exception) {
                 logger.warn(
-                    "The result of request ${request.url()} is failure and error is ${e.message}"
+                    "The result of request ${request.url} is failure and error is ${e.message}"
                 )
                 // 如果第2次重试还是失败，抛出失败异常
                 if (tryCount == 2) throw e
             } finally {
                 if (!responseOK && tryCount < 2) {
                     logger.warn(
-                        "The result of request ${request.url()} is failure and code is ${response?.code()}" +
+                        "The result of request ${request.url} is failure and code is ${response?.code}" +
                             ", will retry it - $tryCount"
                     )
                     response?.close()
@@ -89,7 +89,7 @@ class RetryInterceptor(
         if (sha256.isNullOrEmpty()) return request
         if (size == null) return request
         val retryBody = StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
-        return request.newBuilder().method(request.method(), retryBody).build()
+        return request.newBuilder().method(request.method, retryBody).build()
     }
 
     /**

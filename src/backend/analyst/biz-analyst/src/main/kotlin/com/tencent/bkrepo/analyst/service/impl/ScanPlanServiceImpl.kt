@@ -27,19 +27,6 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
-import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
@@ -63,6 +50,18 @@ import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
 import com.tencent.bkrepo.analyst.utils.ScanParamUtil
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.repository.api.PackageClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -89,6 +88,10 @@ class ScanPlanServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "invalid scan plan type[$type]")
             }
 
+            if (scanTypes.isNullOrEmpty()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "scanTypes must not be empty")
+            }
+
             if (scanPlanDao.existsByProjectIdAndName(projectId!!, name!!)) {
                 logger.error("scan plan [$name] is exist.")
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name.toString())
@@ -103,7 +106,7 @@ class ScanPlanServiceImpl(
                 projectId = projectId!!,
                 name = name!!,
                 type = type!!,
-                scanTypes = scanTypes ?: listOf(ScanType.SECURITY.name),
+                scanTypes = scanTypes!!,
                 description = description ?: "",
                 scanner = scanner!!,
                 scanOnNewArtifact = scanOnNewArtifact ?: false,
@@ -168,16 +171,28 @@ class ScanPlanServiceImpl(
     override fun getOrCreateDefaultPlan(
         projectId: String,
         type: String,
-        scanner: String?
+        scannerName: String?
     ): ScanPlan {
-        val name = defaultScanPlanName(type, scanner)
+        val name = defaultScanPlanName(type, scannerName)
 
-        val defaultScanPlan = findByName(projectId, type, name)
+        var defaultScanPlan = scanPlanDao.find(projectId, type, name)
         if (defaultScanPlan != null) {
-            return defaultScanPlan
+            // 更新支持扫描的类型与扫描器一致
+            val scanner = scannerDao.findByName(defaultScanPlan.scanner)
+            require(scanner != null)
+            if (!defaultScanPlan.scanTypes.containsAll(scanner.supportScanTypes) ||
+                !scanner.supportPackageTypes.containsAll(defaultScanPlan.scanTypes)) {
+                defaultScanPlan = defaultScanPlan.copy(
+                    scanTypes = scanner.supportScanTypes,
+                    lastModifiedDate = LocalDateTime.now(),
+                    lastModifiedBy = SecurityUtils.getUserId()
+                )
+                scanPlanDao.save(defaultScanPlan)
+            }
+            return ScanPlanConverter.convert(defaultScanPlan)
         }
 
-        return createDefaultScanPlan(projectId, type, scanner)
+        return createDefaultScanPlan(projectId, type, scannerName)
     }
 
     override fun delete(projectId: String, id: String) {
@@ -299,17 +314,18 @@ class ScanPlanServiceImpl(
         }
     }
 
-    private fun createDefaultScanPlan(projectId: String, type: String, scanner: String?): ScanPlan {
+    private fun createDefaultScanPlan(projectId: String, type: String, scannerName: String?): ScanPlan {
         // 项目成员即可创建默认扫描方案
         permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.READ)
-        val name = defaultScanPlanName(type, scanner)
+        val name = defaultScanPlanName(type, scannerName)
+        val scanner = scannerName?.let { scannerService.get(it) } ?: scannerService.default()
         return try {
             val scanPlan = ScanPlan(
                 projectId = projectId,
                 name = name,
                 type = type,
-                scanTypes = listOf(ScanType.SECURITY.name),
-                scanner = scanner ?: scannerService.default().name,
+                scanTypes = scanner.supportScanTypes,
+                scanner = scanner.name,
                 rule = RuleConverter.convert(projectId, emptyList(), type)
             )
             scanPlan.readOnly = true

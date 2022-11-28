@@ -28,11 +28,14 @@
 package com.tencent.bkrepo.opdata.pojo.config
 
 import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.opdata.handler.MaskConfigItem
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 
 /**
  * 配置项
  */
+@Sensitive(handler = MaskConfigItem::class)
 data class ConfigItem(
     val key: String,
     val value: Any?

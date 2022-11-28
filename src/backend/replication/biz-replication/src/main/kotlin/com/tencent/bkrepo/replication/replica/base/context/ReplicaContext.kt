@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.replication.replica.base.context
 
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -52,11 +53,12 @@ import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import java.io.InputStream
-import java.time.Duration
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.slf4j.LoggerFactory
+import java.io.InputStream
+import java.time.Duration
 
 class ReplicaContext(
     taskDetail: ReplicaTaskDetail,
@@ -148,12 +150,15 @@ class ReplicaContext(
             .addFormDataPart(SHA256, sha256).apply {
                 storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
             }.build()
+        logger.info("The request will be sent for file sha256 [$sha256].")
+        val tag = RequestTag(task, sha256, size)
         val httpRequest = Request.Builder()
             .url(pushBlobUrl)
             .post(requestBody)
+            .tag(RequestTag::class.java, tag)
             .build()
         httpClient.newCall(httpRequest).execute().use {
-            check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
+            check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
         }
     }
 
@@ -170,6 +175,7 @@ class ReplicaContext(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
         private const val READ_TIMEOUT = 60 * 60 * 1000L
     }
 }

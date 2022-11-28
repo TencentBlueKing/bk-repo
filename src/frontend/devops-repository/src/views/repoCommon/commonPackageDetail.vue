@@ -77,7 +77,6 @@
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
-    import { scanTypeEnum } from '@repository/store/publicEnum'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
@@ -123,7 +122,7 @@
             }
         },
         computed: {
-            ...mapState(['permission']),
+            ...mapState(['permission', 'scannerSupportPackageType']),
             projectId () {
                 return this.$route.params.projectId || ''
             },
@@ -143,12 +142,15 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && Object.keys(scanTypeEnum).join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {
             this.getPackageInfoHandler()
             this.handlerPaginationChange()
+            if (RELEASE_MODE !== 'community') {
+                this.refreshSupportPackageTypeList()
+            }
         },
         methods: {
             ...mapActions([
@@ -156,7 +158,8 @@
                 'getVersionList',
                 'changeStageTag',
                 'deleteVersion',
-                'forbidPackageMetadata'
+                'forbidPackageMetadata',
+                'refreshSupportPackageTypeList'
             ]),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, load) {
                 this.pagination.current = current

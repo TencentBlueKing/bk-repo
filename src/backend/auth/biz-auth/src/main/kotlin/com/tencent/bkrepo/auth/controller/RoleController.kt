@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestAttribute
 import java.lang.Exception
 
 @RestController
@@ -138,5 +139,12 @@ class RoleController @Autowired constructor(
         @RequestBody updateRoleRequest: UpdateRoleRequest
     ): Response<Boolean> {
         return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
+    }
+
+    @GetMapping("/sys/list")
+    fun allRole(
+        @RequestAttribute userId: String
+    ): Response<List<Role>> {
+        return ResponseBuilder.success(emptyList())
     }
 }

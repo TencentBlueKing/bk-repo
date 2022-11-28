@@ -37,7 +37,7 @@ import com.tencent.bkrepo.auth.pojo.iam.IamCreateApiReq
 import com.tencent.bkrepo.auth.pojo.iam.IamPermissionUrlReq
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
@@ -63,7 +63,7 @@ class IamEsbClient {
         logger.debug("createRelationResource, url[$url]")
         val content = objectMapper.writeValueAsString(setCredentials(iamCreateApiReq, appCode, appSecret))
         logger.debug("v3 createRelationResource body[$content]")
-        val requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), content)
+        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), content)
         val request = Request.Builder().url(url).post(requestBody).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 1)
         val iamApiRes = objectMapper.readValue<Map<String, Any>>(apiResponse.content)
@@ -78,7 +78,7 @@ class IamEsbClient {
         logger.info("getPermissionUrl, url:$url")
         val content = objectMapper.writeValueAsString(setCredentials(iamPermissionUrl, appCode, appSecret))
         logger.info("getPermissionUrl, content:$content")
-        val requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), content)
+        val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), content)
         val request = Request.Builder().url(url).post(requestBody).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 1)
         val iamApiRes = objectMapper.readValue<Map<String, Any>>(apiResponse.content)

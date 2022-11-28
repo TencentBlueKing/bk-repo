@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.configuration
 
+import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory.Companion.DISTRIBUTED_COUNT_REDIS
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("scanner")
@@ -46,7 +47,11 @@ data class ScannerProperties(
     /**
      * 前端baseUrl
      */
-    var frontEndBaseUrl: String = "http://localhost/ui"
+    var frontEndBaseUrl: String = "http://localhost/ui",
+    /**
+     * 用于监控数据统计的分布式计数器使用的存储类型
+     */
+    var distributedCountType: String = DISTRIBUTED_COUNT_REDIS
 ) {
     companion object {
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0

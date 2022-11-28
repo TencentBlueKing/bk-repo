@@ -52,6 +52,16 @@ class OperateLogController(
         return ResponseBuilder.success()
     }
 
+    override fun save(log: OperateLog): Response<Void> {
+        operateLogService.save(log)
+        return ResponseBuilder.success()
+    }
+
+    override fun batchSave(logs: List<OperateLog>): Response<Void> {
+        operateLogService.save(logs)
+        return ResponseBuilder.success()
+    }
+
     override fun list(option: OpLogListOption): Response<Page<OperateLog>> {
         return ResponseBuilder.success(operateLogService.listPage(option))
     }

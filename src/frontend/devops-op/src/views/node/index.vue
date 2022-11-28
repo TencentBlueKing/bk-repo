@@ -75,30 +75,6 @@
           type="primary"
           @click="changeRouteQueryParams(true)"
         >查询</el-button>
-        <el-button
-          size="mini"
-          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
-          type="primary"
-          @click="fileOperation('copy')"
-        >复制</el-button>
-        <el-button
-          size="mini"
-          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
-          type="primary"
-          @click="fileOperation('move')"
-        >移动</el-button>
-        <el-button
-          size="mini"
-          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
-          type="primary"
-          @click="fileOperation('rename')"
-        >重命名</el-button>
-        <el-button
-          size="mini"
-          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
-          type="primary"
-          @click="showShare()"
-        >分享</el-button>
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
@@ -123,15 +99,16 @@
       </el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
-          <el-button v-if="scope.row.folder" size="mini" type="primary" @click="showNodeDetail(scope.row)">
-            详情
-          </el-button>
-          <el-dropdown v-else size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
+          <el-dropdown size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
             详情
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
-              <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
-              <el-dropdown-item @click.native="showScanDialog(scope.row)">扫描</el-dropdown-item>
+              <el-dropdown-item v-if="!scope.row.folder" @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
+              <el-dropdown-item v-if="!scope.row.folder" @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
+              <el-dropdown-item v-if="!scope.row.folder" @click.native="showScanDialog(scope.row)">扫描</el-dropdown-item>
+              <el-dropdown-item @click.native="fileOperation('copy', scope.row)">复制</el-dropdown-item>
+              <el-dropdown-item @click.native="fileOperation('move', scope.row)">移动</el-dropdown-item>
+              <el-dropdown-item @click.native="fileOperation('rename', scope.row)">重命名</el-dropdown-item>
+              <el-dropdown-item @click.native="showShare(scope.row)">分享</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
           <el-button
@@ -169,8 +146,13 @@
     <file-restore-dialog :visible.sync="showNodeRestoreDialog" :node="nodeToRestore" @restore-success="onRestoreSuccess" />
     <file-delete-dialog :visible.sync="showNodeDeleteDialog" :node="nodeToDelete" @delete-success="onDeleteSuccess" />
     <file-scan-dialog :visible.sync="showFileScanDialog" :node="nodeToScan" />
-    <share-dialog :visible.sync="showShareDialog" :updating-keys="nodeQuery" />
-    <file-operation-dialog :visible.sync="showFileOperationDialog" :create-mode="createMode" :updating-keys="nodeQuery" @complete="queryNodes(nodeQuery)" />
+    <share-dialog :visible.sync="showShareDialog" :updating-keys="nodeToShare" />
+    <file-operation-dialog
+      :visible.sync="showFileOperationDialog"
+      :create-mode="createMode"
+      :updating-keys="nodeToOperate"
+      @complete="queryNodes(nodeQuery)"
+    />
   </div>
 </template>
 <script>
@@ -222,7 +204,9 @@ export default {
       nodeToScan: {},
       showShareDialog: false,
       showFileOperationDialog: false,
-      createMode: ''
+      createMode: '',
+      nodeToShare: {},
+      nodeToOperate: {}
     }
   },
   mounted() {
@@ -412,12 +396,14 @@ export default {
     onDeleteSuccess() {
       this.queryNodes(this.nodeQuery)
     },
-    showShare() {
+    showShare(node) {
       this.showShareDialog = true
+      this.nodeToShare = node
     },
-    fileOperation(key) {
+    fileOperation(key, node) {
       this.createMode = key
       this.showFileOperationDialog = true
+      this.nodeToOperate = node
     }
   }
 }

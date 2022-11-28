@@ -79,6 +79,14 @@ data class TReplicaTask(
      */
     var status: ReplicaStatus,
     /**
+     * 已同步字节
+     */
+    var replicatedBytes: Long? = 0,
+    /**
+     * 总字节
+     */
+    val totalBytes: Long? = 0,
+    /**
      * 任务描述
      */
     val description: String?,

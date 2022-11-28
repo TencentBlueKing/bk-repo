@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -76,7 +78,9 @@ data class KnowledgeBase(
     @ApiModelProperty("漏洞知识库地址，例如http://127.0.0.1:1234")
     val endpoint: String,
     @ApiModelProperty("漏洞知识库认证id")
+    @Sensitive(handler = MaskPartString::class)
     val secretId: String = "",
     @ApiModelProperty("漏洞知识库认证密钥")
+    @Sensitive(handler = MaskPartString::class)
     val secretKey: String = ""
 )

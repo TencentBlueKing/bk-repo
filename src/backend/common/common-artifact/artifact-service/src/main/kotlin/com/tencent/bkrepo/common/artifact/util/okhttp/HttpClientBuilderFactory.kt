@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableVa
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
-import okhttp3.internal.Util
+import okhttp3.internal.threadFactory
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.cloud.sleuth.instrument.async.TraceableExecutorService
 import java.util.concurrent.SynchronousQueue
@@ -88,7 +88,7 @@ object HttpClientBuilderFactory {
                             60L,
                             TimeUnit.SECONDS,
                             SynchronousQueue(),
-                            Util.threadFactory("OkHttp Dispatcher", false)
+                            threadFactory("OkHttp Dispatcher", false)
                         )
                     )
                     dispatcher(Dispatcher(traceableExecutorService))
