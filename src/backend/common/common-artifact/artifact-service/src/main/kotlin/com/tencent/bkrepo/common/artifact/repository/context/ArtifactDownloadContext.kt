@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.slf4j.LoggerFactory
 
 /**
  * 构件下载context
@@ -58,32 +57,11 @@ open class ArtifactDownloadContext(
 
     @Suppress("UNCHECKED_CAST")
     fun getInterceptors(): List<DownloadInterceptor<*, NodeDetail>> {
-        val interceptorList = mutableListOf<DownloadInterceptor<*, NodeDetail>>()
-        try {
-            val settings = repo.configuration.settings
-            val interceptors = settings[INTERCEPTORS] as? List<Map<String, Any>>
-            interceptors?.forEach {
-                val type: DownloadInterceptorType = DownloadInterceptorType.valueOf(it[TYPE].toString())
-                val rules: Map<String, Any> by it
-                val interceptor = DownloadInterceptorFactory.buildInterceptor(type, rules)
-                interceptor?.let { interceptorList.add(interceptor) }
-            }
-            interceptorList.add(DownloadInterceptorFactory.buildInterceptor(DownloadInterceptorType.NODE_FORBID)!!)
-            logger.debug("get repo[${repo.projectId}/${repo.name}] download interceptor: $interceptorList")
-        } catch (e: Exception) {
-            logger.warn("fail to get repo[${repo.projectId}/${repo.name}] download interceptor: $e")
-        }
-        return interceptorList
+        return DownloadInterceptorFactory.buildInterceptors(repo.configuration.settings)
     }
 
     fun getPackageInterceptors(): List<DownloadInterceptor<*, PackageVersion>> {
         return listOf(DownloadInterceptorFactory.buildPackageInterceptor(DownloadInterceptorType.PACKAGE_FORBID)!!)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactDownloadContext::class.java)
-        private const val INTERCEPTORS = "interceptors"
-        private const val TYPE = "type"
     }
 
 }
