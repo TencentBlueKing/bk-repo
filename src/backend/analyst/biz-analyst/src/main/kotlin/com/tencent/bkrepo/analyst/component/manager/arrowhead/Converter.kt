@@ -80,7 +80,8 @@ object Converter {
         LicenseResult(
             licenseName = licenseName,
             path = path,
-            pkgName
+            pkgName = pkgName,
+            versionsPaths = versionsPaths
         )
     }
 
@@ -150,6 +151,7 @@ object Converter {
         TSecurityResultData(
             path = path ?: "",
             pkgName = pkgName ?: "",
+            versionsPaths = versionsPaths,
             pkgVersions = pkgVersions,
             vulId = vulId,
             cveId = cveId ?: "",
@@ -191,6 +193,7 @@ object Converter {
             vulName = cve?.name,
             cveId = cve?.cveId,
             path = securityResult.data.path,
+            versionsPaths = securityResult.data.versionsPaths,
             pkgName = securityResult.data.pkgName,
             pkgVersions = securityResult.data.pkgVersions.toMutableSet(),
             fixedVersion = cve?.versionFixed,
@@ -198,7 +201,7 @@ object Converter {
             solution = cve?.officialSolution,
             references = cve?.references ?: emptyList(),
             cvss = cve?.cvss,
-            severity = cve?.cvssRank ?: ""
+            severity = securityResult.data.severity
         )
     }
 

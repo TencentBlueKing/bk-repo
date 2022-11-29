@@ -88,4 +88,6 @@ interface UserService {
     fun addUserAccount(userId: String, accountId: String): Boolean
 
     fun removeUserAccount(userId: String, accountId: String): Boolean
+
+    fun validateEntityUser(userId: String): Boolean
 }

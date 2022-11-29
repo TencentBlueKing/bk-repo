@@ -28,8 +28,6 @@
 package com.tencent.bkrepo.analyst.distribution
 
 import com.tencent.bkrepo.analyst.dao.ScannerSimpleMongoDao
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -51,8 +49,8 @@ class DistributedCountDao : ScannerSimpleMongoDao<TDistributedCount>() {
         return determineMongoTemplate().findAndModify(query, update, options, TDistributedCount::class.java)!!.count
     }
 
-    fun get(key: String): Double {
+    fun get(key: String): Double? {
         val query = Query(TDistributedCount::key.isEqualTo(key))
-        return findOne(query)?.count ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
+        return findOne(query)?.count
     }
 }
