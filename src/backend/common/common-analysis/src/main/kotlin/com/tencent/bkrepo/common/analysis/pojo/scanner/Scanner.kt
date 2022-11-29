@@ -70,7 +70,9 @@ open class Scanner(
     @ApiModelProperty("支持扫描的包类型")
     val supportPackageTypes: List<String> = emptyList(),
     @ApiModelProperty("支持扫描的类型")
-    val supportScanTypes: List<String> = emptyList()
+    val supportScanTypes: List<String> = emptyList(),
+    @ApiModelProperty("执行扫描所需要的内存大小")
+    val memory: Long = DEFAULT_MEM
 ) {
     /**
      * 获取待扫描文件最大允许扫描时长
@@ -101,5 +103,9 @@ open class Scanner(
          * 默认至少允许扫描的时间
          */
         private const val DEFAULT_MIN_SCAN_DURATION = 3 * 60L * 1000L
+        /**
+         * 默认内存大小
+         */
+        private const val DEFAULT_MEM = 32L * 1024L * 1024L * 1024L
     }
 }

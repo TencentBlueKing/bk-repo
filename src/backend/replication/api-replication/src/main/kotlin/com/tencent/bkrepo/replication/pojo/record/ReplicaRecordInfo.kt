@@ -44,5 +44,9 @@ data class ReplicaRecordInfo(
     @ApiModelProperty("结束时间")
     var endTime: LocalDateTime? = null,
     @ApiModelProperty("错误原因，未执行或执行成功则为null")
-    var errorReason: String? = null
+    var errorReason: String? = null,
+    @ApiModelProperty("已同步字节数")
+    var replicatedBytes: Long? = 0,
+    @ApiModelProperty("总字节数")
+    var totalBytes: Long? = 0
 )
