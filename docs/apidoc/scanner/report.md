@@ -124,6 +124,14 @@
           "vulName": "Apache Log4j安全漏洞",
           "cveId": "CVE-2021-45046",
           "path": "/dc435b35b5923eb05afe30a24f04e9a0a5372da8e76f986efe8508b96101c4ff.jar",
+          "versionsPaths": [
+            {
+              "version": "5.3.16",
+              "paths": [
+                "/0903d17e58654a2c79f4e46df79dc73ccaa49b6edbc7c3278359db403b687f6e.jar"
+              ]
+            }
+          ],
           "pkgName": "org.apache.logging.log4j:log4j-core",
           "pkgVersions": ["2.9.1"],
           "fixedVersion": "2.16.0",
@@ -155,28 +163,30 @@
 
  data字段说明
 
-| 字段              | 类型     | 说明                               | Description               |
-|-----------------|--------|----------------------------------|---------------------------|
-| status          | string | 文件扫描状态                           | file scan status          |
-| sha256          | string | 文件sha256                         | file sha256               |
-| pageNumber      | number | 页码                               | page number               |
-| pageSize        | number | 页大小                              | page size                 |
-| totalRecords    | number | 总记录数量                            | total records             |
-| totalPage       | number | 总页数                              | total page                |
-| vulId           | string | 漏洞id                             | vul id                    |
-| vulName         | string | 漏洞名                              | vul Name                  |
-| cveId           | string | 漏洞cve id                         | total page                |
-| path            | string | 当被扫描的制品是压缩包时，表示存在漏洞的文件的在被扫描包中的路径 | path                      |
-| pkgName         | string | 存在漏洞的组件名                         | package name              |
-| pkgVersions     | array  | 存在漏洞的组件版本                        | package versions          |
-| fixedVersion    | string | 修复版本                             | fixed version             |
-| effectedVersion | string | 影响版本                             | effected version          |
-| des             | string | 漏洞描述                             | vulnerability description |
-| solution        | string | 漏洞解决方案                           | solution                  |
-| references      | array  | 漏洞相关引用                           | references                |
-| cvss            | number | 漏洞cvss                           | cvss                      |
-| severity        | string | 漏洞评级,取值CRITICAL,HIGH,MEDIUM,LOW  | severity                  |
-| licenseName     | string | 许可证名                             | license name              |
+| 字段                    | 类型     | 说明                                                     | Description               |
+|-----------------------|--------|--------------------------------------------------------|---------------------------|
+| status                | string | 文件扫描状态                                                 | file scan status          |
+| sha256                | string | 文件sha256                                               | file sha256               |
+| pageNumber            | number | 页码                                                     | page number               |
+| pageSize              | number | 页大小                                                    | page size                 |
+| totalRecords          | number | 总记录数量                                                  | total records             |
+| totalPage             | number | 总页数                                                    | total page                |
+| vulId                 | string | 漏洞id                                                   | vul id                    |
+| vulName               | string | 漏洞名                                                    | vul Name                  |
+| cveId                 | string | 漏洞cve id                                               | total page                |
+| path                  | string | 已废弃，使用versionsPaths替代，当被扫描的制品是压缩包时，表示存在漏洞的文件的在被扫描包中的路径 | path                      |
+| versionsPaths.version | string | 版本                                                     | version                   |
+| versionsPaths.paths   | array  | 版本所在路径                                                 | version path              |
+| pkgName               | string | 存在漏洞的组件名                                               | package name              |
+| pkgVersions           | array  | 存在漏洞的组件版本                                              | package versions          |
+| fixedVersion          | string | 修复版本                                                   | fixed version             |
+| effectedVersion       | string | 影响版本                                                   | effected version          |
+| des                   | string | 漏洞描述                                                   | vulnerability description |
+| solution              | string | 漏洞解决方案                                                 | solution                  |
+| references            | array  | 漏洞相关引用                                                 | references                |
+| cvss                  | number | 漏洞cvss                                                 | cvss                      |
+| severity              | string | 漏洞评级,取值CRITICAL,HIGH,MEDIUM,LOW                        | severity                  |
+| licenseName           | string | 许可证名                                                   | license name              |
 
 ## 获取子任务扫描报告详情
 
