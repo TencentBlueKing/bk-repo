@@ -29,15 +29,17 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.ID
-import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ReplicationLockCleanupJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
@@ -46,47 +48,55 @@ import java.time.LocalDateTime
 @Component
 @EnableConfigurationProperties(ReplicationLockCleanupJobProperties::class)
 class ReplicationLockCleanupJob(
-    private val properties: ReplicationLockCleanupJobProperties,
+    properties: ReplicationLockCleanupJobProperties,
     private val mongoTemplate: MongoTemplate
-) : DefaultContextMongoDbJob<ReplicationLockCleanupJob.ShedlockInfoData>(properties) {
+) : DefaultContextJob(properties) {
 
-    override fun entityClass(): Class<ShedlockInfoData> {
-        return ShedlockInfoData::class.java
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+
+    override fun doStart0(jobContext: JobContext) {
+        mongoTemplate.find(
+            Query(Criteria.where(LOCK_UNTIL).lt(LocalDateTime.now().minusDays(1))),
+            ShedLockInfoData::class.java, COLLECTION_NAME
+        ).forEach {
+            removeLock(it)
+        }
     }
 
-    override fun collectionNames(): List<String> {
-        return listOf(COLLECTION_NAME)
-    }
-
-    override fun buildQuery(): Query {
-        val endDate = LocalDateTime.now().minusDays(1)
-        return Query(
-            Criteria.where(LOCK_UNTIL).lt(endDate)
-        )
-    }
-
-    override fun run(row: ShedlockInfoData, collectionName: String, context: JobContext) {
+    private fun removeLock(row: ShedLockInfoData) {
         with(row) {
             try {
-                if (id.startsWith(REPLICA_LOCK_NAME_PREFIX)) {
+                if (!id.startsWith(REPLICA_LOCK_NAME_PREFIX)) return
+                val taskId = id.substringAfter(REPLICA_LOCK_NAME_PREFIX)
+                val taskQuery = Query.query(Criteria.where(ID).isEqualTo(taskId))
+                val data = mongoTemplate.find<Map<String, Any?>>(
+                    taskQuery,
+                    TASK_COLLECTION_NAME
+                )
+                if (data.isEmpty()) {
                     val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(id))
-                    mongoTemplate.remove(nodeQuery, collectionName)
+                    mongoTemplate.remove(nodeQuery, COLLECTION_NAME)
+                    return
+                }
+                val status: String = data.first()[TASK_STATUS] as String
+                if (status == TASK_STATUS_FINISHED) {
+                    val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(id))
+                    mongoTemplate.remove(nodeQuery, COLLECTION_NAME)
                 }
             } catch (ignored: Exception) {
-                logger.warn("Clean up replication lock shed_lock[$row] failed in collection[$collectionName].", ignored)
+                logger.warn(
+                    "Clean up replication lock shed_lock[$row] failed in collection[$COLLECTION_NAME].",
+                    ignored
+                )
             }
         }
     }
 
-    data class ShedlockInfoData(private val map: Map<String, Any?>) {
-        val id: String by map
-        val lockUntil: String? by map
-        val lockedAt: String by map
-    }
-
-    override fun mapToEntity(row: Map<String, Any?>): ShedlockInfoData {
-        return ShedlockInfoData(row)
-    }
+    data class ShedLockInfoData(
+        val id: String,
+        val lockUntil: String,
+        val lockedAt: String,
+    )
 
     companion object {
         private val logger = LoggerHolder.jobLogger
@@ -95,5 +105,7 @@ class ReplicationLockCleanupJob(
         const val LOCKED_AT = "lockedAt"
         const val LOCK_UNTIL = "lockUntil"
         const val REPLICA_LOCK_NAME_PREFIX = "REPLICA_JOB_"
+        const val TASK_STATUS = "status"
+        const val TASK_STATUS_FINISHED = "COMPLETED"
     }
 }
