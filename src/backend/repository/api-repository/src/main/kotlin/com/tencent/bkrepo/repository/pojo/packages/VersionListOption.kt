@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.pojo.packages
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.query.model.Sort.Direction
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -48,5 +49,9 @@ data class VersionListOption(
     @ApiModelProperty("晋级tag, 多个tag以逗号分隔")
     val stageTag: String? = null,
     @ApiModelProperty("元数据")
-    val metadata: List<MetadataModel>? = null
+    val metadata: List<MetadataModel>? = null,
+    @ApiModelProperty("排序字段")
+    val sortProperty: String? = null,
+    @ApiModelProperty("排序方向")
+    val direction: Direction? = Direction.DESC
 )

@@ -27,6 +27,7 @@
                     <div class="card-metadata" :title="`所属仓库：${cardData.repoName}`"></div>
                     <div class="card-metadata" :title="`文件大小：${convertFileSize(cardData.size)}`"></div>
                     <div class="card-metadata" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="`最初创建：${formatDate(cardData.createdDate)}`"></div>
                 </template>
             </div>
         </div>

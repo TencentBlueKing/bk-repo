@@ -92,7 +92,12 @@ data class SecurityResult(
     /**
      * 漏洞在制品压缩包中的路径
      */
+    @Deprecated("use versionsPaths")
     val path: String? = null,
+    /**
+     * 组件所在路径
+     */
+    val versionsPaths: MutableSet<VersionPaths> = HashSet(),
     /**
      * 存在漏洞的组件
      */
@@ -139,7 +144,12 @@ data class LicenseResult(
     /**
      * 检出License的文件在制品包中的路径
      */
+    @Deprecated("use versionsPaths")
     val path: String? = null,
+    /**
+     * 组件所在路径
+     */
+    val versionsPaths: MutableSet<VersionPaths> = HashSet(),
     /**
      * 检出License的组件
      */
@@ -166,4 +176,18 @@ data class SensitiveResult(
      * 敏感信息内容
      */
     val content: String
+)
+
+/**
+ * 指定版本组件所在的路径列表
+ */
+data class VersionPaths(
+    /**
+     * 版本
+     */
+    val version: String,
+    /**
+     * 路径列表
+     */
+    val paths: MutableSet<String> = HashSet()
 )

@@ -47,6 +47,9 @@
                     v-model="genericShare.ip"
                     placeholder="授权访问IP，为空则任意IP可访问，按Enter键确认"
                     trigger="focus"
+                    :create-tag-validator="tag => {
+                        return /((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}/g.test(tag)
+                    }"
                     allow-create>
                 </bk-tag-input>
             </bk-form-item>
