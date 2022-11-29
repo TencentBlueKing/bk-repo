@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.component.manager.trivy.dao
+package com.tencent.bkrepo.replication.replica.base.interceptor.progress
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
-import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
-import com.tencent.bkrepo.analyst.component.manager.trivy.model.TVulnerabilityItem
-import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.trivy.TrivyLoadResultArguments
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import okio.Buffer
+import okio.BufferedSink
+import okio.ForwardingSink
+import okio.Sink
+import okio.buffer
 
-@Repository
-class VulnerabilityItemDao : ResultItemDao<TVulnerabilityItem>() {
-    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        require(arguments is TrivyLoadResultArguments)
-        if (arguments.vulnerabilityLevels.isNotEmpty()) {
-            val levels = arguments.vulnerabilityLevels + arguments.vulnerabilityLevels.map { it.toUpperCase() }
-            criteria.and(dataKey(VulnerabilityItem::severity.name)).inValues(levels)
+internal class ProgressRequestBody(
+    private val delegate: RequestBody,
+    private val listener: ProgressListener,
+    private val task: ReplicaTaskInfo,
+    private val sha256: String
+) : RequestBody() {
+
+    override fun contentType(): MediaType? = delegate.contentType()
+    override fun contentLength(): Long = delegate.contentLength()
+
+    override fun writeTo(sink: BufferedSink) {
+        val countingSink = CountingSink(sink)
+        val bufferedSink: BufferedSink = countingSink.buffer()
+        delegate.writeTo(bufferedSink)
+        bufferedSink.flush()
+    }
+
+    inner class CountingSink(delegate: Sink) : ForwardingSink(delegate) {
+        override fun write(source: Buffer, byteCount: Long) {
+            super.write(source, byteCount)
+            listener.onProgress(task, sha256, byteCount)
         }
-        if (arguments.vulIds.isNotEmpty()) {
-            criteria.and(dataKey(VulnerabilityItem::vulnerabilityId.name)).inValues(arguments.vulIds)
-        }
-        return criteria
     }
 }

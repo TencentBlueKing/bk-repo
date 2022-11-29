@@ -102,6 +102,9 @@ class UserServiceImpl constructor(
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
+        if (!request.asstUsers.all { validateEntityUser(it) }) {
+            throw ErrorCodeException(AuthMessageCode.AUTH_ENTITY_USER_NOT_EXIST)
+        }
         val hashPwd = if (request.pwd == null) {
             DataDigestUtils.md5FromStr(IDUtil.genRandomId())
         } else {
@@ -403,6 +406,12 @@ class UserServiceImpl constructor(
         val record = mongoTemplate.updateFirst(query, update, TUser::class.java)
         if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
         return false
+    }
+
+    override fun validateEntityUser(userId: String): Boolean {
+        val query = UserQueryHelper.getUserById(userId)
+        val record = mongoTemplate.findOne(query, TUser::class.java)
+        return record != null && !record.group
     }
 
     companion object {

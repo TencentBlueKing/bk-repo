@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.component.manager.trivy.dao
+package com.tencent.bkrepo.replication.pojo.blob
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
-import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
-import com.tencent.bkrepo.analyst.component.manager.trivy.model.TVulnerabilityItem
-import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.trivy.TrivyLoadResultArguments
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 
-@Repository
-class VulnerabilityItemDao : ResultItemDao<TVulnerabilityItem>() {
-    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        require(arguments is TrivyLoadResultArguments)
-        if (arguments.vulnerabilityLevels.isNotEmpty()) {
-            val levels = arguments.vulnerabilityLevels + arguments.vulnerabilityLevels.map { it.toUpperCase() }
-            criteria.and(dataKey(VulnerabilityItem::severity.name)).inValues(levels)
-        }
-        if (arguments.vulIds.isNotEmpty()) {
-            criteria.and(dataKey(VulnerabilityItem::vulnerabilityId.name)).inValues(arguments.vulIds)
-        }
-        return criteria
-    }
-}
+data class RequestTag(
+    val task: ReplicaTaskInfo,
+    val key: String,
+    val size: Long
+)

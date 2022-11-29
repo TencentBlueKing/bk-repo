@@ -70,7 +70,7 @@ class TrivyConverter : ScannerConverter {
 
     override fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments {
         return TrivyLoadResultArguments(
-            vulnerabilityLevels = request.leakType?.let { listOf(it.toUpperCase()) } ?: emptyList(),
+            vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )

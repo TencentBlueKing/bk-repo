@@ -111,11 +111,12 @@
                 <bk-form-item label="电话">
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
-                <bk-form-item v-if="editUserDialog.group" label="关联用户">
+                <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" label="关联用户">
                     <bk-tag-input
                         v-model="editUserDialog.asstUsers"
                         placeholder="请输入，按Enter键确认"
                         trigger="focus"
+                        :create-tag-validator="tag => validateUser(tag)"
                         allow-create>
                     </bk-tag-input>
                 </bk-form-item>
@@ -193,6 +194,13 @@
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('email'),
                             trigger: 'blur'
                         }
+                    ],
+                    asstUsers: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + '关联账户',
+                            trigger: 'blur'
+                        }
                     ]
                 }
             }
@@ -221,7 +229,8 @@
                 'resetPwd',
                 'checkUserId',
                 'getUserInfo',
-                'importUsers'
+                'importUsers',
+                'validateEntityUser'
             ]),
             asynCheckUserId () {
                 return !this.editUserDialog.add || !(this.editUserDialog.userId in this.userList)
@@ -442,6 +451,12 @@
                 }).finally(() => {
                     this.getUserListHandler()
                 })
+            },
+            async validateUser (tag) {
+                const res = await this.validateEntityUser(tag)
+                if (!res) {
+                    this.editUserDialog.asstUsers.splice(this.editUserDialog.asstUsers.indexOf(tag), 1)
+                }
             }
         }
     }

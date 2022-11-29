@@ -106,6 +106,7 @@ object DockerUtils {
     fun dockerHostConfig(
         binds: Binds,
         maxSize: Long,
+        mem: Long,
         withPrivileged: Boolean = false
     ): HostConfig {
         return HostConfig().apply {
@@ -114,6 +115,7 @@ object DockerUtils {
             // 降低容器CPU优先级，限制可用的核心，避免调用DockerDaemon获其他系统服务时超时
             withCpuShares(CONTAINER_CPU_SHARES)
             withPrivileged(withPrivileged)
+            withMemory(mem)
             val processorCount = Runtime.getRuntime().availableProcessors()
             if (processorCount > 2) {
                 withCpusetCpus("0-${processorCount - 2}")
