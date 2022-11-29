@@ -114,6 +114,11 @@ export default {
             `${authPrefix}/user/${userId}`
         )
     },
+    validateEntityUser (_, userId) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/validateEntityUser/${userId}`
+        )
+    },
     // 新建角色
     createRole (_, { body }) {
         return Vue.prototype.$ajax.post(

@@ -160,7 +160,7 @@ class UserController @Autowired constructor(
     @PutMapping("/{uid}")
     fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         checkUserId(uid)
-        if (request.admin !=null && request.admin) {
+        if (request.admin != null && request.admin) {
             checkPlatformPermission()
         }
         userService.updateUserById(uid, request)
@@ -353,6 +353,12 @@ class UserController @Autowired constructor(
     @GetMapping("/admin/{projectId}")
     fun isProjectAdmin(@PathVariable projectId: String): Response<Boolean> {
         return ResponseBuilder.success(checkProjectAdmin(projectId))
+    }
+
+    @ApiOperation("检验实体用户是否存在此userid")
+    @GetMapping("/validateEntityUser/{uid}")
+    fun validateEntityUser(@PathVariable uid: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.validateEntityUser(uid))
     }
 
     companion object {
