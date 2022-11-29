@@ -70,7 +70,6 @@ import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_METADATA
 import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
-import com.tencent.bkrepo.helm.constants.OVERWRITE
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.helm.constants.REPO_NAME
@@ -244,7 +243,7 @@ open class AbstractChartService : ArtifactService() {
     /**
      * 当helm 本地文件上传后/或从远程代理下载后，创建或更新包/包版本信息
      */
-    fun initPackageInfo(context: ArtifactContext) {
+    fun initPackageInfo(context: ArtifactContext, isOverwrite: Boolean = false) {
         with(context) {
             if (CHART != getStringAttribute(FILE_TYPE)) return
             logger.info("start to update package meta info..")
@@ -252,7 +251,6 @@ open class AbstractChartService : ArtifactService() {
             val helmChartMetadataMap = getAttribute<Map<String, Any>?>(META_DETAIL)
             helmChartMetadataMap?.let {
                 val helmChartMetadata = HelmMetadataUtils.convertToObject(helmChartMetadataMap)
-                val overWrite = getBooleanAttribute(OVERWRITE) ?: false
                 val sourceType = getAttribute<ArtifactChannel>(SOURCE_TYPE)
                 createVersion(
                     userId = userId,
@@ -260,7 +258,7 @@ open class AbstractChartService : ArtifactService() {
                     repoName = artifactInfo.repoName,
                     chartInfo = helmChartMetadata,
                     size = size!!,
-                    isOverwrite = overWrite,
+                    isOverwrite = isOverwrite,
                     sourceType = sourceType
                 )
             }
@@ -363,7 +361,7 @@ open class AbstractChartService : ArtifactService() {
                 packageKey = PackageKeys.ofHelm(chartInfo.name),
                 version = chartInfo.version
             ).data
-            if (packageVersion == null) {
+            if (packageVersion == null || isOverwrite) {
                 val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
                     userId = userId,
                     projectId = projectId,
@@ -373,15 +371,9 @@ open class AbstractChartService : ArtifactService() {
                     isOverwrite = isOverwrite,
                     sourceType = sourceType
                 )
-                val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    chartInfo = chartInfo
-                )
                 packageClient.createVersion(packageVersionCreateRequest).apply {
                     logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
                 }
-                packageClient.updatePackage(packageUpdateRequest)
             } else {
                 val packageVersionUpdateRequest = ObjectBuilderUtil.buildPackageVersionUpdateRequest(
                     projectId = projectId,
