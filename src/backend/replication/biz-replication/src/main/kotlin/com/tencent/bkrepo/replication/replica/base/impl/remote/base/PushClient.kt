@@ -32,7 +32,11 @@ import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
+import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
@@ -67,14 +71,13 @@ abstract class PushClient(
         version: String,
         projectId: String,
         repoName: String,
-        clusterInfo: ClusterInfo,
-        targetVersions: List<String>? = null
+        context: ReplicaContext
     ): Boolean {
         logger.info(
             "Package $name|$version in the local repo $projectId|$repoName will be pushed to the third party repository"
         )
         try {
-            val token = getAuthorizationDetails(name, clusterInfo)
+            val token = getAuthorizationDetails(name, context.cluster)
             val nodes = querySyncNodeList(
                 name = name,
                 version = version,
@@ -87,12 +90,11 @@ abstract class PushClient(
                 name = name,
                 version = version,
                 nodes = nodes,
-                clusterInfo = clusterInfo,
-                targetVersions = targetVersions
+                context = context
             )
         } catch (e: Exception) {
             logger.warn(
-                "Error occurred while pushing artifact $name|$version to cluster[${clusterInfo.name}] " +
+                "Error occurred while pushing artifact $name|$version to cluster[${context.cluster.name}] " +
                     "in the local repo $projectId|$repoName, failed reason: ${e.message}"
             )
             throw e
@@ -107,8 +109,7 @@ abstract class PushClient(
         name: String,
         version: String,
         token: String?,
-        clusterInfo: ClusterInfo,
-        targetVersions: List<String>? = null
+        context: ReplicaContext
     ): Boolean {
         return true
     }
@@ -127,12 +128,29 @@ abstract class PushClient(
         return emptyList()
     }
 
+    protected fun buildRequestTag(
+        context: ReplicaContext,
+        key: String,
+        size: Long
+    ): RequestTag? {
+        return if (context.task.replicaType == ReplicaType.RUN_ONCE) {
+            RequestTag(
+                task = context.task,
+                key = key,
+                size = size
+            )
+        } else {
+            null
+        }
+    }
+
     private fun buildClient(): OkHttpClient {
         return HttpClientBuilderFactory.create()
             .readTimeout(DEFAULT_READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .writeTimeout(DEFAULT_WRITE_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .addInterceptor(RetryInterceptor(localDataManager))
+            .addNetworkInterceptor(ProgressInterceptor())
             .build()
     }
 
