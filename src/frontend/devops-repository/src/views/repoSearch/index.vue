@@ -13,11 +13,8 @@
                 </bk-input>
                 <i class="name-search devops-icon icon-search flex-center" @click="changePackageName()"></i>
             </div>
-            <div v-if="pagination.count" class="mt20 flex-between-center" style="align-items:flex-end;">
+            <div class="mt20 flex-between-center" style="align-items:flex-end;">
                 <div class="result-count flex-align-center">
-                    <span v-if="isSearching">搜索到相关结果</span>
-                    <span v-else>全部制品共</span>
-                    <span>{{ pagination.count }}个</span>
                 </div>
                 <div class="sort-tool flex-align-center">
                     <bk-select
@@ -60,7 +57,7 @@
                     ref="infiniteScroll"
                     class="package-list flex-1"
                     :is-loading="isLoading"
-                    :has-next="resultList.length < pagination.count"
+                    :has-next="hasNext"
                     @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
                     <package-card
                         class="mb10"
@@ -121,7 +118,8 @@
                     limit: 20,
                     count: 0
                 },
-                resultList: []
+                resultList: [],
+                hasNext: true
             }
         },
         computed: {
@@ -188,6 +186,9 @@
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
+                    if (records.length < this.pagination.limit) {
+                        this.hasNext = false
+                    }
                     scrollLoad ? this.resultList.push(...records) : (this.resultList = records)
                 }).finally(() => {
                     this.isLoading = false

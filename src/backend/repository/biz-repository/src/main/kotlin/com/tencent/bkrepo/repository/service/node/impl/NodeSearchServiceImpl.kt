@@ -70,6 +70,11 @@ class NodeSearchServiceImpl(
         return doQuery(context)
     }
 
+    override fun searchWithoutCount(queryModel: QueryModel): Page<Map<String, Any?>> {
+        val context = nodeQueryInterpreter.interpret(queryModel) as NodeQueryContext
+        return doQueryWithoutCount(context)
+    }
+
     override fun nodeOverview(
         userId: String,
         projectId: String,
@@ -125,8 +130,7 @@ class NodeSearchServiceImpl(
         return projectSet.toList()
     }
 
-    private fun doQuery(context: NodeQueryContext): Page<Map<String, Any?>> {
-        val query = context.mongoQuery
+    private fun queryList(query: Query): List<MutableMap<String, Any?>> {
         val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
         // metadata格式转换，并排除id字段
         nodeList.forEach {
@@ -145,11 +149,23 @@ class NodeSearchServiceImpl(
                 it[NodeInfo::nodeMetadata.name] = MetadataUtils.convertToMetadataModel(metadata)
             }
         }
+        return nodeList
+    }
+
+    private fun doQuery(context: NodeQueryContext): Page<Map<String, Any?>> {
+        val query = context.mongoQuery
+        val nodeList = queryList(query)
         val countQuery = Query.of(query).limit(0).skip(0)
         val totalRecords = nodeDao.count(countQuery)
         val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
-
         return Page(pageNumber + 1, query.limit, totalRecords, nodeList)
+    }
+
+    private fun doQueryWithoutCount(context: NodeQueryContext): Page<Map<String, Any?>> {
+        val query = context.mongoQuery
+        val nodeList = queryList(query)
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(pageNumber + 1, query.limit, 0, nodeList)
     }
 
     companion object {
