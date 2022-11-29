@@ -29,8 +29,8 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
@@ -49,6 +49,7 @@ import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialReq
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
@@ -62,7 +63,8 @@ class ReplicaRecordServiceImpl(
     private val replicaRecordDao: ReplicaRecordDao,
     private val replicaRecordDetailDao: ReplicaRecordDetailDao,
     private val replicaTaskDao: ReplicaTaskDao,
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    private val progressListener: ProgressListener
 ) : ReplicaRecordService {
 
     override fun startNewRecord(key: String): ReplicaRecordInfo {
@@ -112,6 +114,10 @@ class ReplicaRecordServiceImpl(
         tReplicaTask.lastExecutionStatus = status
         tReplicaTask.status = if (isCronJob(tReplicaTask.setting, tReplicaTask.replicaType))
             ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
+        if (status == ExecutionStatus.SUCCESS) {
+            tReplicaTask.replicatedBytes = tReplicaTask.totalBytes
+        }
+        progressListener.onFinish(tReplicaTask.id!!)
         replicaRecordDao.save(record)
         replicaTaskDao.save(tReplicaTask)
         logger.info("complete record [$recordId], status from [${replicaRecordInfo.status}] to [$status].")
