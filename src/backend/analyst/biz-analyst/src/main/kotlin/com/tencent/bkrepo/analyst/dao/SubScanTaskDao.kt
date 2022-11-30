@@ -29,16 +29,15 @@ package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.analyst.model.TSubScanTask
+import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
-import com.tencent.bkrepo.analyst.model.TSubScanTask
-import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -212,7 +211,7 @@ class SubScanTaskDao(
 
         val criteria = Criteria().andOperator(
             timeoutCriteria,
-            TSubScanTask::status.inValues(PULLED.name, ENQUEUED.name, EXECUTING.name)
+            TSubScanTask::status.inValues(PULLED.name, EXECUTING.name)
         )
 
         return findOne(Query(criteria))

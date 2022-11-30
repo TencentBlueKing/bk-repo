@@ -47,7 +47,7 @@ import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
-import com.tencent.bkrepo.analyst.task.ScanTaskSchedulerConfiguration
+import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.analyst.utils.RuleConverter
 import com.tencent.bkrepo.analyst.utils.RuleUtil

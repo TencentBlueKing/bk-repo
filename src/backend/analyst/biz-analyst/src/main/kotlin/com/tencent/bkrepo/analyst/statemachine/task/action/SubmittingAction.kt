@@ -49,7 +49,7 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
-import com.tencent.bkrepo.analyst.task.iterator.IteratorManager
+import com.tencent.bkrepo.analyst.statemachine.iterator.IteratorManager
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.NEVER_SCANNED
 import com.tencent.bkrepo.common.lock.service.LockOperation

@@ -43,9 +43,6 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.utils.FlushableBuffer
-import com.tencent.bkrepo.analyst.task.queue.SubScanTaskQueue
-import com.tencent.bkrepo.analyst.utils.Converter
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -61,7 +58,6 @@ class CreateSubtaskAction(
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val publisher: ApplicationEventPublisher,
-    private val subScanTaskQueue: SubScanTaskQueue,
     private val scannerMetrics: ScannerMetrics,
     private val subScanTaskDao: SubScanTaskDao
 ) : SubtaskAction {
@@ -94,17 +90,6 @@ class CreateSubtaskAction(
     @Scheduled(fixedRate = FLUSH_RATE)
     fun forceFlush() {
         subtaskBuffer.flush()
-    }
-
-    // TODO enqueue
-    private fun enqueue(subtasks: List<TSubScanTask>, scanner: Scanner) {
-        val enqueuedTasks = subScanTaskQueue.enqueue(subtasks.map { Converter.convert(it, scanner) })
-        logger.info("${enqueuedTasks.size} subTasks enqueued")
-        if (enqueuedTasks.isNotEmpty()) {
-            subScanTaskDao.updateStatus(enqueuedTasks, SubScanTaskStatus.ENQUEUED)
-            scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.CREATED, enqueuedTasks.size.toDouble())
-            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED, enqueuedTasks.size.toDouble())
-        }
     }
 
     @Transactional(rollbackFor = [Throwable::class])

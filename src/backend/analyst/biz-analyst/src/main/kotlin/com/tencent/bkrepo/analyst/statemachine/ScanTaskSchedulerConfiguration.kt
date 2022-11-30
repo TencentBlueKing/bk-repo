@@ -25,22 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.task.queue
+package com.tencent.bkrepo.analyst.statemachine
 
-import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.concurrent.ThreadPoolExecutor.DiscardPolicy
 
-interface SubScanTaskQueue {
-    /**
-     * 提交扫描任务
-     *
-     * @return 是否提交成功
-     */
-    fun enqueue(subScanTask: SubScanTask): Boolean
+@Configuration(proxyBeanMethods = false)
+class ScanTaskSchedulerConfiguration {
+    @Bean(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
+    fun scanTaskSchedulerThreadPool(): ThreadPoolTaskExecutor {
+        return ThreadPoolTaskExecutor().apply {
+            corePoolSize = Runtime.getRuntime().availableProcessors() + 1
+            maxPoolSize = corePoolSize
+            setQueueCapacity(DEFAULT_QUEUE_CAPACITY)
+            setAllowCoreThreadTimeOut(true)
+            setWaitForTasksToCompleteOnShutdown(true)
+            setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS)
+            threadNamePrefix = SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX
+            setRejectedExecutionHandler(DiscardPolicy())
+        }
+    }
 
-    /**
-     * 批量提交任务
-     *
-     * @return 提交成功的任务id
-     */
-    fun enqueue(subScanTasks: List<SubScanTask>): List<String>
+    companion object {
+        const val SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME = "scanTaskSchedulerThreadPool"
+        private const val DEFAULT_AWAIT_TERMINATION_SECONDS = 300
+        private const val DEFAULT_QUEUE_CAPACITY = 200
+        private const val SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX = "scanner-task-scheduler-"
+    }
 }

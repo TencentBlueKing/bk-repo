@@ -31,7 +31,7 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.distribution.DistributedCount
 import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
-import com.tencent.bkrepo.analyst.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
+import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge

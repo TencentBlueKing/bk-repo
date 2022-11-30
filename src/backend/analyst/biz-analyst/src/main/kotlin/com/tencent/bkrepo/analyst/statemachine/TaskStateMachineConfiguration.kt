@@ -40,7 +40,6 @@ import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.STOPPING
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.BLOCK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.CREATE
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.ENQUEUE
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.EXECUTE
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.NOTIFY
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.PULL
@@ -57,7 +56,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCKED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCK_TIMEOUT
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.CREATED
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.FAILED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.NEVER_SCANNED
@@ -105,7 +103,6 @@ class TaskStateMachineConfiguration(
             externalTransition(BLOCKED, CREATED, NOTIFY, subtaskActions)
             externalTransitions(arrayOf(CREATED, EXECUTING), PULLED, PULL, subtaskActions)
             internalTransition(PULLED, PULL, subtaskActions)
-            externalTransition(CREATED, ENQUEUED, ENQUEUE, subtaskActions)
             externalTransition(PULLED, EXECUTING, EXECUTE, subtaskActions)
 
             // finished state
@@ -114,7 +111,7 @@ class TaskStateMachineConfiguration(
             externalTransition(EXECUTING, FAILED, SubtaskEvent.FAILED, subtaskActions)
             externalTransition(EXECUTING, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
             externalTransition(NEVER_SCANNED, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
-            val from = arrayOf(BLOCKED, CREATED, PULLED, ENQUEUED, EXECUTING)
+            val from = arrayOf(BLOCKED, CREATED, PULLED, EXECUTING)
             externalTransitions(from, SubScanTaskStatus.STOPPED, STOP, subtaskActions)
             build(STATE_MACHINE_ID_SUB_SCAN_TASK)
         }

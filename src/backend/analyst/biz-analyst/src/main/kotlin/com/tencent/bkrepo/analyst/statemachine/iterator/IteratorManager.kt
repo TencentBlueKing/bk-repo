@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.task.iterator
+package com.tencent.bkrepo.analyst.statemachine.iterator
 
 import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.analyst.pojo.ScanPlan

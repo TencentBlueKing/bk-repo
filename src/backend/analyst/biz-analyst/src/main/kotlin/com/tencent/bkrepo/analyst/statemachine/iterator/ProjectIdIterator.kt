@@ -25,33 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.task
+package com.tencent.bkrepo.analyst.statemachine.iterator
 
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.util.concurrent.ThreadPoolExecutor.DiscardPolicy
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.repository.api.ProjectClient
+import org.slf4j.LoggerFactory
 
-@Configuration(proxyBeanMethods = false)
-class ScanTaskSchedulerConfiguration {
-    @Bean(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
-    fun scanTaskSchedulerThreadPool(): ThreadPoolTaskExecutor {
-        return ThreadPoolTaskExecutor().apply {
-            corePoolSize = Runtime.getRuntime().availableProcessors() + 1
-            maxPoolSize = corePoolSize
-            setQueueCapacity(DEFAULT_QUEUE_CAPACITY)
-            setAllowCoreThreadTimeOut(true)
-            setWaitForTasksToCompleteOnShutdown(true)
-            setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS)
-            threadNamePrefix = SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX
-            setRejectedExecutionHandler(DiscardPolicy())
+class ProjectIdIterator(
+    private val projectClient: ProjectClient,
+    position: PageIteratePosition = PageIteratePosition()
+) : PageableIterator<String>(position) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    override fun nextPageData(page: Int, pageSize: Int): List<String> {
+        return if (page == FIRST_PAGE) {
+            val res = projectClient.listProject()
+            if (res.isNotOk()) {
+                logger.error("List projects failed: code[${res.code}], message[${res.message}]")
+                throw SystemErrorException()
+            }
+            return res.data!!.map { it.name }
+        } else {
+            emptyList()
         }
     }
 
     companion object {
-        const val SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME = "scanTaskSchedulerThreadPool"
-        private const val DEFAULT_AWAIT_TERMINATION_SECONDS = 300
-        private const val DEFAULT_QUEUE_CAPACITY = 200
-        private const val SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX = "scanner-task-scheduler-"
+        private const val FIRST_PAGE = 1
     }
 }

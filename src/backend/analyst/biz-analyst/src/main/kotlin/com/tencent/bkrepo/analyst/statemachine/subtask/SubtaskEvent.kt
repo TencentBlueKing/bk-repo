@@ -40,7 +40,6 @@ enum class SubtaskEvent {
      */
     NOTIFY,
     PULL,
-    ENQUEUE,
     EXECUTE,
     STOP,
     BLOCK_TIMEOUT,
@@ -49,7 +48,7 @@ enum class SubtaskEvent {
     SUCCESS;
 
     companion object {
-        fun finishEventOf(state: String): SubtaskEvent = when(state) {
+        fun finishEventOf(state: String): SubtaskEvent = when (state) {
             SubScanTaskStatus.TIMEOUT.name -> TIMEOUT
             SubScanTaskStatus.BLOCK_TIMEOUT.name -> BLOCK_TIMEOUT
             SubScanTaskStatus.STOPPED.name -> STOP

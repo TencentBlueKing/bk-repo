@@ -35,7 +35,6 @@ import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.SCANNING_SUBMITTED
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCKED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.CREATED
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.ENQUEUED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import net.javacrumbs.shedlock.core.LockConfiguration
@@ -81,7 +80,7 @@ class CorrectMetricsJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CorrectMetricsJob::class.java)
-        private val CORRECT_SUBTASK_STATUS = listOf(BLOCKED, CREATED, PULLED, ENQUEUED, EXECUTING)
+        private val CORRECT_SUBTASK_STATUS = listOf(BLOCKED, CREATED, PULLED, EXECUTING)
         private val CORRECT_TASK_STATUS = listOf(PENDING, SCANNING_SUBMITTING, SCANNING_SUBMITTED)
         private const val FIXED_DELAY = 60 * 60 * 1000L
     }
