@@ -45,15 +45,19 @@ class DateConverterConfig {
      */
     @Bean
     fun localDateTimeConverter(): Converter<String, LocalDateTime> {
-        return Converter { source ->
-            LocalDateTime.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT))
+        return object: Converter<String, LocalDateTime> {
+            override fun convert(source: String): LocalDateTime {
+                return LocalDateTime.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT))
+            }
         }
     }
 
     @Bean
     fun localDateConverter(): Converter<String, LocalDate> {
-        return Converter { source ->
-            LocalDate.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT))
+        return object: Converter<String, LocalDate> {
+            override fun convert(source: String): LocalDate {
+                return LocalDate.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT))
+            }
         }
     }
 
