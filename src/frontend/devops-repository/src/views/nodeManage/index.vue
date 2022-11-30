@@ -95,7 +95,7 @@
                     <bk-input v-model.trim="editNodeDialog.url" :disabled="!editNodeDialog.add"></bk-input>
                 </bk-form-item>
                 <bk-form-item label="证书" property="certificate" error-display-type="normal">
-                    <bk-input v-model.trim="editNodeDialog.certificate"></bk-input>
+                    <bk-input type="textarea" v-model.trim="editNodeDialog.certificate"></bk-input>
                 </bk-form-item>
                 <bk-form-item label="认证方式">
                     <bk-radio-group v-model="createType" :change="changeValidateType()">
