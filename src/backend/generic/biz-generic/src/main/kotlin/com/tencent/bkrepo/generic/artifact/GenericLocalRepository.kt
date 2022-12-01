@@ -153,7 +153,11 @@ class GenericLocalRepository : LocalRepository() {
     private fun downloadSingleNode(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val node = getNodeDetailsFromReq(true)?.firstOrNull()
-                ?: ArtifactContextHolder.getNodeDetail()
+                ?: ArtifactContextHolder.getNodeDetail(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = artifactInfo.getArtifactFullPath()
+                )
                 ?: return null
             if (node.folder) {
                 return downloadFolder(this, node)
