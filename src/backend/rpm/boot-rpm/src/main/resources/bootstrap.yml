@@ -1,2 +1,5 @@
 spring.application.name: rpm
 server.port: 25807
+spring:
+  main:
+    allow-circular-references: true

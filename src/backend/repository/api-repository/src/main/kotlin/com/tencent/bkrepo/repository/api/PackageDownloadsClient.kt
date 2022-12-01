@@ -44,12 +44,10 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("包下载统计服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDownloadsClient")
-@RequestMapping("/service/package/downloads/")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDownloadsClient", path = "/service/package/downloads/")
 interface PackageDownloadsClient {
 
     @ApiOperation("记录包下载")

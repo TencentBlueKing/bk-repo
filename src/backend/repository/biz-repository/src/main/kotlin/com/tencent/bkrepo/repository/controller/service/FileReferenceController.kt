@@ -4,9 +4,11 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/fileReference")
 class FileReferenceController(
     private val fileReferenceService: FileReferenceService
 ) : FileReferenceClient {

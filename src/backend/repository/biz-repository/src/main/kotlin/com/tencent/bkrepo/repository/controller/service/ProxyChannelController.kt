@@ -37,9 +37,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/proxy-channel")
 class ProxyChannelController(
     private val proxyChannelService: ProxyChannelService
 ) : ProxyChannelClient {

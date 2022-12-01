@@ -3,3 +3,6 @@ server.port: 25813
 
 rds:
   domain: ${cluster.self.url}/rds
+spring:
+  main:
+    allow-circular-references: true

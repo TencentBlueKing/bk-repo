@@ -37,12 +37,14 @@ import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.repository.service.packages.StageService
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 晋级服务接口实现类
  */
 @RestController
+@RequestMapping("/service/stage")
 class StageController(
     private val stageService: StageService
 ) : StageClient {

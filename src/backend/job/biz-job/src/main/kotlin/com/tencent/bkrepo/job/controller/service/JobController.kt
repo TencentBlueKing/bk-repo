@@ -32,9 +32,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.job.pojo.JobDetail
 import com.tencent.bkrepo.job.service.SystemJobService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/job")
 class JobController(val systemJobService: SystemJobService) : JobClient {
     override fun detail(): Response<List<JobDetail>> {
         return ResponseBuilder.success(systemJobService.detail())

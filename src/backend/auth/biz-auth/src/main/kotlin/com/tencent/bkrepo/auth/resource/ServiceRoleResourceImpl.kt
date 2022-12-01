@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
@@ -42,9 +43,11 @@ import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_SERVICE_ROLE_PREFIX)
 class ServiceRoleResourceImpl @Autowired constructor(
     private val roleService: RoleService
 ) : ServiceRoleResource {

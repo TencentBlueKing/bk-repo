@@ -1,2 +1,8 @@
 spring.application.name: composer
 server.port: 25808
+spring:
+  main:
+    allow-circular-references: true
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher

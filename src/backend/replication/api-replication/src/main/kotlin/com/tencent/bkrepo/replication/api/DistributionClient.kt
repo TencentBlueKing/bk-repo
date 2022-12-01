@@ -34,7 +34,6 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
@@ -42,8 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("分发服务操作接口")
 @Primary
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "DistributionClient")
-@RequestMapping("/service/distribution")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "DistributionClient", path = "/service/distribution")
 interface DistributionClient {
     @ApiOperation("删除已完成的一次性执行任务")
     @DeleteMapping("/delete")
