@@ -1,2 +1,5 @@
 spring.application.name: replication
 server.port: 25903
+spring:
+  main:
+    allow-circular-references: true

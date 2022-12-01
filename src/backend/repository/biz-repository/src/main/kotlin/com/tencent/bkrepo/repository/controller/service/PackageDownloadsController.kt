@@ -40,9 +40,11 @@ import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
 import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/package/downloads/")
 class PackageDownloadsController(
     private val packageDownloadsService: PackageDownloadsService
 ) : PackageDownloadsClient {

@@ -3,3 +3,6 @@ server.port: 25801
 
 generic:
   domain: ${cluster.self.url}/generic
+spring:
+  main:
+    allow-circular-references: true

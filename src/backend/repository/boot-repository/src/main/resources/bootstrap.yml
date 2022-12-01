@@ -4,3 +4,7 @@ server.port: 25901
 repository:
   deletedNodeReserveDays: 14
   listCountLimit: 100000
+
+spring:
+  main:
+    allow-circular-references: true

@@ -36,14 +36,12 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 存储凭证服务接口
  */
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StorageCredentialsClient")
-@RequestMapping("/service/storage/credentials")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StorageCredentialsClient", path = "/service/storage/credentials")
 interface StorageCredentialsClient {
 
     /**

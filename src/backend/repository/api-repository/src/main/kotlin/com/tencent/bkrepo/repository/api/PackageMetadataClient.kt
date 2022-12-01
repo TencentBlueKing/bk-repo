@@ -40,15 +40,13 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * 节点元数据服务接口
  */
 @Api("节点元数据服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageMetadataClient")
-@RequestMapping("/service/metadata/package")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageMetadataClient", path = "/service/metadata/package")
 interface PackageMetadataClient {
 
     @ApiOperation("创建/更新元数据列表")

@@ -36,12 +36,14 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.service.metadata.PackageMetadataService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 元数据服务接口实现类
  */
 @RestController
+@RequestMapping("/service/metadata/package")
 class PackageMetadataController(
     private val packageMetadataService: PackageMetadataService
 ) : PackageMetadataClient {

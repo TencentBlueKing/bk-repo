@@ -1,2 +1,8 @@
 spring.application.name: oci
 server.port: 25811
+spring:
+  main:
+    allow-circular-references: true
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher

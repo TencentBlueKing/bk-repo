@@ -28,14 +28,17 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationResource
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
 class ServiceOauthAuthorizationResourceImpl @Autowired constructor(
     private val oauthAuthorizationService: OauthAuthorizationService
 ) : ServiceOauthAuthorizationResource {

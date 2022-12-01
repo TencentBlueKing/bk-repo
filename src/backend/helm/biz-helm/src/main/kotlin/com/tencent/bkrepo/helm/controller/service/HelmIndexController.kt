@@ -37,9 +37,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.helm.listener.consumer.RemoteEventJobExecutor
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/index")
 class HelmIndexController(
     private val remoteEventJobExecutor: RemoteEventJobExecutor
 ) : HelmClient {

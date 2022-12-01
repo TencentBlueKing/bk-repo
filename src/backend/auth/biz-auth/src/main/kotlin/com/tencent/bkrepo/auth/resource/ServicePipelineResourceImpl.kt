@@ -32,13 +32,16 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServicePipelineResource
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX)
 class ServicePipelineResourceImpl @Autowired constructor(
     private val bkAuthPipelineService: BkAuthPipelineService
 ) : ServicePipelineResource {

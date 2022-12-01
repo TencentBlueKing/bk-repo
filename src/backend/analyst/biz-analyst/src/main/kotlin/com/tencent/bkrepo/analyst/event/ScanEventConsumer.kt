@@ -27,6 +27,15 @@
 
 package com.tencent.bkrepo.analyst.event
 
+import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
+import com.tencent.bkrepo.analyst.dao.ScanPlanDao
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
+import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.analyst.service.SpdxLicenseService
+import com.tencent.bkrepo.analyst.utils.RuleConverter
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_GLOBAL_PROJECT
@@ -39,26 +48,17 @@ import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
-import com.tencent.bkrepo.analyst.dao.ScanPlanDao
-import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
-import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
-import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
-import com.tencent.bkrepo.analyst.service.ScanService
-import com.tencent.bkrepo.analyst.service.ScannerService
-import com.tencent.bkrepo.analyst.service.SpdxLicenseService
-import com.tencent.bkrepo.analyst.utils.RuleConverter
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 /**
  * 构件事件消费者，用于触发制品更新扫描
  * 制品有新的推送时，筛选已开启自动扫描的方案进行扫描
  * 对应binding name为artifactEvent-in-0
  */
-@Component("artifactEvent")
+@Configuration
 class ScanEventConsumer(
     private val spdxLicenseService: SpdxLicenseService,
     private val scanService: ScanService,
@@ -66,7 +66,7 @@ class ScanEventConsumer(
     private val scanPlanDao: ScanPlanDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
     private val executor: ThreadPoolTaskExecutor
-) : Consumer<ArtifactEvent> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -77,19 +77,20 @@ class ScanEventConsumer(
         EventType.VERSION_UPDATED
     )
 
-    override fun accept(event: ArtifactEvent) {
-        if (!acceptTypes.contains(event.type)) {
-            return
-        }
-
-        executor.execute {
-            when (event.type) {
-                EventType.NODE_CREATED -> {
-                    scanOnNodeCreatedEvent(event)
-                    importLicenseEvent(event)
+    @Bean("artifactEvent")
+    fun artifactEvent(): (ArtifactEvent) -> Unit {
+        return { event ->
+            if (acceptTypes.contains(event.type)) {
+                executor.execute {
+                    when (event.type) {
+                        EventType.NODE_CREATED -> {
+                            scanOnNodeCreatedEvent(event)
+                            importLicenseEvent(event)
+                        }
+                        EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> scanOnVersionCreated(event)
+                        else -> throw UnsupportedOperationException()
+                    }
                 }
-                EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> scanOnVersionCreated(event)
-                else -> throw UnsupportedOperationException()
             }
         }
     }
