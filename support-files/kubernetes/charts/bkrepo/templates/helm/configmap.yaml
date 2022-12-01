@@ -14,7 +14,11 @@ metadata:
 data:
   application.yml: |-
     helm:
-      domain: {{ .Values.gateway.helmHost }}
+      {{- if or .Values.ingress.tls .Values.forceHttps }}
+      domain: https://{{ .Values.gateway.helmHost }}
+      {{- else }}
+      domain: http://{{ .Values.gateway.helmHost }}
+      {{- end }}
       {{- if keys $.Values.helm.config }}
         {{- toYaml .Values.helm.config | nindent 6 }}
       {{- end}}
