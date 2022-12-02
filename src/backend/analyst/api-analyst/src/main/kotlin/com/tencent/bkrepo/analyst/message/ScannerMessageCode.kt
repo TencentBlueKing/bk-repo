@@ -42,20 +42,14 @@ enum class ScannerMessageCode(
     SCAN_TASK_NAME_BATCH_SCAN("scanner.task.name.manual", 6),
     SCAN_TASK_NAME_SINGLE_SCAN("scanner.task.name.manual.single", 7),
     SCAN_REPORT_NOTIFY_MESSAGE_SCANNED("scanner.report.notify.message.scanned",8),
-    SCAN_REPORT_NOTIFY_MESSAGE_FAILED("scanner.report.notify.message.failed",9),
-    SCAN_REPORT_NOTIFY_MESSAGE_CVE_LOW("scanner.report.notify.message.cve.low",10),
-    SCAN_REPORT_NOTIFY_MESSAGE_CVE_MEDIUM("scanner.report.notify.message.cve.medium",11),
-    SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH("scanner.report.notify.message.cve.high",12),
-    SCAN_REPORT_NOTIFY_MESSAGE_CVE_CRITICAL("scanner.report.notify.message.cve.critical",13),
+    SCAN_REPORT_NOTIFY_MESSAGE_CVE("scanner.report.notify.message.cve",10),
     SCAN_REPORT_NOTIFY_MESSAGE_DETAIL("scanner.report.notify.message.detail",14),
     SCAN_REPORT_NOTIFY_MESSAGE_TITLE("scanner.report.notify.message.title", 15),
     SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_TIME("scanner.report.notify.message.trigger.time", 16),
     SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_USER("scanner.report.notify.message.trigger.user", 17),
     LICENSE_NOT_FOUND("license.not-found",18),
-    SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_DEPRECATED("scanner.report.notify.message.license.deprecated",19),
-    SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_UNTRUSTED("scanner.report.notify.message.license.untrusted",20),
-    SCAN_REPORT_NOTIFY_MESSAGE_LICENSE_UNKNOWN("scanner.report.notify.message.license.unknown",21),
-    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE_TOTAL("scanner.report.notify.message.sensitive.total",22);
+    SCAN_REPORT_NOTIFY_MESSAGE_LICENSE("scanner.report.notify.message.license",19),
+    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive",20);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

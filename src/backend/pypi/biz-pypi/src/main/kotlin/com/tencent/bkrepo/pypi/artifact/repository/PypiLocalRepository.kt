@@ -50,6 +50,8 @@ import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifa
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.artifact.util.version.SemVersion
+import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -403,7 +405,14 @@ class PypiLocalRepository(
      */
     private fun buildPackageFileNodeListContent(nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
-        for (node in nodeList) {
+        val sortedNodeList = nodeList.sortedBy {
+            try {
+                SemVersionParser.parse(it.metadata?.get("version").toString())
+            } catch (ignore: IllegalArgumentException) {
+                SemVersion(0,0,0)
+            }
+        }
+        for (node in sortedNodeList) {
             val md5 = node.md5
             builder.append("<a")
             val requiresPython = node.metadata?.get("requires_python")?.toString()

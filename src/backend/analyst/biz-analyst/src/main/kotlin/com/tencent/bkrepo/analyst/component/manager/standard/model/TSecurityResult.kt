@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.component.manager.standard.model
 
 import com.tencent.bkrepo.analyst.component.manager.ResultItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.VersionPaths
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("security_result")
@@ -49,6 +50,10 @@ data class TSecurityResultData(
      */
     val pkgName: String = "",
     /**
+     * 组件所在路径
+     */
+    val versionsPaths: MutableSet<VersionPaths> = HashSet(),
+    /**
      * 组件版本
      */
     val pkgVersions: Set<String> = emptySet(),
@@ -60,5 +65,10 @@ data class TSecurityResultData(
     /**
      * cvss等级， CRITICAL,HIGH,MEDIUM,LOW
      */
-    val severity: String
+    val severity: String,
+    /**
+     * cvss等级, 3,2,1,0
+     */
+    val severityLevel: Int? = null,
+    val cvss: Double? = null
 )

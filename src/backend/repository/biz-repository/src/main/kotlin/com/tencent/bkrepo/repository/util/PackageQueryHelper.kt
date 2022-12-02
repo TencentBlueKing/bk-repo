@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.util
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -73,10 +74,18 @@ object PackageQueryHelper {
         packageId: String,
         name: String? = null,
         stageTag: List<String>? = null,
-        metadata: List<MetadataModel>? = null
+        metadata: List<MetadataModel>? = null,
+        sortProperty: String? = null,
+        direction: Sort.Direction = Sort.Direction.DESC
     ): Query {
         return Query(versionListCriteria(packageId, name, stageTag, metadata))
-            .with(Sort.by(Sort.Order(Sort.Direction.DESC, TPackageVersion::ordinal.name)))
+            .apply {
+                if (sortProperty.isNullOrBlank() || sortProperty == PackageVersion::name.name) {
+                    with(Sort.by(Sort.Order(direction, TPackageVersion::ordinal.name)))
+                } else {
+                    with(Sort.by(Sort.Order(direction, sortProperty)))
+                }
+            }
     }
 
     fun versionLatestQuery(packageId: String): Query {

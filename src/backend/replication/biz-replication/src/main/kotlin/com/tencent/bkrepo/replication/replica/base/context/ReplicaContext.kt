@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
+import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -150,9 +151,11 @@ class ReplicaContext(
                 storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
             }.build()
         logger.info("The request will be sent for file sha256 [$sha256].")
+        val tag = RequestTag(task, sha256, size)
         val httpRequest = Request.Builder()
             .url(pushBlobUrl)
             .post(requestBody)
+            .tag(RequestTag::class.java, tag)
             .build()
         httpClient.newCall(httpRequest).execute().use {
             check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }

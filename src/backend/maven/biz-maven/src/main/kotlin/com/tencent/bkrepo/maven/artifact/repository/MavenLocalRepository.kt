@@ -766,7 +766,7 @@ class MavenLocalRepository(
         checksumType: HashType? = null
     ): NodeDetail? {
         with(context) {
-            var node = ArtifactContextHolder.getNodeDetail(fullPath)
+            var node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
             if (node != null || checksumType == null) {
                 return node
             }
@@ -776,11 +776,11 @@ class MavenLocalRepository(
                     "in ${artifactInfo.getRepoIdentify()}"
             )
             val temPath = fullPath.removeSuffix(".${checksumType.ext}")
-            node = ArtifactContextHolder.getNodeDetail(temPath)
+            node = ArtifactContextHolder.getNodeDetail(fullPath = temPath)
             // 源文件存在，但是对应checksum文件不存在，需要生成
             if (node != null) {
                 verifyPath(context, temPath, checksumType)
-                node = ArtifactContextHolder.getNodeDetail(fullPath)
+                node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
             }
             return node
         }
