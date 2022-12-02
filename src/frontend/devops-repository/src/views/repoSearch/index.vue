@@ -46,10 +46,9 @@
                     @icon-click="iconClickHandler"
                     @item-click="itemClickHandler">
                     <template #icon><span></span></template>
-                    <template #text="{ item: { name, sum } }">
+                    <template #text="{ item: { name } }">
                         <div class="flex-1 flex-between-center">
                             <span class="text-overflow">{{ name }}</span>
-                            <span class="mr10" style="color:var(--fontSubsidiaryColor);">{{ sum }}</span>
                         </div>
                     </template>
                 </repo-tree>
