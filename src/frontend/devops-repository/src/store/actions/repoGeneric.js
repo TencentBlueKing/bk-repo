@@ -170,39 +170,6 @@ export default {
         return Vue.prototype.$ajax.get(
             `${prefix}/metadata/label/${projectId}`
         )
-        // mock 数据，方便腾讯同学调试，真实数据接口可用后删除
-        // return new Promise((resolve, reject) => {
-        //     resolve({
-        //         code: 0,
-        //         data: [
-        //             {
-        //                 labelKey: 'scanStatus',
-        //                 labelColorMap: {
-        //                     FAILED: '#FF0000',
-        //                     SUCCESS: '#00EE00'
-        //                 },
-        //                 display: false,
-        //                 createdBy: 'admin',
-        //                 createdDate: '2022-08-22T17:00:00.000',
-        //                 lastModifiedBy: 'admin',
-        //                 lastModifiedDate: '2022-08-22T17:00:00.000'
-        //             },
-        //             {
-        //                 labelKey: 'qualityRedLine',
-        //                 labelColorMap: {
-        //                     false: '#FF0000',
-        //                     true: '#00EE00'
-        //                 },
-        //                 display: true,
-        //                 createdBy: 'admin',
-        //                 createdDate: '2022-08-22T17:00:00.000',
-        //                 lastModifiedBy: 'admin',
-        //                 lastModifiedDate: '2022-08-22T17:00:00.000'
-        //             }
-        //         ],
-        //         traceId: null
-        //     })
-        // })
     },
     // 创建目录
     createFolder (_, { projectId, repoName, fullPath = '' }) {

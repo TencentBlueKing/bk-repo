@@ -47,6 +47,10 @@ class IpSegmentInterceptor(
     rules
 ) {
     override fun parseRule(): Map<String, Any> {
+        val customIpSegment = rules[IP_SEGMENT] as? List<String> ?: emptyList()
+        customIpSegment.forEach {
+            IpUtils.parseCidr(it)
+        }
         return rules
     }
 
@@ -62,7 +66,7 @@ class IpSegmentInterceptor(
 
         val clientIp = HttpContextHolder.getClientAddress()
         val officeNetworkIpSegment = if (officeNetworkEnabled) properties.officeNetwork.whiteList else emptyList()
-        var ipSegment = officeNetworkIpSegment.plus(customIpSegment)
+        val ipSegment = officeNetworkIpSegment.plus(customIpSegment)
         ipSegment.forEach {
             if (IpUtils.isInRange(clientIp, it)) {
                 return true
