@@ -16,7 +16,7 @@
             <div class="mt20 flex-between-center" style="align-items:flex-end;">
                 <div class="result-count flex-align-center">
                 </div>
-                <div class="sort-tool flex-align-center">
+                <div v-if="resultList.length !== 0 || repoList[0].children.length !== 0" class="sort-tool flex-align-center">
                     <bk-select
                         style="width:150px;"
                         v-model="property"
@@ -36,7 +36,7 @@
             </div>
         </div>
         <main class="repo-search-result flex-align-center">
-            <template v-if="resultList.length">
+            <template v-if="resultList.length !== 0 || repoList[0].children.length !== 0">
                 <repo-tree
                     class="repo-tree"
                     ref="dialogTree"
@@ -174,6 +174,7 @@
             searckPackageHandler (scrollLoad) {
                 if (this.isLoading) return
                 this.isLoading = !scrollLoad
+                this.hasNext = true
                 this.searchPackageList({
                     projectId: this.projectId,
                     repoType: this.repoType,
