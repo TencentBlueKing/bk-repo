@@ -255,7 +255,7 @@ class ArtifactContextHolder(
             return otherRepo ?: throw RepoNotFoundException(repoName)
         }
 
-        fun getNodeDetail(fullPath: String? = null): NodeDetail? {
+        fun getNodeDetail(projectId: String? = null, repoName: String? = null, fullPath: String? = null): NodeDetail? {
             val request = HttpContextHolder.getRequestOrNull() ?: return null
             val nodeDetailAttribute = request.getAttribute(NODE_DETAIL_KEY)
             if (nodeDetailAttribute != null) {
@@ -265,8 +265,8 @@ class ArtifactContextHolder(
 
             val artifactInfo = getArtifactInfo(request) ?: return null
             val nodeDetail = nodeClient.getNodeDetail(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
+                projectId = projectId ?: artifactInfo.projectId,
+                repoName = repoName ?: artifactInfo.repoName,
                 fullPath = fullPath ?: artifactInfo.getArtifactFullPath()
             ).data
             nodeDetail?.let { request.setAttribute(NODE_DETAIL_KEY, nodeDetail) }

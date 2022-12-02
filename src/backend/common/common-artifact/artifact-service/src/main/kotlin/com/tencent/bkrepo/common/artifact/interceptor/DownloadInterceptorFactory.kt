@@ -57,10 +57,31 @@ class DownloadInterceptorFactory(
         private lateinit var properties: DownloadInterceptorProperties
         private const val ANDROID_APP_USER_AGENT = "BKCI_APP"
         private const val IOS_APP_USER_AGENT = "com.apple.appstored"
+        private const val INTERCEPTORS = "interceptors"
+        private const val TYPE = "type"
         private val forbidRule = mapOf(
             MetadataInterceptor.METADATA to "$FORBID_STATUS:true",
             DownloadInterceptor.ALLOWED to false
         )
+
+        fun buildInterceptors(
+            settings: MutableMap<String, Any>
+        ): List<DownloadInterceptor<*, NodeDetail>> {
+            val interceptorList = mutableListOf<DownloadInterceptor<*, NodeDetail>>()
+            try {
+                val interceptors = settings[INTERCEPTORS] as? List<Map<String, Any>>
+                interceptors?.forEach {
+                    val type: DownloadInterceptorType = DownloadInterceptorType.valueOf(it[TYPE].toString())
+                    val rules: Map<String, Any> by it
+                    val interceptor = buildInterceptor(type, rules)
+                    interceptor?.let { interceptorList.add(interceptor) }
+                }
+                interceptorList.add(buildInterceptor(DownloadInterceptorType.NODE_FORBID)!!)
+            } catch (e: Exception) {
+                logger.warn("fail to get download interceptor by settings[$settings]: $e")
+            }
+            return interceptorList
+        }
 
         fun buildInterceptor(
             type: DownloadInterceptorType,
