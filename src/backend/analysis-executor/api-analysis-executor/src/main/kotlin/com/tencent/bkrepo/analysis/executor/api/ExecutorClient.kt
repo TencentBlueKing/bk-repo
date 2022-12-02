@@ -25,21 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation("io.kubernetes:client-java:${Versions.KubernetesClient}")
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.analysis.executor.api
+
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.common.api.constant.ANALYSIS_EXECUTOR_SERVICE_NAME
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+
+@FeignClient(ANALYSIS_EXECUTOR_SERVICE_NAME, contextId = "ScanClient")
+@RequestMapping("/service/executor")
+interface ExecutorClient {
+    /**
+     * 执行扫描任务
+     * @param subtask 扫描任务
+     * @return 是否成功提交执行
+     */
+    @PostMapping("/execute")
+    fun execute(@RequestBody subtask: SubScanTask): Boolean
+
+    /**
+     * 执行扫描任务，执行器会通过[subtaskId]到analysis拉取任务详情，同时到generic服务拉取制品
+     * @param subtaskId 扫描任务id
+     * @param token 用于更新
+     * @return 是否成功执行
+     */
+    fun execute(@RequestParam subtaskId: String, token: String): Boolean
+
+    /**
+     * 停止扫描任务
+     * @param subtaskId 扫描任务id
+     * @return 是否成功停止
+     */
+    @PostMapping("/stop")
+    fun stop(@RequestParam subtaskId: String): Boolean
 }

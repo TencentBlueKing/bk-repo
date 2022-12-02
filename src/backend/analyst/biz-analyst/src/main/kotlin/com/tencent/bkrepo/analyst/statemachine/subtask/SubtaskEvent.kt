@@ -40,6 +40,11 @@ enum class SubtaskEvent {
      */
     NOTIFY,
     PULL,
+
+    /**
+     * 分发到分析执行集群失败
+     */
+    DISPATCH_FAILED,
     EXECUTE,
     STOP,
     BLOCK_TIMEOUT,

@@ -79,7 +79,7 @@ class StopAction(
     }
 
     companion object {
-        private val scheduler = Executors.newScheduledThreadPool(200)
+        private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
         /**
          * 延迟停止任务时间

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.STOPPING
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.BLOCK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.CREATE
+import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.DISPATCH_FAILED
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.EXECUTE
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.NOTIFY
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.PULL
@@ -104,6 +105,7 @@ class TaskStateMachineConfiguration(
             externalTransitions(arrayOf(CREATED, EXECUTING), PULLED, PULL, subtaskActions)
             internalTransition(PULLED, PULL, subtaskActions)
             externalTransition(PULLED, EXECUTING, EXECUTE, subtaskActions)
+            externalTransition(PULLED, CREATED, DISPATCH_FAILED, subtaskActions)
 
             // finished state
             externalTransition(BLOCKED, BLOCK_TIMEOUT, SubtaskEvent.BLOCK_TIMEOUT, subtaskActions)

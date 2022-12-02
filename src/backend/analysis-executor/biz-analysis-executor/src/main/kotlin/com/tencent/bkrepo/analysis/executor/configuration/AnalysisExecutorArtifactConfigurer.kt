@@ -25,21 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation("io.kubernetes:client-java:${Versions.KubernetesClient}")
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.analysis.executor.configuration
+
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class AnalysisExecutorArtifactConfigurer : ArtifactConfigurerSupport() {
+
+    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
+
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/analysis-executor").includePattern("/api/**")
+        }
+    }
 }

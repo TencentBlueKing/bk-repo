@@ -55,5 +55,9 @@ data class ScannerExecutorProperties(
     /**
      * 扫描器日志最大行数
      */
-    var maxScannerLogLines: Int = 200
+    var maxScannerLogLines: Int = 200,
+    /**
+     * 是否主动轮询拉取任务
+     */
+    var pull: Boolean = true
 )

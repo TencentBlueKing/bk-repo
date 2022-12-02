@@ -62,4 +62,5 @@ object Versions {
     const val Swagger = "1.6.2"
     const val SleuthOtel = "1.0.0-M13"
     const val Cola = "4.3.1"
+    const val KubernetesClient = "11.0.2"
 }

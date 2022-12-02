@@ -25,21 +25,50 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation("io.kubernetes:client-java:${Versions.KubernetesClient}")
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-}
+package com.tencent.bkrepo.analyst.configuration
+
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
+
+@ConfigurationProperties("scanner.dispatcher.k8s")
+data class KubernetesDispatcherProperties(
+    /**
+     * 是否启用
+     */
+    var enabled: Boolean = false,
+    /**
+     * 创建job使用的命名空间
+     */
+    var namespace: String = "default",
+    /**
+     * k8s api server url
+     */
+    var apiServer: String? = null,
+    /**
+     * 用于访问apiServer时进行认证，未配置时取当前环境的~/.kube/config，或者当前部署的service account
+     */
+    var token: String? = null,
+    /**
+     * job执行结束后，k8s中job对象保留时间为一小时
+     */
+    var jobTtlSecondsAfterFinished: Int = 60 * 60,
+
+    /**
+     * 容器limit mem
+     */
+    var limitMem: DataSize = DataSize.ofGigabytes(32),
+
+    /**
+     * 容器 request mem
+     */
+    var requestMem: DataSize = DataSize.ofGigabytes(16),
+
+    /**
+     * 容器request cpu
+     */
+    var requestCpu: Double = 4.0,
+    /**
+     * 容器limit cpu
+     */
+    var limitCpu: Double = 16.0
+)
