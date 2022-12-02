@@ -48,4 +48,15 @@ class EventAuditListener(
     fun handle(event: ArtifactEvent) {
         operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
     }
+
+    /**
+     * 将需要审计记录的事件持久化
+     */
+    @EventListener(List::class)
+    fun handleMulti(events: List<ArtifactEvent>) {
+        operateLogService.saveEventsAsync(
+            events,
+            events.first().data["realIpAddress"] as? String ?: HttpContextHolder.getClientAddress()
+        )
+    }
 }
