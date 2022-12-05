@@ -44,6 +44,7 @@ import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
@@ -83,6 +84,28 @@ open class NodeDeleteSupport(
                 }
             }
             return deleteByPaths(projectId, repoName, fullPaths, operator)
+        }
+    }
+
+    override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
+        with(nodesDeleteRequest) {
+            if (fullPaths.isEmpty()) {
+                return 0L
+            }
+            val orOperation = mutableListOf<Criteria>()
+            val normalizedFullPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
+            orOperation.add(where(TNode::fullPath).inValues(normalizedFullPaths))
+            normalizedFullPaths.forEach {
+                val normalizedPath = PathUtils.toPath(it)
+                val escapedPath = PathUtils.escapeRegex(normalizedPath)
+                orOperation.add(where(TNode::fullPath).regex("^$escapedPath"))
+            }
+            val criteria = where(TNode::projectId).isEqualTo(projectId)
+                .and(TNode::repoName).isEqualTo(repoName)
+                .and(TNode::deleted).isEqualTo(null)
+                .and(TNode::folder).isEqualTo(false)
+                .orOperator(*orOperation.toTypedArray())
+            return nodeDao.count(Query(criteria))
         }
     }
 
