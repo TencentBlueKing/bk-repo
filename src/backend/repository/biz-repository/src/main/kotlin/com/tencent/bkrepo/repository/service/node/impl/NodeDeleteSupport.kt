@@ -151,7 +151,7 @@ open class NodeDeleteSupport(
         fullPaths: List<String>,
         operator: String
     ): NodeDeleteResult {
-        val deletedSize: Long
+        var deletedSize = 0L
         var deletedNum = 0L
         val normalizedFullPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
         val orOperation = mutableListOf(
@@ -168,10 +168,10 @@ open class NodeDeleteSupport(
             .orOperator(*orOperation.toTypedArray())
         val query = Query(criteria)
         val deleteTime = LocalDateTime.now()
-        deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
         try {
             val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
             deletedNum = updateResult.modifiedCount
+            deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
             quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             publishEvent(buildDeletedEvent(projectId, repoName, fullPaths, operator))
         } catch (exception: DuplicateKeyException) {
