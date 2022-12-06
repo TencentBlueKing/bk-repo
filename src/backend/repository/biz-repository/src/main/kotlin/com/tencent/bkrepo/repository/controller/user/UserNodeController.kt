@@ -162,6 +162,24 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
     }
 
+    @ApiOperation("统计批量删除节点数")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    @PostMapping("/batch/{projectId}/{repoName}")
+    fun countBatchDeleteNode(
+        @RequestAttribute userId: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestBody @Size(max = 200, message = "操作个数必须在0和200之间") fullPaths: List<String>
+    ): Response<Long> {
+        val nodesDeleteRequest = NodesDeleteRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPaths = fullPaths,
+            operator = userId
+        )
+        return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
+    }
+
     @ApiOperation("清理创建时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
