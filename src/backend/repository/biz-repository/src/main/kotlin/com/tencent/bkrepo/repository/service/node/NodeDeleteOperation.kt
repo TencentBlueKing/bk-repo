@@ -52,6 +52,11 @@ interface NodeDeleteOperation {
     fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult
 
     /**
+     * 统计批量删除指定节点总数
+     */
+    fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long
+
+    /**
      * 根据全路径删除文件或者目录
      */
     fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String): NodeDeleteResult

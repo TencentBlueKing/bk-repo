@@ -100,6 +100,10 @@ class NodeServiceImpl(
         return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
     }
 
+    override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
+        return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteByPath(
         projectId: String,
