@@ -117,6 +117,10 @@ class KubernetesDispatcher(
         }
     }
 
+    override fun name(): String {
+        return NAME
+    }
+
     @Suppress("LongParameterList")
     private fun createJob(
         taskId: String,
@@ -181,5 +185,6 @@ class KubernetesDispatcher(
 
     companion object {
         private val logger = LoggerFactory.getLogger(KubernetesDispatcher::class.java)
+        const val NAME = "k8s"
     }
 }

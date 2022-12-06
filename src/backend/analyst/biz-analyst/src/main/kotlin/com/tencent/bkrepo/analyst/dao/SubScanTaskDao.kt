@@ -30,6 +30,8 @@ package com.tencent.bkrepo.analyst.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.TSubScanTask
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.elemMatch
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.lt
@@ -187,8 +190,13 @@ class SubScanTaskDao(
         return updateResult
     }
 
-    fun firstTaskByStatusIn(status: List<String>): TSubScanTask? {
-        val query = Query(TSubScanTask::status.inValues(status))
+    fun firstTaskByStatusIn(status: List<String>, dispatcher: String?): TSubScanTask? {
+        val query = Query(
+            Criteria().andOperator(
+                TSubScanTask::status.inValues(status),
+                dispatcherCriteria(dispatcher)
+            )
+        )
         return findOne(query)
     }
 
@@ -197,7 +205,7 @@ class SubScanTaskDao(
      *
      * @param timeoutSeconds 允许执行的最长时间
      */
-    fun firstTimeoutTask(timeoutSeconds: Long): TSubScanTask? {
+    fun firstTimeoutTask(timeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
         val now = LocalDateTime.now()
 
         val lastModifiedCriteria = Criteria
@@ -211,7 +219,8 @@ class SubScanTaskDao(
 
         val criteria = Criteria().andOperator(
             timeoutCriteria,
-            TSubScanTask::status.inValues(PULLED.name, EXECUTING.name)
+            TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
+            dispatcherCriteria(dispatcher)
         )
 
         return findOne(Query(criteria))
@@ -226,6 +235,17 @@ class SubScanTaskDao(
             .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
             .and(TSubScanTask::status.name).isEqualTo(SubScanTaskStatus.BLOCKED.name)
         return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
+    }
+
+    private fun dispatcherCriteria(dispatcher: String?): Criteria {
+        return if (dispatcher == null) {
+            Criteria("${TSubScanTask::metadata.name}.${TaskMetadata::key.name}").ne(TASK_METADATA_DISPATCHER)
+        } else {
+            TSubScanTask::metadata.elemMatch(
+                TaskMetadata::key.isEqualTo(TASK_METADATA_DISPATCHER)
+                    .and(TaskMetadata::value.name).isEqualTo(dispatcher)
+            )
+        }
     }
 
     companion object {

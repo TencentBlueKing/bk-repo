@@ -167,10 +167,9 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
-    override fun pull(): SubScanTask? {
-        return pullSubScanTask()?.let {
-            val parentTask = scanTaskDao.findById(it.parentScanTaskId)!!
-            return Converter.convert(it, scannerService.get(it.scanner), parentTask.metadata)
+    override fun pull(dispatcher: String?): SubScanTask? {
+        return pullSubScanTask(dispatcher)?.let {
+            return Converter.convert(it, scannerService.get(it.scanner))
         }
     }
 
@@ -212,12 +211,12 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     @Suppress("ReturnCount")
-    fun pullSubScanTask(): TSubScanTask? {
+    fun pullSubScanTask(dispatcher: String?): TSubScanTask? {
         var count = 0
         while (true) {
             // 优先返回待执行任务，再返回超时任务
-            val task = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name))
-                ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
+            val task = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
+                ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS, dispatcher)
                 ?: return null
 
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败

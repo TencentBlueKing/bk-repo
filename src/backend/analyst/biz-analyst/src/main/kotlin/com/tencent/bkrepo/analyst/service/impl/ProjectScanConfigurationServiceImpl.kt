@@ -27,12 +27,6 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_PROJECT_SCAN_PRIORITY
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_SCAN_TASK_COUNT_LIMIT
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
@@ -42,6 +36,12 @@ import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.request.ProjectScanConfigurationPageRequest
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -71,7 +71,8 @@ class ProjectScanConfigurationServiceImpl(
                 priority = priority,
                 scanTaskCountLimit = scanTaskCountLimit,
                 subScanTaskCountLimit = subScanTaskCountLimit,
-                autoScanConfiguration = autoScanConfiguration ?: emptyMap()
+                autoScanConfiguration = autoScanConfiguration ?: emptyMap(),
+                dispatcher = dispatcher
             )
             return Converter.convert(projectScanConfigurationDao.insert(configuration))
         }
@@ -95,7 +96,8 @@ class ProjectScanConfigurationServiceImpl(
                 subScanTaskCountLimit = subScanTaskCountLimit ?: oldConfiguration.subScanTaskCountLimit,
                 autoScanConfiguration = autoScanConfiguration ?: oldConfiguration.autoScanConfiguration,
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate
+                lastModifiedDate = lastModifiedDate,
+                dispatcher = dispatcher
             )
             return Converter.convert(projectScanConfigurationDao.save(newConfiguration))
         }

@@ -66,5 +66,9 @@ data class TProjectScanConfiguration(
     /**
      * 自动扫描配置,key为scannerName,value为扫描器对应的自动扫描配置
      */
-    val autoScanConfiguration: Map<String, AutoScanConfiguration> = emptyMap()
+    val autoScanConfiguration: Map<String, AutoScanConfiguration> = emptyMap(),
+    /**
+     * 用于分发子任务的分发器
+     */
+    val dispatcher: String? = null
 )

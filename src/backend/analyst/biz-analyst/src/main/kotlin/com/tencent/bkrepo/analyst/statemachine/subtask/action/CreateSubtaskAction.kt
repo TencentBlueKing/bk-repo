@@ -153,7 +153,8 @@ class CreateSubtaskAction(
                 size = size,
                 packageSize = packageSize,
                 credentialsKey = credentialKey,
-                scanQuality = scanTask.scanPlan?.scanQuality
+                scanQuality = scanTask.scanPlan?.scanQuality,
+                metadata = scanTask.metadata
             )
         }
     }

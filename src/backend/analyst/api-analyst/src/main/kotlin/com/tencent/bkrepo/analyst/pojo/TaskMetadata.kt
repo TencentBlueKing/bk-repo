@@ -61,5 +61,10 @@ data class TaskMetadata(
          * 只扫描单个制品时，可以通过该元数据指定扫描器加载的文件名
          */
         const val TASK_METADATA_FILE_NAME = "FILE_NAME"
+
+        /**
+         * 指定任务使用哪个分发器分发子任务
+         */
+        const val TASK_METADATA_DISPATCHER = "DISPATCHER"
     }
 }

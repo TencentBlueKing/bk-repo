@@ -43,5 +43,7 @@ data class ProjectScanConfiguration(
     @ApiModelProperty("项目扫描子任务数量限制")
     val subScanTaskCountLimit: Int? = null,
     @ApiModelProperty("自动扫描配置")
-    val autoScanConfiguration: Map<String, AutoScanConfiguration>? = null
+    val autoScanConfiguration: Map<String, AutoScanConfiguration>? = null,
+    @ApiModelProperty("子任务分发器")
+    val dispatcher: String? = null
 )

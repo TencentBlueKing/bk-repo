@@ -64,8 +64,7 @@ open class SubtaskPoller(
         var subtask: SubScanTask?
         // 不加锁，允许少量超过执行器的资源限制
         for (i in 0 until dispatcher.availableCount()) {
-            // TODO 根据任务元数据选择分发到哪个集群
-            subtask = scanService.pull() ?: break
+            subtask = scanService.pull(dispatcher.name()) ?: break
             subtask.token = temporaryScanTokenService.createToken(subtask.taskId)
             if (!dispatcher.dispatch(subtask)) {
                 // 分发失败，放回队列中

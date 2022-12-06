@@ -12,6 +12,11 @@
           <el-option v-for="scanner in scanners" :key="scanner" :label="scanner" :value="scanner" />
         </el-select>
       </el-form-item>
+      <el-form-item label="子任务分发器" prop="dispatcher">
+        <el-select v-model="configuration.dispatcher" placeholder="请选择" clearable>
+          <el-option v-for="dispatcher in dispatchers" :key="dispatcher" :label="dispatcher" :value="dispatcher" />
+        </el-select>
+      </el-form-item>
     </el-form>
     <div slot="footer">
       <el-button @click="close">取 消</el-button>
@@ -43,6 +48,7 @@ export default {
     return {
       showDialog: this.visible,
       configuration: this.newConfiguration(),
+      dispatchers: ['k8s'],
       scanners: [],
       selectedScanners: [],
       loading: false

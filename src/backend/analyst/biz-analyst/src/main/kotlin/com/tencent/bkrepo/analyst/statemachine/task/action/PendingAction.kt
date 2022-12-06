@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.statemachine.task.action
 
 import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
+import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.event.listener.ScanTaskStatusChangedEventListener
@@ -40,14 +41,15 @@ import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
-import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.analyst.utils.RuleConverter
 import com.tencent.bkrepo.analyst.utils.RuleUtil
@@ -69,6 +71,7 @@ import java.time.LocalDateTime
 @Action
 @Suppress("LongParameterList")
 class PendingAction(
+    private val projectScanConfigurationDao: ProjectScanConfigurationDao,
     private val scanPlanDao: ScanPlanDao,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scannerService: ScannerService,
@@ -105,6 +108,7 @@ class PendingAction(
             val plan = planId?.let { scanPlanDao.get(it) }
             val projectId = projectId(rule, plan)
             val repoNames = RuleUtil.getRepoNames(rule)
+            val metadata = customMetadata(metadata, projectId)
 
             // 校验权限
             if (userId != null) {
@@ -146,6 +150,16 @@ class PendingAction(
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             logger.info("create scan task[${scanTask.taskId}] success")
             return scanTask
+        }
+    }
+
+    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String): List<TaskMetadata> {
+        val projectScanConfiguration = projectScanConfigurationDao.findByProjectId(projectId)
+        val customMetadata = metadata.filter { it.key != TASK_METADATA_DISPATCHER }
+        return if (projectScanConfiguration?.dispatcher.isNullOrEmpty()) {
+            customMetadata
+        } else {
+            customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, projectScanConfiguration!!.dispatcher!!)
         }
     }
 

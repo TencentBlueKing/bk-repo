@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@FeignClient(ANALYSIS_EXECUTOR_SERVICE_NAME, contextId = "ScanClient")
+@FeignClient(ANALYSIS_EXECUTOR_SERVICE_NAME, contextId = "ExecutorClient")
 @RequestMapping("/service/executor")
 interface ExecutorClient {
     /**

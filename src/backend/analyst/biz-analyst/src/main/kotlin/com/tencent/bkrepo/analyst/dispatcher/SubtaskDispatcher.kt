@@ -42,4 +42,6 @@ interface SubtaskDispatcher {
      * 允许调度多少个任务
      */
     fun availableCount(): Int
+
+    fun name(): String
 }
