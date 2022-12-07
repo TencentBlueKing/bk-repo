@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler
 import org.springframework.http.HttpHeaders
 import org.springframework.web.server.ServerWebExchange
@@ -48,6 +49,7 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
         } else {
             exchange.response.rawStatusCode = HttpStatus.INTERNAL_SERVER_ERROR.value
             val errorMsg = CommonMessageCode.SYSTEM_ERROR.getKey()
+            logger.error(errorMsg, ex)
             Response(CommonMessageCode.SYSTEM_ERROR.getCode(), errorMsg, null, null)
         }
         if (ex is AuthenticationException) {
@@ -56,5 +58,9 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
         val bodyBytes = JsonUtils.objectMapper.writeValueAsBytes(body)
         val res = exchange.response.bufferFactory().wrap(bodyBytes)
         return exchange.response.writeWith(Mono.just(res))
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
     }
 }

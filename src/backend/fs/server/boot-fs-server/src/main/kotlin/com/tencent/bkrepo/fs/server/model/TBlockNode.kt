@@ -25,27 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.metrics
+package com.tencent.bkrepo.fs.server.model
 
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import java.util.concurrent.atomic.AtomicInteger
+import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingDocument
+import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingKey
+import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_VERSION_IDX
+import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_VERSION_IDX_DEF
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import java.time.LocalDateTime
+import org.springframework.data.mongodb.core.index.CompoundIndex
 
-class ServerMetrics : MeterBinder {
-    var downloadingCount = AtomicInteger(0)
-    var uploadingCount = AtomicInteger(0)
-    override fun bindTo(registry: MeterRegistry) {
-        Gauge.builder(FILE_DOWNLOAD_COUNT, downloadingCount) { it.get().toDouble() }
-            .description("Number of file downloading")
-            .register(registry)
-        Gauge.builder(FILE_UPLOAD_COUNT, uploadingCount) { it.get().toDouble() }
-            .description("Number of file uploading")
-            .register(registry)
-    }
-
+/**
+ * 块节点
+ * 数据节点
+ * */
+@ShardingDocument("block_node")
+@CompoundIndex(name = BLOCK_VERSION_IDX, def = BLOCK_VERSION_IDX_DEF, unique = true)
+data class TBlockNode(
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    @ShardingKey(count = SHARDING_COUNT)
+    val nodeFullPath: String,
+    val index: Long,
+    var sha256: String,
+    val projectId: String,
+    val repoName: String,
+    val effective: Boolean,
+    val isDeleted: Boolean,
+    val version: Int,
+    val size: Int
+) {
     companion object {
-        const val FILE_DOWNLOAD_COUNT = "file_download_count"
-        const val FILE_UPLOAD_COUNT = "file_upload_count"
+        const val BLOCK_VERSION_IDX = "projectId_repoName_fullPath_idx"
+        const val BLOCK_VERSION_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'index': 1,'version':1}"
     }
 }

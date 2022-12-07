@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -61,6 +62,9 @@ interface RRepositoryClient {
         @RequestParam path: String,
         @RequestBody option: NodeListOption = NodeListOption()
     ): Mono<Response<Page<NodeInfo>>>
+
+    @PostMapping("/node/create")
+    fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
 
     @GetMapping("/repo/detail/{projectId}/{repoName}")
     fun getRepoDetail(

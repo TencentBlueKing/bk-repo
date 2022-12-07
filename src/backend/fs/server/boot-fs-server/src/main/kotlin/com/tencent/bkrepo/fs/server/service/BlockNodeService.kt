@@ -25,27 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.metrics
+package com.tencent.bkrepo.fs.server.service
 
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import java.util.concurrent.atomic.AtomicInteger
+import com.tencent.bkrepo.fs.server.model.TBlockNode
+import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 
-class ServerMetrics : MeterBinder {
-    var downloadingCount = AtomicInteger(0)
-    var uploadingCount = AtomicInteger(0)
-    override fun bindTo(registry: MeterRegistry) {
-        Gauge.builder(FILE_DOWNLOAD_COUNT, downloadingCount) { it.get().toDouble() }
-            .description("Number of file downloading")
-            .register(registry)
-        Gauge.builder(FILE_UPLOAD_COUNT, uploadingCount) { it.get().toDouble() }
-            .description("Number of file uploading")
-            .register(registry)
-    }
-
-    companion object {
-        const val FILE_DOWNLOAD_COUNT = "file_download_count"
-        const val FILE_UPLOAD_COUNT = "file_upload_count"
+class BlockNodeService(val blockNodeRepository: BlockNodeRepository) {
+    suspend fun listBlocks(projectId: String, repoName: String, fullPath: String): List<TBlockNode> {
+        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
+            .and(TBlockNode::effective.name).isEqualTo(true)
+            .and(TBlockNode::projectId.name).isEqualTo(projectId)
+            .and(TBlockNode::repoName.name).isEqualTo(repoName)
+        // 读取最新版本
+        val query = Query(criteria)
+        query.with(Sort.by(Sort.Direction.DESC, TBlockNode::version.name))
+        return blockNodeRepository.find(query)
     }
 }

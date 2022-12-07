@@ -25,27 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.metrics
+package com.tencent.bkrepo.common.mongo.reactive.dao
 
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import java.util.concurrent.atomic.AtomicInteger
+import com.mongodb.client.result.UpdateResult
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 
-class ServerMetrics : MeterBinder {
-    var downloadingCount = AtomicInteger(0)
-    var uploadingCount = AtomicInteger(0)
-    override fun bindTo(registry: MeterRegistry) {
-        Gauge.builder(FILE_DOWNLOAD_COUNT, downloadingCount) { it.get().toDouble() }
-            .description("Number of file downloading")
-            .register(registry)
-        Gauge.builder(FILE_UPLOAD_COUNT, uploadingCount) { it.get().toDouble() }
-            .description("Number of file uploading")
-            .register(registry)
-    }
+/**
+ * mongo db reactive 数据访问层接口
+ */
+interface MongoReactiveDao<E> {
 
-    companion object {
-        const val FILE_DOWNLOAD_COUNT = "file_download_count"
-        const val FILE_UPLOAD_COUNT = "file_upload_count"
-    }
+    /**
+     * 通过查询对象查询单条文档，返回元素类型由clazz指定
+     */
+    suspend fun <T> findOne(query: Query, clazz: Class<T>): T?
+
+    /**
+     * 通过查询对象查询文档集合，返回元素类型由clazz指定
+     */
+    suspend fun <T> find(query: Query, clazz: Class<T>): List<T>
+
+    /**
+     * 新增文档到数据库的集合中
+     */
+    suspend fun save(entity: E): E
+
+    /**
+     * 更新文档
+     */
+    suspend fun updateMulti(query: Query, update: Update): UpdateResult
 }

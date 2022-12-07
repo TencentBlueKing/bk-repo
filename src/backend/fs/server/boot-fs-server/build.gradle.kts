@@ -3,6 +3,7 @@ dependencies {
         exclude(module = "common-service")
     }
     implementation(project(":common:common-storage:storage-service"))
+    implementation(project(":common:common-mongo-reactive"))
     implementation("io.jsonwebtoken:jjwt-api")
     runtimeOnly("io.jsonwebtoken:jjwt-impl")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
@@ -11,6 +12,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.google.guava:guava")
 }

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.listener.NodeFlushListener
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.devops.service.config.ServiceProperties
@@ -49,6 +50,7 @@ val beans = beans {
     bean<ServerMetrics>()
     bean<ActuatorAuthFilter>()
     bean<GlobalExceptionHandler>()
+    bean<NodeFlushListener>()
     bean {
         RouteConfiguration(ref(), ref(), ref(), ref(), ref()).router()
     }

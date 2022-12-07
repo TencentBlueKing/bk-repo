@@ -84,6 +84,39 @@ class RouteConfiguration(
      * 文件读写路由
      * */
     private fun CoRouterFunctionDsl.readWriteRouter() {
+        "/block/{index}".nest {
+            accept(APPLICATION_OCTET_STREAM).nest {
+                requireReadPermission()
+                GET(DEFAULT_MAPPING_URI, fileOperationsHandler::readBlock)
+                filter { req, next ->
+                    try {
+                        serverMetrics.downloadingCount.incrementAndGet()
+                        next(req)
+                    } finally {
+                        serverMetrics.downloadingCount.decrementAndGet()
+                    }
+                }
+            }
+            accept(APPLICATION_JSON).nest {
+                requireWritePermission()
+                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::writeBlock)
+                filter { req, next ->
+                    try {
+                        serverMetrics.uploadingCount.incrementAndGet()
+                        next(req)
+                    } finally {
+                        serverMetrics.uploadingCount.decrementAndGet()
+                    }
+                }
+            }
+        }
+        "/block".nest {
+            accept(APPLICATION_JSON).nest {
+                requireWritePermission()
+                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::complete)
+            }
+        }
+
         accept(APPLICATION_OCTET_STREAM).nest {
             requireReadPermission()
             GET(DEFAULT_MAPPING_URI, fileOperationsHandler::download)
@@ -98,6 +131,9 @@ class RouteConfiguration(
         }
     }
 
+    private fun CoRouterFunctionDsl.requireWritePermission() {
+        checkPermission(PermissionAction.WRITE)
+    }
     private fun CoRouterFunctionDsl.requireReadPermission() {
         checkPermission(PermissionAction.READ)
     }

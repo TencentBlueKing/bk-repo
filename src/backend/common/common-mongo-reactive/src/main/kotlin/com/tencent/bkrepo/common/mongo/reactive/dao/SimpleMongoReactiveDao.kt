@@ -25,27 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.metrics
+package com.tencent.bkrepo.common.mongo.reactive.dao
 
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import java.util.concurrent.atomic.AtomicInteger
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.query.Query
 
-class ServerMetrics : MeterBinder {
-    var downloadingCount = AtomicInteger(0)
-    var uploadingCount = AtomicInteger(0)
-    override fun bindTo(registry: MeterRegistry) {
-        Gauge.builder(FILE_DOWNLOAD_COUNT, downloadingCount) { it.get().toDouble() }
-            .description("Number of file downloading")
-            .register(registry)
-        Gauge.builder(FILE_UPLOAD_COUNT, uploadingCount) { it.get().toDouble() }
-            .description("Number of file uploading")
-            .register(registry)
+class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
+
+    // 抽象类使用构造器注入不方便
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var reactiveMongoOperations: ReactiveMongoOperations
+
+    override fun determineReactiveMongoOperations(): ReactiveMongoOperations {
+        return reactiveMongoOperations
     }
 
-    companion object {
-        const val FILE_DOWNLOAD_COUNT = "file_download_count"
-        const val FILE_UPLOAD_COUNT = "file_upload_count"
+    override fun determineCollectionName(query: Query): String {
+        return collectionName
+    }
+
+    override fun determineCollectionName(entity: E): String {
+        return collectionName
     }
 }
