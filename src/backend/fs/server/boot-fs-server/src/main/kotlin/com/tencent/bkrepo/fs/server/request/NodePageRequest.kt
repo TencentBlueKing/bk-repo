@@ -37,7 +37,11 @@ class NodePageRequest(request: ServerRequest) : NodeRequest(request) {
         val includeFolder = request.queryParamOrNull("includeFolder").toBoolean()
         listOption = NodeListOption(
             includeFolder = includeFolder,
-            pageSize = 10000
+            pageSize = MAX_SIZE
         )
+    }
+
+    companion object {
+        private const val MAX_SIZE = 10000
     }
 }

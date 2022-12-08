@@ -34,7 +34,9 @@ import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
 import com.tencent.bkrepo.fs.server.request.NodeRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.withContext
 import org.springframework.core.io.FileSystemResource
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -53,7 +55,6 @@ class FileOperationsHandler(
 ) {
 
     suspend fun download(request: ServerRequest): ServerResponse {
-        println("enter file operation")
         with(NodeRequest(request)) {
             val repo = RepositoryCache.getRepoDetail(projectId, repoName)
             val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data!!
@@ -64,8 +65,9 @@ class FileOperationsHandler(
                 Range(startPosition, endPosition, length)
             }
             val range = httpRange ?: Range.full(length)
-            val artifactInputStream = storageService.load(node.sha256!!, range, repo.storageCredentials)
-                ?: return ServerResponse.notFound().buildAndAwait()
+            val artifactInputStream = withContext(Dispatchers.IO) {
+                storageService.load(node.sha256!!, range, repo.storageCredentials)
+            } ?: return ServerResponse.notFound().buildAndAwait()
             val source = if (artifactInputStream is FileArtifactInputStream) {
                 FileSystemResource(artifactInputStream.file)
             } else {
