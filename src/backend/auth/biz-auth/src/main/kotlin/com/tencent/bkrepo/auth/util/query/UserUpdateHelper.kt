@@ -35,6 +35,9 @@ object UserUpdateHelper {
         request.admin?.let {
             update.set(TUser::admin.name, request.admin)
         }
+        request.asstUsers?.let {
+            update.set(TUser::asstUsers.name, request.asstUsers)
+        }
         return update.set(TUser::lastModifiedDate.name, LocalDateTime.now())
     }
 

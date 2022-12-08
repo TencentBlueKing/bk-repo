@@ -19,5 +19,9 @@ data class UserInfo(
     @ApiModelProperty("用户名")
     val locked: Boolean,
     @ApiModelProperty("是否管理员")
-    val admin: Boolean
+    val admin: Boolean,
+    @ApiModelProperty("是否为虚拟用户")
+    val group: Boolean,
+    @ApiModelProperty("关联用户")
+    val asstUsers: List<String> = emptyList(),
 )
