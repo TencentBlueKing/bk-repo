@@ -35,7 +35,7 @@ data class ScannerExecutorProperties(
     /**
      * 扫描执行器工作目录
      */
-    var workDir: String = System.getProperty("java.io.tmpdir"),
+    var workDir: String = "/bkrepo-data/analysis-executor",
     /**
      * 单机最大允许执行的任务数量
      */
@@ -47,11 +47,11 @@ data class ScannerExecutorProperties(
     /**
      * 机器当前空闲内存占比，小于这个值后不再认领任务
      */
-    var atLeastFreeMemPercent: Double = 0.2,
+    var atLeastFreeMemPercent: Double = 0.0,
     /**
      * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
      */
-    var atLeastUsableDiskSpacePercent: Double = 0.3,
+    var atLeastUsableDiskSpacePercent: Double = 0.1,
     /**
      * 扫描器日志最大行数
      */

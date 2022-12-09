@@ -42,6 +42,8 @@ dependencies {
     implementation(project(":rpm:biz-rpm"))
     implementation(project(":oci:biz-oci"))
     implementation(project(":job:biz-job"))
+    implementation(project(":analyst:biz-analyst"))
+    implementation(project(":analysis-executor:biz-analysis-executor"))
     implementation(project(":replication:biz-replication"))
 }
 
