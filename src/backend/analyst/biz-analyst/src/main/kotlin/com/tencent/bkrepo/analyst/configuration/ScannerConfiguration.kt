@@ -33,10 +33,14 @@ import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
+import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.repository.api.OperateLogClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -63,5 +67,11 @@ class ScannerConfiguration {
         subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
     ): SubtaskPoller {
         return SubtaskPoller(dispatcher, scanService, temporaryScanTokenService, subtaskStateMachine)
+    }
+
+    @Bean
+    @ConditionalOnMissingClass("com.tencent.bkrepo.BootApplication") // 仅在非单体包部署时创建，避免循环依赖问题
+    fun OperateLogService(operateLogClient: OperateLogClient): OperateLogService {
+        return OperateLogServiceImpl(operateLogClient)
     }
 }
