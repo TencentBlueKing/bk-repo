@@ -104,26 +104,31 @@
         </encoder>
     </appender>
 
+    <appender name="async_console_log" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="console" />
+        <neverBlock>true</neverBlock>
+    </appender>
+
     <springProfile name="default">
         <logger name="com.tencent.bkrepo" level="DEBUG" additivity="false">
-            <appender-ref ref="console"/>
+            <appender-ref ref="async_console_log"/>
         </logger>
         <root level="INFO">
-            <appender-ref ref="console"/>
+            <appender-ref ref="async_console_log"/>
         </root>
     </springProfile>
 
     <springProfile name="dev">
         <logger name="JobLogger" level="INFO" additivity="false">
-            <appender-ref ref="console"/>
+            <appender-ref ref="async_console_log"/>
             <appender-ref ref="async_job_log"/>
         </logger>
         <logger name="reactor.netty.http.server.AccessLog" level="INFO" additivity="false">
-            <appender-ref ref="console"/>
+            <appender-ref ref="async_console_log"/>
             <appender-ref ref="async_access_log"/>
         </logger>
         <root level="INFO">
-            <appender-ref ref="console"/>
+            <appender-ref ref="async_console_log"/>
             <appender-ref ref="async_app_log"/>
             <appender-ref ref="async_error_log"/>
         </root>

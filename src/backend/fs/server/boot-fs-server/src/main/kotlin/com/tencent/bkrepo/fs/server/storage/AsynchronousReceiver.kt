@@ -25,10 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.file
+package com.tencent.bkrepo.fs.server.storage
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
+import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
@@ -36,22 +40,24 @@ import java.nio.channels.AsynchronousFileChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import kotlin.io.path.inputStream
 import kotlinx.coroutines.reactive.awaitSingle
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import reactor.core.publisher.Mono
 
 class AsynchronousReceiver(
-    private val path: Path,
+    receiveProperties: ReceiveProperties,
+    private var path: Path,
     private val fileName: String = generateRandomName()
-) {
-    val bufferSize = DEFAULT_BUFFER_SIZE
-    val cache = ByteArray(bufferSize)
+) : StorageHealthMonitor.Observer {
+
+    private val fileSizeThreshold = receiveProperties.fileSizeThreshold.toBytes().toInt()
+    val cache = ByteArray(fileSizeThreshold)
     private var pos: Long = 0
     var inMemory = true
-    private val filePath: Path by lazy { path.resolve(fileName) }
+    val filePath: Path get() = path.resolve(fileName)
 
     private val channel: AsynchronousFileChannel by lazy {
         AsynchronousFileChannel.open(
@@ -60,18 +66,32 @@ class AsynchronousReceiver(
             StandardOpenOption.CREATE_NEW
         )
     }
-    var finish: Boolean = false
+    var fallback: Boolean = false
+    var finished: Boolean = false
+    var fallBackPath: Path? = null
 
     /**
      * 数据摘要计算监听类
      */
     val listener = DigestCalculateListener()
 
-    val digestDataBuffer: ByteArray = ByteArray(bufferSize)
+    /**
+     * 接收开始时间
+     */
+    private var startTime = 0L
 
-    suspend fun write(buffer: DataBuffer) {
+    /**
+     * 接收结束时间
+     */
+    private var endTime = 0L
+
+    suspend fun receive(buffer: DataBuffer) {
+        if (startTime == 0L) {
+            startTime = System.nanoTime()
+        }
+        checkFallback()
         val len = buffer.readableByteCount()
-        if (pos + len > bufferSize && inMemory) {
+        if (pos + len > fileSizeThreshold && inMemory) {
             flushToFile()
             DataBufferUtils.write(Mono.just(buffer), channel, pos).awaitSingle()
         } else if (inMemory) {
@@ -80,8 +100,7 @@ class AsynchronousReceiver(
             DataBufferUtils.write(Mono.just(buffer), channel, pos).awaitSingle()
         }
         buffer.readPosition(0)
-        buffer.read(digestDataBuffer, 0, len)
-        listener.data(digestDataBuffer, 0, len)
+        digest(buffer)
         pos += len
     }
 
@@ -89,24 +108,64 @@ class AsynchronousReceiver(
         if (inMemory) {
             val cacheData = cache.copyOfRange(0, pos.toInt())
             val buf = DefaultDataBufferFactory.sharedInstance.wrap(cacheData)
-            DataBufferUtils.write(Mono.just(buf), channel, pos).awaitSingle()
+            DataBufferUtils.write(Mono.just(buf), channel).awaitSingle()
             inMemory = false
         }
     }
 
-    fun finish() {
-        finish = true
-        listener.finished()
+    private fun digest(buffer: DataBuffer) {
+        val len = buffer.readableByteCount()
+        val digestArray = ByteArray(len)
+        buffer.read(digestArray)
+        listener.data(digestArray, 0, len)
+    }
+
+    override fun unhealthy(fallbackPath: Path?, reason: String?) {
+        if (!finished && !fallback) {
+            fallBackPath = fallbackPath
+            fallback = true
+            logger.warn("Path[$path] is unhealthy, fallback to use [$fallBackPath], reason: $reason")
+        }
+    }
+
+    private fun checkFallback() {
+        if (!fallback) {
+            return
+        }
+        if (fallBackPath == null || fallBackPath == path) {
+            logger.info("Fallback path is null or equals to primary path,skip")
+            return
+        }
+        if (inMemory) {
+            path = fallBackPath!!
+        }
+    }
+
+    fun finish(): Throughput {
+        try {
+            endTime = System.nanoTime()
+            finished = true
+            listener.finished()
+            return Throughput(pos, endTime - startTime)
+        } finally {
+            channel.closeQuietly()
+        }
     }
 
     fun close() {
-        getFile()?.let {
-            Files.deleteIfExists(filePath)
+        try {
+            getFile()?.let {
+                Files.deleteIfExists(filePath)
+            }
+        } finally {
+            channel.closeQuietly()
         }
     }
+
     fun getFile(): File? {
         return if (inMemory) null else filePath.toFile()
     }
+
     fun getSize(): Long {
         return pos
     }
@@ -115,10 +174,11 @@ class AsynchronousReceiver(
         getFile()?.let {
             return it.inputStream()
         }
-        return ByteArrayInputStream(cache)
+        return ByteArrayInputStream(cache, 0, pos.toInt())
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(AsynchronousReceiver::class.java)
         private const val ARTIFACT_ASYNC_PREFIX = "artifact_async_"
         private const val ARTIFACT_ASYNC_SUFFIX = ".temp"
 

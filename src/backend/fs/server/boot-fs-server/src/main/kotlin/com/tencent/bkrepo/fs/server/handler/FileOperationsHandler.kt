@@ -27,43 +27,26 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
-import com.tencent.bkrepo.fs.server.file.ReactiveArtifactFile
+import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
-import com.tencent.bkrepo.fs.server.listener.NodeFlushEvent
-import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
+import com.tencent.bkrepo.fs.server.request.BlockRequest
+import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
-import kotlinx.coroutines.Dispatchers
-import java.time.LocalDateTime
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onCompletion
+import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.service.FileOperationService
+import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withContext
-import org.springframework.context.ApplicationContext
 import org.springframework.core.io.FileSystemResource
-import org.springframework.core.io.buffer.DataBuffer
-import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.bodyToFlow
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
-import org.springframework.web.reactive.function.server.buildAndAwait
 
 /**
  * 文件操作相关处理器
@@ -71,27 +54,32 @@ import org.springframework.web.reactive.function.server.buildAndAwait
  * 处理文件操作请求
  * */
 class FileOperationsHandler(
-    private val storageService: StorageService,
     private val rRepositoryClient: RRepositoryClient,
-    private val blockNodeRepository: BlockNodeRepository,
-    private val storageProperties: StorageProperties,
-    private val applicationContext: ApplicationContext
+    private val fileNodeService: FileNodeService,
+    private val fileOperationService: FileOperationService
 ) {
 
-    suspend fun download(request: ServerRequest): ServerResponse {
+    /**
+     * 读取文件
+     * 支持按范围读取
+     * */
+    suspend fun read(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val repo = RepositoryCache.getRepoDetail(projectId, repoName)
-            val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data!!
-            val length = node.size
-            val httpRange = request.headers().range().firstOrNull()?.let {
-                val startPosition = it.getRangeStart(length)
-                val endPosition = it.getRangeEnd(length)
-                Range(startPosition, endPosition, length)
+            val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data
+            if (node?.folder == true) {
+                throw NodeNotFoundException(this.toString())
             }
-            val range = httpRange ?: Range.full(length)
-            val artifactInputStream = withContext(Dispatchers.IO) {
-                storageService.load(node.sha256!!, range, repo.storageCredentials)
-            } ?: return ServerResponse.notFound().buildAndAwait()
+            // 读取的文件，可能是个正在写入的文件，有块数据，但是还未冲刷，所以这里的size和sha256可能为null。
+            val nodeSize = node?.size ?: 0
+            // 新写入的块，可能还未冲刷成文件，所以需要获取最新的文件长度
+            val fileLength = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeSize)
+            val range = resolveRange(request, fileLength)
+            val artifactInputStream = fileOperationService.read(
+                request = this,
+                digest = node?.sha256,
+                size = node?.size,
+                range = range
+            ) ?: throw ArtifactNotFoundException(this.toString())
             val source = if (artifactInputStream is FileArtifactInputStream) {
                 FileSystemResource(artifactInputStream.file)
             } else {
@@ -101,118 +89,55 @@ class FileOperationsHandler(
         }
     }
 
-    suspend fun readBlock(request: ServerRequest): ServerResponse {
-      /*
-      * 1. 获取待读取的的block index和Node信息
-      * 2. 查询出待读取的block node
-      * 3. 读取block data
-      * */
-        with(NodeRequest(request)) {
-            val repo = RepositoryCache.getRepoDetail(projectId, repoName)
-            val index = request.pathVariable("index").toLong()
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-                .and(TBlockNode::index.name).isEqualTo(index)
-                .and(TBlockNode::effective.name).isEqualTo(true)
-            // 读取最新版本
-            val query = Query(criteria)
-            query.with(Sort.by(Sort.Direction.DESC, TBlockNode::version.name))
-            val blockNode = blockNodeRepository.findOne(query) ?: throw RuntimeException()
-            val range = Range.full(blockNode.size.toLong())
-            val artifactInputStream = storageService.load(blockNode.sha256, range, repo.storageCredentials)
-                ?: return ServerResponse.notFound().buildAndAwait()
-            val source = if (artifactInputStream is FileArtifactInputStream) {
-                FileSystemResource(artifactInputStream.file)
-            } else {
-                RegionInputStreamResource(artifactInputStream, range.length)
-            }
-            return ok().bodyValueAndAwait(source)
-        }
+    /**
+     * 写入文件块
+     * 写入的文件块，立马可以被读取
+     * */
+    suspend fun write(request: ServerRequest): ServerResponse {
+        val user = ReactiveSecurityUtils.getUser()
+        val artifactFile = request.bodyToArtifactFile()
+        val blockRequest = BlockRequest(request)
+        val blockNode = fileOperationService.write(artifactFile, blockRequest, user)
+        return ReactiveResponseBuilder.success(blockNode)
     }
 
-    suspend fun writeBlock(request: ServerRequest): ServerResponse {
-        /*
-        * 1. 获取待写入的block index
-        * 2. 获取带入写文件的Node信息
-        * 3. 写入新block数据
-        * 4. 更新block node
-        * 5. 删除旧的block data
-        * */
-        with(NodeRequest(request)) {
-            val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data!!
-            if (node.folder) {
-                throw RuntimeException("没找到文件节点")
-            }
-            // todo 覆盖上传文件需要删除所有分块
-            val repo = RepositoryCache.getRepoDetail(projectId, repoName)
-            val user = request.attributes()[USER_KEY] as String
-            val index = request.pathVariable("index").toLong()
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-                .and(TBlockNode::index.name).isEqualTo(index)
-            val query = Query(criteria)
-            query.with(Sort.by(Sort.Direction.DESC, TBlockNode::version.name))
-            val oldVersion = blockNodeRepository.findOne(query)?.version ?: 0
-            val version = oldVersion + 1
-            val storageCredentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
-            val artifactFile = receive(request, storageCredentials)
-            // 找到当前最新版本
-            val blockNode = TBlockNode(
-                createdBy = user,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = user,
-                lastModifiedDate = LocalDateTime.now(),
-                nodeFullPath = fullPath,
-                index = index,
-                sha256 = artifactFile.getFileSha256(),
-                projectId = projectId,
-                repoName = repoName,
-                effective = false,
-                size = artifactFile.getSize().toInt(),
-                version = version,
-                isDeleted = false
-            )
-//            store(artifactFile, storageCredentials)
-            blockNodeRepository.save(blockNode)
-            return ok().bodyValueAndAwait(blockNode)
-        }
+    /**
+     * 把文件块，冲刷到新文件
+     * */
+    suspend fun flush(request: ServerRequest): ServerResponse {
+        val user = ReactiveSecurityUtils.getUser()
+        val flushRequest = FlushRequest(request)
+        fileOperationService.flush(flushRequest, user)
+        return ReactiveResponseBuilder.success()
     }
 
-    suspend fun complete(request: ServerRequest): ServerResponse {
-        // 使block node生效
-        with(NodeRequest(request)) {
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-                .and(TBlockNode::effective.name).isEqualTo(false)
-            val query = Query(criteria)
-            val update = Update().set(TBlockNode::effective.name, true)
-            val ret = blockNodeRepository.updateMulti(query, update)
-            val repo = RepositoryCache.getRepoDetail(projectId, repoName)
-            val storageCredentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
-            val flushEvent = NodeFlushEvent(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                storageCredentials = storageCredentials,
-                userId = request.attributes()[USER_KEY] as String
-            )
-            applicationContext.publishEvent(flushEvent)
-            return ok().bodyValueAndAwait(ret)
-        }
+    /**
+     * 写入块的同时冲刷文件，避免小文件的写入需要两个请求，write和flush。
+     * */
+    suspend fun writeAndFlush(request: ServerRequest): ServerResponse {
+        val user = ReactiveSecurityUtils.getUser()
+        val blockRequest = BlockRequest(request)
+        val artifactFile = request.bodyToArtifactFile()
+        val blockNode = fileOperationService.write(artifactFile, blockRequest, user)
+        val flushRequest = FlushRequest(request)
+        fileOperationService.flush(flushRequest, user)
+        return ReactiveResponseBuilder.success(blockNode)
     }
 
-    private suspend fun store(file: ArtifactFile, storageCredentials: StorageCredentials?) {
-        withContext(Dispatchers.IO) {
-            val digest = file.getFileSha256()
-            storageService.store(digest, file, storageCredentials)
+    /**
+     * 处理文件范围请求
+     * @param request http server request
+     * @param total 文件总长度
+     * @return range 文件请求范围
+     * */
+    private fun resolveRange(request: ServerRequest, total: Long): Range {
+        val httpRange = request.headers().range().firstOrNull()
+        return if (httpRange != null) {
+            val startPosition = httpRange.getRangeStart(total)
+            val endPosition = httpRange.getRangeEnd(total)
+            Range(startPosition, endPosition, total)
+        } else {
+            Range.full(total)
         }
-    }
-
-    private suspend fun receive(request: ServerRequest, storageCredentials: StorageCredentials): ReactiveArtifactFile {
-        val reactiveArtifactFile = ReactiveArtifactFile(storageCredentials)
-        request.bodyToFlow<DataBuffer>().onCompletion {
-            reactiveArtifactFile.finish()
-        }.collect {
-            reactiveArtifactFile.write(it)
-        }
-        reactiveArtifactFile.delete()
-        return reactiveArtifactFile
     }
 }

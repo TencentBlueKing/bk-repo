@@ -29,11 +29,10 @@ package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
-import com.tencent.bkrepo.fs.server.api.RAuthClient
-import kotlinx.coroutines.reactor.awaitSingle
+import com.tencent.bkrepo.fs.server.utils.SecurityManager
+import io.jsonwebtoken.ExpiredJwtException
+import io.jsonwebtoken.JwtException
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
@@ -41,23 +40,28 @@ import org.springframework.web.reactive.function.server.ServerResponse
  * 认证过滤器，处理服务器认证
  * */
 class AuthHandlerFilterFunction(
-    private val rAuthClient: RAuthClient
+    private val securityManager: SecurityManager
 ) : CoHandlerFilterFunction {
 
     override suspend fun filter(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        val authorizationHeader = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull().orEmpty()
-        if (!authorizationHeader.startsWith(BASIC_AUTH_PREFIX)) {
-            throw AuthenticationException()
+        if (request.path().startsWith("/login")) {
+            return next(request)
         }
-        val (username, password) = BasicAuthUtils.decode(authorizationHeader)
-        val tokenRes = rAuthClient.checkToken(username, password).awaitSingle()
-        if (tokenRes.data != true) {
-            throw AuthenticationException()
+        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+            ?: throw AuthenticationException("missing token.")
+        try {
+            val jws = securityManager.validateToken(token)
+            request.exchange().attributes[USER_KEY] = jws.body.subject
+            return next(request)
+        } catch (exception: ExpiredJwtException) {
+            throw AuthenticationException("Expired token")
+        } catch (exception: JwtException) {
+            throw AuthenticationException("Invalid token")
+        } catch (exception: IllegalArgumentException) {
+            throw AuthenticationException("Empty token")
         }
-        request.attributes()[USER_KEY] = username
-        return next(request)
     }
 }

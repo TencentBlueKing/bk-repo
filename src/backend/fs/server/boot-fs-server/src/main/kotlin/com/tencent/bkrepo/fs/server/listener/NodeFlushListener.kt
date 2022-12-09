@@ -27,80 +27,89 @@
 
 package com.tencent.bkrepo.fs.server.listener
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
-import com.tencent.bkrepo.fs.server.file.ReactiveArtifactFile
-import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.service.BlockNodeService
+import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.storage.CoStorageManager
+import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
+import com.tencent.bkrepo.fs.server.copyTo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitSingle
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
-import org.springframework.core.io.buffer.DataBuffer
-import org.springframework.core.io.buffer.DataBufferUtils
-import org.springframework.core.io.buffer.DefaultDataBufferFactory
 
 /**
  * 当文件块被更新时，刷新节点数据，保证普通下载可以下载到最新的数据
  * */
 class NodeFlushListener(
-    val rRepositoryClient: RRepositoryClient,
-    val blockNodeService: BlockNodeService,
-    val storageService: StorageService
+    private val storageManager: CoStorageManager,
+    private val fileNodeService: FileNodeService,
+    private val rRepositoryClient: RRepositoryClient,
+    private val applicationCoroutineScope: CoroutineScope
 ) {
     @EventListener(NodeFlushEvent::class)
     fun listen(event: NodeFlushEvent) {
-        with(event) {
-            runBlocking {
-                val blockNodes = blockNodeService.listBlocks(projectId, repoName, fullPath)
-                if (blockNodes.isEmpty()) {
-                    return@runBlocking
-                }
-                val newArtifactFile = mergeBlock(blockNodes, storageCredentials)
-                storageService.store(newArtifactFile.getFileSha256(), newArtifactFile, storageCredentials)
-                val nodeCreateRequest = NodeCreateRequest(
+        logger.info("Receive node flush event $event")
+        applicationCoroutineScope.launch {
+            with(event) {
+                val node = rRepositoryClient.getNodeDetail(
                     projectId = projectId,
                     repoName = repoName,
-                    folder = false,
+                    fullPath = fullPath
+                ).awaitSingle().data
+                val storageCredentials = event.repositoryDetail.storageCredentials
+                val range = Range.full(size)
+                val fileInputStream = fileNodeService.read(
+                    projectId = projectId,
+                    repoName = repoName,
                     fullPath = fullPath,
-                    size = newArtifactFile.getSize(),
-                    sha256 = newArtifactFile.getFileSha256(),
-                    md5 = newArtifactFile.getFileMd5(),
-                    operator = userId,
-                    overwrite = true
-                )
-                val node = rRepositoryClient.createNode(nodeCreateRequest).awaitSingle()
-                logger.info("Success flush node[$projectId/$repoName/$fullPath],[${blockNodes.size}] blocks,sha256[${node.data?.sha256}]")
+                    storageCredentials = repositoryDetail.storageCredentials,
+                    digest = node?.sha256,
+                    size = node?.size,
+                    range = range
+                ) ?: throw ArtifactNotFoundException(event.toString())
+                val artifactFile = ReactiveArtifactFileFactory.buildArtifactFileOnNotHttpRequest(storageCredentials)
+                try {
+                    fileInputStream.copyTo(artifactFile)
+                    if (event.md5 != null) {
+                        validateCheckSum(artifactFile.getFileMd5(), event.md5)
+                    }
+                    val nodeCreateRequest = NodeCreateRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        folder = false,
+                        fullPath = fullPath,
+                        size = artifactFile.getSize(),
+                        sha256 = artifactFile.getFileSha256(),
+                        md5 = artifactFile.getFileMd5(),
+                        operator = event.userId,
+                        overwrite = true
+                    )
+                    storageManager.storeNode(artifactFile, nodeCreateRequest, storageCredentials)
+                    logger.info(
+                        "Success to flush node[$projectId/$repoName$fullPath]," +
+                            "sha256[${artifactFile.getFileSha256()}]"
+                    )
+                } catch (e: Exception) {
+                    logger.error("Failed to flush node[$projectId/$repoName$fullPath]", e)
+                } finally {
+                    artifactFile.delete()
+                }
             }
         }
     }
 
-    private suspend fun mergeBlock(blocks: List<TBlockNode>, storageCredentials: StorageCredentials): ArtifactFile {
-        val artifactFile = ReactiveArtifactFile(storageCredentials)
-        flow<DataBuffer> {
-            blocks.forEach {
-                val size = it.size.toLong()
-                val range = Range.full(size)
-                val artifactInputStream = storageService.load(it.sha256, range, storageCredentials)
-                    ?: throw RuntimeException("block data miss")
-                DataBufferUtils.readInputStream({ artifactInputStream }, DefaultDataBufferFactory.sharedInstance, 1024).asFlow().collect { buf ->
-                    emit(buf)
-                }
-            }
-        }.collect {
-            artifactFile.write(it)
+    private fun validateCheckSum(serverMd5: String, clientMd5: String) {
+        if (serverMd5 != clientMd5) {
+            throw IllegalStateException("File has broken,server md5 $serverMd5 != client md5 $clientMd5")
         }
-        return artifactFile
     }
 
     companion object {
+
         private val logger = LoggerFactory.getLogger(NodeFlushListener::class.java)
     }
 }

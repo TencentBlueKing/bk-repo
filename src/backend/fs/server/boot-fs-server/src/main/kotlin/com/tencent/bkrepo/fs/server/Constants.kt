@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server
 
-const val PROJECT = "projectId"
-const val REPO_NAME = "repoName"
 const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
+
+const val JWT_CLAIMS_REPOSITORY = "repository"
+const val JWT_CLAIMS_PERMIT = "permit"

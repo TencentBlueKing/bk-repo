@@ -30,12 +30,12 @@ package com.tencent.bkrepo.fs.server.handler
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.request.NodePageRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
+import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.toNode
+import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.springframework.web.reactive.function.server.buildAndAwait
 
 /**
@@ -43,7 +43,7 @@ import org.springframework.web.reactive.function.server.buildAndAwait
  *
  * 处理节点操作的请求
  * */
-class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
+class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, val fileNodeService: FileNodeService) {
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
@@ -52,7 +52,8 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
                 repoName = repoName,
                 fullPath = fullPath
             ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
-            return ok().bodyValueAndAwait(nodeDetail.nodeInfo.toNode())
+            val length = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeDetail.size)
+            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode(length))
         }
     }
 
@@ -64,9 +65,12 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
                 projectId = projectId,
                 repoName = repoName,
                 option = listOption
-            ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
+            ).awaitSingle().data?.records?.map {
+                val length = fileNodeService.getFileLength(projectId, repoName, fullPath, it.size)
+                it.toNode(length)
+            }?.toList()
                 ?: return ServerResponse.notFound().buildAndAwait()
-            return ok().bodyValueAndAwait(nodes)
+            return ReactiveResponseBuilder.success(nodes)
         }
     }
 }

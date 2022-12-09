@@ -27,10 +27,36 @@
 
 package com.tencent.bkrepo.fs.server
 
+import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
+import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.core.io.buffer.DataBuffer
+import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.bodyToFlow
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilterChain
 
 suspend fun WebFilterChain.filterAndAwait(exchange: ServerWebExchange) {
     this.filter(exchange).awaitSingleOrNull()
+}
+
+suspend fun ServerRequest.bodyToArtifactFile(): ReactiveArtifactFile {
+    val reactiveArtifactFile = ReactiveArtifactFileFactory.buildArtifactFile()
+    this.bodyToFlow<DataBuffer>().onCompletion {
+        reactiveArtifactFile.finish()
+    }.collect {
+        try {
+            reactiveArtifactFile.write(it)
+        } finally {
+            DataBufferUtils.release(it)
+        }
+    }
+    return reactiveArtifactFile
+}
+
+fun ServerRequest.useRequestParam(param: String, consumer: (x: String) -> Unit) {
+    this.queryParam(param).ifPresent { consumer(it) }
 }

@@ -28,12 +28,20 @@
 package com.tencent.bkrepo.fs.server.config
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.fs.server.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.fs.server.JWT_CLAIMS_PERMIT
+import com.tencent.bkrepo.fs.server.JWT_CLAIMS_REPOSITORY
+import com.tencent.bkrepo.fs.server.filter.ArtifactContextFilterFunction
+import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilter
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
-import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
@@ -49,13 +57,26 @@ class RouteConfiguration(
     private val nodeOperationsHandler: NodeOperationsHandler,
     private val fileOperationsHandler: FileOperationsHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
-    private val permissionService: PermissionService,
-    private val serverMetrics: ServerMetrics
+    private val serverMetrics: ServerMetrics,
+    private val artifactContextFilterFunction: ArtifactContextFilterFunction,
+    private val artifactFileCleanupFilter: ArtifactFileCleanupFilter,
+    private val securityManager: SecurityManager,
+    private val loginHandler: LoginHandler
 ) {
     fun router() = coRouter {
+        loginRouter()
         requireAuth()
+        contextInit()
         nodeRouter()
         readWriteRouter()
+    }
+
+    private fun CoRouterFunctionDsl.loginRouter() {
+        "/login".nest {
+            accept(APPLICATION_JSON).nest {
+                POST("/{projectId}/{repoName}", loginHandler::login)
+            }
+        }
     }
 
     /**
@@ -63,6 +84,10 @@ class RouteConfiguration(
      * */
     private fun CoRouterFunctionDsl.requireAuth() {
         filter(authHandlerFilterFunction::filter)
+    }
+
+    private fun CoRouterFunctionDsl.contextInit() {
+        filter(artifactContextFilterFunction::filter)
     }
 
     /**
@@ -84,49 +109,53 @@ class RouteConfiguration(
      * 文件读写路由
      * */
     private fun CoRouterFunctionDsl.readWriteRouter() {
-        "/block/{index}".nest {
-            accept(APPLICATION_OCTET_STREAM).nest {
-                requireReadPermission()
-                GET(DEFAULT_MAPPING_URI, fileOperationsHandler::readBlock)
-                filter { req, next ->
-                    try {
-                        serverMetrics.downloadingCount.incrementAndGet()
-                        next(req)
-                    } finally {
-                        serverMetrics.downloadingCount.decrementAndGet()
-                    }
-                }
-            }
+        "/block/flush".nest {
             accept(APPLICATION_JSON).nest {
                 requireWritePermission()
-                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::writeBlock)
-                filter { req, next ->
-                    try {
-                        serverMetrics.uploadingCount.incrementAndGet()
-                        next(req)
-                    } finally {
-                        serverMetrics.uploadingCount.decrementAndGet()
-                    }
-                }
-            }
-        }
-        "/block".nest {
-            accept(APPLICATION_JSON).nest {
-                requireWritePermission()
-                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::complete)
+                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::flush)
             }
         }
 
+        "/block/write-flush/{offset}".nest {
+            accept(APPLICATION_JSON).nest {
+                requireWritePermission()
+                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::writeAndFlush)
+            }
+        }
+
+        "/block/{offset}".nest {
+            accept(APPLICATION_JSON).nest {
+                requireWritePermission()
+                filter(artifactFileCleanupFilter::filter)
+                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::write)
+                addUploadMetrics()
+            }
+        }
         accept(APPLICATION_OCTET_STREAM).nest {
             requireReadPermission()
-            GET(DEFAULT_MAPPING_URI, fileOperationsHandler::download)
-            filter { req, next ->
-                try {
-                    serverMetrics.downloadingCount.incrementAndGet()
-                    next(req)
-                } finally {
-                    serverMetrics.downloadingCount.decrementAndGet()
-                }
+            GET(DEFAULT_MAPPING_URI, fileOperationsHandler::read)
+            addDownloadMetrics()
+        }
+    }
+
+    private fun CoRouterFunctionDsl.addUploadMetrics() {
+        filter { req, next ->
+            try {
+                serverMetrics.uploadingCount.incrementAndGet()
+                next(req)
+            } finally {
+                serverMetrics.uploadingCount.decrementAndGet()
+            }
+        }
+    }
+
+    private fun CoRouterFunctionDsl.addDownloadMetrics() {
+        filter { req, next ->
+            try {
+                serverMetrics.downloadingCount.incrementAndGet()
+                next(req)
+            } finally {
+                serverMetrics.downloadingCount.decrementAndGet()
             }
         }
     }
@@ -134,16 +163,36 @@ class RouteConfiguration(
     private fun CoRouterFunctionDsl.requireWritePermission() {
         checkPermission(PermissionAction.WRITE)
     }
+
     private fun CoRouterFunctionDsl.requireReadPermission() {
         checkPermission(PermissionAction.READ)
     }
+
     private fun CoRouterFunctionDsl.checkPermission(action: PermissionAction) {
         filter { req, next ->
-            if (!permissionService.checkPermission(req, action)) {
+            val token = req.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+            if (token == null) {
                 ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
             } else {
-                next(req)
+                val jws = securityManager.validateToken(token)
+                val repo = jws.body[JWT_CLAIMS_REPOSITORY]
+                val permit = jws.body[JWT_CLAIMS_PERMIT].toString()
+                val projectId = req.pathVariable(PROJECT_ID)
+                val repoName = req.pathVariable(REPO_NAME)
+                val requestRepo = "$projectId/$repoName"
+                if (requestRepo == repo && checkAction(permit, action)) {
+                    next(req)
+                } else {
+                    ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
+                }
             }
         }
+    }
+
+    private fun checkAction(permit: String, action: PermissionAction): Boolean {
+        if (action == PermissionAction.READ) {
+            return permit == PermissionAction.READ.name || permit == PermissionAction.WRITE.name
+        }
+        return permit == action.name
     }
 }

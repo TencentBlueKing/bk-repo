@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.mongo.reactive.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -55,4 +56,14 @@ interface MongoReactiveDao<E> {
      * 更新文档
      */
     suspend fun updateMulti(query: Query, update: Update): UpdateResult
+
+    /**
+     * 删除文档
+     */
+    suspend fun remove(query: Query): DeleteResult
+
+    /**
+     * update or insert
+     */
+    suspend fun upsert(query: Query, update: Update): UpdateResult
 }

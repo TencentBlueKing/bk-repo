@@ -31,7 +31,7 @@ import com.tencent.bkrepo.fs.server.model.Node
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import java.time.format.DateTimeFormatter
 
-fun NodeInfo.toNode(): Node {
+fun NodeInfo.toNode(size: Long): Node {
     return Node(
         createdBy = this.createdBy,
         createdDate = this.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -43,7 +43,7 @@ fun NodeInfo.toNode(): Node {
         path = this.path,
         name = this.name,
         fullPath = this.fullPath,
-        size = this.size,
+        size = size,
         sha256 = this.sha256,
         md5 = this.md5,
         metadata = metadata,

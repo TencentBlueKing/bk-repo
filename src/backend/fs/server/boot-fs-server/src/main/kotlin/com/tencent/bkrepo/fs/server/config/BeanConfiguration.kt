@@ -27,15 +27,29 @@
 
 package com.tencent.bkrepo.fs.server.config
 
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
+import com.tencent.bkrepo.fs.server.filter.ArtifactContextFilterFunction
+import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilter
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.filter.ReactiveRequestContextFilter
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.listener.NodeFlushListener
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
+import com.tencent.bkrepo.fs.server.service.BlockNodeServiceImpl
+import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.service.FileOperationService
 import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.storage.CoStorageManager
+import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
+import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import com.tencent.devops.service.config.ServiceProperties
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.support.GenericApplicationContext
 import org.springframework.context.support.beans
@@ -44,6 +58,7 @@ val beans = beans {
     bean<ServiceProperties>()
     bean<NodeOperationsHandler>()
     bean<FileOperationsHandler>()
+    bean<LoginHandler>()
     bean<PermissionService>()
     bean<AuthHandlerFilterFunction>()
     bean<RepositoryCache>()
@@ -51,8 +66,21 @@ val beans = beans {
     bean<ActuatorAuthFilter>()
     bean<GlobalExceptionHandler>()
     bean<NodeFlushListener>()
+    bean<BlockNodeServiceImpl>()
+    bean<ReactiveRequestContextFilter>()
+    bean<ReactiveArtifactFileFactory>()
+    bean<ArtifactContextFilterFunction>()
+    bean<CoStorageManager>()
+    bean<ArtifactFileCleanupFilter>()
+    bean<FileNodeService>()
+    bean<FileOperationService>()
+    bean<SecurityManager>()
+    bean<JwtAuthProperties>()
     bean {
-        RouteConfiguration(ref(), ref(), ref(), ref(), ref()).router()
+        RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
+    }
+    bean {
+        CoroutineScope(Dispatchers.IO + SupervisorJob())
     }
 }
 

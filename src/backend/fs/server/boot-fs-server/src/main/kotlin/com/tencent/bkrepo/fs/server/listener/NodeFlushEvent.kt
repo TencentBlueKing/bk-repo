@@ -27,12 +27,18 @@
 
 package com.tencent.bkrepo.fs.server.listener
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 data class NodeFlushEvent(
     val projectId: String,
     val repoName: String,
     val fullPath: String,
-    val storageCredentials: StorageCredentials,
+    val size: Long,
+    val md5: String?,
+    val repositoryDetail: RepositoryDetail,
     val userId: String
-)
+) {
+    override fun toString(): String {
+        return "$projectId/$repoName/$fullPath"
+    }
+}

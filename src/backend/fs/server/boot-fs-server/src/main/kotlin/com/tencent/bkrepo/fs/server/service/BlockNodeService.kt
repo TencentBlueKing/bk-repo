@@ -27,22 +27,15 @@
 
 package com.tencent.bkrepo.fs.server.service
 
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
-import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
-class BlockNodeService(val blockNodeRepository: BlockNodeRepository) {
-    suspend fun listBlocks(projectId: String, repoName: String, fullPath: String): List<TBlockNode> {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::effective.name).isEqualTo(true)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-        // 读取最新版本
-        val query = Query(criteria)
-        query.with(Sort.by(Sort.Direction.DESC, TBlockNode::version.name))
-        return blockNodeRepository.find(query)
-    }
+interface BlockNodeService {
+    suspend fun listBlocks(range: Range, projectId: String, repoName: String, fullPath: String): List<TBlockNode>
+    suspend fun getLatestBlock(projectId: String, repoName: String, fullPath: String): TBlockNode?
+    suspend fun createBlock(blockNode: TBlockNode, repositoryDetail: RepositoryDetail): TBlockNode
+    suspend fun deleteBlock(blockNode: TBlockNode, repositoryDetail: RepositoryDetail)
+
+    suspend fun getBlock(projectId: String, repoName: String, fullPath: String, offset: Long): TBlockNode?
 }

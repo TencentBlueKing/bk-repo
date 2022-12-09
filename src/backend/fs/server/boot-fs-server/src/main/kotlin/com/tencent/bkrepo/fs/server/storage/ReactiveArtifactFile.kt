@@ -25,18 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.file
+package com.tencent.bkrepo.fs.server.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
 import java.io.File
 import java.io.InputStream
 import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBuffer
 
-class ReactiveArtifactFile(storageCredentials: StorageCredentials) : ArtifactFile {
+class ReactiveArtifactFile(
+    storageCredentials: StorageCredentials,
+    storageProperties: StorageProperties,
+    val monitor: StorageHealthMonitor
+) : ArtifactFile {
 
     /**
      * 是否初始化
@@ -53,8 +60,15 @@ class ReactiveArtifactFile(storageCredentials: StorageCredentials) : ArtifactFil
     }
 
     init {
-        val receivePath = storageCredentials.upload.location
-        receiver = AsynchronousReceiver(receivePath.toPath())
+        val path = storageCredentials.upload.location.toPath()
+        receiver = AsynchronousReceiver(
+            storageProperties.receive,
+            path
+        )
+        monitor.add(receiver)
+        if (!monitor.healthy.get()) {
+            receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
+        }
     }
 
     override fun getInputStream(): InputStream {
@@ -80,11 +94,11 @@ class ReactiveArtifactFile(storageCredentials: StorageCredentials) : ArtifactFil
     override fun flushToFile(): File {
         require(initialized)
         runBlocking { receiver.flushToFile() }
-        return receiver.getFile()!!
+        return receiver.filePath.toFile()
     }
 
     override fun delete() {
-        receiver.close()
+        this.close()
     }
 
     override fun hasInitialized(): Boolean {
@@ -115,11 +129,21 @@ class ReactiveArtifactFile(storageCredentials: StorageCredentials) : ArtifactFil
     }
 
     suspend fun write(buffer: DataBuffer) {
-        receiver.write(buffer)
+        receiver.receive(buffer)
     }
 
     fun finish() {
-        receiver.finish()
+        val throughput = receiver.finish()
+        monitor.remove(receiver)
         initialized = true
+        logger.info("Receive file $throughput")
+    }
+
+    fun close() {
+        receiver.close()
+        monitor.remove(receiver)
+    }
+    companion object {
+        private val logger = LoggerFactory.getLogger(ReactiveArtifactFile::class.java)
     }
 }

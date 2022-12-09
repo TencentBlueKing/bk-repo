@@ -38,6 +38,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -72,4 +73,9 @@ interface RRepositoryClient {
         @PathVariable repoName: String,
         @RequestParam type: String? = null
     ): Mono<Response<RepositoryDetail?>>
-}
+
+    @PutMapping("/fileReference/decrement")
+    fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
+
+    @PutMapping("/fileReference/increment")
+    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>> }

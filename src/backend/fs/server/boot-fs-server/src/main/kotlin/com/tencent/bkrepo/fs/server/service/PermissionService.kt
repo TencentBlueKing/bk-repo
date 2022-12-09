@@ -30,11 +30,8 @@ package com.tencent.bkrepo.fs.server.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.fs.server.api.RAuthClient
-import com.tencent.bkrepo.fs.server.request.NodeRequest
 import kotlinx.coroutines.reactor.awaitSingle
-import org.springframework.web.reactive.function.server.ServerRequest
 
 /**
  * 权限服务
@@ -42,17 +39,16 @@ import org.springframework.web.reactive.function.server.ServerRequest
 class PermissionService(
     private val rAuthClient: RAuthClient
 ) {
-    suspend fun checkPermission(request: ServerRequest, action: PermissionAction): Boolean {
-        val nodeRequest = NodeRequest(request)
-        val uid = request.attribute(USER_KEY).get() as String
+    suspend fun checkPermission(projectId: String, repoName: String, action: PermissionAction, uid: String): Boolean {
         val checkRequest = CheckPermissionRequest(
             uid = uid,
-            resourceType = ResourceType.NODE.toString(),
+            resourceType = ResourceType.REPO.toString(),
             action = action.toString(),
-            projectId = nodeRequest.projectId,
-            repoName = nodeRequest.repoName,
-            path = nodeRequest.fullPath
+            projectId = projectId,
+            repoName = repoName
         )
         return rAuthClient.checkPermission(checkRequest).awaitSingle().data ?: false
     }
+
+    companion object
 }

@@ -27,21 +27,25 @@
 
 package com.tencent.bkrepo.fs.server.request
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.fs.server.useRequestParam
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.queryParamOrNull
 
 class NodePageRequest(request: ServerRequest) : NodeRequest(request) {
     val listOption: NodeListOption
+    var pageSize: Int = DEFAULT_PAGE_SIZE
+    var pageNum: Int = DEFAULT_PAGE_NUMBER
     init {
         val includeFolder = request.queryParamOrNull("includeFolder").toBoolean()
+        request.useRequestParam("pageSize") { pageSize = it.toInt() }
+        request.useRequestParam("pageNum") { pageNum = it.toInt() }
         listOption = NodeListOption(
             includeFolder = includeFolder,
-            pageSize = MAX_SIZE
+            pageSize = pageSize,
+            pageNumber = pageNum
         )
-    }
-
-    companion object {
-        private const val MAX_SIZE = 10000
     }
 }

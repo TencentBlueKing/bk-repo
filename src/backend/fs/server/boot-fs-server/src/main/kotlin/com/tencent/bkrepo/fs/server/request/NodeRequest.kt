@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.fs.server.request
 
-import com.tencent.bkrepo.fs.server.PROJECT
-import com.tencent.bkrepo.fs.server.REPO_NAME
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.reactive.HandlerMapping
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -40,15 +43,24 @@ open class NodeRequest(
     open val fullPath: String
 ) {
     constructor(request: ServerRequest) : this(
-        projectId = request.pathVariable(PROJECT),
+        projectId = request.pathVariable(PROJECT_ID),
         repoName = request.pathVariable(REPO_NAME),
-        fullPath = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
-            (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
-            request.path()
-        )
+        fullPath = resolveFullPath(request)
     )
+
+    override fun toString(): String {
+        return "$projectId/$repoName$fullPath"
+    }
 
     companion object {
         private val antPathMatcher = AntPathMatcher()
+        private fun resolveFullPath(request: ServerRequest): String {
+            val encodeUrl = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
+                (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
+                request.path()
+            )
+            val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
+            return PathUtils.normalizeFullPath(decodeUrl)
+        }
     }
 }

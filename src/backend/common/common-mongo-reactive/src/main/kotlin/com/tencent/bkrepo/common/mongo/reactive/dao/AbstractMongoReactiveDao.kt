@@ -27,11 +27,13 @@
 
 package com.tencent.bkrepo.common.mongo.reactive.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import java.lang.reflect.ParameterizedType
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.mapping.Document
@@ -58,7 +60,7 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
     override suspend fun <T> find(query: Query, clazz: Class<T>): List<T> {
         if (logger.isDebugEnabled) {
-            logger.debug("Mongo Dao findOne: [$query] [$clazz]")
+            logger.debug("Mongo Dao find: [$query] [$clazz]")
         }
         return determineReactiveMongoOperations()
             .find(query, clazz, determineCollectionName(query))
@@ -89,6 +91,30 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
             .awaitSingle()
     }
 
+    override suspend fun remove(query: Query): DeleteResult {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao remove: [$query]")
+        }
+        return determineReactiveMongoOperations()
+            .remove(query, classType, determineCollectionName(query))
+            .awaitSingle()
+    }
+
+    override suspend fun upsert(query: Query, update: Update): UpdateResult {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao upsert: [$query], [$update]")
+        }
+        val mongoOperations = determineReactiveMongoOperations()
+        val collectionName = determineCollectionName(query)
+        return try {
+            mongoOperations.upsert(query, update, collectionName).awaitSingle()
+        } catch (exception: DuplicateKeyException) {
+            // retry because upsert operation is not atomic
+            logger.warn("Upsert error[DuplicateKeyException]: " + exception.message.orEmpty())
+            determineReactiveMongoOperations().upsert(query, update, collectionName).awaitSingle()
+        }
+    }
+
     protected open fun determineCollectionName(): String {
         var collectionName: String? = null
         if (classType.isAnnotationPresent(Document::class.java)) {
@@ -96,7 +122,9 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
             collectionName = if (document.collection.isNotBlank()) document.collection else document.value
         }
 
-        return if (collectionName.isNullOrEmpty()) MongoCollectionUtils.getPreferredCollectionName(classType) else collectionName
+        return if (collectionName.isNullOrEmpty()) {
+            MongoCollectionUtils.getPreferredCollectionName(classType)
+        } else collectionName
     }
 
     abstract fun determineReactiveMongoOperations(): ReactiveMongoOperations
