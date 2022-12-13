@@ -758,37 +758,20 @@ class OciOperationServiceImpl(
             // 针对支持多仓库类型，如docker和oci
             val repoType = getRepositoryInfo(ociArtifactInfo).type.name
             val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
-            val packageVersion = packageClient.findVersionByName(
-                projectId = projectId,
-                repoName = repoName,
-                packageKey = packageKey,
-                version = ociArtifactInfo.reference
-            ).data
             val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
                 .apply {
                     chartYaml?.let { this.putAll(chartYaml) }
                     sourceType?.let { this[SOURCE_TYPE] = sourceType }
                 }
-            if (packageVersion == null) {
-                val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
-                    ociArtifactInfo = this,
-                    packageName = packageName,
-                    version = ociArtifactInfo.reference,
-                    size = size,
-                    manifestPath = manifestPath,
-                    repoType = repoType
-                )
-                packageClient.createVersion(request)
-            } else {
-                val request = ObjectBuildUtils.buildPackageVersionUpdateRequest(
-                    ociArtifactInfo = this,
-                    version = ociArtifactInfo.reference,
-                    size = size,
-                    manifestPath = manifestPath,
-                    packageKey = packageKey
-                )
-                packageClient.updateVersion(request)
-            }
+            val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
+                ociArtifactInfo = this,
+                packageName = packageName,
+                version = ociArtifactInfo.reference,
+                size = size,
+                manifestPath = manifestPath,
+                repoType = repoType,
+            )
+            packageClient.createVersion(request)
             savePackageMetaData(
                 projectId = projectId,
                 repoName = repoName,
