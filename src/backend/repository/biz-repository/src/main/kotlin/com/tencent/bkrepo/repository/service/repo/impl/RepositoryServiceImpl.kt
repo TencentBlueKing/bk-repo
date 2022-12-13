@@ -590,6 +590,7 @@ class RepositoryServiceImpl(
         private fun convertToInfo(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
                 RepositoryInfo(
+                    id = it.id,
                     name = it.name,
                     type = it.type,
                     category = it.category,

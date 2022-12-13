@@ -25,41 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-object Release {
-    const val Group = "com.tencent.bk.repo"
-    const val Version = "1.0.0"
-}
+package com.tencent.bkrepo.auth.pojo.enums
 
-object Versions {
-    const val DevopsBoot = "0.0.6"
-    const val Netty = "4.1.77.Final"
-    const val SpringCloudCircuitbreaker = "2.1.2"
-    const val Jersey = "2.35"
-    const val Jsoup = "1.15.1"
-    const val Redline = "1.2.10"
-    const val SkyWalkingApmToolkit = "8.10.0"
-    const val Gson = "2.9.0"
-    const val ProtobufJava = "3.19.4"
-    const val Guava = "31.1-jre"
-    const val Shedlock = "4.12.0"
-    const val JGit = "5.11.0.202103091610-r"
-    const val JavaSemver = "0.9.0"
-    const val CommonsCompress = "1.21"
-    const val CommonsIO = "2.11.0"
-    const val OKhttp = "4.9.0"
-    const val Polaris = "1.5.2"
-    const val CommonsText = "1.9"
-    const val EmbeddedRedis = "0.7.3"
-    const val JMH = "0.5.3"
-    const val HutoolCrypto = "5.5.4"
-    const val JSR311API = "1.1.1"
-    const val MAVEN = "3.8.2"
-    const val MavenArtifact = "3.8.3"
-    const val MockitoKotlin = "4.0.0"
-    const val XStream = "1.4.19"
-    const val DockerJava = "3.2.13"
-    const val Mockk = "1.12.2"
-    const val Swagger = "1.6.2"
-    const val SleuthOtel = "1.0.0-M13"
-    const val IamJavaSdk = "1.0.0-SNAPSHOT"
+enum class ActionTypeMapping(val resType: String, val pAction: String) {
+    PROJECT_MANAGER(ResourceType.PROJECT.name, PermissionAction.MANAGE.name),
+    PROJECT_CREATE(ResourceType.PROJECT.name, PermissionAction.WRITE.name),
+    PROJECT_VIEW(ResourceType.PROJECT.name, PermissionAction.READ.name),
+    PROJECT_EDIT(ResourceType.PROJECT.name, PermissionAction.UPDATE.name),
+    REPO_CREATE(ResourceType.REPO.name, PermissionAction.WRITE.name),
+    REPO_VIEW(ResourceType.REPO.name, PermissionAction.READ.name),
+    REPO_EDIT(ResourceType.REPO.name, PermissionAction.UPDATE.name),
+    NODE_CREATE(ResourceType.NODE.name, PermissionAction.WRITE.name),
+    NODE_VIEW(ResourceType.NODE.name, PermissionAction.VIEW.name),
+    NODE_DOWNLOAD(ResourceType.NODE.name, PermissionAction.READ.name),
+    NODE_EDIT(ResourceType.NODE.name, PermissionAction.UPDATE.name),
+    NODE_DELETE(ResourceType.NODE.name, PermissionAction.DELETE.name);
+
+    fun id() = this.name.toLowerCase()
+
+    companion object {
+
+        fun lookup(resType: String, pAction: String): ActionTypeMapping {
+            return values().find { it.resType == resType && it.pAction == pAction }
+                ?:  throw IllegalArgumentException("No enum for resType $resType and pAction $pAction!")
+        }
+    }
 }

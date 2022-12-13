@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.listener
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3Resource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
@@ -48,7 +49,8 @@ import org.springframework.stereotype.Component
 @Component
 class ResourcePermissionListener(
     private val roleResource: ServiceRoleResource,
-    private val userResource: ServiceUserResource
+    private val userResource: ServiceUserResource,
+    private val bkiamV3Resource: ServiceBkiamV3Resource
 ) {
 
     /**
@@ -61,6 +63,7 @@ class ResourcePermissionListener(
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
+                bkiamV3Resource.createProjectManage(userId, projectId)
             }
         }
     }

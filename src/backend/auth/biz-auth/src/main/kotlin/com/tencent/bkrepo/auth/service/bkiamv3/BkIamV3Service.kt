@@ -25,11 +25,68 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.auth.service.bkiamv3
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+/**
+ * bk iamv3接口调用
+ */
+interface BkIamV3Service {
 
-@ConfigurationProperties("job.replication-lock-cleanup")
-data class ReplicationLockCleanupJobProperties(
-    override var cron: String = "0 0 4/24 * * ?",
-) : MongodbJobProperties()
+    /**
+     * 生成无权限跳转url
+     */
+    fun getPermissionUrl(
+        userId: String,
+        projectId: String,
+        repoName: String?,
+        resourceType: String,
+        action: String,
+        resourceId: String,
+    ): String?
+
+    /**
+     * 鉴权
+     */
+    fun validateResourcePermission(
+        userId: String,
+        projectId: String,
+        repoName: String?,
+        resourceType: String,
+        action: String,
+        resourceId: String,
+        appId: String?
+    ): Boolean
+
+    /**
+     * 仓库资源id转换
+     */
+    fun convertRepoResourceId(projectId: String, repoName: String): String?
+
+    /**
+     * 节点资源id转换
+     */
+    fun convertNodeResourceId(projectId: String, repoName: String, fullPath: String): String?
+
+    /**
+     * 获取有权限的资源列表
+     */
+    fun listPermissionResources(
+        userId: String,
+        projectId: String? = null,
+        resourceType: String,
+        action: String,
+    ): List<String>
+
+    /**
+     * 创建项目分级管理员
+     */
+    fun createGradeManager(
+        userId: String,
+        projectId: String
+    ): String?
+
+    /**
+     * 资源id转换
+     */
+    fun getResourceId(resourceType: String, projectId: String?, repoName: String?, path: String?): String?
+}

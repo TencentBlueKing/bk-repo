@@ -68,6 +68,10 @@ const val AUTH_SERVICE_PERMISSION_PREFIX = "/service/permission"
 const val AUTH_API_ROLE_PREFIX = "/api/role"
 const val AUTH_SERVICE_ROLE_PREFIX = "/service/role"
 
+
+const val AUTH_SERVICE_BKIAMV3_PREFIX = "/service/bkiamv3"
+
+
 const val AUTH_API_USER_PREFIX = "/api/user"
 const val AUTH_SERVICE_USER_PREFIX = "/service/user"
 

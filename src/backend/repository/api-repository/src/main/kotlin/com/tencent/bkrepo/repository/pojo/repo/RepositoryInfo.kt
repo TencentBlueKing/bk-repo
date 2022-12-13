@@ -42,6 +42,7 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("仓库信息")
 data class RepositoryInfo(
+    val id: String? = null,
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("仓库名称")

@@ -25,41 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-object Release {
-    const val Group = "com.tencent.bk.repo"
-    const val Version = "1.0.0"
-}
+package com.tencent.bkrepo.auth.pojo.enums
 
-object Versions {
-    const val DevopsBoot = "0.0.6"
-    const val Netty = "4.1.77.Final"
-    const val SpringCloudCircuitbreaker = "2.1.2"
-    const val Jersey = "2.35"
-    const val Jsoup = "1.15.1"
-    const val Redline = "1.2.10"
-    const val SkyWalkingApmToolkit = "8.10.0"
-    const val Gson = "2.9.0"
-    const val ProtobufJava = "3.19.4"
-    const val Guava = "31.1-jre"
-    const val Shedlock = "4.12.0"
-    const val JGit = "5.11.0.202103091610-r"
-    const val JavaSemver = "0.9.0"
-    const val CommonsCompress = "1.21"
-    const val CommonsIO = "2.11.0"
-    const val OKhttp = "4.9.0"
-    const val Polaris = "1.5.2"
-    const val CommonsText = "1.9"
-    const val EmbeddedRedis = "0.7.3"
-    const val JMH = "0.5.3"
-    const val HutoolCrypto = "5.5.4"
-    const val JSR311API = "1.1.1"
-    const val MAVEN = "3.8.2"
-    const val MavenArtifact = "3.8.3"
-    const val MockitoKotlin = "4.0.0"
-    const val XStream = "1.4.19"
-    const val DockerJava = "3.2.13"
-    const val Mockk = "1.12.2"
-    const val Swagger = "1.6.2"
-    const val SleuthOtel = "1.0.0-M13"
-    const val IamJavaSdk = "1.0.0-SNAPSHOT"
+/**
+ * 默认用户组对应的操作权限
+ */
+enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String, String>) {
+    PROJECT_MANAGER(
+        "project_manager",
+        mapOf(
+            "project" to "project_view,project_edit,repo_create",
+            "repo" to "repo_edit,node_create,repo_view",
+            "node" to "node_download,node_view,node_delete, node_edit",
+        )
+    ),
+    PROJECT_DEVELOPER("project_developer",
+                      mapOf(
+                          "project" to "project_view,repo_create",
+                          "repo" to "repo_edit,node_create,repo_view",
+                          "node" to "node_download,node_view,node_delete, node_edit",
+                      )
+    ),
+    PROJECT_TESTER("project_tester",
+                   mapOf(
+                       "project" to "project_view",
+                       "repo" to "repo_edit,repo_view",
+                       "node" to "node_download,node_view,node_delete, node_edit",
+                   )
+    ),
+    PROJECT_MAINTAINER("project_maintainer",
+                       mapOf(
+                           "project" to "project_view",
+                           "repo" to "repo_edit,repo_view",
+                           "node" to "node_download,node_view",
+                       )
+    );
 }

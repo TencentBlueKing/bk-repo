@@ -25,41 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-object Release {
-    const val Group = "com.tencent.bk.repo"
-    const val Version = "1.0.0"
-}
+package com.tencent.bkrepo.auth.api
 
-object Versions {
-    const val DevopsBoot = "0.0.6"
-    const val Netty = "4.1.77.Final"
-    const val SpringCloudCircuitbreaker = "2.1.2"
-    const val Jersey = "2.35"
-    const val Jsoup = "1.15.1"
-    const val Redline = "1.2.10"
-    const val SkyWalkingApmToolkit = "8.10.0"
-    const val Gson = "2.9.0"
-    const val ProtobufJava = "3.19.4"
-    const val Guava = "31.1-jre"
-    const val Shedlock = "4.12.0"
-    const val JGit = "5.11.0.202103091610-r"
-    const val JavaSemver = "0.9.0"
-    const val CommonsCompress = "1.21"
-    const val CommonsIO = "2.11.0"
-    const val OKhttp = "4.9.0"
-    const val Polaris = "1.5.2"
-    const val CommonsText = "1.9"
-    const val EmbeddedRedis = "0.7.3"
-    const val JMH = "0.5.3"
-    const val HutoolCrypto = "5.5.4"
-    const val JSR311API = "1.1.1"
-    const val MAVEN = "3.8.2"
-    const val MavenArtifact = "3.8.3"
-    const val MockitoKotlin = "4.0.0"
-    const val XStream = "1.4.19"
-    const val DockerJava = "3.2.13"
-    const val Mockk = "1.12.2"
-    const val Swagger = "1.6.2"
-    const val SleuthOtel = "1.0.0-M13"
-    const val IamJavaSdk = "1.0.0-SNAPSHOT"
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_BKIAMV3_PREFIX
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+
+@Api(tags = ["SERVICE_BKIAMV3"], description = "蓝鲸权限v3接口")
+@Primary
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceBkiamV3Resource")
+@RequestMapping(AUTH_SERVICE_BKIAMV3_PREFIX)
+interface ServiceBkiamV3Resource {
+    @ApiOperation("创建项目管理员")
+    @PostMapping("/create/project/manage/{projectId}")
+    fun createProjectManage(
+        @ApiParam(value = "用户id")
+        @RequestParam userId: String,
+        @ApiParam(value = "仓库名称")
+        @PathVariable projectId: String
+    ): Response<String?>
 }

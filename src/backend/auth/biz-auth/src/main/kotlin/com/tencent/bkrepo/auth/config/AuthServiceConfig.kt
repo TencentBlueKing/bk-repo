@@ -31,6 +31,11 @@
 
 package com.tencent.bkrepo.auth.config
 
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_LOCAL
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -43,15 +48,14 @@ import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
-import com.tencent.bkrepo.auth.service.bkiam.BkiamPermissionServiceImpl
-import com.tencent.bkrepo.auth.service.bkiam.BkiamService
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -84,7 +88,12 @@ class AuthServiceConfig {
     ) = AccountServiceImpl(accountRepository, oauthTokenRepository, userService, mongoTemplate)
 
     @Bean
-    @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local", matchIfMissing = true)
+    @ConditionalOnProperty(
+        prefix = AUTH_CONFIG_PREFIX,
+        name = [AUTH_CONFIG_TYPE_NAME],
+        havingValue = AUTH_CONFIG_TYPE_VALUE_LOCAL,
+        matchIfMissing = true
+    )
     fun permissionService(
         userRepository: UserRepository,
         roleRepository: RoleRepository,
@@ -104,29 +113,39 @@ class AuthServiceConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bkiam")
-    fun bkiamPermissionService(
+    @ConditionalOnProperty(
+        prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+    )
+    fun bkiamV3PermissionService(
+        bkiamV3Service: BkIamV3Service,
         userRepository: UserRepository,
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        bkiamService: BkiamService
+        bkAuthConfig: BkAuthConfig,
+        bkAuthPipelineService: BkAuthPipelineService,
+        bkAuthProjectService: BkAuthProjectService
     ): PermissionService {
-        return BkiamPermissionServiceImpl(
+        return BkIamV3PermissionServiceImpl(
             userRepository,
             roleRepository,
             accountRepository,
             permissionRepository,
             mongoTemplate,
-            bkiamService,
+            bkiamV3Service,
             repositoryClient,
-            projectClient
+            projectClient,
+            bkAuthConfig,
+            bkAuthPipelineService,
+            bkAuthProjectService
         )
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "devops")
+    @ConditionalOnProperty(
+        prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_DEVOPS
+    )
     fun bkAuthPermissionService(
         userRepository: UserRepository,
         roleRepository: RoleRepository,
@@ -167,8 +186,4 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         mongoTemplate: MongoTemplate
     ) = UserServiceImpl(userRepository, roleRepository, mongoTemplate)
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(AuthServiceConfig::class.java)
-    }
 }

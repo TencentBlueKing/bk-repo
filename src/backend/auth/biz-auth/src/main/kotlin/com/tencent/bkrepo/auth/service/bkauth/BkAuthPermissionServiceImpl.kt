@@ -49,7 +49,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 /**
  * 对接devops权限
  */
-class BkAuthPermissionServiceImpl constructor(
+open class BkAuthPermissionServiceImpl constructor(
     userRepository: UserRepository,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
