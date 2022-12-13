@@ -89,6 +89,13 @@ class FinishSubtaskAction(
     override fun execute(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent, context: SubtaskContext) {
         require(context is FinishSubtaskContext)
         with(context) {
+            if (targetState != SubScanTaskStatus.SUCCESS.name) {
+                logger.error(
+                    "task[${subtask.parentScanTaskId}], subtask[${subtask.id}], " +
+                        "scan failed: $scanExecutorResult"
+                )
+            }
+
             val scanner = scannerService.get(subtask.scanner)
             // 对扫描结果去重
             scanExecutorResult?.normalizeResult()

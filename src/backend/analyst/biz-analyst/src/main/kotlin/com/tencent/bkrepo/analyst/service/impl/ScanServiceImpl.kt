@@ -177,11 +177,11 @@ class ScanServiceImpl @Autowired constructor(
     override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
         val subtask = subScanTaskDao.findById(subScanTaskId)
         if (subtask != null && subScanTaskStatus == SubScanTaskStatus.EXECUTING.name) {
-            if (subtask.status != SubScanTaskStatus.EXECUTING.name) {
-                val context = ExecuteSubtaskContext(subtask)
-                subtaskStateMachine.fireEvent(SubScanTaskStatus.valueOf(subtask.status), SubtaskEvent.EXECUTE, context)
-            }
-            return true
+            val context = ExecuteSubtaskContext(subtask)
+            val targetState = subtaskStateMachine.fireEvent(
+                SubScanTaskStatus.valueOf(subtask.status), SubtaskEvent.EXECUTE, context
+            )
+            return targetState == SubScanTaskStatus.EXECUTING
         }
         return false
     }
