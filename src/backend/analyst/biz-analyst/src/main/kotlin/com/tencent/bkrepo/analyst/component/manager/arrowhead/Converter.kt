@@ -27,12 +27,6 @@
 
 package com.tencent.bkrepo.analyst.component.manager.arrowhead
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.License
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.model.TApplicationItem
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.model.TApplicationItemData
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.model.TCveSecItem
@@ -42,6 +36,13 @@ import com.tencent.bkrepo.analyst.component.manager.knowledgebase.TLicense
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResult
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResult
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResultData
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.License
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.levelOf
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import java.time.LocalDateTime
 
 object Converter {
@@ -155,7 +156,9 @@ object Converter {
             pkgVersions = pkgVersions,
             vulId = vulId,
             cveId = cveId ?: "",
-            severity = severity
+            severity = severity,
+            severityLevel = levelOf(severity),
+            cvss = cvss
         )
     }
 
@@ -200,7 +203,7 @@ object Converter {
             des = cve?.description,
             solution = cve?.officialSolution,
             references = cve?.references ?: emptyList(),
-            cvss = cve?.cvss,
+            cvss = securityResult.data.cvss ?: cve?.cvss,
             severity = securityResult.data.severity
         )
     }
