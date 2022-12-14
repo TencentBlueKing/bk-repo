@@ -104,7 +104,7 @@ object Converter {
                 scanTaskCountLimit = scanTaskCountLimit,
                 subScanTaskCountLimit = subScanTaskCountLimit,
                 autoScanConfiguration = autoScanConfiguration,
-                dispatcher = dispatcher
+                dispatcherConfiguration = dispatcherConfiguration
             )
         }
     }

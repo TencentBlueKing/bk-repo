@@ -108,7 +108,7 @@ class PendingAction(
             val plan = planId?.let { scanPlanDao.get(it) }
             val projectId = projectId(rule, plan)
             val repoNames = RuleUtil.getRepoNames(rule)
-            val metadata = customMetadata(metadata, projectId)
+            val metadata = customMetadata(metadata, projectId, plan?.scanner ?: scanner!!)
 
             // 校验权限
             if (userId != null) {
@@ -153,13 +153,18 @@ class PendingAction(
         }
     }
 
-    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String): List<TaskMetadata> {
+    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String, scanner: String): List<TaskMetadata> {
         val projectScanConfiguration = projectScanConfigurationDao.findByProjectId(projectId)
         val customMetadata = metadata.filter { it.key != TASK_METADATA_DISPATCHER }
-        return if (projectScanConfiguration?.dispatcher.isNullOrEmpty()) {
+
+        val dispatcher = projectScanConfiguration
+            ?.dispatcherConfiguration
+            ?.firstOrNull { it.scanner == scanner }
+            ?.dispatcher
+        return if (dispatcher.isNullOrEmpty()) {
             customMetadata
         } else {
-            customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, projectScanConfiguration!!.dispatcher!!)
+            customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, dispatcher)
         }
     }
 

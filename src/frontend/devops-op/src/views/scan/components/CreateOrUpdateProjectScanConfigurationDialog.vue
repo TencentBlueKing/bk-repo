@@ -1,6 +1,6 @@
 <template>
   <el-dialog :title="createMode ? '创建配置' : '更新配置'" :visible.sync="showDialog" :before-close="close">
-    <el-form ref="form" :model="configuration" status-icon>
+    <el-form ref="form" :rules="rules" :model="configuration" status-icon>
       <el-form-item label="项目名" prop="projectId" required>
         <el-input v-model="configuration.projectId" :disabled="!createMode" />
       </el-form-item>
@@ -12,10 +12,36 @@
           <el-option v-for="scanner in scanners" :key="scanner" :label="scanner" :value="scanner" />
         </el-select>
       </el-form-item>
-      <el-form-item label="子任务分发器" prop="dispatcher">
-        <el-select v-model="configuration.dispatcher" placeholder="请选择" clearable>
-          <el-option v-for="dispatcher in dispatchers" :key="dispatcher" :label="dispatcher" :value="dispatcher" />
-        </el-select>
+      <el-form-item label="子任务分发器" prop="dispatcherConfiguration">
+        <br>
+        <div
+          v-for="(dispatcherConfiguration, index) in configuration.dispatcherConfiguration"
+          :key="index"
+        >
+          <el-select
+            v-model="dispatcherConfiguration.scanner"
+            style="margin-right: 10px"
+            placeholder="请选择分析工具"
+            clearable
+            required
+          >
+            <el-option v-for="scanner in scanners" :key="scanner" :label="scanner" :value="scanner" />
+          </el-select>
+          <el-select v-model="dispatcherConfiguration.dispatcher" required placeholder="请选择分发的集群" clearable>
+            <el-option v-for="dispatcher in dispatchers" :key="dispatcher" :label="dispatcher" :value="dispatcher" />
+          </el-select>
+          <el-button
+            slot="append"
+            style="margin-left: 10px"
+            type="danger"
+            @click="removeDispatcherConfiguration(index)"
+          >删除</el-button>
+        </div>
+        <el-button
+          style="margin-top: 10px"
+          type="primary"
+          @click="addDispatcherConfiguration()"
+        >新增分发器</el-button>
       </el-form-item>
     </el-form>
     <div slot="footer">
@@ -46,6 +72,11 @@ export default {
   },
   data() {
     return {
+      rules: {
+        'dispatcherConfiguration': [
+          { validator: this.validateDispatcherConfiguration, trigger: 'change' }
+        ]
+      },
       showDialog: this.visible,
       configuration: this.newConfiguration(),
       dispatchers: ['k8s'],
@@ -80,6 +111,22 @@ export default {
     }
   },
   methods: {
+    validateDispatcherConfiguration(rule, value, callback) {
+      const keys = new Set()
+      value.forEach(dispatcher => {
+        if (keys.has(dispatcher.scanner)) {
+          callback(new Error(`存在重复的分发器配置[${dispatcher.scanner}]`))
+        }
+        if (!dispatcher.scanner) {
+          callback(new Error(`scanner不能为空`))
+        }
+        if (!dispatcher.dispatcher) {
+          callback(new Error(`dispatcher不能为空`))
+        }
+        keys.add(dispatcher.scanner)
+      })
+      callback()
+    },
     close() {
       this.showDialog = false
       this.$emit('update:visible', false)
@@ -122,10 +169,17 @@ export default {
         this.$refs['form'].clearValidate()
       })
     },
+    addDispatcherConfiguration() {
+      this.configuration.dispatcherConfiguration.push({})
+    },
+    removeDispatcherConfiguration(index) {
+      this.configuration.dispatcherConfiguration.splice(index, 1)
+    },
     newConfiguration() {
       const configuration = {}
       configuration.subScanTaskCountLimit = 20
       configuration.autoScanConfiguration = {}
+      configuration.dispatcherConfiguration = []
       return configuration
     }
   }

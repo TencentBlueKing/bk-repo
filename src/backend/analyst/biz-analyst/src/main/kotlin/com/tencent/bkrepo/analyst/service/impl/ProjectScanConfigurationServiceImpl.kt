@@ -72,7 +72,7 @@ class ProjectScanConfigurationServiceImpl(
                 scanTaskCountLimit = scanTaskCountLimit,
                 subScanTaskCountLimit = subScanTaskCountLimit,
                 autoScanConfiguration = autoScanConfiguration ?: emptyMap(),
-                dispatcher = dispatcher
+                dispatcherConfiguration = dispatcherConfiguration ?: emptyList()
             )
             return Converter.convert(projectScanConfigurationDao.insert(configuration))
         }
@@ -97,7 +97,7 @@ class ProjectScanConfigurationServiceImpl(
                 autoScanConfiguration = autoScanConfiguration ?: oldConfiguration.autoScanConfiguration,
                 lastModifiedBy = lastModifiedBy,
                 lastModifiedDate = lastModifiedDate,
-                dispatcher = dispatcher
+                dispatcherConfiguration = dispatcherConfiguration ?: oldConfiguration.dispatcherConfiguration
             )
             return Converter.convert(projectScanConfigurationDao.save(newConfiguration))
         }

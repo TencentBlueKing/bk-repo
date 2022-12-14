@@ -45,5 +45,13 @@ data class ProjectScanConfiguration(
     @ApiModelProperty("自动扫描配置")
     val autoScanConfiguration: Map<String, AutoScanConfiguration>? = null,
     @ApiModelProperty("子任务分发器")
-    val dispatcher: String? = null
+    val dispatcherConfiguration: List<DispatcherConfiguration>? = null
+)
+
+@ApiModel("分发器配置")
+data class DispatcherConfiguration(
+    @ApiModelProperty("使用的分发器")
+    val dispatcher: String,
+    @ApiModelProperty("扫描器")
+    val scanner: String
 )
