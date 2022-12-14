@@ -71,7 +71,7 @@ class ScannerConfiguration {
 
     @Bean
     @ConditionalOnMissingClass("com.tencent.bkrepo.BootApplication") // 仅在非单体包部署时创建，避免循环依赖问题
-    fun OperateLogService(operateLogClient: OperateLogClient): OperateLogService {
+    fun operateLogService(operateLogClient: OperateLogClient): OperateLogService {
         return OperateLogServiceImpl(operateLogClient)
     }
 }

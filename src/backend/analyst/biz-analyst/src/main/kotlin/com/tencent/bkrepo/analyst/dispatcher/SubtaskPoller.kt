@@ -38,8 +38,7 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import org.springframework.scheduling.annotation.Scheduled
 
 open class SubtaskPoller(
     private val dispatcher: SubtaskDispatcher,
@@ -47,20 +46,8 @@ open class SubtaskPoller(
     private val temporaryScanTokenService: TemporaryScanTokenService,
     private val subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
 ) {
-
-    init {
-        val runnable = {
-            try {
-                dispatch()
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                // 执行的任务抛异常后scheduler将不会继续执行后续任务，且没有任何提示，需要手动catch异常输出日志
-                logger.error("dispatch subtask failed", e)
-            }
-        }
-        scheduler.scheduleAtFixedRate(runnable, POLL_INITIAL_DELAY, POLL_DELAY, TimeUnit.MILLISECONDS)
-    }
-
-    private fun dispatch() {
+    @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
+    open fun dispatch() {
         var subtask: SubScanTask?
         // 不加锁，允许少量超过执行器的资源限制
         for (i in 0 until dispatcher.availableCount()) {
@@ -76,9 +63,6 @@ open class SubtaskPoller(
 
     companion object {
         private val logger = LoggerFactory.getLogger(SubtaskPoller::class.java)
-        private val scheduler = Executors.newSingleThreadScheduledExecutor {
-            Thread(it, "analyst-subtask-poller")
-        }
         private const val POLL_INITIAL_DELAY = 30000L
         private const val POLL_DELAY = 5000L
     }
