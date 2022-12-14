@@ -25,23 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.ext
+package com.tencent.bkrepo.oci.listener.consumer
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.replication.ThirdPartyReplicationEvent
+import com.tencent.bkrepo.oci.listener.base.EventExecutor
+import com.tencent.bkrepo.oci.service.OciOperationService
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 
 /**
- * 其他类型同步事件
+ * 消费基于Spring进程内传递的事件
  */
-data class ThirdPartyReplicationEvent(
-    val fullPath: String,
-    override val projectId: String,
-    override val repoName: String,
-    override val userId: String
-) : ArtifactEvent(
-    type = EventType.REPLICATION_THIRD_PARTY,
-    projectId = projectId,
-    repoName = repoName,
-    resourceKey = fullPath,
-    userId = userId
-)
+@Component
+class ReplicationEventListener(
+    override val nodeClient: NodeClient,
+    override val repositoryClient: RepositoryClient,
+    override val ociOperationService: OciOperationService
+): EventExecutor(nodeClient, repositoryClient, ociOperationService) {
+    /**
+     * 第三方同步事件处理
+     */
+    @EventListener(ThirdPartyReplicationEvent::class)
+    fun handle(event: ThirdPartyReplicationEvent) {
+        submit(event)
+    }
+}
