@@ -59,7 +59,7 @@ class LoadBalancerClientAutoConfiguration {
     }
 
     private class Ipv6CapableDelegatingServiceInstance(val delegate: ServiceInstance) : ServiceInstance {
-        override fun getServiceId(): String {
+        override fun getServiceId(): String? {
             return delegate.serviceId
         }
 
@@ -89,7 +89,7 @@ class LoadBalancerClientAutoConfiguration {
             return delegate.metadata
         }
 
-        override fun getScheme(): String {
+        override fun getScheme(): String? {
             return delegate.scheme
         }
     }

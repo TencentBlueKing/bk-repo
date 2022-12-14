@@ -44,18 +44,36 @@ data class StandardScanExecutorResult(
 
         // 根据（漏洞id-组件id）进行去重
         val securityResults = HashMap<String, SecurityResult>()
+        val versionPathsMap = HashMap<String, VersionPaths>()
         output.result?.securityResults?.forEach { securityResult ->
-            securityResults.getOrPut("${securityResult.pkgName}-${securityResult.vulId}") {
+            val result = securityResults.getOrPut("${securityResult.pkgName}-${securityResult.vulId}") {
                 securityResult.copy(severity = normalizedLevel(securityResult.severity))
-            }.pkgVersions.addAll(securityResult.pkgVersions)
+            }
+            // 添加组件版本与路径映射关系
+            securityResult.pkgVersions.forEach { version ->
+                result.versionsPaths.add(
+                    updateVersionPaths(securityResult.pkgName, version, securityResult.path, versionPathsMap)
+                )
+            }
+            securityResult.versionsPaths.forEach {
+                result.versionsPaths.add(updateVersionPaths(securityResult.pkgName, it, versionPathsMap))
+            }
+            result.pkgVersions.addAll(securityResult.pkgVersions)
         }
 
         // 去重license
         val licenseResults = HashMap<String, LicenseResult>()
         output.result?.licenseResults?.forEach { licenseResult ->
-            licenseResults
-                .getOrPut("${licenseResult.pkgName}-${licenseResult.licenseName}") { licenseResult }
-                .pkgVersions.addAll(licenseResult.pkgVersions)
+            val pkgName = licenseResult.pkgName
+            val result = licenseResults.getOrPut("${pkgName}-${licenseResult.licenseName}") { licenseResult }
+            // 添加组件版本与路径映射关系
+            licenseResult.pkgVersions.forEach { version ->
+                result.versionsPaths.add(updateVersionPaths(pkgName, version, licenseResult.path, versionPathsMap))
+            }
+            licenseResult.versionsPaths.forEach {
+                result.versionsPaths.add(updateVersionPaths(pkgName, it, versionPathsMap))
+            }
+            result.pkgVersions.addAll(licenseResult.pkgVersions)
         }
 
         // 替换为去重后的结果
@@ -65,5 +83,27 @@ data class StandardScanExecutorResult(
                 licenseResults = licenseResults.values.toList()
             )
         }
+    }
+
+    private fun updateVersionPaths(
+        pkgName: String?,
+        version: String,
+        path: String?,
+        versionPathsMap: MutableMap<String, VersionPaths>
+    ): VersionPaths {
+        val versionPaths = versionPathsMap.getOrPut("${pkgName}-${version}") { VersionPaths(version) }
+        versionPaths.paths.add(path ?: "")
+        return versionPaths
+    }
+
+    private fun updateVersionPaths(
+        pkgName: String?,
+        rawVersionPaths: VersionPaths,
+        versionPathsMap: MutableMap<String, VersionPaths>
+    ): VersionPaths {
+        val version = rawVersionPaths.version
+        val versionPaths = versionPathsMap.getOrPut("${pkgName}-${version}") { VersionPaths(version) }
+        versionPaths.paths.addAll(rawVersionPaths.paths)
+        return versionPaths
     }
 }
