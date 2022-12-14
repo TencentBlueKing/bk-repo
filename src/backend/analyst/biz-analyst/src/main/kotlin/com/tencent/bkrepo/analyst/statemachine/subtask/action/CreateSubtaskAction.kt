@@ -42,12 +42,10 @@ import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.utils.FlushableBuffer
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -64,7 +62,6 @@ class CreateSubtaskAction(
 
     @Autowired
     private lateinit var self: CreateSubtaskAction
-    private var subtaskBuffer = FlushableBuffer<TSubScanTask>(BATCH_SIZE) { self.save(it) }
 
     override fun execute(
         from: SubScanTaskStatus,
@@ -84,12 +81,7 @@ class CreateSubtaskAction(
 
         // 添加到扫描任务队列
         val subtask = createSubTask(scanTask, node, storageCredentialsKey, state)
-        subtaskBuffer.add(subtask)
-    }
-
-    @Scheduled(fixedRate = FLUSH_RATE)
-    fun forceFlush() {
-        subtaskBuffer.flush()
+        self.save(listOf(subtask))
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -167,11 +159,5 @@ class CreateSubtaskAction(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CreateSubtaskAction::class.java)
-
-        /**
-         * 批量提交子任务数量
-         */
-        private const val BATCH_SIZE = 20
-        private const val FLUSH_RATE = 1L * 1000L
     }
 }

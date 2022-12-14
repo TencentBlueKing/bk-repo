@@ -31,18 +31,10 @@ import com.tencent.bkrepo.analyst.configuration.KubernetesDispatcherProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
-import io.kubernetes.client.openapi.models.V1Container
-import io.kubernetes.client.openapi.models.V1Job
-import io.kubernetes.client.openapi.models.V1JobSpec
-import io.kubernetes.client.openapi.models.V1ObjectMeta
-import io.kubernetes.client.openapi.models.V1PodSpec
-import io.kubernetes.client.openapi.models.V1PodTemplateSpec
-import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication
@@ -79,12 +71,12 @@ class KubernetesDispatcher(
         cmd.add(subtask.token!!)
         return createJob(
             taskId = subtask.taskId,
-            namespace = k8sProperties.namespace,
-            name = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}",
-            image = scanner.image,
+            jobNamespace = k8sProperties.namespace,
+            jobName = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}",
+            containerImage = scanner.image,
             cmd = cmd,
             limitStorageSize = maxStorageSize(subtask.packageSize),
-            activeDeadlineSeconds = scanner.maxScanDuration(subtask.packageSize)
+            jobActiveDeadlineSeconds = scanner.maxScanDuration(subtask.packageSize)
         )
     }
 
@@ -124,49 +116,50 @@ class KubernetesDispatcher(
     @Suppress("LongParameterList")
     private fun createJob(
         taskId: String,
-        namespace: String,
-        name: String,
-        image: String,
+        jobNamespace: String,
+        jobName: String,
+        containerImage: String,
         cmd: List<String>,
         limitStorageSize: Long,
-        activeDeadlineSeconds: Long,
+        jobActiveDeadlineSeconds: Long,
     ): Boolean {
-        val api = BatchV1Api()
-        val metadata = V1ObjectMeta().namespace(namespace).name(name)
+        val body = v1Job {
+            metadata {
+                namespace = jobNamespace
+                name = jobName
+            }
+            spec {
+                backoffLimit = 0
+                activeDeadlineSeconds = jobActiveDeadlineSeconds
+                ttlSecondsAfterFinished = k8sProperties.jobTtlSecondsAfterFinished
+                template {
+                    spec {
+                        addContainerItem {
+                            name = jobName
+                            image = containerImage
+                            command = cmd
+                            resources {
+                                requests(
+                                    cpu = k8sProperties.requestCpu,
+                                    memory = k8sProperties.requestMem.toBytes(),
+                                    ephemeralStorage = limitStorageSize
+                                )
+                                limits(
+                                    cpu = k8sProperties.limitCpu,
+                                    memory = k8sProperties.limitMem.toBytes(),
+                                    ephemeralStorage = limitStorageSize
+                                )
+                            }
+                        }
+                        restartPolicy = "Never"
+                    }
+                }
+            }
+        }
 
-        val spec = V1JobSpec()
-            .backoffLimit(0)
-            .activeDeadlineSeconds(activeDeadlineSeconds)
-            .ttlSecondsAfterFinished(k8sProperties.jobTtlSecondsAfterFinished)
-            .template(V1PodTemplateSpec().apply {
-                spec(V1PodSpec().apply {
-                    addContainersItem(V1Container().apply {
-                        name(name)
-                        image(image)
-                        command(cmd)
-                        resources(V1ResourceRequirements().apply {
-                            requests(
-                                mapOf(
-                                    "cpu" to Quantity("${k8sProperties.requestCpu}"),
-                                    "memory" to Quantity("${k8sProperties.requestMem.toBytes()}"),
-                                    "ephemeral-storage" to Quantity("$limitStorageSize")
-                                )
-                            )
-                            limits(
-                                mapOf(
-                                    "cpu" to Quantity("${k8sProperties.limitCpu}"),
-                                    "memory" to Quantity("${k8sProperties.limitMem.toBytes()}"),
-                                    "ephemeral-storage" to Quantity("$limitStorageSize")
-                                )
-                            )
-                        })
-                    })
-                    restartPolicy = "Never"
-                })
-            })
-        val body = V1Job().metadata(metadata).spec(spec)
         try {
-            api.createNamespacedJob(namespace, body, null, null, null)
+            val api = BatchV1Api()
+            api.createNamespacedJob(jobNamespace, body, null, null, null)
             logger.info("dispatch subtask[$taskId] success")
             return true
         } catch (e: ApiException) {

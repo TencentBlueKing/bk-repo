@@ -40,12 +40,10 @@ import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.utils.FlushableBuffer
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -62,9 +60,6 @@ class ReuseResultAction(
 ) : SubtaskAction {
     @Autowired
     private lateinit var self: ReuseResultAction
-    private var finishedSubtaskBuffer = FlushableBuffer<TArchiveSubScanTask>(BATCH_SIZE) {
-        self.saveReuseResultSubtask(it)
-    }
 
     override fun execute(
         from: SubScanTaskStatus,
@@ -77,7 +72,7 @@ class ReuseResultAction(
         val finishedSubtask = createReuseResultSubtask(context, overview)
         // 更新当前正在扫描的任务数
         val passCount = if (finishedSubtask.qualityRedLine == true) 1L else 0L
-        finishedSubtaskBuffer.add(finishedSubtask)
+        self.saveReuseResultSubtask(listOf(finishedSubtask))
         scanTaskDao.updateScanResult(
             context.scanTask.taskId,
             1,
@@ -154,20 +149,7 @@ class ReuseResultAction(
         planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
     }
 
-    @Scheduled(fixedRate = FLUSH_RATE)
-    fun forceFlush() {
-        finishedSubtaskBuffer.flush()
-    }
-
     override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
         return from == SubScanTaskStatus.NEVER_SCANNED && event == SubtaskEvent.SUCCESS
-    }
-
-    companion object {
-        /**
-         * 批量提交子任务数量
-         */
-        private const val BATCH_SIZE = 20
-        private const val FLUSH_RATE = 1L * 1000L
     }
 }
