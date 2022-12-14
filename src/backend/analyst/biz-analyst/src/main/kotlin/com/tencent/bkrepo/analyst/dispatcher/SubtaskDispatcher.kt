@@ -35,6 +35,10 @@ import com.tencent.bkrepo.analyst.pojo.SubScanTask
 interface SubtaskDispatcher {
     /**
      * 分发任务
+     *
+     * @param subtask 需要分发的任务
+     *
+     * @return 是否分发成功
      */
     fun dispatch(subtask: SubScanTask): Boolean
 

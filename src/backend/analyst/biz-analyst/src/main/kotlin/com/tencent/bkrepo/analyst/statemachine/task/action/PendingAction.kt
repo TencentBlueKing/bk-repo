@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.statemachine.task.action
 
 import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
@@ -71,6 +72,7 @@ import java.time.LocalDateTime
 @Action
 @Suppress("LongParameterList")
 class PendingAction(
+    private val scannerProperties: ScannerProperties,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
     private val scanPlanDao: ScanPlanDao,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
@@ -160,8 +162,8 @@ class PendingAction(
         val dispatcher = projectScanConfiguration
             ?.dispatcherConfiguration
             ?.firstOrNull { it.scanner == scanner }
-            ?.dispatcher
-        return if (dispatcher.isNullOrEmpty()) {
+            ?.dispatcher ?: scannerProperties.defaultDispatcher
+        return if (dispatcher.isEmpty()) {
             customMetadata
         } else {
             customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, dispatcher)

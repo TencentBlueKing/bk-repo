@@ -25,12 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    api(project(":common:common-operate:operate-annotation"))
-    api("com.github.docker-java:docker-java:${Versions.DockerJava}")
-    api("com.github.docker-java:docker-java-transport-okhttp:${Versions.DockerJava}")
-    implementation("org.apache.commons:commons-lang3")
+package com.tencent.bkrepo.analyst.dispatcher
+
+fun buildCommand(cmd: String, baseUrl: String, subtaskId: String, token: String): List<String> {
+    val command = ArrayList<String>()
+    command.addAll(cmd.split(" "))
+    command.add("--url")
+    command.add(baseUrl)
+    command.add("--task-id")
+    command.add(subtaskId)
+    command.add("--token")
+    command.add(token)
+    return command
 }

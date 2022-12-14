@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analysis.executor.util
+package com.tencent.bkrepo.common.analysis.pojo.scanner.utils
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.PullImageResultCallback
@@ -35,7 +35,6 @@ import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Ulimit
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.analysis.executor.util.CommonUtils.ignoreExceptionExecute
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
@@ -100,7 +99,11 @@ object DockerUtils {
     }
 
     fun DockerClient.removeContainer(containerId: String, msg: String = "", force: Boolean = true) {
-        ignoreExceptionExecute(msg) { removeContainerCmd(containerId).withForce(force).exec() }
+        try {
+            removeContainerCmd(containerId).withForce(force).exec()
+        } catch (e: Exception) {
+            logger.warn("$msg, ${e.message}")
+        }
     }
 
     fun dockerHostConfig(

@@ -51,7 +51,11 @@ data class ScannerProperties(
     /**
      * 用于监控数据统计的分布式计数器使用的存储类型
      */
-    var distributedCountType: String = DISTRIBUTED_COUNT_REDIS
+    var distributedCountType: String = DISTRIBUTED_COUNT_REDIS,
+    /**
+     * 默认分发器
+     */
+    var defaultDispatcher: String = ""
 ) {
     companion object {
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0

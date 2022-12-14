@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.analyst.configuration
 
 import com.alibaba.cola.statemachine.StateMachine
+import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
+import com.tencent.bkrepo.analyst.dispatcher.DockerDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.KubernetesDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
@@ -47,7 +49,11 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ScannerProperties::class, KubernetesDispatcherProperties::class)
+@EnableConfigurationProperties(
+    ScannerProperties::class,
+    KubernetesDispatcherProperties::class,
+    DockerDispatcherProperties::class
+)
 class ScannerConfiguration {
     @Bean
     @ConditionalOnProperty("scanner.dispatcher.k8s.enabled", havingValue = "true")
@@ -56,6 +62,16 @@ class ScannerConfiguration {
         kubernetesDispatcherProperties: KubernetesDispatcherProperties
     ): SubtaskDispatcher {
         return KubernetesDispatcher(scannerProperties, kubernetesDispatcherProperties)
+    }
+
+    @Bean
+    @ConditionalOnProperty("scanner.dispatcher.docker.enabled", havingValue = "true")
+    fun dockerDispatcher(
+        subScanTaskDao: SubScanTaskDao,
+        scannerProperties: ScannerProperties,
+        dockerDispatcherProperties: DockerDispatcherProperties
+    ): SubtaskDispatcher {
+        return DockerDispatcher(scannerProperties, dockerDispatcherProperties, subScanTaskDao)
     }
 
     @Bean

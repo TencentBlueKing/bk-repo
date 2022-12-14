@@ -191,13 +191,21 @@ class SubScanTaskDao(
     }
 
     fun firstTaskByStatusIn(status: List<String>, dispatcher: String?): TSubScanTask? {
-        val query = Query(
-            Criteria().andOperator(
-                TSubScanTask::status.inValues(status),
-                dispatcherCriteria(dispatcher)
-            )
-        )
+        val query = buildStatusAndDispatcherQuery(status, dispatcher)
         return findOne(query)
+    }
+
+    /**
+     * 获取指定状态任务数量
+     *
+     * @param status 要查询的任务状态列表
+     * @param dispatcher 任务使用的分发器
+     *
+     * @return 任务数量
+     */
+    fun countTaskByStatusIn(status: List<String>, dispatcher: String?): Long {
+        val query = buildStatusAndDispatcherQuery(status, dispatcher)
+        return count(query)
     }
 
     /**
@@ -235,6 +243,15 @@ class SubScanTaskDao(
             .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
             .and(TSubScanTask::status.name).isEqualTo(SubScanTaskStatus.BLOCKED.name)
         return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
+    }
+
+    private fun buildStatusAndDispatcherQuery(status: List<String>, dispatcher: String?): Query {
+        return Query(
+            Criteria().andOperator(
+                TSubScanTask::status.inValues(status),
+                dispatcherCriteria(dispatcher)
+            )
+        )
     }
 
     private fun dispatcherCriteria(dispatcher: String?): Criteria {

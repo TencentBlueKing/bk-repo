@@ -25,12 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-checker:api-checker"))
-    api(project(":common:common-operate:operate-annotation"))
-    api("com.github.docker-java:docker-java:${Versions.DockerJava}")
-    api("com.github.docker-java:docker-java-transport-okhttp:${Versions.DockerJava}")
-    implementation("org.apache.commons:commons-lang3")
-}
+package com.tencent.bkrepo.analyst.configuration
+
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("scanner.dispatcher.docker")
+data class DockerDispatcherProperties (
+    /**
+     * 是否启用
+     */
+    var enabled: Boolean = false,
+    var host: String = "unix://var/run/docker.sock",
+    var version: String = "1.23",
+    var connectTimeout: Int = 5000,
+    var readTimeout: Int = 0,
+    var maxTaskCount: Int = 1
+)

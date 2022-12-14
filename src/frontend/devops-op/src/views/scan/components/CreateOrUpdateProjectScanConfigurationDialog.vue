@@ -79,7 +79,7 @@ export default {
       },
       showDialog: this.visible,
       configuration: this.newConfiguration(),
-      dispatchers: ['k8s'],
+      dispatchers: ['k8s', 'docker'],
       scanners: [],
       selectedScanners: [],
       loading: false
