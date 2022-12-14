@@ -25,37 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.api
+package com.tencent.bkrepo.common.artifact.event.ext
 
-import com.tencent.bkrepo.common.api.constant.OCI_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 
 /**
- * oci仓库接口
+ * 其他类型同步事件
  */
-@Api("oci仓库接口")
-@Primary
-@FeignClient(OCI_SERVICE_NAME, contextId = "OciClient")
-@RequestMapping("/service/manifest")
-interface OciClient {
-
-    @ApiOperation("更新manifest相关信息")
-    @PostMapping("/{projectId}/{repoName}/update")
-    fun updateManifest(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam packageName: String,
-        @RequestParam tag: String,
-        @RequestParam sha256: String,
-        @RequestParam sourceType: ArtifactChannel? = null
-    ): Response<Void>
-}
+data class ThirdPartyReplicationEvent(
+    val fullPath: String,
+    override val projectId: String,
+    override val repoName: String,
+    override val userId: String
+) : ArtifactEvent(
+    type = EventType.REPLICATION_THIRD_PARTY,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = fullPath,
+    userId = userId
+)
