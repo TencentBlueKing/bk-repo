@@ -31,19 +31,24 @@
 
 package com.tencent.bkrepo.common.security.util
 
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.ADMIN_USER
-import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_KEY
+import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.slf4j.LoggerFactory
+import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
+import org.springframework.web.context.request.RequestContextHolder
 
 /**
  * SecurityUtils工具类
  */
 object SecurityUtils {
+
+    private val logger = LoggerFactory.getLogger(SecurityUtils::class.java)
 
     /**
      * 获取userId
@@ -96,6 +101,11 @@ object SecurityUtils {
      * 判断是否为微服务请求
      */
     fun isServiceRequest(): Boolean {
-        return HttpContextHolder.getRequestOrNull()?.getAttribute(MS_REQUEST_KEY) != null
+        try {
+            return RequestContextHolder.getRequestAttributes()?.getAttribute(MS_REQUEST_KEY, SCOPE_REQUEST) != null
+        } catch (e: IllegalStateException) {
+            logger.error("check isServiceRequest failed", e)
+        }
+        return false
     }
 }
