@@ -29,7 +29,6 @@ package com.tencent.bkrepo.oci.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.replication.ThirdPartyReplicationEvent
 import com.tencent.bkrepo.oci.listener.base.EventExecutor
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -65,7 +64,7 @@ class ThirdPartyReplicationEventConsumer(
             return
         }
         logger.info("current third party replication message header is ${message.headers}")
-        submit(message.payload as ThirdPartyReplicationEvent)
+        submit(message.payload)
     }
 
     companion object {

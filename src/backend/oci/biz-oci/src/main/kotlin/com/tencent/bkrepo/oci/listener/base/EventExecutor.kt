@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.oci.listener.base
 
-import com.tencent.bkrepo.common.artifact.event.replication.ThirdPartyReplicationEvent
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -53,7 +53,7 @@ open class EventExecutor(
      * 提交任务到线程池执行
      */
     fun submit(
-        event: ThirdPartyReplicationEvent
+        event: ArtifactEvent
     ): Future<Boolean> {
         return threadPoolExecutor.submit<Boolean> {
             try {
@@ -66,16 +66,19 @@ open class EventExecutor(
         }
     }
 
-    private fun replicationEventHandler(event: ThirdPartyReplicationEvent) {
+    private fun replicationEventHandler(event: ArtifactEvent) {
         with(event) {
+            val packageName = event.data["packageName"].toString()
+            val version = event.data["version"].toString()
+            val sha256 = event.data["sha256"].toString()
             val ociArtifactInfo = OciManifestArtifactInfo(
-                projectId, repoName, packageName, "", version!!, false
+                projectId, repoName, packageName, "", version, false
             )
             val nodeInfo = nodeClient.getNodeDetail(projectId, repoName, ociArtifactInfo.getArtifactFullPath()).data
                 ?: throw NodeNotFoundException(
                     "${ociArtifactInfo.getArtifactFullPath()} not found in repo in $projectId|$repoName"
                 )
-            val ociDigest = OciDigest.fromSha256(sha256!!)
+            val ociDigest = OciDigest.fromSha256(sha256)
             val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw RepoNotFoundException("$projectId|$repoName")
             ociOperationService.updateOciInfo(

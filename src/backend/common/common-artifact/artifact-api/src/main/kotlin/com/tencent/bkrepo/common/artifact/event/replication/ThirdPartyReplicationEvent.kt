@@ -46,5 +46,11 @@ data class ThirdPartyReplicationEvent(
     projectId = projectId,
     repoName = repoName,
     resourceKey = fullPath,
-    userId = userId
+    userId = userId,
+    data = mutableMapOf(
+        "packageName" to packageName
+    ).apply {
+        version?.let { this["version"] = version }
+        sha256?.let { this["sha256"] = sha256 }
+    }
 )
