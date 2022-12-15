@@ -41,3 +41,11 @@ fun normalizedLevel(level: String): String {
         else -> Level.CRITICAL.levelName
     }
 }
+
+fun levelOf(levelName: String) = when (levelName.toLowerCase()) {
+    Level.CRITICAL.levelName -> Level.CRITICAL.level
+    Level.HIGH.levelName -> Level.HIGH.level
+    Level.MEDIUM.levelName -> Level.MEDIUM.level
+    Level.LOW.levelName -> Level.LOW.level
+    else -> Int.MAX_VALUE
+}

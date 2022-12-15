@@ -77,6 +77,25 @@ object NodeEventFactory {
     }
 
     /**
+     * 节点批量删除事件
+     */
+    fun buildDeletedEvent(
+        projectId: String,
+        repoName: String,
+        fullPaths: List<String>,
+        userId: String
+    ): List<NodeDeletedEvent> {
+        return fullPaths.map {
+            NodeDeletedEvent(
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = it,
+                userId = userId
+            )
+        }
+    }
+
+    /**
      * 节点重命名事件
      */
     fun buildRenamedEvent(request: NodeRenameRequest): NodeRenamedEvent {
