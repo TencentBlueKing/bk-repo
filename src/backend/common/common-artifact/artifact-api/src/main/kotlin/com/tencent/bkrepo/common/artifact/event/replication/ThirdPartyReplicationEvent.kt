@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 /**
  * 其他类型同步事件
  */
-data class ThirdPartyReplicationEvent(
+class ThirdPartyReplicationEvent(
     val packageName: String,
     val version: String? = null,
     val sha256: String? = null,
@@ -54,3 +54,4 @@ data class ThirdPartyReplicationEvent(
         sha256?.let { this["sha256"] = sha256 }
     }
 )
+

@@ -764,7 +764,7 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
             // 针对支持多仓库类型，如docker和oci
-            val repoType = getRepositoryInfo(ociArtifactInfo).type.name
+            val repoType = repositoryClient.getRepoDetail(projectId, repoName).data!!.type.name
             val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
             val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
                 .apply {
