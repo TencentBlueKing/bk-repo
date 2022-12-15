@@ -5,6 +5,7 @@ LABEL maintainer="Tencent BlueKing Devops"
 ENV BK_REPO_HOME=/data/workspace/bkrepo \
     BK_REPO_LOGS_DIR=/bkrepo-data/logs \
     BK_REPO_DATA_PATH=/bkrepo-data/store \
+    BK_REPO_REDIS_PATH=/bkrepo-data/redis \
     BK_REPO_MONGO_PATH=/bkrepo-data/mongo \
     BK_REPO_HOST="bkrepo.example.com" \
     BK_REPO_HTTP_PORT="80" \

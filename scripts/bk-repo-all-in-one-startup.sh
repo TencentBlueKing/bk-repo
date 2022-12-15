@@ -1,5 +1,13 @@
 #! /bin/sh
 
+##启动redis
+echo "启动redis..."
+REDIS_LOG_PATH=$BK_REPO_REDIS_PATH/log
+REDIS_DATA_PATH=$BK_REPO_REDIS_PATH/data
+mkdir -p $REDIS_LOG_PATH
+mkdir -p $REDIS_DATA_PATH
+redis-server --daemonize yes --logfile $REDIS_LOG_PATH/redis.log --dir $REDIS_DATA_PATH --appendonly yes
+
 ##启动mongodb
 echo "启动mongodb..."
 MONGO_DATA_PATH=$BK_REPO_MONGO_PATH/lib/mongo
