@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -95,6 +96,15 @@ class NodeServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
+    override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
+    }
+
+    override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
+        return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
     override fun deleteByPath(
         projectId: String,
         repoName: String,
@@ -102,6 +112,16 @@ class NodeServiceImpl(
         operator: String
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun deleteByPaths(
+        projectId: String,
+        repoName: String,
+        fullPaths: List<String>,
+        operator: String
+    ): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
     }
 
     override fun deleteBeforeDate(

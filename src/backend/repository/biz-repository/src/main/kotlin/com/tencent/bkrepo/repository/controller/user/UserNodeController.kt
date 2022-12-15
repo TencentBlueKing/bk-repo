@@ -60,6 +60,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
@@ -73,6 +74,7 @@ import io.swagger.annotations.ApiParam
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
@@ -80,6 +82,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
+import javax.validation.constraints.Size
 
 @Api("节点用户接口")
 @RestController
@@ -139,6 +142,42 @@ class UserNodeController(
             )
             return ResponseBuilder.success(nodeService.deleteNode(deleteRequest))
         }
+    }
+
+    @ApiOperation("批量删除节点")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    @DeleteMapping("/batch/{projectId}/{repoName}")
+    fun deleteNodes(
+        @RequestAttribute userId: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestBody @Size(max = 200, message = "操作个数必须在0和200之间") fullPaths: List<String>
+    ): Response<NodeDeleteResult> {
+        val nodesDeleteRequest = NodesDeleteRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPaths = fullPaths,
+            operator = userId
+        )
+        return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
+    }
+
+    @ApiOperation("统计批量删除节点数")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    @PostMapping("/batch/{projectId}/{repoName}")
+    fun countBatchDeleteNode(
+        @RequestAttribute userId: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestBody @Size(max = 200, message = "操作个数必须在0和200之间") fullPaths: List<String>
+    ): Response<Long> {
+        val nodesDeleteRequest = NodesDeleteRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPaths = fullPaths,
+            operator = userId
+        )
+        return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
 
     @ApiOperation("清理创建时间早于{date}的文件节点")

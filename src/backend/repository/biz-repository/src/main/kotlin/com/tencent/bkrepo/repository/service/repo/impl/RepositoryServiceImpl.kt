@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -36,6 +35,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
@@ -201,7 +201,7 @@ class RepositoryServiceImpl(
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
-            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::description.name)
+            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
@@ -265,7 +265,7 @@ class RepositoryServiceImpl(
     override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
             Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
-            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::description.name)
+            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             val repository = checkRepository(projectId, name)
             quota?.let {
                 Preconditions.checkArgument(it >= (repository.used ?: 0), this::quota.name)
@@ -536,24 +536,24 @@ class RepositoryServiceImpl(
 
     /**
      * 检查下载拦截器配置
-     * 规则：
-     *  filename不为空字符串
-     *  metadata是键值对形式
+     *
      */
     @Suppress("UNCHECKED_CAST")
     private fun checkInterceptorConfig(configuration: RepositoryConfiguration?): Boolean {
-        val config = configuration?.getSetting<List<Map<String, Any>>>(INTERCEPTORS)
-        config?.forEach {
-            val rules = it[RULES] as Map<String, String>
-            val filename = rules[FILENAME]
-            if (filename != null && filename.isBlank()) {
-                return false
-            }
-            val metadata = rules[METADATA]
-            if (metadata != null && metadata.split(StringPool.COLON).size != 2) {
-                return false
+        val settings = configuration?.settings
+        settings?.let {
+            val interceptors = DownloadInterceptorFactory.buildInterceptors(settings)
+            interceptors.forEach {
+                try {
+                    it.parseRule()
+                } catch (ignore: UnsupportedOperationException) {
+                    return@forEach
+                } catch (exception: Exception) {
+                    return false
+                }
             }
         }
+
         return true
     }
 
@@ -561,10 +561,6 @@ class RepositoryServiceImpl(
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESC_MAX_LENGTH = 200
-        private const val INTERCEPTORS = "interceptors"
-        private const val RULES = "rules"
-        private const val FILENAME = "filename"
-        private const val METADATA = "metadata"
 
         private fun convertToDetail(
             tRepository: TRepository?,
