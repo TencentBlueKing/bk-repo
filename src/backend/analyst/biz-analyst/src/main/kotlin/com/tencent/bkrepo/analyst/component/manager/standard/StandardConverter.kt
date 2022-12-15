@@ -83,7 +83,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
         result as Page<SecurityResult>
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
-        val reports = result.records.mapTo(HashSet(result.records.size)) {
+        val reports = result.records.mapTo(LinkedHashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
                 vulId = it.cveId ?: it.vulId,
                 severity = ScanPlanConverter.convertToLeakLevel(it.severity),
