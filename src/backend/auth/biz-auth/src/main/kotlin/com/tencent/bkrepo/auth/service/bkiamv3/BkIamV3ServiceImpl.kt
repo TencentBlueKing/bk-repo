@@ -318,7 +318,12 @@ class BkIamV3ServiceImpl(
             resName = projectInfo.name,
             resType = ResourceType.PROJECT,
             members = setOf(userId),
-            groupList = listOf(DefaultGroupType.PROJECT_MANAGE, DefaultGroupType.PROJECT_EDIT, DefaultGroupType.PROJECT_DOWNLOAD, DefaultGroupType.PROJECT_UPLOAD_DELETE)
+            groupList = listOf(
+                DefaultGroupType.PROJECT_MANAGE,
+                DefaultGroupType.PROJECT_EDIT,
+                DefaultGroupType.PROJECT_DOWNLOAD,
+                DefaultGroupType.PROJECT_UPLOAD_DELETE
+            )
         )
         return managerId.toString()
     }
@@ -346,18 +351,21 @@ class BkIamV3ServiceImpl(
             iamConfiguration = iamConfiguration
         )
         try {
-        // 如果项目没有创建managerid,则直接返回
-        val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT.name, projectId)?.managerId
+        // 如果项目没有创建managerId,则直接返回
+        val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT, projectId)?.managerId
             ?: return null
         val projectManager = managerService.getGradeManagerDetail(projectManagerId.toString()) ?: return null
-        val managerGroup = managerService.getGradeManagerRoleGroupV2(projectManager.id, DefaultGroupType.PROJECT_MANAGE.displayName, V2PageInfoDTO())
+        val managerGroup = managerService.getGradeManagerRoleGroupV2(
+            projectManager.id, DefaultGroupType.PROJECT_MANAGE.displayName, V2PageInfoDTO()
+        )
         val managerUsers = managerService.getRoleGroupMemberV2(managerGroup.results.first().id, PageInfoDTO())
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
         secondManagerMembers.addAll(projectManager.members)
         secondManagerMembers.addAll(managerUsers.results.map { it.id })
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
-            .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}-$REPO_DEFAULT_NAME-${repoDetail.name}")
+            .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}" +
+                      "-$REPO_DEFAULT_NAME-${repoDetail.name}")
             .description(IamGroupUtils.buildManagerDescription("${projectInfo.displayName}-${repoDetail.name}", userId))
             .members(secondManagerMembers.toList())
             .authorizationScopes(authorizationScopes)
@@ -372,7 +380,11 @@ class BkIamV3ServiceImpl(
             resName = repoName,
             resType = ResourceType.REPO,
             members = secondManagerMembers,
-            groupList = listOf(DefaultGroupType.REPO_MANAGER, DefaultGroupType.REPO_DOWNLOAD, DefaultGroupType.REPO_UPLOAD_DELETE)
+            groupList = listOf(
+                DefaultGroupType.REPO_MANAGER,
+                DefaultGroupType.REPO_DOWNLOAD,
+                DefaultGroupType.REPO_UPLOAD_DELETE
+            )
         )
         return repoManagerId.toString()
         } catch (e: Exception) {
@@ -500,7 +512,9 @@ class BkIamV3ServiceImpl(
                 managerService.grantRoleGroupV2(roleId, permission)
             }
         } catch (e: Exception) {
-            logger.error("create role permission for $resType $resId|$resName with actions $actions error: ${e.message}")
+            logger.error(
+                "create role permission for $resType $resId|$resName with actions $actions error: ${e.message}"
+            )
         }
     }
 

@@ -28,10 +28,11 @@
 package com.tencent.bkrepo.auth.repository
 
 import com.tencent.bkrepo.auth.model.TBkIamAuthManager
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
 interface BkIamAuthManagerRepository: MongoRepository<TBkIamAuthManager, String> {
-    fun findByTypeAndResourceId(type: String, resourceId: String) :TBkIamAuthManager?
+    fun findByTypeAndResourceId(type: ResourceType, resourceId: String) :TBkIamAuthManager?
 }
