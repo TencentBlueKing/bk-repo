@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
+import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientBuilder
 import com.github.dockerjava.okhttp.OkDockerHttpClient
@@ -37,7 +38,9 @@ import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.createContainer
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.slf4j.LoggerFactory
+import java.net.InetAddress
 
 class DockerDispatcher(
     private val scannerProperties: ScannerProperties,
@@ -65,11 +68,14 @@ class DockerDispatcher(
     }
 
     override fun dispatch(subtask: SubScanTask): Boolean {
+        logger.info("dispatch subtask[${subtask.taskId}] with $NAME")
         val scanner = subtask.scanner
         require(scanner is StandardScanner)
         try {
             val command = buildCommand(scanner.cmd, scannerProperties.baseUrl, subtask.taskId, subtask.token!!)
-            val containerId = dockerClient.createContainer(image = scanner.image, cmd = command)
+            val containerId = dockerClient.createContainer(
+                image = scanner.image, hostConfig = hostConfig(), cmd = command
+            )
             dockerClient.startContainerCmd(containerId).exec()
         } catch (e: Exception) {
             logger.error("dispatch subtask[${subtask.taskId}] failed", e)
@@ -87,8 +93,18 @@ class DockerDispatcher(
         return NAME
     }
 
+    private fun hostConfig(): HostConfig? {
+        val url = scannerProperties.baseUrl.toHttpUrl()
+        val address = InetAddress.getByName(url.host)
+        if (address.hostAddress == LOCALHOST) {
+            return HostConfig.newHostConfig().withExtraHosts("${url.host}:host-gateway")
+        }
+        return null
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(DockerDispatcher::class.java)
+        private const val LOCALHOST = "127.0.0.1"
         const val NAME = "docker"
     }
 }
