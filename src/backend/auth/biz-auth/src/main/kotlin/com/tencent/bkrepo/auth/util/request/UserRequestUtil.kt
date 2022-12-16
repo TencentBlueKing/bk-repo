@@ -97,7 +97,9 @@ object UserRequestUtil {
             email = user.email,
             phone = user.phone,
             createdDate = user.createdDate,
-            admin = user.admin
+            admin = user.admin,
+            group = user.group,
+            asstUsers = user.asstUsers
         )
     }
 }

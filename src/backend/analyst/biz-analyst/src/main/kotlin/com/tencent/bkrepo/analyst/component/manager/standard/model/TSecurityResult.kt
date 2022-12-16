@@ -65,5 +65,10 @@ data class TSecurityResultData(
     /**
      * cvss等级， CRITICAL,HIGH,MEDIUM,LOW
      */
-    val severity: String
+    val severity: String,
+    /**
+     * cvss等级, 3,2,1,0
+     */
+    val severityLevel: Int? = null,
+    val cvss: Double? = null
 )

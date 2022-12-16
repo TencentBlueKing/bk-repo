@@ -94,11 +94,29 @@
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.url" :disabled="!editNodeDialog.add"></bk-input>
                 </bk-form-item>
-                <bk-form-item :label="$t('account')" :required="true" property="username" error-display-type="normal">
+                <bk-form-item label="证书" property="certificate" error-display-type="normal">
+                    <bk-input type="textarea" v-model.trim="editNodeDialog.certificate"></bk-input>
+                </bk-form-item>
+                <bk-form-item label="认证方式">
+                    <bk-radio-group v-model="createType" :change="changeValidateType()">
+                        <bk-radio class="mr20" value="user">用户名/密码</bk-radio>
+                        <bk-radio class="mr20" value="appId">AppID/AK/SK</bk-radio>
+                    </bk-radio-group>
+                </bk-form-item>
+                <bk-form-item v-if="createType === 'user'" :label="$t('account')" :required="true" property="username" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.username"></bk-input>
                 </bk-form-item>
-                <bk-form-item :label="$t('password')" :required="true" property="password" error-display-type="normal">
+                <bk-form-item v-if="createType === 'user'" :label="$t('password')" :required="true" property="password" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.password" type="password"></bk-input>
+                </bk-form-item>
+                <bk-form-item v-if="createType === 'appId'" label="appId" :required="true" property="appId" error-display-type="normal">
+                    <bk-input v-model.trim="editNodeDialog.appId"></bk-input>
+                </bk-form-item>
+                <bk-form-item v-if="createType === 'appId'" label="accessKey" :required="true" property="accessKey" error-display-type="normal">
+                    <bk-input v-model.trim="editNodeDialog.accessKey"></bk-input>
+                </bk-form-item>
+                <bk-form-item v-if="createType === 'appId'" label="secretKey" :required="true" property="secretKey" error-display-type="normal">
+                    <bk-input v-model.trim="editNodeDialog.secretKey"></bk-input>
                 </bk-form-item>
             </bk-form>
             <template #footer>
@@ -124,6 +142,7 @@
                     name: '',
                     type: ''
                 },
+                createType: 'user',
                 editNodeDialog: {
                     show: false,
                     loading: false,
@@ -132,8 +151,12 @@
                     type: 'STANDALONE',
                     name: '',
                     url: '',
-                    username: '',
-                    password: ''
+                    username: null,
+                    password: null,
+                    appId: null,
+                    accessKey: null,
+                    secretKey: null,
+                    certificate: null
                 },
                 rules: {
                     name: [
@@ -171,6 +194,27 @@
                         {
                             required: true,
                             message: this.$t('pleaseInput') + this.$t('password'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    appId: [
+                        {
+                            required: true,
+                            message: '请输入appId',
+                            trigger: 'blur'
+                        }
+                    ],
+                    accessKey: [
+                        {
+                            required: true,
+                            message: '请输入accessKey',
+                            trigger: 'blur'
+                        }
+                    ],
+                    secretKey: [
+                        {
+                            required: true,
+                            message: '请输入secretKey',
                             trigger: 'blur'
                         }
                     ]
@@ -227,8 +271,12 @@
                     type: 'STANDALONE',
                     name: '',
                     url: '',
-                    username: '',
-                    password: ''
+                    username: null,
+                    password: null,
+                    appId: null,
+                    accessKey: null,
+                    secretKey: null,
+                    certificate: null
                 }
             },
             showEditNode (row) {
@@ -244,14 +292,27 @@
             async confirm () {
                 await this.$refs.editNodeDialog.validate()
                 this.editNodeDialog.loading = true
-                const { type, name, url, username, password } = this.editNodeDialog
+                if (this.createType === 'user') {
+                    this.editNodeDialog.appId = null
+                    this.editNodeDialog.accessKey = null
+                    this.editNodeDialog.secretKey = null
+                }
+                if (this.createType === 'appId') {
+                    this.editNodeDialog.username = null
+                    this.editNodeDialog.password = null
+                }
+                const { type, name, url, username, password, appId, accessKey, secretKey, certificate } = this.editNodeDialog
                 this.createCluster({
                     body: {
                         type,
                         name,
                         url,
                         username,
-                        password
+                        password,
+                        appId,
+                        accessKey,
+                        secretKey,
+                        certificate
                     }
                 }).then(res => {
                     this.$bkMessage({
@@ -259,6 +320,7 @@
                         message: (this.editNodeDialog.add ? '新建节点' : '编辑节点') + this.$t('success')
                     })
                     this.editNodeDialog.show = false
+                    this.createType = 'user'
                     this.getClusterListHandler()
                 }).finally(() => {
                     this.editNodeDialog.loading = false
@@ -280,6 +342,11 @@
                         })
                     }
                 })
+            },
+            changeValidateType () {
+                if (this.editNodeDialog.show) {
+                    this.$refs.editNodeDialog.clearError()
+                }
             }
         }
     }

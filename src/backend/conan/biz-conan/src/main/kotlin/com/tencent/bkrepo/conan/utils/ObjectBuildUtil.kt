@@ -77,7 +77,8 @@ object ObjectBuildUtil {
                 artifactPath = getArtifactFullPath(),
                 stageTag = null,
                 packageMetadata = addPackageMetadata(artifactInfo, sourceType),
-                createdBy = userId
+                createdBy = userId,
+                overwrite = true
             )
         }
     }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.replication.replica.base.process
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import org.springframework.context.event.EventListener
-import org.springframework.stereotype.Component
+import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-/**
- * 事件审计记录监听器
- */
-@Component
-class EventAuditListener(
-    private val operateLogService: OperateLogService
-) {
-
-    /**
-     * 将需要审计记录的事件持久化
-     */
-    @EventListener(ArtifactEvent::class)
-    fun handle(event: ArtifactEvent) {
-        operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
-    }
-
-    /**
-     * 将需要审计记录的事件持久化
-     */
-    @EventListener(List::class)
-    fun handleMulti(events: List<ArtifactEvent>) {
-        operateLogService.saveEventsAsync(
-            events,
-            events.first().data["realIpAddress"] as? String ?: HttpContextHolder.getClientAddress()
-        )
-    }
-}
+data class Progress(
+    val replicatedBytes: ConcurrentHashMap<String, AtomicLong>,
+    val totalBytes: AtomicLong,
+    var lastRecordTime: LocalDateTime
+)

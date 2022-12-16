@@ -56,7 +56,7 @@ class DockerScanHelper(
         val maxScanDuration = task.scanner.maxScanDuration(scannerInputFile.length())
         // 创建容器
         val maxFileSize = maxFileSize(scannerInputFile.length())
-        val hostConfig = DockerUtils.dockerHostConfig(binds, maxFileSize)
+        val hostConfig = DockerUtils.dockerHostConfig(binds, maxFileSize, task.scanner.memory)
         val containerId = dockerClient.createContainer(image, hostConfig, args)
 
         taskContainerIdMap[task.taskId] = containerId

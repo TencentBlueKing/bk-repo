@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.replication.replica.base.interceptor.progress
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import org.springframework.context.event.EventListener
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import okio.Buffer
+import okio.BufferedSink
+import okio.ForwardingSink
+import okio.Sink
+import okio.buffer
 
-/**
- * 事件审计记录监听器
- */
-@Component
-class EventAuditListener(
-    private val operateLogService: OperateLogService
-) {
+internal class ProgressRequestBody(
+    private val delegate: RequestBody,
+    private val listener: ProgressListener,
+    private val task: ReplicaTaskInfo,
+    private val sha256: String
+) : RequestBody() {
 
-    /**
-     * 将需要审计记录的事件持久化
-     */
-    @EventListener(ArtifactEvent::class)
-    fun handle(event: ArtifactEvent) {
-        operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
+    override fun contentType(): MediaType? = delegate.contentType()
+    override fun contentLength(): Long = delegate.contentLength()
+
+    override fun writeTo(sink: BufferedSink) {
+        val countingSink = CountingSink(sink)
+        val bufferedSink: BufferedSink = countingSink.buffer()
+        delegate.writeTo(bufferedSink)
+        bufferedSink.flush()
     }
 
-    /**
-     * 将需要审计记录的事件持久化
-     */
-    @EventListener(List::class)
-    fun handleMulti(events: List<ArtifactEvent>) {
-        operateLogService.saveEventsAsync(
-            events,
-            events.first().data["realIpAddress"] as? String ?: HttpContextHolder.getClientAddress()
-        )
+    inner class CountingSink(delegate: Sink) : ForwardingSink(delegate) {
+        override fun write(source: Buffer, byteCount: Long) {
+            super.write(source, byteCount)
+            listener.onProgress(task, sha256, byteCount)
+        }
     }
 }
