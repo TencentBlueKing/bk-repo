@@ -40,17 +40,20 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 
 object BkIamV3Utils {
-    fun buildProjectManagerResources(
-        projectId: String,
-        projectName: String,
+    fun buildManagerResources(
+        resId: String,
+        resName: String,
+        resType: ResourceType,
+        resActionList: List<ResourceActionMapping>,
         iamConfiguration: IamConfiguration
     ): List<AuthorizationScopes> {
         val authorizationScopes = mutableListOf<AuthorizationScopes>()
-        ResourceActionMapping.values().forEach {
+        resActionList.forEach {
             authorizationScopes.add(
                 buildResource(
-                    projectId = projectId,
-                    projectName = projectName,
+                    resId = resId,
+                    resName = resName,
+                    resType = resType,
                     iamConfiguration = iamConfiguration,
                     actions = it.actions.split(","),
                     resourceType = it.resourceType
@@ -61,17 +64,18 @@ object BkIamV3Utils {
     }
 
     fun buildResource(
-        projectId: String,
-        projectName: String,
+        resId: String,
+        resName: String,
+        resType: ResourceType,
         iamConfiguration: IamConfiguration,
         actions: List<String>,
         resourceType: String
     ): AuthorizationScopes {
         val projectManagerPath = ManagerPath(
             iamConfiguration.systemId,
-            ResourceType.PROJECT.id(),
-            projectId,
-            projectName
+            resType.id(),
+            resId,
+            resName
         )
         val managerPaths = mutableListOf<ManagerPath>()
         managerPaths.add(projectManagerPath)

@@ -47,11 +47,22 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
     private var authType: String = ""
 
     override fun createProjectManage(userId: String, projectId: String): Response<String?> {
-        if (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 && bkIamV3Service == null) {
-            bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
-        }
+        initService()
         bkIamV3Service?.let {
             return ResponseBuilder.success(bkIamV3Service!!.createGradeManager(userId, projectId))
         } ?: return ResponseBuilder.success()
+    }
+
+    override fun createRepoManage(userId: String, projectId: String, repoName: String): Response<String?> {
+        initService()
+        bkIamV3Service?.let {
+            return ResponseBuilder.success(bkIamV3Service!!.createGradeManager(userId, projectId, repoName))
+        } ?: return ResponseBuilder.success()
+    }
+
+    private fun initService() {
+        if (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 && bkIamV3Service == null) {
+            bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
+        }
     }
 }

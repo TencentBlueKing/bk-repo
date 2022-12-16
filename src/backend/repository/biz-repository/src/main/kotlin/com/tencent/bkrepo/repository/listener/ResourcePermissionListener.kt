@@ -78,6 +78,7 @@ class ResourcePermissionListener(
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
                 userResource.addUserRole(userId, repoManagerRoleId)
+                bkiamV3Resource.createRepoManage(userId, projectId, repoName)
             }
         }
     }

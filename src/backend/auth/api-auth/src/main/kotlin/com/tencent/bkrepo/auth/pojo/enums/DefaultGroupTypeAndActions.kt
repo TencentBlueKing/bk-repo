@@ -31,33 +31,62 @@ package com.tencent.bkrepo.auth.pojo.enums
  * 默认用户组对应的操作权限
  */
 enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String, String>) {
-    PROJECT_MANAGER(
-        "project_manager",
+    PROJECT_MANAGE(
+        "project_manage",
         mapOf(
             "project" to "project_view,project_edit,repo_create",
-            "repo" to "repo_edit,node_create,repo_view",
-            "node" to "node_download,node_view,node_delete, node_edit",
+            "repo" to "repo_edit,node_create,repo_view,repo_delete",
+            "node" to "node_download,node_view,node_delete,node_edit",
         )
     ),
-    PROJECT_DEVELOPER("project_developer",
+    PROJECT_DOWNLOAD("project_download",
                       mapOf(
-                          "project" to "project_view,repo_create",
-                          "repo" to "repo_edit,node_create,repo_view",
-                          "node" to "node_download,node_view,node_delete, node_edit",
+                          "project" to "project_view",
+                          "repo" to "repo_view",
+                          "node" to "node_download,node_view",
                       )
     ),
-    PROJECT_TESTER("project_tester",
+    PROJECT_EDIT("project_edit",
+                     mapOf(
+                         "project" to "project_view",
+                         "repo" to "repo_edit,node_create,repo_view",
+                         "node" to "node_download,node_view",
+                     )
+    ),
+    PROJECT_UPLOAD_DELETE("project_upload_delete",
                    mapOf(
                        "project" to "project_view",
-                       "repo" to "repo_edit,repo_view",
-                       "node" to "node_download,node_view,node_delete, node_edit",
+                       "repo" to "repo_view",
+                       "node" to "node_download,node_view,node_delete,node_edit",
                    )
     ),
-    PROJECT_MAINTAINER("project_maintainer",
+    REPO_MANAGE("repo_manage",
                        mapOf(
-                           "project" to "project_view",
-                           "repo" to "repo_edit,repo_view",
-                           "node" to "node_download,node_view",
+                           "repo" to "repo_edit,repo_view,repo_delete",
+                           "node" to "node_download,node_view,node_delete,node_edit",
                        )
+    ),
+    REPO_DOWNLOAD(
+        "repo_download",
+        mapOf(
+            "repo" to "repo_view",
+            "node" to "node_download,node_view",
+        )
+    ),
+    REPO_UPLOAD_DELETE("repo_download_delete",
+                      mapOf(
+                          "repo" to "node_create,repo_view",
+                          "node" to "node_download,node_view,node_delete, node_edit",
+                      )
     );
+
+    companion object {
+        fun get(value: String): DefaultGroupTypeAndActions {
+            DefaultGroupTypeAndActions.values().forEach {
+                if (value == it.value) return it
+            }
+            throw IllegalArgumentException("No enum for constant $value")
+        }
+    }
 }
+

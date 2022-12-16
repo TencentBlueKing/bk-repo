@@ -25,28 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.enums
+package com.tencent.bkrepo.auth.model
 
-enum class AuthGroup(val value: String) {
-    ADMIN("admin"), // 系统管理员
-    MANAGER("manager"), // 管理员
-    DEVELOPER("developer"), // 开发人员
-    MAINTAINER("maintainer"), // 运维人员
-    TESTER("tester"); // 测试人员
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-    companion object {
-        fun get(value: String): AuthGroup {
-            values().forEach {
-                if (value == it.value) return it
-            }
-            throw IllegalArgumentException("No enum for constant $value")
-        }
-
-        fun contains(value: String): Boolean {
-            values().forEach {
-                if (value == it.value) return true
-            }
-            return false
-        }
-    }
-}
+/**
+ * 存储对应资源与创建的分级管理员id关联关系
+ */
+@Document("bkiam_auth_manager")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "resource_idx",
+        def = "{'type': 1, 'resourceId': 1}",
+        background = true
+    )
+)
+data class TBkIamAuthManager(
+    var type: ResourceType,
+    var resourceId: String,
+    var managerId: Int,
+    var createdDate: LocalDateTime,
+    var createdBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var lastModifiedBy: String
+)

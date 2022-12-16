@@ -31,16 +31,19 @@ import com.google.common.cache.CacheBuilder
 import com.tencent.bk.sdk.iam.config.IamConfiguration
 import com.tencent.bk.sdk.iam.constants.ManagerScopesEnum
 import com.tencent.bk.sdk.iam.dto.InstanceDTO
+import com.tencent.bk.sdk.iam.dto.PageInfoDTO
 import com.tencent.bk.sdk.iam.dto.PathInfoDTO
 import com.tencent.bk.sdk.iam.dto.PermissionUrlDTO
 import com.tencent.bk.sdk.iam.dto.RelatedResourceTypes
 import com.tencent.bk.sdk.iam.dto.RelationResourceInstance
+import com.tencent.bk.sdk.iam.dto.V2PageInfoDTO
 import com.tencent.bk.sdk.iam.dto.action.ActionDTO
 import com.tencent.bk.sdk.iam.dto.action.UrlAction
 import com.tencent.bk.sdk.iam.dto.manager.ManagerMember
 import com.tencent.bk.sdk.iam.dto.manager.ManagerRoleGroup
 import com.tencent.bk.sdk.iam.dto.manager.ManagerScopes
 import com.tencent.bk.sdk.iam.dto.manager.dto.CreateManagerDTO
+import com.tencent.bk.sdk.iam.dto.manager.dto.CreateSubsetManagerDTO
 import com.tencent.bk.sdk.iam.dto.manager.dto.ManagerMemberGroupDTO
 import com.tencent.bk.sdk.iam.dto.manager.dto.ManagerRoleGroupDTO
 import com.tencent.bk.sdk.iam.helper.AuthHelper
@@ -50,9 +53,12 @@ import com.tencent.bk.sdk.iam.service.v2.V2ManagerService
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.model.TBkIamAuthManager
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
+import com.tencent.bkrepo.auth.pojo.enums.ResourceActionMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.repository.BkIamAuthManagerRepository
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildResource
@@ -67,6 +73,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -81,7 +88,8 @@ class BkIamV3ServiceImpl(
     private val managerServiceV1: ManagerService,
     private val policyService: PolicyService,
     private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val authManagerRepository: BkIamAuthManagerRepository
     ) : BkIamV3Service {
 
 
@@ -255,16 +263,29 @@ class BkIamV3ServiceImpl(
      */
     override fun createGradeManager(
         userId: String,
+        projectId: String,
+        repoName: String?
+    ): String? {
+        return if (repoName == null) {
+            createProjectGradeManager(userId, projectId)
+        } else {
+            createRepoGradeManager(userId, projectId, repoName)
+        }
+    }
+
+    fun createProjectGradeManager(
+        userId: String,
         projectId: String
     ): String? {
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
-        logger.debug("start to create grade manager for project ${projectInfo.name}")
+        logger.debug("start to create grade manager for project $projectId with user $userId")
         // 授权人员范围默认设置为全部人员
         val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
-
-        val authorizationScopes = BkIamV3Utils.buildProjectManagerResources(
-            projectId = projectInfo.name,
-            projectName = projectInfo.displayName,
+        val authorizationScopes = BkIamV3Utils.buildManagerResources(
+            resId = projectInfo.name,
+            resName = projectInfo.displayName,
+            resType = ResourceType.PROJECT,
+            resActionList = ResourceActionMapping.values().toList(),
             iamConfiguration = iamConfiguration
         )
         val createManagerDTO = CreateManagerDTO.builder().system(iamConfiguration.systemId)
@@ -280,8 +301,84 @@ class BkIamV3ServiceImpl(
             return null
         }
         logger.debug("The id of project [${projectInfo.name}]'s grade manager is $managerId")
-        batchCreateDefaultGroups(userId, managerId, projectId, projectInfo.name)
+        authManagerRepository.save(
+            TBkIamAuthManager(
+                resourceId = projectId,
+                type = ResourceType.PROJECT,
+                managerId = managerId,
+                createdBy = userId,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = userId,
+                lastModifiedDate = LocalDateTime.now())
+        )
+        batchCreateDefaultGroups(
+            userId = userId,
+            gradeManagerId = managerId,
+            resId = projectId,
+            resName = projectInfo.name,
+            resType = ResourceType.PROJECT,
+            members = setOf(userId),
+            groupList = listOf(DefaultGroupType.PROJECT_MANAGE, DefaultGroupType.PROJECT_EDIT, DefaultGroupType.PROJECT_DOWNLOAD, DefaultGroupType.PROJECT_UPLOAD_DELETE)
+        )
         return managerId.toString()
+    }
+
+
+    /**
+     * 创建项目分级管理员
+     */
+    fun createRepoGradeManager(
+        userId: String,
+        projectId: String,
+        repoName: String
+    ): String? {
+        val projectInfo = projectClient.getProjectInfo(projectId).data!!
+        val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
+        logger.debug("start to create grade manager for repo $projectId|$repoName")
+
+        // 授权人员范围默认设置为全部人员
+        val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
+        val authorizationScopes = BkIamV3Utils.buildManagerResources(
+            resId = repoDetail.name,
+            resName = repoDetail.name,
+            resType = ResourceType.REPO,
+            resActionList = listOf(ResourceActionMapping.REPO_ACTIONS, ResourceActionMapping.NODE_ACTIONS),
+            iamConfiguration = iamConfiguration
+        )
+        try {
+        // 如果项目没有创建managerid,则直接返回
+        val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT.name, projectId)?.managerId
+            ?: return null
+        val projectManager = managerService.getGradeManagerDetail(projectManagerId.toString()) ?: return null
+        val managerGroup = managerService.getGradeManagerRoleGroupV2(projectManager.id, DefaultGroupType.PROJECT_MANAGE.displayName, V2PageInfoDTO())
+        val managerUsers = managerService.getRoleGroupMemberV2(managerGroup.results.first().id, PageInfoDTO())
+        val secondManagerMembers = mutableSetOf<String>()
+        secondManagerMembers.add(userId)
+        secondManagerMembers.addAll(projectManager.members)
+        secondManagerMembers.addAll(managerUsers.results.map { it.id })
+        val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
+            .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}-$REPO_DEFAULT_NAME-${repoDetail.name}")
+            .description(IamGroupUtils.buildManagerDescription("${projectInfo.displayName}-${repoDetail.name}", userId))
+            .members(secondManagerMembers.toList())
+            .authorizationScopes(authorizationScopes)
+            .subjectScopes(iamSubjectScopes).build()
+
+        val repoManagerId=  managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
+        logger.debug("The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
+        batchCreateDefaultGroups(
+            userId = userId,
+            gradeManagerId = repoManagerId,
+            resId = repoName,
+            resName = repoName,
+            resType = ResourceType.REPO,
+            members = secondManagerMembers,
+            groupList = listOf(DefaultGroupType.REPO_MANAGER, DefaultGroupType.REPO_DOWNLOAD, DefaultGroupType.REPO_UPLOAD_DELETE)
+        )
+        return repoManagerId.toString()
+        } catch (e: Exception) {
+            logger.error("create grade manager for repo [${projectInfo.name}|$repoName] error: ${e.message}")
+            return null
+        }
     }
 
     override fun getResourceId(resourceType: String, projectId: String?, repoName: String?, path: String?): String? {
@@ -302,16 +399,21 @@ class BkIamV3ServiceImpl(
     private fun batchCreateDefaultGroups(
         userId: String,
         gradeManagerId: Int,
-        projectId: String,
-        projectName: String,
+        resId: String,
+        resName: String,
+        resType: ResourceType,
+        members: Set<String>,
+        groupList: List<DefaultGroupType>
     ) {
-        DefaultGroupType.values().forEach {
+        groupList.forEach {
             createDefaultGroup(
                 userId = userId,
                 gradeManagerId = gradeManagerId,
-                projectId = projectId,
+                resId = resId,
+                resName = resName,
+                resType = resType,
                 defaultGroupType = it,
-                projectName = projectName
+                members = members
             )
         }
     }
@@ -322,75 +424,75 @@ class BkIamV3ServiceImpl(
     private fun createDefaultGroup(
         userId: String,
         gradeManagerId: Int,
-        projectId: String,
-        projectName: String,
-        defaultGroupType: DefaultGroupType
+        resId: String,
+        resName: String,
+        resType: ResourceType,
+        defaultGroupType: DefaultGroupType,
+        members: Set<String>
     ) {
-        logger.debug("start to create default group $defaultGroupType for project [$projectId|$projectName]")
+        logger.debug("start to create default group $defaultGroupType for $resType  [$resId|$resName]")
         val defaultGroup = ManagerRoleGroup(
-            IamGroupUtils.buildIamGroup(projectId, defaultGroupType.displayName),
-            IamGroupUtils.buildDefaultDescription(projectId, defaultGroupType.displayName, userId),
-            false
+            IamGroupUtils.buildIamGroup(resId, defaultGroupType.displayName),
+            IamGroupUtils.buildDefaultDescription(resId, defaultGroupType.displayName, userId),
+            // 管理员组只允许读，不可编辑
+            defaultGroupType == DefaultGroupType.REPO_MANAGER || defaultGroupType == DefaultGroupType.PROJECT_MANAGE
         )
         val managerRoleGroup = ManagerRoleGroupDTO.builder().groups(listOf(defaultGroup)).build()
         val roleId = try {
-            managerService.batchCreateRoleGroupV2(gradeManagerId, managerRoleGroup)
+            when(resType) {
+                ResourceType.PROJECT -> managerService.batchCreateRoleGroupV2(gradeManagerId, managerRoleGroup)
+                ResourceType.REPO -> managerService.batchCreateSubsetRoleGroup(gradeManagerId, managerRoleGroup)
+                else -> return
+            }
         } catch (e: Exception) {
-            logger.error("batch create role for project $projectId error: ${e.message}")
+            logger.error("batch create role for $resType $resId error: ${e.message}")
             return
         }
-        logger.debug("The id of default group $defaultGroupType for project [$projectId|$projectName] is $roleId")
+        logger.debug("The id of default group $defaultGroupType for $resType [$resId|$resName] is $roleId")
         // 赋予权限
         try {
-            val actions = when (defaultGroupType) {
-                DefaultGroupType.MANAGER -> {
-                    val groupMember = ManagerMember(ManagerScopesEnum.getType(ManagerScopesEnum.USER), userId)
-                    val groupMembers = mutableListOf<ManagerMember>()
-                    groupMembers.add(groupMember)
-                    val expired = System.currentTimeMillis() / 1000 + TimeUnit.DAYS.toSeconds(DEFAULT_EXPIRED_AT)
-                    val managerMemberGroup = ManagerMemberGroupDTO.builder().members(groupMembers)
-                        .expiredAt(expired).build()
-                    // 项目创建人添加至管理员分组
-                    managerService.createRoleGroupMemberV2(roleId, managerMemberGroup)
-                    DefaultGroupTypeAndActions.PROJECT_MANAGER.actions
-                }
-                DefaultGroupType.DEVELOPER -> {
-                    DefaultGroupTypeAndActions.PROJECT_DEVELOPER.actions
-                }
-                DefaultGroupType.TESTER -> {
-                    DefaultGroupTypeAndActions.PROJECT_TESTER.actions
-                }
-                DefaultGroupType.MAINTAINER -> {
-                    DefaultGroupTypeAndActions.PROJECT_MAINTAINER.actions
-                }
-            }
-            grantGroupPermission(projectId, projectName, roleId, actions)
+            createRoleGroupMember(defaultGroupType, roleId, members)
+            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.toLowerCase()).actions
+            grantGroupPermission(resId, resName, resType, roleId, actions)
         } catch (e: Exception) {
-            e.printStackTrace()
             managerService.deleteRoleGroupV2(roleId)
             logger.error(
-                "create iam group permission fail : projectId = $projectId |" +
+                "create iam group permission fail : $resType = $resId|$resName" +
                     " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
                 e
             )
         }
     }
 
+    private fun createRoleGroupMember(defaultGroupType: DefaultGroupType, roleId: Int, userIds: Set<String>) {
+        if (defaultGroupType != DefaultGroupType.PROJECT_MANAGE && defaultGroupType != DefaultGroupType.REPO_MANAGER) {
+            return
+        }
+        val groupMembers =  userIds.map { ManagerMember(ManagerScopesEnum.getType(ManagerScopesEnum.USER), it) }
+        val expired = System.currentTimeMillis() / 1000 + TimeUnit.DAYS.toSeconds(DEFAULT_EXPIRED_AT)
+        val managerMemberGroup = ManagerMemberGroupDTO.builder().members(groupMembers)
+            .expiredAt(expired).build()
+        // 项目创建人添加至管理员分组
+        managerService.createRoleGroupMemberV2(roleId, managerMemberGroup)
+    }
+
     /**
      * 用户组授权
      */
     private fun grantGroupPermission(
-        projectId: String,
-        projectName: String,
+        resId: String,
+        resName: String,
+        resType: ResourceType,
         roleId: Int,
         actions: Map<String, String>
     ) {
-        logger.debug("grant role permission for group $roleId in project $projectId with actions $actions")
+        logger.debug("grant role permission for group $roleId in $resType $resId|$resName with actions $actions")
         try {
             actions.forEach{
                 val permission = buildResource(
-                    projectId = projectId,
-                    projectName = projectName,
+                    resId = resId,
+                    resName = resName,
+                    resType = resType,
                     iamConfiguration = iamConfiguration,
                     actions = it.value.split(","),
                     resourceType = it.key
@@ -398,7 +500,7 @@ class BkIamV3ServiceImpl(
                 managerService.grantRoleGroupV2(roleId, permission)
             }
         } catch (e: Exception) {
-            logger.error("create role permission for project $projectId with actions $actions error: ${e.message}")
+            logger.error("create role permission for $resType $resId|$resName with actions $actions error: ${e.message}")
         }
     }
 
@@ -407,5 +509,6 @@ class BkIamV3ServiceImpl(
         private const val DEFAULT_EXPIRED_AT = 365L // 用户组默认一年有效期
         private const val SYSTEM_DEFAULT_NAME = "制品库"
         private const val PROJECT_DEFAULT_NAME = "项目"
+        private const val REPO_DEFAULT_NAME = "仓库"
     }
 }

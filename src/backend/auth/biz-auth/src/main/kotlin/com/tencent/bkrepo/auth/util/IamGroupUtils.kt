@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.auth.util
 
-import com.tencent.bkrepo.auth.pojo.enums.AuthGroup
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -51,15 +50,6 @@ object IamGroupUtils {
     fun renameSystemLable(groupName: String): String {
         return groupName.substringAfterLast("-")
     }
-
-    fun defaultRoleCheck(groupName: String): Boolean {
-        val name = renameSystemLable(groupName)
-        if (AuthGroup.contains(name)) {
-            return true
-        }
-        return false
-    }
-
     fun toDateTime(dateTime: LocalDateTime?, format: String): String {
         if (dateTime == null) {
             return ""

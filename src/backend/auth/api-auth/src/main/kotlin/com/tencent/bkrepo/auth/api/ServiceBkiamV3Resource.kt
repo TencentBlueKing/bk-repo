@@ -50,7 +50,18 @@ interface ServiceBkiamV3Resource {
     fun createProjectManage(
         @ApiParam(value = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "仓库名称")
+        @ApiParam(value = "项目名称")
         @PathVariable projectId: String
+    ): Response<String?>
+
+    @ApiOperation("创建2级仓库管理员")
+    @PostMapping("/create/repo/manage/{projectId}/{repoName}")
+    fun createRepoManage(
+        @ApiParam(value = "用户id")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目名称")
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称")
+        @PathVariable repoName: String
     ): Response<String?>
 }
