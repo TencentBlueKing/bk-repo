@@ -118,6 +118,9 @@ spec:
             - name: gateway
               containerPort: 8081
               protocol: TCP
+            - name: dockerGateway
+              containerPort: 8082
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /ui/
