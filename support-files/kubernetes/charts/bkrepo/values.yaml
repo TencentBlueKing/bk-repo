@@ -242,6 +242,8 @@ gateway:
   appCode:
   ## ci模式必填，app token
   appToken:
+  ## 不支持ipv6网络栈时需要配置
+  extIP:
   ## bkrepo gateway service配置
   service:
     type: ClusterIP
