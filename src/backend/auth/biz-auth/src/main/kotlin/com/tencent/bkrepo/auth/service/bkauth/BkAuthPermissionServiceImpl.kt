@@ -39,7 +39,8 @@ import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
-import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -49,7 +50,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 /**
  * 对接devops权限
  */
-open class BkAuthPermissionServiceImpl constructor(
+class BkAuthPermissionServiceImpl constructor(
     userRepository: UserRepository,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
@@ -59,13 +60,15 @@ open class BkAuthPermissionServiceImpl constructor(
     private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
     repositoryClient: RepositoryClient,
-    projectClient: ProjectClient
-) : PermissionServiceImpl(
+    projectClient: ProjectClient,
+    bkIamV3Service: BkIamV3Service
+) : BkIamV3PermissionServiceImpl(
     userRepository,
     roleRepository,
     accountRepository,
     permissionRepository,
     mongoTemplate,
+    bkIamV3Service,
     repositoryClient,
     projectClient
 ) {

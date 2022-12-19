@@ -30,6 +30,7 @@ package com.tencent.bkrepo.auth.controller
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
@@ -59,7 +60,7 @@ class UserAuthUrlController {
     fun queryProject(
         @RequestBody request: CheckPermissionRequest
     ): Response<String?> {
-        if (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 && bkIamV3Service == null) {
+        if ((authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS) && bkIamV3Service == null) {
             bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
         }
         val result = bkIamV3Service?.let {

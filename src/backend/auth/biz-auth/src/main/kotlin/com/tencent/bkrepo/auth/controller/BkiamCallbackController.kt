@@ -33,15 +33,16 @@ package com.tencent.bkrepo.auth.controller
 
 import com.tencent.bk.sdk.iam.dto.callback.request.CallbackRequestDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.pojo.bkiam.BkResult
 import com.tencent.bkrepo.auth.service.bkiamv3.callback.BkiamCallbackService
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -51,8 +52,9 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/external/bkiam/callback")
-@ConditionalOnProperty(
-    prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+@ConditionalOnExpression(
+    "'\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_DEVOPS')" +
+        " or '\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_BKIAMV3')"
 )
 class BkiamCallbackController @Autowired constructor(private val bkiamCallbackService: BkiamCallbackService) {
 

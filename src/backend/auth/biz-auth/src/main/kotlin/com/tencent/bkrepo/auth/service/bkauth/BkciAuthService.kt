@@ -34,6 +34,9 @@ package com.tencent.bkrepo.auth.service.bkauth
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.pojo.BkciAuthCheckResponse
 import com.tencent.bkrepo.auth.pojo.BkciAuthListResponse
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
@@ -45,10 +48,14 @@ import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
 @Service
+@ConditionalOnProperty(
+    prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_DEVOPS
+)
 class BkciAuthService @Autowired constructor(
     private val bkAuthConfig: BkAuthConfig
 ) {

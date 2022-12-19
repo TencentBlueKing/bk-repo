@@ -42,20 +42,22 @@ import com.tencent.bk.sdk.iam.service.impl.ManagerServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.PolicyServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.TokenServiceImpl
 import com.tencent.bk.sdk.iam.service.v2.impl.V2ManagerServiceImpl
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.service.bkiamv3.IamEsbClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@ConditionalOnProperty(
-    prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+@ConditionalOnExpression(
+    "'\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_DEVOPS')" +
+        " or '\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_BKIAMV3')"
 )
 class BkiamConfiguration {
 

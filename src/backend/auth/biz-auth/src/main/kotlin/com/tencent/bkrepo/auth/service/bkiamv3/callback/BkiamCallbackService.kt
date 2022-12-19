@@ -30,9 +30,10 @@ package com.tencent.bkrepo.auth.service.bkiamv3.callback
 import com.tencent.bk.sdk.iam.dto.callback.request.CallbackRequestDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.service.TokenService
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.exception.AuthFailedException
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -40,13 +41,14 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Service
 import java.util.Base64
 
 @Service
-@ConditionalOnProperty(
-    prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+@ConditionalOnExpression(
+    "'\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_DEVOPS')" +
+        " or '\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_BKIAMV3')"
 )
 class BkiamCallbackService @Autowired constructor(
     private val tokenService: TokenService

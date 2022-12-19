@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_LOCAL
@@ -122,10 +122,7 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
         permissionRepository: PermissionRepository,
-        mongoTemplate: MongoTemplate,
-        bkAuthConfig: BkAuthConfig,
-        bkAuthPipelineService: BkAuthPipelineService,
-        bkAuthProjectService: BkAuthProjectService
+        mongoTemplate: MongoTemplate
     ): PermissionService {
         return BkIamV3PermissionServiceImpl(
             userRepository,
@@ -135,10 +132,7 @@ class AuthServiceConfig {
             mongoTemplate,
             bkiamV3Service,
             repositoryClient,
-            projectClient,
-            bkAuthConfig,
-            bkAuthPipelineService,
-            bkAuthProjectService
+            projectClient
         )
     }
 
@@ -154,7 +148,8 @@ class AuthServiceConfig {
         mongoTemplate: MongoTemplate,
         bkAuthConfig: BkAuthConfig,
         bkAuthPipelineService: BkAuthPipelineService,
-        bkAuthProjectService: BkAuthProjectService
+        bkAuthProjectService: BkAuthProjectService,
+        bkiamV3Service: BkIamV3Service,
     ): PermissionService {
         return BkAuthPermissionServiceImpl(
             userRepository,
@@ -166,7 +161,8 @@ class AuthServiceConfig {
             bkAuthPipelineService,
             bkAuthProjectService,
             repositoryClient,
-            projectClient
+            projectClient,
+            bkiamV3Service
         )
     }
 

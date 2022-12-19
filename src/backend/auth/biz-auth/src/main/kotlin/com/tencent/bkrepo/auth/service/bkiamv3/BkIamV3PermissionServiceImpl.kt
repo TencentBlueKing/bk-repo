@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.auth.service.bkiamv3
 
-import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -35,9 +34,7 @@ import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
+import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.api.ProjectClient
@@ -48,7 +45,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 /**
  * 对接蓝鲸权限中心V3 RBAC
  */
-class BkIamV3PermissionServiceImpl(
+open class BkIamV3PermissionServiceImpl(
     userRepository: UserRepository,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
@@ -56,19 +53,13 @@ class BkIamV3PermissionServiceImpl(
     mongoTemplate: MongoTemplate,
     private val bkiamV3Service: BkIamV3Service,
     repositoryClient: RepositoryClient,
-    projectClient: ProjectClient,
-    bkAuthConfig: BkAuthConfig,
-    bkAuthPipelineService: BkAuthPipelineService,
-    bkAuthProjectService: BkAuthProjectService
-) : BkAuthPermissionServiceImpl(
+    projectClient: ProjectClient
+) : PermissionServiceImpl(
     userRepository,
     roleRepository,
     accountRepository,
     permissionRepository,
     mongoTemplate,
-    bkAuthConfig,
-    bkAuthPipelineService,
-    bkAuthProjectService,
     repositoryClient,
     projectClient
 ) {
@@ -120,7 +111,7 @@ class BkIamV3PermissionServiceImpl(
         }
     }
 
-    private fun mergeResult(list: List<String>, v3list: List<String>) : List<String> {
+    fun mergeResult(list: List<String>, v3list: List<String>) : List<String> {
         val set = mutableSetOf<String>()
         set.addAll(list)
         set.addAll(v3list)

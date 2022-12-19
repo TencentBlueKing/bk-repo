@@ -53,6 +53,7 @@ import com.tencent.bk.sdk.iam.service.v2.V2ManagerService
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.model.TBkIamAuthManager
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
@@ -71,14 +72,15 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @Service
-@ConditionalOnProperty(
-    prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_BKIAMV3
+@ConditionalOnExpression(
+    "'\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_DEVOPS')" +
+        " or '\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}'.equals('$AUTH_CONFIG_TYPE_VALUE_BKIAMV3')"
 )
 class BkIamV3ServiceImpl(
     private val iamConfiguration: IamConfiguration,
@@ -344,7 +346,7 @@ class BkIamV3ServiceImpl(
         // 授权人员范围默认设置为全部人员
         val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
         val authorizationScopes = BkIamV3Utils.buildManagerResources(
-            resId = repoDetail.name,
+            resId = repoDetail.id!!,
             resName = repoDetail.name,
             resType = ResourceType.REPO,
             resActionList = listOf(ResourceActionMapping.REPO_ACTIONS, ResourceActionMapping.NODE_ACTIONS),
@@ -355,14 +357,23 @@ class BkIamV3ServiceImpl(
         val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT, projectId)?.managerId
             ?: return null
         val projectManager = managerService.getGradeManagerDetail(projectManagerId.toString()) ?: return null
+        val v2PageInfo = V2PageInfoDTO()
+            v2PageInfo.pageSize = 500
+            v2PageInfo.page = 1
         val managerGroup = managerService.getGradeManagerRoleGroupV2(
-            projectManager.id, DefaultGroupType.PROJECT_MANAGE.displayName, V2PageInfoDTO()
+            projectManager.id,
+            IamGroupUtils.buildIamGroup(projectId, DefaultGroupType.PROJECT_MANAGE.displayName),
+            v2PageInfo
         )
-        val managerUsers = managerService.getRoleGroupMemberV2(managerGroup.results.first().id, PageInfoDTO())
+        val pageInfo = PageInfoDTO()
+        pageInfo.limit = 500
+        pageInfo.offset = 1
+        val managerUsers = managerService.getRoleGroupMemberV2(managerGroup.results.first().id, pageInfo)
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
         secondManagerMembers.addAll(projectManager.members)
         secondManagerMembers.addAll(managerUsers.results.map { it.id })
+
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
             .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}" +
                       "-$REPO_DEFAULT_NAME-${repoDetail.name}")
@@ -376,7 +387,7 @@ class BkIamV3ServiceImpl(
         batchCreateDefaultGroups(
             userId = userId,
             gradeManagerId = repoManagerId,
-            resId = repoName,
+            resId = repoDetail.id!!,
             resName = repoName,
             resType = ResourceType.REPO,
             members = secondManagerMembers,
