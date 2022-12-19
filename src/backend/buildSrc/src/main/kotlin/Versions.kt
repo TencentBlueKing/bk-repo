@@ -61,5 +61,5 @@ object Versions {
     const val Mockk = "1.12.2"
     const val Swagger = "1.6.2"
     const val SleuthOtel = "1.0.0-M13"
-    const val IamJavaSdk = "1.0.0-SNAPSHOT"
+    const val IamJavaSdk = "1.0.2-SNAPSHOT"
 }

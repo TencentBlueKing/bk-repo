@@ -31,8 +31,8 @@ package com.tencent.bkrepo.auth.pojo.enums
  * 默认用户组对应的操作权限
  */
 enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String, String>) {
-    PROJECT_MANAGE(
-        "project_manage",
+    PROJECT_MANAGER(
+        "project_manager",
         mapOf(
             "project" to "project_view,project_edit,repo_create",
             "repo" to "repo_edit,node_create,repo_view,repo_delete",
@@ -60,7 +60,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                        "node" to "node_download,node_view,node_delete,node_edit",
                    )
     ),
-    REPO_MANAGE("repo_manage",
+    REPO_MANAGER("repo_manager",
                        mapOf(
                            "repo" to "repo_edit,repo_view,repo_delete",
                            "node" to "node_download,node_view,node_delete,node_edit",
@@ -73,7 +73,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
             "node" to "node_download,node_view",
         )
     ),
-    REPO_UPLOAD_DELETE("repo_download_delete",
+    REPO_UPLOAD_DELETE("repo_upload_delete",
                       mapOf(
                           "repo" to "node_create,repo_view",
                           "node" to "node_download,node_view,node_delete, node_edit",

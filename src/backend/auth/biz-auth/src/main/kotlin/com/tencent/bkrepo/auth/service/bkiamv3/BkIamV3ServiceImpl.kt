@@ -57,6 +57,7 @@ import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
 import com.tencent.bkrepo.auth.pojo.enums.ResourceActionMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
 import com.tencent.bkrepo.auth.repository.BkIamAuthManagerRepository
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
@@ -281,10 +282,9 @@ class BkIamV3ServiceImpl(
         logger.debug("start to create grade manager for project $projectId with user $userId")
         // 授权人员范围默认设置为全部人员
         val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
+        val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
         val authorizationScopes = BkIamV3Utils.buildManagerResources(
-            resId = projectInfo.name,
-            resName = projectInfo.displayName,
-            resType = ResourceType.PROJECT,
+            projectResInfo = projectResInfo,
             resActionList = ResourceActionMapping.values().toList(),
             iamConfiguration = iamConfiguration
         )
@@ -314,12 +314,10 @@ class BkIamV3ServiceImpl(
         batchCreateDefaultGroups(
             userId = userId,
             gradeManagerId = managerId,
-            resId = projectId,
-            resName = projectInfo.name,
-            resType = ResourceType.PROJECT,
+            projectResInfo = projectResInfo,
             members = setOf(userId),
             groupList = listOf(
-                DefaultGroupType.PROJECT_MANAGE,
+                DefaultGroupType.PROJECT_MANAGER,
                 DefaultGroupType.PROJECT_EDIT,
                 DefaultGroupType.PROJECT_DOWNLOAD,
                 DefaultGroupType.PROJECT_UPLOAD_DELETE
@@ -340,13 +338,13 @@ class BkIamV3ServiceImpl(
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
         val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
         logger.debug("start to create grade manager for repo $projectId|$repoName")
-
+        val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
+        val repoResInfo = ResourceInfo(repoDetail.id!!, repoDetail.name, ResourceType.REPO)
         // 授权人员范围默认设置为全部人员
         val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
         val authorizationScopes = BkIamV3Utils.buildManagerResources(
-            resId = repoDetail.id!!,
-            resName = repoDetail.name,
-            resType = ResourceType.REPO,
+            projectResInfo = projectResInfo,
+            repoResInfo = repoResInfo,
             resActionList = listOf(ResourceActionMapping.REPO_ACTIONS, ResourceActionMapping.NODE_ACTIONS),
             iamConfiguration = iamConfiguration
         )
@@ -369,9 +367,8 @@ class BkIamV3ServiceImpl(
         batchCreateDefaultGroups(
             userId = userId,
             gradeManagerId = repoManagerId,
-            resId = repoDetail.id!!,
-            resName = repoName,
-            resType = ResourceType.REPO,
+            projectResInfo = projectResInfo,
+            repoResInfo = repoResInfo,
             members = secondManagerMembers,
             groupList = listOf(
                 DefaultGroupType.REPO_MANAGER,
@@ -404,9 +401,8 @@ class BkIamV3ServiceImpl(
     private fun batchCreateDefaultGroups(
         userId: String,
         gradeManagerId: Int,
-        resId: String,
-        resName: String,
-        resType: ResourceType,
+        projectResInfo: ResourceInfo,
+        repoResInfo: ResourceInfo? = null,
         members: Set<String>,
         groupList: List<DefaultGroupType>
     ) {
@@ -414,9 +410,8 @@ class BkIamV3ServiceImpl(
             createDefaultGroup(
                 userId = userId,
                 gradeManagerId = gradeManagerId,
-                resId = resId,
-                resName = resName,
-                resType = resType,
+                projectResInfo = projectResInfo,
+                repoResInfo = repoResInfo,
                 defaultGroupType = it,
                 members = members
             )
@@ -429,18 +424,22 @@ class BkIamV3ServiceImpl(
     private fun createDefaultGroup(
         userId: String,
         gradeManagerId: Int,
-        resId: String,
-        resName: String,
-        resType: ResourceType,
+        projectResInfo: ResourceInfo,
+        repoResInfo: ResourceInfo? = null,
         defaultGroupType: DefaultGroupType,
         members: Set<String>
     ) {
-        logger.debug("start to create default group $defaultGroupType for $resType  [$resId|$resName]")
+        logger.debug("start to create default group $defaultGroupType for $projectResInfo|$repoResInfo")
+        val (resName, resType) = if (repoResInfo == null) {
+            Pair(projectResInfo.resName, projectResInfo.resType)
+        } else {
+            Pair(repoResInfo.resName, repoResInfo.resType)
+        }
         val defaultGroup = ManagerRoleGroup(
-            IamGroupUtils.buildIamGroup(resId, defaultGroupType.displayName),
-            IamGroupUtils.buildDefaultDescription(resId, defaultGroupType.displayName, userId),
+            IamGroupUtils.buildIamGroup(resName, defaultGroupType.displayName),
+            IamGroupUtils.buildDefaultDescription(resName, defaultGroupType.displayName, userId),
             // 管理员组只允许读，不可编辑
-            defaultGroupType == DefaultGroupType.REPO_MANAGER || defaultGroupType == DefaultGroupType.PROJECT_MANAGE
+            false
         )
         val managerRoleGroup = ManagerRoleGroupDTO.builder().groups(listOf(defaultGroup)).build()
         val roleId = try {
@@ -450,19 +449,19 @@ class BkIamV3ServiceImpl(
                 else -> return
             }
         } catch (e: Exception) {
-            logger.error("batch create role for $resType $resId error: ${e.message}")
+            logger.error("batch create role for $projectResInfo|$repoResInfo error: ${e.message}")
             return
         }
-        logger.debug("The id of default group $defaultGroupType for $resType [$resId|$resName] is $roleId")
+        logger.debug("The id of default group $defaultGroupType for $projectResInfo|$repoResInfo is $roleId")
         // 赋予权限
         try {
             createRoleGroupMember(defaultGroupType, roleId, members)
             val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.toLowerCase()).actions
-            grantGroupPermission(resId, resName, resType, roleId, actions)
+            grantGroupPermission(projectResInfo, repoResInfo, roleId, actions)
         } catch (e: Exception) {
             managerService.deleteRoleGroupV2(roleId)
             logger.error(
-                "create iam group permission fail : $resType = $resId|$resName" +
+                "create iam group permission fail : $projectResInfo|$repoResInfo" +
                     " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
                 e
             )
@@ -470,7 +469,7 @@ class BkIamV3ServiceImpl(
     }
 
     private fun createRoleGroupMember(defaultGroupType: DefaultGroupType, roleId: Int, userIds: Set<String>) {
-        if (defaultGroupType != DefaultGroupType.PROJECT_MANAGE && defaultGroupType != DefaultGroupType.REPO_MANAGER) {
+        if (defaultGroupType != DefaultGroupType.PROJECT_MANAGER && defaultGroupType != DefaultGroupType.REPO_MANAGER) {
             return
         }
         val groupMembers =  userIds.map { ManagerMember(ManagerScopesEnum.getType(ManagerScopesEnum.USER), it) }
@@ -485,19 +484,17 @@ class BkIamV3ServiceImpl(
      * 用户组授权
      */
     private fun grantGroupPermission(
-        resId: String,
-        resName: String,
-        resType: ResourceType,
+        projectResInfo: ResourceInfo,
+        repoResInfo: ResourceInfo? = null,
         roleId: Int,
         actions: Map<String, String>
     ) {
-        logger.debug("grant role permission for group $roleId in $resType $resId|$resName with actions $actions")
+        logger.debug("grant role permission for group $roleId in $projectResInfo|$repoResInfo with actions $actions")
         try {
             actions.forEach{
                 val permission = buildResource(
-                    resId = resId,
-                    resName = resName,
-                    resType = resType,
+                    projectResInfo = projectResInfo,
+                    repoResInfo = repoResInfo,
                     iamConfiguration = iamConfiguration,
                     actions = it.value.split(","),
                     resourceType = it.key
@@ -506,7 +503,7 @@ class BkIamV3ServiceImpl(
             }
         } catch (e: Exception) {
             logger.error(
-                "create role permission for $resType $resId|$resName with actions $actions error: ${e.message}"
+                "create role permission for $projectResInfo|$repoResInfo with actions $actions error: ${e.message}"
             )
         }
     }
