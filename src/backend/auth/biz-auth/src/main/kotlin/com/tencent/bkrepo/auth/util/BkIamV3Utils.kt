@@ -128,16 +128,19 @@ object BkIamV3Utils {
     fun getProjects(content: ExpressionDTO): List<String> {
         if (content.field != "project.id") {
             if (content.operator != ExpressionOperationEnum.ANY &&
-                content.operator != ExpressionOperationEnum.OR) {
+                content.operator != ExpressionOperationEnum.OR &&
+                content.operator != ExpressionOperationEnum.AND &&
+                content.operator != ExpressionOperationEnum.START_WITH) {
                 return emptyList()
             }
         }
         val projectList = mutableListOf<String>()
         when (content.operator) {
+            ExpressionOperationEnum.START_WITH -> getProjectFromExpression(content)?.let {projectList.add(it) }
             ExpressionOperationEnum.ANY -> projectList.add("*")
             ExpressionOperationEnum.EQUAL -> projectList.add(content.value.toString())
             ExpressionOperationEnum.IN -> projectList.addAll(StringUtils.obj2List(content.value.toString()))
-            ExpressionOperationEnum.OR -> content.content.forEach {
+            ExpressionOperationEnum.OR, ExpressionOperationEnum.AND -> content.content.forEach {
                 projectList.addAll(getProjects(it))
             }
             else -> {
@@ -313,6 +316,12 @@ object BkIamV3Utils {
         }
         instanceList.add("*")
         return Pair(true, instanceList)
+    }
+
+    private fun getProjectFromExpression(expression: ExpressionDTO): String? {
+        val values = expression.value.toString().split(",")
+        if (values[0] != "/project") return null
+        return values[1].substringBefore("/")
     }
 
     private fun checkField(field: String, resourceType: String): Boolean {

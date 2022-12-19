@@ -80,7 +80,19 @@ open class BkIamV3PermissionServiceImpl(
         logger.debug("listPermissionProject, userId: $userId")
         return mergeResult(
             super.listPermissionProject(userId),
-            listV3PermissionProject(userId)
+            listV3PermissionProject(userId),
+            listV3PermissionProjectFromRepo(userId)
+        )
+    }
+
+    /**
+     * 查找有仓库权限，没有项目权限的列表
+     */
+    private fun listV3PermissionProjectFromRepo(userId: String) : List<String> {
+        return bkiamV3Service.listPermissionResources(
+            userId = userId,
+            resourceType = ResourceType.PROJECT.id(),
+            action = ActionTypeMapping.REPO_VIEW.id()
         )
     }
 
@@ -111,10 +123,11 @@ open class BkIamV3PermissionServiceImpl(
         }
     }
 
-    fun mergeResult(list: List<String>, v3list: List<String>) : List<String> {
+    fun mergeResult(list: List<String>, v3list: List<String>, otherList: List<String> = emptyList()) : List<String> {
         val set = mutableSetOf<String>()
         set.addAll(list)
         set.addAll(v3list)
+        set.addAll(otherList)
         return set.toList()
     }
 

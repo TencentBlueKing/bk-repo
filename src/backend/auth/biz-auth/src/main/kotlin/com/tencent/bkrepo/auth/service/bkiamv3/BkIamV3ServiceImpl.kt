@@ -70,8 +70,10 @@ import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
@@ -90,8 +92,9 @@ class BkIamV3ServiceImpl(
     private val policyService: PolicyService,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
-    private val authManagerRepository: BkIamAuthManagerRepository
-    ) : BkIamV3Service {
+    private val authManagerRepository: BkIamAuthManagerRepository,
+    val mongoTemplate: MongoTemplate
+    ) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
 
 
     private val iamAuthCache = CacheBuilder.newBuilder()
@@ -224,7 +227,6 @@ class BkIamV3ServiceImpl(
         return repositoryClient.getRepoInfo(projectId, repoName).data?.id
     }
 
-
     override fun convertNodeResourceId(projectId: String, repoName: String, fullPath: String): String? {
         val index = HashShardingUtils.shardingSequenceFor(projectId, 256).toString()
         val nodeId = nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.nodeInfo?.id ?: return null
@@ -251,8 +253,11 @@ class BkIamV3ServiceImpl(
                 getProjects(expression)
             }
             ResourceType.REPO.id() -> {
-                getResourceInstance(expression, projectId!!, resourceType).map {
+                val idList = getResourceInstance(expression, projectId!!, resourceType).map {
                     it.removePrefix("$projectId${StringPool.COLON}")
+                }
+                convertRepoResourceIdToRepoName(idList).map {
+                    it[RepositoryInfo::name.name].toString()
                 }
             }
             else -> emptyList()

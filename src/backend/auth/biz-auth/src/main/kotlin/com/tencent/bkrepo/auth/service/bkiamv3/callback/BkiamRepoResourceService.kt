@@ -33,14 +33,12 @@ import com.tencent.bk.sdk.iam.dto.callback.response.BaseDataResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.service.bkiamv3.BkiamV3BaseService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 
 /**
@@ -49,8 +47,8 @@ import org.springframework.stereotype.Component
 @Component
 class BkiamRepoResourceService(
     private val repositoryClient: RepositoryClient,
-    private val mongoTemplate: MongoTemplate
-): BkiamResourceBaseService {
+    val mongoTemplate: MongoTemplate
+): BkiamResourceBaseService, BkiamV3BaseService(mongoTemplate) {
     override fun resourceType(): ResourceType {
         return ResourceType.REPO
     }
@@ -77,9 +75,7 @@ class BkiamRepoResourceService(
 
     private fun filterRepoInfo(idList: List<String>): List<InstanceInfoDTO> {
         logger.info("filterRepoInfo, idList: $idList")
-        val nodeQuery = Query.query(Criteria.where(ID).`in`(idList))
-        val data = mongoTemplate.find<Map<String, Any?>>(nodeQuery, COLLECTION_NAME)
-        if (data.isEmpty()) return listOf()
+        val data = convertRepoResourceIdToRepoName(idList)
         return data.map {
             val entity = InstanceInfoDTO()
             entity.id = it[ID].toString()
@@ -113,7 +109,5 @@ class BkiamRepoResourceService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkiamRepoResourceService::class.java)
-        private const val COLLECTION_NAME = "repository"
-        private const val ID = "_id"
     }
 }
