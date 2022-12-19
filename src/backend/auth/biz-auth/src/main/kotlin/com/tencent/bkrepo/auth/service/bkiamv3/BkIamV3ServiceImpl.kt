@@ -31,12 +31,10 @@ import com.google.common.cache.CacheBuilder
 import com.tencent.bk.sdk.iam.config.IamConfiguration
 import com.tencent.bk.sdk.iam.constants.ManagerScopesEnum
 import com.tencent.bk.sdk.iam.dto.InstanceDTO
-import com.tencent.bk.sdk.iam.dto.PageInfoDTO
 import com.tencent.bk.sdk.iam.dto.PathInfoDTO
 import com.tencent.bk.sdk.iam.dto.PermissionUrlDTO
 import com.tencent.bk.sdk.iam.dto.RelatedResourceTypes
 import com.tencent.bk.sdk.iam.dto.RelationResourceInstance
-import com.tencent.bk.sdk.iam.dto.V2PageInfoDTO
 import com.tencent.bk.sdk.iam.dto.action.ActionDTO
 import com.tencent.bk.sdk.iam.dto.action.UrlAction
 import com.tencent.bk.sdk.iam.dto.manager.ManagerMember
@@ -356,24 +354,8 @@ class BkIamV3ServiceImpl(
         // 如果项目没有创建managerId,则直接返回
         val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT, projectId)?.managerId
             ?: return null
-        val projectManager = managerService.getGradeManagerDetail(projectManagerId.toString()) ?: return null
-        val v2PageInfo = V2PageInfoDTO()
-            v2PageInfo.pageSize = 500
-            v2PageInfo.page = 1
-        val managerGroup = managerService.getGradeManagerRoleGroupV2(
-            projectManager.id,
-            IamGroupUtils.buildIamGroup(projectId, DefaultGroupType.PROJECT_MANAGE.displayName),
-            v2PageInfo
-        )
-        val pageInfo = PageInfoDTO()
-        pageInfo.limit = 500
-        pageInfo.offset = 1
-        val managerUsers = managerService.getRoleGroupMemberV2(managerGroup.results.first().id, pageInfo)
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
-        secondManagerMembers.addAll(projectManager.members)
-        secondManagerMembers.addAll(managerUsers.results.map { it.id })
-
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
             .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}" +
                       "-$REPO_DEFAULT_NAME-${repoDetail.name}")
