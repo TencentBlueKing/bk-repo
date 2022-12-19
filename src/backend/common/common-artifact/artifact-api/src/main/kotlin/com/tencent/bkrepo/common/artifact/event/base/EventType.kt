@@ -60,6 +60,7 @@ enum class EventType(val nick: String) {
     VERSION_UPDATED("更新制品"),
     VERSION_STAGED("晋级制品"),
 
+
     // ADMIN
     ADMIN_ADD("添加管理员"),
     ADMIN_DELETE("移除管理员"),
@@ -145,7 +146,10 @@ enum class EventType(val nick: String) {
     PROJECT_SCAN_CONFIG_LIST("制品项目配置查询"),
 
     // CONFIG
-    CONFIG_UPDATE("配置更新");
+    CONFIG_UPDATE("配置更新"),
+
+    // 第三方同步
+    REPLICATION_THIRD_PARTY("外部制品同步");
 
     companion object {
         /**

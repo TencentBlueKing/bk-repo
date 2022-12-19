@@ -79,16 +79,7 @@ class GenericLocalRepository : LocalRepository() {
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
         // 若不允许覆盖, 提前检查节点是否存在
-        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
-        val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
-        val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
-        if (!overwrite && !isBlockUpload(uploadId, sequence)) {
-            with(context.artifactInfo) {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
-                }
-            }
-        }
+        checkNodeExist(context)
         // 校验sha256
         val calculatedSha256 = context.getArtifactSha256()
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
@@ -101,6 +92,8 @@ class GenericLocalRepository : LocalRepository() {
         if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
+        // 二次检查，防止接收文件过程中，有并发上传成功的情况
+        checkNodeExist(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -144,6 +137,19 @@ class GenericLocalRepository : LocalRepository() {
             downloadSingleNode(context)
         } else {
             downloadMultiNode(context)
+        }
+    }
+
+    private fun checkNodeExist(context: ArtifactUploadContext) {
+        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+        val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
+        val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
+        if (!overwrite && !isBlockUpload(uploadId, sequence)) {
+            with(context.artifactInfo) {
+                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
+                }
+            }
         }
     }
 
