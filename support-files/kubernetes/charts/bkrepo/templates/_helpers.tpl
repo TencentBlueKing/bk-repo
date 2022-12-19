@@ -88,3 +88,12 @@ Return the proper image name
 {{- printf "%s:%s" $repositoryName $tag -}}
 {{- end -}}
 {{- end -}}
+{{/*
+Return the value of auth url
+*/}}
+{{- define "bkrepo.oci.authUrl" -}}
+{{- if and .Values.gateway.service.dockerNodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer")) }}
+{{- .Values.gateway.service.dockerNodePort -}}
+{{- else }}
+{{- .Values.gateway.host -}}
+{{- end }}

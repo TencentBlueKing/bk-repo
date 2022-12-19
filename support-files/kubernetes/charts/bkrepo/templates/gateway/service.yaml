@@ -33,7 +33,7 @@ spec:
       targetPort: 8081
     - name: docker-node
       port: 8082
-      {{- if and .Values.gateway.service.nodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer")) }}
+      {{- if and .Values.gateway.service.dockerNodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer")) }}
       nodePort: {{ .Values.gateway.service.dockerNodePort }}
       {{- else }}
       nodePort: null
