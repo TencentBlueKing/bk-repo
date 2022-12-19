@@ -60,7 +60,10 @@ class UserAuthUrlController {
     fun queryProject(
         @RequestBody request: CheckPermissionRequest
     ): Response<String?> {
-        if ((authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS) && bkIamV3Service == null) {
+        if (
+            (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
+            && bkIamV3Service == null
+        ) {
             bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
         }
         val result = bkIamV3Service?.let {

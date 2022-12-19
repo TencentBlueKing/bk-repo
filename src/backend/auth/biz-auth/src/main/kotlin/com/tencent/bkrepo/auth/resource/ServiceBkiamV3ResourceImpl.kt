@@ -62,7 +62,10 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
     }
 
     private fun initService() {
-        if ((authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS) && bkIamV3Service == null) {
+        if (
+            (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
+            && bkIamV3Service == null
+        ) {
             bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
         }
     }
