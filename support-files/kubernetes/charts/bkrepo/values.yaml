@@ -251,6 +251,8 @@ gateway:
     port: 80
     ## 服务类型为`NodePort`时端口设置
     nodePort: 30025
+    ## 服务类型为docker服务`NodePort`时暴露的ip
+    nodeIP: 127.0.0.1
     ## 服务类型为docker服务`NodePort`时端口设置
     dockerNodePort: 30026
   ## Kubernetes 通用配置
