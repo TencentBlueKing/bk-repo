@@ -93,7 +93,8 @@ Return the value of auth url
 */}}
 {{- define "bkrepo.oci.authUrl" -}}
 {{- if and .Values.gateway.service.dockerNodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer")) }}
-{{- .Values.gateway.service.dockerNodePort -}}
+    {{- .Values.gateway.service.dockerNodePort -}}
 {{- else }}
-{{- .Values.gateway.host -}}
+    {{- .Values.gateway.host -}}
 {{- end }}
+{{- end -}}
