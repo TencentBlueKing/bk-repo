@@ -126,12 +126,15 @@ object BkIamV3Utils {
     }
 
     fun getProjects(content: ExpressionDTO): List<String> {
+
         if (content.field != "project.id") {
-            if (content.operator != ExpressionOperationEnum.ANY &&
-                content.operator != ExpressionOperationEnum.OR &&
-                content.operator != ExpressionOperationEnum.AND &&
-                content.operator != ExpressionOperationEnum.START_WITH) {
-                return emptyList()
+            when(content.operator) {
+                ExpressionOperationEnum.ANY,
+                ExpressionOperationEnum.OR,
+                ExpressionOperationEnum.AND,
+                ExpressionOperationEnum.START_WITH -> {
+                }
+                else -> return emptyList()
             }
         }
         val projectList = mutableListOf<String>()
