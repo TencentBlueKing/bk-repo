@@ -354,7 +354,7 @@ export default {
       return ''
     },
     downloadUrl(node) {
-      return `/web/repository/api/list/${node.projectId}/${node.repoName}${escape(node.fullPath)}`
+      return `/web/repository/api/list/${node.projectId}/${node.repoName}/${encodeURIComponent(node.fullPath)}`
     },
     showNodeDetail(node) {
       this.nodeOfDetailDialog = node
