@@ -86,7 +86,7 @@ data class SubScanTask(
     /**
      * 用于容器化扫描时，状态、结果上报接口鉴权
      */
-    val token: String? = null,
+    var token: String? = null,
     /**
      * 扫描执行器需要的额外信息，用于扩展
      */

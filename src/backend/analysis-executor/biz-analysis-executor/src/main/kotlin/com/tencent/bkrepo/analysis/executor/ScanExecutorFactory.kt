@@ -36,7 +36,7 @@ class ScanExecutorFactory(
     private val scanExecutors: Map<String, ScanExecutor>
 ) {
     fun get(type: String): ScanExecutor {
-        return scanExecutors[type]
+        return scanExecutors["${type}Executor"]
             ?: throw NotFoundException(ScannerMessageCode.SCANNER_NOT_FOUND, type)
     }
 }

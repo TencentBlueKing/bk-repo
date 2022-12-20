@@ -31,9 +31,10 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Binds
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.analysis.executor.util.DockerUtils.createContainer
-import com.tencent.bkrepo.analysis.executor.util.DockerUtils.removeContainer
-import com.tencent.bkrepo.analysis.executor.util.DockerUtils.startContainer
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.createContainer
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.removeContainer
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.startContainer
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap

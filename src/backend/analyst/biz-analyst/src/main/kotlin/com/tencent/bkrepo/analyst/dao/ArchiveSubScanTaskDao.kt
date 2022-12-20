@@ -33,6 +33,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -44,5 +45,13 @@ class ArchiveSubScanTaskDao : AbsSubScanTaskDao<TArchiveSubScanTask>() {
             .update(TArchiveSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TArchiveSubScanTask::status.name, status)
         return updateMulti(query, update)
+    }
+
+    fun updateStatus(id: String, status: String): UpdateResult {
+        val query = Query(Criteria.where(ID).isEqualTo(id))
+        val update = Update
+            .update(TArchiveSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TArchiveSubScanTask::status.name, status)
+        return updateFirst(query, update)
     }
 }

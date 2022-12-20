@@ -82,5 +82,6 @@ const val REPOSITORY_SERVICE_NAME = "\${service.prefix:}repository\${service.suf
 const val AUTH_SERVICE_NAME = "\${service.prefix:}auth\${service.suffix:}"
 const val REPLICATION_SERVICE_NAME = "\${service.prefix:}replication\${service.suffix:}"
 const val SCANNER_SERVICE_NAME = "\${service.prefix:}analyst\${service.suffix:}"
+const val ANALYSIS_EXECUTOR_SERVICE_NAME = "\${service.prefix:}analysis-executor\${service.suffix:}"
 const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"

@@ -80,6 +80,9 @@ export function scan(scanner, projectId, repoName, path) {
 }
 
 export function createProjectScanConfiguration(configuration) {
+  if (!configuration.dispatcher) {
+    configuration.dispatcher = null
+  }
   return request({
     url: `${PREFIX_PROJECT_SCAN_CONFIGURATION}`,
     method: 'post',
@@ -95,6 +98,9 @@ export function deleteProjectScanConfiguration(projectId) {
 }
 
 export function updateProjectScanConfiguration(configuration) {
+  if (!configuration.dispatcher) {
+    configuration.dispatcher = null
+  }
   return request({
     url: `${PREFIX_PROJECT_SCAN_CONFIGURATION}`,
     method: 'put',

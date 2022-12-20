@@ -126,7 +126,8 @@ class TemporaryScanTokenServiceImpl(
             val tokenMap = tokens.data!!.associateBy { it.fullPath }
             val fileUrls = fullPaths.map { (key, value) ->
                 val url = tokenMap[key]!!.let {
-                    "$baseUrl/temporary/download/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}"
+                    "$baseUrl/api/generic/temporary/download" +
+                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}"
                 }
                 value.copy(url = url)
             }
@@ -159,7 +160,7 @@ class TemporaryScanTokenServiceImpl(
             nodes.forEach {
                 val fullPath = it[NodeDetail::fullPath.name]!!.toString()
                 val sha256 = it[NodeDetail::sha256.name]!!.toString()
-                val size = it[NodeDetail::sha256.name]!!.toString().toLong()
+                val size = it[NodeDetail::size.name]!!.toString().toLong()
                 fullPaths[fullPath] = FileUrl("", fullPath.substringAfterLast(SLASH), sha256, size)
             }
             fullPaths
@@ -178,7 +179,7 @@ class TemporaryScanTokenServiceImpl(
                 .projectId(projectId)
                 .repoName(repoName)
                 .rule(NodeDetail::sha256.name, sha256, OperationType.IN)
-                .select(NodeDetail::fullPath.name, NodeDetail::size.name)
+                .select(NodeDetail::fullPath.name, NodeDetail::size.name, NodeDetail::sha256.name)
                 .page(DEFAULT_PAGE_NUMBER, sha256.size)
                 .build()
         ).data?.records

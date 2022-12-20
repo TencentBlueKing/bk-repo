@@ -56,9 +56,9 @@ import java.util.function.Consumer
 /**
  * 构件事件消费者，用于触发制品更新扫描
  * 制品有新的推送时，筛选已开启自动扫描的方案进行扫描
- * 对应binding name为artifactEvent-in-0
+ * 对应binding name为scanEventConsumer-in-0
  */
-@Component("artifactEvent")
+@Component
 class ScanEventConsumer(
     private val spdxLicenseService: SpdxLicenseService,
     private val scanService: ScanService,

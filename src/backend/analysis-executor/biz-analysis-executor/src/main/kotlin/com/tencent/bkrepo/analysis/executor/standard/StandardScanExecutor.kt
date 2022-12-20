@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component
 import java.io.File
 
 @ConditionalOnProperty(DockerProperties.SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
-@Component(StandardScanner.TYPE)
+@Component("${StandardScanner.TYPE}Executor")
 class StandardScanExecutor(
     dockerClient: DockerClient,
     private val scannerExecutorProperties: ScannerExecutorProperties
