@@ -27,8 +27,26 @@
 
 package com.tencent.bkrepo.auth.pojo.enums
 
-enum class ResourceActionMapping(val resourceType: String, val actions: String) {
-    PROJECT_ACTIONS("project", "project_view,project_edit,project_manage,repo_create"),
-    REPO_ACTIONS("repo", "repo_view,repo_edit,repo_manage,node_create,repo_delete"),
-    NODE_ACTIONS("node", "node_view,node_download,node_edit,node_delete");
+enum class ResourceActionMapping(val resourceType: String, val actions: List<String>) {
+    PROJECT_ACTIONS(ResourceType.PROJECT.id(), listOf(
+        ActionTypeMapping.PROJECT_VIEW.id(),
+        ActionTypeMapping.PROJECT_EDIT.id(),
+        ActionTypeMapping.PROJECT_MANAGE.id(),
+        ActionTypeMapping.REPO_CREATE.id()
+    )),
+    REPO_ACTIONS(ResourceType.REPO.id(),
+                 listOf(
+                     ActionTypeMapping.REPO_VIEW.id(),
+                     ActionTypeMapping.REPO_EDIT.id(),
+                     ActionTypeMapping.REPO_MANAGE.id(),
+                     ActionTypeMapping.REPO_DELETE.id(),
+                     ActionTypeMapping.NODE_CREATE.id()
+                 )),
+    NODE_ACTIONS(ResourceType.NODE.id(),
+                 listOf(
+                     ActionTypeMapping.NODE_DELETE.id(),
+                     ActionTypeMapping.NODE_DOWNLOAD.id(),
+                     ActionTypeMapping.NODE_EDIT.id(),
+                     ActionTypeMapping.NODE_VIEW.id()
+                 ));
 }

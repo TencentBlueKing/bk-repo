@@ -30,59 +30,119 @@ package com.tencent.bkrepo.auth.pojo.enums
 /**
  * 默认用户组对应的操作权限
  */
-enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String, String>) {
+enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String, List<String>>) {
     PROJECT_MANAGER(
-        "project_manager",
+        DefaultGroupType.PROJECT_MANAGER.value,
         mapOf(
-            "project" to "project_view,project_edit,project_manage,repo_create",
-            "repo" to "repo_manage,repo_edit,repo_view,repo_delete,node_create",
-            "node" to "node_download,node_view,node_delete,node_edit",
+            ResourceType.PROJECT.id() to listOf(
+                ActionTypeMapping.PROJECT_VIEW.id(),
+                ActionTypeMapping.PROJECT_EDIT.id(),
+                ActionTypeMapping.PROJECT_MANAGE.id(),
+                ActionTypeMapping.REPO_CREATE.id()
+            ),
+            ResourceType.REPO.id() to listOf(
+                    ActionTypeMapping.REPO_MANAGE.id(),
+                    ActionTypeMapping.REPO_EDIT.id(),
+                    ActionTypeMapping.REPO_VIEW.id(),
+                    ActionTypeMapping.REPO_DELETE.id(),
+                    ActionTypeMapping.NODE_CREATE.id()
+                ),
+            ResourceType.NODE.id() to listOf(
+                ActionTypeMapping.NODE_DELETE.id(),
+                ActionTypeMapping.NODE_EDIT.id(),
+                ActionTypeMapping.NODE_VIEW.id(),
+                ActionTypeMapping.NODE_DOWNLOAD.id()
+            ),
         )
     ),
-    PROJECT_DOWNLOAD("project_download",
+    PROJECT_DOWNLOAD(DefaultGroupType.PROJECT_DOWNLOAD.value,
                       mapOf(
-                          "project" to "project_view",
-                          "repo" to "repo_view",
-                          "node" to "node_download,node_view",
+                          ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
+                          ResourceType.REPO.id() to listOf(ActionTypeMapping.REPO_VIEW.id()),
+                          ResourceType.NODE.id() to listOf(
+                              ActionTypeMapping.NODE_DOWNLOAD.id(),
+                              ActionTypeMapping.NODE_VIEW.id()
+                          ),
                       )
     ),
-    PROJECT_EDIT("project_edit",
+    PROJECT_EDIT(DefaultGroupType.PROJECT_EDIT.value,
                      mapOf(
-                         "project" to "project_view",
-                         "repo" to "repo_edit,node_create,repo_view",
-                         "node" to "node_download,node_view,node_delete,node_edit",
+                         ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
+                         ResourceType.REPO.id() to listOf(
+                             ActionTypeMapping.REPO_VIEW.id(),
+                             ActionTypeMapping.REPO_EDIT.id(),
+                             ActionTypeMapping.REPO_CREATE.id(),
+                             ActionTypeMapping.NODE_CREATE.id()
+                         ),
+                         ResourceType.NODE.id() to listOf(
+                             ActionTypeMapping.NODE_DELETE.id(),
+                             ActionTypeMapping.NODE_EDIT.id(),
+                             ActionTypeMapping.NODE_VIEW.id(),
+                             ActionTypeMapping.NODE_DOWNLOAD.id()
+                         )
                      )
     ),
-    PROJECT_UPLOAD_DELETE("project_upload_delete",
+    PROJECT_UPLOAD_DELETE(DefaultGroupType.PROJECT_UPLOAD_DELETE.value,
                    mapOf(
-                       "project" to "project_view",
-                       "repo" to "repo_view,node_create",
-                       "node" to "node_download,node_view,node_delete,node_edit",
+                       ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
+                       ResourceType.REPO.id() to listOf(
+                           ActionTypeMapping.REPO_VIEW.id(),
+                           ActionTypeMapping.NODE_CREATE.id()
+                       ),
+                       ResourceType.NODE.id() to listOf(
+                           ActionTypeMapping.NODE_DELETE.id(),
+                           ActionTypeMapping.NODE_EDIT.id(),
+                           ActionTypeMapping.NODE_VIEW.id(),
+                           ActionTypeMapping.NODE_DOWNLOAD.id()
+                       )
                    )
     ),
-    REPO_MANAGER("repo_manager",
+    REPO_MANAGER(DefaultGroupType.REPO_MANAGER.value,
                        mapOf(
-                           "repo" to "repo_edit,repo_view,repo_manage,repo_delete,node_create",
-                           "node" to "node_download,node_view,node_delete,node_edit",
+                           ResourceType.REPO.id() to listOf(
+                               ActionTypeMapping.REPO_MANAGE.id(),
+                               ActionTypeMapping.REPO_EDIT.id(),
+                               ActionTypeMapping.REPO_VIEW.id(),
+                               ActionTypeMapping.REPO_DELETE.id(),
+                               ActionTypeMapping.NODE_CREATE.id()
+                           ),
+                           ResourceType.NODE.id() to listOf(
+                               ActionTypeMapping.NODE_DELETE.id(),
+                               ActionTypeMapping.NODE_EDIT.id(),
+                               ActionTypeMapping.NODE_VIEW.id(),
+                               ActionTypeMapping.NODE_DOWNLOAD.id()
+                           )
                        )
     ),
     REPO_DOWNLOAD(
-        "repo_download",
+        DefaultGroupType.REPO_DOWNLOAD.value,
         mapOf(
-            "repo" to "repo_view",
-            "node" to "node_download,node_view",
+            ResourceType.REPO.id() to listOf(ActionTypeMapping.REPO_VIEW.id()),
+            ResourceType.NODE.id() to listOf(
+                ActionTypeMapping.NODE_VIEW.id(),
+                ActionTypeMapping.NODE_DOWNLOAD.id()
+            )
         )
     ),
-    REPO_UPLOAD_DELETE("repo_upload_delete",
+    REPO_UPLOAD_DELETE(
+        DefaultGroupType.REPO_UPLOAD_DELETE.value,
                       mapOf(
-                          "repo" to "repo_view,node_create",
-                          "node" to "node_download,node_view,node_delete, node_edit",
+                          ResourceType.REPO.id() to listOf(
+                              ActionTypeMapping.REPO_VIEW.id(),
+                              ActionTypeMapping.NODE_CREATE.id()
+                          ),
+                          ResourceType.NODE.id() to listOf(
+                              ActionTypeMapping.NODE_DELETE.id(),
+                              ActionTypeMapping.NODE_EDIT.id(),
+                              ActionTypeMapping.NODE_VIEW.id(),
+                              ActionTypeMapping.NODE_DOWNLOAD.id()
+                          ),
                       )
     );
 
     companion object {
         fun get(value: String): DefaultGroupTypeAndActions {
-            DefaultGroupTypeAndActions.values().forEach {
+            values().forEach {
                 if (value == it.value) return it
             }
             throw IllegalArgumentException("No enum for constant $value")

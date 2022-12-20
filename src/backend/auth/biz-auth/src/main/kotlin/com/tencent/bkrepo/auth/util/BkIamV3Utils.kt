@@ -53,7 +53,7 @@ object BkIamV3Utils {
                     projectResInfo = projectResInfo,
                     repoResInfo = repoResInfo,
                     iamConfiguration = iamConfiguration,
-                    actions = it.actions.split(","),
+                    actions = it.actions,
                     resourceType = it.resourceType
                 )
             )

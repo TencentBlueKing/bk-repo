@@ -492,7 +492,7 @@ class BkIamV3ServiceImpl(
         projectResInfo: ResourceInfo,
         repoResInfo: ResourceInfo? = null,
         roleId: Int,
-        actions: Map<String, String>
+        actions: Map<String, List<String>>
     ) {
         logger.debug("grant role permission for group $roleId in $projectResInfo|$repoResInfo with actions $actions")
         try {
@@ -501,7 +501,7 @@ class BkIamV3ServiceImpl(
                     projectResInfo = projectResInfo,
                     repoResInfo = repoResInfo,
                     iamConfiguration = iamConfiguration,
-                    actions = it.value.split(","),
+                    actions = it.value,
                     resourceType = it.key
                 )
                 managerService.grantRoleGroupV2(roleId, permission)
