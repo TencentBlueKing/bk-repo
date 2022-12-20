@@ -189,6 +189,8 @@ class BkAuthPermissionServiceImpl constructor(
         // 校验平台账号操作范围
         if (!super.checkPlatformPermission(request)) return false
 
+        if (super.matchBkiamv3Cond(request)) return super.checkBkIamV3Permission(request)
+
         // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)
 
