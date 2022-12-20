@@ -13,13 +13,10 @@
                 </bk-input>
                 <i class="name-search devops-icon icon-search flex-center" @click="changePackageName()"></i>
             </div>
-            <div v-if="pagination.count" class="mt20 flex-between-center" style="align-items:flex-end;">
+            <div class="mt20 flex-between-center" style="align-items:flex-end;">
                 <div class="result-count flex-align-center">
-                    <span v-if="isSearching">搜索到相关结果</span>
-                    <span v-else>全部制品共</span>
-                    <span>{{ pagination.count }}个</span>
                 </div>
-                <div class="sort-tool flex-align-center">
+                <div v-if="resultList.length !== 0 || repoList[0].children.length !== 0" class="sort-tool flex-align-center">
                     <bk-select
                         style="width:150px;"
                         v-model="property"
@@ -39,7 +36,7 @@
             </div>
         </div>
         <main class="repo-search-result flex-align-center">
-            <template v-if="resultList.length">
+            <template v-if="resultList.length !== 0 || repoList[0].children.length !== 0">
                 <repo-tree
                     class="repo-tree"
                     ref="dialogTree"
@@ -49,10 +46,9 @@
                     @icon-click="iconClickHandler"
                     @item-click="itemClickHandler">
                     <template #icon><span></span></template>
-                    <template #text="{ item: { name, sum } }">
+                    <template #text="{ item: { name } }">
                         <div class="flex-1 flex-between-center">
                             <span class="text-overflow">{{ name }}</span>
-                            <span class="mr10" style="color:var(--fontSubsidiaryColor);">{{ sum }}</span>
                         </div>
                     </template>
                 </repo-tree>
@@ -60,7 +56,7 @@
                     ref="infiniteScroll"
                     class="package-list flex-1"
                     :is-loading="isLoading"
-                    :has-next="resultList.length < pagination.count"
+                    :has-next="hasNext"
                     @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
                     <package-card
                         class="mb10"
@@ -121,7 +117,8 @@
                     limit: 20,
                     count: 0
                 },
-                resultList: []
+                resultList: [],
+                hasNext: true
             }
         },
         computed: {
@@ -177,6 +174,7 @@
             searckPackageHandler (scrollLoad) {
                 if (this.isLoading) return
                 this.isLoading = !scrollLoad
+                this.hasNext = true
                 this.searchPackageList({
                     projectId: this.projectId,
                     repoType: this.repoType,
@@ -188,6 +186,9 @@
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
+                    if (records.length < this.pagination.limit) {
+                        this.hasNext = false
+                    }
                     scrollLoad ? this.resultList.push(...records) : (this.resultList = records)
                 }).finally(() => {
                     this.isLoading = false
