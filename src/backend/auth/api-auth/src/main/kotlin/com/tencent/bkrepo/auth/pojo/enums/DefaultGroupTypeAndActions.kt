@@ -34,8 +34,8 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
     PROJECT_MANAGER(
         "project_manager",
         mapOf(
-            "project" to "project_view,project_edit,repo_create",
-            "repo" to "repo_edit,node_create,repo_view,repo_delete",
+            "project" to "project_view,project_edit,project_manage,repo_create",
+            "repo" to "repo_manage,repo_edit,repo_view,repo_delete,node_create",
             "node" to "node_download,node_view,node_delete,node_edit",
         )
     ),
@@ -50,19 +50,19 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                      mapOf(
                          "project" to "project_view",
                          "repo" to "repo_edit,node_create,repo_view",
-                         "node" to "node_download,node_view",
+                         "node" to "node_download,node_view,node_delete,node_edit",
                      )
     ),
     PROJECT_UPLOAD_DELETE("project_upload_delete",
                    mapOf(
                        "project" to "project_view",
-                       "repo" to "repo_view",
+                       "repo" to "repo_view,node_create",
                        "node" to "node_download,node_view,node_delete,node_edit",
                    )
     ),
     REPO_MANAGER("repo_manager",
                        mapOf(
-                           "repo" to "repo_edit,repo_view,repo_delete",
+                           "repo" to "repo_edit,repo_view,repo_manage,repo_delete,node_create",
                            "node" to "node_download,node_view,node_delete,node_edit",
                        )
     ),
@@ -75,7 +75,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
     ),
     REPO_UPLOAD_DELETE("repo_upload_delete",
                       mapOf(
-                          "repo" to "node_create,repo_view",
+                          "repo" to "repo_view,node_create",
                           "node" to "node_download,node_view,node_delete, node_edit",
                       )
     );

@@ -28,11 +28,12 @@
 package com.tencent.bkrepo.auth.pojo.enums
 
 enum class ActionTypeMapping(val resType: String, val pAction: String) {
-    PROJECT_MANAGER(ResourceType.PROJECT.name, PermissionAction.MANAGE.name),
+    PROJECT_MANAGE(ResourceType.PROJECT.name, PermissionAction.MANAGE.name),
     PROJECT_CREATE(ResourceType.PROJECT.name, PermissionAction.WRITE.name),
     PROJECT_VIEW(ResourceType.PROJECT.name, PermissionAction.READ.name),
     PROJECT_EDIT(ResourceType.PROJECT.name, PermissionAction.UPDATE.name),
     REPO_CREATE(ResourceType.REPO.name, PermissionAction.WRITE.name),
+    REPO_MANAGE(ResourceType.REPO.name, PermissionAction.MANAGE.name),
     REPO_VIEW(ResourceType.REPO.name, PermissionAction.READ.name),
     REPO_EDIT(ResourceType.REPO.name, PermissionAction.UPDATE.name),
     REPO_DELETE(ResourceType.REPO.name, PermissionAction.DELETE.name),
