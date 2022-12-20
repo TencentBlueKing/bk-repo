@@ -35,7 +35,7 @@ data class DockerProperties(
     var host: String = "unix://var/run/docker.sock",
     var version: String = "1.23",
     var connectTimeout: Int = 5000,
-    var readTimeout: Int = 300000
+    var readTimeout: Int = 0
 ) {
     companion object {
         const val SCANNER_EXECUTOR_DOCKER_ENABLED = "scanner.executor.docker.enabled"

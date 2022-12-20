@@ -54,7 +54,7 @@ import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
 
-@Component(ScancodeToolkitScanner.TYPE)
+@Component("${ScancodeToolkitScanner.TYPE}Executor")
 @ConditionalOnProperty(DockerProperties.SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class ScancodeToolkitExecutor @Autowired constructor(
     dockerClient: DockerClient,

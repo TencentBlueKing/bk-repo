@@ -267,7 +267,7 @@ object ScanPlanConverter {
 
     private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {
         return when (status) {
-            ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED, SubScanTaskStatus.ENQUEUED)
+            ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED)
             ScanStatus.RUNNING -> listOf(SubScanTaskStatus.EXECUTING)
             ScanStatus.STOP -> listOf(SubScanTaskStatus.STOPPED)
             ScanStatus.FAILED -> listOf(SubScanTaskStatus.FAILED)
@@ -280,7 +280,6 @@ object ScanPlanConverter {
             SubScanTaskStatus.BLOCKED.name,
             SubScanTaskStatus.CREATED.name,
             SubScanTaskStatus.PULLED.name,
-            SubScanTaskStatus.ENQUEUED.name,
             ScanTaskStatus.PENDING.name -> ScanStatus.INIT
 
             SubScanTaskStatus.EXECUTING.name,

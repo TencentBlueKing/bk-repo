@@ -111,10 +111,11 @@ interface ScanService {
 
     /**
      * 拉取子任务
+     * @param dispatcher 指定子任务分发器
      *
      * @return 没有可执行的任务时返回null，否则返回一个待执行的任务
      */
-    fun pull(): SubScanTask?
+    fun pull(dispatcher: String? = null): SubScanTask?
 
     /**
      * 获取扫描任务

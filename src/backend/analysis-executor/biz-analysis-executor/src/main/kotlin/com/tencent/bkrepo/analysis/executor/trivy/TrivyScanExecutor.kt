@@ -65,7 +65,7 @@ import org.springframework.stereotype.Component
 import java.io.File
 import java.io.FileOutputStream
 
-@Component(TrivyScanner.TYPE)
+@Component("${TrivyScanner.TYPE}Executor")
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class TrivyScanExecutor @Autowired constructor(
     dockerClient: DockerClient,

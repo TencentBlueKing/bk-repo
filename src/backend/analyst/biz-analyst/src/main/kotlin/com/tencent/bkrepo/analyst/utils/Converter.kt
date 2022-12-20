@@ -35,7 +35,6 @@ import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
-import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
@@ -47,8 +46,7 @@ import java.time.format.DateTimeFormatter
 object Converter {
     fun convert(
         subScanTask: TSubScanTask,
-        scanner: Scanner,
-        metadata: List<TaskMetadata> = emptyList()
+        scanner: Scanner
     ): SubScanTask = with(subScanTask) {
         SubScanTask(
             taskId = id!!,
@@ -105,7 +103,8 @@ object Converter {
                 priority = priority,
                 scanTaskCountLimit = scanTaskCountLimit,
                 subScanTaskCountLimit = subScanTaskCountLimit,
-                autoScanConfiguration = autoScanConfiguration
+                autoScanConfiguration = autoScanConfiguration,
+                dispatcherConfiguration = dispatcherConfiguration
             )
         }
     }

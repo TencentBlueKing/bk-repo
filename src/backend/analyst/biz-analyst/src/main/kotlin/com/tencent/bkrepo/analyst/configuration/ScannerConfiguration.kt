@@ -27,9 +27,67 @@
 
 package com.tencent.bkrepo.analyst.configuration
 
+import com.alibaba.cola.statemachine.StateMachine
+import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
+import com.tencent.bkrepo.analyst.dispatcher.DockerDispatcher
+import com.tencent.bkrepo.analyst.dispatcher.KubernetesDispatcher
+import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcher
+import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
+import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
+import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
+import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
+import com.tencent.bkrepo.repository.api.OperateLogClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ScannerProperties::class)
-class ScannerConfiguration
+@EnableConfigurationProperties(
+    ScannerProperties::class,
+    KubernetesDispatcherProperties::class,
+    DockerDispatcherProperties::class
+)
+class ScannerConfiguration {
+    @Bean
+    @ConditionalOnProperty("scanner.dispatcher.k8s.enabled", havingValue = "true")
+    fun k8sDispatcher(
+        scannerProperties: ScannerProperties,
+        kubernetesDispatcherProperties: KubernetesDispatcherProperties
+    ): SubtaskDispatcher {
+        return KubernetesDispatcher(scannerProperties, kubernetesDispatcherProperties)
+    }
+
+    @Bean
+    @ConditionalOnProperty("scanner.dispatcher.docker.enabled", havingValue = "true")
+    fun dockerDispatcher(
+        subScanTaskDao: SubScanTaskDao,
+        scannerProperties: ScannerProperties,
+        dockerDispatcherProperties: DockerDispatcherProperties
+    ): SubtaskDispatcher {
+        return DockerDispatcher(scannerProperties, dockerDispatcherProperties, subScanTaskDao)
+    }
+
+    @Bean
+    @ConditionalOnBean(SubtaskDispatcher::class)
+    fun poller(
+        dispatcher: SubtaskDispatcher,
+        scanService: ScanService,
+        temporaryScanTokenService: TemporaryScanTokenService,
+        subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+    ): SubtaskPoller {
+        return SubtaskPoller(dispatcher, scanService, temporaryScanTokenService, subtaskStateMachine)
+    }
+
+    @Bean
+    @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
+    fun operateLogService(operateLogClient: OperateLogClient): OperateLogService {
+        return OperateLogServiceImpl(operateLogClient)
+    }
+}

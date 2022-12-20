@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analysis.executor
 
 import com.sun.management.OperatingSystemMXBean
+import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analysis.executor.component.FileLoader
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.analysis.executor.util.Converter
@@ -40,12 +41,13 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Component
 class ExecutorScheduler @Autowired constructor(
@@ -54,34 +56,47 @@ class ExecutorScheduler @Autowired constructor(
     private val scanClient: ScanClient,
     private val executor: ThreadPoolTaskExecutor,
     private val scannerExecutorProperties: ScannerExecutorProperties
-) {
+) : ExecutorClient {
+
+    init {
+        if (scannerExecutorProperties.pull) {
+            pullSubtaskAtFixedRate()
+        }
+    }
 
     private val executingSubtaskExecutorMap = ConcurrentHashMap<String, ScanExecutor>()
     private val operatingSystemBean by lazy { ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean }
 
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
-    fun scan() {
-        while (allowExecute()) {
-            val subtask = scanClient.pullSubTask().data ?: break
-            if (scanning(subtask.taskId)) {
-                // 任务执行中，直接忽略新任务
-                logger.warn("subtask[${subtask.taskId}] of task[${subtask.parentScanTaskId}] is executing")
-                return
-            }
+    override fun execute(subtask: SubScanTask): Boolean {
+        return scan(subtask)
+    }
 
-            scanClient.updateSubScanTaskStatus(subtask.taskId, SubScanTaskStatus.EXECUTING.name)
+    override fun execute(subtaskId: String, token: String): Boolean {
+        throw UnsupportedOperationException()
+    }
 
-            executingSubtaskExecutorMap[subtask.taskId] = scanExecutorFactory.get(subtask.scanner.type)
-            logger.info("task start, executing task count ${executingSubtaskExecutorMap.size}")
-            executor.execute {
-                try {
-                    doScan(subtask)
-                } finally {
-                    executingSubtaskExecutorMap.remove(subtask.taskId)
-                    logger.info("task finished, executing task count ${executingSubtaskExecutorMap.size}")
-                }
+    override fun stop(subtaskId: String): Boolean {
+        return executingSubtaskExecutorMap[subtaskId]?.stop(subtaskId) ?: false
+    }
+
+    fun scan(subtask: SubScanTask): Boolean {
+        if (!allowExecute() || scanning(subtask.taskId)) {
+            return false
+        }
+
+        scanClient.updateSubScanTaskStatus(subtask.taskId, SubScanTaskStatus.EXECUTING.name)
+
+        executingSubtaskExecutorMap[subtask.taskId] = scanExecutorFactory.get(subtask.scanner.type)
+        logger.info("task start, executing task count ${executingSubtaskExecutorMap.size}")
+        executor.execute {
+            try {
+                doScan(subtask)
+            } finally {
+                executingSubtaskExecutorMap.remove(subtask.taskId)
+                logger.info("task finished, executing task count ${executingSubtaskExecutorMap.size}")
             }
         }
+        return true
     }
 
     /**
@@ -89,6 +104,20 @@ class ExecutorScheduler @Autowired constructor(
      */
     fun scanning(taskId: String): Boolean {
         return executingSubtaskExecutorMap.containsKey(taskId)
+    }
+
+    private fun pullSubtaskAtFixedRate() {
+        val runnable = {
+            try {
+                while (allowExecute()) {
+                    val subtask = scanClient.pullSubTask().data ?: break
+                    scan(subtask)
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                logger.error("pull subtask failed", e)
+            }
+        }
+        scheduler.scheduleAtFixedRate(runnable, INITIAL_DELAY, FIXED_DELAY, TimeUnit.MILLISECONDS)
     }
 
     /**
@@ -180,7 +209,9 @@ class ExecutorScheduler @Autowired constructor(
     }
 
     companion object {
+        private const val INITIAL_DELAY = 30000L
         private const val FIXED_DELAY = 3000L
+        private val scheduler = Executors.newSingleThreadScheduledExecutor()
         private val logger = LoggerFactory.getLogger(ExecutorScheduler::class.java)
     }
 }
