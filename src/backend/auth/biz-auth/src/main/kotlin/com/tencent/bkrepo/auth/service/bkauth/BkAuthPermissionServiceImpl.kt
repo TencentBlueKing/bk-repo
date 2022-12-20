@@ -179,7 +179,6 @@ class BkAuthPermissionServiceImpl constructor(
                 if (checkDevopsPermission(request)) {
                     return getAllRepoByProjectId(projectId)
                 }
-                return emptyList()
             }
         }
         return super.listPermissionRepo(projectId, userId, appId)
