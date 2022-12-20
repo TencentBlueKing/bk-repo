@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server
 
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
 import java.io.InputStream
+import java.util.Optional
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.reactive.asFlow
@@ -47,4 +48,11 @@ suspend fun InputStream.copyTo(artifactFile: ReactiveArtifactFile, finish: Boole
     }.collect { buf ->
         artifactFile.write(buf)
     }
+}
+
+fun <T> Optional<T>.getOrNull(): T? {
+    if (this.isPresent) {
+        return this.get()
+    }
+    return null
 }

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server.config
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.fs.server.DEFAULT_MAPPING_URI
@@ -37,11 +38,15 @@ import com.tencent.bkrepo.fs.server.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.filter.ArtifactContextFilterFunction
 import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilter
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.getOrNull
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
@@ -63,6 +68,8 @@ class RouteConfiguration(
     private val securityManager: SecurityManager,
     private val loginHandler: LoginHandler
 ) {
+
+    private val logger = LoggerFactory.getLogger(RouteConfiguration::class.java)
     fun router() = coRouter {
         loginRouter()
         requireAuth()
@@ -120,6 +127,7 @@ class RouteConfiguration(
             accept(APPLICATION_JSON).nest {
                 requireWritePermission()
                 PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::writeAndFlush)
+                addUploadMetrics()
             }
         }
 
@@ -139,23 +147,25 @@ class RouteConfiguration(
     }
 
     private fun CoRouterFunctionDsl.addUploadMetrics() {
-        filter { req, next ->
-            try {
-                serverMetrics.uploadingCount.incrementAndGet()
-                next(req)
-            } finally {
-                serverMetrics.uploadingCount.decrementAndGet()
-            }
-        }
+        addMetrics(serverMetrics.uploadingCount)
     }
 
     private fun CoRouterFunctionDsl.addDownloadMetrics() {
+        addMetrics(serverMetrics.downloadingCount)
+    }
+
+    private fun CoRouterFunctionDsl.addMetrics(metric: AtomicInteger) {
         filter { req, next ->
             try {
-                serverMetrics.downloadingCount.incrementAndGet()
+                metric.incrementAndGet()
                 next(req)
+            } catch (e: CancellationException) {
+                val principal = req.exchange().attributes[USER_KEY]
+                val clientAddress = req.remoteAddress().getOrNull()
+                logger.info("Remote user[$principal],ip[$clientAddress] close connection.")
+                throw e
             } finally {
-                serverMetrics.downloadingCount.decrementAndGet()
+                metric.decrementAndGet()
             }
         }
     }

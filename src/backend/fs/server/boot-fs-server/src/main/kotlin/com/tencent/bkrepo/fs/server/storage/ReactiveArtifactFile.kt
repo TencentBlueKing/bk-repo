@@ -133,10 +133,12 @@ class ReactiveArtifactFile(
     }
 
     fun finish() {
-        val throughput = receiver.finish()
-        monitor.remove(receiver)
-        initialized = true
-        logger.info("Receive file $throughput")
+        if (!initialized) {
+            val throughput = receiver.finish()
+            monitor.remove(receiver)
+            initialized = true
+            logger.info("Receive file $throughput")
+        }
     }
 
     fun close() {

@@ -54,7 +54,7 @@ class AsynchronousReceiver(
 ) : StorageHealthMonitor.Observer {
 
     private val fileSizeThreshold = receiveProperties.fileSizeThreshold.toBytes().toInt()
-    val cache = ByteArray(fileSizeThreshold)
+    private var cache: ByteArray? = ByteArray(fileSizeThreshold)
     private var pos: Long = 0
     var inMemory = true
     val filePath: Path get() = path.resolve(fileName)
@@ -95,7 +95,7 @@ class AsynchronousReceiver(
             flushToFile()
             DataBufferUtils.write(Mono.just(buffer), channel, pos).awaitSingle()
         } else if (inMemory) {
-            buffer.read(cache, pos.toInt(), len)
+            buffer.read(cache!!, pos.toInt(), len)
         } else {
             DataBufferUtils.write(Mono.just(buffer), channel, pos).awaitSingle()
         }
@@ -106,10 +106,12 @@ class AsynchronousReceiver(
 
     suspend fun flushToFile() {
         if (inMemory) {
-            val cacheData = cache.copyOfRange(0, pos.toInt())
+            val cacheData = cache!!.copyOfRange(0, pos.toInt())
             val buf = DefaultDataBufferFactory.sharedInstance.wrap(cacheData)
             DataBufferUtils.write(Mono.just(buf), channel).awaitSingle()
             inMemory = false
+            // help gc
+            cache = null
         }
     }
 
@@ -148,17 +150,17 @@ class AsynchronousReceiver(
             listener.finished()
             return Throughput(pos, endTime - startTime)
         } finally {
-            channel.closeQuietly()
+            if (!inMemory) {
+                channel.closeQuietly()
+            }
         }
     }
 
     fun close() {
-        try {
-            getFile()?.let {
-                Files.deleteIfExists(filePath)
-            }
-        } finally {
+        if (!inMemory) {
             channel.closeQuietly()
+            Files.deleteIfExists(filePath)
+            logger.info("Delete path $filePath")
         }
     }
 

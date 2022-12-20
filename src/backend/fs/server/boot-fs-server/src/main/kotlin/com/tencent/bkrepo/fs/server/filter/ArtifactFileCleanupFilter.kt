@@ -28,36 +28,48 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
-import java.io.IOException
 import kotlin.system.measureTimeMillis
 import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
 class ArtifactFileCleanupFilter : CoHandlerFilterFunction {
-    @Suppress("UNCHECKED_CAST")
+
     override suspend fun filter(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        val response = next(request)
         try {
-            val artifactFileList =
-                ReactiveRequestContextHolder.getWebExchange()
-                    .attributes[ReactiveArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>
-            artifactFileList?.filter { !it.isInMemory() }?.forEach {
+            return next(request)
+        } finally {
+            cleanup(request)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun cleanup(request: ServerRequest) {
+        try {
+            val artifactFileList = request.exchange()
+                .attributes[ReactiveArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>
+            artifactFileList?.filter {
+                // 理论上走到这里handler的方法已经执行完毕，但是这里会出现handler里面的方法未完成，
+                // 就已经走到过滤器这里了，怀疑跟协程的挂起，恢复有关。走到这里，表示请求已经结束，则
+                // 临时文件可以删除，删除前需要finish一下
+                if (it is ReactiveArtifactFile && !it.hasInitialized()) {
+                    it.finish()
+                }
+                !it.isInMemory()
+            }?.forEach {
                 val absolutePath = it.getFile()!!.absolutePath
                 measureTimeMillis { it.delete() }.apply {
                     logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
                 }
             }
-        } catch (exception: IOException) {
+        } catch (exception: Exception) {
             logger.warn("Failed to clean temp artifact file.", exception)
         }
-
-        return response
     }
 
     companion object {
