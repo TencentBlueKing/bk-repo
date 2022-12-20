@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import org.springframework.scheduling.annotation.Async
 
-class OperateLogServiceImpl(private val operateLogClient: OperateLogClient): OperateLogService {
+open class OperateLogServiceImpl(private val operateLogClient: OperateLogClient): OperateLogService {
     override fun saveEventAsync(event: ArtifactEvent, address: String) {
         throw UnsupportedOperationException()
     }
