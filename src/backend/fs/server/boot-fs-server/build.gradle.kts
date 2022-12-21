@@ -15,6 +15,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.google.guava:guava")
+    compileOnly("org.springframework.cloud:spring-cloud-starter-sleuth")
+
     testImplementation("org.mockito.kotlin:mockito-kotlin")
 }
 

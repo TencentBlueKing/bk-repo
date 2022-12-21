@@ -27,36 +27,41 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
 
-object ResponseBuilder {
+class SpringContextUtils : ApplicationContextAware {
 
-    fun <T> build(code: Int, message: String?, data: T?) =
-        Response(code, message, data, getTraceId())
+    override fun setApplicationContext(applicationContext: ApplicationContext) {
+        Companion.applicationContext = applicationContext
+    }
 
-    /**
-     * 创建确定类型的[Response]，规避Jackson序列化时不包含类型信息问题
-     */
-    inline fun <reified T> buildTyped(
-        data: T,
-        message: String? = null,
-        code: Int = CommonMessageCode.SUCCESS.getCode()
-    ): Response<T> = object : Response<T>(code, message, data) {}
+    companion object {
+        @Suppress("LateinitUsage") // 静态成员通过init构造函数初始化
+        private lateinit var applicationContext: ApplicationContext
 
-    fun success() = build(CommonMessageCode.SUCCESS.getCode(), null, null)
+        /**
+         * 获取对象
+         * @param <T> Bean
+         * @return 实例
+         * @throws BeansException 异常
+         */
+        @Throws(BeansException::class)
+        inline fun <reified T> getBean(): T {
+            return getBean(T::class.java)
+        }
 
-    fun <T> success(data: T) = build(CommonMessageCode.SUCCESS.getCode(), null, data)
-
-    fun fail(code: Int, message: String?) = build(code, message, null)
-
-    private fun getTraceId(): String? {
-        return try {
-            SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
-        } catch (_: BeansException) {
-            null
+        /**
+         * 获取对象 这里重写了bean方法，起主要作用
+         * @param clazz 类名
+         * @param <T> Bean
+         * @return 实例
+         * @throws BeansException 异常
+         */
+        @Throws(BeansException::class)
+        fun <T> getBean(clazz: Class<T>): T {
+            return applicationContext.getBean(clazz)
         }
     }
 }
