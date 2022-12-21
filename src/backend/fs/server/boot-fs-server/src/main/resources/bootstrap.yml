@@ -1,0 +1,3 @@
+spring.application.name: fs-server
+server.port: 25816
+service.prefix: bkrepo-
