@@ -87,6 +87,15 @@ interface BkIamV3Service {
     ): String?
 
     /**
+     * 删除仓库分级管理员
+     */
+    fun deleteRepoGradeManager(
+        userId: String,
+        projectId: String,
+        repoName: String
+    ): Boolean
+
+    /**
      * 资源id转换
      */
     fun getResourceId(resourceType: String, projectId: String?, repoName: String?, path: String?): String?

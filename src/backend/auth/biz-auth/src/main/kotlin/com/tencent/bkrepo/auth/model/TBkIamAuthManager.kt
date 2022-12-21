@@ -39,13 +39,14 @@ import java.time.LocalDateTime
 @Document("bkiam_auth_manager")
 @CompoundIndexes(
     CompoundIndex(
-        name = "resource_idx",
-        def = "{'type': 1, 'resourceId': 1}",
+        name = "res_idx",
+        def = "{'type': 1, 'resourceId': 1, 'parentResId': 1}",
         background = true
     )
 )
 data class TBkIamAuthManager(
     var type: ResourceType,
+    var parentResId: String? = null,
     var resourceId: String,
     var managerId: Int,
     var createdDate: LocalDateTime,

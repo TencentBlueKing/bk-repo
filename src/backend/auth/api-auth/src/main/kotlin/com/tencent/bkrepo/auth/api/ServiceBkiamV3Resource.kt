@@ -35,6 +35,7 @@ import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -57,6 +58,17 @@ interface ServiceBkiamV3Resource {
     @ApiOperation("创建2级仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
     fun createRepoManage(
+        @ApiParam(value = "用户id")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目名称")
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称")
+        @PathVariable repoName: String
+    ): Response<String?>
+
+    @ApiOperation("删除仓库相关用户组")
+    @DeleteMapping("/delete/repo/manage/{projectId}/{repoName}")
+    fun deleteRepoManageGroup(
         @ApiParam(value = "用户id")
         @RequestParam userId: String,
         @ApiParam(value = "项目名称")

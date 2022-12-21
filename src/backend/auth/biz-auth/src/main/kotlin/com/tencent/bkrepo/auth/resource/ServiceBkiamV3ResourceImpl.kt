@@ -61,6 +61,13 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
         } ?: return ResponseBuilder.success()
     }
 
+    override fun deleteRepoManageGroup(userId: String, projectId: String, repoName: String): Response<String?> {
+        initService()
+        bkIamV3Service?.let {
+            return ResponseBuilder.success(bkIamV3Service!!.createGradeManager(userId, projectId, repoName))
+        } ?: return ResponseBuilder.success()
+    }
+
     private fun initService() {
         if (
             (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)

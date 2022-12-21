@@ -34,5 +34,7 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface BkIamAuthManagerRepository: MongoRepository<TBkIamAuthManager, String> {
-    fun findByTypeAndResourceId(type: ResourceType, resourceId: String) :TBkIamAuthManager?
+    fun findByTypeAndResourceIdAndParentResId(
+        type: ResourceType, resourceId: String, parentResId: String?
+    ) :TBkIamAuthManager?
 }

@@ -280,6 +280,14 @@ class BkIamV3ServiceImpl(
         }
     }
 
+    override fun deleteRepoGradeManager(userId: String, projectId: String, repoName: String): Boolean {
+        val managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+            ResourceType.REPO, repoName, projectId
+        )?.managerId ?: return true
+        // TODO 等待提供接口
+        return true
+    }
+
     fun createProjectGradeManager(
         userId: String,
         projectId: String
@@ -307,16 +315,7 @@ class BkIamV3ServiceImpl(
             return null
         }
         logger.debug("The id of project [${projectInfo.name}]'s grade manager is $managerId")
-        authManagerRepository.save(
-            TBkIamAuthManager(
-                resourceId = projectId,
-                type = ResourceType.PROJECT,
-                managerId = managerId,
-                createdBy = userId,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now())
-        )
+        saveTBkIamAuthManager(projectId, null, managerId, userId)
         batchCreateDefaultGroups(
             userId = userId,
             gradeManagerId = managerId,
@@ -356,8 +355,9 @@ class BkIamV3ServiceImpl(
         )
         try {
         // 如果项目没有创建managerId,则补充创建
-        val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT, projectId)?.managerId
-            ?: createProjectGradeManager(userId, projectId)
+        val projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+            ResourceType.PROJECT, projectId, null
+        )?.managerId ?: createProjectGradeManager(userId, projectId)
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
@@ -370,6 +370,7 @@ class BkIamV3ServiceImpl(
 
         val repoManagerId=  managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
         logger.debug("The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
+        saveTBkIamAuthManager(projectId, repoName, repoManagerId, userId)
         batchCreateDefaultGroups(
             userId = userId,
             gradeManagerId = repoManagerId,
@@ -399,6 +400,38 @@ class BkIamV3ServiceImpl(
                 convertNodeResourceId(projectId!!, repoName!!, path!!)
             else -> throw IllegalArgumentException("invalid resource type")
         }
+    }
+
+    private fun saveTBkIamAuthManager(
+        projectId: String,
+        repoName: String?,
+        managerId: Int,
+        userId: String
+    ) {
+        val tBkIamAuthManager = if (repoName == null) {
+            TBkIamAuthManager(
+                resourceId = projectId,
+                type = ResourceType.PROJECT,
+                managerId = managerId,
+                createdBy = userId,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = userId,
+                lastModifiedDate = LocalDateTime.now())
+        } else {
+            TBkIamAuthManager(
+                resourceId = repoName,
+                type = ResourceType.REPO,
+                managerId = managerId,
+                parentResId = projectId,
+                createdBy = userId,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = userId,
+                lastModifiedDate = LocalDateTime.now()
+            )
+        }
+        authManagerRepository.save(
+            tBkIamAuthManager
+        )
     }
 
     /**

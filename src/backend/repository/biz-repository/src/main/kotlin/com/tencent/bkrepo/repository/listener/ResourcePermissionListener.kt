@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -80,6 +81,17 @@ class ResourcePermissionListener(
                 userResource.addUserRole(userId, repoManagerRoleId)
                 bkiamV3Resource.createRepoManage(userId, projectId, repoName)
             }
+        }
+    }
+
+    /**
+     * 删除仓库时，需要删除当前在权限中心创建的分级管理员
+     */
+    @Async
+    @EventListener(RepoDeletedEvent::class)
+    fun handle(event: RepoDeletedEvent) {
+        with(event) {
+            bkiamV3Resource.deleteRepoManageGroup(userId, projectId, repoName)
         }
     }
 
