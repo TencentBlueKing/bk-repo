@@ -113,6 +113,19 @@ open class BkIamV3PermissionServiceImpl(
         )
     }
 
+    fun checkBkIamV3ProjectPermission(projectId: String, userId: String, action: String): Boolean {
+        logger.info("checkBkIamV3PRojectPermission userId: $userId, projectId: $projectId, action: $action")
+        return bkiamV3Service.validateResourcePermission(
+            userId = userId,
+            projectId = projectId,
+            repoName = null,
+            resourceType = ResourceType.PROJECT.id(),
+            action = convertActionType(ResourceType.PROJECT.name, action),
+            resourceId = projectId,
+            appId = null
+        )
+    }
+
     /**
      * 查找有仓库权限，没有项目权限的列表
      */

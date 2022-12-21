@@ -203,7 +203,8 @@ class BkIamV3ServiceImpl(
         val cacheKey = userId + action + resourceId
         // 优先从缓存内获取
         val cachedResult = iamAuthCache.getIfPresent(cacheKey)
-        if (cachedResult != null) {
+        cachedResult?.let {
+            logger.debug("validateResourcePermission match in cache: $cacheKey|$cachedResult")
             return cachedResult
         }
         var allowed: Boolean
@@ -354,9 +355,9 @@ class BkIamV3ServiceImpl(
             iamConfiguration = iamConfiguration
         )
         try {
-        // 如果项目没有创建managerId,则直接返回
+        // 如果项目没有创建managerId,则补充创建
         val projectManagerId = authManagerRepository.findByTypeAndResourceId(ResourceType.PROJECT, projectId)?.managerId
-            ?: return null
+            ?: createProjectGradeManager(userId, projectId)
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()

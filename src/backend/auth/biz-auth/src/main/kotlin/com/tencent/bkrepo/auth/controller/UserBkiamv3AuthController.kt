@@ -49,23 +49,18 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/user/auth")
-class UserAuthUrlController {
+class UserBkiamv3AuthController {
     private var bkIamV3Service: BkIamV3Service? = null
 
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME:}")
     private var authType: String = ""
 
     @ApiOperation("生成无权限申请url")
-    @PostMapping("/permission/url")
+    @PostMapping("/bkiamv3/permission/url")
     fun queryProject(
         @RequestBody request: CheckPermissionRequest
     ): Response<String?> {
-        if (
-            (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
-            && bkIamV3Service == null
-        ) {
-            bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
-        }
+        initService()
         val result = bkIamV3Service?.let {
             val resourceId = try {
             bkIamV3Service!!.getResourceId(
@@ -84,5 +79,14 @@ class UserAuthUrlController {
                 )
         } ?: StringPool.EMPTY
         return ResponseBuilder.success(result)
+    }
+
+    private fun initService() {
+        if (
+            (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
+            && bkIamV3Service == null
+        ) {
+            bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
+        }
     }
 }

@@ -161,8 +161,14 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
         logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
         return when (action) {
-            PermissionAction.MANAGE.toString() -> bkAuthProjectService.isProjectManager(uid, projectId)
-            else -> bkAuthProjectService.isProjectMember(uid, projectId, action)
+            PermissionAction.MANAGE.toString() -> {
+                bkAuthProjectService.isProjectManager(uid, projectId) ||
+                    super.checkBkIamV3ProjectPermission(projectId, uid, PermissionAction.MANAGE.name)
+            }
+            else -> {
+                bkAuthProjectService.isProjectMember(uid, projectId, action) ||
+                    super.checkBkIamV3ProjectPermission(projectId, uid, action)
+            }
         }
     }
 
@@ -189,6 +195,7 @@ class BkAuthPermissionServiceImpl constructor(
         // 校验平台账号操作范围
         if (!super.checkPlatformPermission(request)) return false
 
+        // bkiamv3权限校验
         if (super.matchBkiamv3Cond(request)) return super.checkBkIamV3Permission(request)
 
         // devops账号
