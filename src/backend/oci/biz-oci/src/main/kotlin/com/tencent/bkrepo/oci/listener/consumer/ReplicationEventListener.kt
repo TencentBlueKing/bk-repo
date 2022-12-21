@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,13 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.oci.listener.consumer
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
+import com.tencent.bkrepo.common.artifact.event.replication.ThirdPartyReplicationEvent
+import com.tencent.bkrepo.oci.listener.base.EventExecutor
+import com.tencent.bkrepo.oci.service.OciOperationService
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
+
+/**
+ * 消费基于Spring进程内传递的事件
+ */
+@Component
+class ReplicationEventListener(
+    override val nodeClient: NodeClient,
+    override val repositoryClient: RepositoryClient,
+    override val ociOperationService: OciOperationService
+): EventExecutor(nodeClient, repositoryClient, ociOperationService) {
+    /**
+     * 第三方同步事件处理
+     */
+    @EventListener(ThirdPartyReplicationEvent::class)
+    fun handle(event: ThirdPartyReplicationEvent) {
+        submit(event)
+    }
 }

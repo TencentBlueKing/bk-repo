@@ -51,6 +51,8 @@ Your release is named {{ .Release.Name }}.
 2. 访问http://{{ .Values.gateway.host }}/ui/ 验证服务能否正常访问
 
     **TIP** 如果使用NodePort或port-forward方式访问，通过http://<NodeIp>:{{ .Values.gateway.service.nodePort }}/方式访问文件服务
+
+    **TIP** 如果使用NodePort或port-forward方式访问，通过{{ .Values.gateway.service.nodeIP }}:{{ .Values.gateway.service.dockerNodePort }}/方式访问容器镜像服务
     
     初始用户名/密码: {{ $username }}/{{ $password }}
     初始项目: blueking

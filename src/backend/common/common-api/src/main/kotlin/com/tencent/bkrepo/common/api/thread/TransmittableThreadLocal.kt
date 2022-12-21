@@ -11,7 +11,7 @@ open class TransmittableThreadLocal<T> : ThreadLocal<T>() {
 
     override fun set(value: T) {
         super.set(value)
-        if (!Transmitter.holder.get().contains(this as ThreadLocal<Any>)) {
+        if (!Transmitter.holder.get().contains(this)) {
             Transmitter.holder.get().add(this as ThreadLocal<Any>)
         }
     }

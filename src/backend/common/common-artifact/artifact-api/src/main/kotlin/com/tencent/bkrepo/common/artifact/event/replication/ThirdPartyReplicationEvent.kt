@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,13 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.common.artifact.event.replication
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-}
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+
+/**
+ * 其他类型同步事件
+ */
+class ThirdPartyReplicationEvent(
+    val packageName: String,
+    val version: String? = null,
+    val sha256: String? = null,
+    val fullPath: String,
+    override val projectId: String,
+    override val repoName: String,
+    override val userId: String
+) : ArtifactEvent(
+    type = EventType.REPLICATION_THIRD_PARTY,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = fullPath,
+    userId = userId,
+    data = mutableMapOf(
+        "packageName" to packageName
+    ).apply {
+        version?.let { this["version"] = version }
+        sha256?.let { this["sha256"] = sha256 }
+    }
+)
+

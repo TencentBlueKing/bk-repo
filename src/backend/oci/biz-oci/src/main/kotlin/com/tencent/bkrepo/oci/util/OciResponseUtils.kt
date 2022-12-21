@@ -66,12 +66,19 @@ object OciResponseUtils {
     fun getResponseURI(request: HttpServletRequest, enableHttp: Boolean): URI {
         val hostHeaders = request.getHeaders(HOST)
         var host = LOCAL_HOST
+        var port: Int? = null
         if (hostHeaders != null) {
             val headers = hostHeaders.toList()
             val parts = (headers[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             host = parts[0]
+            if (parts.size > 1) {
+                port = Integer.valueOf(parts[1])
+            }
         }
         val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttp))
+        port?.let {
+            builder.port(port)
+        }
         return builder.build()
     }
 
