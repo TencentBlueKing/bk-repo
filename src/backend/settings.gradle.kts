@@ -41,14 +41,6 @@ pluginManagement {
             mavenCentral()
             maven(url = "https://repo.spring.io/milestone")
             gradlePluginPortal()
-            // 用于拉取devops framework gradle plugin snapshot版本
-            maven {
-                name = "MavenSnapshot"
-                url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
-                mavenContent {
-                    snapshotsOnly()
-                }
-            }
         }
     }
 }
@@ -93,3 +85,5 @@ includeAll(":analyst")
 includeAll(":analysis-executor")
 includeAll(":common:common-checker")
 includeAll(":conan")
+includeAll(":fs")
+includeAll(":fs:server")

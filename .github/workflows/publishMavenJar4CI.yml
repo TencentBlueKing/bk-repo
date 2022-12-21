@@ -27,6 +27,7 @@ jobs:
       - name: Gradle Build
         working-directory: src/backend
         env:
+          MAVEN_REPO_DEPLOY_URL: "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
@@ -36,7 +37,10 @@ jobs:
           echo "GITHUB_REF=${GITHUB_REF}"
           repo_version=${GITHUB_REF##*/v}
           echo "repo_version=${repo_version}"
-          ./gradlew publishAllPublicationsToAllJarRepository -Drepo_version=${repo_version}
+          ./gradlew publishAllPublicationsToAllJarRepository -Drepo_version=${repo_version} \
+          -PallJarRepo=${MAVEN_REPO_DEPLOY_URL} \
+          -PallJarUsername=${SONATYPE_USERNAME} \
+          -PallJarPassword='${SONATYPE_PASSWORD}'
       - name: Clean Up
         if: ${{ always() }}
         working-directory:

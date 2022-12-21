@@ -13,6 +13,8 @@ ENV BK_REPO_HOME=/data/workspace/bkrepo \
     BK_REPO_SERVICE_NAME="bk-repo" \
     BK_REPO_DOMAIN="127.0.0.1:8080" \
     BK_REPO_DOCKER_HOST="docker.bkrepo.example.com" \
+    BK_REPO_STATIC_HOST="static.bkrepo.example.com" \
+    BK_REPO_EXT_IP="[::]" \
     BK_REPO_DOCKER_HTTP_PORT="80" \
     BK_REPO_PROFILE="dev"
 
