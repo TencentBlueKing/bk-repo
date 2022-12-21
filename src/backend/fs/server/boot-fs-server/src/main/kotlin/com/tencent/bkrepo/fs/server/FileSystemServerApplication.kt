@@ -38,10 +38,5 @@ import reactivefeign.spring.config.EnableReactiveFeignClients
 class FileSystemServerApplication
 
 fun main(args: Array<String>) {
-    enabledAccessLog()
     runApplication<FileSystemServerApplication>(*args)
-}
-
-private fun enabledAccessLog() {
-    System.setProperty("reactor.netty.http.server.accessLogEnabled", "true")
 }

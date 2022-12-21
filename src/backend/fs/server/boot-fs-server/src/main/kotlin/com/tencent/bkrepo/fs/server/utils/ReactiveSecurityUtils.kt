@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 
@@ -35,6 +36,6 @@ object ReactiveSecurityUtils {
     suspend fun getUser(): String {
         return ReactiveRequestContextHolder
             .getWebExchange()
-            .attributes[USER_KEY] as String
+            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
     }
 }

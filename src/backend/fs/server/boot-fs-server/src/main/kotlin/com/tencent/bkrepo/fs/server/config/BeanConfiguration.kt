@@ -78,6 +78,7 @@ val beans = beans {
     bean<SecurityManager>()
     bean<JwtAuthProperties>()
     bean<SpringContextUtils>()
+    bean<NettyWebServerAccessLogCustomizer>()
     bean {
         RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
     }

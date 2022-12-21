@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.fs.server.utils
 
 import org.springframework.beans.BeansException
+import org.springframework.cloud.sleuth.Tracer
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 
@@ -62,6 +63,14 @@ class SpringContextUtils : ApplicationContextAware {
         @Throws(BeansException::class)
         fun <T> getBean(clazz: Class<T>): T {
             return applicationContext.getBean(clazz)
+        }
+
+        fun getTraceId(): String? {
+            return try {
+                getBean<Tracer>().currentSpan()?.context()?.traceId()
+            } catch (_: BeansException) {
+                null
+            }
         }
     }
 }

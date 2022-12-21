@@ -29,13 +29,11 @@ package com.tencent.bkrepo.fs.server.utils
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 
 object ResponseBuilder {
 
     fun <T> build(code: Int, message: String?, data: T?) =
-        Response(code, message, data, getTraceId())
+        Response(code, message, data, SpringContextUtils.getTraceId())
 
     /**
      * 创建确定类型的[Response]，规避Jackson序列化时不包含类型信息问题
@@ -51,12 +49,4 @@ object ResponseBuilder {
     fun <T> success(data: T) = build(CommonMessageCode.SUCCESS.getCode(), null, data)
 
     fun fail(code: Int, message: String?) = build(code, message, null)
-
-    private fun getTraceId(): String? {
-        return try {
-            SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
-        } catch (_: BeansException) {
-            null
-        }
-    }
 }
