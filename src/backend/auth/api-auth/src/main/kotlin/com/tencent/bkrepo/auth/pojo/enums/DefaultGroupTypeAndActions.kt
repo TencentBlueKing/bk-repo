@@ -50,6 +50,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
             ResourceType.NODE.id() to listOf(
                 ActionTypeMapping.NODE_DELETE.id(),
                 ActionTypeMapping.NODE_EDIT.id(),
+                ActionTypeMapping.NODE_WRITE.id(),
                 ActionTypeMapping.NODE_VIEW.id(),
                 ActionTypeMapping.NODE_DOWNLOAD.id()
             ),
@@ -77,6 +78,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                          ResourceType.NODE.id() to listOf(
                              ActionTypeMapping.NODE_DELETE.id(),
                              ActionTypeMapping.NODE_EDIT.id(),
+                             ActionTypeMapping.NODE_WRITE.id(),
                              ActionTypeMapping.NODE_VIEW.id(),
                              ActionTypeMapping.NODE_DOWNLOAD.id()
                          )
@@ -92,6 +94,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                        ResourceType.NODE.id() to listOf(
                            ActionTypeMapping.NODE_DELETE.id(),
                            ActionTypeMapping.NODE_EDIT.id(),
+                           ActionTypeMapping.NODE_WRITE.id(),
                            ActionTypeMapping.NODE_VIEW.id(),
                            ActionTypeMapping.NODE_DOWNLOAD.id()
                        )
@@ -109,6 +112,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                            ResourceType.NODE.id() to listOf(
                                ActionTypeMapping.NODE_DELETE.id(),
                                ActionTypeMapping.NODE_EDIT.id(),
+                               ActionTypeMapping.NODE_WRITE.id(),
                                ActionTypeMapping.NODE_VIEW.id(),
                                ActionTypeMapping.NODE_DOWNLOAD.id()
                            )
@@ -134,6 +138,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                           ResourceType.NODE.id() to listOf(
                               ActionTypeMapping.NODE_DELETE.id(),
                               ActionTypeMapping.NODE_EDIT.id(),
+                              ActionTypeMapping.NODE_WRITE.id(),
                               ActionTypeMapping.NODE_VIEW.id(),
                               ActionTypeMapping.NODE_DOWNLOAD.id()
                           ),

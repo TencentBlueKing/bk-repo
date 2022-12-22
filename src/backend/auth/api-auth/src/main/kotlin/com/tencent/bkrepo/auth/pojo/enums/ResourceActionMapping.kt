@@ -47,6 +47,7 @@ enum class ResourceActionMapping(val resourceType: String, val actions: List<Str
                      ActionTypeMapping.NODE_DELETE.id(),
                      ActionTypeMapping.NODE_DOWNLOAD.id(),
                      ActionTypeMapping.NODE_EDIT.id(),
+                     ActionTypeMapping.NODE_WRITE.id(),
                      ActionTypeMapping.NODE_VIEW.id()
                  ));
 }
