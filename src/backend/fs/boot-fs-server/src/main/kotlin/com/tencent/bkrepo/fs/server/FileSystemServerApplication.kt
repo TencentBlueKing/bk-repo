@@ -25,16 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.fs.server
 
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
+import org.springframework.scheduling.annotation.EnableScheduling
+import reactivefeign.spring.config.EnableReactiveFeignClients
 
-object ReactiveSecurityUtils {
+@SpringBootApplication
+@EnableReactiveFeignClients
+@EnableScheduling
+class FileSystemServerApplication
 
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as String
-    }
+fun main(args: Array<String>) {
+    runApplication<FileSystemServerApplication>(*args)
 }
