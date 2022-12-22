@@ -38,13 +38,11 @@ import com.tencent.bkrepo.fs.server.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.service.PermissionService
-import com.tencent.bkrepo.fs.server.utils.ResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.bodyValueAndAwait
 
 /**
  * 登录处理器
@@ -87,6 +85,6 @@ class LoginHandler(
             subject = username,
             claims = claims
         )
-        return ok().bodyValueAndAwait(ResponseBuilder.success(token))
+        return ReactiveResponseBuilder.success(token)
     }
 }
