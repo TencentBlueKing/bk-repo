@@ -61,10 +61,10 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
         } ?: return ResponseBuilder.success()
     }
 
-    override fun deleteRepoManageGroup(userId: String, projectId: String, repoName: String): Response<String?> {
+    override fun deleteRepoManageGroup(userId: String, projectId: String, repoName: String): Response<Boolean> {
         initService()
         bkIamV3Service?.let {
-            return ResponseBuilder.success(bkIamV3Service!!.createGradeManager(userId, projectId, repoName))
+            return ResponseBuilder.success(bkIamV3Service!!.deleteRepoGradeManager(userId, projectId, repoName))
         } ?: return ResponseBuilder.success()
     }
 

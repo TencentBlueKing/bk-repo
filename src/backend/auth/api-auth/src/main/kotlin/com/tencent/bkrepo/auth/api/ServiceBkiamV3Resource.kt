@@ -75,5 +75,5 @@ interface ServiceBkiamV3Resource {
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称")
         @PathVariable repoName: String
-    ): Response<String?>
+    ): Response<Boolean>
 }
