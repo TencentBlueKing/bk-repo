@@ -52,8 +52,7 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, va
                 repoName = repoName,
                 fullPath = fullPath
             ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
-            val length = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeDetail.size)
-            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode(length))
+            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode())
         }
     }
 
@@ -65,10 +64,7 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, va
                 projectId = projectId,
                 repoName = repoName,
                 option = listOption
-            ).awaitSingle().data?.records?.map {
-                val length = fileNodeService.getFileLength(projectId, repoName, fullPath, it.size)
-                it.toNode(length)
-            }?.toList()
+            ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
                 ?: return ServerResponse.notFound().buildAndAwait()
             return ReactiveResponseBuilder.success(nodes)
         }
