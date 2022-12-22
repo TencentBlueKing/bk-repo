@@ -242,6 +242,8 @@ gateway:
   appCode:
   ## ci模式必填，app token
   appToken:
+  ## 不支持ipv6网络栈时需要配置
+  extIP:
   ## bkrepo gateway service配置
   service:
     type: ClusterIP
@@ -249,6 +251,10 @@ gateway:
     port: 80
     ## 服务类型为`NodePort`时端口设置
     nodePort: 30025
+    ## 服务类型为docker服务`NodePort`时暴露的ip
+    nodeIP: 127.0.0.1
+    ## 服务类型为docker服务`NodePort`时端口设置
+    dockerNodePort: 30026
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com

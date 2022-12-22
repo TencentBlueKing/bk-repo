@@ -22,9 +22,9 @@ data:
       {{- end }}
     auth:
       {{- if .Values.ingress.tls }}
-      url: https://{{ .Values.gateway.host }}/docker/v2/auth
+      url: https://{{ .Values.gateway.host }}
       {{- else }}
-      url: http://{{ .Values.gateway.host }}/docker/v2/auth
+      url: http://{{ .Values.gateway.host }}
       {{- end }}
     {{- if keys $.Values.docker.config }}
       {{- toYaml .Values.docker.config | nindent 6 }}

@@ -99,7 +99,7 @@ export default {
     searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
-            `${prefix}/${isGeneric ? 'node/query' : 'package/search'}`,
+            `${prefix}/${isGeneric ? 'node/queryWithoutCount' : 'package/search'}`,
             {
                 page: {
                     pageNumber: current,

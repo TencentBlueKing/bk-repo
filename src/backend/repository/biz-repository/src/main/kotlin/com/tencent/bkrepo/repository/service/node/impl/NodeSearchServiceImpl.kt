@@ -34,20 +34,16 @@ package com.tencent.bkrepo.repository.service.node.impl
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
-import com.tencent.bkrepo.repository.pojo.software.CountResult
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.search.node.NodeQueryContext
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.util.MetadataUtils
-import org.springframework.data.mongodb.core.aggregation.Aggregation
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -70,6 +66,11 @@ class NodeSearchServiceImpl(
         return doQuery(context)
     }
 
+    override fun searchWithoutCount(queryModel: QueryModel): Page<Map<String, Any?>> {
+        val context = nodeQueryInterpreter.interpret(queryModel) as NodeQueryContext
+        return doQueryWithoutCount(context)
+    }
+
     override fun nodeOverview(
         userId: String,
         projectId: String,
@@ -88,24 +89,10 @@ class NodeSearchServiceImpl(
         } else repos
 
         if (genericRepos.isEmpty()) return listOf()
-        val criteria = Criteria.where(TNode::repoName.name).`in`(genericRepos)
-        criteria.and(TNode::projectId.name).`is`(projectId)
-            .and(TNode::deleted.name).`is`(null)
-            .and(TNode::folder.name).`is`(false)
-
-        val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(name)
-        val regexPattern = escapedValue.replace("*", ".*")
-        criteria.and(TNode::name.name).regex("^$regexPattern$", "i")
-        val aggregation = Aggregation.newAggregation(
-            TNode::class.java,
-            Aggregation.match(criteria),
-            Aggregation.group("\$${TNode::repoName.name}").count().`as`("count")
-        )
-        val result = nodeDao.aggregate(aggregation, CountResult::class.java).mappedResults
-        return transTree(projectId, result)
+        return transTree(projectId, genericRepos)
     }
 
-    private fun transTree(projectId: String, list: List<CountResult>): List<ProjectPackageOverview> {
+    private fun transTree(projectId: String, repoNamelist: List<String>): List<ProjectPackageOverview> {
         val projectSet = mutableSetOf<ProjectPackageOverview>()
         projectSet.add(
             ProjectPackageOverview(
@@ -114,19 +101,18 @@ class NodeSearchServiceImpl(
                 sum = 0L
             )
         )
-        list.sortedByDescending { it.count }.map { pojo ->
+        repoNamelist.map { pojo ->
             val repoOverview = ProjectPackageOverview.RepoPackageOverview(
-                repoName = pojo.id,
-                packages = pojo.count
+                repoName = pojo,
+                packages = 0L
             )
             projectSet.first().repos.add(repoOverview)
-            projectSet.first().sum += pojo.count
+            projectSet.first().sum += 0L
         }
         return projectSet.toList()
     }
 
-    private fun doQuery(context: NodeQueryContext): Page<Map<String, Any?>> {
-        val query = context.mongoQuery
+    private fun queryList(query: Query): List<MutableMap<String, Any?>> {
         val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
         // metadata格式转换，并排除id字段
         nodeList.forEach {
@@ -145,11 +131,23 @@ class NodeSearchServiceImpl(
                 it[NodeInfo::nodeMetadata.name] = MetadataUtils.convertToMetadataModel(metadata)
             }
         }
+        return nodeList
+    }
+
+    private fun doQuery(context: NodeQueryContext): Page<Map<String, Any?>> {
+        val query = context.mongoQuery
+        val nodeList = queryList(query)
         val countQuery = Query.of(query).limit(0).skip(0)
         val totalRecords = nodeDao.count(countQuery)
         val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
-
         return Page(pageNumber + 1, query.limit, totalRecords, nodeList)
+    }
+
+    private fun doQueryWithoutCount(context: NodeQueryContext): Page<Map<String, Any?>> {
+        val query = context.mongoQuery
+        val nodeList = queryList(query)
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(pageNumber + 1, query.limit, 0, nodeList)
     }
 
     companion object {

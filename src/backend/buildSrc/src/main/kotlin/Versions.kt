@@ -63,5 +63,6 @@ object Versions {
     const val SleuthOtel = "1.0.0-M13"
     const val Cola = "4.3.1"
     const val KubernetesClient = "11.0.2"
+    const val ReactiveFeign = "3.2.6"
     const val IamJavaSdk = "1.0.2-SNAPSHOT"
 }

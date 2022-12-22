@@ -367,6 +367,12 @@ class UserNodeController(
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/queryWithoutCount")
+    fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
+        return ResponseBuilder.success(nodeSearchService.searchWithoutCount(queryModel))
+    }
+
     @ApiOperation("仓库 包数量 总览")
     @GetMapping("/search/overview")
     fun nodeGlobalSearchOverview(

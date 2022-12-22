@@ -79,7 +79,7 @@ export function pageNodesBySha256(sha256, page = 1, size = DEFAULT_PAGE_SIZE) {
 }
 
 export function restoreNode(projectId, repoName, fullPath, deletedTimestamp) {
-  const encodedPath = escape(fullPath)
+  const encodedPath = encodeURIComponent(fullPath.substring(1))
   return request({
     url: `${PREFIX_NODE}/restore/${projectId}/${repoName}/${encodedPath}`,
     method: 'post',
@@ -91,7 +91,7 @@ export function restoreNode(projectId, repoName, fullPath, deletedTimestamp) {
 }
 
 export function deleteNode(projectId, repoName, fullPath) {
-  const encodedPath = escape(fullPath)
+  const encodedPath = encodeURIComponent(fullPath.substring(1))
   return request({
     url: `${PREFIX_NODE}/delete/${projectId}/${repoName}/${encodedPath}`,
     method: 'delete'

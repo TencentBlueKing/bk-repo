@@ -44,6 +44,8 @@ interface NodeSearchService {
      */
     fun search(queryModel: QueryModel): Page<Map<String, Any?>>
 
+    fun searchWithoutCount(queryModel: QueryModel): Page<Map<String, Any?>>
+
     fun nodeOverview(
         userId: String,
         projectId: String,
