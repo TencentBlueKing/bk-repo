@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 object ResponseBuilder {
 
     fun <T> build(code: Int, message: String?, data: T?) =
-        Response(code, message, data)
+        Response(code, message, data, SpringContextUtils.getTraceId())
 
     /**
      * 创建确定类型的[Response]，规避Jackson序列化时不包含类型信息问题

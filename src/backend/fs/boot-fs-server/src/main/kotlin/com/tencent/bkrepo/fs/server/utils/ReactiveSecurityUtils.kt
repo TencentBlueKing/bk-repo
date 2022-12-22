@@ -25,23 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server
+package com.tencent.bkrepo.fs.server.utils
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.scheduling.annotation.EnableScheduling
-import reactivefeign.spring.config.EnableReactiveFeignClients
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 
-@SpringBootApplication
-@EnableReactiveFeignClients
-@EnableScheduling
-class FileSystemServerApplication
+object ReactiveSecurityUtils {
 
-fun main(args: Array<String>) {
-    enabledAccessLog()
-    runApplication<FileSystemServerApplication>(*args)
-}
-
-private fun enabledAccessLog() {
-    System.setProperty("reactor.netty.http.server.accessLogEnabled", "true")
+    suspend fun getUser(): String {
+        return ReactiveRequestContextHolder
+            .getWebExchange()
+            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
+    }
 }
