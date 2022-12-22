@@ -81,7 +81,7 @@ class ScanTaskStatusChangedEventListener(
     @Async
     @EventListener(ScanTaskStatusChangedEvent::class)
     fun listen(event: ScanTaskStatusChangedEvent) {
-        if (event.task.status == ScanTaskStatus.FINISHED.name) {
+        if (event.task.status == ScanTaskStatus.FINISHED.name && event.task.scanned != 0L) {
             notify(event.task)
         }
     }
