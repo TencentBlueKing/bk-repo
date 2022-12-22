@@ -64,12 +64,12 @@ open class BkIamV3PermissionServiceImpl(
     projectClient
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        logger.debug("checkPermission, request: $request")
+        logger.debug("v3 checkPermission, request: $request")
         return super.checkPermission(request) || checkBkIamV3Permission(request)
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        logger.debug("listPermissionRepo, projectId: $projectId, userId: $userId, appId: $appId")
+        logger.debug("v3 listPermissionRepo, projectId: $projectId, userId: $userId, appId: $appId")
         return mergeResult(
             super.listPermissionRepo(projectId, userId, appId),
             listV3PermissionRepo(projectId, userId)
@@ -77,7 +77,7 @@ open class BkIamV3PermissionServiceImpl(
     }
 
     override fun listPermissionProject(userId: String): List<String> {
-        logger.debug("listPermissionProject, userId: $userId")
+        logger.debug("v3 listPermissionProject, userId: $userId")
         return mergeResult(
             super.listPermissionProject(userId),
             listV3PermissionProject(userId),
@@ -114,7 +114,7 @@ open class BkIamV3PermissionServiceImpl(
     }
 
     fun checkBkIamV3ProjectPermission(projectId: String, userId: String, action: String): Boolean {
-        logger.info("checkBkIamV3PRojectPermission userId: $userId, projectId: $projectId, action: $action")
+        logger.info("v3 checkBkIamV3PRojectPermission userId: $userId, projectId: $projectId, action: $action")
         return bkiamV3Service.validateResourcePermission(
             userId = userId,
             projectId = projectId,

@@ -61,13 +61,13 @@ class BkiamNodeResourceService(
     }
 
     override fun fetchInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Node fetchInstanceInfo, request $request")
+        logger.info("v3 Node fetchInstanceInfo, request $request")
         val ids = request.filter.idList.map { it.toString() }
         return buildFetchInstanceInfoResponseDTO(filterNodeInfo(ids))
     }
 
     override fun searchInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Node searchInstanceInfo, request $request")
+        logger.info("v3 Node searchInstanceInfo, request $request")
         val parentId = request.filter.parent.id
         return buildSearchInstanceResponseDTO(
             listNode(parentId = parentId, page = request.page, path = request.filter.keyword)
@@ -75,7 +75,7 @@ class BkiamNodeResourceService(
     }
 
     override fun listInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Node listInstanceInfo, request $request")
+        logger.info("v3 Node listInstanceInfo, request $request")
         val parentId = request.filter.parent.id
         return buildListInstanceResponseDTO(
             listNode(parentId = parentId, page = request.page)
@@ -86,7 +86,7 @@ class BkiamNodeResourceService(
     private fun filterNodeInfo(
         idList: List<String>
     ): List<InstanceInfoDTO> {
-        logger.info("filterNodeInfo, idList: $idList")
+        logger.info("v3 filterNodeInfo, idList: $idList")
         val result = mutableListOf<InstanceInfoDTO>()
         idList.forEach {
             val (id, index) = splitId(it)
@@ -117,7 +117,7 @@ class BkiamNodeResourceService(
         page: PageInfoDTO? = null,
         path: String = "/"
     ): BaseDataResponseDTO<InstanceInfoDTO> {
-        logger.info("listNode, parentId: $parentId, page $page, id: $path")
+        logger.info("v3 listNode, parentId: $parentId, page $page, id: $path")
         val (projectId, repoName) = getRepoNameById(parentId) ?: return buildBaseDataResponseDTO(0, emptyList())
         val index = HashShardingUtils.shardingSequenceFor(projectId, 256).toString()
         var offset = 0

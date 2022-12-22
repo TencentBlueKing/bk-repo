@@ -50,25 +50,25 @@ class BkiamProjectResourceService(
     }
 
     override fun fetchInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Project fetchInstanceInfo, request $request")
+        logger.info("v3 Project fetchInstanceInfo, request $request")
         val ids = request.filter.idList.map { it.toString() }
         return buildFetchInstanceInfoResponseDTO(filterProjectInfo(ids))
     }
 
     override fun searchInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Project searchInstanceInfo, request $request")
+        logger.info("v3 Project searchInstanceInfo, request $request")
         val ids = listOf(request.filter.keyword)
         return buildSearchInstanceResponseDTO(listProject(page = request.page, idList = ids))
     }
 
     override fun listInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Project listInstanceInfo, request $request")
+        logger.info("v3 Project listInstanceInfo, request $request")
         return buildListInstanceResponseDTO(listProject(page = request.page))
     }
 
 
     private fun filterProjectInfo(idList: List<String>): List<InstanceInfoDTO> {
-        logger.info("filterProjectInfo, idList: $idList")
+        logger.info("v3 filterProjectInfo, idList: $idList")
         val projectPage = projectClient.rangeQuery(ProjectRangeQueryRequest(idList, 0, 10000)).data!!
 
         return  projectPage.records.map {
@@ -83,7 +83,7 @@ class BkiamProjectResourceService(
         page: PageInfoDTO? = null,
         idList: List<String> = emptyList()
     ): BaseDataResponseDTO<InstanceInfoDTO> {
-        logger.info("listProject, page $page, ids: $idList")
+        logger.info("v3 listProject, page $page, ids: $idList")
         var offset = 0L
         var limit = 20
         if (page != null) {

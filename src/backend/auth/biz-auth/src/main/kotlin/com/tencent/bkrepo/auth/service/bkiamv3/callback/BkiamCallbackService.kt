@@ -59,19 +59,19 @@ class BkiamCallbackService @Autowired constructor(
     private var bufferedToken = ""
 
     fun queryProject(token: String, request: CallbackRequestDTO): CallbackBaseResponseDTO? {
-        logger.info("queryProject, token: $token, request: $request")
+        logger.info("v3 queryProject, token: $token, request: $request")
         checkToken(token)
         return ResourceMappings.functionMap(ResourceType.PROJECT, request)
     }
 
     fun queryRepo(token: String, request: CallbackRequestDTO): CallbackBaseResponseDTO? {
-        logger.info("queryRepo, token: $token, request: $request")
+        logger.info("v3 queryRepo, token: $token, request: $request")
         checkToken(token)
         return ResourceMappings.functionMap(ResourceType.REPO, request)
     }
 
     fun queryNode(token: String, request: CallbackRequestDTO): CallbackBaseResponseDTO? {
-        logger.info("queryNode, token: $token, request: $request")
+        logger.info("v3 queryNode, token: $token, request: $request")
         checkToken(token)
         return ResourceMappings.functionMap(ResourceType.NODE, request)
     }

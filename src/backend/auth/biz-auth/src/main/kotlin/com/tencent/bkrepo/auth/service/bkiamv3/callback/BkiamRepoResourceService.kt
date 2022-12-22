@@ -54,27 +54,27 @@ class BkiamRepoResourceService(
     }
 
     override fun fetchInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Repo fetchInstanceInfo, request $request")
+        logger.info("v3 Repo fetchInstanceInfo, request $request")
         val ids = request.filter.idList.map { it.toString() }
         return buildFetchInstanceInfoResponseDTO(filterRepoInfo(ids))
     }
 
     override fun searchInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Repo searchInstanceInfo, request $request")
+        logger.info("v3 Repo searchInstanceInfo, request $request")
         val projectId = request.filter.parent.id
         val ids = listOf(request.filter.keyword)
         return buildSearchInstanceResponseDTO(listRepo(projectId = projectId, page = request.page, idList = ids))
     }
 
     override fun listInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO {
-        logger.info("Repo listInstanceInfo, request $request")
+        logger.info("v3 Repo listInstanceInfo, request $request")
         val projectId = request.filter.parent.id
         return buildListInstanceResponseDTO(listRepo(projectId = projectId, page = request.page))
     }
 
 
     private fun filterRepoInfo(idList: List<String>): List<InstanceInfoDTO> {
-        logger.info("filterRepoInfo, idList: $idList")
+        logger.info("v3 filterRepoInfo, idList: $idList")
         val data = convertRepoResourceIdToRepoName(idList)
         return data.map {
             val entity = InstanceInfoDTO()
@@ -90,7 +90,7 @@ class BkiamRepoResourceService(
         page: PageInfoDTO? = null,
         idList: List<String> = emptyList()
     ): BaseDataResponseDTO<InstanceInfoDTO> {
-        logger.info("listRepo, projectId: $projectId, page: $page, ids: $idList")
+        logger.info("v3 listRepo, projectId: $projectId, page: $page, ids: $idList")
         var offset = 0L
         var limit = 20
         if (page != null) {

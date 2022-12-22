@@ -111,7 +111,7 @@ class BkIamV3ServiceImpl(
         resourceId: String,
     ): String? {
         logger.debug(
-            "getPermissionUrl, userId: $userId, projectId: $projectId, repoName: $repoName" +
+            "v3 getPermissionUrl, userId: $userId, projectId: $projectId, repoName: $repoName" +
                 " resourceType: $resourceType, action: $action, resourceId: $resourceId"
         )
         val instanceList = mutableListOf<RelationResourceInstance>()
@@ -154,11 +154,11 @@ class BkIamV3ServiceImpl(
             iamConfiguration.systemId,
             actions
         )
-        logger.info("get permissionUrl pUrlRequest: $pUrlRequest")
+        logger.info("v3 get permissionUrl pUrlRequest: $pUrlRequest")
         val pUrl = try {
             managerServiceV1.getPermissionUrl(pUrlRequest)
         } catch (e: Exception) {
-            logger.error( "getPermissionUrl with userId: $userId, action: $action," +
+            logger.error( "v3 getPermissionUrl with userId: $userId, action: $action," +
                               " pUrlRequest: $pUrlRequest\" error: ${e.message}")
             StringPool.EMPTY
         }
@@ -175,7 +175,7 @@ class BkIamV3ServiceImpl(
         appId: String?
     ): Boolean {
         logger.debug(
-            "validateResourcePermission, userId: $userId, projectId: $projectId, repoName: $repoName" +
+            "v3 validateResourcePermission, userId: $userId, projectId: $projectId, repoName: $repoName" +
                 " resourceType: $resourceType, action: $action, resourceId: $resourceId, appId: $appId"
         )
         val instanceDTO = InstanceDTO()
@@ -204,7 +204,7 @@ class BkIamV3ServiceImpl(
         // 优先从缓存内获取
         val cachedResult = iamAuthCache.getIfPresent(cacheKey)
         cachedResult?.let {
-            logger.debug("validateResourcePermission match in cache: $cacheKey|$cachedResult")
+            logger.debug("v3 validateResourcePermission match in cache: $cacheKey|$cachedResult")
             return cachedResult
         }
         var allowed: Boolean
@@ -219,7 +219,7 @@ class BkIamV3ServiceImpl(
             allowed = false
         }
         logger.debug(
-            "isAllowed $allowed for userId: $userId, action: $action, instanceDTO: $instanceDTO"
+            "v3 isAllowed $allowed for userId: $userId, action: $action, instanceDTO: $instanceDTO"
         )
         return allowed
     }
@@ -241,14 +241,14 @@ class BkIamV3ServiceImpl(
         action: String,
     ): List<String> {
         logger.debug(
-            "listPermissionResources, userId: $userId, projectId: $projectId" +
+            "v3 listPermissionResources, userId: $userId, projectId: $projectId" +
                 " resourceType: $resourceType, action: $action"
         )
         val actionDto = ActionDTO()
         actionDto.id = action
         val expression = policyService.getPolicyByAction(userId, actionDto, null)
         if (expression == null || expression.isEmpty) return emptyList()
-        logger.debug("expression is $expression, and resourceType is $resourceType")
+        logger.debug("v3 expression is $expression, and resourceType is $resourceType")
         return when(resourceType) {
             ResourceType.PROJECT.id() -> {
                 getProjects(expression)
@@ -293,7 +293,7 @@ class BkIamV3ServiceImpl(
         projectId: String
     ): String? {
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
-        logger.debug("start to create grade manager for project $projectId with user $userId")
+        logger.debug("v3 start to create grade manager for project $projectId with user $userId")
         // 授权人员范围默认设置为全部人员
         val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
         val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
@@ -311,10 +311,10 @@ class BkIamV3ServiceImpl(
         val managerId = try {
             managerService.createManagerV2(createManagerDTO)
         } catch (e: Exception) {
-            logger.error("create grade manager for project ${projectInfo.name} error: ${e.message}")
+            logger.error("v3 create grade manager for project ${projectInfo.name} error: ${e.message}")
             return null
         }
-        logger.debug("The id of project [${projectInfo.name}]'s grade manager is $managerId")
+        logger.debug("v3 The id of project [${projectInfo.name}]'s grade manager is $managerId")
         saveTBkIamAuthManager(projectId, null, managerId, userId)
         batchCreateDefaultGroups(
             userId = userId,
@@ -342,7 +342,7 @@ class BkIamV3ServiceImpl(
     ): String? {
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
         val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
-        logger.debug("start to create grade manager for repo $projectId|$repoName")
+        logger.debug("v3 start to create grade manager for repo $projectId|$repoName")
         val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
         val repoResInfo = ResourceInfo(repoDetail.id!!, repoDetail.name, ResourceType.REPO)
         // 授权人员范围默认设置为全部人员
@@ -369,7 +369,7 @@ class BkIamV3ServiceImpl(
             .subjectScopes(iamSubjectScopes).build()
 
         val repoManagerId=  managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
-        logger.debug("The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
+        logger.debug("v3 The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
         saveTBkIamAuthManager(projectId, repoName, repoManagerId, userId)
         batchCreateDefaultGroups(
             userId = userId,
@@ -385,7 +385,7 @@ class BkIamV3ServiceImpl(
         )
         return repoManagerId.toString()
         } catch (e: Exception) {
-            logger.error("create grade manager for repo [${projectInfo.name}|$repoName] error: ${e.message}")
+            logger.error("v3 create grade manager for repo [${projectInfo.name}|$repoName] error: ${e.message}")
             return null
         }
     }
@@ -468,7 +468,7 @@ class BkIamV3ServiceImpl(
         defaultGroupType: DefaultGroupType,
         members: Set<String>
     ) {
-        logger.debug("start to create default group $defaultGroupType for $projectResInfo|$repoResInfo")
+        logger.debug("v3 start to create default group $defaultGroupType for $projectResInfo|$repoResInfo")
         val (resName, resType) = if (repoResInfo == null) {
             Pair(projectResInfo.resName, projectResInfo.resType)
         } else {
@@ -488,10 +488,10 @@ class BkIamV3ServiceImpl(
                 else -> return
             }
         } catch (e: Exception) {
-            logger.error("batch create role for $projectResInfo|$repoResInfo error: ${e.message}")
+            logger.error("v3 batch create role for $projectResInfo|$repoResInfo error: ${e.message}")
             return
         }
-        logger.debug("The id of default group $defaultGroupType for $projectResInfo|$repoResInfo is $roleId")
+        logger.debug("v3 The id of default group $defaultGroupType for $projectResInfo|$repoResInfo is $roleId")
         // 赋予权限
         try {
             createRoleGroupMember(defaultGroupType, roleId, members)
@@ -500,7 +500,7 @@ class BkIamV3ServiceImpl(
         } catch (e: Exception) {
             managerService.deleteRoleGroupV2(roleId)
             logger.error(
-                "create iam group permission fail : $projectResInfo|$repoResInfo" +
+                "v3 create iam group permission fail : $projectResInfo|$repoResInfo" +
                     " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
                 e
             )
@@ -528,7 +528,7 @@ class BkIamV3ServiceImpl(
         roleId: Int,
         actions: Map<String, List<String>>
     ) {
-        logger.debug("grant role permission for group $roleId in $projectResInfo|$repoResInfo with actions $actions")
+        logger.debug("v3 grant role permission for group $roleId in $projectResInfo|$repoResInfo with actions $actions")
         try {
             actions.forEach{
                 val permission = buildResource(
@@ -542,7 +542,7 @@ class BkIamV3ServiceImpl(
             }
         } catch (e: Exception) {
             logger.error(
-                "create role permission for $projectResInfo|$repoResInfo with actions $actions error: ${e.message}"
+                "v3 create role permission for $projectResInfo|$repoResInfo with actions $actions error: ${e.message}"
             )
         }
     }
