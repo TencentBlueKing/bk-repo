@@ -68,11 +68,13 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
     ),
     PROJECT_EDIT(DefaultGroupType.PROJECT_EDIT.value,
                      mapOf(
-                         ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
+                         ResourceType.PROJECT.id() to listOf(
+                             ActionTypeMapping.PROJECT_VIEW.id(),
+                             ActionTypeMapping.REPO_CREATE.id()
+                         ),
                          ResourceType.REPO.id() to listOf(
                              ActionTypeMapping.REPO_VIEW.id(),
                              ActionTypeMapping.REPO_EDIT.id(),
-                             ActionTypeMapping.REPO_CREATE.id(),
                              ActionTypeMapping.NODE_CREATE.id()
                          ),
                          ResourceType.NODE.id() to listOf(
