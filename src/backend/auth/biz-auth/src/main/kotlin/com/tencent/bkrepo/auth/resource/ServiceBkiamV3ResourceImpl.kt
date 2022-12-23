@@ -34,8 +34,10 @@ import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.RestController
 
@@ -44,20 +46,29 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
 
     private var bkIamV3Service: BkIamV3Service? = null
 
+    @Autowired
+    lateinit var lockOperation: LockOperation
+
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME:}")
     private var authType: String = ""
 
     override fun createProjectManage(userId: String, projectId: String): Response<String?> {
         initService()
         bkIamV3Service?.let {
-            return ResponseBuilder.success(bkIamV3Service!!.createGradeManager(userId, projectId))
+            val gradeId = lockAction(projectId) {
+                bkIamV3Service!!.createGradeManager(userId, projectId)
+            }
+            return ResponseBuilder.success(gradeId)
         } ?: return ResponseBuilder.success()
     }
 
     override fun createRepoManage(userId: String, projectId: String, repoName: String): Response<String?> {
         initService()
         bkIamV3Service?.let {
-            return ResponseBuilder.success(bkIamV3Service!!.createGradeManager(userId, projectId, repoName))
+            val repoGradeId = lockAction(projectId) {
+            bkIamV3Service!!.createGradeManager(userId, projectId, repoName)
+        }
+            return ResponseBuilder.success(repoGradeId)
         } ?: return ResponseBuilder.success()
     }
 
@@ -68,6 +79,23 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
         } ?: return ResponseBuilder.success()
     }
 
+    /**
+     * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
+     */
+    private fun <T> lockAction(projectId: String, action: () -> T): T {
+        val lockKey = "$AUTH_LOCK_KEY_PREFIX$projectId"
+        val lock = lockOperation.getLock(lockKey)
+        return if (lockOperation.getSpinLock(lockKey, lock)) {
+            try {
+                action()
+            } finally {
+                lockOperation.close(lockKey, lock)
+            }
+        } else {
+            action()
+        }
+    }
+
     private fun initService() {
         if (
             (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
@@ -75,5 +103,8 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
         ) {
             bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
         }
+    }
+    companion object {
+        const val AUTH_LOCK_KEY_PREFIX = "auth:lock:gradeCreate:"
     }
 }
