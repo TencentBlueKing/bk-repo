@@ -355,9 +355,14 @@ class BkIamV3ServiceImpl(
         )
         try {
         // 如果项目没有创建managerId,则补充创建
-        val projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+        var projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.PROJECT, projectId, null
         )?.managerId ?: createProjectGradeManager(projectInfo.createdBy, projectId)
+        if (projectManagerId == null) {
+            projectManagerId = createProjectGradeManager(userId, projectId)
+        }
+        logger.debug("v3 create grade manager for repo [${projectInfo.name}|$repoName]," +
+                         " projectManagerId: $projectManagerId")
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
