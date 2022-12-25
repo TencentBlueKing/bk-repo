@@ -357,7 +357,7 @@ class BkIamV3ServiceImpl(
         // 如果项目没有创建managerId,则补充创建
         val projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.PROJECT, projectId, null
-        )?.managerId ?: createProjectGradeManager(userId, projectId)
+        )?.managerId ?: createProjectGradeManager(projectInfo.createdBy, projectId)
         val secondManagerMembers = mutableSetOf<String>()
         secondManagerMembers.add(userId)
         val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
