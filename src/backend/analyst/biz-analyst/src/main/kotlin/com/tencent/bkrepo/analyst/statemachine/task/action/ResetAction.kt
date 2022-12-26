@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
@@ -35,12 +34,16 @@ import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.ResetTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.annotation.Transactional
 
@@ -55,10 +58,12 @@ class ResetAction(
 
     @Lazy
     @Autowired
-    private lateinit var taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private lateinit var taskStateMachine: StateMachine
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun execute(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent, context: TaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is ResetTaskContext)
         val task = context.task
         // 任务超时后移除所有子任务，重置状态后重新提交执行
@@ -69,13 +74,15 @@ class ResetAction(
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
             val submitTaskContext = SubmitTaskContext(Converter.convert(resetTask, plan))
-            taskStateMachine.fireEvent(ScanTaskStatus.PENDING, ScanTaskEvent.SUBMIT, submitTaskContext)
+            val submitEvent = Event(ScanTaskEvent.SUBMIT.name, submitTaskContext)
+            return taskStateMachine.sendEvent(ScanTaskStatus.PENDING.name, submitEvent)
         }
+        return TransitResult(source)
     }
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return (from == ScanTaskStatus.SCANNING_SUBMITTING || from == ScanTaskStatus.PENDING)
-            && to == ScanTaskStatus.PENDING
-            && event == ScanTaskEvent.RESET
+    override fun support(from: String, to: String, event: String): Boolean {
+        return (from == ScanTaskStatus.SCANNING_SUBMITTING.name || from == ScanTaskStatus.PENDING.name)
+            && to == ScanTaskStatus.PENDING.name
+            && event == ScanTaskEvent.RESET.name
     }
 }

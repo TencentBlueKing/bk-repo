@@ -27,30 +27,24 @@
 
 package com.tencent.bkrepo.analyst.statemachine
 
-import com.alibaba.cola.statemachine.Action
+import com.tencent.bkrepo.statemachine.Action
 
-interface StateAction<S, E, C> : Action<S, E, C> {
+
+interface StateAction : Action {
     /**
      * 是否支持在[event]触发从[from]转换到[to]状态时执行
      */
-    fun support(from: S, to: S, event: E): Boolean = false
+    fun support(from: String, to: String, event: String): Boolean = false
 
     /**
      * 是否支持在[event]触发从[from]转换到[to]状态时执行
      */
-    fun support(from: Array<S>, to: S, event: E): Boolean {
+    fun support(from: Array<String>, to: String, event: String): Boolean {
         from.forEach {
             if (!support(it, to, event)) {
                 return false
             }
         }
         return true
-    }
-
-    /**
-     * 是否支持[event]触发状态[within]内部变换时执行
-     */
-    fun support(within: S, event: E): Boolean {
-        return support(within, within, event)
     }
 }

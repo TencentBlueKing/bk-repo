@@ -27,16 +27,14 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.DISPATCH_FAILED
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.DispatchFailedContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 
@@ -44,7 +42,7 @@ open class SubtaskPoller(
     private val dispatcher: SubtaskDispatcher,
     private val scanService: ScanService,
     private val temporaryScanTokenService: TemporaryScanTokenService,
-    private val subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+    private val subtaskStateMachine: StateMachine
 ) {
     @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
     open fun dispatch() {
@@ -56,7 +54,7 @@ open class SubtaskPoller(
             if (!dispatcher.dispatch(subtask)) {
                 // 分发失败，放回队列中
                 logger.warn("dispatch subtask failed, subtask[${subtask.taskId}]")
-                subtaskStateMachine.fireEvent(PULLED, DISPATCH_FAILED, DispatchFailedContext(subtask))
+                subtaskStateMachine.sendEvent(PULLED.name, Event(DISPATCH_FAILED.name, DispatchFailedContext(subtask)))
             }
         }
     }

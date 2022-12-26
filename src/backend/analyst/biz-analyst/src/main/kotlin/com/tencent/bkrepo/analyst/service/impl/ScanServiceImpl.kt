@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
@@ -48,24 +47,27 @@ import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.ExecuteSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.FinishSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.PullSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.ResetTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -78,14 +80,17 @@ class ScanServiceImpl @Autowired constructor(
     private val scanPlanService: ScanPlanService,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val scannerService: ScannerService,
-    private val taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>,
-    private val subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>,
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private val taskStateMachine: StateMachine,
+    @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
+    private val subtaskStateMachine: StateMachine,
 ) : ScanService {
 
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
         val context = CreateTaskContext(scanRequest = scanRequest, triggerType = triggerType, userId = userId)
-        taskStateMachine.fireEvent(ScanTaskStatus.PENDING, ScanTaskEvent.CREATE, context)
-        return context.createdScanTask!!
+        val event = Event(ScanTaskEvent.CREATE.name, context)
+        val transitResult = taskStateMachine.sendEvent(ScanTaskStatus.PENDING.name, event)
+        return transitResult.result as ScanTask
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -110,8 +115,9 @@ class ScanServiceImpl @Autowired constructor(
                 weworkBotUrl = weworkBotUrl,
                 chatIds = chatIds
             )
-            taskStateMachine.fireEvent(ScanTaskStatus.PENDING, ScanTaskEvent.CREATE, context)
-            return context.createdScanTask!!
+            val event = Event(ScanTaskEvent.CREATE.name, context)
+            val transitResult = taskStateMachine.sendEvent(ScanTaskStatus.PENDING.name, event)
+            return transitResult.result as ScanTask
         }
     }
 
@@ -131,7 +137,8 @@ class ScanServiceImpl @Autowired constructor(
             targetState = SubScanTaskStatus.STOPPED.name,
             modifiedBy = SecurityUtils.getUserId()
         )
-        subtaskStateMachine.fireEvent(SubScanTaskStatus.valueOf(subtask.status), SubtaskEvent.STOP, context)
+        val event = Event(SubtaskEvent.STOP.name, context)
+        subtaskStateMachine.sendEvent(subtask.status, event)
         return true
     }
 
@@ -145,7 +152,8 @@ class ScanServiceImpl @Autowired constructor(
         }
 
         val context = StopTaskContext(task)
-        taskStateMachine.fireEvent(ScanTaskStatus.valueOf(task.status), ScanTaskEvent.STOP, context)
+        val event = Event(ScanTaskEvent.STOP.name, context)
+        taskStateMachine.sendEvent(task.status, event)
         return true
     }
 
@@ -178,10 +186,8 @@ class ScanServiceImpl @Autowired constructor(
         val subtask = subScanTaskDao.findById(subScanTaskId)
         if (subtask != null && subScanTaskStatus == SubScanTaskStatus.EXECUTING.name) {
             val context = ExecuteSubtaskContext(subtask)
-            val targetState = subtaskStateMachine.fireEvent(
-                SubScanTaskStatus.valueOf(subtask.status), SubtaskEvent.EXECUTE, context
-            )
-            return targetState == SubScanTaskStatus.EXECUTING
+            val targetState = subtaskStateMachine.sendEvent(subtask.status, Event(SubtaskEvent.EXECUTE.name, context))
+            return targetState.transitState == SubScanTaskStatus.EXECUTING.name
         }
         return false
     }
@@ -196,7 +202,7 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun enqueueTimeoutTask() {
         val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS) ?: return
-        taskStateMachine.fireEvent(ScanTaskStatus.valueOf(task.status), ScanTaskEvent.RESET, ResetTaskContext(task))
+        taskStateMachine.sendEvent(task.status, Event(ScanTaskEvent.RESET.name, ResetTaskContext(task)))
     }
 
     /**
@@ -227,8 +233,8 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             val context = PullSubtaskContext(task)
-            subtaskStateMachine.fireEvent(SubScanTaskStatus.valueOf(task.status), SubtaskEvent.PULL, context)
-            if (context.updated == true) {
+            val transitResult = subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.PULL.name, context))
+            if (transitResult.result == true) {
                 return task
             }
 
@@ -252,7 +258,7 @@ class ScanServiceImpl @Autowired constructor(
             modifiedBy = userId
         )
         val event = SubtaskEvent.finishEventOf(targetState)
-        subtaskStateMachine.fireEvent(SubScanTaskStatus.valueOf(subtask.status), event, context)
+        subtaskStateMachine.sendEvent(subtask.status, Event(event.name, context))
     }
 
     companion object {

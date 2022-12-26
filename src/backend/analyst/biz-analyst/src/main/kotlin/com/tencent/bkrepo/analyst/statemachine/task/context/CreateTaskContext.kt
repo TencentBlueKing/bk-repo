@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.context
 
-import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 
@@ -36,6 +35,5 @@ data class CreateTaskContext(
     val triggerType: ScanTriggerType,
     val userId: String?,
     val weworkBotUrl: String? = null,
-    val chatIds: String? = null,
-    var createdScanTask: ScanTask? = null
+    val chatIds: String? = null
 ) : TaskContext()

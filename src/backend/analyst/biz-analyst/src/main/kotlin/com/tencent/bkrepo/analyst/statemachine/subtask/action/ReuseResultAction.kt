@@ -39,9 +39,10 @@ import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
@@ -61,12 +62,8 @@ class ReuseResultAction(
     @Autowired
     private lateinit var self: ReuseResultAction
 
-    override fun execute(
-        from: SubScanTaskStatus,
-        to: SubScanTaskStatus,
-        event: SubtaskEvent,
-        context: SubtaskContext
-    ) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is CreateSubtaskContext)
         val overview = context.existsOverview?.let { Converter.convert(it) }
         val finishedSubtask = createReuseResultSubtask(context, overview)
@@ -82,6 +79,7 @@ class ReuseResultAction(
             passCount = passCount
         )
         scannerMetrics.incReuseResultSubtaskCount()
+        return TransitResult(target)
     }
 
     private fun createReuseResultSubtask(
@@ -149,7 +147,7 @@ class ReuseResultAction(
         planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
     }
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return from == SubScanTaskStatus.NEVER_SCANNED && event == SubtaskEvent.SUCCESS
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == SubScanTaskStatus.NEVER_SCANNED.name && event == SubtaskEvent.SUCCESS.name
     }
 }

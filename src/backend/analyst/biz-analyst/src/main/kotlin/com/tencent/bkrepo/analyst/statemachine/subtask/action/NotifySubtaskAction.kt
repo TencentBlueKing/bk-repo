@@ -34,9 +34,10 @@ import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.NotifySubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 
 @Action
 class NotifySubtaskAction(
@@ -46,7 +47,8 @@ class NotifySubtaskAction(
     private val scannerProperties: ScannerProperties,
     private val lockOperation: LockOperation
 ) : SubtaskAction {
-    override fun execute(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent, context: SubtaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is NotifySubtaskContext)
         val projectId = context.projectId
         // 加锁避免多个进程唤醒项目子任务导致唤醒的任务数量超过配额
@@ -62,11 +64,14 @@ class NotifySubtaskAction(
                 scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toDouble())
             }
         }
+        return TransitResult(target)
     }
 
     private fun notifySubtaskLockKey(projectId: String) = "scanner:lock:notify:$projectId:subtask"
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return from == SubScanTaskStatus.BLOCKED && to == SubScanTaskStatus.CREATED && event == SubtaskEvent.NOTIFY
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == SubScanTaskStatus.BLOCKED.name
+            && to == SubScanTaskStatus.CREATED.name
+            && event == SubtaskEvent.NOTIFY.name
     }
 }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.statemachine.builder
 
 import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.StateMachineImpl
 
 class StateMachineBuilder private constructor(private val name: String) {
     private val stateBuilders: MutableMap<String, StateBuilder> = HashMap()
@@ -46,7 +47,7 @@ class StateMachineBuilder private constructor(private val name: String) {
     }
 
     private fun build(): StateMachine {
-        return StateMachine(name, stateBuilders.mapValues { it.value.build() })
+        return StateMachineImpl(name, stateBuilders.mapValues { it.value.build() })
     }
     
     private fun getOrCreateStateBuilder(name: String): StateBuilder {

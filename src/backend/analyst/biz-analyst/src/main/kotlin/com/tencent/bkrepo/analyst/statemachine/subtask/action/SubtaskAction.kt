@@ -28,8 +28,5 @@
 package com.tencent.bkrepo.analyst.statemachine.subtask.action
 
 import com.tencent.bkrepo.analyst.statemachine.StateAction
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 
-interface SubtaskAction : StateAction<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+interface SubtaskAction : StateAction
