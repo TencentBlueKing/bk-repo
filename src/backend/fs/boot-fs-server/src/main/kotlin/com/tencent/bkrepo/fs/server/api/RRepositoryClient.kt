@@ -33,8 +33,11 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -67,6 +70,16 @@ interface RRepositoryClient {
     @PostMapping("/node/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
 
+    @DeleteMapping("/node/delete")
+    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Mono<Response<Void>>
+
+    @GetMapping("/node/size/{projectId}/{repoName}")
+    fun computeSize(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Mono<Response<NodeSizeInfo>>
+
     @GetMapping("/repo/detail/{projectId}/{repoName}")
     fun getRepoDetail(
         @PathVariable projectId: String,
@@ -78,4 +91,5 @@ interface RRepositoryClient {
     fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
 
     @PutMapping("/fileReference/increment")
-    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>> }
+    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
+}

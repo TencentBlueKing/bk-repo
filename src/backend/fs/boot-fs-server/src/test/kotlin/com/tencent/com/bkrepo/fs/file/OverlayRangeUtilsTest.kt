@@ -241,14 +241,16 @@ class OverlayRangeUtilsTest {
 
     private fun createBlock(digest: String, startPos: Long, size: Int): TBlockNode {
         return TBlockNode(
-            lastModifiedBy = UT_USER,
-            lastModifiedDate = LocalDateTime.now(),
+            createdBy = UT_USER,
+            createdDate = LocalDateTime.now(),
             nodeFullPath = "",
+            nodeSha256 = "sha256",
             startPos = startPos,
             sha256 = digest,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
-            size = size
+            size = size,
+            isDeleted = false
         )
     }
 }

@@ -72,7 +72,7 @@ class FileOperationsHandler(
             // 读取的文件，可能是个正在写入的文件，有块数据，但是还未冲刷，所以这里的size和sha256可能为null。
             val nodeSize = node?.size ?: 0
             // 新写入的块，可能还未冲刷成文件，所以需要获取最新的文件长度
-            val fileLength = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeSize)
+            val fileLength = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeSize, node?.sha256)
             val range = resolveRange(request, fileLength)
             val artifactInputStream = fileOperationService.read(
                 request = this,

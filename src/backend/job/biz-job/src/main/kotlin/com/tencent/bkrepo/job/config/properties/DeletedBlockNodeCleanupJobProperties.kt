@@ -25,39 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.model
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingDocument
-import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingKey
-import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX
-import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX_DEF
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import java.time.LocalDateTime
-import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 块节点
- * 数据节点
- * */
-@ShardingDocument("block_node")
-@CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF)
-data class TBlockNode(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    @ShardingKey(count = SHARDING_COUNT)
-    val nodeFullPath: String,
-    val nodeSha256: String?,
-    val startPos: Long,
-    var sha256: String,
-    val projectId: String,
-    val repoName: String,
-    val size: Int,
-    val endPos: Long = startPos + size - 1,
-    val isDeleted: Boolean
-) {
-    companion object {
-        const val BLOCK_IDX = "block_idx"
-        const val BLOCK_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'startPos': 1}"
-    }
-}
+@ConfigurationProperties(value = "job.deleted-block-node-cleanup")
+class DeletedBlockNodeCleanupJobProperties(
+    override var cron: String = "0 0 3/6 * * ?"
+) : MongodbJobProperties()

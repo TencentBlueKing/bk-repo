@@ -64,14 +64,16 @@ class FileOperationService(
     suspend fun write(artifactFile: ReactiveArtifactFile, request: BlockRequest, user: String): TBlockNode {
         with(request) {
             val blockNode = TBlockNode(
-                lastModifiedBy = user,
-                lastModifiedDate = LocalDateTime.now(),
+                createdBy = user,
+                createdDate = LocalDateTime.now(),
                 nodeFullPath = fullPath,
+                nodeSha256 = digest,
                 startPos = offset,
                 sha256 = artifactFile.getFileSha256(),
                 projectId = projectId,
                 repoName = repoName,
-                size = artifactFile.getSize().toInt()
+                size = artifactFile.getSize().toInt(),
+                isDeleted = false
             )
             storageManager.storeBlock(artifactFile, blockNode)
             return blockNode

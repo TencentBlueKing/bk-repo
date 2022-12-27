@@ -84,7 +84,7 @@ class FileNodeServiceTest {
             )
 
             // 没有任何块
-            `when`(blockNodeService.listBlocks(any(), any(), any(), any())).thenReturn(emptyList())
+            `when`(blockNodeService.listBlocks(any(), any(), any(), any(), anyOrNull())).thenReturn(emptyList())
 
             val range = Range.full(3)
             val inputStream = fileNodeService.read(UT_PROJECT_ID, UT_REPO_NAME, "", null, "node", 3, range)
@@ -102,7 +102,7 @@ class FileNodeServiceTest {
             val nodeData = byteArrayOf(1, 2, 3)
             val block = createBlock("block", 0, 3)
             val blockData = byteArrayOf(4, 5, 6)
-            `when`(blockNodeService.listBlocks(any(), any(), any(), any())).thenReturn(
+            `when`(blockNodeService.listBlocks(any(), any(), any(), any(), anyOrNull())).thenReturn(
                 listOf(block)
             )
             `when`(storageService.load(any(), any(), anyOrNull()))
@@ -135,7 +135,7 @@ class FileNodeServiceTest {
             val nodeData = byteArrayOf(1, 2, 3)
             val block = createBlock("block", 1, 2)
             val blockData = byteArrayOf(4, 5)
-            `when`(blockNodeService.listBlocks(any(), any(), any(), any())).thenReturn(
+            `when`(blockNodeService.listBlocks(any(), any(), any(), any(), anyOrNull())).thenReturn(
                 listOf(block)
             )
             `when`(storageService.load(any(), any(), anyOrNull()))
@@ -171,7 +171,7 @@ class FileNodeServiceTest {
             val nodeData = byteArrayOf(1, 2, 3)
             val block = createBlock("block", 3, 2)
             val blockData = byteArrayOf(4, 5)
-            `when`(blockNodeService.listBlocks(any(), any(), any(), any())).thenReturn(
+            `when`(blockNodeService.listBlocks(any(), any(), any(), any(), anyOrNull())).thenReturn(
                 listOf(block)
             )
             `when`(storageService.load(any(), any(), anyOrNull()))
@@ -201,14 +201,16 @@ class FileNodeServiceTest {
 
     private fun createBlock(sha256: String, startPos: Long, size: Int): TBlockNode {
         return TBlockNode(
-            lastModifiedBy = UT_USER,
-            lastModifiedDate = LocalDateTime.now(),
+            createdBy = UT_USER,
+            createdDate = LocalDateTime.now(),
             nodeFullPath = "",
+            nodeSha256 = "sha256",
             startPos = startPos,
             sha256 = sha256,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
-            size = size
+            size = size,
+            isDeleted = false
         )
     }
 }
