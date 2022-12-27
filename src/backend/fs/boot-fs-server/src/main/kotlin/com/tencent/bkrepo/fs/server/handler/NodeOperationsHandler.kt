@@ -33,6 +33,8 @@ import com.tencent.bkrepo.fs.server.request.NodeRequest
 import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.toNode
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -67,6 +69,29 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, va
             ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
                 ?: return ServerResponse.notFound().buildAndAwait()
             return ReactiveResponseBuilder.success(nodes)
+        }
+    }
+
+    /**
+     * 删除节点
+     * */
+    suspend fun deleteNode(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val nodeDeleteRequest = NodeDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                operator = ReactiveSecurityUtils.getUser()
+            )
+            rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle()
+            return ReactiveResponseBuilder.success()
+        }
+    }
+
+    suspend fun getStat(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
+            return ReactiveResponseBuilder.success(nodeStat)
         }
     }
 }

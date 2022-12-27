@@ -28,14 +28,55 @@
 package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
+/**
+ * 块服务
+ * */
 interface BlockNodeService {
-    suspend fun listBlocks(range: Range, projectId: String, repoName: String, fullPath: String): List<TBlockNode>
-    suspend fun getLatestBlock(projectId: String, repoName: String, fullPath: String): TBlockNode?
-    suspend fun createBlock(blockNode: TBlockNode, repositoryDetail: RepositoryDetail): TBlockNode
-    suspend fun deleteBlock(blockNode: TBlockNode, repositoryDetail: RepositoryDetail)
+    /**
+     * 查询出范围内的分块
+     * */
+    suspend fun listBlocks(
+        range: Range,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeSha256: String?
+    ): List<TBlockNode>
 
-    suspend fun getBlock(projectId: String, repoName: String, fullPath: String, offset: Long): TBlockNode?
+    /**
+     * 获取文件的最后一个分块
+     * */
+    suspend fun getLatestBlock(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeSha256: String?
+    ): TBlockNode?
+
+    /**
+     * 创建分块
+     * */
+    suspend fun createBlock(
+        blockNode: TBlockNode,
+        storageCredentials: StorageCredentials?
+    ): TBlockNode
+
+    /**删除分块*/
+    suspend fun deleteBlock(
+        blockNode: TBlockNode,
+        storageCredentials: StorageCredentials?
+    )
+
+    /**
+     * 查询非当前节点的块
+     * */
+    suspend fun listOldBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCurrentSha256: String?
+    ): List<TBlockNode>
 }

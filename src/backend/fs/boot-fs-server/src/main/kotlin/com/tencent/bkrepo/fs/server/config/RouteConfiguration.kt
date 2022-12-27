@@ -103,6 +103,9 @@ class RouteConfiguration(
     private fun CoRouterFunctionDsl.nodeRouter() {
         "/api/node".nest {
             requireReadPermission()
+            "/stat".nest {
+                GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getStat)
+            }
             accept(APPLICATION_JSON).nest {
                 GET("/page$DEFAULT_MAPPING_URI", nodeOperationsHandler::listNodes)
             }
@@ -143,6 +146,11 @@ class RouteConfiguration(
             requireReadPermission()
             GET(DEFAULT_MAPPING_URI, fileOperationsHandler::read)
             addDownloadMetrics()
+        }
+
+        accept(APPLICATION_JSON).nest {
+            requireWritePermission()
+            DELETE(DEFAULT_MAPPING_URI, nodeOperationsHandler::deleteNode)
         }
     }
 

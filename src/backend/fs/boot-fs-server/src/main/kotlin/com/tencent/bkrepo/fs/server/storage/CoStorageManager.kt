@@ -55,7 +55,7 @@ class CoStorageManager(
             val storageCredentials = repo.storageCredentials
             val stored = storageService.store(digest, artifactFile, storageCredentials)
             try {
-                blockNodeService.createBlock(blockNode, repo)
+                blockNodeService.createBlock(blockNode, storageCredentials)
             } catch (e: Exception) {
                 if (stored > 1) {
                     storageService.delete(digest, storageCredentials)

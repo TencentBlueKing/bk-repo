@@ -88,7 +88,8 @@ class NodeFlushListener(
                         operator = event.userId,
                         overwrite = true
                     )
-                    storageManager.storeNode(artifactFile, nodeCreateRequest, storageCredentials)
+                    val newNode = storageManager.storeNode(artifactFile, nodeCreateRequest, storageCredentials)
+                    newNode?.let { fileNodeService.deleteNodeOldBlocks(it) }
                     logger.info(
                         "Success to flush node[$projectId/$repoName$fullPath]," +
                             "sha256[${artifactFile.getFileSha256()}]"

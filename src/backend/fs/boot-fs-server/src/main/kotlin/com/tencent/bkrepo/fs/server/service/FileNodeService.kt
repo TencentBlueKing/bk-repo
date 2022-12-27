@@ -32,10 +32,12 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.file.FileRange
 import com.tencent.bkrepo.fs.server.file.MultiArtifactFileInputStream
 import com.tencent.bkrepo.fs.server.file.OverlayRangeUtils
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import java.io.InputStream
 import kotlin.math.min
 import kotlinx.coroutines.runBlocking
@@ -102,11 +104,31 @@ class FileNodeService(
      * @param size 文件大小，当文件不存在时，可以为0
      * @return 文件当前大小
      * */
-    suspend fun getFileLength(projectId: String, repoName: String, fullPath: String, size: Long): Long {
-        val block = blockNodeService.getLatestBlock(projectId, repoName, fullPath) ?: let {
+    suspend fun getFileLength(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        sha256: String?
+    ): Long {
+        val block = blockNodeService.getLatestBlock(projectId, repoName, fullPath, sha256) ?: let {
             return size
         }
         return maxOf(block.endPos, size)
+    }
+
+    suspend fun deleteNodeOldBlocks(node: NodeDetail) {
+        with(node) {
+            val repo = RepositoryCache.getRepoDetail(projectId, repoName)
+            val oldBlocks = blockNodeService.listOldBlocks(projectId, repoName, node.fullPath, node.sha256!!)
+            oldBlocks.forEach { blockNodeService.deleteBlock(it, repo.storageCredentials) }
+        }
+    }
+
+    suspend fun deleteNodeBlocks(projectId: String, repoName: String, nodeFullPath: String) {
+        val repo = RepositoryCache.getRepoDetail(projectId, repoName)
+        val oldBlocks = blockNodeService.listOldBlocks(projectId, repoName, nodeFullPath, null)
+        oldBlocks.forEach { blockNodeService.deleteBlock(it, repo.storageCredentials) }
     }
 
     /**
@@ -146,7 +168,7 @@ class FileNodeService(
         range: Range
     ): List<FileRange> {
         // 找到范围内的所有分块
-        val blocks = blockNodeService.listBlocks(range, projectId, repoName, fullPath)
+        val blocks = blockNodeService.listBlocks(range, projectId, repoName, fullPath, sha256)
         if (sha256 == null || size == null) {
             return OverlayRangeUtils.build(range, blocks)
         }
