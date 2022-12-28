@@ -102,6 +102,22 @@ class BkIamV3ServiceImpl(
         .expireAfterWrite(1, TimeUnit.MINUTES)
         .build<String, Boolean>()
 
+    override fun checkIamConfiguration(): Boolean {
+        if (iamConfiguration.systemId.isNullOrEmpty()) {
+            return false
+        }
+        if (iamConfiguration.apigwBaseUrl.isNullOrEmpty()) {
+            return false
+        }
+        if (iamConfiguration.appCode.isNullOrEmpty()) {
+            return false
+        }
+        if (iamConfiguration.appSecret.isNullOrEmpty()) {
+            return false
+        }
+        return true
+    }
+
     override fun getPermissionUrl(
         userId: String,
         projectId: String,
@@ -114,6 +130,7 @@ class BkIamV3ServiceImpl(
             "v3 getPermissionUrl, userId: $userId, projectId: $projectId, repoName: $repoName" +
                 " resourceType: $resourceType, action: $action, resourceId: $resourceId"
         )
+        if (!checkIamConfiguration()) return null
         val instanceList = mutableListOf<RelationResourceInstance>()
 
         val projectInstance = RelationResourceInstance(
@@ -178,6 +195,7 @@ class BkIamV3ServiceImpl(
             "v3 validateResourcePermission, userId: $userId, projectId: $projectId, repoName: $repoName" +
                 " resourceType: $resourceType, action: $action, resourceId: $resourceId, appId: $appId"
         )
+        if (!checkIamConfiguration()) return false
         val instanceDTO = InstanceDTO()
         instanceDTO.system = iamConfiguration.systemId
         instanceDTO.id = resourceId
@@ -244,6 +262,7 @@ class BkIamV3ServiceImpl(
             "v3 listPermissionResources, userId: $userId, projectId: $projectId" +
                 " resourceType: $resourceType, action: $action"
         )
+        if (!checkIamConfiguration()) return emptyList()
         val actionDto = ActionDTO()
         actionDto.id = action
         val expression = policyService.getPolicyByAction(userId, actionDto, null)
@@ -273,6 +292,7 @@ class BkIamV3ServiceImpl(
         projectId: String,
         repoName: String?
     ): String? {
+        if (!checkIamConfiguration()) return null
         return if (repoName == null) {
             createProjectGradeManager(userId, projectId)
         } else {
@@ -281,6 +301,7 @@ class BkIamV3ServiceImpl(
     }
 
     override fun deleteRepoGradeManager(userId: String, projectId: String, repoName: String): Boolean {
+        if (!checkIamConfiguration()) return false
         val managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.REPO, repoName, projectId
         )?.managerId ?: return true

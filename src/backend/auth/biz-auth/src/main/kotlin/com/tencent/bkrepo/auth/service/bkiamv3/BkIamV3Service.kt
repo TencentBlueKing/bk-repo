@@ -33,6 +33,11 @@ package com.tencent.bkrepo.auth.service.bkiamv3
 interface BkIamV3Service {
 
     /**
+     * 判断权限中心相关配置是否配置
+     */
+    fun checkIamConfiguration(): Boolean
+
+    /**
      * 生成无权限跳转url
      */
     fun getPermissionUrl(

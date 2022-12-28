@@ -90,6 +90,7 @@ open class BkIamV3PermissionServiceImpl(
      */
     fun matchBkiamv3Cond(request: CheckPermissionRequest): Boolean {
         with(request) {
+            if (!bkiamV3Service.checkIamConfiguration()) return false
             if (projectId != null && repoName != null) {
                 val repoInfo = repoClient.getRepoInfo(projectId!!, repoName!!).data!!
                 return repoInfo.configuration.getBooleanSetting(BKIAMV3_CHECK) ?: false
