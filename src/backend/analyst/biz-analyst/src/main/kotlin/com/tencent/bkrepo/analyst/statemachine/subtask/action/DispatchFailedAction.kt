@@ -31,11 +31,11 @@ import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.statemachine.Action
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.DISPATCH_FAILED
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.DispatchFailedContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 
 @Action
 class DispatchFailedAction(
@@ -43,16 +43,20 @@ class DispatchFailedAction(
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val scannerMetrics: ScannerMetrics
 ) : SubtaskAction {
-    override fun execute(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent, context: SubtaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is DispatchFailedContext)
-        val oldStatus = SubScanTaskStatus.valueOf(from.name)
+        val oldStatus = SubScanTaskStatus.valueOf(source)
         val subtask = context.subtask
         subScanTaskDao.updateStatus(subtask.taskId, SubScanTaskStatus.CREATED, oldStatus)
         archiveSubScanTaskDao.updateStatus(subtask.taskId, SubScanTaskStatus.CREATED.name)
         scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.CREATED)
+        return TransitResult(SubScanTaskStatus.CREATED.name)
     }
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return from == SubScanTaskStatus.PULLED && to == SubScanTaskStatus.CREATED && event == DISPATCH_FAILED
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == SubScanTaskStatus.PULLED.name
+            && to == SubScanTaskStatus.CREATED.name
+            && event == DISPATCH_FAILED.name
     }
 }

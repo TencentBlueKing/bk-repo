@@ -25,8 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
-
-interface TaskAction : StateAction
+interface Context

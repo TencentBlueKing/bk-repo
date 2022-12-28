@@ -25,8 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
-
-interface TaskAction : StateAction
+/**
+ * 状态
+ *
+ * @param name 状态名
+ * @param transitions 状态转移过程
+ */
+class State(
+    val name: String,
+    private val transitions: Map<String, List<Transition>>
+) {
+    /**
+     * 接收到事件时执行状态转移
+     */
+    fun onEvent(event: Event): TransitResult {
+        var finalTransition: Transition? = null
+        val transitions = transitions[event.name] ?: emptyList()
+        for (transition in transitions) {
+            if (!transition.hasCondition() && finalTransition == null) {
+                finalTransition = transition
+            } else if (transition.hasCondition() && transition.match(event)) {
+                finalTransition = transition
+                break
+            }
+        }
+        return finalTransition?.transit(event) ?: TransitResult(name)
+    }
+}

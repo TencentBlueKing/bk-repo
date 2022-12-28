@@ -25,26 +25,67 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine
+package com.tencent.bkrepo.statemachine.builder
 
 import com.tencent.bkrepo.statemachine.Action
+import com.tencent.bkrepo.statemachine.Condition
+import com.tencent.bkrepo.statemachine.Transition
 
+class TransitionBuilder {
+    private val sources: MutableSet<String> = LinkedHashSet()
+    private var target: String? = null
+    private var event: String? = null
+    private var action: Action? = null
+    private var condition: Condition? = null
 
-interface StateAction : Action {
     /**
-     * 是否支持在[event]触发从[from]转换到[to]状态时执行
+     * 设置状态转移过程源状态
      */
-    fun support(from: String, to: String, event: String): Boolean = false
+    fun source(source: String) {
+        this.sources.add(source)
+    }
 
     /**
-     * 是否支持在[event]触发从[from]转换到[to]状态时执行
+     * 批量设置状态转移过程源状态
      */
-    fun support(from: Array<String>, to: String, event: String): Boolean {
-        from.forEach {
-            if (!support(it, to, event)) {
-                return false
-            }
-        }
-        return true
+    fun sources(vararg sources: String) {
+        this.sources.addAll(sources)
+    }
+
+    /**
+     * 设置状态转移过程目标状态
+     */
+    fun target(target: String) {
+        this.target = target
+    }
+
+    /**
+     * 设置状态转移过程触发事件
+     */
+    fun event(event: String) {
+        this.event = event
+    }
+
+    /**
+     * 设置状态转移过程触发条件
+     */
+    fun condition(condition: Condition) {
+        this.condition = condition
+    }
+
+    /**
+     * 设置状态转移过程
+     */
+    fun action(action: Action) {
+        this.action = action
+    }
+
+    fun build(): List<Transition> {
+        check(sources.isNotEmpty()) { "source states is empty" }
+        checkNotNull(target) { "target is null" }
+        checkNotNull(event) { "event is null" }
+        checkNotNull(action) { "action is null" }
+
+        return sources.map { Transition(it, target!!, event!!, action!!, condition) }
     }
 }

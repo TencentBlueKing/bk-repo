@@ -27,15 +27,18 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Lazy
 
 @Action
@@ -45,19 +48,23 @@ class StoppingAction(
 ) : TaskAction {
     @Autowired
     @Lazy
-    private lateinit var taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private lateinit var taskStateMachine: StateMachine
 
-    override fun execute(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent, context: TaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is StopTaskContext)
         val task = context.task
         // 设置停止中的标记，中止提交子任务
         if (scanTaskDao.updateStatus(task.id!!, ScanTaskStatus.STOPPING, task.lastModifiedDate).modifiedCount == 1L) {
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.STOPPING)
-            taskStateMachine.fireEvent(ScanTaskStatus.STOPPING, ScanTaskEvent.FINISH_STOP, context)
+            val stopEvent = Event(ScanTaskEvent.FINISH_STOP.name, context)
+            return taskStateMachine.sendEvent(ScanTaskStatus.STOPPING.name, stopEvent)
         }
+        return TransitResult(source)
     }
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return to == ScanTaskStatus.STOPPING && event == ScanTaskEvent.STOP
+    override fun support(from: String, to: String, event: String): Boolean {
+        return to == ScanTaskStatus.STOPPING.name && event == ScanTaskEvent.STOP.name
     }
 }

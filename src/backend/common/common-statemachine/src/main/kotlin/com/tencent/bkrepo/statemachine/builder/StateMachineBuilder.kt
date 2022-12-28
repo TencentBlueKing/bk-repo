@@ -25,8 +25,48 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine.builder
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.StateMachineImpl
 
-interface TaskAction : StateAction
+class StateMachineBuilder private constructor(private val name: String) {
+    private val stateBuilders: MutableMap<String, StateBuilder> = HashMap()
+
+    /**
+     * 添加状态转移过程
+     * 
+     * @param configuration 状态转移过程配置
+     */
+    fun addTransition(configuration: TransitionBuilder.() -> Unit) {
+        val builder = TransitionBuilder()
+        builder.configuration()
+        builder.build().forEach { 
+            getOrCreateStateBuilder(it.source).addTransition(it.event, it)
+        }
+    }
+
+    private fun build(): StateMachine {
+        return StateMachineImpl(name, stateBuilders.mapValues { it.value.build() })
+    }
+    
+    private fun getOrCreateStateBuilder(name: String): StateBuilder {
+        return stateBuilders.getOrPut(name) { StateBuilder(name) }
+    }
+
+    companion object {
+        /**
+         * 创建状态机
+         * 
+         * @param name 状态机名
+         * @param configuration 状态机配置
+         * 
+         * @return 创建后的状态机
+         */
+        fun stateMachine(name: String, configuration: StateMachineBuilder.() -> Unit): StateMachine {
+            val builder = StateMachineBuilder(name)
+            builder.configuration()
+            return builder.build()
+        }
+    }
+}

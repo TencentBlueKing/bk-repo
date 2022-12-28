@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.component.CacheableRepositoryClient
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.FileScanResultDao
@@ -43,18 +42,21 @@ import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.PENDING
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
+import com.tencent.bkrepo.analyst.statemachine.iterator.IteratorManager
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
-import com.tencent.bkrepo.analyst.statemachine.iterator.IteratorManager
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.NEVER_SCANNED
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Lazy
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -76,29 +78,32 @@ class SubmittingAction(
 
     @Autowired
     @Lazy
-    private lateinit var taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private lateinit var taskStateMachine: StateMachine
 
     @Autowired
     @Lazy
-    private lateinit var subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+    @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
+    private lateinit var subtaskStateMachine: StateMachine
 
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return from == PENDING && to == SCANNING_SUBMITTING && event == ScanTaskEvent.SUBMIT
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == PENDING.name && to == SCANNING_SUBMITTING.name && event == ScanTaskEvent.SUBMIT.name
     }
 
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
-    @Suppress("TooGenericExceptionCaught")
-    override fun execute(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent, context: TaskContext) {
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is SubmitTaskContext)
         val scanTask = context.scanTask
         // 设置扫描任务状态为提交子任务中
         val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
         // 更新任务状态失败，表示任务已经被提交过，不再重复处理，直接返回
         if (scanTaskDao.updateStatus(scanTask.taskId, SCANNING_SUBMITTING, lastModifiedDate).modifiedCount == 0L) {
-            return
+            return TransitResult(source)
         }
 
         scannerMetrics.incTaskCountAndGet(SCANNING_SUBMITTING)
@@ -114,7 +119,7 @@ class SubmittingAction(
             }
         } catch (e: TaskSubmitInterruptedException) {
             logger.info("task[${e.taskId}] has been stopped")
-            return
+            return TransitResult(ScanTaskStatus.STOPPING.name)
         } catch (e: Exception) {
             logger.error("submit task failed, taskId[${scanTask.taskId}]", e)
             throw e
@@ -123,7 +128,8 @@ class SubmittingAction(
 
         // 更新任务状态为所有子任务已提交
         val submittedContext = context.copy(submittedSubTaskCount = submittedSubTaskCount)
-        taskStateMachine.fireEvent(SCANNING_SUBMITTING, ScanTaskEvent.FINISH_SUBMIT, submittedContext)
+        val finishSubmitEvent = Event(ScanTaskEvent.FINISH_SUBMIT.name, submittedContext)
+        return taskStateMachine.sendEvent(SCANNING_SUBMITTING.name, finishSubmitEvent)
     }
 
 
@@ -161,12 +167,13 @@ class SubmittingAction(
                 logger.info("skip scan file[${node.sha256}], credentials[$credentialsKey]")
                 val overview = existsScanResult.scanResult[scanTask.scanner]?.overview ?: emptyMap()
                 val createFinishedSubtaskContext = context.copy(existsOverview = overview)
-                subtaskStateMachine.fireEvent(NEVER_SCANNED, SubtaskEvent.SUCCESS, createFinishedSubtaskContext)
+                val event = Event(SubtaskEvent.SUCCESS.name, createFinishedSubtaskContext)
+                subtaskStateMachine.sendEvent(NEVER_SCANNED.name, event)
                 reuseResultTaskCount++
             } else {
                 // 变更子任务状态为CREATED或BLOCKED
                 val event = event(scanningCount, projectScanConfiguration)
-                subtaskStateMachine.fireEvent(NEVER_SCANNED, event, context)
+                subtaskStateMachine.sendEvent(NEVER_SCANNED.name, Event(event.name, context))
                 // 统计子任务数量
                 submittedSubTaskCount++
                 if (event == SubtaskEvent.CREATE) {

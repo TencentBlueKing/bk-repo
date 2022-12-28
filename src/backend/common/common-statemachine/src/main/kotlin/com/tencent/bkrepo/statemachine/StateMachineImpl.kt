@@ -25,8 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
+import com.tencent.bkrepo.statemachine.exception.StateMachineException
 
-interface TaskAction : StateAction
+class StateMachineImpl(
+    val name: String,
+    private val states: Map<String, State>
+): StateMachine {
+    override fun sendEvent(source: String, event: Event): TransitResult {
+        val state = states[source] ?: throw StateMachineException("Unknown state [$source]")
+        return state.onEvent(event)
+    }
+}

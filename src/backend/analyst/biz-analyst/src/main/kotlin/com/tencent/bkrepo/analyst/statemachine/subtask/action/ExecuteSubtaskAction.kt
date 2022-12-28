@@ -36,10 +36,10 @@ import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.ExecuteSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -56,7 +56,8 @@ class ExecuteSubtaskAction(
 ) : SubtaskAction {
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun execute(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent, context: SubtaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is ExecuteSubtaskContext)
         val subtask = context.subtask
         val oldStatus = SubScanTaskStatus.valueOf(subtask.status)
@@ -78,10 +79,12 @@ class ExecuteSubtaskAction(
                     TPlanArtifactLatestSubScanTask.convert(subtask, SubScanTaskStatus.EXECUTING.name)
                 )
             )
+            return TransitResult(target)
         }
+        return TransitResult(source)
     }
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return to == SubScanTaskStatus.EXECUTING
+    override fun support(from: String, to: String, event: String): Boolean {
+        return to == SubScanTaskStatus.EXECUTING.name
     }
 }

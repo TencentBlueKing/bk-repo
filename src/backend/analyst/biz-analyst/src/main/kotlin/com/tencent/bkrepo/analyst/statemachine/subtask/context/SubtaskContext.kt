@@ -27,4 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.subtask.context
 
-open class SubtaskContext
+import com.tencent.bkrepo.statemachine.Context
+
+open class SubtaskContext: Context

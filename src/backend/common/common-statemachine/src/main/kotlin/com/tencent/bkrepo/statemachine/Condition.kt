@@ -25,8 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
-
-interface TaskAction : StateAction
+fun interface Condition {
+    /**
+     * 是否匹配转移过程
+     *
+     * @param source 源状态
+     * @param target 目标状态
+     * @param event 触发事件
+     *
+     * @return 是否匹配转移过程
+     */
+    fun match(source: String, target: String, event: Event): Boolean
+}

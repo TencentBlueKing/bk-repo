@@ -25,8 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
-
-interface TaskAction : StateAction
+/**
+ * 状态转移结果
+ */
+open class TransitResult(
+    /**
+     * 转移后的状态
+     */
+    val transitState: String,
+    /**
+     * 转移过程中的产物
+     */
+    val result: Any? = null
+)
