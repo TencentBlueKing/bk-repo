@@ -16,7 +16,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "project_instance"
+                                "id": "project_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -39,7 +40,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "project_instance"
+                                "id": "project_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -65,7 +67,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "project_instance"
+                                "id": "project_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -92,7 +95,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "project_instance"
+                                "id": "project_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -115,7 +119,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "repo_instance"
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -138,7 +143,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "repo_instance"
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -164,7 +170,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "repo_instance"
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -192,7 +199,8 @@
                         "related_instance_selections": [
                             {
                                 "system_id": "bk-repo",
-                                "id": "repo_instance"
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
                             }
                         ]
                     }
@@ -218,7 +226,8 @@
                     "related_instance_selections":[
                         {
                             "system_id":"bk-repo",
-                            "id":"repo_instance"
+                            "id":"repo_instance",
+                            "ignore_iam_path":true
                         }
                     ]
                 }],
@@ -239,7 +248,8 @@
                     "related_instance_selections":[
                         {
                             "system_id":"bk-repo",
-                            "id":"node_instance"
+                            "id":"node_instance",
+                            "ignore_iam_path":true
                         }
                     ]
                 }],
@@ -260,7 +270,8 @@
                     "related_instance_selections":[
                         {
                             "system_id":"bk-repo",
-                            "id":"node_instance"
+                            "id":"node_instance",
+                            "ignore_iam_path":true
                         }
                     ]
                 }],
@@ -284,7 +295,8 @@
                     "related_instance_selections":[
                         {
                             "system_id":"bk-repo",
-                            "id":"node_instance"
+                            "id":"node_instance",
+                            "ignore_iam_path":true
                         }
                     ]
                 }],
@@ -308,7 +320,8 @@
                     "related_instance_selections":[
                         {
                             "system_id":"bk-repo",
-                            "id":"node_instance"
+                            "id":"node_instance",
+                            "ignore_iam_path":true
                         }
                     ]
                 }],
@@ -329,7 +342,8 @@
                     "related_instance_selections":[
                         {
                             "system_id":"bk-repo",
-                            "id":"node_instance"
+                            "id":"node_instance",
+                            "ignore_iam_path":true
                         }
                     ]
                 }],
