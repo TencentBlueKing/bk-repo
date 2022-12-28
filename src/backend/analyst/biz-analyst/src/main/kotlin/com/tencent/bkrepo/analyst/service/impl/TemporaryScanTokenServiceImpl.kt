@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -174,20 +175,33 @@ class TemporaryScanTokenServiceImpl(
         FileUrl(url, subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size)
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
-        val nodes = nodeClient.search(
-            NodeQueryBuilder()
-                .projectId(projectId)
-                .repoName(repoName)
-                .rule(NodeDetail::sha256.name, sha256, OperationType.IN)
-                .select(NodeDetail::fullPath.name, NodeDetail::size.name, NodeDetail::sha256.name)
-                .page(DEFAULT_PAGE_NUMBER, sha256.size)
-                .build()
-        ).data?.records
-        if (nodes == null || nodes.size != sha256.size) {
-            logger.error("get image nodes failed nodes[$nodes], sha256[$sha256]")
-            throw ErrorCodeException(SYSTEM_ERROR)
+        val distinctNodes = HashMap<String, Map<String, Any?>>()
+
+        var pageNumber = DEFAULT_PAGE_NUMBER
+        val pageSize = DEFAULT_PAGE_SIZE
+        while (true) {
+            val res = nodeClient.search(
+                NodeQueryBuilder()
+                    .projectId(projectId)
+                    .repoName(repoName)
+                    .rule(NodeDetail::sha256.name, sha256, OperationType.IN)
+                    .select(NodeDetail::fullPath.name, NodeDetail::size.name, NodeDetail::sha256.name)
+                    .page(pageNumber++, pageSize)
+                    .build()
+            )
+
+            if (res.isNotOk()) {
+                logger.error("get image nodes failed, msg[${res.message}], sha256[$sha256]")
+                throw ErrorCodeException(SYSTEM_ERROR)
+            }
+
+            // 同一个sha256可能会查询到多个node，需要去重
+            res.data!!.records.forEach { distinctNodes[it[NodeDetail::sha256.name]!!.toString()] = it }
+            if (res.data!!.records.size < pageSize || res.data!!.totalRecords.toInt() == res.data!!.records.size) {
+                break
+            }
         }
-        return nodes
+        return distinctNodes.values.toList()
     }
 
     companion object {
