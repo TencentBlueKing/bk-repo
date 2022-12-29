@@ -28,12 +28,15 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.FindAndReplaceOptions
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
@@ -89,6 +92,23 @@ class PlanArtifactLatestSubScanTaskDao(
                 .and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
             return find(Query(criteria))
         }
+    }
+
+    /**
+     * 获取扫描方案制品扫描结果
+     *
+     * @param planId 扫描方案id
+     * @param pageLimit 分页参数
+     *
+     * @return 扫描方案最新的制品扫描结果
+     */
+    fun pageByPlanId(planId: String, pageLimit: PageLimit? = null): List<TPlanArtifactLatestSubScanTask> {
+        val query = Query(TPlanArtifactLatestSubScanTask::planId.isEqualTo(planId))
+        if (pageLimit != null) {
+            val pageRequest = Pages.ofRequest(pageLimit.getNormalizedPageNumber(), pageLimit.getNormalizedPageSize())
+            query.with(pageRequest).with(Sort.by(ID).ascending())
+        }
+        return find(query)
     }
 
     /**
