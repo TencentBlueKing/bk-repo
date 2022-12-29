@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.configuration
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.dispatcher.DockerDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.KubernetesDispatcher
@@ -36,12 +35,12 @@ import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.repository.api.OperateLogClient
+import com.tencent.bkrepo.statemachine.StateMachine
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -80,7 +79,8 @@ class ScannerConfiguration {
         dispatcher: SubtaskDispatcher,
         scanService: ScanService,
         temporaryScanTokenService: TemporaryScanTokenService,
-        subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+        @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
+        subtaskStateMachine: StateMachine
     ): SubtaskPoller {
         return SubtaskPoller(dispatcher, scanService, temporaryScanTokenService, subtaskStateMachine)
     }

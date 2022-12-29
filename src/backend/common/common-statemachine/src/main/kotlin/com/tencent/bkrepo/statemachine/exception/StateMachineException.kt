@@ -25,8 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine.exception
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
+import java.lang.RuntimeException
 
-interface TaskAction : StateAction
+class StateMachineException(msg: String) : RuntimeException(msg)

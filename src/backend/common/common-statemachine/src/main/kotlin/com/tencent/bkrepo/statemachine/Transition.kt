@@ -25,8 +25,55 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
+/**
+ * 状态转移过程
+ */
+class Transition(
+    /**
+     * 源状态
+     */
+    val source: String,
+    /**
+     * 目标状态
+     */
+    val target: String,
+    /**
+     * 状态转移触发事件
+     */
+    val event: String,
+    /**
+     * 状态转移执行的操作
+     *
+     * 传入的参数为源状态，目标状态，触发事件
+     */
+    private val action: Action,
+    /**
+     * 满足该条件时执行才转移
+     *
+     * 传入的参数为源状态，目标状态，触发事件，返回值为true时执行转移
+     */
+    private val condition: Condition? = null
+) {
+    /**
+     * 触发的事件是否满足状态转移条件
+     *
+     * @return 是否满足状态转移条件，[condition]为null时返回true
+     */
+    fun match(event: Event): Boolean {
+        return condition?.match(source, target, event) ?: true
+    }
 
-interface TaskAction : StateAction
+    /**
+     * 是否有状态转移条件
+     */
+    fun hasCondition() = condition != null
+
+    /**
+     * 执行状态转移
+     */
+    fun transit(event: Event): TransitResult {
+        return action.execute(source, target, event)
+    }
+}

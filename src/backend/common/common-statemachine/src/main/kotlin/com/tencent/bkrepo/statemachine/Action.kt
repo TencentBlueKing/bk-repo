@@ -25,8 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
-
-interface TaskAction : StateAction
+fun interface Action {
+    /**
+     * 执行状态转移
+     *
+     * @param source 源状态
+     * @param target 目标状态
+     * @param event 触发事件
+     *
+     * @return 状态转移结果与转移过程产物
+     */
+    fun execute(source: String, target: String, event: Event): TransitResult
+}

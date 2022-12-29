@@ -25,8 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
-
-interface TaskAction : StateAction
+/**
+ * 事件
+ */
+class Event(
+    /**
+     * 事件名
+     */
+    val name: String,
+    /**
+     * 事件上下文
+     */
+    val context: Context
+)

@@ -59,7 +59,7 @@ class KubernetesDispatcher(
     }
 
     override fun dispatch(subtask: SubScanTask): Boolean {
-        logger.info("dispatch subtask[${subtask.taskId}] with ${DockerDispatcher.NAME}")
+        logger.info("dispatch subtask[${subtask.taskId}] with $NAME")
         val scanner = subtask.scanner
         require(scanner is StandardScanner)
         val cmd = ArrayList<String>()

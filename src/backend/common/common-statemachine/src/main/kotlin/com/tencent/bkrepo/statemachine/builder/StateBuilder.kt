@@ -25,8 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.task.action
+package com.tencent.bkrepo.statemachine.builder
 
-import com.tencent.bkrepo.analyst.statemachine.StateAction
+import com.tencent.bkrepo.statemachine.State
+import com.tencent.bkrepo.statemachine.Transition
 
-interface TaskAction : StateAction
+class StateBuilder(
+    private val name: String
+) {
+    private val transitions: MutableMap<String, MutableList<Transition>> = HashMap()
+
+    /**
+     * 添加状态转移过程
+     */
+    fun addTransition(eventName: String, transition: Transition) {
+        transitions.getOrPut(eventName) { ArrayList() }.add(transition)
+    }
+
+    fun build(): State {
+        return State(name, transitions)
+    }
+}

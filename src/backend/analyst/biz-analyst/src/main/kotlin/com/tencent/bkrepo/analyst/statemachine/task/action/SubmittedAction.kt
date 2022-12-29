@@ -27,21 +27,24 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.NotifySubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.FinishTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Lazy
 import java.time.LocalDateTime
 
@@ -53,18 +56,16 @@ class SubmittedAction(
 
     @Autowired
     @Lazy
-    private lateinit var taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private lateinit var taskStateMachine: StateMachine
 
     @Autowired
     @Lazy
-    private lateinit var subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+    @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
+    private lateinit var subtaskStateMachine: StateMachine
 
-    override fun execute(
-        from: ScanTaskStatus,
-        to: ScanTaskStatus,
-        event: ScanTaskEvent,
-        context: TaskContext
-    ) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is SubmitTaskContext)
         val scanTask = context.scanTask
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
@@ -75,20 +76,23 @@ class SubmittedAction(
             // 没有提交任何子任务，直接设置为任务扫描结束
             val now = LocalDateTime.now()
             val finishTaskCtx = FinishTaskContext(context.scanTask.taskId, context.scanTask.scanPlan?.id, now, now)
-            taskStateMachine.fireEvent(ScanTaskStatus.SCANNING_SUBMITTED, ScanTaskEvent.FINISH, finishTaskCtx)
+            val finishEvent = Event(ScanTaskEvent.FINISH.name, finishTaskCtx)
+            return taskStateMachine.sendEvent(ScanTaskStatus.SCANNING_SUBMITTED.name, finishEvent)
         } else {
             // 任务提交结束后尝试唤醒一个任务，避免全部任务都处于BLOCK状态
             scanTask.scanPlan?.projectId?.let {
                 val notifySubtaskContext = NotifySubtaskContext(it)
-                subtaskStateMachine.fireEvent(SubScanTaskStatus.BLOCKED, SubtaskEvent.NOTIFY, notifySubtaskContext)
+                val notifyEvent = Event(SubtaskEvent.NOTIFY.name, notifySubtaskContext)
+                subtaskStateMachine.sendEvent(SubScanTaskStatus.BLOCKED.name, notifyEvent)
             }
         }
+        return TransitResult(target)
     }
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return from == ScanTaskStatus.SCANNING_SUBMITTING
-            && to == ScanTaskStatus.SCANNING_SUBMITTED
-            && event == ScanTaskEvent.FINISH_SUBMIT
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == ScanTaskStatus.SCANNING_SUBMITTING.name
+            && to == ScanTaskStatus.SCANNING_SUBMITTED.name
+            && event == ScanTaskEvent.FINISH_SUBMIT.name
     }
 
     companion object {
