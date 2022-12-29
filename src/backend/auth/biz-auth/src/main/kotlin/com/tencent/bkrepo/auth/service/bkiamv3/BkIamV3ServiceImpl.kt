@@ -52,6 +52,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
+import com.tencent.bkrepo.auth.constant.BKIAMV3_CHECK
 import com.tencent.bkrepo.auth.model.TBkIamAuthManager
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
@@ -67,9 +68,11 @@ import com.tencent.bkrepo.auth.util.BkIamV3Utils.getResourceInstance
 import com.tencent.bkrepo.auth.util.IamGroupUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
@@ -121,7 +124,7 @@ class BkIamV3ServiceImpl(
     override fun checkBkiamv3Config(projectId: String?, repoName: String?): Boolean {
         if (projectId != null && repoName != null) {
             val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data ?: return false
-            return repoInfo.configuration.getBooleanSetting(BkIamV3PermissionServiceImpl.BKIAMV3_CHECK) ?: false
+            return repoInfo.configuration.getBooleanSetting(BKIAMV3_CHECK) ?: false
         }
         return false
     }
@@ -293,6 +296,28 @@ class BkIamV3ServiceImpl(
          }
     }
 
+    override fun refreshProjectManager(projectId: String) {
+            val projectInfo = projectClient.getProjectInfo(projectId).data!!
+            createGradeManager(projectInfo.createdBy, projectId)
+                ?: createGradeManager(SecurityUtils.getUserId(), projectId) ?: return
+            repositoryClient.listRepo(projectId).data?.forEach {
+                // TODO 需要确认是否要将所有仓库的权限校验开关全部开启
+                it.configuration.settings[BKIAMV3_CHECK] = true
+                repositoryClient.updateRepo(
+                    RepoUpdateRequest(
+                    projectId = projectId,
+                    name = it.name,
+                    public = it.public,
+                    description = it.description,
+                    quota = it.quota,
+                    operator = it.lastModifiedBy,
+                    configuration = it.configuration)
+                )
+                createGradeManager(it.createdBy, projectId, it.name)
+                    ?: createGradeManager(SecurityUtils.getUserId(), projectId, it.name)
+        }
+    }
+
     /**
      * 创建项目分级管理员
      */
@@ -326,6 +351,14 @@ class BkIamV3ServiceImpl(
     ): String? {
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
         logger.debug("v3 start to create grade manager for project $projectId with user $userId")
+        // 如果已经创建project管理员，则返回
+        var managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+            ResourceType.PROJECT, projectId, null
+        )?.managerId
+        if (managerId != null) {
+            logger.debug("v3 grade manager for project $projectId already existed")
+            return managerId.toString()
+        }
         // 授权人员范围默认设置为全部人员
         val iamSubjectScopes = listOf(ManagerScopes(ManagerScopesEnum.getType(ManagerScopesEnum.ALL), "*"))
         val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
@@ -340,14 +373,14 @@ class BkIamV3ServiceImpl(
             .members(arrayListOf(userId))
             .authorization_scopes(authorizationScopes)
             .subject_scopes(iamSubjectScopes).build()
-        val managerId = try {
+        managerId = try {
             managerService.createManagerV2(createManagerDTO)
         } catch (e: Exception) {
             logger.error("v3 create grade manager for project ${projectInfo.name} error: ${e.message}")
             return null
         }
         logger.debug("v3 The id of project [${projectInfo.name}]'s grade manager is $managerId")
-        saveTBkIamAuthManager(projectId, null, managerId, userId)
+        saveTBkIamAuthManager(projectId, null, managerId!!, userId)
         batchCreateDefaultGroups(
             userId = userId,
             gradeManagerId = managerId,
@@ -374,7 +407,7 @@ class BkIamV3ServiceImpl(
     ): String? {
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
         val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
-        // 如果已经创建repo基本管理员，则返回
+        // 如果已经创建repo管理员，则返回
         var repoManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.REPO, repoName, projectId
         )?.managerId

@@ -38,10 +38,13 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -78,6 +81,18 @@ class UserBkiamv3AuthController {
                 throw  ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
             }
         }
+        return ResponseBuilder.success(result)
+    }
+
+    @ApiOperation("在权限中心生成对应项目以及其下所有仓库的管理权限")
+    @PostMapping("/bkiamv3/project/refresh/{projectId}")
+    @Principal(PrincipalType.ADMIN)
+    fun refreshProject(@PathVariable projectId: String): Response<Boolean> {
+        initService()
+        val result = bkIamV3Service?.let {
+            bkIamV3Service!!.refreshProjectManager(projectId)
+            true
+        } ?: false
         return ResponseBuilder.success(result)
     }
 

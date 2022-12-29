@@ -186,7 +186,6 @@ open class BkIamV3PermissionServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkIamV3PermissionServiceImpl::class.java)
-        const val BKIAMV3_CHECK = "bkiamv3Check"
     }
 }
 

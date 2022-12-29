@@ -88,6 +88,11 @@ interface BkIamV3Service {
     ): List<String>
 
     /**
+     * 刷新项目以及旗下仓库对应的权限中心权限
+     */
+    fun refreshProjectManager(projectId: String)
+
+    /**
      * 创建项目分级管理员
      */
     fun createGradeManager(
