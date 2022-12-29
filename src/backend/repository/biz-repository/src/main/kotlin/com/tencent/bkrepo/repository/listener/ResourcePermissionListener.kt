@@ -35,10 +35,11 @@ import com.tencent.bkrepo.auth.api.ServiceBkiamV3Resource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent
+import com.tencent.bkrepo.common.artifact.event.repo.RepoUpdatedEvent
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -79,6 +80,16 @@ class ResourcePermissionListener(
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
                 userResource.addUserRole(userId, repoManagerRoleId)
+                bkiamV3Resource.createRepoManage(userId, projectId, repoName)
+            }
+        }
+    }
+
+    @Async
+    @EventListener(RepoUpdatedEvent::class)
+    fun handle(event: RepoUpdatedEvent) {
+        with(event) {
+            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 bkiamV3Resource.createRepoManage(userId, projectId, repoName)
             }
         }

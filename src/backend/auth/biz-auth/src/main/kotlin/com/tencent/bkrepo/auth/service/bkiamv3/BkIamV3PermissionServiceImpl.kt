@@ -91,27 +91,30 @@ open class BkIamV3PermissionServiceImpl(
     fun matchBkiamv3Cond(request: CheckPermissionRequest): Boolean {
         with(request) {
             if (!bkiamV3Service.checkIamConfiguration()) return false
-            if (projectId != null && repoName != null) {
-                val repoInfo = repoClient.getRepoInfo(projectId!!, repoName!!).data!!
-                return repoInfo.configuration.getBooleanSetting(BKIAMV3_CHECK) ?: false
-            }
-            return false
+            return bkiamV3Service.checkBkiamv3Config(projectId, repoName)
         }
     }
 
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {
-        val resourceId = bkiamV3Service.getResourceId(
-            request.resourceType, request.projectId, request.repoName, request.path
-        ) ?: StringPool.EMPTY
-        return bkiamV3Service.validateResourcePermission(
-            userId = request.uid,
-            projectId = request.projectId!!,
-            repoName = request.repoName,
-            resourceType = request.resourceType.toLowerCase(),
-            action = convertActionType(request.resourceType, request.action),
-            resourceId = resourceId,
-            appId = request.appId
-        )
+        with(request) {
+            if (projectId == null) return false
+            if (!bkiamV3Service.checkBkiamv3Config(projectId, repoName)) {
+                // 当仓库权限开关没打开，则校验项目权限
+                return checkBkIamV3ProjectPermission(projectId!!, uid, action)
+            }
+            val resourceId = bkiamV3Service.getResourceId(
+                resourceType, projectId, repoName, path
+            ) ?: StringPool.EMPTY
+            return bkiamV3Service.validateResourcePermission(
+                userId = uid,
+                projectId = projectId!!,
+                repoName = repoName,
+                resourceType = resourceType.toLowerCase(),
+                action = convertActionType(resourceType, action),
+                resourceId = resourceId,
+                appId = appId
+            )
+        }
     }
 
     fun checkBkIamV3ProjectPermission(projectId: String, userId: String, action: String): Boolean {
@@ -121,7 +124,11 @@ open class BkIamV3PermissionServiceImpl(
             projectId = projectId,
             repoName = null,
             resourceType = ResourceType.PROJECT.id(),
-            action = convertActionType(ResourceType.PROJECT.name, action),
+            action = try {
+                convertActionType(ResourceType.PROJECT.name, action)
+            } catch (e: IllegalArgumentException) {
+                ActionTypeMapping.PROJECT_MANAGE.id()
+                                                  },
             resourceId = projectId,
             appId = null
         )

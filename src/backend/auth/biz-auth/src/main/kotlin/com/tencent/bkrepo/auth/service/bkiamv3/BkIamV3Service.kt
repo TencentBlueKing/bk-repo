@@ -38,6 +38,11 @@ interface BkIamV3Service {
     fun checkIamConfiguration(): Boolean
 
     /**
+     * 判断是否开启了蓝鲸权限配置
+     */
+    fun checkBkiamv3Config(projectId: String?, repoName: String?): Boolean
+
+    /**
      * 生成无权限跳转url
      */
     fun getPermissionUrl(

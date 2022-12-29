@@ -118,6 +118,14 @@ class BkIamV3ServiceImpl(
         return true
     }
 
+    override fun checkBkiamv3Config(projectId: String?, repoName: String?): Boolean {
+        if (projectId != null && repoName != null) {
+            val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data ?: return false
+            return repoInfo.configuration.getBooleanSetting(BkIamV3PermissionServiceImpl.BKIAMV3_CHECK) ?: false
+        }
+        return false
+    }
+
     override fun getPermissionUrl(
         userId: String,
         projectId: String,
@@ -131,6 +139,7 @@ class BkIamV3ServiceImpl(
                 " resourceType: $resourceType, action: $action, resourceId: $resourceId"
         )
         if (!checkIamConfiguration()) return null
+        if (repoName != null && !checkBkiamv3Config(projectId, repoName))  return null
         val instanceList = mutableListOf<RelationResourceInstance>()
 
         val projectInstance = RelationResourceInstance(
@@ -296,6 +305,8 @@ class BkIamV3ServiceImpl(
         return if (repoName == null) {
             createProjectGradeManager(userId, projectId)
         } else {
+            // 只针对开启权限开关的仓库才创建对应用户组
+            if (!checkBkiamv3Config(projectId, repoName)) return null
             createRepoGradeManager(userId, projectId, repoName)
         }
     }
@@ -356,13 +367,21 @@ class BkIamV3ServiceImpl(
     /**
      * 创建项目分级管理员
      */
-    fun createRepoGradeManager(
+    private fun createRepoGradeManager(
         userId: String,
         projectId: String,
         repoName: String
     ): String? {
         val projectInfo = projectClient.getProjectInfo(projectId).data!!
         val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
+        // 如果已经创建repo基本管理员，则返回
+        var repoManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+            ResourceType.REPO, repoName, projectId
+        )?.managerId
+        if (repoManagerId != null) {
+            logger.debug("v3 grade manager for repo $projectId|$repoName already existed")
+            return repoManagerId.toString()
+        }
         logger.debug("v3 start to create grade manager for repo $projectId|$repoName")
         val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
         val repoResInfo = ResourceInfo(repoDetail.id!!, repoDetail.name, ResourceType.REPO)
@@ -393,8 +412,7 @@ class BkIamV3ServiceImpl(
             .members(secondManagerMembers.toList())
             .authorizationScopes(authorizationScopes)
             .subjectScopes(iamSubjectScopes).build()
-
-        val repoManagerId=  managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
+        repoManagerId=  managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
         logger.debug("v3 The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
         saveTBkIamAuthManager(projectId, repoName, repoManagerId, userId)
         batchCreateDefaultGroups(
