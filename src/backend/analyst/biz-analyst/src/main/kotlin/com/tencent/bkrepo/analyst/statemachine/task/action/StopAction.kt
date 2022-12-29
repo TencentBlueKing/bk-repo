@@ -27,21 +27,22 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.FinishSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Lazy
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -55,9 +56,11 @@ class StopAction(
 
     @Autowired
     @Lazy
-    private lateinit var subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+    @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
+    private lateinit var subtaskStateMachine: StateMachine
 
-    override fun execute(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent, context: TaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is StopTaskContext)
         // 延迟停止任务，让剩余子任务提交完
         val userId = SecurityUtils.getUserId()
@@ -66,16 +69,17 @@ class StopAction(
                 val finishSubtaskCtx = FinishSubtaskContext(
                     subtask = it, targetState = SubScanTaskStatus.STOPPED.name, modifiedBy = userId
                 )
-                subtaskStateMachine.fireEvent(SubScanTaskStatus.valueOf(it.status), SubtaskEvent.STOP, finishSubtaskCtx)
+                subtaskStateMachine.sendEvent(it.status, Event(SubtaskEvent.STOP.name, finishSubtaskCtx))
             }
             scanTaskDao.updateStatus(context.task.id, ScanTaskStatus.STOPPED)
             scannerMetrics.taskStatusChange(ScanTaskStatus.STOPPING, ScanTaskStatus.STOPPED)
         }
         scheduler.schedule(command, STOP_TASK_DELAY_SECONDS, TimeUnit.SECONDS)
+        return TransitResult(source)
     }
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return to == ScanTaskStatus.STOPPED
+    override fun support(from: String, to: String, event: String): Boolean {
+        return to == ScanTaskStatus.STOPPED.name
     }
 
     companion object {

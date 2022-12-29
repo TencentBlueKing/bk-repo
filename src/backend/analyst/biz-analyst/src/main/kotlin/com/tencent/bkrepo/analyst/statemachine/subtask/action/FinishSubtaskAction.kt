@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.subtask.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
@@ -44,17 +43,21 @@ import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.FinishSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.NotifySubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.FinishTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.annotation.Transactional
@@ -79,14 +82,17 @@ class FinishSubtaskAction(
 
     @Autowired
     @Lazy
-    private lateinit var subtaskStateMachine: StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext>
+    @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
+    private lateinit var subtaskStateMachine: StateMachine
 
     @Autowired
     @Lazy
-    private lateinit var taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private lateinit var taskStateMachine: StateMachine
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun execute(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent, context: SubtaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is FinishSubtaskContext)
         with(context) {
             if (targetState != SubScanTaskStatus.SUCCESS.name) {
@@ -109,6 +115,7 @@ class FinishSubtaskAction(
                 // 扫描成功时更新扫描报告结果
                 updateFileScanReport(context, scanner, overview)
             }
+            return TransitResult(targetState)
         }
     }
 
@@ -158,7 +165,7 @@ class FinishSubtaskAction(
         }
         // 子任务执行结束后唤醒项目另一个子任务
         val context = NotifySubtaskContext(subTask.projectId)
-        subtaskStateMachine.fireEvent(SubScanTaskStatus.BLOCKED, SubtaskEvent.NOTIFY, context)
+        subtaskStateMachine.sendEvent(SubScanTaskStatus.BLOCKED.name, Event(SubtaskEvent.NOTIFY.name, context))
 
         // 质量规则检查结果
         val planId = subTask.planId
@@ -202,12 +209,13 @@ class FinishSubtaskAction(
         }
         scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess, passCount = passCount)
         val finishTaskCtx = FinishTaskContext(parentTaskId, planId)
-        taskStateMachine.fireEvent(ScanTaskStatus.SCANNING_SUBMITTED, ScanTaskEvent.FINISH, finishTaskCtx)
+        val event = Event(ScanTaskEvent.FINISH.name, finishTaskCtx)
+        taskStateMachine.sendEvent(ScanTaskStatus.SCANNING_SUBMITTED.name, event)
         return true
     }
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return from != SubScanTaskStatus.NEVER_SCANNED && SubScanTaskStatus.finishedStatus(to)
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from != SubScanTaskStatus.NEVER_SCANNED.name && SubScanTaskStatus.finishedStatus(to)
     }
 
     companion object {

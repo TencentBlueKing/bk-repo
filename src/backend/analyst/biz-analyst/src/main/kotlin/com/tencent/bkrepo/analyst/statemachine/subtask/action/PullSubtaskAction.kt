@@ -34,9 +34,10 @@ import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.PullSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 
 @Action
 class PullSubtaskAction(
@@ -45,22 +46,23 @@ class PullSubtaskAction(
     private val scannerMetrics: ScannerMetrics
 ) : SubtaskAction {
 
-    override fun execute(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent, context: SubtaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is PullSubtaskContext)
         val subtask = context.subtask
         // 更新任务，更新成功说明任务没有被其他扫描执行器拉取过，可以返回
         val oldStatus = SubScanTaskStatus.valueOf(subtask.status)
         val updateResult = subScanTaskDao.updateStatus(subtask.id!!, PULLED, oldStatus, subtask.lastModifiedDate)
-        if (updateResult.modifiedCount != 0L) {
+        return if (updateResult.modifiedCount != 0L) {
             archiveSubScanTaskDao.save(TArchiveSubScanTask.from(subtask, PULLED.name))
             scannerMetrics.subtaskStatusChange(oldStatus, PULLED)
-            context.updated = true
+            TransitResult(PULLED.name, true)
         } else {
-            context.updated = false
+            TransitResult(source, false)
         }
     }
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return to == PULLED && event == SubtaskEvent.PULL
+    override fun support(from: String, to: String, event: String): Boolean {
+        return to == PULLED.name && event == SubtaskEvent.PULL.name
     }
 }

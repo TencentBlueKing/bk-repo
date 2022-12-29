@@ -29,7 +29,4 @@ package com.tencent.bkrepo.analyst.statemachine.subtask.context
 
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 
-data class PullSubtaskContext(
-    val subtask: TSubScanTask,
-    var updated: Boolean? = null
-) : SubtaskContext()
+data class PullSubtaskContext(val subtask: TSubScanTask) : SubtaskContext()

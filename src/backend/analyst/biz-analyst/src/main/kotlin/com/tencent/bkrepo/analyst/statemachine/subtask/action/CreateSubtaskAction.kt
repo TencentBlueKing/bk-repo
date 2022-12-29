@@ -41,8 +41,9 @@ import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -63,17 +64,13 @@ class CreateSubtaskAction(
     @Autowired
     private lateinit var self: CreateSubtaskAction
 
-    override fun execute(
-        from: SubScanTaskStatus,
-        to: SubScanTaskStatus,
-        event: SubtaskEvent,
-        context: SubtaskContext
-    ) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is CreateSubtaskContext)
         val node = context.node
         val scanTask = context.scanTask
         val storageCredentialsKey = cacheableRepositoryClient.get(node.projectId, node.repoName).storageCredentialsKey
-        val state = if (event == SubtaskEvent.CREATE) {
+        val state = if (event.name == SubtaskEvent.CREATE.name) {
             SubScanTaskStatus.CREATED
         } else {
             SubScanTaskStatus.BLOCKED
@@ -82,6 +79,7 @@ class CreateSubtaskAction(
         // 添加到扫描任务队列
         val subtask = createSubTask(scanTask, node, storageCredentialsKey, state)
         self.save(listOf(subtask))
+        return TransitResult(state.name, subtask)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -151,10 +149,10 @@ class CreateSubtaskAction(
         }
     }
 
-    override fun support(from: SubScanTaskStatus, to: SubScanTaskStatus, event: SubtaskEvent): Boolean {
-        return from == SubScanTaskStatus.NEVER_SCANNED &&
-            (to == SubScanTaskStatus.CREATED || to == SubScanTaskStatus.BLOCKED) &&
-            (event == SubtaskEvent.CREATE || event == SubtaskEvent.BLOCK)
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == SubScanTaskStatus.NEVER_SCANNED.name
+            && (to == SubScanTaskStatus.CREATED.name || to == SubScanTaskStatus.BLOCKED.name)
+            && (event == SubtaskEvent.CREATE.name || event == SubtaskEvent.BLOCK.name)
     }
 
     companion object {

@@ -27,10 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine
 
-import com.alibaba.cola.statemachine.StateMachine
-import com.alibaba.cola.statemachine.builder.StateMachineBuilder
-import com.alibaba.cola.statemachine.builder.StateMachineBuilderFactory
-import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.FINISHED
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.PENDING
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.SCANNING_SUBMITTED
@@ -46,13 +42,11 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.NOTIFY
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.PULL
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.STOP
 import com.tencent.bkrepo.analyst.statemachine.subtask.action.SubtaskAction
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.SubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent.FINISH_STOP
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent.FINISH_SUBMIT
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent.RESET
 import com.tencent.bkrepo.analyst.statemachine.task.action.TaskAction
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCKED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCK_TIMEOUT
@@ -63,6 +57,8 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.NEVER_S
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.SUCCESS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.TIMEOUT
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.builder.StateMachineBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -72,64 +68,61 @@ import org.springframework.context.annotation.Configuration
  * @param taskActions 任务状态迁移时执行的动作
  * @param subtaskActions 子任务状态迁移时执行的动作
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class TaskStateMachineConfiguration(
     private val taskActions: List<TaskAction>,
     private val subtaskActions: List<SubtaskAction>
 ) {
 
     @Bean(STATE_MACHINE_ID_SCAN_TASK)
-    fun scanTaskStateMachine(): StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext> {
-        return StateMachineBuilderFactory.create<ScanTaskStatus, ScanTaskEvent, TaskContext>().run {
-            internalTransition(PENDING, ScanTaskEvent.CREATE, taskActions)
-            externalTransition(PENDING, SCANNING_SUBMITTING, ScanTaskEvent.SUBMIT, taskActions)
-            externalTransition(SCANNING_SUBMITTING, SCANNING_SUBMITTED, FINISH_SUBMIT, taskActions)
-            externalTransition(SCANNING_SUBMITTING, PENDING, RESET, taskActions)
-            internalTransition(PENDING, RESET, taskActions)
+    fun scanTaskStateMachine(): StateMachine {
+        return StateMachineBuilder.stateMachine(STATE_MACHINE_ID_SCAN_TASK) {
+            transition(PENDING, PENDING, ScanTaskEvent.CREATE, taskActions)
+            transition(PENDING, SCANNING_SUBMITTING, ScanTaskEvent.SUBMIT, taskActions)
+            transition(SCANNING_SUBMITTING, SCANNING_SUBMITTED, FINISH_SUBMIT, taskActions)
+            transition(SCANNING_SUBMITTING, PENDING, RESET, taskActions)
+            transition(PENDING, PENDING, RESET, taskActions)
             // finished state
-            externalTransition(SCANNING_SUBMITTED, FINISHED, ScanTaskEvent.FINISH, taskActions)
+            transition(SCANNING_SUBMITTED, FINISHED, ScanTaskEvent.FINISH, taskActions)
 
             val from = arrayOf(PENDING, SCANNING_SUBMITTING, SCANNING_SUBMITTED)
-            externalTransitions(from, STOPPING, ScanTaskEvent.STOP, taskActions)
-            externalTransition(STOPPING, STOPPED, FINISH_STOP, taskActions)
-            build(STATE_MACHINE_ID_SCAN_TASK)
+            transitions(from, STOPPING, ScanTaskEvent.STOP, taskActions)
+            transition(STOPPING, STOPPED, FINISH_STOP, taskActions)
         }
     }
 
     @Bean(STATE_MACHINE_ID_SUB_SCAN_TASK)
-    fun subScanTaskStateMachine(): StateMachine<SubScanTaskStatus, SubtaskEvent, SubtaskContext> {
-        return StateMachineBuilderFactory.create<SubScanTaskStatus, SubtaskEvent, SubtaskContext>().run {
-            externalTransition(NEVER_SCANNED, CREATED, CREATE, subtaskActions)
-            externalTransition(NEVER_SCANNED, BLOCKED, BLOCK, subtaskActions)
-            externalTransition(BLOCKED, CREATED, NOTIFY, subtaskActions)
-            externalTransitions(arrayOf(CREATED, EXECUTING), PULLED, PULL, subtaskActions)
-            internalTransition(PULLED, PULL, subtaskActions)
-            externalTransition(PULLED, EXECUTING, EXECUTE, subtaskActions)
-            externalTransition(PULLED, CREATED, DISPATCH_FAILED, subtaskActions)
+    fun subScanTaskStateMachine(): StateMachine {
+        return StateMachineBuilder.stateMachine(STATE_MACHINE_ID_SUB_SCAN_TASK) {
+            transition(NEVER_SCANNED, CREATED, CREATE, subtaskActions)
+            transition(NEVER_SCANNED, BLOCKED, BLOCK, subtaskActions)
+            transition(BLOCKED, CREATED, NOTIFY, subtaskActions)
+            transitions(arrayOf(CREATED, EXECUTING), PULLED, PULL, subtaskActions)
+            transition(PULLED, PULLED, PULL, subtaskActions)
+            transition(PULLED, EXECUTING, EXECUTE, subtaskActions)
+            transition(PULLED, CREATED, DISPATCH_FAILED, subtaskActions)
 
             // finished state
-            externalTransition(BLOCKED, BLOCK_TIMEOUT, SubtaskEvent.BLOCK_TIMEOUT, subtaskActions)
-            externalTransition(EXECUTING, TIMEOUT, SubtaskEvent.TIMEOUT, subtaskActions)
-            externalTransition(EXECUTING, FAILED, SubtaskEvent.FAILED, subtaskActions)
-            externalTransition(EXECUTING, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
-            externalTransition(NEVER_SCANNED, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
+            transition(BLOCKED, BLOCK_TIMEOUT, SubtaskEvent.BLOCK_TIMEOUT, subtaskActions)
+            transition(EXECUTING, TIMEOUT, SubtaskEvent.TIMEOUT, subtaskActions)
+            transition(EXECUTING, FAILED, SubtaskEvent.FAILED, subtaskActions)
+            transition(EXECUTING, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
+            transition(NEVER_SCANNED, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
             val from = arrayOf(BLOCKED, CREATED, PULLED, EXECUTING)
-            externalTransitions(from, SubScanTaskStatus.STOPPED, STOP, subtaskActions)
-            build(STATE_MACHINE_ID_SUB_SCAN_TASK)
+            transitions(from, SubScanTaskStatus.STOPPED, STOP, subtaskActions)
         }
     }
 
     /**
      * 外部状态流转，任务处于[from]状态时接收到[event]事件将迁移到[to]状态，并执行[actions]中支持该状态流转的动作
      */
-    fun <S, E, C> StateMachineBuilder<S, E, C>.externalTransition(
-        from: S,
-        to: S,
-        event: E,
-        actions: List<StateAction<S, E, C>>
-    ) {
-        val on = externalTransition().from(from).to(to).on(event)
-        actions.firstOrNull { it.support(from, to, event) }?.let { on.perform(it) }
+    private fun <S, E> StateMachineBuilder.transition(from: S, to: S, event: E, actions: List<StateAction>) {
+        addTransition {
+            source(from.toString())
+            target(to.toString())
+            event(event.toString())
+            actions.firstOrNull { it.support(from.toString(), to.toString(), event.toString()) }?.let { action(it) }
+        }
     }
 
     /**
@@ -137,23 +130,14 @@ class TaskStateMachineConfiguration(
      * 并执行[actions]中支持所有(from, to, event)组合的动作
      */
     @Suppress("SpreadOperator")
-    fun <S, E, C> StateMachineBuilder<S, E, C>.externalTransitions(
-        from: Array<S>,
-        to: S,
-        event: E,
-        actions: List<StateAction<S, E, C>>
-    ) {
-        val on = externalTransitions().fromAmong(*from).to(to).on(event)
-        actions.firstOrNull { it.support(from, to, event) }?.let { on.perform(it) }
-    }
-
-    fun <S, E, C> StateMachineBuilder<S, E, C>.internalTransition(
-        state: S,
-        event: E,
-        actions: List<StateAction<S, E, C>>
-    ) {
-        val on = internalTransition().within(state).on(event)
-        actions.firstOrNull { it.support(state, event) }?.let { on.perform(it) }
+    private fun <S, E> StateMachineBuilder.transitions(from: Array<S>, to: S, event: E, actions: List<StateAction>) {
+        val fromStr = from.map { it.toString() }.toTypedArray()
+        addTransition {
+            sources(*fromStr)
+            target(to.toString())
+            event(event.toString())
+            actions.firstOrNull { it.support(fromStr, to.toString(), event.toString()) }?.let { action(it) }
+        }
     }
 
     companion object {

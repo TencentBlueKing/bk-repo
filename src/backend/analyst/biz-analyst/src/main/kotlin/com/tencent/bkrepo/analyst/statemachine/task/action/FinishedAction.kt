@@ -33,10 +33,10 @@ import com.tencent.bkrepo.analyst.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.Action
-import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.FinishTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 
@@ -48,7 +48,8 @@ class FinishedAction(
     private val scannerMetrics: ScannerMetrics
 
 ) : TaskAction {
-    override fun execute(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent, context: TaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is FinishTaskContext)
         with(context) {
             if (scanTaskDao.taskFinished(taskId, finishedDateTime, startDateTime).modifiedCount == 1L) {
@@ -58,12 +59,14 @@ class FinishedAction(
                 val finishedScanTask = Converter.convert(scanTask, scanPlan)
                 publisher.publishEvent(ScanTaskStatusChangedEvent(ScanTaskStatus.SCANNING_SUBMITTED, finishedScanTask))
                 logger.info("scan finished, task[${taskId}]")
+                return TransitResult(target)
             }
         }
+        return TransitResult(source)
     }
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return to == ScanTaskStatus.FINISHED
+    override fun support(from: String, to: String, event: String): Boolean {
+        return to == ScanTaskStatus.FINISHED.name
     }
 
     companion object {

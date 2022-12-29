@@ -177,6 +177,7 @@
         <generic-upload-dialog ref="genericUploadDialog" @update="getArtifactories"></generic-upload-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -192,6 +193,7 @@
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
     import previewBasicFileDialog from './previewBasicFileDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
@@ -212,7 +214,8 @@
             genericShareDialog,
             genericTreeDialog,
             previewBasicFileDialog,
-            compressedFileTable
+            compressedFileTable,
+            iamDenyDialog
         },
         data () {
             return {
@@ -241,11 +244,13 @@
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
-                metadataLabelList: []
+                metadataLabelList: [],
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt']),
+            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -316,7 +321,8 @@
                 'previewCompressedBasicFile',
                 'previewCompressedFileList',
                 'forbidMetadata',
-                'refreshSupportFileNameExtList'
+                'refreshSupportFileNameExtList',
+                'getPermissionUrl'
             ]),
             showRepoScan (node) {
                 return !node.folder && !this.community && this.scannerSupportFileNameExt.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
@@ -500,6 +506,28 @@
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
                     isPipeline: this.repoName === 'pipeline'
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== null) {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.$set(item, 'loading', false)
                 })

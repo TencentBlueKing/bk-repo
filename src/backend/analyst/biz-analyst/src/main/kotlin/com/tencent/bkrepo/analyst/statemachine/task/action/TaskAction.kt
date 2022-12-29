@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.StateAction
-import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 
-interface TaskAction : StateAction<ScanTaskStatus, ScanTaskEvent, TaskContext>
+interface TaskAction : StateAction

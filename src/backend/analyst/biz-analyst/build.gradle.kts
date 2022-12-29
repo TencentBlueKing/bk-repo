@@ -39,7 +39,7 @@ dependencies {
     implementation(project(":common:common-stream"))
     implementation(project(":common:common-lock"))
     implementation(project(":common:common-job"))
+    implementation(project(":common:common-statemachine"))
     implementation("io.kubernetes:client-java:${Versions.KubernetesClient}")
-    implementation("com.alibaba.cola:cola-component-statemachine:${Versions.Cola}")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.statemachine.task.action
 
-import com.alibaba.cola.statemachine.StateMachine
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
@@ -47,10 +46,10 @@ import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration
+import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.TaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.analyst.utils.RuleConverter
 import com.tencent.bkrepo.analyst.utils.RuleUtil
@@ -61,6 +60,9 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
+import com.tencent.bkrepo.statemachine.Event
+import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -85,19 +87,22 @@ class PendingAction(
 ) : TaskAction {
     @Autowired
     @Lazy
-    private lateinit var taskStateMachine: StateMachine<ScanTaskStatus, ScanTaskEvent, TaskContext>
+    @Qualifier(STATE_MACHINE_ID_SCAN_TASK)
+    private lateinit var taskStateMachine: StateMachine
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun execute(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent, context: TaskContext) {
+    override fun execute(source: String, target: String, event: Event): TransitResult {
+        val context = event.context
         require(context is CreateTaskContext)
         with(context) {
             val task = createTask(scanRequest, triggerType, userId)
             weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it, chatIds) }
             // 开始调度扫描任务
             executor.execute {
-                taskStateMachine.fireEvent(ScanTaskStatus.PENDING, ScanTaskEvent.SUBMIT, SubmitTaskContext(task))
+                val submitEvent = Event(ScanTaskEvent.SUBMIT.name, SubmitTaskContext(task))
+                taskStateMachine.sendEvent(ScanTaskStatus.PENDING.name, submitEvent)
             }
-            context.createdScanTask = task
+            return TransitResult(target, task)
         }
     }
 
@@ -197,8 +202,10 @@ class PendingAction(
         }
     }
 
-    override fun support(from: ScanTaskStatus, to: ScanTaskStatus, event: ScanTaskEvent): Boolean {
-        return from == ScanTaskStatus.PENDING && to == ScanTaskStatus.PENDING && event == ScanTaskEvent.CREATE
+    override fun support(from: String, to: String, event: String): Boolean {
+        return from == ScanTaskStatus.PENDING.name
+            && to == ScanTaskStatus.PENDING.name
+            && event == ScanTaskEvent.CREATE.name
     }
 
     companion object {
