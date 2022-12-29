@@ -235,5 +235,11 @@ export default {
                 }
             }
         )
+    },
+    getPermissionUrl (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/auth/bkiamv3/permission/url`,
+            body
+        )
     }
 }

@@ -28,6 +28,12 @@
                     :list="availableList">
                 </card-radio-group>
             </bk-form-item>
+            <bk-form-item label="蓝鲸权限校验">
+                <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
             <template v-if="repoBaseInfo.type === 'generic'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -133,6 +139,11 @@
                 officeNetwork: false,
                 ipSegment: '',
                 whitelistUser: ''
+            },
+            configuration: {
+                settings: {
+                    bkiamv3Check: false
+                }
             }
         }
     }
@@ -321,6 +332,7 @@
                         configuration: {
                             type: 'composite',
                             settings: {
+                                bkiamv3Check: this.repoBaseInfo.configuration.settings.bkiamv3Check,
                                 system: this.repoBaseInfo.system,
                                 interceptors: interceptors.length ? interceptors : undefined,
                                 ...(
