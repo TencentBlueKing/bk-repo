@@ -27,17 +27,6 @@
 
 package com.tencent.bkrepo.analyst.component.manager.arrowhead
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
-import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
 import com.tencent.bkrepo.analyst.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
@@ -47,6 +36,17 @@ import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
+import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.stereotype.Component
 
 @Component("${ArrowheadScanner.TYPE}Converter")
@@ -71,7 +71,8 @@ class ArrowheadConverter(private val licenseService: SpdxLicenseService) : Scann
                 description = detail?.reference ?: "",
                 isOsiApproved = detail?.isOsiApproved,
                 dependentPath = it.path,
-                isFsfLibre = detail?.isFsfLibre
+                isFsfLibre = detail?.isFsfLibre,
+                pkgName = it.component
             )
         }.distinct()
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)

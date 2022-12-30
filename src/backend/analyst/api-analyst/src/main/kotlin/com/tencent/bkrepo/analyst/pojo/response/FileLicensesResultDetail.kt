@@ -52,5 +52,7 @@ data class FileLicensesResultDetail(
     @ApiModelProperty("依赖路径")
     val dependentPath: String,
     @ApiModelProperty("描述")
-    val description: String
+    val description: String,
+    @ApiModelProperty("所属依赖")
+    val pkgName: String? = null
 )
