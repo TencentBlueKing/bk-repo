@@ -305,22 +305,6 @@ class BkIamV3ServiceImpl(
             val projectInfo = projectClient.getProjectInfo(projectId).data!!
             createGradeManager(projectInfo.createdBy, projectId)
                 ?: createGradeManager(SecurityUtils.getUserId(), projectId) ?: return
-            repositoryClient.listRepo(projectId).data?.forEach {
-                // TODO 需要确认是否要将所有仓库的权限校验开关全部开启
-                it.configuration.settings[BKIAMV3_CHECK] = true
-                repositoryClient.updateRepo(
-                    RepoUpdateRequest(
-                    projectId = projectId,
-                    name = it.name,
-                    public = it.public,
-                    description = it.description,
-                    quota = it.quota,
-                    operator = it.lastModifiedBy,
-                    configuration = it.configuration)
-                )
-                createGradeManager(it.createdBy, projectId, it.name)
-                    ?: createGradeManager(SecurityUtils.getUserId(), projectId, it.name)
-        }
     }
 
     /**
