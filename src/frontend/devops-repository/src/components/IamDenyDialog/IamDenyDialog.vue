@@ -14,7 +14,12 @@
             </bk-table-column>
             <bk-table-column label="关联的资源实例" show-overflow-tooltip>
                 <template #default="{ row }">
-                    仓库名：{{ row.repoName }}
+                    <p v-if="row.repoName === ''">
+                        项目名：{{ row.projectId }}
+                    </p>
+                    <p v-else>
+                        仓库名：{{ row.repoName }}
+                    </p>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -45,6 +50,7 @@
             visible: function (newVal) {
                 if (newVal) {
                     this.showIamDenyDialog = true
+                    this.formData = []
                     this.formData.push(this.showData)
                 } else {
                     this.close()
@@ -63,6 +69,12 @@
                 switch (action) {
                     case 'READ':
                         return '查看'
+                    case 'WRITE':
+                        return '写入'
+                    case 'MANAGE':
+                        return '管理'
+                    case 'DELETE':
+                        return '删除'
                     default:
                         return action
                 }
