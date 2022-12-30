@@ -75,6 +75,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
@@ -99,6 +100,8 @@ class BkIamV3ServiceImpl(
     val mongoTemplate: MongoTemplate
     ) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
 
+    @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}")
+    private var ciAuthServer: String = ""
 
     private val iamAuthCache = CacheBuilder.newBuilder()
         .maximumSize(1000)
@@ -122,6 +125,8 @@ class BkIamV3ServiceImpl(
     }
 
     override fun checkBkiamv3Config(projectId: String?, repoName: String?): Boolean {
+        // 如果配置是bkiamv3，默认走bkiamv3校验
+        if (ciAuthServer == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
         if (projectId != null && repoName != null) {
             val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data ?: return false
             return repoInfo.configuration.getBooleanSetting(BKIAMV3_CHECK) ?: false
