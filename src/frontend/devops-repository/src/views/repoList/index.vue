@@ -92,17 +92,19 @@
             @limit-change="limit => handlerPaginationChange({ limit })">
         </bk-pagination>
         <create-repo-dialog ref="createRepo" @refresh="handlerPaginationChange()"></create-repo-dialog>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@repository/store/publicEnum'
     import { formatDate, convertFileSize } from '@repository/utils'
     export default {
         name: 'repoList',
-        components: { OperationList, createRepoDialog },
+        components: { OperationList, createRepoDialog, iamDenyDialog },
         data () {
             return {
                 MODE_CONFIG,
@@ -119,11 +121,13 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['userList']),
+            ...mapState(['userList', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             }
@@ -141,7 +145,8 @@
             convertFileSize,
             ...mapActions([
                 'getRepoList',
-                'deleteRepoList'
+                'deleteRepoList',
+                'getPermissionUrl'
             ]),
             getListData () {
                 this.isLoading = true
@@ -205,6 +210,28 @@
                                 theme: 'success',
                                 message: this.$t('delete') + this.$t('success')
                             })
+                        }).catch(err => {
+                            if (err.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: name
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: name,
+                                            action: 'DELETE',
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })

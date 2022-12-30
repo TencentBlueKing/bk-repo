@@ -106,12 +106,14 @@
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { repoEnum } from '@repository/store/publicEnum'
-    import { mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
 
     const getRepoBaseInfo = () => {
         return {
@@ -150,16 +152,19 @@
 
     export default {
         name: 'createRepo',
-        components: { CardRadioGroup },
+        components: { CardRadioGroup, iamDenyDialog },
         data () {
             return {
                 repoEnum,
                 show: false,
                 loading: false,
-                repoBaseInfo: getRepoBaseInfo()
+                repoBaseInfo: getRepoBaseInfo(),
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -278,7 +283,7 @@
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
@@ -354,6 +359,27 @@
                     })
                     this.cancel()
                     this.$emit('refresh')
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: '',
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.loading = false
                 })

@@ -184,7 +184,7 @@
                                 repoName: this.repoName
                             }
                         }).then(res => {
-                            if (res !== null) {
+                            if (res !== '') {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
