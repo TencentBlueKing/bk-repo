@@ -84,4 +84,8 @@
 </script>
 
 <style lang="scss" scoped>
+::v-deep .bk-dialog-wrapper .bk-dialog-content.bk-dialog-content-drag{
+    width: 600px !important;
+}
+
 </style>

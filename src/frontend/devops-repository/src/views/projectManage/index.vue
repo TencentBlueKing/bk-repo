@@ -38,6 +38,11 @@
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
             </bk-table-column>
+            <bk-table-column label="蓝鲸权限生成" show-overflow-tooltip v-if="iamStatus">
+                <template #default="{ row }">
+                    <bk-button theme="primary" @click="createPermission(row.name)">生成</bk-button>
+                </template>
+            </bk-table-column>
         </bk-table>
         <bk-pagination
             class="p10"
@@ -56,7 +61,7 @@
 </template>
 <script>
     import projectInfoDialog from './projectInfoDialog'
-    import { mapState } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
     import { formatDate } from '@repository/utils'
     export default {
         name: 'projectManage',
@@ -70,7 +75,8 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                iamStatus: false
             }
         },
         computed: {
@@ -81,7 +87,13 @@
                 }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
             }
         },
+        created () {
+            this.getIamPermissionStatus().then(res => {
+                this.iamStatus = res
+            })
+        },
         methods: {
+            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus']),
             formatDate,
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -103,6 +115,21 @@
                     name: 'projectConfig',
                     query: {
                         projectId: id
+                    }
+                })
+            },
+            createPermission (projectId) {
+                this.refreshIamPermission(projectId).then(res => {
+                    if (res === true) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: '权限生成成功'
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: '权限生成失败'
+                        })
                     }
                 })
             }

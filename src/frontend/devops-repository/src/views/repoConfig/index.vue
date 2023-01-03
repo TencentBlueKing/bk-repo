@@ -345,7 +345,7 @@
                                 repoName: this.repoName
                             }
                         }).then(res => {
-                            if (res !== null) {
+                            if (res !== '') {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -416,6 +416,10 @@
                         message: this.$t('save') + this.$t('success')
                     })
                 }).catch(err => {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: err.message
+                    })
                     if (err.status === 403) {
                         this.getPermissionUrl({
                             body: {

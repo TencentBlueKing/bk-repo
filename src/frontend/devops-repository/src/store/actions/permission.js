@@ -241,5 +241,15 @@ export default {
             `${authPrefix}/user/auth/bkiamv3/permission/url`,
             body
         )
+    },
+    refreshIamPermission (_, { projectId }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/auth/bkiamv3/project/refresh/${projectId}`
+        )
+    },
+    getIamPermissionStatus () {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/auth/bkiamv3/status`
+        )
     }
 }
