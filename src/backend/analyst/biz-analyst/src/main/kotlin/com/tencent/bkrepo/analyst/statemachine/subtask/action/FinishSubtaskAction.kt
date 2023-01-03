@@ -36,8 +36,6 @@ import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
-import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
-import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.service.ScanQualityService
@@ -50,6 +48,7 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.context.FinishSubtaskCont
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.NotifySubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.FinishTaskContext
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.statemachine.Event
@@ -175,7 +174,7 @@ class FinishSubtaskAction(
             null
         }
         archiveSubScanTaskDao.save(
-            TArchiveSubScanTask.from(
+            SubtaskConverter.convertToArchiveSubtask(
                 subTask, resultSubTaskStatus, overview, qualityPass = qualityPass, modifiedBy = modifiedBy
             )
         )
@@ -189,7 +188,7 @@ class FinishSubtaskAction(
         publisher.publishEvent(
             SubtaskStatusChangedEvent(
                 SubScanTaskStatus.valueOf(subTask.status),
-                TPlanArtifactLatestSubScanTask.convert(
+                SubtaskConverter.convertToPlanSubtask(
                     subTask, resultSubTaskStatus, overview, qualityPass = qualityPass
                 )
             )
