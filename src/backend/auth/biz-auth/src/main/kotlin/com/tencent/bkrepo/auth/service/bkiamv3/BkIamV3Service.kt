@@ -90,7 +90,7 @@ interface BkIamV3Service {
     /**
      * 刷新项目以及旗下仓库对应的权限中心权限
      */
-    fun refreshProjectManager(projectId: String)
+    fun refreshProjectManager(projectId: String): Boolean
 
     /**
      * 创建项目分级管理员

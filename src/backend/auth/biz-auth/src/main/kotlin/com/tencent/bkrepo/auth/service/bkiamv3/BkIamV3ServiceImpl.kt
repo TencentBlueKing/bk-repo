@@ -67,12 +67,13 @@ import com.tencent.bkrepo.auth.util.BkIamV3Utils.getProjects
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.getResourceInstance
 import com.tencent.bkrepo.auth.util.IamGroupUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -301,26 +302,12 @@ class BkIamV3ServiceImpl(
          }
     }
 
-    override fun refreshProjectManager(projectId: String) {
-            val projectInfo = projectClient.getProjectInfo(projectId).data!!
-            createGradeManager(projectInfo.createdBy, projectId)
-                ?: createGradeManager(SecurityUtils.getUserId(), projectId) ?: return
-            repositoryClient.listRepo(projectId).data?.forEach {
-                // TODO 需要确认是否要将所有仓库的权限校验开关全部开启
-                it.configuration.settings[BKIAMV3_CHECK] = true
-                repositoryClient.updateRepo(
-                    RepoUpdateRequest(
-                    projectId = projectId,
-                    name = it.name,
-                    public = it.public,
-                    description = it.description,
-                    quota = it.quota,
-                    operator = it.lastModifiedBy,
-                    configuration = it.configuration)
-                )
-                createGradeManager(it.createdBy, projectId, it.name)
-                    ?: createGradeManager(SecurityUtils.getUserId(), projectId, it.name)
-        }
+    override fun refreshProjectManager(projectId: String): Boolean {
+        logger.info("v3 refreshProjectManager projectId: $projectId")
+        val projectInfo = projectClient.getProjectInfo(projectId).data
+            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
+        return (createGradeManager(projectInfo.createdBy, projectId)
+            ?: createGradeManager(SecurityUtils.getUserId(), projectId)).isNullOrEmpty()
     }
 
     /**

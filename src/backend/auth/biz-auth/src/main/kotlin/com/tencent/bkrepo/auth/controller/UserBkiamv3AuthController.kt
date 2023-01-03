@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -84,6 +85,16 @@ class UserBkiamv3AuthController {
         return ResponseBuilder.success(result)
     }
 
+    @ApiOperation("判断蓝鲸权限是否开启")
+    @GetMapping("/bkiamv3/status")
+    fun bkiamv3Status(): Response<Boolean> {
+        initService()
+        val result = bkIamV3Service?.let {
+            bkIamV3Service!!.checkIamConfiguration()
+        } ?: false
+        return ResponseBuilder.success(result)
+    }
+
     @ApiOperation("在权限中心生成对应项目以及其下所有仓库的管理权限")
     @PostMapping("/bkiamv3/project/refresh/{projectId}")
     @Principal(PrincipalType.ADMIN)
@@ -91,7 +102,6 @@ class UserBkiamv3AuthController {
         initService()
         val result = bkIamV3Service?.let {
             bkIamV3Service!!.refreshProjectManager(projectId)
-            true
         } ?: false
         return ResponseBuilder.success(result)
     }
