@@ -248,7 +248,7 @@ export default {
         )
     },
     getIamPermissionStatus () {
-        return Vue.prototype.$ajax.post(
+        return Vue.prototype.$ajax.get(
             `${authPrefix}/user/auth/bkiamv3/status`
         )
     }

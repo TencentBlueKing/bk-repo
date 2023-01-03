@@ -416,10 +416,6 @@
                         message: this.$t('save') + this.$t('success')
                     })
                 }).catch(err => {
-                    this.$bkMessage({
-                        theme: 'error',
-                        message: err.message
-                    })
                     if (err.status === 403) {
                         this.getPermissionUrl({
                             body: {
@@ -438,7 +434,17 @@
                                     action: 'MANAGE',
                                     url: res
                                 }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
                             }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
                         })
                     }
                 }).finally(() => {
