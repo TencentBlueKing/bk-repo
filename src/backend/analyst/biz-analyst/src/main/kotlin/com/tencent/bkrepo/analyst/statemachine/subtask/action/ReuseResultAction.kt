@@ -35,12 +35,12 @@ import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
-import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.TransitResult
@@ -148,7 +148,7 @@ class ReuseResultAction(
         }
         val tasks = archiveSubScanTaskDao.insert(finishedSubtasks)
         val planArtifactLatestSubtasks = tasks.map {
-            TPlanArtifactLatestSubScanTask.convert(it, it.status)
+            SubtaskConverter.convertToPlanSubtask(it, it.status)
         }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubtasks)
         planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }

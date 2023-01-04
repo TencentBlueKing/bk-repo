@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.analyst.model
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.analyst.utils.Converter
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -127,51 +125,4 @@ class TPlanArtifactLatestSubScanTask(
     scanResultOverview = scanResultOverview,
     qualityRedLine = qualityRedLine,
     scanQuality = scanQuality
-) {
-    companion object {
-        fun convert(
-            task: SubScanTaskDefinition,
-            resultStatus: String,
-            overview: Map<String, Any?>? = null,
-            modifiedBy: String? = null,
-            qualityPass: Boolean? = null
-        ) = with(task) {
-            val now = LocalDateTime.now()
-            val numberOverview = overview?.let { Converter.convert(it) } ?: task.scanResultOverview
-            val finishedDateTime = if (SubScanTaskStatus.finishedStatus(resultStatus)) {
-                now
-            } else {
-                null
-            }
-            TPlanArtifactLatestSubScanTask(
-                createdBy = createdBy,
-                createdDate = createdDate,
-                lastModifiedBy = modifiedBy ?: lastModifiedBy,
-                lastModifiedDate = now,
-                startDateTime = startDateTime,
-                finishedDateTime = finishedDateTime,
-                triggerType = triggerType,
-                parentScanTaskId = parentScanTaskId,
-                latestSubScanTaskId = id,
-                planId = planId,
-                projectId = projectId,
-                repoName = repoName,
-                repoType = repoType,
-                packageKey = packageKey,
-                version = version,
-                fullPath = fullPath,
-                artifactName = artifactName,
-                status = resultStatus,
-                scanner = scanner,
-                scannerType = scannerType,
-                sha256 = sha256,
-                size = size,
-                packageSize = packageSize,
-                credentialsKey = credentialsKey,
-                scanResultOverview = numberOverview,
-                qualityRedLine = qualityPass ?: qualityRedLine,
-                scanQuality = scanQuality
-            )
-        }
-    }
-}
+)

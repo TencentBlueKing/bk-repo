@@ -34,13 +34,13 @@ import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
-import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
-import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.TransitResult
@@ -78,22 +78,25 @@ class CreateSubtaskAction(
 
         // 添加到扫描任务队列
         val subtask = createSubTask(scanTask, node, storageCredentialsKey, state)
-        self.save(listOf(subtask))
+        self.save(listOf(subtask), scanTask.metadata)
         return TransitResult(state.name, subtask)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun save(subScanTasks: Collection<TSubScanTask>): Collection<TSubScanTask> {
+    fun save(
+        subScanTasks: Collection<TArchiveSubScanTask>,
+        metadata: List<TaskMetadata>
+    ): Collection<TArchiveSubScanTask> {
         if (subScanTasks.isEmpty()) {
             return emptyList()
         }
 
-        val tasks = subScanTaskDao.insert(subScanTasks)
+        val tasks = archiveSubScanTaskDao.insert(subScanTasks)
 
         // 保存方案制品最新扫描记录
-        val planArtifactLatestSubScanTasks = tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
+        val planArtifactLatestSubScanTasks = tasks.map { SubtaskConverter.convertToPlanSubtask(it, it.status) }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubScanTasks)
-        archiveSubScanTaskDao.insert(tasks.map { TArchiveSubScanTask.from(it, it.status) })
+        subScanTaskDao.insert(tasks.map { SubtaskConverter.convertToSubtask(it, metadata) })
         planArtifactLatestSubScanTasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 统计BLOCKED与CREATED任务数量
@@ -113,11 +116,11 @@ class CreateSubtaskAction(
         node: Node,
         credentialKey: String? = null,
         status: SubScanTaskStatus = SubScanTaskStatus.CREATED
-    ): TSubScanTask {
+    ): TArchiveSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
             val repoInfo = cacheableRepositoryClient.get(projectId, repoName)
-            return TSubScanTask(
+            return TArchiveSubScanTask(
                 createdBy = scanTask.createdBy,
                 createdDate = now,
                 lastModifiedBy = scanTask.createdBy,
@@ -143,8 +146,7 @@ class CreateSubtaskAction(
                 size = size,
                 packageSize = packageSize,
                 credentialsKey = credentialKey,
-                scanQuality = scanTask.scanPlan?.scanQuality,
-                metadata = scanTask.metadata
+                scanQuality = scanTask.scanPlan?.scanQuality
             )
         }
     }
