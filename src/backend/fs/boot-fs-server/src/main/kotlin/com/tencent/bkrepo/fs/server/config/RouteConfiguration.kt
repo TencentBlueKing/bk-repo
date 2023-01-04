@@ -103,6 +103,10 @@ class RouteConfiguration(
     private fun CoRouterFunctionDsl.nodeRouter() {
         "/api/node".nest {
             requireReadPermission()
+            "/change/attribute".nest {
+                requireWritePermission()
+                PUT(DEFAULT_MAPPING_URI, nodeOperationsHandler::changeAttribute)
+            }
             "/stat".nest {
                 GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getStat)
             }
