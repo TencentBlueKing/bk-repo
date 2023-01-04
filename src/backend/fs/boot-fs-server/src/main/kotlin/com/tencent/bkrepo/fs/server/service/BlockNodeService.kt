@@ -64,19 +64,18 @@ interface BlockNodeService {
         storageCredentials: StorageCredentials?
     ): TBlockNode
 
-    /**删除分块*/
-    suspend fun deleteBlock(
-        blockNode: TBlockNode,
-        storageCredentials: StorageCredentials?
-    )
-
     /**
-     * 查询非当前节点的块
+     * 删除旧分块，即删除非指定的nodeCurrentSha256的分块。
+     * 如果未指定nodeCurrentSha256，则删除节点所有分块
+     * @param projectId 项目id
+     * @param repoName 仓库名
+     * @param fullPath 文件路径
+     * @param nodeCurrentSha256 当前文件sha256
      * */
-    suspend fun listOldBlocks(
+    suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
         fullPath: String,
         nodeCurrentSha256: String?
-    ): List<TBlockNode>
+    )
 }
