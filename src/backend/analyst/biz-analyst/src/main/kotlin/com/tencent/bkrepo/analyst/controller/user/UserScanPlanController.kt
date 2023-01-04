@@ -38,6 +38,7 @@ import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
+import com.tencent.bkrepo.analyst.service.ScanPlanCorrectService
 import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
@@ -49,6 +50,8 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -65,6 +68,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/scan/plan")
 class UserScanPlanController(
     private val scanPlanService: ScanPlanService,
+    private val scanPlanCorrectService: ScanPlanCorrectService,
     private val scanTaskService: ScanTaskService,
     private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) {
@@ -163,6 +167,14 @@ class UserScanPlanController(
         // TODO 等前端流水线扫描报告移除调用该接口后改会项目管理员权限
         permissionCheckHandler.checkProjectPermission(countRequest.projectId, PermissionAction.READ)
         return ResponseBuilder.success(scanPlanService.scanPlanInfo(ScanPlanConverter.convert(countRequest)))
+    }
+
+    @ApiOperation("校正扫描方案预览信息数据")
+    @PostMapping("/count/correct")
+    @Principal(type = PrincipalType.ADMIN)
+    fun correctPlanOverview(@RequestParam(required = false) planId: String? = null): Response<Any?> {
+        scanPlanCorrectService.correctPlanOverview(planId)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("方案详情-制品信息")

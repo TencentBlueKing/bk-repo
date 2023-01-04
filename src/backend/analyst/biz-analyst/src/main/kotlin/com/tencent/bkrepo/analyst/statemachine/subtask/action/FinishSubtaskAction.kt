@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.FileScanResultDao
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
+import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
@@ -68,6 +69,7 @@ import java.time.LocalDateTime
 @Suppress("LongParameterList")
 class FinishSubtaskAction(
     private val scanTaskDao: ScanTaskDao,
+    private val scanPlanDao: ScanPlanDao,
     private val subScanTaskDao: SubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
@@ -208,6 +210,7 @@ class FinishSubtaskAction(
             0L
         }
         scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess, passCount = passCount)
+        planId?.let { scanPlanDao.updateScanResultOverview(planId, overview) }
         val finishTaskCtx = FinishTaskContext(parentTaskId, planId)
         val event = Event(ScanTaskEvent.FINISH.name, finishTaskCtx)
         taskStateMachine.sendEvent(ScanTaskStatus.SCANNING_SUBMITTED.name, event)
