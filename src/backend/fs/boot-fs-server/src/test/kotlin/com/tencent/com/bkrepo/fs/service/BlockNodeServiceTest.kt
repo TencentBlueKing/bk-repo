@@ -25,7 +25,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -90,28 +89,6 @@ class BlockNodeServiceTest {
         }
     }
 
-    @DisplayName("测试删除块")
-    @Test
-    fun testDeleteBlockNode() {
-        runBlocking {
-            var ref = 1
-            Mockito.`when`(rRepositoryClient.decrement(any(), anyOrNull())).then {
-                ref--
-                Mono.just(successResponse(true))
-            }
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
-                .thenReturn(Mono.just(successResponse(true)))
-
-            val bn = createBlockNode()
-            blockNodeService.deleteBlock(bn, storageCredentials)
-            val criteria = Criteria.where("_id").isEqualTo(bn.id)
-                .and(TBlockNode::nodeFullPath.name).isEqualTo(bn.nodeFullPath)
-            val findOne = blockNodeRepository.findOne(Query(criteria))
-            Assertions.assertEquals(0, ref)
-            Assertions.assertNull(findOne)
-        }
-    }
-
     @DisplayName("测试获取最后一个分块")
     @Test
     fun testGetLatestBlockNode() {
@@ -171,23 +148,81 @@ class BlockNodeServiceTest {
         }
     }
 
-    @DisplayName("测试查找旧的文件块")
+    @DisplayName("测试删除旧的文件块")
     @Test
-    fun testFindOldBlocks() {
+    fun testDeleteOldBlocks() {
         runBlocking {
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
-            val bn0 = createBlockNode()
-            val bn1 = createBlockNode()
-            val oldBlocks = blockNodeService.listOldBlocks(
+            // 创建三个分块，两个旧，一个新分块
+            createBlockNode(startPos = 10)
+            createBlockNode(startPos = 20)
+            val bn = createBlockNode(startPos = 30, nodeSha256 = "newSha256")
+            val blocks0 = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID, UT_REPO_NAME,
+                "/file",
+                nodeSha256 = "sha256"
+            )
+            Assertions.assertEquals(2, blocks0.size)
+            // 删除旧分块
+            blockNodeService.deleteBlocks(
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
                 fullPath = "/file",
                 nodeCurrentSha256 = "newSha256"
             )
-            Assertions.assertEquals(2, oldBlocks.size)
-            Assertions.assertEquals(bn0.id, oldBlocks.first().id)
-            Assertions.assertEquals(bn1.id, oldBlocks[1].id)
+            val blocks1 = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID, UT_REPO_NAME,
+                "/file",
+                "sha256"
+            )
+            // 旧分块已被删除
+            Assertions.assertEquals(0, blocks1.size)
+            val blocks2 = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID, UT_REPO_NAME,
+                "/file",
+                "newSha256"
+            )
+            // 新的分块还在
+            Assertions.assertEquals(1, blocks2.size)
+            Assertions.assertEquals(bn.id, blocks2.first().id)
+        }
+    }
+
+    @DisplayName("测试删除节点所有分块")
+    @Test
+    fun testDeleteBlocks() {
+        runBlocking {
+            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
+                .thenReturn(Mono.just(successResponse(true)))
+            // 创建三个分块，两个旧，一个新分块
+            createBlockNode(startPos = 10)
+            createBlockNode(startPos = 20)
+            val blocks0 = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID, UT_REPO_NAME,
+                "/file",
+                nodeSha256 = "sha256"
+            )
+            Assertions.assertEquals(2, blocks0.size)
+            // 删除所有分块
+            blockNodeService.deleteBlocks(
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                fullPath = "/file",
+                nodeCurrentSha256 = null
+            )
+            val blocks1 = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID, UT_REPO_NAME,
+                "/file",
+                "sha256"
+            )
+            // 所有分块已被删除
+            Assertions.assertEquals(0, blocks1.size)
         }
     }
 

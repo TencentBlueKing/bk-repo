@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.file.FileRange
 import com.tencent.bkrepo.fs.server.file.MultiArtifactFileInputStream
 import com.tencent.bkrepo.fs.server.file.OverlayRangeUtils
@@ -119,16 +118,12 @@ class FileNodeService(
 
     suspend fun deleteNodeOldBlocks(node: NodeDetail) {
         with(node) {
-            val repo = RepositoryCache.getRepoDetail(projectId, repoName)
-            val oldBlocks = blockNodeService.listOldBlocks(projectId, repoName, node.fullPath, node.sha256!!)
-            oldBlocks.forEach { blockNodeService.deleteBlock(it, repo.storageCredentials) }
+             blockNodeService.deleteBlocks(projectId, repoName, node.fullPath, node.sha256!!)
         }
     }
 
     suspend fun deleteNodeBlocks(projectId: String, repoName: String, nodeFullPath: String) {
-        val repo = RepositoryCache.getRepoDetail(projectId, repoName)
-        val oldBlocks = blockNodeService.listOldBlocks(projectId, repoName, nodeFullPath, null)
-        oldBlocks.forEach { blockNodeService.deleteBlock(it, repo.storageCredentials) }
+        blockNodeService.deleteBlocks(projectId, repoName, nodeFullPath, null)
     }
 
     /**

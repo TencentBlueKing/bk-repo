@@ -35,7 +35,6 @@ import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.gt
@@ -70,20 +69,6 @@ class BlockNodeServiceImpl(
         }
     }
 
-    override suspend fun deleteBlock(
-        blockNode: TBlockNode,
-        storageCredentials: StorageCredentials?
-    ) {
-        with(blockNode) {
-            val criteria = Criteria.where(ID).isEqualTo(blockNode.id)
-                // for sharding
-                .and(TBlockNode::nodeFullPath.name).isEqualTo(blockNode.nodeFullPath)
-            blockNodeRepository.remove(Query(criteria))
-            rRepositoryClient.decrement(blockNode.sha256, storageCredentials?.key).awaitSingle()
-            logger.info("Delete block node[$projectId/$repoName$nodeFullPath-$startPos]")
-        }
-    }
-
     override suspend fun listBlocks(
         range: Range,
         projectId: String,
@@ -95,13 +80,13 @@ class BlockNodeServiceImpl(
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)
             .and(TBlockNode::nodeSha256.name).isEqualTo(nodeSha256)
+            .and(TBlockNode::isDeleted.name).isEqualTo(false)
             .norOperator(
                 TBlockNode::startPos.gt(range.end),
                 TBlockNode::endPos.lt(range.start)
             )
-        // 为了提高写入的速度，所以写入的时候不负责删除，
-        // 但是查询时又要保证块的唯一性，所以再应用层进行了重排和去重。
-        return blockNodeRepository.find(Query(criteria)).reSortAndDistinct()
+        val query = Query(criteria).with(Sort.by(TBlockNode::startPos.name))
+        return blockNodeRepository.find(query)
     }
 
     override suspend fun getLatestBlock(
@@ -114,17 +99,18 @@ class BlockNodeServiceImpl(
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)
             .and(TBlockNode::nodeSha256.name).isEqualTo(nodeSha256)
+            .and(TBlockNode::isDeleted.name).isEqualTo(false)
         val query = Query(criteria)
         query.with(Sort.by(TBlockNode::endPos.name).descending())
         return blockNodeRepository.findOne(query)
     }
 
-    override suspend fun listOldBlocks(
+    override suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
         fullPath: String,
         nodeCurrentSha256: String?
-    ): List<TBlockNode> {
+    ) {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName).apply {
@@ -132,23 +118,11 @@ class BlockNodeServiceImpl(
                     and(TBlockNode::nodeSha256.name).ne(nodeCurrentSha256)
                 }
             }
-        return blockNodeRepository.find(Query(criteria))
-    }
-
-    private fun List<TBlockNode>.reSortAndDistinct(): List<TBlockNode> {
-        val startPosSet = mutableSetOf<Long>()
-        return this.sortedByDescending { it.createdDate }.filter {
-            if (!startPosSet.contains(it.startPos)) {
-                startPosSet.add(it.startPos)
-                true
-            } else {
-                false
-            }
-        }.sortedBy { it.startPos }
+        val update = Update().set(TBlockNode::isDeleted.name, true)
+        blockNodeRepository.updateMulti(Query(criteria), update)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(BlockNodeServiceImpl::class.java)
-        private const val ID = "_id"
     }
 }
