@@ -30,6 +30,7 @@ package com.tencent.bkrepo.fs.server.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -92,4 +93,14 @@ interface RRepositoryClient {
 
     @PutMapping("/fileReference/increment")
     fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
+
+    @PostMapping("/metadata/save")
+    fun saveMetadata(@RequestBody request: MetadataSaveRequest): Mono<Response<Void>>
+
+    @GetMapping("/metadata/list/{projectId}/{repoName}")
+    fun listMetadata(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Mono<Response<Map<String, Any>>>
 }
