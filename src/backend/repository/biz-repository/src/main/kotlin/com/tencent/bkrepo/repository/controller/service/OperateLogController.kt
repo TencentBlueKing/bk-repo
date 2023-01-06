@@ -36,9 +36,11 @@ import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.OperateLogClient
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/log")
 class OperateLogController(
     private val operateLogService: OperateLogService
 ) : OperateLogClient {

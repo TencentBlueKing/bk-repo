@@ -41,11 +41,9 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanClient")
-@RequestMapping("/service/scan")
+@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanClient", path = "/service/scan")
 interface ScanClient {
 
     /**

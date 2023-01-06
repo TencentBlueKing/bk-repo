@@ -1,2 +1,5 @@
 spring.application.name: webhook
 server.port: 25908
+spring:
+  main:
+    allow-circular-references: true

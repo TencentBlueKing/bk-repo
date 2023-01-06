@@ -1,3 +1,7 @@
 spring.application.name: conan
 server.port: 25815
+spring:
+  main:
+    allow-circular-references: true
+
 

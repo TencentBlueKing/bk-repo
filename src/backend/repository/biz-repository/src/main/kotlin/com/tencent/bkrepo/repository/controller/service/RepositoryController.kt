@@ -44,6 +44,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -51,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @Primary
+@RequestMapping("/service/repo")
 class RepositoryController(
     private val repositoryService: RepositoryService
 ) : RepositoryClient {

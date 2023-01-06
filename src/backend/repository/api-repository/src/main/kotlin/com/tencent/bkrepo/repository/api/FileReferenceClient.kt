@@ -4,11 +4,9 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "FileReferenceClient")
-@RequestMapping("/service/fileReference")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "FileReferenceClient", path = "/service/fileReference")
 interface FileReferenceClient {
 
     @PutMapping("/decrement")

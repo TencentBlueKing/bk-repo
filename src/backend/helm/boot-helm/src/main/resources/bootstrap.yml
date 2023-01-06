@@ -3,3 +3,6 @@ server.port: 25806
 
 helm:
   domain: ${cluster.self.url}/helm
+spring:
+  main:
+    allow-circular-references: true

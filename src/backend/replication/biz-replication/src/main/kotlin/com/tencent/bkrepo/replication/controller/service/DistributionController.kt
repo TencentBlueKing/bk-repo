@@ -31,9 +31,11 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.DistributionClient
 import com.tencent.bkrepo.replication.service.RemoteNodeService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/distribution")
 class DistributionController(
     private val remoteNodeService: RemoteNodeService
 ) : DistributionClient {

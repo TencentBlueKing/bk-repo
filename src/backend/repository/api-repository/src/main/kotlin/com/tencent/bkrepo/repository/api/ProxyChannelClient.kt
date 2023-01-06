@@ -40,15 +40,13 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 代理源服务接口
  */
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyChannelClient")
-@RequestMapping("/service/proxy-channel")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyChannelClient", path = "/service/proxy-channel")
 interface ProxyChannelClient {
 
     @ApiOperation("查询代理源信息")

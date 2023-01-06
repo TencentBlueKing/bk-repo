@@ -1,6 +1,8 @@
 server.port: 25814
 
 spring:
+  main:
+    allow-circular-references: true
   application:
     name: analyst
   task:

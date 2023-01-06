@@ -45,9 +45,11 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.service.packages.PackageService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service")
 class PackageController(
     private val packageService: PackageService
 ) : PackageClient {

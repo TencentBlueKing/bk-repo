@@ -2,3 +2,6 @@ spring.application.name: maven
 server.port: 25803
 # 本地开发注掉该属性
 maven.domain: ${cluster.self.url}/${spring.application.name}
+spring:
+  main:
+    allow-circular-references: true

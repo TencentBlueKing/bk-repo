@@ -40,15 +40,13 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * 制品同步到远端仓库
  */
 @Api("制品同步到远端仓库")
 @Primary
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ArtifactPushClient")
-@RequestMapping("/service/push")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ArtifactPushClient", path = "/service/push")
 interface ArtifactPushClient {
     @ApiOperation("推送对应artifact到配置的远端仓库")
     @PostMapping("/artifact")

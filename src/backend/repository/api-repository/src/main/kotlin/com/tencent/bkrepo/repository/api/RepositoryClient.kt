@@ -51,7 +51,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
@@ -59,8 +58,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("仓库服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient", primary = false)
-@RequestMapping("/service/repo")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient", primary = false, path = "/service/repo")
 interface RepositoryClient {
 
     @ApiOperation("查询仓库信息")

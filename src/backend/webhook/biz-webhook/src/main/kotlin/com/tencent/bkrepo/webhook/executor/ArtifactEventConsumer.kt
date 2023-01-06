@@ -38,23 +38,23 @@ import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.model.TWebHook
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.Message
-import org.springframework.stereotype.Component
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import java.util.regex.Pattern
 
 /**
  * 事件消息消费者
  */
-@Component("artifactEvent")
+@Configuration
 class ArtifactEventConsumer(
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor,
     private val webHookProperties: WebHookProperties
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     private val executors = ThreadPoolExecutor(
         100,
@@ -74,10 +74,13 @@ class ArtifactEventConsumer(
             )
         })
 
-    override fun accept(message: Message<ArtifactEvent>) {
-        logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
-        val task = Runnable { triggerWebHooks(message.payload) }.trace()
-        executors.execute(task)
+    @Bean("artifactEvent")
+    fun artifactEvent(): (Message<ArtifactEvent>) -> Unit {
+        return { message ->
+            logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
+            val task = Runnable { triggerWebHooks(message.payload) }.trace()
+            executors.execute(task)
+        }
     }
 
     fun triggerWebHooks(event: ArtifactEvent) {

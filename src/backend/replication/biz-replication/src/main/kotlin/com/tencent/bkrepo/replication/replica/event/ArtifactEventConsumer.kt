@@ -31,23 +31,24 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.replica.base.executor.EventConsumerThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import org.springframework.stereotype.Component
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
 /**
  * 构件事件消费者，用于实时同步
  * 对应binding name为artifactEvent-in-0
  */
-@Component("artifactEvent")
+@Configuration
 class ArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
-) : EventConsumer() {
+) {
 
     private val executors = EventConsumerThreadPoolExecutor.instance
     /**
      * 允许接收的事件类型
      */
-    override fun getAcceptTypes(): Set<EventType> {
+    fun getAcceptTypes(): Set<EventType> {
         return setOf(
             EventType.NODE_CREATED,
             EventType.VERSION_CREATED,
@@ -55,10 +56,15 @@ class ArtifactEventConsumer(
         )
     }
 
-    override fun action(event: ArtifactEvent) {
-        executors.execute {
-            replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
-                eventBasedReplicaJobExecutor.execute(it, event)
+    @Bean("artifactEvent")
+    fun artifactEvent(): (ArtifactEvent) -> Unit {
+        return { event ->
+            if (getAcceptTypes().contains(event.type)) {
+                executors.execute {
+                    replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
+                        eventBasedReplicaJobExecutor.execute(it, event)
+                    }
+                }
             }
         }
     }
