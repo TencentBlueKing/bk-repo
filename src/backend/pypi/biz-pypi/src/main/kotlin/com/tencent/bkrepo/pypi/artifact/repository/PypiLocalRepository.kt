@@ -31,10 +31,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
-import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -50,6 +48,8 @@ import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifa
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.artifact.util.version.SemVersion
+import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -65,6 +65,7 @@ import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
+import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
@@ -353,7 +354,7 @@ class PypiLocalRepository(
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
             if (!node.folder) {
                 return null
             }
@@ -362,7 +363,7 @@ class PypiLocalRepository(
                 val nodeList = nodeClient.listNode(
                     projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
                 ).data
-                    ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
                 // 过滤掉'根节点',
                 return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
             }
@@ -373,7 +374,7 @@ class PypiLocalRepository(
                     deep = true, includeMetadata = true
                 ).data
                 if (packageNode.isNullOrEmpty()) {
-                    throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    throw PypiSimpleNotFoundException(getArtifactFullPath())
                 }
                 return buildPypiPageContent(
                     buildPackageFileNodeListContent(packageNode)
@@ -403,7 +404,14 @@ class PypiLocalRepository(
      */
     private fun buildPackageFileNodeListContent(nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
-        for (node in nodeList) {
+        val sortedNodeList = nodeList.sortedBy {
+            try {
+                SemVersionParser.parse(it.metadata?.get("version").toString())
+            } catch (ignore: IllegalArgumentException) {
+                SemVersion(0,0,0)
+            }
+        }
+        for (node in sortedNodeList) {
             val md5 = node.md5
             builder.append("<a")
             val requiresPython = node.metadata?.get("requires_python")?.toString()

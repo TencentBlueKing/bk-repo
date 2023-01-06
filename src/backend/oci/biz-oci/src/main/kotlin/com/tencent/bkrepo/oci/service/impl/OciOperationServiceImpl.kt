@@ -548,8 +548,10 @@ class OciOperationServiceImpl(
             Range.full(nodeDetail.size),
             storageCredentials
         )!!.readText()
-        val version = OciUtils.checkVersion(manifestBytes)
-        val (mediaType, manifest) = if (version == 1) {
+        val schemaVersion = OciUtils.schemeVersion(manifestBytes)
+        // 将该版本对应的blob sha256放到manifest节点的元数据中
+        var digestList: List<String>? = null
+        val (mediaType, manifest) = if (schemaVersion.schemaVersion == 1) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
             val manifest = OciUtils.stringToManifestV2(manifestBytes)
@@ -559,19 +561,21 @@ class OciOperationServiceImpl(
             } else {
                 manifest.mediaType
             }
+            digestList = OciUtils.manifestIteratorDigest(manifest)
             Pair(mediaTypeV2, manifest)
         }
-
         updateNodeMetaData(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             version = ociArtifactInfo.reference,
             fullPath = nodeDetail.fullPath,
-            mediaType = mediaType!!
+            mediaType = mediaType!!,
+            digestList = digestList,
+            sourceType = sourceType
         )
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
-            if (version == 1) {
+            if (schemaVersion.schemaVersion == 1) {
                 syncBlobInfoV1(
                     ociArtifactInfo = ociArtifactInfo,
                     manifestDigest = digest,
@@ -600,13 +604,17 @@ class OciOperationServiceImpl(
         version: String? = null,
         fullPath: String,
         mediaType: String,
-        chartYaml: Map<String, Any>? = null
+        chartYaml: Map<String, Any>? = null,
+        digestList: List<String>? = null,
+        sourceType: ArtifactChannel? = null
     ) {
         // 将基础信息存储到metadata中
         val metadata = ObjectBuildUtils.buildMetadata(
             mediaType = mediaType,
             version = version,
-            yamlData = chartYaml
+            yamlData = chartYaml,
+            digestList = digestList,
+            sourceType = sourceType
         )
         saveMetaData(
             projectId = projectId,
@@ -756,39 +764,22 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
             // 针对支持多仓库类型，如docker和oci
-            val repoType = getRepositoryInfo(ociArtifactInfo).type.name
+            val repoType = repositoryClient.getRepoDetail(projectId, repoName).data!!.type.name
             val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
-            val packageVersion = packageClient.findVersionByName(
-                projectId = projectId,
-                repoName = repoName,
-                packageKey = packageKey,
-                version = ociArtifactInfo.reference
-            ).data
             val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
                 .apply {
                     chartYaml?.let { this.putAll(chartYaml) }
                     sourceType?.let { this[SOURCE_TYPE] = sourceType }
                 }
-            if (packageVersion == null) {
-                val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
-                    ociArtifactInfo = this,
-                    packageName = packageName,
-                    version = ociArtifactInfo.reference,
-                    size = size,
-                    manifestPath = manifestPath,
-                    repoType = repoType
-                )
-                packageClient.createVersion(request)
-            } else {
-                val request = ObjectBuildUtils.buildPackageVersionUpdateRequest(
-                    ociArtifactInfo = this,
-                    version = ociArtifactInfo.reference,
-                    size = size,
-                    manifestPath = manifestPath,
-                    packageKey = packageKey
-                )
-                packageClient.updateVersion(request)
-            }
+            val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
+                ociArtifactInfo = this,
+                packageName = packageName,
+                version = ociArtifactInfo.reference,
+                size = size,
+                manifestPath = manifestPath,
+                repoType = repoType,
+            )
+            packageClient.createVersion(request)
             savePackageMetaData(
                 projectId = projectId,
                 repoName = repoName,

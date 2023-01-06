@@ -109,12 +109,17 @@ spec:
               value: {{ .Values.gateway.appCode }}
             - name: BK_REPO_APP_TOKEN
               value: {{ .Values.gateway.appToken }}
+            - name: BK_REPO_EXT_IP
+              value: {{ default "[::]" .Values.gateway.extIp | quote }}
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
             - name: gateway
               containerPort: 8081
+              protocol: TCP
+            - name: docker-gateway
+              containerPort: 8082
               protocol: TCP
           livenessProbe:
             httpGet:

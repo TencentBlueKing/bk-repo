@@ -71,6 +71,7 @@ allprojects {
                 entry("swagger-annotations")
                 entry("swagger-models")
             }
+            dependency("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter:${Versions.ReactiveFeign}")
         }
     }
     ext["netty.version"] = Versions.Netty

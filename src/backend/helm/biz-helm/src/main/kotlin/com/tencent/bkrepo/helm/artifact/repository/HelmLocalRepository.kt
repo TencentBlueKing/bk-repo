@@ -129,7 +129,7 @@ class HelmLocalRepository(
      */
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
-        helmOperationService.initPackageInfo(context)
+        helmOperationService.initPackageInfo(context, true)
         if (CHART == context.getStringAttribute(FILE_TYPE)) {
             publishEvent(
                 ChartUploadEvent(
@@ -169,7 +169,7 @@ class HelmLocalRepository(
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = ArtifactContextHolder.getNodeDetail(fullPath)
+        val node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
