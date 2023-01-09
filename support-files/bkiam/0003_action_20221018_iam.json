@@ -101,6 +101,9 @@
                         ]
                     }
                 ],
+                "related_actions": [
+                    "project_view"
+                ],
                 "version": 1
             }
         },
@@ -124,6 +127,9 @@
                             }
                         ]
                     }
+                ],
+                "related_actions": [
+                    "project_view"
                 ],
                 "version": 1
             }
@@ -150,6 +156,7 @@
                     }
                 ],
                 "related_actions": [
+                    "project_view",
                     "repo_view"
                 ],
                 "version": 1
@@ -177,6 +184,7 @@
                     }
                 ],
                 "related_actions": [
+                    "project_view",
                     "repo_view",
                     "repo_edit",
                     "repo_delete"
@@ -206,8 +214,8 @@
                     }
                 ],
                 "related_actions": [
-                    "repo_view",
-                    "repo_delete"
+                    "project_view",
+                    "repo_view"
                 ],
                 "version": 1
             }
@@ -231,6 +239,10 @@
                         }
                     ]
                 }],
+                "related_actions": [
+                    "project_view",
+                    "repo_view"
+                ],
                 "version":1
             }
         },
@@ -253,6 +265,10 @@
                         }
                     ]
                 }],
+                "related_actions": [
+                    "project_view",
+                    "repo_view"
+                ],
                 "version":1
             }
         },
@@ -276,6 +292,8 @@
                     ]
                 }],
                 "related_actions":[
+                    "project_view",
+                    "repo_view",
                     "node_view"
                 ],
                 "version":1
@@ -301,6 +319,8 @@
                     ]
                 }],
                 "related_actions":[
+                    "project_view",
+                    "repo_view",
                     "node_view"
                 ],
                 "version":1
@@ -325,6 +345,11 @@
                         }
                     ]
                 }],
+                "related_actions":[
+                    "project_view",
+                    "repo_view",
+                    "node_view"
+                ],
                 "version":1
             }
         },
@@ -348,6 +373,8 @@
                     ]
                 }],
                 "related_actions":[
+                    "project_view",
+                    "repo_view",
                     "node_view"
                 ],
                 "version":1
