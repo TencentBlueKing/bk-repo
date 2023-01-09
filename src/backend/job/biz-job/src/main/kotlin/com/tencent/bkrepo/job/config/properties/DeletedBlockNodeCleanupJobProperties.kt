@@ -25,28 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.fs.server.model.Node
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import java.time.format.DateTimeFormatter
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-fun NodeInfo.toNode(): Node {
-    return Node(
-        createdBy = this.createdBy,
-        createdDate = this.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-        lastModifiedBy = this.lastModifiedBy,
-        lastModifiedDate = this.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-        projectId = this.projectId,
-        repoName = this.repoName,
-        folder = this.folder,
-        path = this.path,
-        name = this.name,
-        fullPath = this.fullPath,
-        size = this.size,
-        sha256 = this.sha256,
-        md5 = this.md5,
-        metadata = metadata,
-        lastAccessDate = this.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME)
-    )
-}
+@ConfigurationProperties(value = "job.deleted-block-node-cleanup")
+class DeletedBlockNodeCleanupJobProperties(
+    override var cron: String = "0 0 3/6 * * ?"
+) : MongodbJobProperties()

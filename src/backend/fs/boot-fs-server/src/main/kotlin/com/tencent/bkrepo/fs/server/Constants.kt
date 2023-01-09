@@ -31,3 +31,5 @@ const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
 
 const val JWT_CLAIMS_REPOSITORY = "repository"
 const val JWT_CLAIMS_PERMIT = "permit"
+
+const val FS_ATTR_KEY = "fs:attr"

@@ -27,12 +27,19 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
+import com.tencent.bkrepo.fs.server.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.model.NodeAttribute
+import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.DEFAULT_MODE
+import com.tencent.bkrepo.fs.server.request.ChangeAttributeRequest
 import com.tencent.bkrepo.fs.server.request.NodePageRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
-import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.toNode
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -43,7 +50,7 @@ import org.springframework.web.reactive.function.server.buildAndAwait
  *
  * 处理节点操作的请求
  * */
-class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, val fileNodeService: FileNodeService) {
+class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
@@ -52,8 +59,7 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, va
                 repoName = repoName,
                 fullPath = fullPath
             ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
-            val length = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeDetail.size)
-            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode(length))
+            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode())
         }
     }
 
@@ -65,12 +71,63 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient, va
                 projectId = projectId,
                 repoName = repoName,
                 option = listOption
-            ).awaitSingle().data?.records?.map {
-                val length = fileNodeService.getFileLength(projectId, repoName, fullPath, it.size)
-                it.toNode(length)
-            }?.toList()
+            ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
                 ?: return ServerResponse.notFound().buildAndAwait()
             return ReactiveResponseBuilder.success(nodes)
+        }
+    }
+
+    /**
+     * 删除节点
+     * */
+    suspend fun deleteNode(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val nodeDeleteRequest = NodeDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                operator = ReactiveSecurityUtils.getUser()
+            )
+            rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle()
+            return ReactiveResponseBuilder.success()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    suspend fun changeAttribute(request: ServerRequest): ServerResponse {
+        with(ChangeAttributeRequest(request)) {
+            val preFsAttributeStr = rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle()?.data
+                ?.get(FS_ATTR_KEY)
+            val attrMap = preFsAttributeStr as? Map<String, Any> ?: mapOf()
+            val preFsAttribute = NodeAttribute(
+                owner = attrMap[NodeAttribute::owner.name] as? String ?: ReactiveSecurityUtils.getUser(),
+                mode = attrMap[NodeAttribute::mode.name] as? Int ?: DEFAULT_MODE
+            )
+
+            val attributes = NodeAttribute(
+                owner = owner ?: preFsAttribute.owner,
+                mode = mode ?: preFsAttribute.mode
+            )
+            val fsAttr = MetadataModel(
+                key = FS_ATTR_KEY,
+                value = attributes
+            )
+            val saveMetaDataRequest = MetadataSaveRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                nodeMetadata = listOf(fsAttr),
+                operator = ReactiveSecurityUtils.getUser()
+            )
+            rRepositoryClient.saveMetadata(saveMetaDataRequest).awaitSingle()
+            return ReactiveResponseBuilder.success(attributes)
+        }
+    }
+
+    suspend fun getStat(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
+            return ReactiveResponseBuilder.success(nodeStat)
         }
     }
 }
