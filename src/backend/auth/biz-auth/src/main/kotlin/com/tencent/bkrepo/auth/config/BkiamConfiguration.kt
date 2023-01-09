@@ -39,9 +39,9 @@ import com.tencent.bk.sdk.iam.service.impl.ApigwHttpClientServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.DefaultHttpClientServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.GrantServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.ManagerServiceImpl
-import com.tencent.bk.sdk.iam.service.impl.PolicyServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.TokenServiceImpl
 import com.tencent.bk.sdk.iam.service.v2.impl.V2ManagerServiceImpl
+import com.tencent.bk.sdk.iam.service.v2.impl.V2PolicyServiceImpl
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
@@ -85,7 +85,7 @@ class BkiamConfiguration {
     @Bean
     fun iamPolicyService(
         @Autowired iamConfiguration: IamConfiguration
-    ) = PolicyServiceImpl(iamConfiguration, apigwHttpClientService(iamConfiguration))
+    ) = V2PolicyServiceImpl(apigwHttpClientService(iamConfiguration), iamConfiguration)
 
     @Bean
     fun tokenService(

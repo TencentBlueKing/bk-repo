@@ -46,7 +46,6 @@ import com.tencent.bk.sdk.iam.dto.manager.dto.ManagerMemberGroupDTO
 import com.tencent.bk.sdk.iam.dto.manager.dto.ManagerRoleGroupDTO
 import com.tencent.bk.sdk.iam.helper.AuthHelper
 import com.tencent.bk.sdk.iam.service.ManagerService
-import com.tencent.bk.sdk.iam.service.PolicyService
 import com.tencent.bk.sdk.iam.service.v2.V2ManagerService
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
@@ -63,8 +62,6 @@ import com.tencent.bkrepo.auth.repository.BkIamAuthManagerRepository
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildResource
-import com.tencent.bkrepo.auth.util.BkIamV3Utils.getProjects
-import com.tencent.bkrepo.auth.util.BkIamV3Utils.getResourceInstance
 import com.tencent.bkrepo.auth.util.IamGroupUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -94,7 +91,6 @@ class BkIamV3ServiceImpl(
     private val projectClient: ProjectClient,
     private val managerService: V2ManagerService,
     private val managerServiceV1: ManagerService,
-    private val policyService: PolicyService,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val authManagerRepository: BkIamAuthManagerRepository,
@@ -283,17 +279,15 @@ class BkIamV3ServiceImpl(
         if (!checkIamConfiguration()) return emptyList()
         val actionDto = ActionDTO()
         actionDto.id = action
-        val expression = policyService.getPolicyByAction(userId, actionDto, null)
-        if (expression == null || expression.isEmpty) return emptyList()
-        logger.debug("v3 expression is $expression, and resourceType is $resourceType")
         return when(resourceType) {
             ResourceType.PROJECT.id() -> {
-                getProjects(expression)
+                authHelper.getInstanceList(userId, action, resourceType)
             }
             ResourceType.REPO.id() -> {
-                val idList = getResourceInstance(expression, projectId!!, resourceType).map {
-                    it.removePrefix("$projectId${StringPool.COLON}")
-                }
+                val pathInfoDTO = PathInfoDTO()
+                pathInfoDTO.id = projectId
+                pathInfoDTO.type = ResourceType.PROJECT.id()
+                val idList = authHelper.getInstanceList(userId, action, resourceType, pathInfoDTO)
                 convertRepoResourceIdToRepoName(idList).map {
                     it[RepositoryInfo::name.name].toString()
                 }
@@ -333,8 +327,14 @@ class BkIamV3ServiceImpl(
         val managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.REPO, repoName, projectId
         )?.managerId ?: return true
-        // TODO 等待提供接口
-        return true
+        return try {
+            managerService.deleteSubsetManager(managerId.toString())
+            authManagerRepository.deleteByTypeAndResourceIdAndParentResId(ResourceType.REPO, repoName, projectId)
+            true
+        } catch (e: Exception) {
+            logger.error("v3 deleteRepoGradeManager for repo $projectId|$repoName error: ${e.message}")
+            false
+        }
     }
 
     fun createProjectGradeManager(

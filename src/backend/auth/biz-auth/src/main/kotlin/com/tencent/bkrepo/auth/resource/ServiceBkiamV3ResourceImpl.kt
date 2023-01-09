@@ -67,7 +67,7 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
         bkIamV3Service?.let {
             val repoGradeId = lockAction(projectId) {
             bkIamV3Service!!.createGradeManager(userId, projectId, repoName)
-        }
+            }
             return ResponseBuilder.success(repoGradeId)
         } ?: return ResponseBuilder.success()
     }
@@ -76,7 +76,7 @@ class ServiceBkiamV3ResourceImpl : ServiceBkiamV3Resource {
         initService()
         bkIamV3Service?.let {
             return ResponseBuilder.success(bkIamV3Service!!.deleteRepoGradeManager(userId, projectId, repoName))
-        } ?: return ResponseBuilder.success()
+        } ?: return ResponseBuilder.success(true)
     }
 
     /**

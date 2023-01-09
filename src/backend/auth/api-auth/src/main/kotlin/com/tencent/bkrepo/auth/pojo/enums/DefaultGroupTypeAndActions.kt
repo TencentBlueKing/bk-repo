@@ -106,6 +106,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
     ),
     REPO_MANAGER(DefaultGroupType.REPO_MANAGER.value,
                        mapOf(
+                           ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
                            ResourceType.REPO.id() to listOf(
                                ActionTypeMapping.REPO_MANAGE.id(),
                                ActionTypeMapping.REPO_EDIT.id(),
@@ -125,6 +126,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
     REPO_DOWNLOAD(
         DefaultGroupType.REPO_DOWNLOAD.value,
         mapOf(
+            ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
             ResourceType.REPO.id() to listOf(ActionTypeMapping.REPO_VIEW.id()),
             ResourceType.NODE.id() to listOf(
                 ActionTypeMapping.NODE_VIEW.id(),
@@ -135,6 +137,7 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
     REPO_UPLOAD_DELETE(
         DefaultGroupType.REPO_UPLOAD_DELETE.value,
                       mapOf(
+                          ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),
                           ResourceType.REPO.id() to listOf(
                               ActionTypeMapping.REPO_VIEW.id(),
                               ActionTypeMapping.NODE_CREATE.id()
