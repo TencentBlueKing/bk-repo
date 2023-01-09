@@ -599,14 +599,9 @@ class BkIamV3ServiceImpl(
         logger.debug("v3 grant role permission for group $roleId in $projectResInfo|$repoResInfo with actions $actions")
         try {
             actions.forEach{
-                val realRepoResInfo = if (it.key == ResourceType.PROJECT.id()) {
-                    null
-                } else {
-                    repoResInfo
-                }
                 val permission = buildResource(
                     projectResInfo = projectResInfo,
-                    repoResInfo = realRepoResInfo,
+                    repoResInfo = repoResInfo,
                     iamConfiguration = iamConfiguration,
                     actions = it.value,
                     resourceType = it.key
