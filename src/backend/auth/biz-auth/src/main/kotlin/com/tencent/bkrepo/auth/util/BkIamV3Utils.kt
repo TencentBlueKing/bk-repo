@@ -35,7 +35,7 @@ import com.tencent.bk.sdk.iam.dto.manager.AuthorizationScopes
 import com.tencent.bk.sdk.iam.dto.manager.ManagerPath
 import com.tencent.bk.sdk.iam.dto.manager.ManagerResources
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
-import com.tencent.bkrepo.auth.pojo.enums.ResourceActionMapping
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
 import com.tencent.bkrepo.common.api.constant.StringPool
 
@@ -43,18 +43,18 @@ object BkIamV3Utils {
     fun buildManagerResources(
         projectResInfo: ResourceInfo,
         repoResInfo: ResourceInfo? = null,
-        resActionList: List<ResourceActionMapping>,
+        resActionMap: Map<String, List<String>>,
         iamConfiguration: IamConfiguration
     ): List<AuthorizationScopes> {
         val authorizationScopes = mutableListOf<AuthorizationScopes>()
-        resActionList.forEach {
+        resActionMap.forEach {
             authorizationScopes.add(
                 buildResource(
                     projectResInfo = projectResInfo,
                     repoResInfo = repoResInfo,
                     iamConfiguration = iamConfiguration,
-                    actions = it.actions,
-                    resourceType = it.resourceType
+                    actions = it.value,
+                    resourceType = it.key
                 )
             )
         }
@@ -68,6 +68,11 @@ object BkIamV3Utils {
         actions: List<String>,
         resourceType: String
     ): AuthorizationScopes {
+        val realRepoResInfo = if (resourceType == ResourceType.PROJECT.id()) {
+            null
+        } else {
+            repoResInfo
+        }
         val projectManagerPath = ManagerPath(
             iamConfiguration.systemId,
             projectResInfo.resType.id(),
@@ -76,12 +81,12 @@ object BkIamV3Utils {
         )
         val managerPaths = mutableListOf<ManagerPath>()
         managerPaths.add(projectManagerPath)
-        repoResInfo?.let {
+        realRepoResInfo?.let {
             val repoManagerPath = ManagerPath(
                 iamConfiguration.systemId,
-                repoResInfo.resType.id(),
-                repoResInfo.resId,
-                repoResInfo.resName
+                realRepoResInfo.resType.id(),
+                realRepoResInfo.resId,
+                realRepoResInfo.resName
             )
             managerPaths.add(repoManagerPath)
         }

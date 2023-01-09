@@ -55,7 +55,6 @@ import com.tencent.bkrepo.auth.constant.BKIAMV3_CHECK
 import com.tencent.bkrepo.auth.model.TBkIamAuthManager
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
-import com.tencent.bkrepo.auth.pojo.enums.ResourceActionMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
 import com.tencent.bkrepo.auth.repository.BkIamAuthManagerRepository
@@ -356,7 +355,7 @@ class BkIamV3ServiceImpl(
         val projectResInfo = ResourceInfo(projectInfo.name, projectInfo.displayName, ResourceType.PROJECT)
         val authorizationScopes = BkIamV3Utils.buildManagerResources(
             projectResInfo = projectResInfo,
-            resActionList = ResourceActionMapping.values().toList(),
+            resActionMap = DefaultGroupTypeAndActions.PROJECT_MANAGER.actions,
             iamConfiguration = iamConfiguration
         )
         val createManagerDTO = CreateManagerDTO.builder().system(iamConfiguration.systemId)
@@ -415,7 +414,7 @@ class BkIamV3ServiceImpl(
         val authorizationScopes = BkIamV3Utils.buildManagerResources(
             projectResInfo = projectResInfo,
             repoResInfo = repoResInfo,
-            resActionList = listOf(ResourceActionMapping.REPO_ACTIONS, ResourceActionMapping.NODE_ACTIONS),
+            resActionMap = DefaultGroupTypeAndActions.REPO_MANAGER.actions,
             iamConfiguration = iamConfiguration
         )
         try {
