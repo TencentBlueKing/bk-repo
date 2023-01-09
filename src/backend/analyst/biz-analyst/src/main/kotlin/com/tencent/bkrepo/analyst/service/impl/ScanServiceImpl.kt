@@ -57,7 +57,7 @@ import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.ResetTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
-import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.exception.NotFoundException
@@ -177,7 +177,7 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun pull(dispatcher: String?): SubScanTask? {
         return pullSubScanTask(dispatcher)?.let {
-            return Converter.convert(it, scannerService.get(it.scanner))
+            return SubtaskConverter.convert(it, scannerService.get(it.scanner))
         }
     }
 
@@ -194,7 +194,7 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun get(subtaskId: String): SubScanTask {
         return subScanTaskDao.findById(subtaskId)?.let {
-            Converter.convert(it, scannerService.get(it.scanner))
+            SubtaskConverter.convert(it, scannerService.get(it.scanner))
         } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
     }
 

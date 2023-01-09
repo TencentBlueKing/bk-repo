@@ -31,7 +31,9 @@ import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TSubScanTask
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import java.time.LocalDateTime
 
@@ -158,6 +160,36 @@ object SubtaskConverter {
             scanResultOverview = numberOverview,
             qualityRedLine = qualityPass ?: qualityRedLine,
             scanQuality = scanQuality
+        )
+    }
+
+    fun convert(
+        subScanTask: SubScanTaskDefinition,
+        scanner: Scanner
+    ): SubScanTask = with(subScanTask) {
+        val extra = if (subScanTask is TSubScanTask) {
+            subScanTask.metadata.associate { Pair(it.key, it.value) }
+        } else {
+            null
+        }
+        val taskId = if (subScanTask is TPlanArtifactLatestSubScanTask) {
+            subScanTask.latestSubScanTaskId!!
+        } else {
+            subScanTask.id!!
+        }
+        SubScanTask(
+            taskId = taskId,
+            parentScanTaskId = parentScanTaskId,
+            scanner = scanner,
+            projectId = projectId,
+            repoName = repoName,
+            repoType = repoType,
+            fullPath = fullPath,
+            sha256 = sha256,
+            size = size,
+            packageSize = packageSize,
+            credentialsKey = credentialsKey,
+            extra = extra
         )
     }
 }

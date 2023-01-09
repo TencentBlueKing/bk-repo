@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.dispatcher
 import com.tencent.bkrepo.analyst.configuration.KubernetesDispatcherProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.Configuration
@@ -44,6 +45,8 @@ class KubernetesDispatcher(
     private val scannerProperties: ScannerProperties,
     private val k8sProperties: KubernetesDispatcherProperties
 ) : SubtaskDispatcher {
+
+    private val batchV1Api by lazy { BatchV1Api() }
 
     init {
         val client = if (k8sProperties.token != null && k8sProperties.apiServer != null) {
@@ -73,12 +76,27 @@ class KubernetesDispatcher(
         return createJob(
             taskId = subtask.taskId,
             jobNamespace = k8sProperties.namespace,
-            jobName = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}",
+            jobName = jobName(subtask),
             containerImage = scanner.image,
             cmd = cmd,
             limitStorageSize = maxStorageSize(subtask.packageSize),
             jobActiveDeadlineSeconds = scanner.maxScanDuration(subtask.packageSize)
         )
+    }
+
+    override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
+        if (subtaskStatus != SubScanTaskStatus.SUCCESS.name) {
+            return false
+        }
+        // 只清理执行成功的Job，失败的Job需要保留用于排查问题
+        return ignoreApiException {
+            batchV1Api.deleteNamespacedJob(
+                jobName(subtask), k8sProperties.namespace,
+                null, null, null,
+                null, "Foreground", null
+            )
+            true
+        }
     }
 
     override fun availableCount(): Int {
@@ -158,27 +176,39 @@ class KubernetesDispatcher(
             }
         }
 
-        try {
-            val api = BatchV1Api()
-            api.createNamespacedJob(jobNamespace, body, null, null, null)
+        return ignoreApiException {
+            batchV1Api.createNamespacedJob(jobNamespace, body, null, null, null)
             logger.info("dispatch subtask[$taskId] success")
-            return true
+            true
+        }
+    }
+
+    private fun jobName(subtask: SubScanTask) = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}"
+
+    private fun maxStorageSize(fileSize: Long): Long {
+        // 先除以文件大小倍率，防止long溢出
+        return (Long.MAX_VALUE / MAX_FILE_SIZE_MULTIPLIER).coerceAtMost(fileSize) * MAX_FILE_SIZE_MULTIPLIER
+    }
+
+    private fun ignoreApiException(action: () -> Boolean): Boolean {
+        try {
+            return action()
         } catch (e: ApiException) {
             logger.error(
-                "subtask[$taskId] dispatch failed\n," +
+                "request k8s api failed\n," +
                     " code: ${e.code}\nmessage: ${e.message}\nheaders: ${e.responseHeaders}\nbody: ${e.responseBody}"
             )
         }
         return false
     }
 
-    private fun maxStorageSize(fileSize: Long): Long {
-        // 最大允许的单文件大小为待扫描文件大小3倍，先除以3，防止long溢出
-        return (Long.MAX_VALUE / 3L).coerceAtMost(fileSize) * 3L
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(KubernetesDispatcher::class.java)
+
+        /**
+         * 最大允许的单文件大小为待扫描文件大小3倍
+         */
+        private const val MAX_FILE_SIZE_MULTIPLIER = 3L
         const val NAME = "k8s"
     }
 }
