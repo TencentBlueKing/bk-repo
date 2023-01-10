@@ -30,10 +30,10 @@ package com.tencent.bkrepo.fs.server.filter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
-import kotlin.system.measureTimeMillis
 import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
+import kotlin.system.measureTimeMillis
 
 class ArtifactFileCleanupFilter : CoHandlerFilterFunction {
 
@@ -49,7 +49,7 @@ class ArtifactFileCleanupFilter : CoHandlerFilterFunction {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun cleanup(request: ServerRequest) {
+    private suspend fun cleanup(request: ServerRequest) {
         try {
             val artifactFileList = request.exchange()
                 .attributes[ReactiveArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>

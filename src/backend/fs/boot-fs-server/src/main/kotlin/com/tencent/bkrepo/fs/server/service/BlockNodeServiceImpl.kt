@@ -59,6 +59,7 @@ class BlockNodeServiceImpl(
                 .and(TBlockNode::projectId.name).isEqualTo(projectId)
                 .and(TBlockNode::repoName.name).isEqualTo(repoName)
                 .and(TBlockNode::startPos.name).isEqualTo(blockNode.startPos)
+                .and(TBlockNode::isDeleted.name).isEqualTo(false)
             val update = Update().set(TBlockNode::isDeleted.name, true)
             // 将之前的块标记为删除
             blockNodeRepository.updateMulti(Query(criteria), update)
