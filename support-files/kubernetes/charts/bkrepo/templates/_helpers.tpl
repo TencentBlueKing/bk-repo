@@ -98,3 +98,15 @@ Return the value of auth url
     {{- printf "%s/docker/v2/auth" .Values.gateway.host -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the value of authorization
+*/}}
+{{- define "bkrepo.authorization" -}}
+{{- if and .Values.gateway.accessKey .Values.gateway.secretKey -}}
+    {{- $base64 = (printf "%s:%s" .Values.gateway.accessKey .Values.gateway.secretKey ) | base64 -}}
+    {{- printf "%Platform %s" $base64 -}}
+{{- else -}}
+    {{- .Values.gateway.authorization -}}
+{{- end -}}
+{{- end -}}
