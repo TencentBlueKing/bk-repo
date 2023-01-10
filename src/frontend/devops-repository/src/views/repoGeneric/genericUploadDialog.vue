@@ -130,7 +130,7 @@
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: e.message
+                                    message: e.message || e
                                 })
                             }
                         })
@@ -159,11 +159,31 @@
                         if (e.status === 404) {
                             this.uploadFile(file)
                         } else if (e.status === 403) {
-                            this.$bkMessage({
-                                theme: 'error',
-                                message: e.message
+                            this.getPermissionUrl({
+                                body: {
+                                    projectId: this.projectId,
+                                    action: 'WRITE',
+                                    resourceType: 'REPO',
+                                    uid: this.userInfo.name,
+                                    repoName: this.repoName
+                                }
+                            }).then(res => {
+                                if (res !== '') {
+                                    this.showIamDenyDialog = true
+                                    this.showData = {
+                                        projectId: this.projectId,
+                                        repoName: this.repoName,
+                                        action: 'WRITE',
+                                        url: res
+                                    }
+                                } else {
+                                    this.$bkMessage({
+                                        theme: 'error',
+                                        message: e.message || e
+                                    })
+                                    this.uploadDialog.loading = false
+                                }
                             })
-                            this.uploadDialog.loading = false
                         }
                     })
                 } else {

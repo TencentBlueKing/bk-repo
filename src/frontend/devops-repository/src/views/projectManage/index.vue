@@ -119,7 +119,7 @@
                 })
             },
             createPermission (projectId) {
-                this.refreshIamPermission(projectId).then(res => {
+                this.refreshIamPermission({ projectId: projectId }).then(res => {
                     if (res === true) {
                         this.$bkMessage({
                             theme: 'success',
