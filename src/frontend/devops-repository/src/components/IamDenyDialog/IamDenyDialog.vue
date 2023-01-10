@@ -9,10 +9,10 @@
             :outer-border="false"
             :row-border="false"
             size="small">
-            <bk-table-column label="需申请的权限" show-overflow-tooltip>
+            <bk-table-column label="需申请的权限" width="276px">
                 <template #default="{ row }"><p>{{ replaceAction(row.action) }}</p></template>
             </bk-table-column>
-            <bk-table-column label="关联的资源实例" show-overflow-tooltip>
+            <bk-table-column label="关联的资源实例" width="276px">
                 <template #default="{ row }">
                     <p v-if="row.repoName === ''">
                         项目名：{{ row.projectId }}

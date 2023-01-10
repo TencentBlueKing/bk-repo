@@ -34,12 +34,17 @@
             <bk-button theme="default" @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="genericForm.loading" theme="primary" @click="submit">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     export default {
         name: 'genericForm',
+        components: {
+            iamDenyDialog
+        },
         data () {
             return {
                 genericForm: {
@@ -85,10 +90,13 @@
                         }
                     ]
                 },
-                scanList: []
+                scanList: [],
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -101,7 +109,8 @@
                 'createFolder',
                 'renameNode',
                 'startScanSingle',
-                'getScanAll'
+                'getScanAll',
+                'getPermissionUrl'
             ]),
             setData (data) {
                 this.genericForm = {
@@ -177,6 +186,38 @@
                         message: message + this.$t('success')
                     })
                     this.genericForm.show = false
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
+                        })
+                    }
                 }).finally(() => {
                     this.genericForm.loading = false
                 })
