@@ -226,9 +226,14 @@ class ScanServiceImpl @Autowired constructor(
                 ?: return null
 
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
-            if (task.status == SubScanTaskStatus.EXECUTING.name && task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
+            if (task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
                 logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] exceed max execute times")
-                finishSubtask(task, SubScanTaskStatus.TIMEOUT.name)
+                val targetState = if (task.status == SubScanTaskStatus.EXECUTING.name) {
+                    SubScanTaskStatus.TIMEOUT.name
+                } else {
+                    SubScanTaskStatus.FAILED.name
+                }
+                finishSubtask(task, targetState)
                 continue
             }
 
