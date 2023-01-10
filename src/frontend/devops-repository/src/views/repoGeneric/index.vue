@@ -629,6 +629,38 @@
                                 theme: 'success',
                                 message: this.$t('delete') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            url: res
+                                        }
+                                    } else {
+                                        this.$bkMessage({
+                                            theme: 'error',
+                                            message: e.message
+                                        })
+                                    }
+                                })
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
                         })
                     }
                 })
@@ -664,11 +696,39 @@
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
-                    this.$bkMessage({
-                        theme: 'error',
-                        message
-                    })
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            } else {
+                                const message = this.$t('fileDownloadError', [this.$route.params.projectId])
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message
+                                })
+                            }
+                        })
+                    } else {
+                        const message = this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
                 })
             },
             handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
@@ -685,6 +745,38 @@
                         message: (forbidStatus ? '解除禁止' : '禁止使用') + this.$t('success')
                     })
                     this.getArtifactories()
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
             },
             calculateFolderSize (row) {
@@ -724,6 +816,38 @@
                                 theme: 'success',
                                 message: this.$t('delete') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            url: res
+                                        }
+                                    } else {
+                                        this.$bkMessage({
+                                            theme: 'error',
+                                            message: e.message
+                                        })
+                                    }
+                                })
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
                         })
                     }
                 })
