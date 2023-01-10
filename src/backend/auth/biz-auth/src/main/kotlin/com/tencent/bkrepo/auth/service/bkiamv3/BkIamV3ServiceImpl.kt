@@ -144,8 +144,11 @@ class BkIamV3ServiceImpl(
         )
         if (!checkIamConfiguration()) return null
         if (repoName != null && !checkBkiamv3Config(projectId, repoName))  return null
-        val instanceList = mutableListOf<RelationResourceInstance>()
+        authManagerRepository.findByTypeAndResourceIdAndParentResId(
+            ResourceType.PROJECT, projectId, null
+        )?.managerId ?: return null
 
+        val instanceList = mutableListOf<RelationResourceInstance>()
         val projectInstance = RelationResourceInstance(
             iamConfiguration.systemId,
             ResourceType.PROJECT.id(),
