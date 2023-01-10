@@ -104,7 +104,7 @@ Return the value of authorization
 */}}
 {{- define "bkrepo.authorization" -}}
 {{- if and .Values.gateway.accessKey .Values.gateway.secretKey -}}
-    {{- $base64 = (printf "%s:%s" .Values.gateway.accessKey .Values.gateway.secretKey ) | base64 -}}
+    {{- $base64 = (printf "%s:%s" .Values.gateway.accessKey .Values.gateway.secretKey ) | b64enc -}}
     {{- printf "%Platform %s" $base64 -}}
 {{- else -}}
     {{- .Values.gateway.authorization -}}
