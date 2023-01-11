@@ -169,14 +169,14 @@
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: e.message
+                                    message: e.message || '访问被拒绝：Forbidden'
                                 })
                             }
                         })
                     } else {
                         this.$bkMessage({
                             theme: 'error',
-                            message: e.message
+                            message: e.message || '访问被拒绝：Forbidden'
                         })
                     }
                 }).finally(() => {
