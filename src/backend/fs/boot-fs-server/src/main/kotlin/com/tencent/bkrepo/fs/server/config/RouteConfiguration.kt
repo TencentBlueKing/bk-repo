@@ -44,8 +44,6 @@ import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.coroutines.cancellation.CancellationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON
@@ -54,6 +52,8 @@ import org.springframework.web.reactive.function.server.CoRouterFunctionDsl
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
 import org.springframework.web.reactive.function.server.coRouter
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * 路由配置
@@ -103,10 +103,6 @@ class RouteConfiguration(
     private fun CoRouterFunctionDsl.nodeRouter() {
         "/api/node".nest {
             requireReadPermission()
-            "/change/attribute".nest {
-                requireWritePermission()
-                PUT(DEFAULT_MAPPING_URI, nodeOperationsHandler::changeAttribute)
-            }
             "/stat".nest {
                 GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getStat)
             }
@@ -115,6 +111,15 @@ class RouteConfiguration(
             }
             accept(APPLICATION_JSON).nest {
                 GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getNode)
+            }
+        }
+        "/api/node".nest {
+            requireWritePermission()
+            "/change/attribute".nest {
+                PUT(DEFAULT_MAPPING_URI, nodeOperationsHandler::changeAttribute)
+            }
+            "/move".nest {
+                PUT(DEFAULT_MAPPING_URI, nodeOperationsHandler::move)
             }
         }
     }

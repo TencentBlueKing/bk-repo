@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.fs.server.model
 
 data class NodeAttribute(
-    val owner: String,
+    val uid: String,
+    val gid: String,
     val mode: Int
 ) {
     companion object {
         const val DEFAULT_MODE = 700
+        const val NOBODY = "nobody"
     }
 }

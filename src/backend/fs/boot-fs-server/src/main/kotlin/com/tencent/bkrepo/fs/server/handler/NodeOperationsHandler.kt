@@ -29,17 +29,22 @@ package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.fs.server.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
 import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.DEFAULT_MODE
+import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.NOBODY
 import com.tencent.bkrepo.fs.server.request.ChangeAttributeRequest
+import com.tencent.bkrepo.fs.server.request.MoveRequest
 import com.tencent.bkrepo.fs.server.request.NodePageRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
+import com.tencent.bkrepo.fs.server.response.StatResponse
 import com.tencent.bkrepo.fs.server.toNode
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -100,12 +105,14 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
                 ?.get(FS_ATTR_KEY)
             val attrMap = preFsAttributeStr as? Map<String, Any> ?: mapOf()
             val preFsAttribute = NodeAttribute(
-                owner = attrMap[NodeAttribute::owner.name] as? String ?: ReactiveSecurityUtils.getUser(),
+                uid = attrMap[NodeAttribute::uid.name] as? String ?: NOBODY,
+                gid = attrMap[NodeAttribute::gid.name] as? String ?: NOBODY,
                 mode = attrMap[NodeAttribute::mode.name] as? Int ?: DEFAULT_MODE
             )
 
             val attributes = NodeAttribute(
-                owner = owner ?: preFsAttribute.owner,
+                uid = uid ?: preFsAttribute.uid,
+                gid = gid ?: preFsAttribute.gid,
                 mode = mode ?: preFsAttribute.mode
             )
             val fsAttr = MetadataModel(
@@ -123,11 +130,37 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
             return ReactiveResponseBuilder.success(attributes)
         }
     }
-
     suspend fun getStat(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
+            val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
             val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
-            return ReactiveResponseBuilder.success(nodeStat)
+            val res = StatResponse(
+                subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,
+                size = nodeStat?.size ?: UNKNOWN,
+                capacity = cap ?: UNKNOWN
+            )
+            return ReactiveResponseBuilder.success(res)
         }
+    }
+
+    /**
+     * 移动节点
+     * */
+    suspend fun move(request: ServerRequest): ServerResponse {
+        with(MoveRequest(request)) {
+            val moveRequest = NodeRenameRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                newFullPath = dst,
+                operator = ReactiveSecurityUtils.getUser()
+            )
+            rRepositoryClient.renameNode(moveRequest).awaitSingle()
+            return ReactiveResponseBuilder.success()
+        }
+    }
+
+    companion object {
+        private const val UNKNOWN = -1L
     }
 }

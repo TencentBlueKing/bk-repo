@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -73,6 +74,9 @@ interface RRepositoryClient {
 
     @DeleteMapping("/node/delete")
     fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Mono<Response<Void>>
+
+    @PostMapping("/node/rename")
+    fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Mono<Response<Void>>
 
     @GetMapping("/node/size/{projectId}/{repoName}")
     fun computeSize(
