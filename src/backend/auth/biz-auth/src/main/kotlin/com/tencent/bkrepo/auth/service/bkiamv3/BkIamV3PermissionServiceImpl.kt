@@ -97,10 +97,6 @@ open class BkIamV3PermissionServiceImpl(
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {
         with(request) {
             if (projectId == null) return false
-            if (!bkiamV3Service.checkBkiamv3Config(projectId, repoName)) {
-                // 当仓库权限开关没打开，则校验项目权限
-                return checkBkIamV3ProjectPermission(projectId!!, uid, action)
-            }
             val resourceId = bkiamV3Service.getResourceId(
                 resourceType, projectId, repoName, path
             ) ?: StringPool.EMPTY
