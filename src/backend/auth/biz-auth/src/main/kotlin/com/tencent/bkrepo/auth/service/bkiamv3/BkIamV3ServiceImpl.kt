@@ -302,7 +302,7 @@ class BkIamV3ServiceImpl(
         logger.info("v3 refreshProjectManager projectId: $projectId")
         val projectInfo = projectClient.getProjectInfo(projectId).data
             ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
-        return (createGradeManager(projectInfo.createdBy, projectId)
+        return !(createGradeManager(projectInfo.createdBy, projectId)
             ?: createGradeManager(SecurityUtils.getUserId(), projectId)).isNullOrEmpty()
     }
 
@@ -548,7 +548,6 @@ class BkIamV3ServiceImpl(
         val defaultGroup = ManagerRoleGroup(
             IamGroupUtils.buildIamGroup(resName, defaultGroupType.displayName),
             IamGroupUtils.buildDefaultDescription(resName, defaultGroupType.displayName, userId),
-            // 管理员组只允许读，不可编辑
             false
         )
         val managerRoleGroup = ManagerRoleGroupDTO.builder().groups(listOf(defaultGroup)).build()
