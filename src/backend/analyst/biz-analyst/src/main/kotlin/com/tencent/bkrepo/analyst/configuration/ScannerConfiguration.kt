@@ -33,6 +33,7 @@ import com.tencent.bkrepo.analyst.dispatcher.KubernetesDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
 import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
@@ -40,12 +41,14 @@ import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.statemachine.StateMachine
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.redis.core.RedisTemplate
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(
@@ -68,9 +71,10 @@ class ScannerConfiguration {
     fun dockerDispatcher(
         subScanTaskDao: SubScanTaskDao,
         scannerProperties: ScannerProperties,
-        dockerDispatcherProperties: DockerDispatcherProperties
+        dockerDispatcherProperties: DockerDispatcherProperties,
+        redisTemplate: ObjectProvider<RedisTemplate<String, String>>
     ): SubtaskDispatcher {
-        return DockerDispatcher(scannerProperties, dockerDispatcherProperties, subScanTaskDao)
+        return DockerDispatcher(scannerProperties, dockerDispatcherProperties, subScanTaskDao, redisTemplate)
     }
 
     @Bean
@@ -78,11 +82,12 @@ class ScannerConfiguration {
     fun poller(
         dispatcher: SubtaskDispatcher,
         scanService: ScanService,
+        scannerService: ScannerService,
         temporaryScanTokenService: TemporaryScanTokenService,
         @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
         subtaskStateMachine: StateMachine
     ): SubtaskPoller {
-        return SubtaskPoller(dispatcher, scanService, temporaryScanTokenService, subtaskStateMachine)
+        return SubtaskPoller(dispatcher, scanService, scannerService, temporaryScanTokenService, subtaskStateMachine)
     }
 
     @Bean
