@@ -33,8 +33,10 @@ import org.springframework.web.reactive.function.server.queryParamOrNull
 
 class MoveRequest(request: ServerRequest) : NodeRequest(request) {
     val dst: String
+    val overwrite: Boolean
 
     init {
         dst = request.queryParamOrNull("dst") ?: throw ParameterInvalidException("required dst parameter.")
+        overwrite = request.queryParamOrNull("overwrite")?.toBoolean() ?: false
     }
 }

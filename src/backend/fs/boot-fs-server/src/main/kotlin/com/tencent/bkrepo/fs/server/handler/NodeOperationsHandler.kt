@@ -148,6 +148,21 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
      * */
     suspend fun move(request: ServerRequest): ServerResponse {
         with(MoveRequest(request)) {
+            if (overwrite) {
+                rRepositoryClient.getNodeDetail(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = dst
+                ).awaitSingle().data?.let {
+                    val nodeDeleteRequest = NodeDeleteRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = dst,
+                        operator = ReactiveSecurityUtils.getUser()
+                    )
+                    rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle()
+                }
+            }
             val moveRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
