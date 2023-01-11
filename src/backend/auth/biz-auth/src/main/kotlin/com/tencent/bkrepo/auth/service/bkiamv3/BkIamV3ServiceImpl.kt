@@ -298,11 +298,16 @@ class BkIamV3ServiceImpl(
          }
     }
 
-    override fun refreshProjectManager(projectId: String): Boolean {
-        logger.info("v3 refreshProjectManager projectId: $projectId")
+    override fun refreshProjectManager(userId: String?, projectId: String): Boolean {
+        logger.info("v3 refreshProjectManager projectId: $projectId and userId: $userId")
         val projectInfo = projectClient.getProjectInfo(projectId).data
             ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
-        return !(createGradeManager(projectInfo.createdBy, projectId)
+        val uId = if (userId.isNullOrEmpty()) {
+            projectInfo.createdBy
+        } else {
+            userId
+        }
+        return !(createGradeManager(uId, projectId)
             ?: createGradeManager(SecurityUtils.getUserId(), projectId)).isNullOrEmpty()
     }
 
@@ -324,8 +329,17 @@ class BkIamV3ServiceImpl(
         }
     }
 
-    override fun deleteRepoGradeManager(userId: String, projectId: String, repoName: String): Boolean {
+    override fun deleteGradeManager(projectId: String, repoName: String?): Boolean {
         if (!checkIamConfiguration()) return false
+        logger.info("Manager for $projectId|$repoName will be deleted")
+        return if (repoName != null) {
+            deleteRepoManager(projectId, repoName)
+        } else {
+            deleteProjectManager(projectId)
+        }
+    }
+
+    private fun deleteRepoManager(projectId: String, repoName: String): Boolean {
         val managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.REPO, repoName, projectId
         )?.managerId ?: return true
@@ -339,6 +353,24 @@ class BkIamV3ServiceImpl(
         }
     }
 
+    private fun deleteProjectManager(projectId: String): Boolean {
+        val managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+            ResourceType.PROJECT, projectId, null
+        )?.managerId ?: return true
+        return try {
+            managerService.deleteManagerV2(managerId.toString())
+            authManagerRepository.findAllByTypeAndParentResId(ResourceType.REPO, projectId).forEach{
+                authManagerRepository.deleteByTypeAndResourceIdAndParentResId(
+                    ResourceType.REPO, it.resourceId, projectId
+                )
+            }
+            authManagerRepository.deleteByTypeAndResourceIdAndParentResId(ResourceType.PROJECT, projectId, null)
+            true
+        } catch (e: Exception) {
+            logger.error("v3 deleteProjectManager for repo $projectId error: ${e.message}")
+            false
+        }
+    }
     fun createProjectGradeManager(
         userId: String,
         projectId: String

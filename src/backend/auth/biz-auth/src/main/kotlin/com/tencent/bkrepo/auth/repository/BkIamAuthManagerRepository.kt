@@ -38,6 +38,10 @@ interface BkIamAuthManagerRepository: MongoRepository<TBkIamAuthManager, String>
         type: ResourceType, resourceId: String, parentResId: String?
     ) :TBkIamAuthManager?
 
+    fun findAllByTypeAndParentResId(
+        type: ResourceType, parentResId: String
+    ) :List<TBkIamAuthManager>
+
     fun deleteByTypeAndResourceIdAndParentResId(
         type: ResourceType, resourceId: String, parentResId: String?
     )

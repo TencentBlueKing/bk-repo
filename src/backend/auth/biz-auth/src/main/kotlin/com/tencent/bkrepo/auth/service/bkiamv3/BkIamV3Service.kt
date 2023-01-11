@@ -90,7 +90,8 @@ interface BkIamV3Service {
     /**
      * 刷新项目以及旗下仓库对应的权限中心权限
      */
-    fun refreshProjectManager(projectId: String): Boolean
+    fun refreshProjectManager(userId: String? = null, projectId: String): Boolean
+
 
     /**
      * 创建项目分级管理员
@@ -102,12 +103,11 @@ interface BkIamV3Service {
     ): String?
 
     /**
-     * 删除仓库分级管理员
+     * 删除分级管理员
      */
-    fun deleteRepoGradeManager(
-        userId: String,
+    fun deleteGradeManager(
         projectId: String,
-        repoName: String
+        repoName: String? = null
     ): Boolean
 
     /**
