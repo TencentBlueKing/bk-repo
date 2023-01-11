@@ -72,7 +72,7 @@ open class SubtaskPoller(
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
     open fun clean(event: SubtaskStatusChangedEvent) {
-        if (SubScanTaskStatus.finishedStatus(event.subtask.status)) {
+        if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher == dispatcher.name()) {
             val scanner = scannerService.get(event.subtask.scanner)
             val result = dispatcher.clean(SubtaskConverter.convert(event.subtask, scanner), event.subtask.status)
             val subtaskId = event.subtask.latestSubScanTaskId
