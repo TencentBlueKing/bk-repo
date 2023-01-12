@@ -39,6 +39,7 @@ import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
@@ -192,7 +193,8 @@ class FinishSubtaskAction(
                 SubScanTaskStatus.valueOf(subTask.status),
                 SubtaskConverter.convertToPlanSubtask(
                     subTask, resultSubTaskStatus, overview, qualityPass = qualityPass
-                )
+                ),
+                subTask.metadata.firstOrNull { it.key == TaskMetadata.TASK_METADATA_DISPATCHER }?.value
             )
         )
 

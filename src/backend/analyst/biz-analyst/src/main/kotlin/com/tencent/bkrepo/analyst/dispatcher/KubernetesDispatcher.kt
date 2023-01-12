@@ -89,11 +89,12 @@ class KubernetesDispatcher(
     }
 
     override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
-        if (subtaskStatus != SubScanTaskStatus.SUCCESS.name || !k8sProperties.cleanJobAfterSuccess) {
-            return false
+        val shouldClean = k8sProperties.cleanJobAfterSuccess && subtaskStatus == SubScanTaskStatus.SUCCESS.name
+        if (shouldClean || subtaskStatus == SubScanTaskStatus.STOPPED.name) {
+            // 只清理执行成功或手动停止的Job，失败的Job需要保留用于排查问题
+            return cleanJob(jobName(subtask))
         }
-        // 只清理执行成功的Job，失败的Job需要保留用于排查问题
-        return cleanJob(jobName(subtask))
+        return false
     }
 
     override fun availableCount(): Int {
