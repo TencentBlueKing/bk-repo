@@ -635,9 +635,10 @@
                                     body: {
                                         projectId: this.projectId,
                                         action: 'DELETE',
-                                        resourceType: 'REPO',
+                                        resourceType: 'NODE',
                                         uid: this.userInfo.name,
-                                        repoName: this.repoName
+                                        repoName: this.repoName,
+                                        path: fullPath
                                     }
                                 }).then(res => {
                                     if (res !== '') {
@@ -646,6 +647,7 @@
                                             projectId: this.projectId,
                                             repoName: this.repoName,
                                             action: 'DELETE',
+                                            path: fullPath,
                                             url: res
                                         }
                                     } else {
@@ -701,9 +703,10 @@
                             body: {
                                 projectId: this.projectId,
                                 action: 'READ',
-                                resourceType: 'REPO',
+                                resourceType: 'NODE',
                                 uid: this.userInfo.name,
-                                repoName: this.repoName
+                                repoName: this.repoName,
+                                path: fullPath
                             }
                         }).then(res => {
                             if (res !== '') {
@@ -711,6 +714,7 @@
                                 this.showData = {
                                     projectId: this.projectId,
                                     repoName: this.repoName,
+                                    path: fullPath,
                                     action: 'READ',
                                     url: res
                                 }
@@ -751,7 +755,8 @@
                             body: {
                                 projectId: this.projectId,
                                 action: 'READ',
-                                resourceType: 'REPO',
+                                resourceType: 'NODE',
+                                path: fullPath,
                                 uid: this.userInfo.name,
                                 repoName: this.repoName
                             }
@@ -762,6 +767,7 @@
                                     projectId: this.projectId,
                                     repoName: this.repoName,
                                     action: 'READ',
+                                    path: fullPath,
                                     url: res
                                 }
                             } else {

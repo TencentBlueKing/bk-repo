@@ -14,7 +14,10 @@
             </bk-table-column>
             <bk-table-column label="关联的资源实例" width="276px">
                 <template #default="{ row }">
-                    <p v-if="row.repoName === ''">
+                    <p v-if="row.path">
+                        节点路径：{{ row.path }}
+                    </p>
+                    <p v-else-if="row.repoName === ''">
                         项目名：{{ row.projectId }}
                     </p>
                     <p v-else>

@@ -153,8 +153,9 @@
                             body: {
                                 projectId: projectId,
                                 action: 'READ',
-                                resourceType: 'REPO',
+                                resourceType: 'NODE',
                                 uid: this.userInfo.name,
+                                path: path,
                                 repoName: repoName
                             }
                         }).then(res => {
@@ -164,6 +165,7 @@
                                     projectId: projectId,
                                     repoName: repoName,
                                     action: 'READ',
+                                    path: path,
                                     url: res
                                 }
                             } else {
