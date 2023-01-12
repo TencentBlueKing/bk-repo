@@ -42,11 +42,14 @@ import com.tencent.bkrepo.fs.server.service.FileOperationService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
-import org.springframework.core.io.FileSystemResource
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.ZeroCopyHttpOutputMessage
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
+import org.springframework.web.reactive.function.server.buildAndAwait
 
 /**
  * 文件操作相关处理器
@@ -80,12 +83,23 @@ class FileOperationsHandler(
                 size = node?.size,
                 range = range
             ) ?: throw ArtifactNotFoundException(this.toString())
-            val source = if (artifactInputStream is FileArtifactInputStream) {
-                FileSystemResource(artifactInputStream.file)
+            if (artifactInputStream is FileArtifactInputStream) {
+                val response = request.exchange().response
+                response.statusCode = HttpStatus.PARTIAL_CONTENT
+                val headers = response.headers
+                headers.contentLength = artifactInputStream.range.length
+                headers.set(HttpHeaders.ACCEPT_RANGES, "bytes")
+                headers.add("Content-Range", "bytes ${range.start}-${range.end}/$fileLength")
+                (response as ZeroCopyHttpOutputMessage).writeWith(
+                    artifactInputStream.file,
+                    artifactInputStream.range.start,
+                    artifactInputStream.range.length
+                ).awaitSingle()
+                return ok().buildAndAwait()
             } else {
-                RegionInputStreamResource(artifactInputStream, range.length)
+                val source = RegionInputStreamResource(artifactInputStream, range.length)
+                return ok().bodyValueAndAwait(source)
             }
-            return ok().bodyValueAndAwait(source)
         }
     }
 
