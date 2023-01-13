@@ -754,7 +754,7 @@
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
-                                action: 'READ',
+                                action: 'UPDATE',
                                 resourceType: 'NODE',
                                 path: fullPath,
                                 uid: this.userInfo.name,
@@ -766,7 +766,7 @@
                                 this.showData = {
                                     projectId: this.projectId,
                                     repoName: this.repoName,
-                                    action: 'READ',
+                                    action: 'UPDATE',
                                     path: fullPath,
                                     url: res
                                 }
@@ -806,48 +806,25 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     paths
-                })
-                this.$confirm({
-                    theme: 'danger',
-                    message: `确认批量删除已选中的 ${this.multiSelect.length} 项？`,
-                    subMessage: `选中文件夹和文件共计包含 ${totalRecords} 个文件`,
-                    confirmFn: () => {
-                        return this.deleteMultiArtifactory({
-                            projectId: this.projectId,
-                            repoName: this.repoName,
-                            paths
-                        }).then(() => {
-                            this.refreshNodeChange()
-                            this.$bkMessage({
-                                theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
-                            })
-                        }).catch(e => {
-                            if (e.status === 403) {
-                                this.getPermissionUrl({
-                                    body: {
-                                        projectId: this.projectId,
-                                        action: 'DELETE',
-                                        resourceType: 'REPO',
-                                        uid: this.userInfo.name,
-                                        repoName: this.repoName
-                                    }
-                                }).then(res => {
-                                    if (res !== '') {
-                                        this.showIamDenyDialog = true
-                                        this.showData = {
-                                            projectId: this.projectId,
-                                            repoName: this.repoName,
-                                            action: 'DELETE',
-                                            url: res
-                                        }
-                                    } else {
-                                        this.$bkMessage({
-                                            theme: 'error',
-                                            message: e.message
-                                        })
-                                    }
-                                })
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'DELETE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'DELETE',
+                                    url: res
+                                }
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
@@ -855,8 +832,33 @@
                                 })
                             }
                         })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
                     }
                 })
+                if (totalRecords !== undefined) {
+                    this.$confirm({
+                        theme: 'danger',
+                        message: `确认批量删除已选中的 ${this.multiSelect.length} 项？`,
+                        subMessage: `选中文件夹和文件共计包含 ${totalRecords} 个文件`,
+                        confirmFn: () => {
+                            return this.deleteMultiArtifactory({
+                                projectId: this.projectId,
+                                repoName: this.repoName,
+                                paths
+                            }).then(() => {
+                                this.refreshNodeChange()
+                                this.$bkMessage({
+                                    theme: 'success',
+                                    message: this.$t('delete') + this.$t('success')
+                                })
+                            })
+                        }
+                    })
+                }
             },
             async handlerPreviewBasicsFile (row) {
                 this.$refs.previewBasicFileDialog.setDialogData({
@@ -868,6 +870,40 @@
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
                 this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
@@ -890,6 +926,40 @@
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
 
                 this.compressedData = res.reduce((acc, item) => {

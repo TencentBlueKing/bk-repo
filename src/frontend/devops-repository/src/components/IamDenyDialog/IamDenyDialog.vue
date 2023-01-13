@@ -14,7 +14,7 @@
             </bk-table-column>
             <bk-table-column label="关联的资源实例" width="276px">
                 <template #default="{ row }">
-                    <p v-if="row.path">
+                    <p v-if="row.path && row.path !== ''">
                         节点路径：{{ row.path }}
                     </p>
                     <p v-else-if="row.repoName === ''">
@@ -78,6 +78,8 @@
                         return '管理'
                     case 'DELETE':
                         return '删除'
+                    case 'UPDATE':
+                        return '更新'
                     default:
                         return action
                 }
