@@ -131,7 +131,7 @@ class TemporaryScanTokenServiceImpl(
                 value.copy(url = url)
             }
 
-            return ToolInput.create(taskId, scanner, repoType, subtask.size, fileUrls)
+            return ToolInput.create(taskId, scanner, repoType, subtask.packageSize, fileUrls)
         }
     }
 
