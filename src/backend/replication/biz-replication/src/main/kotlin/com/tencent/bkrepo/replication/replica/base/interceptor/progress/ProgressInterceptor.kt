@@ -34,6 +34,7 @@ import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
+import java.io.IOException
 
 class ProgressInterceptor : Interceptor {
 
@@ -46,13 +47,18 @@ class ProgressInterceptor : Interceptor {
             val task = tag.task
             val key = tag.key
             listener.onStart(task, key,request.body!!.contentLength() - tag.size)
-            val response = chain.proceed(wrapRequest(request, task, key))
-            if (response.isSuccessful) {
-                listener.onSuccess(task)
-            } else {
+            try {
+                val response = chain.proceed(wrapRequest(request, task, key))
+                if (response.isSuccessful) {
+                    listener.onSuccess(task)
+                } else {
+                    listener.onFailed(task, key)
+                }
+                return response
+            } catch (e: IOException) {
                 listener.onFailed(task, key)
+                throw e
             }
-            return response
         }
 
         return chain.proceed(request)
