@@ -74,7 +74,7 @@ spec:
             - name: BK_REPO_GATEWAY_DNS_ADDR
               value: {{ .Values.gateway.dnsServer }}
             - name: BK_REPO_AUTHORIZATION
-              value: {{ .Values.gateway.authorization }}
+              value: {{ include "bkrepo.authorization" . }}
             - name: BK_REPO_DEPLOY_MODE
               value: {{ .Values.gateway.deployMode }}
             - name: BK_REPO_AUTH_MODE
