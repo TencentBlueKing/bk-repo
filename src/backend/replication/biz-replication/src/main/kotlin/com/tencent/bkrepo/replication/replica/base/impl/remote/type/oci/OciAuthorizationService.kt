@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.base.impl.remote.type.oci
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.QUESTION
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
@@ -130,7 +131,7 @@ class OciAuthorizationService : AuthorizationService {
         return try {
             val params = wwwAuthenticate.split("\",")
             params.forEach {
-                val param = it.split("=")
+                val param = it.split(Regex("="),2)
                 val name = param.first()
                 val value = param.last().replace("\"", "")
                 map[name] = value
@@ -148,7 +149,11 @@ class OciAuthorizationService : AuthorizationService {
 
     private fun buildAuthenticationUrl(property: AuthenticationProperty, userName: String?): String? {
         if (property.authUrl.isBlank()) return null
-        var result = "${property.authUrl}?$SERVICE=${property.service}"
+        var result = if (property.authUrl.contains(QUESTION)) {
+            "${property.authUrl}&$SERVICE=${property.service}"
+        } else {
+            "${property.authUrl}?$SERVICE=${property.service}"
+        }
         property.scope?.let {
             result += "&$SCOPE=${property.scope}"
         }
