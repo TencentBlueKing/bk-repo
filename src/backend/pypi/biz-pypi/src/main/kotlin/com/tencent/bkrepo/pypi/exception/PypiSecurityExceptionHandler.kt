@@ -25,9 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-operate:operate-api"))
-    api(project(":common:common-mongo"))
-    api(project(":common:common-security"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.pypi.exception
+
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
+import org.springframework.http.HttpHeaders
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+@RestControllerAdvice
+class PypiSecurityExceptionHandler: SecurityExceptionHandler() {
+
+    @ExceptionHandler(AuthenticationException::class)
+    override fun handleException(exception: AuthenticationException): Response<*> {
+        HttpContextHolder.getResponse().setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
+        HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_JSON)
+        return response(exception)
+    }
 }

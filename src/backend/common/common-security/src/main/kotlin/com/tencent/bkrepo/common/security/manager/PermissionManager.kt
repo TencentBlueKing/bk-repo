@@ -188,7 +188,7 @@ open class PermissionManager(
      * @param userId 用户id
      * @param principalType 身份类型
      */
-    fun checkPrincipal(userId: String, principalType: PrincipalType) {
+    open fun checkPrincipal(userId: String, principalType: PrincipalType) {
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 

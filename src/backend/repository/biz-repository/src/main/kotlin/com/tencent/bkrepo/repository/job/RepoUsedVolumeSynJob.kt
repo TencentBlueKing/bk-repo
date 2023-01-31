@@ -33,11 +33,13 @@ package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.event.repo.RepoVolumeSyncEvent
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
+import org.springframework.context.event.EventListener
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -53,6 +55,11 @@ class RepoUsedVolumeSynJob(
 ) {
 
     private val repositoryDao = nodeBaseService.repositoryDao
+
+    @EventListener(RepoVolumeSyncEvent::class)
+    fun listener(event: RepoVolumeSyncEvent) {
+        syn(event.projectId, event.repoName)
+    }
 
     fun syn(projectId: String, repoName: String): Long {
         logger.info("start to synchronize repo used volume, projectId: $projectId, repoName: $repoName")

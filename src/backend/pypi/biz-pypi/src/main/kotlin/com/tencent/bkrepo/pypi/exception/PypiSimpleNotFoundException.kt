@@ -25,9 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-operate:operate-api"))
-    api(project(":common:common-mongo"))
-    api(project(":common:common-security"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-}
+package com.tencent.bkrepo.pypi.exception
+
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+
+/**
+ * Simple接口Not Found异常
+ */
+class PypiSimpleNotFoundException(
+    message: String
+) : NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, message)

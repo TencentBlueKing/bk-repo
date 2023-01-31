@@ -31,6 +31,9 @@
 
 package com.tencent.bkrepo.pypi.exception
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.pojo.PypiExceptionResponse
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -57,6 +60,13 @@ class PypiExceptionHandler {
     @ExceptionHandler(PypiRemoteSearchException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleException(exception: PypiRemoteSearchException): PypiExceptionResponse {
+        return PypiExceptionResponse(HttpStatus.NOT_FOUND.toString(), exception.message)
+    }
+
+    @ExceptionHandler(PypiSimpleNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleException(exception: PypiSimpleNotFoundException): PypiExceptionResponse {
+        HttpContextHolder.getResponse().addHeader(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_JSON)
         return PypiExceptionResponse(HttpStatus.NOT_FOUND.toString(), exception.message)
     }
 }

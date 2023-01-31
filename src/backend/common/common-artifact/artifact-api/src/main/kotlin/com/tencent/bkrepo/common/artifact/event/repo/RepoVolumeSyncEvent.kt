@@ -25,9 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-operate:operate-api"))
-    api(project(":common:common-mongo"))
-    api(project(":common:common-security"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-}
+package com.tencent.bkrepo.common.artifact.event.repo
+
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+
+data class RepoVolumeSyncEvent(
+    override val projectId: String,
+    override val repoName: String
+): ArtifactEvent(
+    type = EventType.REPO_VOLUME_SYNC,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = StringPool.ROOT,
+    userId = "system"
+)

@@ -41,6 +41,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * 记录被[LogOperate]注解的类或方法操作日志
@@ -50,6 +53,12 @@ import java.util.concurrent.ConcurrentHashMap
 class LogOperateAspect(private val operateLogService: OperateLogService) {
     @Volatile
     private var operateLogBuffer: MutableSet<OperateLog> = ConcurrentHashMap.newKeySet(LOG_BUFFER_SIZE)
+
+    /**
+     * 用于控制在创建新的[operateLogBuffer]期间，不允许往[operateLogBuffer]中写内容
+     * 避免替换新的[operateLogBuffer]后依然有线程持有旧的引用并往其中写内容
+     */
+    private val bufferRefreshLock = ReentrantReadWriteLock()
 
     @Around(
         "@within(com.tencent.bkrepo.common.operate.api.annotation.LogOperate) " +
@@ -94,8 +103,9 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
         if (operateLogBuffer.size >= LOG_BUFFER_SIZE) {
             flush(false)
         }
-        // 不加锁控制元素的添加，并发量较大时，允许buffer size少量超过限制的大小
-        operateLogBuffer.add(operateLog)
+        // 允许多线程同时写，buffer size少量超过限制的大小
+        // 此处加读写锁控制[operateLogBuffer]的刷新与元素添加两个操作不可同时执行
+        bufferRefreshLock.read { operateLogBuffer.add(operateLog) }
 
         if (logger.isDebugEnabled) {
             logger.debug("save operate log[$operateLog]")
@@ -113,7 +123,7 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
             return
         }
         val current = operateLogBuffer
-        operateLogBuffer = ConcurrentHashMap.newKeySet(LOG_BUFFER_SIZE)
+        bufferRefreshLock.write { operateLogBuffer = ConcurrentHashMap.newKeySet(LOG_BUFFER_SIZE) }
         operateLogService.saveAsync(current)
         if (logger.isDebugEnabled) {
             logger.debug("save ${current.size} operate logs success.")

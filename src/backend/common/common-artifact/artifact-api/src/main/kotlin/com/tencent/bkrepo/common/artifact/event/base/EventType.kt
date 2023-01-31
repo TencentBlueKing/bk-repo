@@ -40,6 +40,7 @@ enum class EventType(val nick: String) {
     REPO_DELETED("删除仓库"),
     // 主要针对代理仓库需要定时从远程将相关信息同步到本地
     REPO_REFRESHED("刷新仓库信息"),
+    REPO_VOLUME_SYNC("同步仓库使用容量"),
 
     // NODE
     NODE_CREATED("创建节点"),
