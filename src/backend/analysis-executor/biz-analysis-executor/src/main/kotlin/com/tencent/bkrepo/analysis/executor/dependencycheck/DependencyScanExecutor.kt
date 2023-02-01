@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
-@Component(DependencyScanner.TYPE)
+@Component("${DependencyScanner.TYPE}Executor")
 class DependencyScanExecutor @Autowired constructor(
     private val storageProperties: StorageProperties
 ) : ScanExecutor {

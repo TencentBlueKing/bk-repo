@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.model
 
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -102,7 +103,11 @@ class TSubScanTask(
     /**
      * 扫描时方案的质量规则
      */
-    scanQuality: Map<String, Any>? = null
+    scanQuality: Map<String, Any>? = null,
+    /**
+     * 扫描任务元数据
+     */
+    val metadata: List<TaskMetadata> = emptyList()
 ) : SubScanTaskDefinition(
     id = id,
     createdDate = createdDate,

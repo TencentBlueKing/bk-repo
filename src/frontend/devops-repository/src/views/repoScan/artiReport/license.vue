@@ -126,7 +126,7 @@
                 }).then(({ records, totalRecords }) => {
                     this.licenseList = records.map(v => ({
                         ...v,
-                        licenseKey: `${v.licenseId}${v.dependentPath}`
+                        licenseKey: `${v.licenseId}-${v.dependentPath}-${v.pkgName}`
                     }))
                     this.pagination.count = totalRecords
                 }).finally(() => {

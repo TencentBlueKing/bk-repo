@@ -8,13 +8,14 @@ ENV PATH=$PATH:$JAVA_HOME/bin \
 
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo 'Asia/Shanghai' > /etc/timezone && \
+    wget -O /etc/yum.repos.d/epel.repo https://mirrors.cloud.tencent.com/repo/epel-7.repo && \
     rpm --rebuilddb && \
-    yum -y install initscripts libcurl openssl xz-libs && \
+    yum -y install initscripts libcurl openssl xz-libs redis && \
     yum clean all && \
-    wget https://openresty.org/package/centos/7/x86_64/openresty-openssl-1.1.0h-3.el7.x86_64.rpm -P openresty && \
-    wget https://openresty.org/package/centos/7/x86_64/openresty-pcre-8.42-1.el7.x86_64.rpm -P openresty && \
-    wget https://openresty.org/package/centos/7/x86_64/openresty-zlib-1.2.11-3.el7.x86_64.rpm -P openresty && \
-    wget https://openresty.org/package/centos/7/x86_64/openresty-1.13.6.2-1.el7.x86_64.rpm -P openresty && \
+    wget https://mirrors.cloud.tencent.com/openresty/rhel/7/x86_64/openresty-openssl-1.1.0h-3.el7.x86_64.rpm -P openresty && \
+    wget https://mirrors.cloud.tencent.com/openresty/rhel/7/x86_64/openresty-pcre-8.42-1.el7.x86_64.rpm -P openresty && \
+    wget https://mirrors.cloud.tencent.com/openresty/rhel/7/x86_64/openresty-zlib-1.2.11-3.el7.x86_64.rpm -P openresty && \
+    wget https://mirrors.cloud.tencent.com/openresty/rhel/7/x86_64/openresty-1.13.6.2-1.el7.x86_64.rpm -P openresty && \
     rpm -ivh openresty/openresty-pcre-8.42-1.el7.x86_64.rpm  && \
     rpm -ivh openresty/openresty-zlib-1.2.11-3.el7.x86_64.rpm  && \
     rpm -ivh openresty/openresty-openssl-1.1.0h-3.el7.x86_64.rpm  --replacefiles && \

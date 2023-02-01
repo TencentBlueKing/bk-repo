@@ -52,11 +52,6 @@ enum class SubScanTaskStatus {
     PULLED,
 
     /**
-     * 子任务已入队
-     */
-    ENQUEUED,
-
-    /**
      * 扫描执行中
      */
     EXECUTING,
@@ -87,7 +82,7 @@ enum class SubScanTaskStatus {
     SUCCESS;
 
     companion object {
-        val RUNNING_STATUS = listOf(CREATED.name, PULLED.name, ENQUEUED.name, EXECUTING.name)
+        val RUNNING_STATUS = listOf(CREATED.name, PULLED.name, EXECUTING.name)
 
         /**
          * 判断[status]是否是已结束的状态

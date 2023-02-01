@@ -31,41 +31,16 @@ import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.model.TScanTask
-import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
-import com.tencent.bkrepo.analyst.pojo.SubScanTask
-import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.util.readJsonString
 import java.time.format.DateTimeFormatter
 
 object Converter {
-    fun convert(
-        subScanTask: TSubScanTask,
-        scanner: Scanner,
-        metadata: List<TaskMetadata> = emptyList()
-    ): SubScanTask = with(subScanTask) {
-        SubScanTask(
-            taskId = id!!,
-            parentScanTaskId = parentScanTaskId,
-            scanner = scanner,
-            projectId = projectId,
-            repoName = repoName,
-            repoType = repoType,
-            fullPath = fullPath,
-            sha256 = sha256,
-            size = size,
-            packageSize = packageSize,
-            credentialsKey = credentialsKey,
-            extra = metadata.associate { Pair(it.key, it.value) }
-        )
-    }
-
     fun convert(
         scanTask: TScanTask,
         scanPlan: TScanPlan? = null,
@@ -105,7 +80,8 @@ object Converter {
                 priority = priority,
                 scanTaskCountLimit = scanTaskCountLimit,
                 subScanTaskCountLimit = subScanTaskCountLimit,
-                autoScanConfiguration = autoScanConfiguration
+                autoScanConfiguration = autoScanConfiguration,
+                dispatcherConfiguration = dispatcherConfiguration
             )
         }
     }

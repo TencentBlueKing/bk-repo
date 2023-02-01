@@ -214,8 +214,12 @@ gateway:
   helmHost: helm.bkrepo.example.com
   ## dns服务器地址，用于配置nginx resolver。local=on为openrestry语法，取本机/etc/resolv.conf配置
   dnsServer: local=on
-  ## 网关访问微服务认证信息
+  ## 网关访问微服务认证信息 ,authorization配置即将被废弃，建议使用accessKey/secretKey配置
   authorization: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
+  ## authorization配置独立出accessKey
+  accessKey: ""
+  ## authorization配置独立出secretKey
+  secretKey: ""
   ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式 , saas模式: 蓝鲸saas部署模式
   deployMode: standalone
   ## 网关认证模式，ticket, 校验bk_ticket token ，校验bk_token

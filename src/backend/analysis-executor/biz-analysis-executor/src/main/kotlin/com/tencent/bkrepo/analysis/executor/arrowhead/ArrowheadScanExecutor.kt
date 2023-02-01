@@ -44,7 +44,7 @@ import org.springframework.core.io.Resource
 import org.springframework.stereotype.Component
 import java.io.File
 
-@Component(ArrowheadScanner.TYPE)
+@Component("${ArrowheadScanner.TYPE}Executor")
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class ArrowheadScanExecutor @Autowired constructor(
     dockerClient: DockerClient,

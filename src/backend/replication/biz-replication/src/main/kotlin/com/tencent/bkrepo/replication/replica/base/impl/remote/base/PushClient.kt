@@ -39,6 +39,7 @@ import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
@@ -146,6 +147,7 @@ abstract class PushClient(
 
     private fun buildClient(): OkHttpClient {
         return HttpClientBuilderFactory.create()
+            .protocols(listOf(Protocol.HTTP_1_1))
             .readTimeout(DEFAULT_READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .writeTimeout(DEFAULT_WRITE_TIMEOUT_MINUTES, TimeUnit.MINUTES)

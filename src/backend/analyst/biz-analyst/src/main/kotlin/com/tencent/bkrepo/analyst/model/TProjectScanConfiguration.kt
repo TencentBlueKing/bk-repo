@@ -31,6 +31,7 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFA
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_SCAN_TASK_COUNT_LIMIT
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
 import com.tencent.bkrepo.analyst.pojo.AutoScanConfiguration
+import com.tencent.bkrepo.analyst.pojo.DispatcherConfiguration
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -66,5 +67,9 @@ data class TProjectScanConfiguration(
     /**
      * 自动扫描配置,key为scannerName,value为扫描器对应的自动扫描配置
      */
-    val autoScanConfiguration: Map<String, AutoScanConfiguration> = emptyMap()
+    val autoScanConfiguration: Map<String, AutoScanConfiguration> = emptyMap(),
+    /**
+     * 用于分发子任务的分发器
+     */
+    val dispatcherConfiguration: List<DispatcherConfiguration> = emptyList()
 )

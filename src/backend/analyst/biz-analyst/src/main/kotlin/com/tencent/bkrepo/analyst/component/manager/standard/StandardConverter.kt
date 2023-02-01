@@ -72,9 +72,10 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 description = detail?.reference ?: "",
                 isOsiApproved = detail?.isOsiApproved,
                 dependentPath = it.path ?: "",
-                isFsfLibre = detail?.isFsfLibre
+                isFsfLibre = detail?.isFsfLibre,
+                pkgName = it.pkgName
             )
-        }.distinct()
+        }
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)
     }
