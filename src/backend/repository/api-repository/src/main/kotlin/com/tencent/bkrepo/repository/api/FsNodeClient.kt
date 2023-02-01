@@ -25,8 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.exception
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-class BlockDataMissException(fullPath: String) : NotFoundException(FSMessageCode.BLOCK_DATA_MISS, fullPath)
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "FsNodeClient", primary = false)
+@RequestMapping("/service/node/fs")
+interface FsNodeClient {
+
+    @PutMapping("/length")
+    fun setLength(
+        @RequestBody nodeSetLengthRequest: NodeSetLengthRequest
+    ): Response<Void>
+
+    @PostMapping("/create")
+    fun createNode(@RequestBody createRequest: NodeCreateRequest): Response<NodeDetail>
+}

@@ -27,31 +27,32 @@
 
 package com.tencent.bkrepo.fs.server.config
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
-import com.tencent.bkrepo.fs.server.DEFAULT_MAPPING_URI
-import com.tencent.bkrepo.fs.server.JWT_CLAIMS_PERMIT
-import com.tencent.bkrepo.fs.server.JWT_CLAIMS_REPOSITORY
-import com.tencent.bkrepo.fs.server.filter.ArtifactContextFilterFunction
-import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilter
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.fs.server.constant.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.getOrNull
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
-import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
+import org.springframework.util.AntPathMatcher
+import org.springframework.web.reactive.HandlerMapping
 import org.springframework.web.reactive.function.server.CoRouterFunctionDsl
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.buildAndAwait
+import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.coRouter
+import org.springframework.web.util.pattern.PathPattern
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -61,114 +62,48 @@ import kotlin.coroutines.cancellation.CancellationException
 class RouteConfiguration(
     private val nodeOperationsHandler: NodeOperationsHandler,
     private val fileOperationsHandler: FileOperationsHandler,
+    private val loginHandler: LoginHandler,
+    private val fsNodeHandler: FsNodeHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
-    private val artifactContextFilterFunction: ArtifactContextFilterFunction,
-    private val artifactFileCleanupFilter: ArtifactFileCleanupFilter,
-    private val securityManager: SecurityManager,
-    private val loginHandler: LoginHandler
+    private val permissionFilterFunction: PermissionFilterFunction,
+    private val artifactFileCleanupFilterFunction: ArtifactFileCleanupFilterFunction
 ) {
-
-    private val logger = LoggerFactory.getLogger(RouteConfiguration::class.java)
     fun router() = coRouter {
-        loginRouter()
-        requireAuth()
-        contextInit()
-        nodeRouter()
-        readWriteRouter()
-    }
-
-    private fun CoRouterFunctionDsl.loginRouter() {
-        "/login".nest {
-            accept(APPLICATION_JSON).nest {
-                POST("/{projectId}/{repoName}", loginHandler::login)
-            }
-        }
-    }
-
-    /**
-     * 认证过滤器
-     * */
-    private fun CoRouterFunctionDsl.requireAuth() {
         filter(authHandlerFilterFunction::filter)
-    }
+        before(RouteConfiguration::initArtifactContext)
+        filter(permissionFilterFunction::filter)
+        POST("/login/{projectId}/{repoName}", loginHandler::login)
 
-    private fun CoRouterFunctionDsl.contextInit() {
-        filter(artifactContextFilterFunction::filter)
-    }
-
-    /**
-     * 节点路由
-     * */
-    private fun CoRouterFunctionDsl.nodeRouter() {
-        "/api/node".nest {
-            requireReadPermission()
-            "/stat".nest {
-                GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getStat)
-            }
-            accept(APPLICATION_JSON).nest {
-                GET("/page$DEFAULT_MAPPING_URI", nodeOperationsHandler::listNodes)
-            }
-            accept(APPLICATION_JSON).nest {
-                GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getNode)
-            }
-        }
-        "/api/node".nest {
-            requireWritePermission()
-            "/change/attribute".nest {
-                PUT(DEFAULT_MAPPING_URI, nodeOperationsHandler::changeAttribute)
-            }
-            "/move".nest {
-                PUT(DEFAULT_MAPPING_URI, nodeOperationsHandler::move)
-            }
-        }
-    }
-
-    /**
-     * 文件读写路由
-     * */
-    private fun CoRouterFunctionDsl.readWriteRouter() {
-        "/block/flush".nest {
-            accept(APPLICATION_JSON).nest {
-                requireWritePermission()
-                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::flush)
-            }
+        "/service/block".nest {
+            GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
         }
 
-        "/block/write-flush/{offset}".nest {
-            accept(APPLICATION_JSON).nest {
-                requireWritePermission()
-                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::writeAndFlush)
-                addUploadMetrics()
-            }
+        "/node".nest {
+            PUT("/change/attribute$DEFAULT_MAPPING_URI", nodeOperationsHandler::changeAttribute)
+            PUT("/move$DEFAULT_MAPPING_URI", nodeOperationsHandler::move)
+            POST("/create$DEFAULT_MAPPING_URI", nodeOperationsHandler::createNode)
+            DELETE("/delete$DEFAULT_MAPPING_URI", nodeOperationsHandler::deleteNode)
+            POST("/mkdir$DEFAULT_MAPPING_URI", nodeOperationsHandler::mkdir)
+            PUT("/set-length$DEFAULT_MAPPING_URI", nodeOperationsHandler::setLength)
+            GET("/stat$DEFAULT_MAPPING_URI", nodeOperationsHandler::getStat)
+            GET("/info$DEFAULT_MAPPING_URI", nodeOperationsHandler::info)
+            GET("/page$DEFAULT_MAPPING_URI", nodeOperationsHandler::listNodes)
+            GET(DEFAULT_MAPPING_URI, nodeOperationsHandler::getNode)
         }
 
-        "/block/{offset}".nest {
-            accept(APPLICATION_JSON).nest {
-                requireWritePermission()
-                filter(artifactFileCleanupFilter::filter)
-                PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::write)
-                addUploadMetrics()
-            }
+        PUT("/block/flush$DEFAULT_MAPPING_URI", fileOperationsHandler::flush)
+        "/block".nest {
+            filter(artifactFileCleanupFilterFunction::filter)
+            PUT("/write-flush/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::writeAndFlush)
+            PUT("/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::write)
+            addMetrics(serverMetrics.uploadingCount)
         }
+
         accept(APPLICATION_OCTET_STREAM).nest {
-            requireReadPermission()
             GET(DEFAULT_MAPPING_URI, fileOperationsHandler::read)
-            addDownloadMetrics()
+            addMetrics(serverMetrics.downloadingCount)
         }
-
-        accept(APPLICATION_JSON).nest {
-            requireWritePermission()
-            DELETE(DEFAULT_MAPPING_URI, nodeOperationsHandler::deleteNode)
-        }
-    }
-
-    private fun CoRouterFunctionDsl.addUploadMetrics() {
-        addMetrics(serverMetrics.uploadingCount)
-    }
-
-    private fun CoRouterFunctionDsl.addDownloadMetrics() {
-        addMetrics(serverMetrics.downloadingCount)
     }
 
     private fun CoRouterFunctionDsl.addMetrics(metric: AtomicInteger) {
@@ -187,39 +122,27 @@ class RouteConfiguration(
         }
     }
 
-    private fun CoRouterFunctionDsl.requireWritePermission() {
-        checkPermission(PermissionAction.WRITE)
-    }
-
-    private fun CoRouterFunctionDsl.requireReadPermission() {
-        checkPermission(PermissionAction.READ)
-    }
-
-    private fun CoRouterFunctionDsl.checkPermission(action: PermissionAction) {
-        filter { req, next ->
-            val token = req.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
-            if (token == null) {
-                ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
-            } else {
-                val jws = securityManager.validateToken(token)
-                val repo = jws.body[JWT_CLAIMS_REPOSITORY]
-                val permit = jws.body[JWT_CLAIMS_PERMIT].toString()
-                val projectId = req.pathVariable(PROJECT_ID)
-                val repoName = req.pathVariable(REPO_NAME)
-                val requestRepo = "$projectId/$repoName"
-                if (requestRepo == repo && checkAction(permit, action)) {
-                    next(req)
-                } else {
-                    ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
-                }
-            }
+    companion object {
+        private val logger = LoggerFactory.getLogger(RouteConfiguration::class.java)
+        private val antPathMatcher = AntPathMatcher()
+        private fun initArtifactContext(request: ServerRequest): ServerRequest {
+            val projectId = request.pathVariable(PROJECT_ID)
+            val repoName = request.pathVariable(REPO_NAME)
+            val encodeUrl = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
+                (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
+                request.path()
+            )
+            val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
+            val artifactUri = PathUtils.normalizeFullPath(decodeUrl)
+            request.exchange().attributes[PROJECT_ID] = projectId
+            request.exchange().attributes[REPO_NAME] = repoName
+            val artifactInfo = ArtifactInfo(
+                projectId = projectId,
+                repoName = repoName,
+                artifactUri = artifactUri
+            )
+            request.exchange().attributes[ARTIFACT_INFO_KEY] = artifactInfo
+            return request
         }
-    }
-
-    private fun checkAction(permit: String, action: PermissionAction): Boolean {
-        if (action == PermissionAction.READ) {
-            return permit == PermissionAction.READ.name || permit == PermissionAction.WRITE.name
-        }
-        return permit == action.name
     }
 }

@@ -29,23 +29,33 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    api(project(":replication:api-replication"))
-    api(project(":fs:api-fs-server"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-storage:storage-service"))
-    api(project(":common:common-operate:operate-service"))
-    api(project(":common:common-stream"))
+package com.tencent.bkrepo.fs.server.config.feign
 
-    api("org.springframework.boot:spring-boot-starter-aop")
-    api("io.micrometer:micrometer-registry-prometheus")
-    api("org.influxdb:influxdb-java")
-    api("org.apache.commons:commons-text")
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.fs.server.exception.RemoteErrorCodeException
+import feign.Response
+import feign.codec.ErrorDecoder
+import java.io.IOException
 
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+/**
+ * Feign ErrorDecoder
+ */
+class ErrorCodeDecoder : ErrorDecoder {
+
+    private val delegate: ErrorDecoder = ErrorDecoder.Default()
+
+    override fun decode(methodKey: String, feignResponse: Response): Exception {
+        if (feignResponse.status() == HttpStatus.BAD_REQUEST.value) {
+            return try {
+                feignResponse.body().asInputStream().use {
+                    val response = it.readJsonString<com.tencent.bkrepo.common.api.pojo.Response<Any>>()
+                    RemoteErrorCodeException(methodKey, response.code, response.message)
+                }
+            } catch (ignored: IOException) {
+                delegate.decode(methodKey, feignResponse)
+            }
+        }
+        return delegate.decode(methodKey, feignResponse)
+    }
 }

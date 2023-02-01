@@ -25,16 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import io.swagger.annotations.ApiModelProperty
 
-class FlushRequest(request: ServerRequest) : NodeRequest(request) {
-    val length: Long
-    init {
-        length = request.queryParamOrNull("length")?.toLong()
-            ?: throw ParameterInvalidException("required length parameter.")
-    }
-}
+data class NodeSetLengthRequest(
+    @ApiModelProperty("所属项目", required = true)
+    override val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    override val repoName: String,
+    @ApiModelProperty("节点完整路径", required = true)
+    override val fullPath: String,
+    @ApiModelProperty("操作用户", required = true)
+    override val operator: String,
+    val newLength: Long
+) : NodeRequest, ServiceRequest

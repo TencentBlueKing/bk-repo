@@ -25,16 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.repository.service.fs
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 
-class FlushRequest(request: ServerRequest) : NodeRequest(request) {
-    val length: Long
-    init {
-        length = request.queryParamOrNull("length")?.toLong()
-            ?: throw ParameterInvalidException("required length parameter.")
-    }
+interface FsService {
+    fun createNode(createRequest: NodeCreateRequest): NodeDetail
+
+    fun setLength(setLengthRequest: NodeSetLengthRequest)
 }

@@ -25,16 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
-
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
-
-class FlushRequest(request: ServerRequest) : NodeRequest(request) {
-    val length: Long
-    init {
-        length = request.queryParamOrNull("length")?.toLong()
-            ?: throw ParameterInvalidException("required length parameter.")
-    }
+dependencies {
+    api(project(":common:common-api"))
+    api(project(":common:common-storage:storage-api"))
+    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
 }

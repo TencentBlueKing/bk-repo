@@ -32,15 +32,8 @@ class NodeModifyListener(
         runBlocking {
             with(event) {
                 val node = rRepositoryClient.getNodeDetail(projectId, repoName, resourceKey).awaitSingle().data
-                if (node?.folder == true) {
-                    return@runBlocking
-                }
-                if (node == null) {
-                    // 删除所有分块
+                if (node?.folder != true) {
                     fileNodeService.deleteNodeBlocks(projectId, repoName, resourceKey)
-                } else {
-                    // 删除旧分块
-                    fileNodeService.deleteNodeOldBlocks(node)
                 }
             }
         }

@@ -42,19 +42,8 @@ interface BlockNodeService {
         range: Range,
         projectId: String,
         repoName: String,
-        fullPath: String,
-        nodeSha256: String?
+        fullPath: String
     ): List<TBlockNode>
-
-    /**
-     * 获取文件的最后一个分块
-     * */
-    suspend fun getLatestBlock(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        nodeSha256: String?
-    ): TBlockNode?
 
     /**
      * 创建分块
@@ -70,12 +59,17 @@ interface BlockNodeService {
      * @param projectId 项目id
      * @param repoName 仓库名
      * @param fullPath 文件路径
-     * @param nodeCurrentSha256 当前文件sha256
      * */
     suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
+        fullPath: String
+    )
+
+    suspend fun moveBlocks(
+        projectId: String,
+        repoName: String,
         fullPath: String,
-        nodeCurrentSha256: String?
+        dstFullPath: String
     )
 }

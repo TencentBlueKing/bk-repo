@@ -51,7 +51,7 @@ class BlockNodeServiceTest {
 
     @BeforeEach
     fun beforeEach() {
-        val criteria = where(TBlockNode::nodeFullPath).regex("^/")
+        val criteria = where(TBlockNode::repoName).isEqualTo(UT_REPO_NAME)
         runBlocking { blockNodeRepository.remove(Query(criteria)) }
     }
 
@@ -71,44 +71,6 @@ class BlockNodeServiceTest {
         }
     }
 
-    @DisplayName("测试覆盖创建块")
-    @Test
-    fun testCreateOnOverride() {
-        runBlocking {
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull())).then {
-                Mono.just(successResponse(true))
-            }
-            val bn0 = createBlockNode()
-            val bn1 = createBlockNode()
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(bn0.nodeFullPath)
-                .and("_id").isEqualTo(bn0.id)
-            val bn2 = blockNodeRepository.findOne(Query(criteria))
-            Assertions.assertNotNull(bn2)
-            Assertions.assertEquals(true, bn2!!.isDeleted)
-            Assertions.assertEquals(false, bn1.isDeleted)
-        }
-    }
-
-    @DisplayName("测试获取最后一个分块")
-    @Test
-    fun testGetLatestBlockNode() {
-        runBlocking {
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
-                .thenReturn(Mono.just(successResponse(true)))
-            repeat(3) {
-                createBlockNode(it.toLong())
-            }
-            val bn = blockNodeService.getLatestBlock(
-                projectId = UT_PROJECT_ID,
-                repoName = UT_REPO_NAME,
-                fullPath = "/file",
-                nodeSha256 = "sha256"
-            )
-            Assertions.assertNotNull(bn)
-            Assertions.assertEquals(2, bn!!.startPos)
-        }
-    }
-
     @DisplayName("测试获取范围内的分块")
     @Test
     fun testListRangeBlockNodes() {
@@ -116,79 +78,18 @@ class BlockNodeServiceTest {
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(10)
-            // test order
-            createBlockNode(30)
             createBlockNode(20)
+            createBlockNode(30)
             val range = Range(startPosition = 20, endPosition = 40, total = 100)
             val blocks = blockNodeService.listBlocks(
                 range = range,
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
-                fullPath = "/file",
-                nodeSha256 = "sha256"
+                fullPath = "/file"
             )
             Assertions.assertEquals(2, blocks.size)
             Assertions.assertEquals(20, blocks.first().startPos)
             Assertions.assertEquals(30, blocks[1].startPos)
-
-            // 测试当有新增时，获取最新的。
-            createBlockNode(startPos = 20, sha256 = "2")
-            createBlockNode(startPos = 20, sha256 = "3")
-            val blocks1 = blockNodeService.listBlocks(
-                range = range,
-                projectId = UT_PROJECT_ID,
-                repoName = UT_REPO_NAME,
-                fullPath = "/file",
-                nodeSha256 = "sha256"
-            )
-            Assertions.assertEquals(2, blocks1.size)
-            Assertions.assertEquals(20, blocks1.first().startPos)
-            Assertions.assertEquals("3", blocks1.first().sha256)
-            Assertions.assertEquals(30, blocks1[1].startPos)
-        }
-    }
-
-    @DisplayName("测试删除旧的文件块")
-    @Test
-    fun testDeleteOldBlocks() {
-        runBlocking {
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
-                .thenReturn(Mono.just(successResponse(true)))
-            // 创建三个分块，两个旧，一个新分块
-            createBlockNode(startPos = 10)
-            createBlockNode(startPos = 20)
-            val bn = createBlockNode(startPos = 30, nodeSha256 = "newSha256")
-            val blocks0 = blockNodeService.listBlocks(
-                Range.full(Long.MAX_VALUE),
-                UT_PROJECT_ID, UT_REPO_NAME,
-                "/file",
-                nodeSha256 = "sha256"
-            )
-            Assertions.assertEquals(2, blocks0.size)
-            // 删除旧分块
-            blockNodeService.deleteBlocks(
-                projectId = UT_PROJECT_ID,
-                repoName = UT_REPO_NAME,
-                fullPath = "/file",
-                nodeCurrentSha256 = "newSha256"
-            )
-            val blocks1 = blockNodeService.listBlocks(
-                Range.full(Long.MAX_VALUE),
-                UT_PROJECT_ID, UT_REPO_NAME,
-                "/file",
-                "sha256"
-            )
-            // 旧分块已被删除
-            Assertions.assertEquals(0, blocks1.size)
-            val blocks2 = blockNodeService.listBlocks(
-                Range.full(Long.MAX_VALUE),
-                UT_PROJECT_ID, UT_REPO_NAME,
-                "/file",
-                "newSha256"
-            )
-            // 新的分块还在
-            Assertions.assertEquals(1, blocks2.size)
-            Assertions.assertEquals(bn.id, blocks2.first().id)
         }
     }
 
@@ -198,14 +99,13 @@ class BlockNodeServiceTest {
         runBlocking {
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
-            // 创建三个分块，两个旧，一个新分块
             createBlockNode(startPos = 10)
             createBlockNode(startPos = 20)
             val blocks0 = blockNodeService.listBlocks(
                 Range.full(Long.MAX_VALUE),
-                UT_PROJECT_ID, UT_REPO_NAME,
-                "/file",
-                nodeSha256 = "sha256"
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                "/file"
             )
             Assertions.assertEquals(2, blocks0.size)
             // 删除所有分块
@@ -213,15 +113,42 @@ class BlockNodeServiceTest {
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
                 fullPath = "/file",
-                nodeCurrentSha256 = null
             )
             val blocks1 = blockNodeService.listBlocks(
                 Range.full(Long.MAX_VALUE),
-                UT_PROJECT_ID, UT_REPO_NAME,
-                "/file",
-                "sha256"
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                "/file"
             )
             // 所有分块已被删除
+            Assertions.assertEquals(0, blocks1.size)
+        }
+    }
+
+    @DisplayName("测试移动节点")
+    @Test
+    fun testMoveNode() {
+        runBlocking {
+            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
+                .thenReturn(Mono.just(successResponse(true)))
+            createBlockNode(startPos = 10)
+            createBlockNode(startPos = 20)
+            val fullPath = "/file"
+            val newFullPath = "newFile"
+            blockNodeService.moveBlocks(UT_PROJECT_ID, UT_REPO_NAME, fullPath, newFullPath)
+            val blocks = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                newFullPath
+            )
+            Assertions.assertEquals(2, blocks.size)
+            val blocks1 = blockNodeService.listBlocks(
+                Range.full(Long.MAX_VALUE),
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                fullPath
+            )
             Assertions.assertEquals(0, blocks1.size)
         }
     }
@@ -229,20 +156,17 @@ class BlockNodeServiceTest {
     private suspend fun createBlockNode(
         startPos: Long = 0,
         fullPath: String = "/file",
-        sha256: String = "",
-        nodeSha256: String = "sha256"
+        sha256: String = ""
     ): TBlockNode {
         val blockNode = TBlockNode(
             createdBy = UT_USER,
             createdDate = LocalDateTime.now(),
             nodeFullPath = fullPath,
-            nodeSha256 = nodeSha256,
             startPos = startPos,
             sha256 = sha256,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
-            size = 1,
-            isDeleted = false
+            size = 1
         )
         return blockNodeService.createBlock(blockNode, storageCredentials)
     }

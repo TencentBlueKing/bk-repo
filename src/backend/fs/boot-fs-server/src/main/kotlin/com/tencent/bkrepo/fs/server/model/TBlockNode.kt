@@ -29,43 +29,36 @@ package com.tencent.bkrepo.fs.server.model
 
 import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingDocument
 import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingKey
-import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.DELETED_IDX
-import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.DELETED_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.START_POS_IDX
-import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.START_POS_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX
+import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX_DEF
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import java.time.LocalDateTime
 
 /**
  * 块节点
- * 数据节点
  * */
 @ShardingDocument("block_node")
 @CompoundIndexes(
-    CompoundIndex(name = START_POS_IDX, def = START_POS_IDX_DEF),
-    CompoundIndex(name = DELETED_IDX, def = DELETED_IDX_DEF)
+    CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF)
 )
 data class TBlockNode(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
-    @ShardingKey(count = SHARDING_COUNT)
     val nodeFullPath: String,
-    val nodeSha256: String?,
     val startPos: Long,
     var sha256: String,
     val projectId: String,
+    @ShardingKey(count = SHARDING_COUNT)
     val repoName: String,
-    val size: Int,
+    val size: Long,
     val endPos: Long = startPos + size - 1,
-    val isDeleted: Boolean
+    var deleted: LocalDateTime? = null
 ) {
     companion object {
-        const val START_POS_IDX = "start_pos_idx"
-        const val START_POS_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'startPos': 1,'isDeleted': 1}"
-        const val DELETED_IDX = "deleted_idx"
-        const val DELETED_IDX_DEF = "{'isDeleted': 1}"
+        const val BLOCK_IDX = "start_pos_idx"
+        const val BLOCK_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'startPos': 1, 'isDeleted': 1}"
     }
 }

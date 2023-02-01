@@ -30,18 +30,18 @@ package com.tencent.bkrepo.fs.server.handler
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
-import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.service.FileOperationService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ZeroCopyHttpOutputMessage
@@ -58,7 +58,6 @@ import org.springframework.web.reactive.function.server.buildAndAwait
  * */
 class FileOperationsHandler(
     private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService,
     private val fileOperationService: FileOperationService
 ) {
 
@@ -69,35 +68,28 @@ class FileOperationsHandler(
     suspend fun read(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
             val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data
-            if (node?.folder == true) {
+            if (node?.folder == true || node == null) {
                 throw NodeNotFoundException(this.toString())
             }
-            // 读取的文件，可能是个正在写入的文件，有块数据，但是还未冲刷，所以这里的size和sha256可能为null。
-            val nodeSize = node?.size ?: 0
-            // 新写入的块，可能还未冲刷成文件，所以需要获取最新的文件长度
-            val fileLength = fileNodeService.getFileLength(projectId, repoName, fullPath, nodeSize, node?.sha256)
-            val range = resolveRange(request, fileLength)
-            val artifactInputStream = fileOperationService.read(
-                request = this,
-                digest = node?.sha256,
-                size = node?.size,
-                range = range
-            ) ?: throw ArtifactNotFoundException(this.toString())
+            val range = request.resolveRange(node.size)
+            val artifactInputStream = fileOperationService.read(node, range) ?: throw ArtifactNotFoundException(
+                this.toString()
+            )
             if (artifactInputStream is FileArtifactInputStream) {
                 val response = request.exchange().response
                 response.statusCode = HttpStatus.PARTIAL_CONTENT
                 val headers = response.headers
                 headers.contentLength = artifactInputStream.range.length
                 headers.set(HttpHeaders.ACCEPT_RANGES, "bytes")
-                headers.add("Content-Range", "bytes ${range.start}-${range.end}/$fileLength")
+                headers.add("Content-Range", "bytes ${range.start}-${range.end}/${node.size}")
                 (response as ZeroCopyHttpOutputMessage).writeWith(
                     artifactInputStream.file,
                     artifactInputStream.range.start,
                     artifactInputStream.range.length
-                ).awaitSingle()
+                ).awaitSingleOrNull()
                 return ok().buildAndAwait()
             } else {
-                val source = RegionInputStreamResource(artifactInputStream, range.length)
+                val source = RegionInputStreamResource(artifactInputStream, range.total)
                 return ok().bodyValueAndAwait(source)
             }
         }
@@ -136,22 +128,5 @@ class FileOperationsHandler(
         val flushRequest = FlushRequest(request)
         fileOperationService.flush(flushRequest, user)
         return ReactiveResponseBuilder.success(blockNode)
-    }
-
-    /**
-     * 处理文件范围请求
-     * @param request http server request
-     * @param total 文件总长度
-     * @return range 文件请求范围
-     * */
-    private fun resolveRange(request: ServerRequest, total: Long): Range {
-        val httpRange = request.headers().range().firstOrNull()
-        return if (httpRange != null) {
-            val startPosition = httpRange.getRangeStart(total)
-            val endPosition = httpRange.getRangeEnd(total)
-            Range(startPosition, endPosition, total)
-        } else {
-            Range.full(total)
-        }
     }
 }

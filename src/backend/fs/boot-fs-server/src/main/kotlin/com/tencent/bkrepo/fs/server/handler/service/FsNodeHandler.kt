@@ -25,16 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.fs.server.handler.service
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.request.service.ListBlocksRequest
+import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.buildAndAwait
 
-class FlushRequest(request: ServerRequest) : NodeRequest(request) {
-    val length: Long
-    init {
-        length = request.queryParamOrNull("length")?.toLong()
-            ?: throw ParameterInvalidException("required length parameter.")
+class FsNodeHandler(
+    private val rRepositoryClient: RRepositoryClient,
+    private val fileNodeService: FileNodeService
+) {
+
+    suspend fun listBlocks(request: ServerRequest): ServerResponse {
+        with(ListBlocksRequest(request)) {
+            val nodeDetail = rRepositoryClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = path
+            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+            val range = Range(startPos, endPos, nodeDetail.size)
+            return ReactiveResponseBuilder.success(fileNodeService.info(nodeDetail, range))
+        }
     }
 }

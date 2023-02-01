@@ -31,20 +31,22 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.common.service.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.RoleType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -53,8 +55,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储管理类
@@ -74,7 +76,8 @@ class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
     private val clusterProperties: ClusterProperties,
-    private val storageCredentialsClient: StorageCredentialsClient
+    private val storageCredentialsClient: StorageCredentialsClient,
+    private val fsNodeClient: FsNodeClient
 ) {
 
     /**
@@ -110,11 +113,13 @@ class StorageManager(
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
             // 当文件有创建，则删除文件
-            if (affectedCount == 1) try {
-                cancel.set(true)
-                storageService.delete(request.sha256!!, storageCredentials)
-            } catch (exception: Exception) {
-                logger.error("Failed to delete new created file[${request.sha256}]", exception)
+            if (affectedCount == 1) {
+                try {
+                    cancel.set(true)
+                    storageService.delete(request.sha256!!, storageCredentials)
+                } catch (exception: Exception) {
+                    logger.error("Failed to delete new created file[${request.sha256}]", exception)
+                }
             }
             // 异常往上抛
             throw exception
@@ -148,6 +153,9 @@ class StorageManager(
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
         val sha256 = node.sha256.orEmpty()
+        if (isFsFile(node)) {
+            return loadFromFs(node, range, storageCredentials)
+        }
         /*
         * 顺序查找
         * 1.当前仓库存储实例 (正常情况)
@@ -209,6 +217,23 @@ class StorageManager(
             return storageService.load(node.sha256!!, range, oldCredentials)
         }
         return null
+    }
+
+    private fun loadFromFs(
+        node: NodeInfo,
+        range: Range,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        with(node) {
+            val blocks = fsNodeClient.listBlockResources(
+                projectId = projectId,
+                repoName = repoName,
+                path = fullPath,
+                startPos = range.start,
+                endPos = range.end
+            ).data ?: return null
+            return storageService.load(blocks, range, storageCredentials)
+        }
     }
 
     /**
@@ -291,6 +316,10 @@ class StorageManager(
             )
             return ArtifactContextHolder.getRepoDetail(repositoryId)
         }
+    }
+
+    private fun isFsFile(node: NodeInfo): Boolean {
+        return node.metadata?.containsKey(FS_ATTR_KEY) == true
     }
 
     companion object {

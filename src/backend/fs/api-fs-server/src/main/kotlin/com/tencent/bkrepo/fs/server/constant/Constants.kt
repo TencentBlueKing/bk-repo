@@ -25,16 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.fs.server.constant
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
 
-class FlushRequest(request: ServerRequest) : NodeRequest(request) {
-    val length: Long
-    init {
-        length = request.queryParamOrNull("length")?.toLong()
-            ?: throw ParameterInvalidException("required length parameter.")
-    }
-}
+const val JWT_CLAIMS_REPOSITORY = "repository"
+const val JWT_CLAIMS_PERMIT = "permit"
+
+const val FS_ATTR_KEY = "fs:attr"
+
+const val FAKE_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
+const val FAKE_MD5 = "00000000000000000000000000000000"

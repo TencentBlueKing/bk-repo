@@ -25,16 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.FsNodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import com.tencent.bkrepo.repository.service.fs.FsService
+import org.springframework.web.bind.annotation.RestController
 
-class FlushRequest(request: ServerRequest) : NodeRequest(request) {
-    val length: Long
-    init {
-        length = request.queryParamOrNull("length")?.toLong()
-            ?: throw ParameterInvalidException("required length parameter.")
+@RestController
+class FsNodeController(
+    private val fsService: FsService
+) : FsNodeClient {
+
+    override fun setLength(nodeSetLengthRequest: NodeSetLengthRequest): Response<Void> {
+        fsService.setLength(nodeSetLengthRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun createNode(createRequest: NodeCreateRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(fsService.createNode(createRequest))
     }
 }

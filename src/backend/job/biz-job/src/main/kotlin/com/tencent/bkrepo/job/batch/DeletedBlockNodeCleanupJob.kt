@@ -32,9 +32,10 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedBlockNodeCleanupJobProperties
-import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.FileReferenceClient
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -43,6 +44,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -50,7 +52,7 @@ import java.time.Duration
 @Component("JobServiceDeletedBlockNodeCleanupJob")
 @EnableConfigurationProperties(DeletedBlockNodeCleanupJobProperties::class)
 class DeletedBlockNodeCleanupJob(
-    properties: DeletedBlockNodeCleanupJobProperties,
+    private val properties: DeletedBlockNodeCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val fileReferenceClient: FileReferenceClient
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
@@ -60,9 +62,8 @@ class DeletedBlockNodeCleanupJob(
         val projectId: String,
         val repoName: String,
         val sha256: String,
-        val isDeleted: Boolean
+        val deleted: LocalDateTime?
     )
-
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun collectionNames(): List<String> {
@@ -74,7 +75,8 @@ class DeletedBlockNodeCleanupJob(
     }
 
     override fun buildQuery(): Query {
-        return Query.query(where(BlockNode::isDeleted).isEqualTo(true))
+        val expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays)
+        return Query.query(where(BlockNode::deleted).lt(expireDate))
     }
 
     override fun mapToEntity(row: Map<String, Any?>): BlockNode {
@@ -83,7 +85,7 @@ class DeletedBlockNodeCleanupJob(
             projectId = row[BlockNode::projectId.name].toString(),
             repoName = row[BlockNode::repoName.name].toString(),
             sha256 = row[BlockNode::sha256.name].toString(),
-            isDeleted = row[BlockNode::isDeleted.name].toString().toBoolean()
+            deleted = TimeUtils.parseMongoDateTimeStr(row[BlockNode::deleted.name].toString())
         )
     }
 
@@ -96,19 +98,20 @@ class DeletedBlockNodeCleanupJob(
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(nodeQuery, collectionName)
             decrementFileReference(row)
-        } catch (e: Exception) {
-            throw JobExecuteException("Clean up deleted block node[$row] failed in collection[$collectionName].", e)
+        } catch (ignored: Exception) {
+            logger.error("Clean up deleted block node[$row] failed in collection[$collectionName].", ignored)
         }
     }
 
-    private fun decrementFileReference(blockNode: BlockNode): Boolean {
-        val credentialsKey = RepositoryCommonUtils
-            .getRepositoryDetail(blockNode.projectId, blockNode.repoName)
-            .storageCredentials?.key
-        return fileReferenceClient.decrement(blockNode.sha256, credentialsKey).data ?: false
+    private fun decrementFileReference(blockNode: BlockNode) {
+        with(blockNode) {
+            val credentialsKey = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+                .storageCredentials?.key
+            fileReferenceClient.decrement(sha256, credentialsKey).data
+        }
     }
-
     companion object {
+        private val logger = LoggerFactory.getLogger(DeletedBlockNodeCleanupJob::class.java)
         private const val COLLECTION_NAME_PREFIX = "block_node_"
     }
 }

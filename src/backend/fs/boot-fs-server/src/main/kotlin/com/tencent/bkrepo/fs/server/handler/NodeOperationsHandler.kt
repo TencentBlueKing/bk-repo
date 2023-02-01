@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
-import com.tencent.bkrepo.fs.server.FS_ATTR_KEY
+import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
 import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.DEFAULT_MODE
@@ -37,15 +40,20 @@ import com.tencent.bkrepo.fs.server.request.ChangeAttributeRequest
 import com.tencent.bkrepo.fs.server.request.MoveRequest
 import com.tencent.bkrepo.fs.server.request.NodePageRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
+import com.tencent.bkrepo.fs.server.request.SetLengthRequest
+import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.response.StatResponse
+import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.toNode
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import kotlinx.coroutines.reactive.awaitSingle
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
@@ -55,7 +63,10 @@ import org.springframework.web.reactive.function.server.buildAndAwait
  *
  * 处理节点操作的请求
  * */
-class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
+class NodeOperationsHandler(
+    private val rRepositoryClient: RRepositoryClient,
+    private val fileNodeService: FileNodeService
+) {
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
@@ -94,6 +105,7 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
                 operator = ReactiveSecurityUtils.getUser()
             )
             rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle()
+            fileNodeService.deleteNodeBlocks(projectId, repoName, fullPath)
             return ReactiveResponseBuilder.success()
         }
     }
@@ -171,6 +183,82 @@ class NodeOperationsHandler(private val rRepositoryClient: RRepositoryClient) {
                 operator = ReactiveSecurityUtils.getUser()
             )
             rRepositoryClient.renameNode(moveRequest).awaitSingle()
+            fileNodeService.renameNodeBlocks(projectId, repoName, fullPath, dst)
+            return ReactiveResponseBuilder.success()
+        }
+    }
+
+    suspend fun info(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val nodeDetail = rRepositoryClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath
+            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+            val range = request.resolveRange(nodeDetail.size)
+            val blocks = fileNodeService.info(nodeDetail, range)
+            val newBlocks = OverlayRangeUtils.build(blocks, range)
+            return ReactiveResponseBuilder.success(newBlocks)
+        }
+    }
+
+    suspend fun createNode(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val user = ReactiveSecurityUtils.getUser()
+            // 创建节点
+            val attributes = NodeAttribute(
+                uid = NOBODY,
+                gid = NOBODY,
+                mode = DEFAULT_MODE
+            )
+            val fsAttr = MetadataModel(
+                key = FS_ATTR_KEY,
+                value = attributes
+            )
+
+            val nodeCreateRequest = NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = fullPath,
+                sha256 = FAKE_SHA256,
+                md5 = FAKE_MD5,
+                nodeMetadata = listOf(fsAttr),
+                operator = user
+            )
+            val node = rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data
+            return ReactiveResponseBuilder.success(node!!.nodeInfo.toNode())
+        }
+    }
+
+    suspend fun mkdir(request: ServerRequest): ServerResponse {
+        with(NodeRequest(request)) {
+            val user = ReactiveSecurityUtils.getUser()
+            val nodeCreateRequest = NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = true,
+                fullPath = fullPath,
+                sha256 = FAKE_SHA256,
+                md5 = FAKE_MD5,
+                operator = user
+            )
+            val node = rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data
+            return ReactiveResponseBuilder.success(node!!.nodeInfo.toNode())
+        }
+    }
+
+    suspend fun setLength(request: ServerRequest): ServerResponse {
+        with(SetLengthRequest(request)) {
+            val user = ReactiveSecurityUtils.getUser()
+            val nodeSetLengthRequest = NodeSetLengthRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                newLength = length,
+                operator = user
+            )
+            rRepositoryClient.setLength(nodeSetLengthRequest).awaitSingle()
             return ReactiveResponseBuilder.success()
         }
     }

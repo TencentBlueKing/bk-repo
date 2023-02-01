@@ -25,11 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server
+package com.tencent.bkrepo.fs.server.request.service
 
-const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
+import com.tencent.bkrepo.fs.server.request.NodeRequest
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.queryParamOrNull
 
-const val JWT_CLAIMS_REPOSITORY = "repository"
-const val JWT_CLAIMS_PERMIT = "permit"
-
-const val FS_ATTR_KEY = "fs:attr"
+class ListBlocksRequest(request: ServerRequest) : NodeRequest(request) {
+    val startPos: Long
+    val endPos: Long
+    val path: String
+    init {
+        startPos = request.queryParamOrNull("startPos")?.toLong() ?: throw ParameterInvalidException(
+            "required length parameter."
+        )
+        endPos = request.queryParamOrNull("endPos")?.toLong() ?: throw ParameterInvalidException(
+            "required length parameter."
+        )
+        path = request.queryParamOrNull("path") ?: throw ParameterInvalidException(
+            "required length parameter."
+        )
+    }
+}

@@ -25,20 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.listener
+package com.tencent.bkrepo.common.storage.pojo
 
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-
-data class NodeFlushEvent(
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
+/**
+ * 分块资源
+ * */
+data class RegionResource(
+    /**
+     * 资源sha256
+     * */
+    val digest: String,
+    /**
+     * 资源所在文件的pos
+     * */
+    val pos: Long,
+    /**
+     * 资源原始大小
+     * */
     val size: Long,
-    val md5: String?,
-    val repositoryDetail: RepositoryDetail,
-    val userId: String
+    /**
+     * 获取资源的偏移量
+     * */
+    val off: Long,
+    /**
+     * 获取资源长度
+     * */
+    val len: Long
 ) {
-    override fun toString(): String {
-        return "$projectId/$repoName/$fullPath"
+
+    /**
+     * 获取资源所在文件的结束位置
+     * */
+    val endPos: Long = pos + len - 1
+
+    companion object {
+        const val ZERO_RESOURCE = ""
     }
 }

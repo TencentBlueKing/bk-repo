@@ -25,49 +25,52 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.storage
+package com.tencent.bkrepo.common.storage.core
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.storage.core.overlay.OverlayArtifactFileInputStream
+import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
-import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.service.BlockNodeService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.InputStream
+import org.slf4j.LoggerFactory
 
-class CoStorageManager(
-    private val blockNodeService: BlockNodeService,
-    private val storageService: StorageService
-) {
-
-    suspend fun storeBlock(artifactFile: ArtifactFile, blockNode: TBlockNode) {
-        withContext(Dispatchers.IO) {
-            val digest = artifactFile.getFileSha256()
-            val repo = RepositoryCache.getRepoDetail(blockNode.projectId, blockNode.repoName)
-            val storageCredentials = repo.storageCredentials
-            val stored = storageService.store(digest, artifactFile, storageCredentials)
-            try {
-                blockNodeService.createBlock(blockNode, storageCredentials)
-            } catch (e: Exception) {
-                if (stored > 1) {
-                    storageService.delete(digest, storageCredentials)
-                }
-                throw e
-            }
-        }
-    }
-
-    suspend fun loadArtifactInputStream(
+abstract class OverlaySupport : FileBlockSupport() {
+    override fun load(
         blocks: List<RegionResource>,
         range: Range,
         storageCredentials: StorageCredentials?
-    ): InputStream? {
-        return withContext(Dispatchers.IO) {
-            storageService.load(blocks, range, storageCredentials)
+    ): ArtifactInputStream? {
+        if (logger.isDebugEnabled) {
+            logger.debug("Range: $range, blocks: ${blocks.joinToString()}")
         }
+        val ranges = OverlayRangeUtils.build(blocks, range)
+        if (ranges.size == 1) {
+            return loadResource(ranges.first(), storageCredentials)?.artifactStream(range)
+        }
+        if (ranges.isEmpty()) {
+            return null
+        }
+        return OverlayArtifactFileInputStream(ranges) {
+            val input = loadResource(it, storageCredentials)
+            check(input != null) { "Block[${it.digest}] miss." }
+            input
+        }.artifactStream(range)
+    }
+
+    private fun loadResource(
+        resource: RegionResource,
+        storageCredentials: StorageCredentials?
+    ) = if (resource.digest == RegionResource.ZERO_RESOURCE) {
+        ZeroInputStream(resource.len)
+    } else {
+        val range = Range(resource.off, resource.off + resource.len - 1, resource.size)
+        load(resource.digest, range, storageCredentials)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(OverlaySupport::class.java)
     }
 }

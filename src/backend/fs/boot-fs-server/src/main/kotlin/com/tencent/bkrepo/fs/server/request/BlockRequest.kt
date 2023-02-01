@@ -28,14 +28,11 @@
 package com.tencent.bkrepo.fs.server.request
 
 import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
 
 class BlockRequest(request: ServerRequest) : NodeRequest(request) {
     val offset: Long
-    val digest: String?
     init {
         offset = request.pathVariable("offset").toLong()
-        digest = request.queryParamOrNull("digest")
     }
 
     override fun toString(): String {

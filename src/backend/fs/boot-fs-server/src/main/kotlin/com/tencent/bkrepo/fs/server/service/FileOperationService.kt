@@ -28,37 +28,36 @@
 package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
-import com.tencent.bkrepo.fs.server.listener.NodeFlushEvent
+import com.tencent.bkrepo.fs.server.model.NodeAttribute
 import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
-import com.tencent.bkrepo.fs.server.request.NodeRequest
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import kotlinx.coroutines.reactor.awaitSingle
 import java.io.InputStream
 import java.time.LocalDateTime
-import org.springframework.context.ApplicationContext
 
 class FileOperationService(
+    private val rRepositoryClient: RRepositoryClient,
     private val storageManager: CoStorageManager,
-    private val applicationContext: ApplicationContext,
     private val fileNodeService: FileNodeService
 ) {
 
-    suspend fun read(request: NodeRequest, digest: String?, size: Long?, range: Range): InputStream? {
-        with(request) {
-            val repo = ReactiveArtifactContextHolder.getRepoDetail()
-            return fileNodeService.read(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                storageCredentials = repo.storageCredentials,
-                digest = digest,
-                size = size,
-                range = range
-            )
-        }
+    suspend fun read(nodeDetail: NodeDetail, range: Range): InputStream? {
+        val repo = ReactiveArtifactContextHolder.getRepoDetail()
+        return fileNodeService.read(
+            nodeDetail = nodeDetail,
+            storageCredentials = repo.storageCredentials,
+            range = range
+        )
     }
 
     suspend fun write(artifactFile: ReactiveArtifactFile, request: BlockRequest, user: String): TBlockNode {
@@ -67,13 +66,11 @@ class FileOperationService(
                 createdBy = user,
                 createdDate = LocalDateTime.now(),
                 nodeFullPath = fullPath,
-                nodeSha256 = digest,
                 startPos = offset,
                 sha256 = artifactFile.getFileSha256(),
                 projectId = projectId,
                 repoName = repoName,
-                size = artifactFile.getSize().toInt(),
-                isDeleted = false
+                size = artifactFile.getSize()
             )
             storageManager.storeBlock(artifactFile, blockNode)
             return blockNode
@@ -82,16 +79,35 @@ class FileOperationService(
 
     suspend fun flush(request: FlushRequest, user: String) {
         with(request) {
-            val flushEvent = NodeFlushEvent(
+            rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle().data
+                ?.get(FS_ATTR_KEY) ?: let {
+                val attributes = NodeAttribute(
+                    uid = NodeAttribute.NOBODY,
+                    gid = NodeAttribute.NOBODY,
+                    mode = NodeAttribute.DEFAULT_MODE
+                )
+                val fsAttr = MetadataModel(
+                    key = FS_ATTR_KEY,
+                    value = attributes
+                )
+                val saveMetaDataRequest = MetadataSaveRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    nodeMetadata = listOf(fsAttr),
+                    operator = user
+                )
+                rRepositoryClient.saveMetadata(saveMetaDataRequest).awaitSingle()
+            }
+
+            val nodeSetLengthRequest = NodeSetLengthRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
-                size = length,
-                md5 = md5,
-                repositoryDetail = ReactiveArtifactContextHolder.getRepoDetail(),
-                userId = user
+                newLength = length,
+                operator = user
             )
-            applicationContext.publishEvent(flushEvent)
+            rRepositoryClient.setLength(nodeSetLengthRequest).awaitSingle()
         }
     }
 }

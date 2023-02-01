@@ -37,10 +37,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.gt
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.lt
 import org.springframework.data.mongodb.core.query.where
+import java.time.LocalDateTime
 
 /**
  * 文件块服务
@@ -55,14 +57,6 @@ class BlockNodeServiceImpl(
         storageCredentials: StorageCredentials?
     ): TBlockNode {
         with(blockNode) {
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(blockNode.nodeFullPath)
-                .and(TBlockNode::projectId.name).isEqualTo(projectId)
-                .and(TBlockNode::repoName.name).isEqualTo(repoName)
-                .and(TBlockNode::startPos.name).isEqualTo(blockNode.startPos)
-                .and(TBlockNode::isDeleted.name).isEqualTo(false)
-            val update = Update().set(TBlockNode::isDeleted.name, true)
-            // 将之前的块标记为删除
-            blockNodeRepository.updateMulti(Query(criteria), update)
             val bn = blockNodeRepository.save(blockNode)
             rRepositoryClient.increment(blockNode.sha256, storageCredentials?.key).awaitSingle()
             logger.info("Create block node[$projectId/$repoName$nodeFullPath-$startPos] ,sha256[$sha256] success.")
@@ -75,52 +69,41 @@ class BlockNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        nodeSha256: String?
     ): List<TBlockNode> {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::nodeSha256.name).isEqualTo(nodeSha256)
-            .and(TBlockNode::isDeleted.name).isEqualTo(false)
+            .and(TBlockNode::deleted).isEqualTo(null)
             .norOperator(
                 TBlockNode::startPos.gt(range.end),
                 TBlockNode::endPos.lt(range.start)
             )
-        val query = Query(criteria).with(Sort.by(TBlockNode::startPos.name))
+        val query = Query(criteria).with(Sort.by(TBlockNode::createdDate.name))
         return blockNodeRepository.find(query)
-    }
-
-    override suspend fun getLatestBlock(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        nodeSha256: String?
-    ): TBlockNode? {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::nodeSha256.name).isEqualTo(nodeSha256)
-            .and(TBlockNode::isDeleted.name).isEqualTo(false)
-        val query = Query(criteria)
-        query.with(Sort.by(TBlockNode::endPos.name).descending())
-        return blockNodeRepository.findOne(query)
     }
 
     override suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
-        fullPath: String,
-        nodeCurrentSha256: String?
+        fullPath: String
     ) {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName).apply {
-                nodeCurrentSha256?.let {
-                    and(TBlockNode::nodeSha256.name).ne(nodeCurrentSha256)
-                }
-            }
-        val update = Update().set(TBlockNode::isDeleted.name, true)
+            .and(TBlockNode::repoName.name).isEqualTo(repoName)
+            .and(TBlockNode::deleted).isEqualTo(null)
+        val update = Update().set(TBlockNode::deleted.name, LocalDateTime.now())
         blockNodeRepository.updateMulti(Query(criteria), update)
+        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success.")
+    }
+
+    override suspend fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
+        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
+            .and(TBlockNode::projectId.name).isEqualTo(projectId)
+            .and(TBlockNode::repoName.name).isEqualTo(repoName)
+            .and(TBlockNode::deleted).isEqualTo(null)
+        val update = Update().set(TBlockNode::nodeFullPath.name, dstFullPath)
+        blockNodeRepository.updateMulti(Query(criteria), update)
+        logger.info("Move node[$projectId/$repoName$fullPath] to node[$projectId/$repoName$dstFullPath] success.")
     }
 
     companion object {

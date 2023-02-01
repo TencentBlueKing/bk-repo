@@ -28,14 +28,13 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
 import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import kotlin.system.measureTimeMillis
 
-class ArtifactFileCleanupFilter : CoHandlerFilterFunction {
+class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
 
     override suspend fun filter(
         request: ServerRequest,
@@ -49,17 +48,11 @@ class ArtifactFileCleanupFilter : CoHandlerFilterFunction {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun cleanup(request: ServerRequest) {
+    private fun cleanup(request: ServerRequest) {
         try {
             val artifactFileList = request.exchange()
                 .attributes[ReactiveArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>
             artifactFileList?.filter {
-                // 理论上走到这里handler的方法已经执行完毕，但是这里会出现handler里面的方法未完成，
-                // 就已经走到过滤器这里了，怀疑跟协程的挂起，恢复有关。走到这里，表示请求已经结束，则
-                // 临时文件可以删除，删除前需要finish一下
-                if (it is ReactiveArtifactFile && !it.hasInitialized()) {
-                    it.finish()
-                }
                 !it.isInMemory()
             }?.forEach {
                 val absolutePath = it.getFile()!!.absolutePath
@@ -72,7 +65,7 @@ class ArtifactFileCleanupFilter : CoHandlerFilterFunction {
         }
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactFileCleanupFilter::class.java)
+    companion object{
+        private val logger = LoggerFactory.getLogger(ArtifactFileCleanupFilterFunction::class.java)
     }
 }
