@@ -58,3 +58,6 @@ management:
       influx:
         enabled: false
 
+feign:
+  client:
+    decode-slash: false
