@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
+import com.tencent.bkrepo.analyst.component.AnalystLoadBalancer
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
@@ -63,14 +64,17 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.TimeUnit
 
 @Service
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -84,6 +88,7 @@ class ScanServiceImpl @Autowired constructor(
     private val taskStateMachine: StateMachine,
     @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
+    private val redisTemplate: RedisTemplate<String, String>
 ) : ScanService {
 
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
@@ -177,6 +182,11 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun pull(dispatcher: String?): SubScanTask? {
         return pullSubScanTask(dispatcher)?.let {
+            HttpContextHolder.getRequestOrNull()?.remoteHost?.let { remoteHost ->
+                val ops = redisTemplate.opsForValue()
+                val key = AnalystLoadBalancer.instanceKey(it.id!!)
+                ops.set(key, remoteHost, 1L, TimeUnit.DAYS)
+            }
             return SubtaskConverter.convert(it, scannerService.get(it.scanner))
         }
     }
