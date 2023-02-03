@@ -289,7 +289,8 @@ class RemoteNodeServiceImpl(
     ): ReplicaTaskInfo {
         with(request) {
             val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty()) {
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty()
+                && replicaType == ReplicaType.RUN_ONCE) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
             }
             val replicaTaskObjects = listOf(

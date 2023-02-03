@@ -65,9 +65,6 @@ class EventBasedReplicaService(
                     replicaByPackageConstraint(this, packageConstraint)
                 }
                 EventType.VERSION_UPDATED -> {
-                    // 只有third party集群支持该消息
-                    if (context.remoteCluster.type != ClusterNodeType.REMOTE)
-                        throw UnsupportedOperationException()
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()
                     val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
