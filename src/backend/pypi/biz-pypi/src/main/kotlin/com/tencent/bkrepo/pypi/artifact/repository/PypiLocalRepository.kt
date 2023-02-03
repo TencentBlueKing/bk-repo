@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -287,7 +288,7 @@ class PypiLocalRepository(
      * 2，pypi simple html页面
      */
     override fun query(context: ArtifactQueryContext): Any? {
-        val servletPath = context.request.servletPath
+        val servletPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
         return if (servletPath.startsWith("/ext/version/detail")) {
             // 请求版本详情
             getVersionDetail(context)
