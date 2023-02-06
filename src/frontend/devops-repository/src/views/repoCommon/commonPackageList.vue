@@ -57,7 +57,7 @@
                         :is-loading="isLoading"
                         :has-next="packageList.length < pagination.count"
                         @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
-                        <div class="mb10 list-count">共计{{ pagination.count }}个制品</div>
+                        <div class="mb10 list-count">{{ $t('total of') + pagination.count + $t('versions')}}</div>
                         <package-card
                             class="mb10"
                             v-for="pkg in packageList"

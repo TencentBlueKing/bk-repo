@@ -145,7 +145,8 @@
                 repoEnum,
                 show: false,
                 loading: false,
-                repoBaseInfo: getRepoBaseInfo()
+                repoBaseInfo: getRepoBaseInfo(),
+                title: this.$t('CreateRepository')
             }
         },
         computed: {
@@ -372,5 +373,8 @@
             height: 60px;
         }
     }
+}
+.card-radio-group ::v-deep.card-radio{
+    width: 274px;
 }
 </style>

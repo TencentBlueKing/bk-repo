@@ -1,19 +1,19 @@
 <template>
     <div class="project-detail-container">
         <bk-tab class="project-detail-tab page-tab" type="unborder-card" :active.sync="tabName">
-            <bk-tab-panel name="basic" label="基础信息">
+            <bk-tab-panel name="basic" :label="$t('baseInfo')">
                 <bk-form class="ml10 mr10" :label-width="75">
-                    <bk-form-item label="项目标识">
+                    <bk-form-item :label="$t('projectId')">
                         <span>{{ currentProject.id }}</span>
                     </bk-form-item>
-                    <bk-form-item label="项目名称">
+                    <bk-form-item :label="$t('projectName')">
                         <span>{{ currentProject.name }}</span>
                     </bk-form-item>
-                    <bk-form-item label="项目描述">
+                    <bk-form-item :label="$t('projectDescription')">
                         <span>{{ currentProject.description }}</span>
                     </bk-form-item>
                     <bk-form-item>
-                        <bk-button theme="primary" @click="showProjectDialog">修改</bk-button>
+                        <bk-button theme="primary" @click="showProjectDialog">{{ $t('modify') }}</bk-button>
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
@@ -24,7 +24,7 @@
                         v-model="tab.add"
                         multiple
                         searchable
-                        placeholder="请选择用户"
+                        :placeholder="$t('please select user')"
                         :enable-virtual-scroll="selectList(tab).length > 3000"
                         :list="selectList(tab)">
                         <bk-option v-for="option in selectList(tab)"
@@ -34,7 +34,8 @@
                         </bk-option>
                     </bk-select>
                     <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')">{{ $t('add') }}</bk-button>
-                    <bk-button :disabled="!tab.delete.length" theme="default" class="ml10" @click="confirmHandler(tab, 'delete')">批量移除</bk-button>
+                    <bk-button :disabled="!tab.delete.length" theme="default" class="ml10" @click="confirmHandler(tab, 'delete')">
+                        {{ $t('Batch remove')}}</bk-button>
                 </div>
                 <bk-table
                     class="mt10"
@@ -72,7 +73,7 @@
                 manage: {
                     id: 'manage',
                     loading: false,
-                    name: '项目管理员',
+                    name: this.$t('projectManager'),
                     type: 'user',
                     items: [],
                     add: [],
@@ -81,7 +82,7 @@
                 user: {
                     id: 'user',
                     loading: false,
-                    name: '项目用户',
+                    name: this.$t('projectUser'),
                     type: 'user',
                     items: [],
                     add: [],
@@ -90,7 +91,7 @@
                 role: {
                     id: 'role',
                     loading: false,
-                    name: '项目用户组',
+                    name: this.$t('projectUserGroup'),
                     type: 'role',
                     items: [],
                     add: [],
@@ -116,9 +117,9 @@
         beforeRouteEnter (to, from, next) {
             const breadcrumb = to.meta.breadcrumb
             if (to.query.projectId) {
-                breadcrumb.splice(0, breadcrumb.length, { name: 'projectManage', label: to.query.projectId }, { name: 'projectConfig', label: '项目设置' })
+                breadcrumb.splice(0, breadcrumb.length, { name: 'projectManage', label: to.query.projectId }, { name: 'projectConfig', label: this.$t('projectConfig') })
             } else {
-                breadcrumb.splice(0, breadcrumb.length, { name: 'projectConfig', label: '项目设置' })
+                breadcrumb.splice(0, breadcrumb.length, { name: 'projectConfig', label: this.$t('projectConfig') })
             }
             next()
         },
@@ -197,7 +198,7 @@
                     ? confirmFn()
                     : this.$confirm({
                         theme: 'danger',
-                        message: `确认移除 ${deleteName} ?`,
+                        message: this.$t('confirm remove') + `${deleteName} ?`,
                         confirmFn
                     })
             },

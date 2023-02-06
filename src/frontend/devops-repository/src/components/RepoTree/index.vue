@@ -5,7 +5,7 @@
                 <div class="repo-tree-title"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
                     :style="{ 'padding-left': 20 * computedDepth(item) + 'px' }"
-                    v-bk-tooltips="{ content: item.name, placements: ['top'], disabled: item.name.toString().length < 19 || (openType !== '' && openType !== 'repoSearch') }"
+                    v-bk-tooltips="{ content: item.name, placements: ['top'], disabled: item.name.toString().length < 19 || openType !== '' }"
                     @click.stop="itemClickHandler(item)">
                     <i v-if="item.loading" class="mr5 loading spin-icon"></i>
                     <i v-else-if="!item.leaf" class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
@@ -137,10 +137,8 @@
                 this.$emit('item-click', item)
             },
             importantTransform (displayName) {
-                console.log(displayName)
                 if (!this.importantSearch) return displayName
                 const normalText = displayName.split(this.importantSearch)
-                console.log(normalText)
                 return normalText.reduce((a, b) => {
                     return a + `<em>${this.importantSearch}</em>` + b
                 })

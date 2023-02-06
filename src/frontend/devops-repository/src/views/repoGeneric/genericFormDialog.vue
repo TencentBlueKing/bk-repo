@@ -17,14 +17,14 @@
             </template>
             <template v-else-if="genericForm.type === 'rename'">
                 <bk-form-item :label="$t('file') + $t('name')" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model.trim="genericForm.name" :placeholder="$t('folderNamePlacehodler')" maxlength="255" show-word-limit></bk-input>
+                    <bk-input v-model.trim="genericForm.name" :placeholder="$t('folderNamePlaceholder')" maxlength="255" show-word-limit></bk-input>
                 </bk-form-item>
             </template>
             <template v-else-if="genericForm.type === 'scan'">
-                <bk-form-item label="扫描方案" :required="true" property="id" error-display-type="normal">
+                <bk-form-item :label="$t('scanScheme')" :required="true" property="id" error-display-type="normal">
                     <bk-select
                         v-model="genericForm.id"
-                        placeholder="请选择扫描方案">
+                        :placeholder="$t('please select a scanning scheme')">
                         <bk-option v-for="scan in scanList" :key="scan.id" :id="scan.id" :name="scan.name"></bk-option>
                     </bk-select>
                 </bk-form-item>
@@ -73,7 +73,7 @@
                         },
                         {
                             regex: /^([^\\/:*?"<>|]){1,50}$/,
-                            message: this.$t('folderNamePlacehodler'),
+                            message: this.$t('folderNamePlaceholder'),
                             trigger: 'blur'
                         }
                     ],
