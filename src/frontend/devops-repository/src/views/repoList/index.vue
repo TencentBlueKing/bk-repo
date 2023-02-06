@@ -6,7 +6,7 @@
                 <bk-input
                     v-model.trim="query.name"
                     class="w250"
-                    placeholder="请输入仓库名称, 按Enter键搜索"
+                    :placeholder="repoEnterTip"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
@@ -39,11 +39,11 @@
             <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
-                        class="mr5 repo-tag SUCCESS" data-name="内置"></span>
+                        class="mr5 repo-tag SUCCESS" :data-name="$t('built-in')"></span>
                     <span v-if="row.configuration.settings.system"
-                        class="mr5 repo-tag" data-name="系统"></span>
+                        class="mr5 repo-tag" :data-name="$t('system')"></span>
                     <span v-if="row.public"
-                        class="mr5 repo-tag WARNING" data-name="公开"></span>
+                        class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
                 </template>
@@ -72,7 +72,7 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: '设置', clickEvent: () => toRepoConfig(row) },
+                            { label: $t('setting'), clickEvent: () => toRepoConfig(row) },
                             row.repoType !== 'generic' && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
                         ]">
                     </operation-list>
@@ -92,17 +92,19 @@
             @limit-change="limit => handlerPaginationChange({ limit })">
         </bk-pagination>
         <create-repo-dialog ref="createRepo" @refresh="handlerPaginationChange()"></create-repo-dialog>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@repository/store/publicEnum'
     import { formatDate, convertFileSize } from '@repository/utils'
     export default {
         name: 'repoList',
-        components: { OperationList, createRepoDialog },
+        components: { OperationList, createRepoDialog, iamDenyDialog },
         data () {
             return {
                 MODE_CONFIG,
@@ -119,11 +121,14 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                showIamDenyDialog: false,
+                showData: {},
+                repoEnterTip: this.$t('repoNamePlaceHolder')
             }
         },
         computed: {
-            ...mapState(['userList']),
+            ...mapState(['userList', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             }
@@ -141,7 +146,8 @@
             convertFileSize,
             ...mapActions([
                 'getRepoList',
-                'deleteRepoList'
+                'deleteRepoList',
+                'getPermissionUrl'
             ]),
             getListData () {
                 this.isLoading = true
@@ -205,6 +211,28 @@
                                 theme: 'success',
                                 message: this.$t('delete') + this.$t('success')
                             })
+                        }).catch(err => {
+                            if (err.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: name
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: name,
+                                            action: 'DELETE',
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })

@@ -15,7 +15,7 @@
                 <bk-select
                     class="ml10 w250"
                     v-model="lastExecutionStatus"
-                    placeholder="上次执行状态"
+                    :placeholder="$t('lastExecutionStatus')"
                     @change="handlerPaginationChange()">
                     <bk-option v-for="(label, key) in asyncPlanStatusEnum" :key="key" :id="key" :name="label"></bk-option>
                 </bk-select>

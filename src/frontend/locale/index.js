@@ -19,7 +19,7 @@ const localeAliasMap = {
     'zh-cn': 'zh-CN',
     cn: 'zh-CN',
     'en-us': 'en-US',
-    en: 'en-US',
+    en: 'en',
     us: 'en-US',
     // 设置蓝鲸cookie使用
     'zh-CN': 'zh-cn',
