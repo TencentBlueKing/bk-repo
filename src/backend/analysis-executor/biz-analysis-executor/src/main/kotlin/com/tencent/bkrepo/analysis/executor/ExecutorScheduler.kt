@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.analysis.executor
 
 import com.sun.management.OperatingSystemMXBean
-import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analysis.executor.component.FileLoader
 import com.tencent.bkrepo.analysis.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.analysis.executor.util.Converter
@@ -56,7 +55,7 @@ class ExecutorScheduler @Autowired constructor(
     private val scanClient: ScanClient,
     private val executor: ThreadPoolTaskExecutor,
     private val scannerExecutorProperties: ScannerExecutorProperties
-) : ExecutorClient {
+) {
 
     init {
         if (scannerExecutorProperties.pull) {
@@ -66,18 +65,6 @@ class ExecutorScheduler @Autowired constructor(
 
     private val executingSubtaskExecutorMap = ConcurrentHashMap<String, ScanExecutor>()
     private val operatingSystemBean by lazy { ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean }
-
-    override fun execute(subtask: SubScanTask): Boolean {
-        return scan(subtask)
-    }
-
-    override fun execute(subtaskId: String, token: String): Boolean {
-        throw UnsupportedOperationException()
-    }
-
-    override fun stop(subtaskId: String): Boolean {
-        return executingSubtaskExecutorMap[subtaskId]?.stop(subtaskId) ?: false
-    }
 
     fun scan(subtask: SubScanTask): Boolean {
         if (!allowExecute() || scanning(subtask.taskId)) {
@@ -97,6 +84,10 @@ class ExecutorScheduler @Autowired constructor(
             }
         }
         return true
+    }
+
+    fun stop(subtaskId: String): Boolean {
+        return executingSubtaskExecutorMap[subtaskId]?.stop(subtaskId) ?: false
     }
 
     /**

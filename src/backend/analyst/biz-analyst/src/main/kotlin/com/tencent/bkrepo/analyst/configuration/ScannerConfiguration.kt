@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.configuration
 
+import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.dispatcher.DockerDispatcher
 import com.tencent.bkrepo.analyst.dispatcher.KubernetesDispatcher
@@ -46,6 +47,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.core.RedisTemplate
@@ -56,6 +58,7 @@ import org.springframework.data.redis.core.RedisTemplate
     KubernetesDispatcherProperties::class,
     DockerDispatcherProperties::class
 )
+@LoadBalancerClients(defaultConfiguration = [AnalysisLoadBalancerConfiguration::class])
 class ScannerConfiguration {
     @Bean
     @ConditionalOnProperty("scanner.dispatcher.k8s.enabled", havingValue = "true")
@@ -85,9 +88,12 @@ class ScannerConfiguration {
         scannerService: ScannerService,
         temporaryScanTokenService: TemporaryScanTokenService,
         @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
-        subtaskStateMachine: StateMachine
+        subtaskStateMachine: StateMachine,
+        executorClient: ExecutorClient
     ): SubtaskPoller {
-        return SubtaskPoller(dispatcher, scanService, scannerService, temporaryScanTokenService, subtaskStateMachine)
+        return SubtaskPoller(
+            dispatcher, scanService, scannerService, temporaryScanTokenService, subtaskStateMachine, executorClient
+        )
     }
 
     @Bean
