@@ -104,6 +104,4 @@ class ThirdPartyImageReplicationJob(
         private val logger = LoggerHolder.jobLogger
         const val COLLECTION_NAME = "oci_replication_record"
     }
-
-
 }
