@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
+import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
@@ -49,7 +50,8 @@ open class SubtaskPoller(
     private val scanService: ScanService,
     private val scannerService: ScannerService,
     private val temporaryScanTokenService: TemporaryScanTokenService,
-    private val subtaskStateMachine: StateMachine
+    private val subtaskStateMachine: StateMachine,
+    private val executorClient: ExecutorClient
 ) {
     @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
     open fun dispatch() {
@@ -77,6 +79,11 @@ open class SubtaskPoller(
             val result = dispatcher.clean(SubtaskConverter.convert(event.subtask, scanner), event.subtask.status)
             val subtaskId = event.subtask.latestSubScanTaskId
             logger.info("clean result[$result], subtask[$subtaskId], dispatcher[${dispatcher.name()}]")
+        }
+        if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher.isNullOrEmpty()) {
+            val subtaskId = event.subtask.latestSubScanTaskId!!
+            val result = executorClient.stop(subtaskId)
+            logger.info("stop subtask[$subtaskId] executor result[$result]")
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,41 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analysis.executor.api
+package com.tencent.bkrepo.analysis.executor.controller
 
+import com.tencent.bkrepo.analysis.executor.ExecutorScheduler
+import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
-import com.tencent.bkrepo.common.api.constant.ANALYSIS_EXECUTOR_SERVICE_NAME
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
-@FeignClient(ANALYSIS_EXECUTOR_SERVICE_NAME, contextId = "ExecutorClient")
-@RequestMapping("/service/executor")
-interface ExecutorClient {
-    /**
-     * 执行扫描任务
-     * @param subtask 扫描任务
-     * @return 是否成功提交执行
-     */
-    @PostMapping("/execute")
-    fun execute(@RequestBody subtask: SubScanTask): Boolean
+@RestController
+class ExecutorController(private val executorScheduler: ExecutorScheduler): ExecutorClient {
+    override fun execute(subtask: SubScanTask): Boolean {
+        return executorScheduler.scan(subtask)
+    }
 
-    /**
-     * 执行扫描任务，执行器会通过[subtaskId]到analysis拉取任务详情，同时到generic服务拉取制品
-     * @param subtaskId 扫描任务id
-     * @param token 用于更新
-     * @return 是否成功执行
-     */
-    @PostMapping("/dispatch")
-    fun dispatch(@RequestParam subtaskId: String, @RequestParam token: String): Boolean
+    override fun dispatch(subtaskId: String, token: String): Boolean {
+        throw UnsupportedOperationException()
+    }
 
-    /**
-     * 停止扫描任务
-     * @param subtaskId 扫描任务id
-     * @return 是否成功停止
-     */
-    @PostMapping("/stop")
-    fun stop(@RequestParam subtaskId: String): Boolean
+    override fun stop(subtaskId: String): Boolean {
+        return executorScheduler.stop(subtaskId)
+    }
 }
