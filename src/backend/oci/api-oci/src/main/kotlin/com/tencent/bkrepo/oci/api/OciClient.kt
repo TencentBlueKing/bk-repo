@@ -30,6 +30,7 @@ package com.tencent.bkrepo.oci.api
 import com.tencent.bkrepo.common.api.constant.OCI_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
+import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
@@ -38,6 +39,8 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 
+
+@Api("oci")
 @Primary
 @FeignClient(OCI_SERVICE_NAME, contextId = "OciClient")
 @RequestMapping("/service/third")

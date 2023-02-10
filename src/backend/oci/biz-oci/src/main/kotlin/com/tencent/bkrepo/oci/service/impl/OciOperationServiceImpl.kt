@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -87,6 +88,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -266,13 +268,15 @@ class OciOperationServiceImpl(
                     storageCredentials = getRepositoryInfo(this).storageCredentials
                 )
                 // 针对helm chart包，将部分信息放入到package中
-                val (appVersion, description) = getMetaDataFromChart(chartYaml)
-                updatePackageInfo(
-                    ociArtifactInfo = artifactInfo,
-                    appVersion = appVersion,
-                    description = description,
-                    packageKey = packageKey
-                )
+                chartYaml?.let {
+                    val (appVersion, description) = getMetaDataFromChart(chartYaml)
+                    updatePackageInfo(
+                        ociArtifactInfo = artifactInfo,
+                        appVersion = appVersion,
+                        description = description,
+                        packageKey = packageKey
+                    )
+                }
             } catch (e: Exception) {
                 logger.warn("can not convert meta data")
             }
@@ -629,7 +633,8 @@ class OciOperationServiceImpl(
                 manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
                 size = size,
                 chartYaml = null,
-                sourceType = ArtifactChannel.REPLICATION
+                sourceType = ArtifactChannel.REPLICATION,
+                userId = SYSTEM_USER
             )
             return true
         }
@@ -813,7 +818,8 @@ class OciOperationServiceImpl(
         manifestDigest: OciDigest,
         size: Long,
         chartYaml: Map<String, Any>? = null,
-        sourceType: ArtifactChannel? = null
+        sourceType: ArtifactChannel? = null,
+        userId: String = SecurityUtils.getUserId()
     ) {
         with(ociArtifactInfo) {
             logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
@@ -832,6 +838,7 @@ class OciOperationServiceImpl(
                 size = size,
                 manifestPath = manifestPath,
                 repoType = repoType,
+                userId = userId
             )
             packageClient.createVersion(request)
             savePackageMetaData(
@@ -843,13 +850,15 @@ class OciOperationServiceImpl(
             )
 
             // 针对helm chart包，将部分信息放入到package中
-            val (appVersion, description) = getMetaDataFromChart(chartYaml)
-            updatePackageInfo(
-                ociArtifactInfo = ociArtifactInfo,
-                appVersion = appVersion,
-                description = description,
-                packageKey = packageKey
-            )
+            chartYaml?.let {
+                val (appVersion, description) = getMetaDataFromChart(chartYaml)
+                updatePackageInfo(
+                    ociArtifactInfo = ociArtifactInfo,
+                    appVersion = appVersion,
+                    description = description,
+                    packageKey = packageKey
+                )
+            }
         }
     }
 
