@@ -54,4 +54,5 @@ dependencies {
     }
 
     compileOnly(project(":common:common-mongo"))
+    testImplementation(project(":common:common-mongo"))
 }
