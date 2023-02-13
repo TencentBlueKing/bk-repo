@@ -907,7 +907,7 @@ class OciOperationServiceImpl(
     override fun getReturnDomain(request: HttpServletRequest): String {
         return OciResponseUtils.getResponseURI(
             request = request,
-            enableHttp = ociProperties.http
+            enableHttps = ociProperties.https
         ).toString()
     }
 
