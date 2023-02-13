@@ -27,8 +27,10 @@ data:
     oci.domain: {{ .Values.gateway.dockerHost }}
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
+    oci.http: false
     {{- else }}
     oci.authUrl: http://{{ include "bkrepo.oci.authUrl" . }}
+    oci.http: true
     {{- end }}
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
