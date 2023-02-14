@@ -63,13 +63,17 @@ import javax.ws.rs.core.UriBuilder
 object OciResponseUtils {
     private const val LOCAL_HOST = "localhost"
 
-    fun getResponseURI(request: HttpServletRequest, enableHttps: Boolean): URI {
+    fun getResponseURI(request: HttpServletRequest, enableHttps: Boolean, domain: String): URI {
         val hostHeaders = request.getHeaders(HOST)
         var host = LOCAL_HOST
         if (hostHeaders != null) {
             val headers = hostHeaders.toList()
             val parts = (headers[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             host = parts[0]
+        }
+        // domain为ip,port组合
+        if (domain.split(":").size > 1) {
+            host = domain
         }
         val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttps))
         return builder.build()
