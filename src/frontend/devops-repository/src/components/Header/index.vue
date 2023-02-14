@@ -9,7 +9,7 @@
                 >
                     <use xlink:href="#repository" />
                 </svg>
-                <header class="ml10 bkrepo-title">{{ $t('制品管理') }}</header>
+                <header class="ml10 bkrepo-title">{{ $t('RepoManage') }}</header>
             </router-link>
             <!-- <a class="ml20 link" target="_self" href="/software/repoList">
                 <i class="devops-icon icon-sort"></i>
@@ -20,7 +20,7 @@
                 :value="projectId"
                 searchable
                 :clearable="false"
-                placeholder="请选择项目"
+                :placeholder="$t('inputProject')"
                 @change="changeProject"
                 size="small"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
@@ -32,20 +32,32 @@
                 </bk-option>
             </bk-select>
         </div>
+        <div style="flex: 1;text-align: end" @click="changeLanguage" class="language-select">
+            <span>{{ language === 'zh-cn' ? 'English' : '中文' }}</span>
+        </div>
         <User />
     </div>
 </template>
 <script>
     import User from '@repository/components/User'
     import { mapState, mapActions } from 'vuex'
+    import cookies from 'js-cookie'
     export default {
         name: 'bkrepoHeader',
         components: { User },
+        data () {
+            return {
+                language: ''
+            }
+        },
         computed: {
             ...mapState(['projectList']),
             projectId () {
                 return this.$route.params.projectId
             }
+        },
+        created () {
+            this.language = cookies.get('blueking_language') || 'zh-cn'
         },
         methods: {
             ...mapActions(['checkPM']),
@@ -60,6 +72,18 @@
                     },
                     query: this.$route.query
                 })
+            },
+            changeLanguage () {
+                const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
+                if (this.language === 'zh-cn') {
+                    cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
+                    cookies.set('blueking_language', 'en', { domain: BK_CI_DOMAIN, path: '/' })
+                    location.reload()
+                } else {
+                    cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
+                    cookies.set('blueking_language', 'zh-cn', { domain: BK_CI_DOMAIN, path: '/' })
+                    location.reload()
+                }
             }
         }
     }
@@ -101,6 +125,9 @@
         &:hover {
             background-color: rgba(255, 255, 255, 0.4);
         }
+    }
+    .language-select:hover{
+        cursor: pointer;
     }
 }
 </style>

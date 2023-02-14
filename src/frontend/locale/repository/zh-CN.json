@@ -574,5 +574,7 @@
     "sharePlaceHolder1":"授权访问IP，为空则任意IP可访问，按Enter键确认",
     "visits":"访问次数",
     "sharePlaceHolder2":"请输入访问次数，为空则不限制",
-    "sharePlaceHolder3":"请选择过期时间"
+    "sharePlaceHolder3":"请选择过期时间",
+    "RepoManage": "制品管理",
+    "inputProject":"请选择项目"
 }

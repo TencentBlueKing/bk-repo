@@ -556,5 +556,7 @@
     "sharePlaceHolder1":"Authorize to access the IP, if it is empty, any IP can be accessed, press Enter to confirm",
     "visits":"visits",
     "sharePlaceHolder2":"Please enter the number of visits, if it is empty, there is no limit",
-    "sharePlaceHolder3":"Please select an expiration time"
+    "sharePlaceHolder3":"Please select an expiration time",
+    "RepoManage": "RepoManage",
+    "inputProject":"Please select an item"
 }
