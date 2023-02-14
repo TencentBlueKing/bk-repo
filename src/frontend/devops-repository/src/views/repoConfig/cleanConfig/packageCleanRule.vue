@@ -1,19 +1,19 @@
 <template>
-    <div class="rule-item flex-align-center">
-        <span class="mr5">制品元数据满足</span>
+    <div class="rule-item flex-align-center" :data-suffix="$t('shortOr')">
+        <span class="mr5">{{$t('metadataSatisfy')}}</span>
         <bk-input
             style="width:180px;"
             :value="defaultValue.field.replace(/^metadata\.(.*)$/, '$1')"
             @input="field => change({ field: `metadata.${field}` })"
             :disabled="disabled"
-            placeholder="属性键">
+            :placeholder="$t('key')">
         </bk-input>
         <select-input
             :select="defaultValue.operation"
             :select-list="typeList"
             :input="defaultValue.value"
             :disabled="disabled"
-            placeholder="属性值"
+            :placeholder="$t('value')"
             @change="r => change(r)">
         </select-input>
         <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="$emit('delete')" />
@@ -35,9 +35,9 @@
                     value: ''
                 },
                 typeList: [
-                    { id: 'EQ', name: '等于' },
-                    { id: 'MATCH', name: '包含' },
-                    { id: 'REGEX', name: '正则匹配' }
+                    { id: 'EQ', name: this.$t('equal') },
+                    { id: 'MATCH', name: this.$t('contain') },
+                    { id: 'REGEX', name: this.$t('regular') }
                 ]
             }
         },
@@ -76,7 +76,7 @@
 <style lang="scss" scoped>
 .rule-item {
     &:not(:nth-child(1)):before {
-        content: '或';
+        content: attr(data-suffix);
         position: absolute;
         margin-left: -22px;
         color: var(--fontSubsidiaryColor);

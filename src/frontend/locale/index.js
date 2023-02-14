@@ -50,6 +50,7 @@ export default (r) => {
     const initLocale = getLsLocale()
     // export localeList
     const i18n = new VueI18n({
+        silentFallbackWarn: true,
         locale: initLocale,
         fallbackLocale: initLocale,
         messages

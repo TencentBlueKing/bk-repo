@@ -25,7 +25,7 @@
                         <span class="flex-1 text-overflow" :title="detailSlider.data.md5">{{ detailSlider.data.md5 }}</span>
                     </div>
                 </div>
-                <div v-if="!detailSlider.folder" class="display-block" data-title="命令行下载">
+                <div v-if="!detailSlider.folder" class="display-block" :data-title="$t('commandDownload')">
                     <div class="pl30">
                         <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                         {{ $t('tokenSubTitle') }}
@@ -36,7 +36,7 @@
                 </div>
             </bk-tab-panel>
             <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
-                <div class="version-metadata display-block" data-title="元数据">
+                <div class="version-metadata display-block" :data-title="$t('meteDate')">
                     <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
@@ -232,7 +232,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: '删除元数据' + this.$t('success')
+                        message: this.$t('delete') + this.$t('metadata') + this.$t('success')
                     })
                     this.getDetail()
                 })

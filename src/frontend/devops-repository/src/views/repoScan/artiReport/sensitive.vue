@@ -5,7 +5,7 @@
                 class="w250"
                 v-model.trim="sensitiveContent"
                 clearable
-                placeholder="请输入敏感信息内容, 按Enter键搜索"
+                :placeholder="$t('sensitiveContentPlaceHolder')"
                 right-icon="bk-icon icon-search"
                 @enter="handlerPaginationChange()"
                 @clear="handlerPaginationChange()">
@@ -14,13 +14,13 @@
                 class="ml10 w250"
                 v-model.trim="sensitiveType"
                 clearable
-                placeholder="请输入敏感信息类型, 按Enter键搜索"
+                :placeholder="$t('sensitiveTypePlaceHolder')"
                 right-icon="bk-icon icon-search"
                 @enter="handlerPaginationChange()"
                 @clear="handlerPaginationChange()">
             </bk-input>
             <div class="flex-1 flex-end-center">
-                <bk-button theme="default" @click="$emit('rescan')">重新扫描</bk-button>
+                <bk-button theme="default" @click="$emit('rescan')">{{ $t('rescan') }}</bk-button>
             </div>
         </div>
         <bk-table
@@ -31,24 +31,24 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" title="未扫描到敏感信息">
+                <empty-data :is-loading="isLoading" :title="$t('noSensitiveTitle')">
                 </empty-data>
             </template>
             <bk-table-column type="expand" width="30">
                 <template #default="{ row }">
                     <template v-if="row.path">
-                        <div class="leak-title">存在敏感信息的文件路径</div>
+                        <div class="leak-title">{{ $t('hasSensitivePath') }}</div>
                         <div class="leak-tip">{{ row.path }}</div>
                     </template>
                     <template v-if="row.content">
-                        <div class="leak-title">敏感信息内容</div>
+                        <div class="leak-title">{{ $t('sensitiveContent') }}</div>
                         <div class="leak-tip">{{ row.content }}</div>
                     </template>
                 </template>
             </bk-table-column>
-            <bk-table-column label="类型" prop="type" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="路径" prop="path" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="内容" prop="content" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('type')" prop="type" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('path')" prop="path" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('content')" prop="content" show-overflow-tooltip></bk-table-column>
         </bk-table>
         <bk-pagination
             class="p10"

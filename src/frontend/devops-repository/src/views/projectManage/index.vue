@@ -5,7 +5,7 @@
             <bk-input
                 v-model.trim="projectInput"
                 class="w250"
-                placeholder="请输入项目名称/项目标识"
+                :placeholder="$t('please enter projectId or projectName')"
                 clearable
                 right-icon="bk-icon icon-search"
                 @change="handlerPaginationChange()">
@@ -21,13 +21,13 @@
             <template #empty>
                 <empty-data :search="Boolean(projectInput)"></empty-data>
             </template>
-            <bk-table-column label="项目名称" show-overflow-tooltip>
+            <bk-table-column :label="$t('projectName')" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span class="hover-btn" @click="showProjectDetailHandler(row)">{{row.name}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="项目标识" prop="id" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="项目描述" show-overflow-tooltip>
+            <bk-table-column :label="$t('projectId')" prop="id" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('projectDescription')" show-overflow-tooltip>
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('createdDate')">

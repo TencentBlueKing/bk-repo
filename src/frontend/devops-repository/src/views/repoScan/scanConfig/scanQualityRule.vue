@@ -1,28 +1,28 @@
 <template>
     <bk-form style="max-width: 1080px;" :label-width="120" :model="rule" :rules="rules" ref="ruleForm">
         <template>
-            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_LICENSE)" label="许可证规则">
-                <div style="color:var(--fontSubsidiaryColor);">当许可证中出现不符合以下规则的许可证时，则不通过质量规则</div>
-                <div class="mt10"><bk-checkbox v-model="rule.recommend">仅有推荐使用的许可证</bk-checkbox></div>
-                <div class="mt10"><bk-checkbox v-model="rule.compliance">仅有合规的许可证</bk-checkbox></div>
-                <div class="mt10"><bk-checkbox v-model="rule.unknown">无未知许可证</bk-checkbox></div>
+            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_LICENSE)" :label="$t('licenseRules')">
+                <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualityLicenceRule') }}</div>
+                <div class="mt10"><bk-checkbox v-model="rule.recommend">{{ $t('recommendLicenseRule') }}</bk-checkbox></div>
+                <div class="mt10"><bk-checkbox v-model="rule.compliance">{{ $t('compliantLicenseRule') }}</bk-checkbox></div>
+                <div class="mt10"><bk-checkbox v-model="rule.unknown">{{ $t('unknownLicenseRule') }}</bk-checkbox></div>
             </bk-form-item>
-            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" label="安全规则">
-                <div style="color:var(--fontSubsidiaryColor);">当扫描的制品漏洞超过下方任意一条规则中设定的数量，则制品未通过质量规则</div>
+            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" :label="$t('safetyRules')">
+                <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualitySafetyRule') }}</div>
             </bk-form-item>
             <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" label="" v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id"
                 :property="id.toLowerCase()" error-display-type="normal">
                 <div class="flex-align-center">
-                    <div :class="`status-sign ${id}`" :data-name="`${name}漏洞≦`"></div>
+                    <div :class="`status-sign ${id}`" :data-name="`${name}` + $t('vulnerability') + `≦`"></div>
                     <bk-input class="ml10 mr10" style="width: 80px;" v-model.trim="rule[id.toLowerCase()]"></bk-input>
-                    <span>个</span>
+                    <span>{{ $t('per') }}</span>
                 </div>
             </bk-form-item>
         </template>
-        <bk-form-item label="触发事件">
-            <div style="color:var(--fontSubsidiaryColor);">可勾选下方按钮，在扫描或扫描结束后触发勾选项</div>
+        <bk-form-item :label="$t('triggerEvent')">
+            <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualityCheckBtnPre') }}</div>
             <!-- <div class="mt10"><bk-checkbox v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div> -->
-            <div class="mt10"><bk-checkbox v-model="rule.forbidQualityUnPass">自动禁止使用制品：质量规则未通过的制品</bk-checkbox></div>
+            <div class="mt10"><bk-checkbox v-model="rule.forbidQualityUnPass">{{ $t('scanQualityCheckBtn') }}</bk-checkbox></div>
         </bk-form-item>
         <bk-form-item>
             <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
@@ -44,7 +44,7 @@
             const validate = [
                 {
                     regex: /^[0-9]*$/,
-                    message: '输入格式错误，请输入非负整数',
+                    message: this.$t('nonNegativeIntegerTip'),
                     trigger: 'blur'
                 }
             ]

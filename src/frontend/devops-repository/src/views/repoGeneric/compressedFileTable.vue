@@ -38,7 +38,7 @@
                     <div v-if="!row.folder" v-bk-tooltips="{ disabled: getBtnDisabled(row.name), content: $t('supportPreview') }">
                         <bk-button class="mr10" :ext-cls="!getBtnDisabled(row.name) ? 'preview-btn' : ''" text :disabled="!getBtnDisabled(row.name)" @click="handlerPreview(row)">{{ $t('preview') }}</bk-button>
                     </div>
-                    <bk-button v-else text @click="openFolder(row, null, null, $index)">打开</bk-button>
+                    <bk-button v-else text @click="openFolder(row, null, null, $index)">{{ $t('openBtn')}}</bk-button>
                 </template>
             </bk-table-column>
         </bk-table>

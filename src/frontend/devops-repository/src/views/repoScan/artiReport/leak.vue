@@ -5,7 +5,7 @@
                 class="w250"
                 v-model.trim="filter.vulId"
                 clearable
-                placeholder="请输入漏洞ID, 按Enter键搜索"
+                :placeholder="$t('bugSearchHolder')"
                 right-icon="bk-icon icon-search"
                 @enter="handlerPaginationChange()"
                 @clear="handlerPaginationChange()">
@@ -13,12 +13,12 @@
             <bk-select
                 class="ml10 w250"
                 v-model="filter.severity"
-                placeholder="漏洞等级"
+                :placeholder="$t('vulnerabilityLevel')"
                 @change="handlerPaginationChange()">
                 <bk-option v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="name"></bk-option>
             </bk-select>
             <div class="flex-1 flex-end-center">
-                <bk-button theme="default" @click="$emit('rescan')">重新扫描</bk-button>
+                <bk-button theme="default" @click="$emit('rescan')">{{$t('rescan')}}</bk-button>
             </div>
         </div>
         <bk-table
@@ -33,35 +33,35 @@
                 <empty-data
                     :is-loading="isLoading"
                     :search="Boolean(filter.vulId || filter.severity)"
-                    title="未扫描到漏洞">
+                    :title="$t('noVulnerabilityTitle')">
                 </empty-data>
             </template>
             <bk-table-column type="expand" width="30">
                 <template #default="{ row }">
                     <template v-if="row.path">
-                        <div class="leak-title">存在漏洞的文件路径</div>
+                        <div class="leak-title">{{ $t('vulnerabilityPathTitle') }}</div>
                         <div class="leak-tip">{{ row.path }}</div>
                     </template>
                     <div class="leak-title">{{ row.title }}</div>
                     <div class="leak-tip">{{ row.description || '/' }}</div>
-                    <div class="leak-title">修复建议</div>
+                    <div class="leak-title">{{$t('fixSuggestion')}}}</div>
                     <div class="leak-tip">{{ row.officialSolution || '/' }}</div>
                     <template v-if="row.reference && row.reference.length">
-                        <div class="leak-title">相关资料</div>
+                        <div class="leak-title">{{ $t('relatedInfo') }}</div>
                         <div class="leak-tip" v-for="url in row.reference" :key="url">
                             <a :href="url" target="_blank">{{ url }}</a>
                         </div>
                     </template>
                 </template>
             </bk-table-column>
-            <bk-table-column label="漏洞ID" prop="vulId" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="漏洞等级">
+            <bk-table-column :label="$t('vulnerability') + 'ID'" prop="vulId" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('vulnerabilityLevel')">
                 <template #default="{ row }">
                     <div class="status-sign" :class="row.severity" :data-name="leakLevelEnum[row.severity]"></div>
                 </template>
             </bk-table-column>
-            <bk-table-column label="所属依赖" prop="pkgName" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="引入版本" prop="installedVersion" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('dependPackage')" prop="pkgName" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('installedVersion')" prop="installedVersion" show-overflow-tooltip></bk-table-column>
         </bk-table>
         <bk-pagination
             class="p10"

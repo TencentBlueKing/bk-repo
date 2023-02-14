@@ -12,7 +12,7 @@
                     <bk-form-item :label="$t('repoAddress')">
                         <span>{{repoAddress}}</span>
                     </bk-form-item>
-                    <bk-form-item label="访问权限">
+                    <bk-form-item :label="$t('accessPermission')">
                         <card-radio-group
                             v-model="available"
                             :list="availableList">
@@ -231,9 +231,9 @@
             },
             availableList () {
                 return [
-                    { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
+                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
+                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
                 ]
             },
             rules () {
@@ -397,5 +397,8 @@
             max-width: 800px;
         }
     }
+}
+.card-radio-group ::v-deep.card-radio{
+    width: 274px;
 }
 </style>

@@ -26,9 +26,9 @@ Vue.mixin({
             if (MODE_CONFIG === 'ci') {
                 switch (name) {
                     case 'custom':
-                        return '自定义仓库'
+                        return this.$t('custom')
                     case 'pipeline':
-                        return '流水线仓库'
+                        return this.$t('pipeline')
                     default:
                         return name
                 }

@@ -1,22 +1,22 @@
 <template>
     <canway-dialog
         v-model="scanForm.show"
-        title="创建扫描方案"
+        :title="$t('createScanPlan')"
         width="500"
         :height-num="365"
         @cancel="cancel">
         <bk-form class="mr10" :label-width="80" :model="scanForm" :rules="rules" ref="scanForm">
-            <bk-form-item label="方案名称" :required="true" property="name" error-display-type="normal">
+            <bk-form-item :label="$t('schemeName')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="scanForm.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>
-            <bk-form-item label="方案类型" :required="true" property="type" error-display-type="normal">
+            <bk-form-item :label="$t('schemeType')" :required="true" property="type" error-display-type="normal">
                 <bk-select
                     v-model="scanForm.type"
                     @change="scanForm.scanner = ''">
                     <bk-option v-for="[id, name] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="name"></bk-option>
                 </bk-select>
             </bk-form-item>
-            <bk-form-item v-if="scanForm.type" label="扫描器" :required="true" property="scanner" error-display-type="normal">
+            <bk-form-item v-if="scanForm.type" :label="$t('scanner')" :required="true" property="scanner" error-display-type="normal">
                 <bk-select
                     v-model="scanForm.scanner">
                     <bk-option v-for="scanner in filterScannerList" :key="scanner.name" :id="scanner.name" :name="scanner.name"></bk-option>
@@ -60,21 +60,21 @@
                     name: [
                         {
                             required: true,
-                            message: '请输入方案名称',
+                            message: this.$t('planNameTip'),
                             trigger: 'blur'
                         }
                     ],
                     type: [
                         {
                             required: true,
-                            message: '请选择方案类型',
+                            message: this.$t('planTypeTip'),
                             trigger: 'blur'
                         }
                     ],
                     scanner: [
                         {
                             required: true,
-                            message: '请选择扫描器',
+                            message: this.$t('selectScannerPlaceHolder'),
                             trigger: 'blur'
                         }
                     ]
@@ -130,7 +130,7 @@
                     this.$emit('refresh')
                     this.$bkMessage({
                         theme: 'success',
-                        message: '创建扫描方案' + this.$t('success')
+                        message: this.$t('createScanPlan') + this.$t('space') + this.$t('success')
                     })
                     this.scanForm.show = false
                 }).finally(() => {

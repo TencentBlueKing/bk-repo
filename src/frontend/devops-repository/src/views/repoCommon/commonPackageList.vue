@@ -26,7 +26,7 @@
                 <bk-input
                     class="w250"
                     v-model.trim="packageNameVal"
-                    placeholder="请输入制品名称, 按Enter键搜索"
+                    :placeholder="$t('productPlaceHolder')"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
@@ -38,11 +38,11 @@
                         v-model="property"
                         :clearable="false"
                         @change="handlerPaginationChange()">
-                        <bk-option id="name" name="名称排序"></bk-option>
-                        <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
-                        <bk-option id="downloads" name="下载量排序"></bk-option>
+                        <bk-option id="name" :name="$t('Order by name')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
+                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
                     </bk-select>
-                    <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
+                    <bk-popover :content="$t('toggle to') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
                             <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
                         </div>
@@ -57,7 +57,7 @@
                         :is-loading="isLoading"
                         :has-next="packageList.length < pagination.count"
                         @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
-                        <div class="mb10 list-count">共计{{ pagination.count }}个制品</div>
+                        <div class="mb10 list-count">{{ $t('totalVersionCount', [pagination.count])}}</div>
                         <package-card
                             class="mb10"
                             v-for="pkg in packageList"

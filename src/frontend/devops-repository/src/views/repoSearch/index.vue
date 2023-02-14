@@ -18,16 +18,16 @@
                 </div>
                 <div v-if="resultList.length !== 0 || repoList[0].children.length !== 0" class="sort-tool flex-align-center">
                     <bk-select
-                        style="width:150px;"
+                        style="width:200px;"
                         v-model="property"
                         :clearable="false"
                         @change="changeSortType">
-                        <bk-option id="name" name="名称排序"></bk-option>
-                        <bk-option id="lastModifiedDate" name="最后修改时间排序"></bk-option>
-                        <bk-option id="createdDate" name="最初创建时间排序"></bk-option>
-                        <bk-option id="downloads" name="下载量排序"></bk-option>
+                        <bk-option id="name" :name="$t('Order by name')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
+                        <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
+                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
                     </bk-select>
-                    <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
+                    <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
                             <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
                         </div>
@@ -105,7 +105,7 @@
                 packageName: this.$route.query.packageName || '',
                 repoType: this.$route.query.repoType || 'generic',
                 repoList: [{
-                    name: '全部',
+                    name: this.$t('total'),
                     roadMap: '0',
                     children: []
                 }],
@@ -118,7 +118,8 @@
                     count: 0
                 },
                 resultList: [],
-                hasNext: true
+                hasNext: true,
+                focusContent: this.$t('toggle to')
             }
         },
         computed: {
@@ -156,7 +157,7 @@
                     packageName: this.packageName || ''
                 }).then(([item]) => {
                     this.repoList = [{
-                        name: '全部',
+                        name: this.$t('total'),
                         roadMap: '0',
                         children: item.repos.map((child, i) => {
                             return {

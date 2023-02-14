@@ -118,7 +118,7 @@ export const scanStatusEnum = {
     FAILED: '扫描异常'
 }
 
-// 漏洞风险等级
+// 漏洞风险等级(已国际化)
 export const leakLevelEnum = {
     CRITICAL: '危急',
     HIGH: '高级',

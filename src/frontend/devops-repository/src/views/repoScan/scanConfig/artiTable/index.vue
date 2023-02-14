@@ -1,10 +1,10 @@
 <template>
     <div class="arti-table-container">
         <bk-radio-group v-model="showAddBtn">
-            <bk-radio :disabled="disabled" :value="false">所有制品的最新版本</bk-radio>
+            <bk-radio :disabled="disabled" :value="false">{{ $t('satisfyVersionBtn') }}</bk-radio>
             <bk-radio :disabled="disabled" class="mt10" :value="true">
-                <span>满足规则的制品</span>
-                <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="addRule()">添加规则</bk-button>
+                <span>{{ $t('satisfyRuleBtn')}}</span>
+                <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="addRule()">{{ $t('addRule') }}</bk-button>
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn" class="rule-list">
