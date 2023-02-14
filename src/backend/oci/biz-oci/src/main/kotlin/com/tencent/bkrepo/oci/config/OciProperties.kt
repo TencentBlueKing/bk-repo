@@ -37,5 +37,6 @@ data class OciProperties(
     var authUrl: String = "localhost",
 
     var domain: String = "localhost",
-    var https: Boolean = true
+
+    var https: Boolean = false
 )
