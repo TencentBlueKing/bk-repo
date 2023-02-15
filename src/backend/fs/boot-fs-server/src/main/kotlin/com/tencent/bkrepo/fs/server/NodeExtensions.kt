@@ -46,7 +46,7 @@ fun NodeInfo.toNode(): Node {
         size = this.size,
         sha256 = this.sha256,
         md5 = this.md5,
-        metadata = metadata,
+        metadata = this.metadata,
         lastAccessDate = this.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME)
     )
 }
