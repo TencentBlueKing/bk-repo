@@ -8,7 +8,7 @@
                     style="width:390px"
                     v-model.trim="packageName"
                     size="large"
-                    :placeholder="$t('pleaseInput') + $t('packageName')"
+                    :placeholder="$t('pleaseInput') + $t('space') + $t('packageName')"
                     @enter="changePackageName()">
                 </bk-input>
                 <i class="name-search devops-icon icon-search flex-center" @click="changePackageName()"></i>

@@ -3,14 +3,14 @@
         :value="show"
         width="528"
         height-num="281"
-        title="添加文件路径"
+        :title="$t('addFilePath')"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">
         <bk-input
             class="w480"
             v-model="pathsStr"
             type="textarea"
-            placeholder="请输入文件路径，以换行分隔"
+            :placeholder="$t('addFilePathPlaceHolder')"
             :rows="6">
         </bk-input>
     </canway-dialog>
