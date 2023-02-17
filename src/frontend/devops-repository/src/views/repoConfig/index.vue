@@ -241,7 +241,7 @@
                     repodataDepth: [
                         {
                             regex: /^(0|[1-9][0-9]*)$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('repodataDepth'),
                             trigger: 'blur'
                         }
                     ],
@@ -252,7 +252,7 @@
                                     return /\.xml$/.test(v)
                                 })
                             },
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('groupXmlSet') + this.$t('space') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
                         }
                     ],
@@ -374,7 +374,7 @@
                     this.getRepoInfoHandler()
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('save') + this.$t('success')
+                        message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
                 }).finally(() => {
                     this.repoBaseInfo.loading = false
