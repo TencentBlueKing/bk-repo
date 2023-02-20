@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.service
 
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.reactor.awaitSingle
-import java.io.InputStream
 import java.time.LocalDateTime
 
 class FileOperationService(
@@ -51,7 +51,7 @@ class FileOperationService(
     private val fileNodeService: FileNodeService
 ) {
 
-    suspend fun read(nodeDetail: NodeDetail, range: Range): InputStream? {
+    suspend fun read(nodeDetail: NodeDetail, range: Range): ArtifactInputStream? {
         val repo = ReactiveArtifactContextHolder.getRepoDetail()
         return fileNodeService.read(
             nodeDetail = nodeDetail,

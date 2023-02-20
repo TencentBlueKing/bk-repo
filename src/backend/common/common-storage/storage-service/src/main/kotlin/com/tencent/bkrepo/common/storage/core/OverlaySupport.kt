@@ -48,7 +48,7 @@ abstract class OverlaySupport : FileBlockSupport() {
         }
         val ranges = OverlayRangeUtils.build(blocks, range)
         if (ranges.size == 1) {
-            return loadResource(ranges.first(), storageCredentials)?.artifactStream(range)
+            return loadResource(ranges.first(), storageCredentials)
         }
         if (ranges.isEmpty()) {
             return null
@@ -63,8 +63,8 @@ abstract class OverlaySupport : FileBlockSupport() {
     private fun loadResource(
         resource: RegionResource,
         storageCredentials: StorageCredentials?
-    ) = if (resource.digest == RegionResource.ZERO_RESOURCE) {
-        ZeroInputStream(resource.len)
+    ): ArtifactInputStream? = if (resource.digest == RegionResource.ZERO_RESOURCE) {
+        ZeroInputStream(resource.len)?.artifactStream(Range.full(resource.len))
     } else {
         val range = Range(resource.off, resource.off + resource.len - 1, resource.size)
         load(resource.digest, range, storageCredentials)

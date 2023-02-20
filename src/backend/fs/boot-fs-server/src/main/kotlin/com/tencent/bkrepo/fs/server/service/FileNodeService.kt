@@ -28,13 +28,13 @@
 
 package com.tencent.bkrepo.fs.server.service
 
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import java.io.InputStream
 
 class FileNodeService(
     private val blockNodeService: BlockNodeService,
@@ -56,7 +56,7 @@ class FileNodeService(
         nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
         range: Range
-    ): InputStream? {
+    ): ArtifactInputStream? {
         val blocks = info(nodeDetail, range)
         return coStorageManager.loadArtifactInputStream(blocks, range, storageCredentials)
     }

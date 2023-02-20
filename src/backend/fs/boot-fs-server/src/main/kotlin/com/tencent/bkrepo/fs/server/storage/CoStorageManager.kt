@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.fs.server.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -37,7 +38,6 @@ import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.service.BlockNodeService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.InputStream
 
 class CoStorageManager(
     private val blockNodeService: BlockNodeService,
@@ -65,7 +65,7 @@ class CoStorageManager(
         blocks: List<RegionResource>,
         range: Range,
         storageCredentials: StorageCredentials?
-    ): InputStream? {
+    ): ArtifactInputStream? {
         return withContext(Dispatchers.IO) {
             storageService.load(blocks, range, storageCredentials)
         }

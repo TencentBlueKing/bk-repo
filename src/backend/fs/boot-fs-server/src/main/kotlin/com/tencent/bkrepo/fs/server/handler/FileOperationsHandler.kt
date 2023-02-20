@@ -42,13 +42,14 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ZeroCopyHttpOutputMessage
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.springframework.web.reactive.function.server.buildAndAwait
 
 /**
@@ -75,23 +76,26 @@ class FileOperationsHandler(
             val artifactInputStream = fileOperationService.read(node, range) ?: throw ArtifactNotFoundException(
                 this.toString()
             )
-            if (artifactInputStream is FileArtifactInputStream) {
-                val response = request.exchange().response
+            val response = request.exchange().response
+            if (range.isPartialContent()) {
                 response.statusCode = HttpStatus.PARTIAL_CONTENT
-                val headers = response.headers
-                headers.contentLength = artifactInputStream.range.length
-                headers.set(HttpHeaders.ACCEPT_RANGES, "bytes")
-                headers.add("Content-Range", "bytes ${range.start}-${range.end}/${node.size}")
+            }
+            val headers = response.headers
+            headers.contentLength = artifactInputStream.range.length
+            headers.set(HttpHeaders.ACCEPT_RANGES, "bytes")
+            headers.add("Content-Range", "bytes ${range.start}-${range.end}/${node.size}")
+            if (artifactInputStream is FileArtifactInputStream) {
                 (response as ZeroCopyHttpOutputMessage).writeWith(
                     artifactInputStream.file,
                     artifactInputStream.range.start,
                     artifactInputStream.range.length
                 ).awaitSingleOrNull()
-                return ok().buildAndAwait()
             } else {
                 val source = RegionInputStreamResource(artifactInputStream, range.total)
-                return ok().bodyValueAndAwait(source)
+                val body = DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
+                response.writeWith(body).awaitSingleOrNull()
             }
+            return ok().buildAndAwait()
         }
     }
 
