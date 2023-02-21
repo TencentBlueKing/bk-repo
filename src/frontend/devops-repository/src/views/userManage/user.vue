@@ -24,8 +24,8 @@
                     v-model="showAdmin"
                     :placeholder="$t('accountPermission')"
                     @change="handlerPaginationChange()">
-                    <bk-option id="true" :name="$t('System administrator')"></bk-option>
-                    <bk-option id="false" :name="$t('normal user')"></bk-option>
+                    <bk-option id="true" :name="$t('administrator')"></bk-option>
+                    <bk-option id="false" :name="$t('normalUser')"></bk-option>
                 </bk-select>
             </div>
         </div>
@@ -49,12 +49,12 @@
             <bk-table-column :label="$t('createdDate')">
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('System administrator')">
+            <bk-table-column :label="$t('administrator')">
                 <template #default="{ row }">
                     <bk-switcher class="m5" v-model="row.admin" size="small" theme="primary" @change="changeAdminStatus(row)"></bk-switcher>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('activate account')">
+            <bk-table-column :label="$t('activateAccount')">
                 <template #default="{ row }">
                     <bk-switcher class="m5" :value="!row.locked" size="small" theme="primary" @change="changeUserStatus(row)"></bk-switcher>
                 </template>
@@ -63,9 +63,9 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: this.$t('edit'), clickEvent: () => showEditUser(row) },
-                            { label: this.$t('reset password'), clickEvent: () => resetUserPwd(row) },
-                            { label: this.$t('delete'), clickEvent: () => deleteUserHandler(row) }
+                            { label: $t('edit'), clickEvent: () => showEditUser(row) },
+                            { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
+                            { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
                         ]"></operation-list>
                 </template>
             </bk-table-column>
@@ -84,15 +84,15 @@
         </bk-pagination>
         <canway-dialog
             v-model="editUserDialog.show"
-            :title="editUserDialog.add ? $t('create user') : $t('edit user')"
+            :title="editUserDialog.add ? $t('createUser') : $t('editUser')"
             width="500"
             height-num="400"
             @cancel="editUserDialog.show = false">
             <bk-form class="mr30" :label-width="90" :model="editUserDialog" :rules="rules" ref="editUserDialog">
                 <bk-form-item :label="$t('type')" :required="true">
                     <bk-radio-group v-model="editUserDialog.group">
-                        <bk-radio :value="false" :disabled="!editUserDialog.add">{{ $t('Entity user')}}</bk-radio>
-                        <bk-radio class="ml20" :value="true" :disabled="!editUserDialog.add">{{ $t('Virtual user')}}</bk-radio>
+                        <bk-radio :value="false" :disabled="!editUserDialog.add">{{ $t('entityUser')}}</bk-radio>
+                        <bk-radio class="ml20" :value="true" :disabled="!editUserDialog.add">{{ $t('virtualUser')}}</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('account')" :required="true" property="userId" error-display-type="normal">
@@ -111,10 +111,10 @@
                 <bk-form-item :label="$t('telephone')">
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
-                <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" :label="$t('associated user')">
+                <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" :label="$t('associatedUser')">
                     <bk-tag-input
                         v-model="editUserDialog.asstUsers"
-                        :placeholder="$t('please enter, press Enter to confirm')"
+                        :placeholder="$t('enterPlaceHolder')"
                         trigger="focus"
                         :create-tag-validator="tag => validateUser(tag)"
                         allow-create>
@@ -283,7 +283,7 @@
                 if (!(/\.xlsx$/.test(file.name))) {
                     this.$bkMessage({
                         theme: 'error',
-                        message: this.$t('wrong file type')
+                        message: this.$t('wrongFileType')
                     })
                     e.target.value = ''
                     return
@@ -338,7 +338,7 @@
                     return this.importUsers({ body: data }).then(() => {
                         this.$bkMessage({
                             theme: 'success',
-                            message: this.$t('user import') + this.$t('success')
+                            message: this.$t('userImport') + this.$t('success')
                         })
                         this.getRepoUserList()
                         this.handlerPaginationChange()
@@ -367,7 +367,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (this.editUserDialog.add ? this.$t('create user') : this.$t('edit user')) + this.$t('success')
+                        message: (this.editUserDialog.add ? this.$t('createUser') : this.$t('editUser')) + this.$t('space') + this.$t('success')
                     })
                     this.editUserDialog.show = false
                     this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
@@ -402,7 +402,7 @@
                             this.getUserListHandler()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         })
                     }
@@ -411,12 +411,12 @@
             resetUserPwd (row) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认重置账户 ${row.name} 的密码为默认密码？`,
+                    message: this.$t('resetUserMsg', { 0: row.name }),
                     confirmFn: () => {
                         return this.resetPwd(row.userId).then(() => {
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('reset password') + this.$t('success')
+                                message: this.$t('resetPassword') + this.$t('space') + this.$t('success')
                             })
                         })
                     }
@@ -446,7 +446,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('set to') + `${admin ? this.$t('System administrator') : this.$t('normal user')}`
+                        message: this.$t('set') + this.$t('space') + `${admin ? this.$t('administrator') : this.$t('normalUser')}`
                     })
                 }).finally(() => {
                     this.getUserListHandler()

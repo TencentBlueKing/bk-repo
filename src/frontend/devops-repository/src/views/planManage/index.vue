@@ -61,7 +61,7 @@
             </bk-table-column>
             <bk-table-column :label="$t('lastExecutionStatus')" width="100">
                 <template #default="{ row }">
-                    <span class="repo-tag" :class="row.lastExecutionStatus">{{asyncPlanStatusEnum[row.lastExecutionStatus] || '未执行'}}</span>
+                    <span class="repo-tag" :class="row.lastExecutionStatus">{{row.lastExecutionStatus ? $t(`asyncPlanStatusEnum.${row.lastExecutionStatus}`) : $t('notExecuted')}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('nextExecutionTime')" prop="NEXT_EXECUTION_TIME" width="150" :render-header="renderHeader">
@@ -219,7 +219,7 @@
                 if (lastExecutionStatus === 'RUNNING' || replicaType === 'REAL_TIME') return
                 this.$confirm({
                     theme: 'warning',
-                    message: this.$t('planConfirmExecuteMsg', name),
+                    message: this.$t('planConfirmExecuteMsg', [name]),
                     confirmFn: () => {
                         return this.executePlan({
                             key
@@ -257,7 +257,7 @@
             deletePlanHandler ({ key, name }) {
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('planConfirmDeleteMsg', name),
+                    message: this.$t('planConfirmDeleteMsg', [name]),
                     confirmFn: () => {
                         return this.deletePlan({
                             key

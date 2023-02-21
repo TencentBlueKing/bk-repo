@@ -18,15 +18,15 @@
             <span class="package-card-description text-overflow" :title="cardData.description">{{ cardData.description }}</span>
             <div class="package-card-data">
                 <template v-if="cardData.type">
-                    <div class="card-metadata" :title="$t('the latest version') + ':' + `${cardData.latest}`"></div>
-                    <div class="card-metadata" :title="$t('last modified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
-                    <div class="card-metadata" :title="$t('number of versions') + ':' + `${cardData.versions}`"></div>
-                    <div class="card-metadata" :title="$t('download stats') + ':' + `${cardData.downloads}`"></div>
+                    <div class="card-metadata" :title="$t('latestVersion') + ':' + `${cardData.latest}`"></div>
+                    <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="$t('versions') + ':' + `${cardData.versions}`"></div>
+                    <div class="card-metadata" :title="$t('downloadStats') + ':' + `${cardData.downloads}`"></div>
                 </template>
                 <template v-else>
                     <div class="card-metadata" :title="$t('repo') + ':' + `${cardData.repoName}`"></div>
-                    <div class="card-metadata" :title="$t('file size') + ':' + `${convertFileSize(cardData.size)}`"></div>
-                    <div class="card-metadata" :title="$t('last modified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="$t('fileSize') + ':' + `${convertFileSize(cardData.size)}`"></div>
+                    <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
                     <div class="card-metadata" :title="$t('created') + ':' + `${formatDate(cardData.createdDate)}`"></div>
                 </template>
             </div>

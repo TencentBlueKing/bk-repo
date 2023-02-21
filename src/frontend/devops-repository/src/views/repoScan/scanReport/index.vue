@@ -100,14 +100,14 @@
                     <bk-table-column v-if="scanPlan.scanTypes.includes(SCAN_TYPE_SECURITY)" :label="$t('riskLevel')">
                         <template #default="{ row }">
                             <div v-if="row.highestLeakLevel" class="status-sign" :class="row.highestLeakLevel"
-                                :data-name="leakLevelEnum[row.highestLeakLevel]">
+                                :data-name="$t(`leakLevelEnum.${row.highestLeakLevel}`)">
                             </div>
                             <span v-else>/</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('scanStatus')">
                         <template #default="{ row }">
-                            <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
+                            <span class="repo-tag" :class="row.status">{{$t(`scanStatusEnum.$(row.status)`)}}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('scanCompletionTime')" width="150">

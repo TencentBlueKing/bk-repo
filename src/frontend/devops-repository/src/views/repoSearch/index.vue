@@ -18,7 +18,7 @@
                 </div>
                 <div v-if="resultList.length !== 0 || repoList[0].children.length !== 0" class="sort-tool flex-align-center">
                     <bk-select
-                        style="width:200px;"
+                        style="width:220px;"
                         v-model="property"
                         :clearable="false"
                         @change="changeSortType">
@@ -119,7 +119,7 @@
                 },
                 resultList: [],
                 hasNext: true,
-                focusContent: this.$t('toggle to')
+                focusContent: this.$t('toggle')
             }
         },
         computed: {

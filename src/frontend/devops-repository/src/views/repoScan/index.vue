@@ -9,7 +9,7 @@
                     class="w250"
                     v-model.trim="scanName"
                     clearable
-                    placeholder="请输入方案名称, 按Enter键搜索"
+                    :placeholder="$t('planNamePlaceHolder')"
                     right-icon="bk-icon icon-search"
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()">
@@ -17,9 +17,9 @@
                 <bk-select
                     class="ml10 w250"
                     v-model="scanType"
-                    :placeholder="$t('$t(\'schemeType\')')"
+                    :placeholder="$t('schemeType')"
                     @change="handlerPaginationChange()">
-                    <bk-option v-for="[id, name] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="name"></bk-option>
+                    <bk-option v-for="[id] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="$t(`scanTypeEnum.${id}`)"></bk-option>
                 </bk-select>
             </div>
         </div>
@@ -40,12 +40,12 @@
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('schemeType')">
-                <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
+                <template #default="{ row }">{{ $t(`scanTypeEnum.${row.planType}`) }}</template>
             </bk-table-column>
             <!-- <bk-table-column label="扫描器" prop="scanner" show-overflow-tooltip></bk-table-column> -->
             <bk-table-column :label="$t('scanStatus')">
                 <template #default="{ row }">
-                    <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
+                    <span class="repo-tag" :class="row.status">{{ $t(`scanStatusEnum.${row.status}`)}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('lastScanTime')">
@@ -151,7 +151,7 @@
             deleteScanHandler ({ id, name }) {
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('confirmDeleteScanMsg', name),
+                    message: this.$t('confirmDeleteScanMsg', [name]),
                     confirmFn: () => {
                         return this.deleteScan({
                             projectId: this.projectId,
@@ -207,7 +207,7 @@
             stopScanHandler ({ id, name }) {
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('stopScanMsg', name),
+                    message: this.$t('stopScanMsg', [name]),
                     confirmFn: () => {
                         return this.stopScan({
                             projectId: this.projectId,

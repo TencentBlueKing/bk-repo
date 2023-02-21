@@ -18,7 +18,7 @@
                         v-for="(label, type) in nodeTypeEnum"
                         :key="type"
                         :id="type"
-                        :name="label">
+                        :name="$t(`nodeTypeEnum.${type}`)">
                     </bk-option>
                 </bk-select>
             </div>
@@ -40,7 +40,7 @@
             </bk-table-column>
             <bk-table-column :label="$t('nodeName')" prop="name" width="250" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('nodeType')" width="120">
-                <template #default="{ row }">{{ nodeTypeEnum[row.type] }}</template>
+                <template #default="{ row }">{{ $t(`nodeTypeEnum.${row.type}`) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('address')">
                 <template #default="{ row }">
@@ -317,7 +317,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (this.editNodeDialog.add ? '新建节点' : '编辑节点') + this.$t('success')
+                        message: (this.editNodeDialog.add ? this.$t('createNode') : this.$t('editNode')) + this.$t('space') + this.$t('success')
                     })
                     this.editNodeDialog.show = false
                     this.createType = 'user'
@@ -329,7 +329,7 @@
             deleteClusterHandler (row) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认删除节点 ${row.name} ？`,
+                    message: this.$t('deleteNodeMsg', { 0: row.name }),
                     confirmFn: () => {
                         return this.deleteCluster({
                             id: row.id
@@ -337,7 +337,7 @@
                             this.getClusterListHandler()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         })
                     }

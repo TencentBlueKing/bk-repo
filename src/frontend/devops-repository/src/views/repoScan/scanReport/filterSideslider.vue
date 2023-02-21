@@ -30,13 +30,13 @@
                     <bk-form-item v-if="!scanType.includes('LICENSE')" :label="$t('riskLevel')">
                         <bk-select
                             v-model="filter.highestLeakLevel">
-                            <bk-option v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="name"></bk-option>
+                            <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
                         </bk-select>
                     </bk-form-item>
                     <bk-form-item :label="$t('scanStatus')">
                         <bk-select
                             v-model="filter.status">
-                            <bk-option v-for="[id, name] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="name"></bk-option>
+                            <bk-option v-for="[id] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="$t(`scanStatusEnum.${id}`)"></bk-option>
                         </bk-select>
                     </bk-form-item>
                     <!-- <bk-form-item label="质量规则状态">

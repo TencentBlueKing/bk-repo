@@ -146,7 +146,7 @@
                 show: false,
                 loading: false,
                 repoBaseInfo: getRepoBaseInfo(),
-                title: this.$t('CreateRepository')
+                title: this.$t('createRepository')
             }
         },
         computed: {

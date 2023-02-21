@@ -236,7 +236,7 @@
                     ...(!metadataMap.forbidStatus
                         ? [
                             this.permission.edit && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
-                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scan product') }
+                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanProduct') }
                         ]
                         : []),
                     { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
@@ -315,7 +315,7 @@
             }
             > label {
                 line-height: 40px;
-                flex-basis: 80px;
+                flex-basis: 130px;
                 flex-shrink: 0;
                 background-color: var(--bgColor);
             }

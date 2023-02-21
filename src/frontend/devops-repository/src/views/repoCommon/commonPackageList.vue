@@ -42,7 +42,7 @@
                         <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
                         <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
                     </bk-select>
-                    <bk-popover :content="$t('toggle to') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
+                    <bk-popover :content="$t('toggle') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
                             <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
                         </div>

@@ -1,11 +1,11 @@
 <template>
     <div class="empty-guide-container">
         <div class="empty-guide-header flex-center flex-column">
-            <div class="mb10 empty-guide-tip">{{'emptyGuide'}}</div>
+            <div class="mb10 empty-guide-tip">{{$t('emptyGuide')}}</div>
             <div class="empty-guide-subtip">
                 <span>{{$t('emptyGuideTip')}}</span>
                 <template v-if="showRepoConfigRoute">
-                    <span>，{{$t('or')}}}</span>
+                    <span>，{{$t('or')}}</span>
                     <router-link :to="{ name: 'repoConfig', query: { repoName: this.$route.query.repoName } }">{{ $t('configureProxy') }}</router-link>
                     <span>{{ $t('emptyGuideProxyMsg') }}</span>
                 </template>

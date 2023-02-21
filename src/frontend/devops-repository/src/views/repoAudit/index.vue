@@ -5,7 +5,7 @@
                 v-model="query.projectId"
                 class="mr10 w250"
                 searchable
-                :placeholder="$t('View single project logs')"
+                :placeholder="$t('viewProjectLogPlaceHolder')"
                 @change="handlerPaginationChange()"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
                 :list="projectList">
@@ -28,7 +28,7 @@
                 v-model="query.user"
                 :list="Object.values(userList).filter(user => user.id !== 'anonymous')"
                 :search-key="['id', 'name']"
-                :placeholder="$t('please enter user, press Enter to confirm')"
+                :placeholder="$t('userInputPlaceHolder')"
                 :max-data="1"
                 trigger="focus"
                 allow-create

@@ -5,7 +5,7 @@
             <bk-input
                 v-model.trim="projectInput"
                 class="w250"
-                :placeholder="$t('please enter projectId or projectName')"
+                :placeholder="$t('projectNameOrIdPlaceHolder')"
                 clearable
                 right-icon="bk-icon icon-search"
                 @change="handlerPaginationChange()">

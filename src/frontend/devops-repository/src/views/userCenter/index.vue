@@ -218,7 +218,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('modifyPassword') + this.$t('success') + '，' + this.$t('please login again')
+                        message: this.$t('modifyPassword') + this.$t('space') + this.$t('success') + '，' + this.$t('loginAgainMsg')
                     })
                     this.pwdDialog.show = false
                     setTimeout(this.logout, 3000)

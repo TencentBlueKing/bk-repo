@@ -1,7 +1,7 @@
 <template>
     <span class="scan-tag-container"
         :class="{ 'spin-icon': status === 'RUNNING', readonly }"
-        v-bk-tooltips="{ content: scanStatusEnum[status] || $t('unscanned'), placements: ['right'] }"
+        v-bk-tooltips="{ content: scanStatusEnum[status] ? $t(`scanStatusEnum.${status}`) : $t('unscanned'), placements: ['right'] }"
         @click.stop="showScanList"
         v-bk-clickoutside="handleClickOutSide">
         <Icon size="16" :name="`scan-${(status || 'INIT').toLowerCase()}`" />
@@ -23,14 +23,14 @@
                         'INIT': status === 'UN_QUALITY',
                         'WARNING': status === 'QUALITY_UNPASS'
                     }">
-                    {{scanStatusEnum[status] || $t('unscanned')}}
+                    {{scanStatusEnum[status] ? $t(`scanStatusEnum.${status}`) : $t('unscanned')}}
                 </span>
             </div>
             <div class="scan-item flex-between-center"
                 v-for="scan in scanList"
                 :key="scan.id">
                 <div class="flex-align-center">
-                    <Icon v-bk-tooltips="{ content: scanStatusEnum[scan.status] || $t('unscanned'), placements: ['bottom-start'] }" size="16" :name="`scan-${(scan.status || 'INIT').toLowerCase()}`" />
+                    <Icon v-bk-tooltips="{ content: scanStatusEnum[scan.status] ? $t(`scanStatusEnum.${scan.status}`) : $t('unscanned'), placements: ['bottom-start'] }" size="16" :name="`scan-${(scan.status || 'INIT').toLowerCase()}`" />
                     <span class="ml5 text-overflow" style="max-width:150px;" :title="scan.name">{{ scan.name }}</span>
                 </div>
                 <bk-button text theme="primary" :disabled="!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(scan.status)" @click="toReport(scan)">{{ $t('viewDetails') }}</bk-button>

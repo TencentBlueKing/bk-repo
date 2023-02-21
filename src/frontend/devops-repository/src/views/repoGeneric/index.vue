@@ -146,7 +146,7 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scan product') }
+                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanProduct') }
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
@@ -551,7 +551,7 @@
                 this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: this.$t('scan product'),
+                    title: this.$t('scanProduct'),
                     type: 'scan',
                     id: '',
                     name,
@@ -684,7 +684,7 @@
                 this.$confirm({
                     theme: 'danger',
                     message: this.$t('batchDeleteMsg', [this.multiSelect.length]),
-                    subMessage: this.$t('batchDeleteMsg', [totalRecords]),
+                    subMessage: this.$t('batchDeleteSubMsg', [totalRecords]),
                     confirmFn: () => {
                         return this.deleteMultiArtifactory({
                             projectId: this.projectId,
@@ -694,7 +694,7 @@
                             this.refreshNodeChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         })
                     }

@@ -36,7 +36,7 @@
                 </div>
             </bk-tab-panel>
             <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
-                <div class="version-metadata display-block" :data-title="$t('meteDate')">
+                <div class="version-metadata display-block" :data-title="$t('metaData')">
                     <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
@@ -264,7 +264,7 @@
             display: flex;
             overflow: hidden;
             label {
-                flex-basis: 80px;
+                flex-basis: auto;
                 text-align: right;
             }
         }

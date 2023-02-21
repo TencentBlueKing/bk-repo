@@ -1,7 +1,7 @@
 <template>
     <canway-dialog
         v-model="editProjectDialog.show"
-        :title="editProjectDialog.add ? $t('create project') : $t('edit project')"
+        :title="editProjectDialog.add ? $t('createProject') : $t('editProject')"
         width="500"
         height-num="354"
         @cancel="editProjectDialog.show = false">
@@ -44,29 +44,29 @@
                     id: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('projectId'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('projectId'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^[a-z][a-z0-9_-]{1,99}$/,
-                            message: this.$t(''),
+                            message: this.$t('numCharacterTip'),
                             trigger: 'blur'
                         },
                         {
                             validator: id => this.asynCheck({ id }),
-                            message: this.$t('projectId') + this.$t('exist'),
+                            message: this.$t('projectId') + this.$t('space') + this.$t('exist'),
                             trigger: 'blur'
                         }
                     ],
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('projectName'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('projectName'),
                             trigger: 'blur'
                         },
                         {
                             validator: name => this.asynCheck({ name }),
-                            message: this.$t('projectName') + this.$t('exist'),
+                            message: this.$t('projectName') + this.$t('space') + this.$t('exist'),
                             trigger: 'blur'
                         }
                     ]
@@ -109,7 +109,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (this.editProjectDialog.add ? this.$t('create project') : this.$t('edit project')) + this.$t('success')
+                        message: (this.editProjectDialog.add ? this.$t('createProject') : this.$t('editProject')) + this.$t('space') + this.$t('success')
                     })
                     this.editProjectDialog.show = false
                     this.getProjectList()

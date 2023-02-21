@@ -32,7 +32,8 @@
                 </bk-option>
             </bk-select>
         </div>
-        <div style="flex: 1;text-align: end" @click="changeLanguage" class="language-select">
+        <div style="text-align: end" @click="changeLanguage" class="language-select">
+            <img width="20" height="20" style="background-color: currentColor;float: left;margin-right: 3px" src="/ui/locale.svg" />
             <span>{{ language === 'zh-cn' ? 'English' : '中文' }}</span>
         </div>
         <User />
@@ -128,6 +129,9 @@
     }
     .language-select:hover{
         cursor: pointer;
+    }
+    .language-select {
+        margin-left: auto
     }
 }
 </style>

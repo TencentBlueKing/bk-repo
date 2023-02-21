@@ -13,7 +13,7 @@
                 <bk-select
                     v-model="scanForm.type"
                     @change="scanForm.scanner = ''">
-                    <bk-option v-for="[id, name] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="name"></bk-option>
+                    <bk-option v-for="[id] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="$t(`scanTypeEnum.${id}`)"></bk-option>
                 </bk-select>
             </bk-form-item>
             <bk-form-item v-if="scanForm.type" :label="$t('scanner')" :required="true" property="scanner" error-display-type="normal">

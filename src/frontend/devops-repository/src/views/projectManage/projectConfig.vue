@@ -24,7 +24,7 @@
                         v-model="tab.add"
                         multiple
                         searchable
-                        :placeholder="$t('please select user')"
+                        :placeholder="$t('selectUserMsg')"
                         :enable-virtual-scroll="selectList(tab).length > 3000"
                         :list="selectList(tab)">
                         <bk-option v-for="option in selectList(tab)"
@@ -35,7 +35,7 @@
                     </bk-select>
                     <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')">{{ $t('add') }}</bk-button>
                     <bk-button :disabled="!tab.delete.length" theme="default" class="ml10" @click="confirmHandler(tab, 'delete')">
-                        {{ $t('Batch remove')}}</bk-button>
+                        {{ $t('batchRemove')}}</bk-button>
                 </div>
                 <bk-table
                     class="mt10"
@@ -117,9 +117,9 @@
         beforeRouteEnter (to, from, next) {
             const breadcrumb = to.meta.breadcrumb
             if (to.query.projectId) {
-                breadcrumb.splice(0, breadcrumb.length, { name: 'projectManage', label: to.query.projectId }, { name: 'projectConfig', label: this.$t('projectConfig') })
+                breadcrumb.splice(0, breadcrumb.length, { name: 'projectManage', label: to.query.projectId }, { name: 'projectConfig', label: 'projectConfig' })
             } else {
-                breadcrumb.splice(0, breadcrumb.length, { name: 'projectConfig', label: this.$t('projectConfig') })
+                breadcrumb.splice(0, breadcrumb.length, { name: 'projectConfig', label: 'projectConfig' })
             }
             next()
         },
@@ -198,7 +198,7 @@
                     ? confirmFn()
                     : this.$confirm({
                         theme: 'danger',
-                        message: this.$t('confirm remove') + `${deleteName} ?`,
+                        message: this.$t('removeConfirm') + `${deleteName} ?`,
                         confirmFn
                     })
             },

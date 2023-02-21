@@ -33,33 +33,12 @@
     const nowTime = new Date(
         `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
     ).getTime() + 3600 * 1000 * 24
-    const shortcuts = [
-        {
-            text: this.$t('last 7 days'),
-            value () {
-                return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
-            }
-        },
-        {
-            text: this.$t('last 15 days'),
-            value () {
-                return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
-            }
-        },
-        {
-            text: this.$t('last 30 days'),
-            value () {
-                return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
-            }
-        }
-    ]
     export default {
         props: {
             scanPlan: Object
         },
         data () {
             return {
-                shortcuts,
                 filterTime: [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)],
                 overview: {
                     artifactCount: 0,
@@ -71,7 +50,27 @@
                     unRecommend: 0,
                     unknown: 0,
                     unCompliance: 0
-                }
+                },
+                shortcuts: [
+                    {
+                        text: this.$t('last 7 days'),
+                        value () {
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                        }
+                    },
+                    {
+                        text: this.$t('last 15 days'),
+                        value () {
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
+                        }
+                    },
+                    {
+                        text: this.$t('last 30 days'),
+                        value () {
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
+                        }
+                    }
+                ]
             }
         },
         computed: {
@@ -144,7 +143,7 @@
             stopScanHandler () {
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('stopScanMsg', this.scanPlan.name),
+                    message: this.$t('stopScanMsg', [this.scanPlan.name]),
                     confirmFn: () => {
                         return this.stopScan({
                             projectId: this.scanPlan.projectId,

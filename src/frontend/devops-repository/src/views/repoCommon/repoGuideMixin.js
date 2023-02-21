@@ -511,7 +511,7 @@ export default {
                     title: this.$t('setCredentials'),
                     main: [
                         {
-                            subTitle: this.$t('setCredentials', this.repoName),
+                            subTitle: this.$t('rpmCreditGuideSubTitle', [this.repoName]),
                             codeList: [
                                 `[${this.repoName}]`,
                                 `name=${this.repoName}`,
@@ -545,7 +545,7 @@ export default {
                             ]
                         },
                         {
-                            subTitle: this.$t('rpmPullGuideSunTitle1'),
+                            subTitle: this.$t('rpmPullGuideSunTitle2'),
                             codeList: [
                                 `yum install ${this.packageName}`
                             ]

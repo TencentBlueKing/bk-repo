@@ -6,7 +6,7 @@
                     <bk-form-item :label="$t('schemeName')">
                         <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
                     </bk-form-item>
-                    <bk-form-item :label="$t('schemeType')">{{ scanTypeEnum[scanBaseInfo.type] }}</bk-form-item>
+                    <bk-form-item :label="$t('schemeType')">{{ $t(`scanTypeEnum.${scanBaseInfo.type}`) }}</bk-form-item>
                     <bk-form-item :label="$t('scanner')">{{ scanBaseInfo.scanner }}</bk-form-item>
                     <bk-form-item :label="$t('description')">
                         <bk-input type="textarea"

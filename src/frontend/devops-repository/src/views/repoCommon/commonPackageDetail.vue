@@ -48,7 +48,7 @@
                                             disabled: ($version.stageTag || '').includes('@release')
                                         },
                                         repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
-                                        showRepoScan && { label: $t('scan product'), clickEvent: () => scanPackageHandler($version) }
+                                        showRepoScan && { label: $t('scanProduct'), clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
                                     { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('lift the ban') : $t('forbidden to use') },
                                     permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
@@ -247,7 +247,7 @@
                 this.$refs.commonFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: this.$t('scan product'),
+                    title: this.$t('scanProduct'),
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,
