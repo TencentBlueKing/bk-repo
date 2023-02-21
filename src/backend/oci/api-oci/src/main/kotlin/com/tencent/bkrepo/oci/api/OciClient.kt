@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -24,22 +24,31 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":job:api-job"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":repository:api-repository"))
-    implementation(project(":helm:api-helm"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":replication:api-replication"))
-    implementation(project(":common:common-operate:operate-service"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+
+package com.tencent.bkrepo.oci.api
+
+import com.tencent.bkrepo.common.api.constant.OCI_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+
+
+
+@Api("oci")
+@Primary
+@FeignClient(OCI_SERVICE_NAME, contextId = "OciClient")
+@RequestMapping("/service/third")
+interface OciClient {
+
+    @ApiOperation("更新第三方同步时，先传manifest文件，再传其他文件")
+    @PostMapping("/{projectId}/{repoName}/packageCreate")
+    fun packageCreate(
+        @RequestBody record: OciReplicationRecordInfo
+    ): Response<Void>
 }

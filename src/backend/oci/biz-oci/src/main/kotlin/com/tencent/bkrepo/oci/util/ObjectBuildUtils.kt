@@ -129,7 +129,8 @@ object ObjectBuildUtils {
         version: String,
         size: Long,
         manifestPath: String,
-        repoType: String
+        repoType: String,
+        userId: String
     ): PackageVersionCreateRequest {
         with(ociArtifactInfo) {
             // 兼容多仓库类型支持
@@ -146,7 +147,7 @@ object ObjectBuildUtils {
                 artifactPath = manifestPath,
                 manifestPath = manifestPath,
                 overwrite = true,
-                createdBy = SecurityUtils.getUserId()
+                createdBy = userId
             )
         }
     }
