@@ -9,12 +9,15 @@
             :outer-border="false"
             :row-border="false"
             size="small">
-            <bk-table-column label="需申请的权限" show-overflow-tooltip>
+            <bk-table-column label="需申请的权限" width="276px">
                 <template #default="{ row }"><p>{{ replaceAction(row.action) }}</p></template>
             </bk-table-column>
-            <bk-table-column label="关联的资源实例" show-overflow-tooltip>
+            <bk-table-column label="关联的资源实例" width="276px">
                 <template #default="{ row }">
-                    <p v-if="row.repoName === ''">
+                    <p v-if="row.path && row.path !== ''">
+                        节点路径：{{ row.path }}
+                    </p>
+                    <p v-else-if="row.repoName === ''">
                         项目名：{{ row.projectId }}
                     </p>
                     <p v-else>
@@ -75,6 +78,8 @@
                         return '管理'
                     case 'DELETE':
                         return '删除'
+                    case 'UPDATE':
+                        return '更新'
                     default:
                         return action
                 }

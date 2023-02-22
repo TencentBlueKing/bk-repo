@@ -91,6 +91,7 @@ class BkAuthPermissionServiceImpl constructor(
                 // devops直接放过
                 if (appId == bkAuthConfig.devopsAppId) return true
                 return checkProjectPermission(uid, projectId!!, action)
+                    || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
@@ -162,12 +163,10 @@ class BkAuthPermissionServiceImpl constructor(
         logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
         return when (action) {
             PermissionAction.MANAGE.toString() -> {
-                bkAuthProjectService.isProjectManager(uid, projectId) ||
-                    super.checkBkIamV3ProjectPermission(projectId, uid, PermissionAction.MANAGE.name)
+                bkAuthProjectService.isProjectManager(uid, projectId)
             }
             else -> {
-                bkAuthProjectService.isProjectMember(uid, projectId, action) ||
-                    super.checkBkIamV3ProjectPermission(projectId, uid, action)
+                bkAuthProjectService.isProjectMember(uid, projectId, action)
             }
         }
     }
@@ -196,7 +195,10 @@ class BkAuthPermissionServiceImpl constructor(
         if (!super.checkPlatformPermission(request)) return false
 
         // bkiamv3权限校验
-        if (super.matchBkiamv3Cond(request)) return super.checkBkIamV3Permission(request)
+        if (super.matchBkiamv3Cond(request)) {
+            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
+            if (super.checkBkIamV3Permission(request)) return true
+        }
 
         // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)

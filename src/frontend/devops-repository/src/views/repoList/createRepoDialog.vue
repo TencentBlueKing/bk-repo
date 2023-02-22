@@ -377,6 +377,11 @@
                                     action: 'WRITE',
                                     url: res
                                 }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message || '访问被拒绝：Forbidden'
+                                })
                             }
                         })
                     }

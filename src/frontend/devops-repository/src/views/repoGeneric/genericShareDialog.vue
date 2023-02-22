@@ -153,8 +153,9 @@
                             body: {
                                 projectId: projectId,
                                 action: 'READ',
-                                resourceType: 'REPO',
+                                resourceType: 'NODE',
                                 uid: this.userInfo.name,
+                                path: path,
                                 repoName: repoName
                             }
                         }).then(res => {
@@ -164,19 +165,20 @@
                                     projectId: projectId,
                                     repoName: repoName,
                                     action: 'READ',
+                                    path: path,
                                     url: res
                                 }
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: e.message
+                                    message: e.message || '访问被拒绝：Forbidden'
                                 })
                             }
                         })
                     } else {
                         this.$bkMessage({
                             theme: 'error',
-                            message: e.message
+                            message: e.message || '访问被拒绝：Forbidden'
                         })
                     }
                 }).finally(() => {

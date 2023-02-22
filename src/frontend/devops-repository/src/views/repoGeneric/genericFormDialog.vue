@@ -223,10 +223,11 @@
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
-                                action: 'WRITE',
-                                resourceType: 'REPO',
+                                action: this.genericForm.type === 'rename' ? 'UPDATE' : 'WRITE',
+                                resourceType: this.genericForm.type === 'rename' ? 'NODE' : 'REPO',
                                 uid: this.userInfo.name,
-                                repoName: this.repoName
+                                repoName: this.repoName,
+                                path: this.genericForm.type === 'rename' ? this.genericForm.path : ''
                             }
                         }).then(res => {
                             if (res !== '') {
@@ -234,7 +235,8 @@
                                 this.showData = {
                                     projectId: this.projectId,
                                     repoName: this.repoName,
-                                    action: 'WRITE',
+                                    action: this.genericForm.type === 'rename' ? 'UPDATE' : 'WRITE',
+                                    path: this.genericForm.type === 'rename' ? this.genericForm.path : '',
                                     url: res
                                 }
                             } else {
