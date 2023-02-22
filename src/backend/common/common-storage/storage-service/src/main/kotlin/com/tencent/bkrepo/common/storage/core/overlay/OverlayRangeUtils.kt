@@ -43,9 +43,6 @@ object OverlayRangeUtils {
         val initialBlock = RegionResource(RegionResource.ZERO_RESOURCE, 0, range.total, 0, range.total)
         val list = LinkedList<RegionResource>()
         list.add(initialBlock)
-        if (blocks.isEmpty()) {
-            return list
-        }
         // 完整文件分布
         blocks.forEach {
             insert(it, list, range.total)
