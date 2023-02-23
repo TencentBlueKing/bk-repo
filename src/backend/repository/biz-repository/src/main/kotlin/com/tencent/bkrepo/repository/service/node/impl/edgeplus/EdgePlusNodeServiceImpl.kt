@@ -77,8 +77,6 @@ class EdgePlusNodeServiceImpl(
     repositoryProperties,
     messageSupplier
 ) {
-
-
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact)
     }

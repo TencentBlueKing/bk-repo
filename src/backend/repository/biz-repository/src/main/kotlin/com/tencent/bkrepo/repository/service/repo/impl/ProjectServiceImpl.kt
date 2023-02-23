@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -66,6 +67,7 @@ import java.util.regex.Pattern
  * 仓库服务实现类
  */
 @Service
+@ConditionalOnCenterNode
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionResource: ServicePermissionResource

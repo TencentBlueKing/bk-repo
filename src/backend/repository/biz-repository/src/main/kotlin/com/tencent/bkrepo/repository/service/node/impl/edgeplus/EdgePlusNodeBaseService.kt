@@ -44,7 +44,6 @@ import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.base.NodeBaseService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 abstract class EdgePlusNodeBaseService(
@@ -80,10 +79,6 @@ abstract class EdgePlusNodeBaseService(
         ).data!! || super.checkExist(artifact)
     }
 
-    override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
-        return super.listExistFullPath(projectId, repoName, fullPathList)
-    }
-
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         centerNodeClient.createNode(createRequest)
         return super.createNode(createRequest)
@@ -97,9 +92,5 @@ abstract class EdgePlusNodeBaseService(
     override fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest) {
         centerNodeClient.updateNodeAccessDate(updateAccessDateRequest)
         super.updateNodeAccessDate(updateAccessDateRequest)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(EdgePlusNodeBaseService::class.java)
     }
 }

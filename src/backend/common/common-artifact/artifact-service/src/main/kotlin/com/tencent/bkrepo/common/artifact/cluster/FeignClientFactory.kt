@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_ALGORITHM
 import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.security.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import feign.Client
@@ -94,6 +95,9 @@ object FeignClientFactory {
 
     private fun createInterceptor(cluster: ClusterInfo): RequestInterceptor {
         return RequestInterceptor {
+            HeaderUtils.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.let { lang ->
+                it.header(HttpHeaders.ACCEPT_LANGUAGE, lang)
+            }
             if (cluster.appId != null) {
                 // 内部集群请求签名
                 require(cluster.accessKey != null)

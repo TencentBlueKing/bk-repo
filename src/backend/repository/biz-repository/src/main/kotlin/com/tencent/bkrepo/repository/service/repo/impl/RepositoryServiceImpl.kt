@@ -86,7 +86,6 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -94,8 +93,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 仓库服务实现类
  */
-@Service
-class RepositoryServiceImpl(
+open class RepositoryServiceImpl(
     private val repositoryDao: RepositoryDao,
     private val nodeService: NodeService,
     private val projectService: ProjectService,
