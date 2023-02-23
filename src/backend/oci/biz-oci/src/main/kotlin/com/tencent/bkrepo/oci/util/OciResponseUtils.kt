@@ -63,22 +63,19 @@ import javax.ws.rs.core.UriBuilder
 object OciResponseUtils {
     private const val LOCAL_HOST = "localhost"
 
-    fun getResponseURI(request: HttpServletRequest, enableHttp: Boolean): URI {
+    fun getResponseURI(request: HttpServletRequest, enableHttps: Boolean, domain: String): URI {
         val hostHeaders = request.getHeaders(HOST)
         var host = LOCAL_HOST
-        var port: Int? = null
         if (hostHeaders != null) {
             val headers = hostHeaders.toList()
             val parts = (headers[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             host = parts[0]
-            if (parts.size > 1) {
-                port = Integer.valueOf(parts[1])
-            }
         }
-        val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttp))
-        port?.let {
-            builder.port(port)
+        // domain为ip,port组合
+        if (domain.split(":").size > 1) {
+            host = domain
         }
+        val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttps))
         return builder.build()
     }
 
@@ -86,8 +83,8 @@ object OciResponseUtils {
      * determine to return http protocol
      * prefix or https prefix
      */
-    private fun getProtocol(request: HttpServletRequest, enableHttp: Boolean): String {
-        if (enableHttp) return HTTP_PROTOCOL_HTTP
+    private fun getProtocol(request: HttpServletRequest, enableHttps: Boolean): String {
+        if (enableHttps) return HTTP_PROTOCOL_HTTPS
         val protocolHeaders = request.getHeaders(HTTP_FORWARDED_PROTO) ?: return HTTP_PROTOCOL_HTTP
         return if (protocolHeaders.hasMoreElements()) {
             protocolHeaders.iterator().next() as String

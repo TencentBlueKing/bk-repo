@@ -24,11 +24,17 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
-    oci.domain: {{ .Values.gateway.dockerHost }}
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
+    oci.https: true
     {{- else }}
     oci.authUrl: http://{{ include "bkrepo.oci.authUrl" . }}
+    oci.https: false
+    {{- end }}
+    {{- if and .Values.gateway.service.nodeIP (and .Values.gateway.service.dockerNodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer"))) }}
+    oci.domain: {{ .Values.gateway.service.nodeIP }}:{{ .Values.gateway.service.dockerNodePort }}
+    {{- else }}
+    oci.domain: {{ .Values.gateway.dockerHost }}
     {{- end }}
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
