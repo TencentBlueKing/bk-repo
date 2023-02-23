@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.service.cluster
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
@@ -16,7 +17,7 @@ class CenterJobAspect(
         val signature = point.signature as MethodSignature
         val method = signature.method
         val scheduled = method.getAnnotation(Scheduled::class.java)
-        if (scheduled != null && clusterProperties.role != RoleType.CENTER) {
+        if (scheduled != null && clusterProperties.role != ClusterNodeType.CENTER) {
             return null
         }
         return point.proceed()

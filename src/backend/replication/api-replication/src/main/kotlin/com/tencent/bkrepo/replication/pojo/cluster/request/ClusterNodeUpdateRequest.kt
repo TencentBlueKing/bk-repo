@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.pojo.cluster.request
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 /**

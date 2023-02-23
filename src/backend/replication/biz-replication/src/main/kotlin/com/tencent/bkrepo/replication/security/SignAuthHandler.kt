@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.security
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
@@ -85,7 +86,7 @@ class SignAuthHandler(
             // 请求超时
             throw PermissionException("Request timeout.")
         }
-        return SYSTEM_USER
+        return request.getHeader(MS_AUTH_HEADER_UID) ?: SYSTEM_USER
     }
 
     private data class SignAuthCredentials(

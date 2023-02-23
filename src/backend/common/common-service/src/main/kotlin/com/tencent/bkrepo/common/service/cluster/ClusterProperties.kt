@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.service.cluster
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 
@@ -42,7 +43,7 @@ data class ClusterProperties(
     /**
      * 节点角色
      */
-    var role: RoleType = RoleType.CENTER,
+    var role: ClusterNodeType = ClusterNodeType.CENTER,
     /**
      * 部署区域
      */
@@ -58,8 +59,3 @@ data class ClusterProperties(
     @NestedConfigurationProperty
     var self: ClusterInfo = ClusterInfo()
 )
-
-enum class RoleType {
-    CENTER,
-    EDGE;
-}

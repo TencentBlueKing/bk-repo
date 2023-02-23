@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl
+package com.tencent.bkrepo.repository.service.node.impl.base
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -54,7 +54,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -63,14 +62,14 @@ import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.isEqualTo
 
 /**
  * 节点基础服务，实现了CRUD基本操作
@@ -84,7 +83,7 @@ abstract class NodeBaseService(
     open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
-) : NodeService, NodeBaseOperation {
+) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -397,7 +396,7 @@ abstract class NodeBaseService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(NodeBaseService::class.java)
         private const val TOPIC = "bkbase_bkrepo_artifact_node_created"
 
         private fun convert(tNode: TNode?): NodeInfo? {

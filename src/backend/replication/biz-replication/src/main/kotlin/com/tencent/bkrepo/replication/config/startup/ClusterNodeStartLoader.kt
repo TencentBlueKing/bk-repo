@@ -28,8 +28,6 @@
 package com.tencent.bkrepo.replication.config.startup
 
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -61,30 +59,17 @@ class ClusterNodeStartLoader(
 
     private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest {
         return with(clusterProperties) {
-            when (role) {
-                RoleType.CENTER -> ClusterNodeCreateRequest(
-                    name = center.name.orEmpty(),
-                    url = center.url,
-                    certificate = center.certificate.orEmpty(),
-                    username = center.username.orEmpty(),
-                    password = center.password.orEmpty(),
-                    appId = self.appId,
-                    accessKey = self.accessKey,
-                    secretKey = self.secretKey,
-                    type = ClusterNodeType.CENTER
-                )
-                RoleType.EDGE -> ClusterNodeCreateRequest(
-                    name = self.name.orEmpty(),
-                    url = self.url,
-                    certificate = self.certificate.orEmpty(),
-                    username = self.username.orEmpty(),
-                    password = self.password.orEmpty(),
-                    appId = self.appId,
-                    accessKey = self.accessKey,
-                    secretKey = self.secretKey,
-                    type = ClusterNodeType.EDGE
-                )
-            }
+            ClusterNodeCreateRequest(
+                name = center.name.orEmpty(),
+                url = center.url,
+                certificate = center.certificate.orEmpty(),
+                username = center.username.orEmpty(),
+                password = center.password.orEmpty(),
+                appId = self.appId,
+                accessKey = self.accessKey,
+                secretKey = self.secretKey,
+                type = role
+            )
         }
     }
 

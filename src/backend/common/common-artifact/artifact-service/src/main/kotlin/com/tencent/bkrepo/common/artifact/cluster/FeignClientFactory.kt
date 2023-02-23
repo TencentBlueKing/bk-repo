@@ -34,10 +34,12 @@ package com.tencent.bkrepo.common.artifact.cluster
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
+import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.util.HttpSigner
 import com.tencent.bkrepo.common.security.util.HttpSigner.ACCESS_KEY
@@ -49,6 +51,7 @@ import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_ALGORITHM
 import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.security.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import feign.Client
 import feign.Feign
@@ -111,6 +114,9 @@ object FeignClientFactory {
                 val bodyHash = Hashing.sha256().hashBytes(bodyToHash).toString()
                 val sig = HttpSigner.sign(it, bodyHash, cluster.secretKey!!, algorithm)
                 it.query(SIGN, sig)
+                HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let { userId ->
+                    it.header(MS_AUTH_HEADER_UID, userId.toString())
+                }
             } else {
                 it.header(HttpHeaders.AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
             }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,35 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.dao
+package com.tencent.bkrepo.common.artifact.cluster
 
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.replication.model.TClusterNode
-import com.tencent.bkrepo.replication.util.ClusterQueryHelper
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import java.lang.annotation.Inherited
 
 /**
- * 集群节点数据访问层
+ * 当集群为EdgePlus时生效
  */
-@Repository
-class ClusterNodeDao : SimpleMongoDao<TClusterNode>() {
-
-    /**
-     * 根据名称[name]查找集群节点
-     */
-    fun findByName(name: String): TClusterNode? {
-        return this.findOne(Query(TClusterNode::name.isEqualTo(name)))
-    }
-
-    /**
-     * 查找集群节点
-     * @param name 集群名称，前缀匹配
-     * @param type 集群类型
-     */
-    fun listByNameAndType(name: String? = null, type: ClusterNodeType? = null): List<TClusterNode> {
-        return this.find(ClusterQueryHelper.clusterListQuery(name, type))
-    }
-}
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@ConditionalOnProperty("cluster.role", havingValue = "EDGE_PLUS")
+annotation class ConditionalOnEdgePlusNode

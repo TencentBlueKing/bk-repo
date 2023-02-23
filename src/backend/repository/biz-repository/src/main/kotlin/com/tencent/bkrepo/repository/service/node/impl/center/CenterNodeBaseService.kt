@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.repository.service.node.impl.center
 
-/**
- * 集群类型
- */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.node.impl.base.NodeBaseService
+import com.tencent.bkrepo.repository.service.repo.QuotaService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 
-    // 边缘节点
-    EDGE,
-
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
-}
+abstract class CenterNodeBaseService(
+    override val nodeDao: NodeDao,
+    override val repositoryDao: RepositoryDao,
+    override val fileReferenceService: FileReferenceService,
+    override val storageCredentialService: StorageCredentialService,
+    override val storageService: StorageService,
+    override val quotaService: QuotaService,
+    override val repositoryProperties: RepositoryProperties,
+    override val messageSupplier: MessageSupplier,
+) : NodeBaseService(
+    nodeDao,
+    repositoryDao,
+    fileReferenceService,
+    storageCredentialService,
+    storageService,
+    quotaService,
+    repositoryProperties,
+    messageSupplier
+)
