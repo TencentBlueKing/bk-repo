@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Import
 @Configuration
 @Import(
     StorageManager::class,
-    PackageManager::class
+    PackageManager::class,
+    NodeResourceFactoryImpl::class
 )
 class ArtifactManagerConfiguration
