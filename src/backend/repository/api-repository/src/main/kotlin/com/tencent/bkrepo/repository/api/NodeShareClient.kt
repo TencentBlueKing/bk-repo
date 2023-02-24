@@ -25,21 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node.service
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+
 
 /**
- * 更新节点访问时间请求
+ * 节点分享服务接口
  */
-data class NodeUpdateAccessDateRequest(
-    override val projectId: String,
-    override val repoName: String,
-    override val fullPath: String,
-    override val operator: String,
-    val accessDate: LocalDateTime,
-    override var region: String? = null
-) : NodeRequest, ServiceRequest, ClusterRequest
+@Api("节点分享服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeShareClient", primary = false)
+@RequestMapping("/service/node/share")
+interface NodeShareClient {
+    @ApiOperation("创建分享链接")
+    @PostMapping("/create")
+    fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): Response<ShareRecordInfo>
+
+    @ApiOperation("检查token")
+    @PostMapping("/token")
+    fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): Response<ShareRecordInfo>
+}

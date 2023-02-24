@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
+import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
@@ -47,5 +48,7 @@ data class NodeUpdateRequest(
     @ApiModelProperty("过期时间，单位天(0代表永久保存)")
     val expires: Long = 0,
     @ApiModelProperty("操作用户", required = true)
-    override val operator: String
-) : NodeRequest, ServiceRequest
+    override val operator: String,
+    @ApiModelProperty("地区", required = false)
+    override var region: String? = null
+) : NodeRequest, ServiceRequest, ClusterRequest

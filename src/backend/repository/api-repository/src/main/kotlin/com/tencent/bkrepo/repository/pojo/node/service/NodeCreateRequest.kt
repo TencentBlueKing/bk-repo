@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.pojo.node.service
 
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.AuditableRequest
+import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
@@ -68,10 +69,12 @@ data class NodeCreateRequest(
     val metadata: Map<String, Any>? = null,
     @ApiModelProperty("元数据信息")
     val nodeMetadata: List<MetadataModel>? = null,
+    @ApiModelProperty("地区")
+    override var region: String? = null,
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER,
     override val createdBy: String? = null,
     override var createdDate: LocalDateTime? = null,
     override val lastModifiedBy: String? = null,
     override var lastModifiedDate: LocalDateTime? = null
-) : NodeRequest, ServiceRequest, AuditableRequest
+) : NodeRequest, ServiceRequest, AuditableRequest, ClusterRequest

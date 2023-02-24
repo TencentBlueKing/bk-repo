@@ -25,21 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node.service
+package com.tencent.bkrepo.replication.controller.service
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.ClusterNodeClient
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.service.ClusterNodeService
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 更新节点访问时间请求
- */
-data class NodeUpdateAccessDateRequest(
-    override val projectId: String,
-    override val repoName: String,
-    override val fullPath: String,
-    override val operator: String,
-    val accessDate: LocalDateTime,
-    override var region: String? = null
-) : NodeRequest, ServiceRequest, ClusterRequest
+@RestController
+class ClusterNodeController(
+    private val clusterNodeService: ClusterNodeService
+) : ClusterNodeClient {
+    override fun getCluster(name: String): Response<ClusterNodeInfo?> {
+        return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
+    }
+}

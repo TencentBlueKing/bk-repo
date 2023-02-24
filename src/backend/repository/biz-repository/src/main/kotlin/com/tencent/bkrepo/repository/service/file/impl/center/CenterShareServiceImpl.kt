@@ -25,21 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node.service
+package com.tencent.bkrepo.repository.service.file.impl.center
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
+import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
+import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.stereotype.Service
 
-/**
- * 更新节点访问时间请求
- */
-data class NodeUpdateAccessDateRequest(
-    override val projectId: String,
-    override val repoName: String,
-    override val fullPath: String,
-    override val operator: String,
-    val accessDate: LocalDateTime,
-    override var region: String? = null
-) : NodeRequest, ServiceRequest, ClusterRequest
+@Service
+@ConditionalOnCenterNode
+class CenterShareServiceImpl(
+    repositoryService: RepositoryService,
+    nodeService: NodeService,
+    mongoTemplate: MongoTemplate
+) : ShareServiceImpl(
+    repositoryService, nodeService, mongoTemplate
+)

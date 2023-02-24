@@ -25,21 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node.service
-
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import java.time.LocalDateTime
+package com.tencent.bkrepo.repository.pojo
 
 /**
- * 更新节点访问时间请求
+ * 跨集群调用的请求
  */
-data class NodeUpdateAccessDateRequest(
-    override val projectId: String,
-    override val repoName: String,
-    override val fullPath: String,
-    override val operator: String,
-    val accessDate: LocalDateTime,
-    override var region: String? = null
-) : NodeRequest, ServiceRequest, ClusterRequest
+interface ClusterRequest {
+    var region: String?
+}

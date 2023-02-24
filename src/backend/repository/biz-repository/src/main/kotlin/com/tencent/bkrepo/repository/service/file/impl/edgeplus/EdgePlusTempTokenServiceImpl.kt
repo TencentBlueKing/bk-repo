@@ -25,45 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.edgeplus
+package com.tencent.bkrepo.repository.service.file.impl.edgeplus
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.repository.service.file.TemporaryTokenService
 import org.springframework.stereotype.Service
 
 @Service
 @ConditionalOnEdgePlusNode
-class EdgePlusProjectService(
-    projectDao: ProjectDao,
-    servicePermissionResource: ServicePermissionResource
-) : ProjectServiceImpl(
-    projectDao,
-    servicePermissionResource
-) {
+class EdgePlusTempTokenServiceImpl : TemporaryTokenService{
+    override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
+        TODO("Not yet implemented")
+    }
 
-    @Autowired
-    private lateinit var clusterProperties: ClusterProperties
+    override fun getTokenInfo(token: String): TemporaryTokenInfo? {
+        TODO("Not yet implemented")
+    }
 
-    private val centerProjectClient: ProjectClient by lazy { FeignClientFactory.create(clusterProperties.center) }
+    override fun deleteToken(token: String) {
+        TODO("Not yet implemented")
+    }
 
-    override fun createProject(request: ProjectCreateRequest): ProjectInfo {
-        try {
-            centerProjectClient.createProject(request)
-        } catch (e: RemoteErrorCodeException) {
-            if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
-                throw e
-            }
-        }
-        return super.createProject(request)
+    override fun decrementPermits(token: String) {
+        TODO("Not yet implemented")
     }
 }

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.node.impl.edgeplus
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -44,11 +45,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeDeleteSupport
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeMoveCopySupport
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeRenameSupport
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeRestoreSupport
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeStatsSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.data.mongodb.core.query.Criteria
@@ -66,7 +67,8 @@ class EdgePlusNodeServiceImpl(
     override val storageService: StorageService,
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
-    override val messageSupplier: MessageSupplier
+    override val messageSupplier: MessageSupplier,
+    override val clusterProperties: ClusterProperties
 ) : EdgePlusNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -75,7 +77,8 @@ class EdgePlusNodeServiceImpl(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier
+    messageSupplier,
+    clusterProperties
 ) {
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact)
@@ -97,6 +100,7 @@ class EdgePlusNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
+        centerNodeClient.deleteNodes(nodesDeleteRequest)
         return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
     }
 
@@ -135,21 +139,25 @@ class EdgePlusNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
+        centerNodeClient.moveNode(moveRequest)
         NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun copyNode(copyRequest: NodeMoveCopyRequest) {
+        centerNodeClient.copyNode(copyRequest)
         NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun renameNode(renameRequest: NodeRenameRequest) {
+        centerNodeClient.renameNode(renameRequest)
         NodeRenameSupport(this).renameNode(renameRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
+        centerNodeClient.restoreNode(artifact, nodeRestoreOption)
         return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
     }
 

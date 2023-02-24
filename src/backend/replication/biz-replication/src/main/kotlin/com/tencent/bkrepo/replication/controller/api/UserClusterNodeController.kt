@@ -53,7 +53,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/cluster")
 @Principal(PrincipalType.ADMIN)
-class ClusterNodeController(
+class UserClusterNodeController(
     private val clusterNodeService: ClusterNodeService
 ) {
 

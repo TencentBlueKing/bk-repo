@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.edgeplus
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -41,10 +40,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeBaseService
+import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import org.springframework.beans.factory.annotation.Autowired
 
 abstract class EdgePlusNodeBaseService(
     override val nodeDao: NodeDao,
@@ -55,6 +53,7 @@ abstract class EdgePlusNodeBaseService(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val clusterProperties: ClusterProperties
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -63,23 +62,14 @@ abstract class EdgePlusNodeBaseService(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier
+    messageSupplier,
+    clusterProperties
 ) {
-
-    @Autowired
-    private lateinit var clusterProperties: ClusterProperties
 
     val centerNodeClient: NodeClient by lazy { FeignClientFactory.create(clusterProperties.center) }
 
-    override fun checkExist(artifact: ArtifactInfo): Boolean {
-        return centerNodeClient.checkExist(
-            artifact.projectId,
-            artifact.repoName,
-            artifact.getArtifactFullPath()
-        ).data!! || super.checkExist(artifact)
-    }
-
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
+        createRequest.region = clusterProperties.region
         centerNodeClient.createNode(createRequest)
         return super.createNode(createRequest)
     }

@@ -53,7 +53,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -61,8 +60,7 @@ import java.util.UUID
 /**
  * 文件分享服务实现类
  */
-@Service
-class ShareServiceImpl(
+open class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate
@@ -98,8 +96,7 @@ class ShareServiceImpl(
         }
     }
 
-    override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
-        logger.info("artifact[$artifactInfo] download user: $userId")
+    override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo {
         with(artifactInfo) {
             val query = Query.query(
                 where(TShareRecord::projectId).isEqualTo(artifactInfo.projectId)
@@ -109,13 +106,21 @@ class ShareServiceImpl(
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
                 ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-            val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
             }
+            return convert(shareRecord)
+        }
+    }
+
+    override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
+        logger.info("artifact[$artifactInfo] download user: $userId")
+        val shareRecord = checkToken(userId, token, artifactInfo)
+        with(artifactInfo) {
+            val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
@@ -160,7 +165,8 @@ class ShareServiceImpl(
                     shareUrl = generateShareUrl(it),
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
-                    expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME)
+                    expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
+                    createdBy = it.createdBy
                 )
             }
         }

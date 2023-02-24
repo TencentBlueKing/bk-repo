@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
-import com.tencent.bkrepo.repository.service.node.impl.base.NodeRestoreSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 
 /**
  * 节点恢复接口

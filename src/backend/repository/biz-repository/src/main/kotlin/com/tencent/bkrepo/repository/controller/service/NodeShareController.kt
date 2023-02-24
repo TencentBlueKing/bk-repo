@@ -25,41 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.center
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
-import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.NodeShareClient
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
+import com.tencent.bkrepo.repository.service.file.ShareService
+import org.springframework.web.bind.annotation.RestController
 
-@Service
-@ConditionalOnCenterNode
-class CenterRepositoryService(
-    repositoryDao: RepositoryDao,
-    nodeService: NodeService,
-    projectService: ProjectService,
-    storageCredentialService: StorageCredentialService,
-    proxyChannelService: ProxyChannelService,
-    repositoryProperties: RepositoryProperties,
-    messageSupplier: MessageSupplier,
-    servicePermissionResource: ServicePermissionResource
-) : RepositoryServiceImpl(
-    repositoryDao,
-    nodeService,
-    projectService,
-    storageCredentialService,
-    proxyChannelService,
-    repositoryProperties,
-    messageSupplier,
-    servicePermissionResource
-) {
+@RestController
+class NodeShareController(
+    private val shareService: ShareService
+): NodeShareClient {
+    override fun create(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        request: ShareRecordCreateRequest
+    ): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.create(userId, artifactInfo, request))
+    }
 
-
+    override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.checkToken(userId, token, artifactInfo))
+    }
 }
