@@ -69,6 +69,16 @@ data class KubernetesDispatcherProperties(
     var requestMem: DataSize = DataSize.ofGigabytes(16),
 
     /**
+     * 会在文件三倍大小与该值之间取大者作为容器request ephemeralStorage
+     */
+    var requestStorage: DataSize = DataSize.ofGigabytes(16),
+
+    /**
+     * 容器limit ephemeralStorage
+     */
+    var limitStorage: DataSize = DataSize.ofGigabytes(128),
+
+    /**
      * 容器request cpu
      */
     var requestCpu: Double = 4.0,
