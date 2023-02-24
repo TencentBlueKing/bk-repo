@@ -34,20 +34,18 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
@@ -138,11 +136,8 @@ interface NodeClient {
     fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
-    @PostMapping("/restore/$DEFAULT_MAPPING_URI")
-    fun restoreNode(
-        artifactInfo: ArtifactInfo,
-        nodeRestoreOption: NodeRestoreOption
-    ): Response<NodeRestoreResult>
+    @PostMapping("/restore")
+    fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult>
 
     @ApiOperation("查询节点大小信息")
     @GetMapping("/size/{projectId}/{repoName}")

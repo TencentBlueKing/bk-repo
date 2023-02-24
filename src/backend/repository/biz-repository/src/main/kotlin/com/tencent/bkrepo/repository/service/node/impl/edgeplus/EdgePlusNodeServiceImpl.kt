@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
@@ -157,7 +158,7 @@ class EdgePlusNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
-        centerNodeClient.restoreNode(artifact, nodeRestoreOption)
+        centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
         return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
     }
 
