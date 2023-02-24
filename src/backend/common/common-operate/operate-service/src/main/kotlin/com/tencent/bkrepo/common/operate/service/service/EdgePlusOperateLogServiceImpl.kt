@@ -25,17 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.operate.service.service
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import java.lang.annotation.Inherited
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.operate.service.config.OperateProperties
+import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
 
-/**
- * 当集群为EdgePlus时生效
- */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-@Inherited
-@MustBeDocumented
-@ConditionalOnProperty("cluster.role", havingValue = "EDGE_PLUS")
-annotation class ConditionalOnEdgePlusNode
+@ConditionalOnEdgePlusNode
+class EdgePlusOperateLogServiceImpl(
+    operateProperties: OperateProperties,
+    operateLogDao: OperateLogDao,
+    permissionManager: PermissionManager,
+    clusterProperties: ClusterProperties
+) : OperateLogServiceImpl(
+    operateProperties,
+    operateLogDao,
+    permissionManager
+) {
+
+//    private val centerOpLogClient: OperateLogClient by lazy {  }
+
+    override fun saveEventAsync(event: ArtifactEvent, address: String) {
+        if (event.type == EventType.NODE_DOWNLOADED) {
+            // sync
+//            centerOpLogClient.save()
+        }
+        super.saveEventAsync(event, address)
+    }
+}

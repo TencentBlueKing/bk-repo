@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.center
 
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
+import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService

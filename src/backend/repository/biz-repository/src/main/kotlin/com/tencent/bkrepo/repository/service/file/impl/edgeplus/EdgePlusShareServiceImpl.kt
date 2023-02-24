@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.repository.service.file.impl.edgeplus
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
 import com.tencent.bkrepo.repository.api.NodeShareClient
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo

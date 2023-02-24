@@ -25,20 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.common.service.cluster
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.stereotype.Service
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import java.lang.annotation.Inherited
 
-@Service
-@ConditionalOnCenterNode
-class CenterProjectServiceImpl(
-    projectDao: ProjectDao,
-    servicePermissionResource: ServicePermissionResource
-) : ProjectServiceImpl (
-    projectDao,
-    servicePermissionResource
-)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@ConditionalOnProperty("cluster.role", havingValue = "CENTER", matchIfMissing = true)
+annotation class ConditionalOnCenterNode

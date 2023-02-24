@@ -25,14 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.service.cluster
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import java.lang.annotation.Inherited
 
+/**
+ * 当集群为EdgePlus时生效
+ */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @Inherited
 @MustBeDocumented
-@ConditionalOnProperty("cluster.role", havingValue = "CENTER", matchIfMissing = true)
-annotation class ConditionalOnCenterNode
+@ConditionalOnProperty("cluster.role", havingValue = "EDGE_PLUS")
+annotation class ConditionalOnEdgePlusNode

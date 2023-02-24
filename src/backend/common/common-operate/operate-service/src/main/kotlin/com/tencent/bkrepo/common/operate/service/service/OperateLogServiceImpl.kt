@@ -61,7 +61,6 @@ import java.time.format.DateTimeFormatter
 /**
  * OperateLogService 实现类
  */
-
 open class OperateLogServiceImpl(
     private val operateProperties: OperateProperties,
     private val operateLogDao: OperateLogDao,

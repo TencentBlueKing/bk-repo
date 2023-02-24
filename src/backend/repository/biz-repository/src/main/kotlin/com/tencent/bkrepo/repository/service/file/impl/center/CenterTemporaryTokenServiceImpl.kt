@@ -33,10 +33,10 @@ package com.tencent.bkrepo.repository.service.file.impl.center
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
 import com.tencent.bkrepo.repository.model.TTemporaryToken
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
