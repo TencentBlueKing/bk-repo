@@ -25,41 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.repository.service.repo.impl.edgeplus
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
-import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
+import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnCenterNode
-class CenterRepositoryService(
-    repositoryDao: RepositoryDao,
-    nodeService: NodeService,
-    projectService: ProjectService,
-    storageCredentialService: StorageCredentialService,
-    proxyChannelService: ProxyChannelService,
-    repositoryProperties: RepositoryProperties,
-    messageSupplier: MessageSupplier,
-    servicePermissionResource: ServicePermissionResource
-) : RepositoryServiceImpl(
-    repositoryDao,
-    nodeService,
-    projectService,
-    storageCredentialService,
-    proxyChannelService,
-    repositoryProperties,
-    messageSupplier,
+@ConditionalOnEdgePlusNode
+class EdgePlusProjectServiceImpl(
+    projectDao: ProjectDao,
+    servicePermissionResource: ServicePermissionResource,
+    clusterProperties: ClusterProperties
+) : ProjectServiceImpl(
+    projectDao,
     servicePermissionResource
 ) {
 
+    private val centerProjectClient: ProjectClient by lazy { FeignClientFactory.create(clusterProperties.center) }
 
+    override fun createProject(request: ProjectCreateRequest): ProjectInfo {
+        try {
+            centerProjectClient.createProject(request)
+        } catch (e: RemoteErrorCodeException) {
+            if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
+                throw e
+            }
+        }
+        return super.createProject(request)
+    }
 }

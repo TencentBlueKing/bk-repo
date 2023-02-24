@@ -42,7 +42,7 @@ import org.springframework.stereotype.Service
 
 @Service
 @ConditionalOnEdgePlusNode
-class EdgePlusShareService(
+class EdgePlusShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
     mongoTemplate: MongoTemplate,

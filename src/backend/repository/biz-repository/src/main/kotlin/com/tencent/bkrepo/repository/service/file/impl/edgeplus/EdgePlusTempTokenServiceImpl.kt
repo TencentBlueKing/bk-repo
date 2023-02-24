@@ -28,6 +28,9 @@
 package com.tencent.bkrepo.repository.service.file.impl.edgeplus
 
 import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.repository.service.file.TemporaryTokenService
@@ -35,20 +38,26 @@ import org.springframework.stereotype.Service
 
 @Service
 @ConditionalOnEdgePlusNode
-class EdgePlusTempTokenServiceImpl : TemporaryTokenService{
+class EdgePlusTempTokenServiceImpl(
+    clusterProperties: ClusterProperties
+) : TemporaryTokenService{
+
+    private val centerTempTokenClient: TemporaryTokenClient
+        by lazy { FeignClientFactory.create(clusterProperties.center) }
+
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
-        TODO("Not yet implemented")
+        return centerTempTokenClient.createToken(request).data!!
     }
 
     override fun getTokenInfo(token: String): TemporaryTokenInfo? {
-        TODO("Not yet implemented")
+        return centerTempTokenClient.getTokenInfo(token).data!!
     }
 
     override fun deleteToken(token: String) {
-        TODO("Not yet implemented")
+        centerTempTokenClient.deleteToken(token)
     }
 
     override fun decrementPermits(token: String) {
-        TODO("Not yet implemented")
+        centerTempTokenClient.decrementPermits(token)
     }
 }

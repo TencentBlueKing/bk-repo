@@ -25,34 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.edgeplus
+package com.tencent.bkrepo.repository.service.repo.impl.center
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
-
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusRepositoryService(
+@ConditionalOnCenterNode
+class CenterRepositoryServiceImpl(
     repositoryDao: RepositoryDao,
     nodeService: NodeService,
     projectService: ProjectService,
@@ -72,29 +61,5 @@ class EdgePlusRepositoryService(
     servicePermissionResource
 ) {
 
-    @Autowired
-    private lateinit var clusterProperties: ClusterProperties
 
-    private val centerRepoClient: RepositoryClient by lazy { FeignClientFactory.create(clusterProperties.center) }
-
-    override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
-        try {
-            centerRepoClient.createRepo(repoCreateRequest)
-        } catch (e: RemoteErrorCodeException) {
-            if (e.errorCode != ArtifactMessageCode.REPOSITORY_EXISTED.getCode()) {
-                throw e
-            }
-        }
-        return super.createRepo(repoCreateRequest)
-    }
-
-    override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
-        centerRepoClient.deleteRepo(repoDeleteRequest)
-        super.deleteRepo(repoDeleteRequest)
-    }
-
-    override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
-        centerRepoClient.updateRepo(repoUpdateRequest)
-        super.updateRepo(repoUpdateRequest)
-    }
 }

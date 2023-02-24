@@ -25,45 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.edgeplus
+package com.tencent.bkrepo.repository.service.repo.impl.center
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnEdgePlusNode
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusProjectService(
+@ConditionalOnCenterNode
+class CenterProjectServiceImpl(
     projectDao: ProjectDao,
     servicePermissionResource: ServicePermissionResource
-) : ProjectServiceImpl(
+) : ProjectServiceImpl (
     projectDao,
     servicePermissionResource
-) {
-
-    @Autowired
-    private lateinit var clusterProperties: ClusterProperties
-
-    private val centerProjectClient: ProjectClient by lazy { FeignClientFactory.create(clusterProperties.center) }
-
-    override fun createProject(request: ProjectCreateRequest): ProjectInfo {
-        try {
-            centerProjectClient.createProject(request)
-        } catch (e: RemoteErrorCodeException) {
-            if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
-                throw e
-            }
-        }
-        return super.createProject(request)
-    }
-}
+)

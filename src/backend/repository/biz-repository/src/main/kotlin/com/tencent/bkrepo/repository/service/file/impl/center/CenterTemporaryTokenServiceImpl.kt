@@ -29,10 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl
+package com.tencent.bkrepo.repository.service.file.impl.center
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -51,7 +52,8 @@ import java.util.UUID
  * 临时token服务实现类
  */
 @Service
-class TemporaryTokenServiceImpl(
+@ConditionalOnCenterNode
+class CenterTemporaryTokenServiceImpl(
     private val temporaryTokenDao: TemporaryTokenDao
 ) : TemporaryTokenService, ArtifactService() {
 
@@ -106,7 +108,7 @@ class TemporaryTokenServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(TemporaryTokenServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(CenterTemporaryTokenServiceImpl::class.java)
 
         private fun generateToken(): String {
             return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()
