@@ -25,45 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.edgeplus
+package com.tencent.bkrepo.repository.service.metadata.impl.edgeplus
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.NodeShareClient
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import org.springframework.data.mongodb.core.MongoTemplate
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl
 import org.springframework.stereotype.Service
 
 @Service
 @ConditionalOnEdgePlusNode
-class EdgePlusShareServiceImpl(
-    repositoryService: RepositoryService,
-    nodeService: NodeService,
-    mongoTemplate: MongoTemplate,
+class EdgePlusMetadataServiceImpl(
+    nodeDao: NodeDao,
     clusterProperties: ClusterProperties
-) : ShareServiceImpl(
-    repositoryService,
-    nodeService,
-    mongoTemplate
+) : MetadataServiceImpl(
+    nodeDao
 ) {
 
-    private val centerShareClient: NodeShareClient by lazy { FeignClientFactory.create(clusterProperties.center) }
+    private val centerMetadataClient: MetadataClient
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
 
-    override fun create(
-        userId: String,
-        artifactInfo: ArtifactInfo,
-        request: ShareRecordCreateRequest
-    ): ShareRecordInfo {
-        return centerShareClient.create(userId, artifactInfo, request).data!!
+    override fun saveMetadata(request: MetadataSaveRequest) {
+        centerMetadataClient.saveMetadata(request)
+        super.saveMetadata(request)
     }
 
-    override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo {
-        return centerShareClient.checkToken(userId, token, artifactInfo).data!!
+    override fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
+        centerMetadataClient.deleteMetadata(request)
+        super.deleteMetadata(request, allowDeleteSystemMetadata)
+    }
+
+    override fun addForbidMetadata(request: MetadataSaveRequest) {
+        centerMetadataClient.addForbidMetadata(request)
+        super.addForbidMetadata(request)
     }
 }

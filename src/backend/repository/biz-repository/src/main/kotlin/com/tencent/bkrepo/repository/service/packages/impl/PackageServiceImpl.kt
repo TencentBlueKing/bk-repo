@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -69,14 +70,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-@Service
-class PackageServiceImpl(
+open class PackageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,
-    private val packageSearchInterpreter: PackageSearchInterpreter
+    private val packageSearchInterpreter: PackageSearchInterpreter,
+    private val clusterProperties: ClusterProperties
 ) : PackageService {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
@@ -190,6 +190,9 @@ class PackageServiceImpl(
             Preconditions.checkNotBlank(packageKey, this::packageKey.name)
             Preconditions.checkNotBlank(packageName, this::packageName.name)
             Preconditions.checkNotBlank(versionName, this::versionName.name)
+            if (request.region.isNullOrBlank()) {
+                request.region = clusterProperties.region
+            }
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(request)
             // 检查版本是否存在
@@ -212,6 +215,7 @@ class PackageServiceImpl(
                     metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                     extension = request.extension.orEmpty()
+                    region = request.region
                 }
             } else {
                 // create new
@@ -231,7 +235,8 @@ class PackageServiceImpl(
                     stageTag = stageTag.orEmpty(),
                     metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
-                    extension = request.extension.orEmpty()
+                    extension = request.extension.orEmpty(),
+                    region = request.region
                 )
             }
             try {
@@ -244,17 +249,18 @@ class PackageServiceImpl(
                 tPackage.extension = extension?.let { extension }
                 tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
                 tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
+                val region = tPackage.region.orEmpty().toMutableSet()
+                region.add(request.region!!)
+                tPackage.region = region
                 packageDao.save(tPackage)
 
                 if (!isOverride) {
                     publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
                 } else {
                     publishEvent(
-                        (
-                            PackageEventFactory.buildUpdatedEvent(
-                                request, realIpAddress ?: HttpContextHolder.getClientAddress()
-                            )
-                            )
+                        PackageEventFactory.buildUpdatedEvent(
+                            request, realIpAddress ?: HttpContextHolder.getClientAddress()
+                        )
                     )
                 }
                 logger.info("Create package version[$newVersion] success")
@@ -541,7 +547,8 @@ class PackageServiceImpl(
                     versionTag = versionTag.orEmpty(),
                     extension = packageExtension.orEmpty(),
                     description = packageDescription,
-                    historyVersion = mutableSetOf(versionName)
+                    historyVersion = mutableSetOf(versionName),
+                    region = if (request.region.isNullOrBlank()) emptySet() else setOf(request.region!!)
                 )
                 try {
                     packageDao.save(tPackage)

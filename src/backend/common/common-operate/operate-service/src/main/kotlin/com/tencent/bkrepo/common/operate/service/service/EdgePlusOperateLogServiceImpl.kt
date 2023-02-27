@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.OperateLogClient
 
-class EdgePlusOperateLogServiceImpl(
+open class EdgePlusOperateLogServiceImpl(
     operateProperties: OperateProperties,
     operateLogDao: OperateLogDao,
     permissionManager: PermissionManager,

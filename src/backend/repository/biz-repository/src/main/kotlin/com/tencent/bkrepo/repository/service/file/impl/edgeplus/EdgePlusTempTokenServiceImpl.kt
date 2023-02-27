@@ -40,17 +40,17 @@ import org.springframework.stereotype.Service
 @ConditionalOnEdgePlusNode
 class EdgePlusTempTokenServiceImpl(
     clusterProperties: ClusterProperties
-) : TemporaryTokenService{
+) : TemporaryTokenService {
 
     private val centerTempTokenClient: TemporaryTokenClient
-        by lazy { FeignClientFactory.create(clusterProperties.center) }
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
         return centerTempTokenClient.createToken(request).data!!
     }
 
     override fun getTokenInfo(token: String): TemporaryTokenInfo? {
-        return centerTempTokenClient.getTokenInfo(token).data!!
+        return centerTempTokenClient.getTokenInfo(token).data
     }
 
     override fun deleteToken(token: String) {

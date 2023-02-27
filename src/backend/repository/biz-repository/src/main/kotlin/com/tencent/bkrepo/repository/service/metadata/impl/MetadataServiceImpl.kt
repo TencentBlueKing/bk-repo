@@ -51,14 +51,12 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
  * 元数据服务实现类
  */
-@Service
-class MetadataServiceImpl(
+open class MetadataServiceImpl(
     private val nodeDao: NodeDao
 ) : MetadataService {
 

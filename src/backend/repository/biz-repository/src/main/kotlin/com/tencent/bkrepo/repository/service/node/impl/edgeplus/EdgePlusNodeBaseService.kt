@@ -66,7 +66,7 @@ abstract class EdgePlusNodeBaseService(
     clusterProperties
 ) {
 
-    val centerNodeClient: NodeClient by lazy { FeignClientFactory.create(clusterProperties.center) }
+    val centerNodeClient: NodeClient by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         createRequest.region = clusterProperties.region

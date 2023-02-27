@@ -25,17 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.cluster
+package com.tencent.bkrepo.repository.service.metadata.impl.center
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import java.lang.annotation.Inherited
+import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
+import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl
+import org.springframework.stereotype.Service
 
-/**
- * 当集群为Center时生效
- */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-@Inherited
-@MustBeDocumented
-@ConditionalOnProperty("cluster.role", havingValue = "CENTER", matchIfMissing = true)
-annotation class ConditionalOnCenterNode
+@Service
+@ConditionalOnCenterNode
+class CenterMetadataServiceImpl(
+    nodeDao: NodeDao
+) : MetadataServiceImpl(
+    nodeDao
+)

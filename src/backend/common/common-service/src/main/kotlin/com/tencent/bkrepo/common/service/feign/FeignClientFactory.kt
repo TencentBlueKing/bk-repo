@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -67,13 +68,18 @@ object FeignClientFactory {
     /**
      * [remoteClusterInfo]为远程集群信息
      */
-    inline fun <reified T> create(remoteClusterInfo: ClusterInfo): T {
-        return create(T::class.java, remoteClusterInfo)
+    inline fun <reified T> create(remoteClusterInfo: ClusterInfo, serviceName: String? = null): T {
+        return create(T::class.java, remoteClusterInfo, serviceName)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> create(target: Class<T>, remoteClusterInfo: ClusterInfo): T {
+    fun <T> create(target: Class<T>, remoteClusterInfo: ClusterInfo, serviceName: String? = null): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
+        val url = if (serviceName.isNullOrBlank()) {
+            remoteClusterInfo.url
+        } else {
+            remoteClusterInfo.url.ensureSuffix("/").plus(serviceName)
+        }
         return cache.getOrPut(remoteClusterInfo) {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
@@ -85,7 +91,7 @@ object FeignClientFactory {
                 .retryer(SpringContextUtils.getBean())
                 .options(options)
                 .errorDecoder(SpringContextUtils.getBean())
-                .target(target, remoteClusterInfo.url) as Any
+                .target(target, url) as Any
         } as T
     }
 
