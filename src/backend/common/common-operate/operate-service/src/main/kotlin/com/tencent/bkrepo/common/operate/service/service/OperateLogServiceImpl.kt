@@ -192,7 +192,7 @@ open class OperateLogServiceImpl(
         }
     }
 
-    private fun notNeedRecord(type: String, projectId: String?, repoName: String?): Boolean {
+    protected fun notNeedRecord(type: String, projectId: String?, repoName: String?): Boolean {
         val projectRepoKey = "$projectId/$repoName"
         if (match(operateProperties.eventType, type)) {
             return true

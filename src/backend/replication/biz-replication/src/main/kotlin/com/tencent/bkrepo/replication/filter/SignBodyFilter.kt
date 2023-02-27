@@ -2,15 +2,15 @@ package com.tencent.bkrepo.replication.filter
 
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.util.HttpSigner
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
+import com.tencent.bkrepo.common.service.util.HttpSigner
+import org.springframework.http.MediaType
 import java.io.ByteArrayOutputStream
 import javax.servlet.Filter
 import javax.servlet.FilterChain
 import javax.servlet.ServletRequest
 import javax.servlet.ServletResponse
 import javax.servlet.http.HttpServletRequest
-import org.springframework.http.MediaType
 
 /**
  * 对body进行签名的过滤器。

@@ -32,13 +32,13 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao

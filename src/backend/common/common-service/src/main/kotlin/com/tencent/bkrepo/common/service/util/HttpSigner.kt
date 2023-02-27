@@ -25,18 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.util
+package com.tencent.bkrepo.common.service.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import feign.RequestTemplate
-import javax.servlet.http.HttpServletRequest
 import okhttp3.MultipartBody
 import okhttp3.Request
 import okio.Buffer
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.apache.commons.codec.digest.HmacUtils
 import org.apache.commons.fileupload.ParameterParser
+import javax.servlet.http.HttpServletRequest
 
 /**
  * http请求签名工具，提供了servlet/feign/okhttp请求统一签名

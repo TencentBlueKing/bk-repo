@@ -29,20 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.okhttp
+package com.tencent.bkrepo.common.service.util.okhttp
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.Response
 
 /**
- * OKHTTP Basic Auth认证拦截器
- * 向请求头添加header: "Authorization: Basic Base64($username:$password)"
+ * OKHTTP Bearer token认证拦截器
+ * 向请求头添加header: "Authorization: Bearer XXXX"
  */
-class BasicAuthInterceptor(user: String, password: String) : Interceptor {
+class TokenAuthInterceptor(token: String) : Interceptor {
 
-    private val credentials = Credentials.basic(user, password)
+    private val credentials = token
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()

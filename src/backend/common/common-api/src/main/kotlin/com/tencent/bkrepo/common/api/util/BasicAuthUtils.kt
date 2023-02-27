@@ -25,28 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.exception
+package com.tencent.bkrepo.common.api.util
 
-import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
-import org.springframework.http.HttpHeaders
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.RestControllerAdvice
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.StringPool
+import java.util.Base64
 
-@Order(Ordered.HIGHEST_PRECEDENCE + 1)
-@RestControllerAdvice
-class PypiSecurityExceptionHandler: SecurityExceptionHandler() {
+/**
+ * Basic Auth 工具类
+ */
+object BasicAuthUtils {
 
-    @ExceptionHandler(AuthenticationException::class)
-    override fun handleException(exception: AuthenticationException): Response<*> {
-        HttpContextHolder.getResponse().setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
-        HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_JSON)
-        return response(exception)
+    /**
+     * basic auth编码
+     * @return Basic base64(username:password)
+     */
+    fun encode(username: String, password: String): String {
+        val byteArray = ("$username${StringPool.COLON}$password").toByteArray(Charsets.UTF_8)
+        val encodedValue = Base64.getEncoder().encodeToString(byteArray)
+        return "$BASIC_AUTH_PREFIX$encodedValue"
+    }
+
+    /**
+     * basic auth解码
+     */
+    fun decode(content: String): Pair<String, String> {
+        val normalized = content.removePrefix(BASIC_AUTH_PREFIX)
+        val decodedHeader = String(Base64.getDecoder().decode(normalized))
+        val parts = decodedHeader.split(StringPool.COLON)
+        require(parts.size >= 2)
+        return Pair(parts[0], parts[1])
     }
 }

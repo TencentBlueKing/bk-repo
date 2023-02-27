@@ -45,11 +45,11 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.ADMIN_USER
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor

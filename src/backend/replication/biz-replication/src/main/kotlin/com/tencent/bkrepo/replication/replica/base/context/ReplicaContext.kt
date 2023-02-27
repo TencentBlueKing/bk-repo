@@ -28,12 +28,12 @@
 package com.tencent.bkrepo.replication.replica.base.context
 
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.constant.FILE

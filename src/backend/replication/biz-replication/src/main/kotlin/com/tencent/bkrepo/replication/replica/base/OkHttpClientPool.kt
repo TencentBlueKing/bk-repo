@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.replication.replica.base
 
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
-import okhttp3.Protocol
 
 /**
  * OkHttpClient池，提供OkHttpClient复用

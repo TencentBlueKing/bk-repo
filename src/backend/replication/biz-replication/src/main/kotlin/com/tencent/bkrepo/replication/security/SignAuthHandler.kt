@@ -27,22 +27,22 @@
 
 package com.tencent.bkrepo.replication.security
 
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.security.util.HttpSigner
-import com.tencent.bkrepo.common.security.util.HttpSigner.ACCESS_KEY
-import com.tencent.bkrepo.common.security.util.HttpSigner.APP_ID
-import com.tencent.bkrepo.common.security.util.HttpSigner.MILLIS_PER_SECOND
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_BODY
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_TIME
-import com.tencent.bkrepo.common.security.util.HttpSigner.TIME_SPLIT
+import com.tencent.bkrepo.common.service.util.HttpSigner
+import com.tencent.bkrepo.common.service.util.HttpSigner.ACCESS_KEY
+import com.tencent.bkrepo.common.service.util.HttpSigner.APP_ID
+import com.tencent.bkrepo.common.service.util.HttpSigner.MILLIS_PER_SECOND
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_BODY
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
+import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
 import javax.servlet.http.HttpServletRequest

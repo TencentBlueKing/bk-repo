@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.edgeplus
 
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.api.NodeClient

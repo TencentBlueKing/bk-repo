@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.edgeplus
 
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo

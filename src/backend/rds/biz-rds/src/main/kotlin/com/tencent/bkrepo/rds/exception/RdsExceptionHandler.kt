@@ -32,10 +32,10 @@
 package com.tencent.bkrepo.rds.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.rds.pojo.RdsErrorResponse

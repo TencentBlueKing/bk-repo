@@ -28,14 +28,17 @@
 package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
+import com.tencent.bkrepo.fs.server.JWT_CLAIMS_PERMIT
+import com.tencent.bkrepo.fs.server.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
