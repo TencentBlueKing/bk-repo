@@ -17,6 +17,7 @@
         <div
           v-for="(dispatcherConfiguration, index) in configuration.dispatcherConfiguration"
           :key="index"
+          style="margin-top: 5px"
         >
           <el-select
             v-model="dispatcherConfiguration.scanner"
@@ -24,11 +25,17 @@
             placeholder="请选择分析工具"
             clearable
             required
+            @change="clearDispatcher(dispatcherConfiguration, index)"
           >
             <el-option v-for="scanner in scanners" :key="scanner" :label="scanner" :value="scanner" />
           </el-select>
           <el-select v-model="dispatcherConfiguration.dispatcher" required placeholder="请选择分发的集群" clearable>
-            <el-option v-for="dispatcher in dispatchers" :key="dispatcher" :label="dispatcher" :value="dispatcher" />
+            <el-option
+              v-for="dispatcher in supportDispatchers(dispatcherConfiguration.scanner)"
+              :key="dispatcher"
+              :label="dispatcher"
+              :value="dispatcher"
+            />
           </el-select>
           <el-button
             slot="append"
@@ -81,6 +88,7 @@ export default {
       configuration: this.newConfiguration(),
       dispatchers: ['k8s', 'docker'],
       scanners: [],
+      scannersDetail: new Map(),
       selectedScanners: [],
       loading: false
     }
@@ -100,7 +108,12 @@ export default {
         this.showDialog = true
         this.loading = true
         this.scanners = scanners().then(res => {
-          this.scanners = res.data.map(s => s.name)
+          this.scannersDetail.clear()
+          this.scanners = []
+          res.data.forEach(s => {
+            this.scanners.push(s.name)
+            this.scannersDetail.set(s.name, s)
+          })
         }).finally(_ => {
           this.loading = false
         })
@@ -130,6 +143,17 @@ export default {
     close() {
       this.showDialog = false
       this.$emit('update:visible', false)
+    },
+    supportDispatchers(scannerName) {
+      const scanner = this.scannersDetail.get(scannerName)
+      return scanner ? scanner.supportDispatchers : []
+    },
+    clearDispatcher(dispatcherConfiguration, index) {
+      this.configuration.dispatcherConfiguration.splice(
+        index,
+        1,
+        { scanner: dispatcherConfiguration.scanner }
+      )
     },
     handleCreateOrUpdate(configuration) {
       this.$refs['form'].validate((valid) => {

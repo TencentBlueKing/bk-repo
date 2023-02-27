@@ -68,6 +68,11 @@
           <el-option v-for="item in scanTypes" :key="item" :label="item" :value="item" />
         </el-select>
       </el-form-item>
+      <el-form-item label="支持的分发器" prop="supportDispatchers">
+        <el-select v-model="scanner.supportDispatchers" multiple placeholder="请选择" style="width: 100%">
+          <el-option v-for="item in dispatchers" :key="item" :label="item" :value="item" />
+        </el-select>
+      </el-form-item>
       <!-- standard -->
       <el-form-item v-if="scanner.type === SCANNER_TYPE_STANDARD" label="镜像" prop="image" required>
         <el-input v-model="scanner.image" placeholder="镜像，IMAGE:TAG" />
@@ -116,7 +121,7 @@
 import { IMAGE_REGEX, URL_REGEX } from '@/utils/validate'
 import _ from 'lodash'
 import {
-  createScanner, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
+  createScanner, dispatchers, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
   SCANNER_TYPE_TRIVY, scanTypes,
   updateScanner
 } from '@/api/scan'
@@ -147,6 +152,7 @@ export default {
       SCANNER_TYPE_SCANCODE: SCANNER_TYPE_SCANCODE,
       scanTypes: scanTypes,
       repoTypes: repoTypes,
+      dispatchers: dispatchers,
       rules: {
         'knowledgeBase.endpoint': [
           { validator: this.validateUrl, trigger: 'change' }

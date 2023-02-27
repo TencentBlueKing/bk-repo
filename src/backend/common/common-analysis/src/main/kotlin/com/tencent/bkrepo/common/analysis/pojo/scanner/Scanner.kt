@@ -71,6 +71,8 @@ open class Scanner(
     val supportPackageTypes: List<String> = emptyList(),
     @ApiModelProperty("支持扫描的类型")
     val supportScanTypes: List<String> = emptyList(),
+    @ApiModelProperty("支持的分发器")
+    val supportDispatchers: List<String> = emptyList(),
     @ApiModelProperty("执行扫描所需要的内存大小")
     val memory: Long = DEFAULT_MEM
 ) {
