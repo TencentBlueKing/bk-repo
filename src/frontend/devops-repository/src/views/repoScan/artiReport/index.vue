@@ -59,18 +59,14 @@
             }
         },
         created () {
-            this.getScanConfig({ projectId: this.projectId, id: this.planId })
-                .then(res => {
-                    this.scanTypes = res.scanTypes
-                    this.panels = res.scanTypes.map(scanType => this.allPanels[scanType])
-                })
-
             this.artiReportOverview({
                 projectId: this.projectId,
                 recordId: this.recordId,
                 taskId: this.taskId,
                 viewType: this.viewType
             }).then(res => {
+                this.scanTypes = res.scanTypes
+                this.panels = res.scanTypes.map(scanType => this.allPanels[scanType])
                 this.subtaskOverview = {
                     ...res,
                     highestLeakLevel: leakLevelEnum[res.highestLeakLevel],
