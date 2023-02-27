@@ -427,14 +427,14 @@ abstract class NodeBaseService(
             }
         }
 
-        private fun convertToDetail(tNode: TNode?): NodeDetail? {
+        fun convertToDetail(tNode: TNode?): NodeDetail? {
             return convert(tNode)?.let { NodeDetail(it) }
         }
 
         /**
          * 根据有效天数，计算到期时间
          */
-        private fun parseExpireDate(expireDays: Long?): LocalDateTime? {
+        fun parseExpireDate(expireDays: Long?): LocalDateTime? {
             return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this) }
         }
     }

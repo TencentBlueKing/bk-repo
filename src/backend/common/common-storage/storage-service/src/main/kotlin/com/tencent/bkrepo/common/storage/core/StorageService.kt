@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.operation.CleanupOperation
 import com.tencent.bkrepo.common.storage.core.operation.FileBlockOperation
 import com.tencent.bkrepo.common.storage.core.operation.HealthCheckOperation
+import com.tencent.bkrepo.common.storage.core.operation.OverlayOperation
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import java.nio.file.Path
@@ -45,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * 存储服务接口
  */
-interface StorageService : FileBlockOperation, HealthCheckOperation, CleanupOperation {
+interface StorageService : OverlayOperation, FileBlockOperation, HealthCheckOperation, CleanupOperation {
     /**
      * 在存储实例[storageCredentials]上存储摘要为[digest]的构件[artifactFile]
      * 返回文件影响数，如果文件已经存在则返回0，否则返回1

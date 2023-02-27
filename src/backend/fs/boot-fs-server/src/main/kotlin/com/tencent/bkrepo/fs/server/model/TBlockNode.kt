@@ -32,29 +32,33 @@ import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingKey
 import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX
 import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX_DEF
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import java.time.LocalDateTime
 
 /**
  * 块节点
- * 数据节点
  * */
 @ShardingDocument("block_node")
-@CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF, unique = true)
+@CompoundIndexes(
+    CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF)
+)
 data class TBlockNode(
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    @ShardingKey(count = SHARDING_COUNT)
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
     val nodeFullPath: String,
     val startPos: Long,
     var sha256: String,
     val projectId: String,
+    @ShardingKey(count = SHARDING_COUNT)
     val repoName: String,
-    val size: Int,
-    val endPos: Long = startPos + size - 1
+    val size: Long,
+    val endPos: Long = startPos + size - 1,
+    var deleted: LocalDateTime? = null
 ) {
     companion object {
-        const val BLOCK_IDX = "block_idx"
-        const val BLOCK_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'startPos': 1}"
+        const val BLOCK_IDX = "start_pos_idx"
+        const val BLOCK_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'startPos': 1, 'isDeleted': 1}"
     }
 }

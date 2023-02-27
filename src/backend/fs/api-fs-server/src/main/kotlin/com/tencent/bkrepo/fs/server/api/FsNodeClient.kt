@@ -25,15 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.exception
+package com.tencent.bkrepo.fs.server.api
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.constant.FS_SERVER_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.storage.pojo.RegionResource
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
-enum class FSMessageCode(private val key: String) : MessageCode {
-    BLOCK_NODE_NOT_FOUND("block-node-not-found"),
-    BLOCK_DATA_MISS("block-data-miss");
+@FeignClient(FS_SERVER_SERVICE_NAME, contextId = "BlockClient", primary = false)
+@RequestMapping("/service/block")
+interface FsNodeClient {
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 10
+    @GetMapping("/list/{projectId}/{repoName}")
+    fun listBlockResources(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam path: String,
+        @RequestParam startPos: Long,
+        @RequestParam endPos: Long
+    ): Response<List<RegionResource>>
 }

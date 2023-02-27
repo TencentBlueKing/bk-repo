@@ -25,42 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.filter
+package com.tencent.bkrepo.fs.server.request
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
-import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
-import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
-import org.springframework.util.AntPathMatcher
-import org.springframework.web.reactive.HandlerMapping
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.util.pattern.PathPattern
+import org.springframework.web.reactive.function.server.queryParamOrNull
 
-class ArtifactContextFilterFunction : CoHandlerFilterFunction {
-
-    override suspend fun filter(
-        request: ServerRequest,
-        next: suspend (ServerRequest) -> ServerResponse
-    ): ServerResponse {
-        val projectId = request.pathVariable(PROJECT_ID)
-        val repoName = request.pathVariable(REPO_NAME)
-        val artifactUri = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
-            (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
-            request.path()
+class SetLengthRequest(request: ServerRequest) : NodeRequest(request) {
+    val length: Long
+    init {
+        length = request.queryParamOrNull("length")?.toLong() ?: throw ParameterInvalidException(
+            "required length parameter."
         )
-        request.exchange().attributes[PROJECT_ID] = projectId
-        request.exchange().attributes[REPO_NAME] = repoName
-        val artifactInfo = ArtifactInfo(
-            projectId = projectId,
-            repoName = repoName,
-            artifactUri = artifactUri
-        )
-        request.exchange().attributes[ARTIFACT_INFO_KEY] = artifactInfo
-        return next(request)
-    }
-
-    companion object {
-        private val antPathMatcher = AntPathMatcher()
     }
 }

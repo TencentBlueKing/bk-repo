@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server
 
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
 import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
 import kotlinx.coroutines.flow.collect
@@ -59,4 +60,21 @@ suspend fun ServerRequest.bodyToArtifactFile(): ReactiveArtifactFile {
 
 fun ServerRequest.useRequestParam(param: String, consumer: (x: String) -> Unit) {
     this.queryParam(param).ifPresent { consumer(it) }
+}
+
+/**
+ * 处理文件范围请求
+ * @param request http server request
+ * @param total 文件总长度
+ * @return range 文件请求范围
+ * */
+fun ServerRequest.resolveRange(total: Long): Range {
+    val httpRange = headers().range().firstOrNull()
+    return if (httpRange != null) {
+        val startPosition = httpRange.getRangeStart(total)
+        val endPosition = httpRange.getRangeEnd(total)
+        Range(startPosition, endPosition, total)
+    } else {
+        Range.full(total)
+    }
 }

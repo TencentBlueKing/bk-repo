@@ -25,18 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.file
+package com.tencent.bkrepo.fs.server.exception
 
-data class FileRange(
-    val source: String,
-    val startPos: Long,
-    val endPos: Long
-) {
-    override fun toString(): String {
-        return "$startPos-$endPos/$source"
-    }
-
-    companion object {
-        const val ZERO_SOURCE = "ZERO"
-    }
-}
+/**
+ * 外部ErrorCodeException。
+ * 调用外部服务时，出现业务异常会返回errorCode和message，message已经过国际化与模版化，所以直接返回。
+ */
+class RemoteErrorCodeException(
+    val methodKey: String,
+    val errorCode: Int,
+    val errorMessage: String?
+) : RuntimeException(errorMessage)
