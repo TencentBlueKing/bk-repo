@@ -26,9 +26,6 @@ export default {
     },
     // 所有扫描方案
     getScanAll (_, { projectId, type, fileNameExt = null }) {
-        if (!fileNameExt) {
-            fileNameExt = null
-        }
         return Vue.prototype.$ajax.get(
             `${prefix}/plan/all/${projectId}`,
             {

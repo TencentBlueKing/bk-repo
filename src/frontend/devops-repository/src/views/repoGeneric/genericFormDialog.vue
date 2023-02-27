@@ -109,10 +109,15 @@
                     ...data
                 }
                 if (data.type === 'scan') {
+                    let fileNameExt = ''
+                    const lastIndexOfDot = this.genericForm.path.lastIndexOf('.')
+                    if (lastIndexOfDot !== -1) {
+                        fileNameExt = this.genericForm.path.substring(lastIndexOfDot + 1)
+                    }
                     this.getScanAll({
                         projectId: this.projectId,
                         type: 'GENERIC',
-                        fileNameExt: this.genericForm.path.substr(this.genericForm.path.lastIndexOf('.') + 1)
+                        fileNameExt: fileNameExt
                     }).then(res => {
                         this.scanList = res
                     })

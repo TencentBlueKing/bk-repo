@@ -319,7 +319,14 @@
                 'refreshSupportFileNameExtList'
             ]),
             showRepoScan (node) {
-                return !node.folder && !this.community && this.scannerSupportFileNameExt.includes(node.name.replace(/^.+\.([^.]+)$/, '$1'))
+                const indexOfLastDot = node.name.lastIndexOf('.')
+                let supportFileNameExt = false
+                if (indexOfLastDot === -1) {
+                    supportFileNameExt = this.scannerSupportFileNameExt.includes('')
+                } else {
+                    supportFileNameExt = this.scannerSupportFileNameExt.includes(node.name.substring(indexOfLastDot + 1))
+                }
+                return !node.folder && !this.community && supportFileNameExt
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {

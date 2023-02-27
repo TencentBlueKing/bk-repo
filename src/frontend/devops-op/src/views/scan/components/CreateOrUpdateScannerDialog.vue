@@ -31,7 +31,7 @@
           <template slot="append">ms</template>
         </el-input>
       </el-form-item>
-      <el-form-item label="支持的文件类型" prop="supportFileNameExt" required>
+      <el-form-item label="支持的文件类型" prop="supportFileNameExt">
         <el-tooltip effect="dark" content="仅扫描GENERIC包时生效" placement="top-start">
           <svg-icon icon-class="question" />
         </el-tooltip>
@@ -242,7 +242,8 @@ export default {
     },
     handleInputConfirm() {
       const ext = this.extInputValue
-      if (ext && this.scanner.supportFileNameExt.indexOf(ext) === -1) {
+      // 输入为空字符串时表示支持无后缀文件名
+      if (this.scanner.supportFileNameExt.indexOf(ext) === -1) {
         this.scanner.supportFileNameExt.push(ext)
       }
       this.extInputVisible = false
