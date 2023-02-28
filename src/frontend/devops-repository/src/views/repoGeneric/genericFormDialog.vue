@@ -60,7 +60,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^(\/[^\\:*?"<>|]{1,50})+$/,
+                            regex: /^(\/[^\\:*?"<>|]{1,255})+$/,
                             message: this.$t('folderPathPlacehodler'),
                             trigger: 'blur'
                         }
@@ -72,7 +72,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^([^\\/:*?"<>|]){1,50}$/,
+                            regex: /^([^\\/:*?"<>|]){1,255}$/,
                             message: this.$t('folderNamePlacehodler'),
                             trigger: 'blur'
                         }
