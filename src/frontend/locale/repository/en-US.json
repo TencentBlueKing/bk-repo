@@ -389,11 +389,11 @@
     "hasSensitivePath":"sensitive File path",
     "sensitiveContent":"sensitive Content",
     "content":"content",
-    "genericRule":"Rules that Artifact Names Satisfy",
+    "genericRule":"Artifact Names Rules",
     "addRule":"add rule",
     "satisfyRuleBtn":"Products that satisfy the rules",
     "satisfyVersionBtn":"Latest versions of all artifacts",
-    "genericRuleSpan":"and the artifact version satisfies the rule",
+    "genericRuleSpan":"and artifact version rule",
     "allRepo":"All Repo",
     "addRepo": "Add Repo",
     "specifiedRepo": "Specified Repo",
@@ -426,7 +426,7 @@
     "suspend": "suspend",
     "startTime":"startTime",
     "endTime":"endTime",
-    "scanProductNum":"Number of products scanned",
+    "scanProductNum":"products scanned",
     "scanCompletionTime":"scan completion time",
     "overview":"overview",
     "taskView":"taskView",
@@ -661,5 +661,7 @@
     "commonList":"dependency repository",
     "commonPackage":"product detail",
     "scanConfig":"program settings",
-    "operationConfirmation":"Operation Confirmation"
+    "operationConfirmation":"Operation Confirmation",
+    "executeScanSuccessMsg":"Scan performed successfully",
+    "scanRulePreMsg":"Skip rule if blank"
 }

@@ -7,7 +7,7 @@
                 <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="addRule()">{{ $t('addRule') }}</bk-button>
             </bk-radio>
         </bk-radio-group>
-        <div v-show="showAddBtn" class="rule-list">
+        <div v-show="showAddBtn" class="rule-list" :data-suffix="$t('scanRulePreMsg')">
             <component :is="scanType.includes('GENERIC') ? `generic-rule` : 'package-rule'"
                 class="mt10"
                 v-for="(rule, ind) in defaultRules"
@@ -110,7 +110,7 @@
     }
     .rule-list {
         &:before {
-            content: '不填写则跳过规则';
+            content: attr(data-suffix);
             display: block;
             margin-bottom: -10px;
             color: var(--fontSubsidiaryColor);

@@ -676,5 +676,7 @@
     "commonList":"依赖仓库",
     "commonPackage":"制品详情",
     "scanConfig":"方案设置",
-    "operationConfirmation":"操作确认"
+    "operationConfirmation":"操作确认",
+    "executeScanSuccessMsg":"执行扫描成功",
+    "scanRulePreMsg":"不填写则跳过规则"
 }

@@ -107,7 +107,7 @@
                     </bk-table-column>
                     <bk-table-column :label="$t('scanStatus')">
                         <template #default="{ row }">
-                            <span class="repo-tag" :class="row.status">{{$t(`scanStatusEnum.$(row.status)`)}}</span>
+                            <span class="repo-tag" :class="row.status">{{$t(`scanStatusEnum.${row.status}`)}}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('scanCompletionTime')" width="150">
@@ -450,7 +450,7 @@
                 border-right: 0 none;
             }
             .overview-key {
-                width: 80px;
+                width: auto;
                 color: var(--fontSubsidiaryColor);
                 background-color: var(--bgColor);
             }

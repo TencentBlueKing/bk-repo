@@ -5,7 +5,7 @@
                 <span>{{ config.name }}</span>
             </bk-form-item>
             <bk-form-item :label="$t('schemeType')">
-                <span>{{ scanTypeEnum[config.type] }}</span>
+                <span>{{ $t(`scanTypeEnum.${config.type}`)}}</span>
             </bk-form-item>
             <bk-form-item :label="$t('repoScope')" :required="true" property="repo" error-display-type="normal">
                 <repo-table
@@ -24,7 +24,7 @@
                 </arti-table>
             </bk-form-item>
             <bk-form-item>
-                <bk-button style="width: 70px;" theme="primary" @click="save()">{{ $t('scanImmediately') }}</bk-button>
+                <bk-button style="width: 140px;" theme="primary" @click="save()">{{ $t('scanImmediately') }}</bk-button>
             </bk-form-item>
         </bk-form>
     </div>
@@ -128,7 +128,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: '执行扫描成功'
+                        message: this.$t('executeScanSuccessMsg')
                     })
                     this.$router.push({
                         name: 'scanReport',
