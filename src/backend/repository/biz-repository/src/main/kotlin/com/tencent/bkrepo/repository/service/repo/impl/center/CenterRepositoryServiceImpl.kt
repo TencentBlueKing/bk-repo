@@ -59,7 +59,4 @@ class CenterRepositoryServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionResource
-) {
-
-
-}
+)

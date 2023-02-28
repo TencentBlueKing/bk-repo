@@ -35,6 +35,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
@@ -66,10 +67,16 @@ abstract class EdgePlusNodeBaseService(
     clusterProperties
 ) {
 
-    val centerNodeClient: NodeClient by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
+    val centerNodeClient: NodeClient
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+
+    override fun buildTNode(request: NodeCreateRequest): TNode {
+        val node = super.buildTNode(request)
+        node.regions = setOf(clusterProperties.region!!)
+        return node
+    }
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
-        createRequest.region = clusterProperties.region
         centerNodeClient.createNode(createRequest)
         return super.createNode(createRequest)
     }

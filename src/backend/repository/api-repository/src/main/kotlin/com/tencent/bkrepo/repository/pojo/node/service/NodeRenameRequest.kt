@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
@@ -51,7 +50,5 @@ data class NodeRenameRequest(
     @ApiModelProperty("节点新完整路径", required = true)
     val newFullPath: String,
     @ApiModelProperty("操作用户", required = true)
-    override val operator: String,
-    @ApiModelProperty("地区", required = false)
-    override var region: String? = null
-) : NodeRequest, ServiceRequest, ClusterRequest
+    override val operator: String
+) : NodeRequest, ServiceRequest

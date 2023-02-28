@@ -53,7 +53,8 @@ class EdgePlusShareServiceImpl(
     mongoTemplate
 ) {
 
-    private val centerShareClient: NodeShareClient by lazy { FeignClientFactory.create(clusterProperties.center) }
+    private val centerShareClient: NodeShareClient
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
 
     override fun create(
         userId: String,

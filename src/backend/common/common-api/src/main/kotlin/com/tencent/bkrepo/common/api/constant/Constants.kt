@@ -102,3 +102,5 @@ const val OAUTH_AUTH_PREFIX = "Oauth"
  * micro service header user id key
  */
 const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
+
+const val MS_REQUEST_SRC_REGION = "X-BKREPO-MS-REGION"

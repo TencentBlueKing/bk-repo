@@ -56,7 +56,7 @@ class EdgePlusPackageServiceImpl(
 ) {
 
     private val centerPackageClient: PackageClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
 
     override fun createPackageVersion(request: PackageVersionCreateRequest, realIpAddress: String?) {
         centerPackageClient.createVersion(request)

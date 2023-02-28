@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -155,30 +156,37 @@ abstract class NodeBaseService(
             // 判断父目录是否存在，不存在先创建
             val parents = mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
-            val node = TNode(
+            val node = buildTNode(this)
+            doCreate(node)
+            afterCreate(repo, node, createStart, parents, deletedTime)
+            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
+            return convertToDetail(node)!!
+        }
+    }
+
+    open fun buildTNode(request: NodeCreateRequest):TNode {
+        with(request) {
+            val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
+            return TNode(
                 projectId = projectId,
                 repoName = repoName,
-                path = PathUtils.resolveParent(fullPath),
-                name = PathUtils.resolveName(fullPath),
-                fullPath = fullPath,
+                path = PathUtils.resolveParent(normalizeFullPath),
+                name = PathUtils.resolveName(normalizeFullPath),
+                fullPath = normalizeFullPath,
                 folder = folder,
                 expireDate = if (folder) null else parseExpireDate(expires),
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
                 metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
-                region = region ?: clusterProperties.region,
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
                 lastAccessDate = LocalDateTime.now()
             )
-            doCreate(node)
-            afterCreate(repo, node, createStart, parents, deletedTime)
-            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
-            return convertToDetail(node)!!
         }
+
     }
 
     private fun afterCreate(
@@ -290,6 +298,9 @@ abstract class NodeBaseService(
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            if (!node.isLocalRegion()) {
+                throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+            }
             val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = NodeQueryHelper.nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
@@ -378,6 +389,9 @@ abstract class NodeBaseService(
                 } else {
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
+                    if (!existNode.isLocalRegion()) {
+                        throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+                    }
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
                 }
             } else {

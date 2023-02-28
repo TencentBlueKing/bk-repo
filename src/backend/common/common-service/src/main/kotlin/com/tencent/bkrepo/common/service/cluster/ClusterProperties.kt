@@ -57,5 +57,9 @@ data class ClusterProperties(
      * 自身节点信息
      */
     @NestedConfigurationProperty
-    var self: ClusterInfo = ClusterInfo()
+    var self: ClusterInfo = ClusterInfo(),
+    /**
+     * 组网方式
+     */
+    var architecture: String = "center"
 )

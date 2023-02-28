@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -59,10 +58,8 @@ data class NodeMoveCopyRequest(
     @ApiModelProperty("同名文件是否覆盖", required = false)
     val overwrite: Boolean = false,
     @ApiModelProperty("操作用户", required = true)
-    val operator: String,
-    @ApiModelProperty("地区", required = false)
-    override var region: String? = null
-) : NodeRequest, ClusterRequest {
+    val operator: String
+) : NodeRequest {
     override val projectId: String
         get() = srcProjectId
     override val repoName: String

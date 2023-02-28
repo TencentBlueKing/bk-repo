@@ -43,7 +43,7 @@ class EdgePlusTempTokenServiceImpl(
 ) : TemporaryTokenService {
 
     private val centerTempTokenClient: TemporaryTokenClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
         return centerTempTokenClient.createToken(request).data!!

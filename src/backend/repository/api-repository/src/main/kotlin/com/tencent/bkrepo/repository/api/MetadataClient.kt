@@ -75,7 +75,7 @@ interface MetadataClient {
     @DeleteMapping("/delete")
     fun deleteMetadata(@RequestBody request: MetadataDeleteRequest): Response<Void>
 
-    @ApiOperation("")
+    @ApiOperation("添加禁用元数据")
     @PostMapping("/forbid")
     fun addForbidMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
 }

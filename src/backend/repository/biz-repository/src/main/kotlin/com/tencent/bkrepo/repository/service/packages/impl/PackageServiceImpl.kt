@@ -190,9 +190,6 @@ open class PackageServiceImpl(
             Preconditions.checkNotBlank(packageKey, this::packageKey.name)
             Preconditions.checkNotBlank(packageName, this::packageName.name)
             Preconditions.checkNotBlank(versionName, this::versionName.name)
-            if (request.region.isNullOrBlank()) {
-                request.region = clusterProperties.region
-            }
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(request)
             // 检查版本是否存在
@@ -215,7 +212,6 @@ open class PackageServiceImpl(
                     metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                     extension = request.extension.orEmpty()
-                    region = request.region
                 }
             } else {
                 // create new
@@ -235,8 +231,7 @@ open class PackageServiceImpl(
                     stageTag = stageTag.orEmpty(),
                     metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
-                    extension = request.extension.orEmpty(),
-                    region = request.region
+                    extension = request.extension.orEmpty()
                 )
             }
             try {
@@ -249,9 +244,6 @@ open class PackageServiceImpl(
                 tPackage.extension = extension?.let { extension }
                 tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
                 tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
-                val region = tPackage.region.orEmpty().toMutableSet()
-                region.add(request.region!!)
-                tPackage.region = region
                 packageDao.save(tPackage)
 
                 if (!isOverride) {
@@ -548,7 +540,6 @@ open class PackageServiceImpl(
                     extension = packageExtension.orEmpty(),
                     description = packageDescription,
                     historyVersion = mutableSetOf(versionName),
-                    region = if (request.region.isNullOrBlank()) emptySet() else setOf(request.region!!)
                 )
                 try {
                     packageDao.save(tPackage)

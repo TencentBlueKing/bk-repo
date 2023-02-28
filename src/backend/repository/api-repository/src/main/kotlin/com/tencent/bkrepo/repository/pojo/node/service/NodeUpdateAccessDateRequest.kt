@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import java.time.LocalDateTime
@@ -40,6 +39,5 @@ data class NodeUpdateAccessDateRequest(
     override val repoName: String,
     override val fullPath: String,
     override val operator: String,
-    val accessDate: LocalDateTime,
-    override var region: String? = null
-) : NodeRequest, ServiceRequest, ClusterRequest
+    val accessDate: LocalDateTime
+) : NodeRequest, ServiceRequest

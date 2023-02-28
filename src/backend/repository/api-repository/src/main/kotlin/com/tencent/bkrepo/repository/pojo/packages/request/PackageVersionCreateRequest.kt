@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.pojo.packages.request
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import io.swagger.annotations.ApiModelProperty
@@ -75,7 +74,5 @@ data class PackageVersionCreateRequest(
     @ApiModelProperty("是否允许覆盖")
     val overwrite: Boolean = false,
     @ApiModelProperty("创建人")
-    val createdBy: String,
-    @ApiModelProperty("地区")
-    override var region: String? = null
-) : ClusterRequest
+    val createdBy: String
+)

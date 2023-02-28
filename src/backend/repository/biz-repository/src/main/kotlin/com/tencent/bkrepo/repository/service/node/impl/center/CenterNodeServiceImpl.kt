@@ -80,6 +80,7 @@ class CenterNodeServiceImpl(
     messageSupplier,
     clusterProperties
 ) {
+
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact)
     }
@@ -94,12 +95,20 @@ class CenterNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNode(deleteRequest)
+        return if (clusterProperties.architecture == "center") {
+            CenterNodeDeleteSupport(this).deleteNode(deleteRequest)
+        } else {
+            NodeDeleteSupport(this).deleteNode(deleteRequest)
+        }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
+        return if (clusterProperties.architecture == "center") {
+            CenterNodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
+        } else {
+            NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
+        }
     }
 
     override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
@@ -113,7 +122,11 @@ class CenterNodeServiceImpl(
         fullPath: String,
         operator: String
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        return if (clusterProperties.architecture == "center") {
+            CenterNodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        } else {
+            NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -123,7 +136,11 @@ class CenterNodeServiceImpl(
         fullPaths: List<String>,
         operator: String
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
+        return if (clusterProperties.architecture == "center") {
+            CenterNodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
+        } else {
+            NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
+        }
     }
 
     override fun deleteBeforeDate(

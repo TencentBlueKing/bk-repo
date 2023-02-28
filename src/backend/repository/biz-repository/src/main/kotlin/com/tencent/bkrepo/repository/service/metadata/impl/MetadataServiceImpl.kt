@@ -32,9 +32,12 @@
 package com.tencent.bkrepo.repository.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
@@ -51,13 +54,16 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
  * 元数据服务实现类
  */
-open class MetadataServiceImpl(
-    private val nodeDao: NodeDao
+@Service
+@ConditionalOnCenterNode
+class MetadataServiceImpl(
+    private val nodeDao: NodeDao,
 ) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
@@ -74,7 +80,9 @@ open class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-
+            if (!node.isLocalRegion()) {
+                throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+            }
             val oldMetadata = node.metadata ?: ArrayList()
             val newMetadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata)
             node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
@@ -108,7 +116,11 @@ open class MetadataServiceImpl(
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
 
             // 检查是否有更新权限
-            nodeDao.findOne(query)?.metadata?.forEach {
+            val node = nodeDao.findOne(query) ?: throw NodeNotFoundException(fullPath)
+            if (node.isLocalRegion()) {
+                throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+            }
+            node.metadata?.forEach {
                 if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
                     throw PermissionException("No permission to update system metadata[${it.key}]")
                 }

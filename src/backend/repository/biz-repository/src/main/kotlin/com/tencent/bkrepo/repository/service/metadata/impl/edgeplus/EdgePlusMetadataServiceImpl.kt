@@ -47,7 +47,7 @@ class EdgePlusMetadataServiceImpl(
 ) {
 
     private val centerMetadataClient: MetadataClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository") }
+        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
 
     override fun saveMetadata(request: MetadataSaveRequest) {
         centerMetadataClient.saveMetadata(request)

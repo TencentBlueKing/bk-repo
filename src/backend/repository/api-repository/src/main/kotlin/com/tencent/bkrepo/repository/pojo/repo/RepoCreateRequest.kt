@@ -64,5 +64,4 @@ data class RepoCreateRequest(
 
     @ApiModelProperty("操作用户", required = false)
     val operator: String = SYSTEM_USER
-
 ) : RepoRequest

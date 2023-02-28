@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.repository.pojo.ClusterRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -17,7 +16,5 @@ class NodesDeleteRequest(
 	@ApiModelProperty("节点完整路径列表", required = true)
 	val fullPaths: List<String>,
 	@ApiModelProperty("操作用户", required = true)
-	override val operator: String,
-	@ApiModelProperty("地区", required = false)
-	override var region: String? = null
-) : ServiceRequest, ClusterRequest
+	override val operator: String
+) : ServiceRequest

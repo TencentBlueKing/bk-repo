@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.center
 
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
@@ -58,4 +61,11 @@ abstract class CenterNodeBaseService(
     repositoryProperties,
     messageSupplier,
     clusterProperties
-)
+) {
+
+    override fun buildTNode(request: NodeCreateRequest): TNode {
+        val node = super.buildTNode(request)
+        node.regions = setOf(SecurityUtils.getRegion() ?: clusterProperties.region!!)
+        return node
+    }
+}
