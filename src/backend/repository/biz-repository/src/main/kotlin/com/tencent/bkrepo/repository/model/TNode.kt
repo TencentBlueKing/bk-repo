@@ -31,9 +31,14 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX_DEF
@@ -92,10 +97,27 @@ data class TNode(
     var projectId: String,
     var repoName: String
 ) {
+    @JsonIgnore
+    fun checkLocalRegion() {
+        if (!isLocalRegion()) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+        }
+    }
+
+    @JsonIgnore
     fun isLocalRegion(): Boolean {
-        val srcRegion = SecurityUtils.getRegion()
-        if (regions == null || srcRegion == null) {
+        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
+        var srcRegion = SecurityUtils.getRegion()
+
+        if (regions == null && srcRegion.isNullOrBlank()) {
+            // 兼容旧逻辑
             return true
+        } else if (regions == null) {
+            // edge plus操作center节点
+            return false
+        } else if (srcRegion.isNullOrBlank()) {
+            // center操作节点
+            srcRegion = clusterProperties.region
         }
 
         return regions!!.contains(srcRegion)

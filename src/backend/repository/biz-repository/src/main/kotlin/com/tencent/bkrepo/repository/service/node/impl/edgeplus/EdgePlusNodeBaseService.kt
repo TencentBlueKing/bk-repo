@@ -54,7 +54,7 @@ abstract class EdgePlusNodeBaseService(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
-    override val clusterProperties: ClusterProperties
+    open val clusterProperties: ClusterProperties
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -63,8 +63,7 @@ abstract class EdgePlusNodeBaseService(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier,
-    clusterProperties
+    messageSupplier
 ) {
 
     val centerNodeClient: NodeClient

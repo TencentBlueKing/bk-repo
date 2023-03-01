@@ -25,34 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl.center
+package com.tencent.bkrepo.common.service.cluster
 
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
-import com.tencent.bkrepo.repository.service.repo.QuotaService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import java.lang.annotation.Inherited
 
-abstract class CenterNodeBaseService(
-    override val nodeDao: NodeDao,
-    override val repositoryDao: RepositoryDao,
-    override val fileReferenceService: FileReferenceService,
-    override val storageCredentialService: StorageCredentialService,
-    override val storageService: StorageService,
-    override val quotaService: QuotaService,
-    override val repositoryProperties: RepositoryProperties,
-    override val messageSupplier: MessageSupplier,
-) : NodeBaseService(
-    nodeDao,
-    repositoryDao,
-    fileReferenceService,
-    storageCredentialService,
-    storageService,
-    quotaService,
-    repositoryProperties,
-    messageSupplier
-)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@ConditionalOnProperty("cluster.architecture", havingValue = "START")
+annotation class ConditionalOnStarCluster

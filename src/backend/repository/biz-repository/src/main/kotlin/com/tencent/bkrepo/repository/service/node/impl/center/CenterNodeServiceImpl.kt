@@ -28,8 +28,7 @@
 package com.tencent.bkrepo.repository.service.node.impl.center
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
+import com.tencent.bkrepo.common.service.cluster.AutonomousCenterCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -52,13 +51,14 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
-@ConditionalOnCenterNode
+@Conditional(AutonomousCenterCondition::class)
 class CenterNodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
@@ -67,8 +67,7 @@ class CenterNodeServiceImpl(
     override val storageService: StorageService,
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
-    override val messageSupplier: MessageSupplier,
-    override val clusterProperties: ClusterProperties
+    override val messageSupplier: MessageSupplier
 ) : CenterNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -77,8 +76,7 @@ class CenterNodeServiceImpl(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier,
-    clusterProperties
+    messageSupplier
 ) {
 
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
@@ -95,20 +93,12 @@ class CenterNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        return if (clusterProperties.architecture == "center") {
-            CenterNodeDeleteSupport(this).deleteNode(deleteRequest)
-        } else {
-            NodeDeleteSupport(this).deleteNode(deleteRequest)
-        }
+        return NodeDeleteSupport(this).deleteNode(deleteRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        return if (clusterProperties.architecture == "center") {
-            CenterNodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
-        } else {
-            NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
-        }
+        return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
     }
 
     override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
@@ -122,11 +112,7 @@ class CenterNodeServiceImpl(
         fullPath: String,
         operator: String
     ): NodeDeleteResult {
-        return if (clusterProperties.architecture == "center") {
-            CenterNodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
-        } else {
-            NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
-        }
+        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -136,11 +122,7 @@ class CenterNodeServiceImpl(
         fullPaths: List<String>,
         operator: String
     ): NodeDeleteResult {
-        return if (clusterProperties.architecture == "center") {
-            CenterNodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
-        } else {
-            NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
-        }
+        return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
     }
 
     override fun deleteBeforeDate(

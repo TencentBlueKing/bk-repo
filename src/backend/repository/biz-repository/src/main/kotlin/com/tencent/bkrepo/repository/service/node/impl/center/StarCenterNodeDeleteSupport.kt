@@ -30,6 +30,7 @@ package com.tencent.bkrepo.repository.service.node.impl.center
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
@@ -39,8 +40,9 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
 
-class CenterNodeDeleteSupport(
-    private val centerNodeBaseService: CenterNodeBaseService
+class StarCenterNodeDeleteSupport(
+    private val centerNodeBaseService: CenterNodeBaseService,
+    private val clusterProperties: ClusterProperties
 ): NodeDeleteSupport(
     centerNodeBaseService
 ) {
@@ -54,10 +56,16 @@ class CenterNodeDeleteSupport(
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val node = nodeDao.findNode(projectId, repoName, normalizedFullPath)
             ?: return NodeDeleteResult(0,0, LocalDateTime.now())
-        return if (node.folder) {
-            delete(node, operator)
+        if (node.folder) {
+            return delete(node, operator)
+        }
+
+        return if (!node.isLocalRegion()) {
+            NodeDeleteResult(0,0, LocalDateTime.now())
         } else {
-            super.deleteByPath(projectId, repoName, fullPath, operator)
+            val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
+            deleteFileNode(node, srcRegion, operator)
+            NodeDeleteResult(1, node.size, LocalDateTime.now())
         }
     }
 
@@ -80,7 +88,7 @@ class CenterNodeDeleteSupport(
     fun delete(folder: TNode, operator: String): NodeDeleteResult {
         var deletedNumber = 0L
         var deletedSize = 0L
-        val srcRegion = SecurityUtils.getRegion() ?: centerNodeBaseService.clusterProperties.region.toString()
+        val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
         val criteria = where(TNode::projectId).isEqualTo(folder.projectId)
             .and(TNode::repoName).isEqualTo(folder.repoName)
             .and(TNode::deleted).isEqualTo(null)
@@ -94,15 +102,10 @@ class CenterNodeDeleteSupport(
                 deletedNumber += result.deletedNumber
                 deletedSize += result.deletedSize
             } else {
-                if (!it.regions.orEmpty().contains(srcRegion)) {
+                if (!it.isLocalRegion()) {
                     return@forEach
                 }
-                it.regions = it.regions!!.minus(srcRegion)
-                if (it.regions.orEmpty().isEmpty()) {
-                    super.deleteByPath(it.projectId, it.repoName, it.fullPath, operator)
-                } else {
-                    nodeDao.save(it)
-                }
+                deleteFileNode(it, srcRegion, operator)
                 deletedNumber ++
                 deletedSize += it.size
             }
@@ -111,5 +114,23 @@ class CenterNodeDeleteSupport(
             super.deleteByPath(folder.projectId, folder.repoName, folder.fullPath, operator)
         }
         return NodeDeleteResult(deletedNumber, deletedSize, LocalDateTime.now())
+    }
+
+    private fun deleteFileNode(
+        node: TNode,
+        srcRegion: String,
+        operator: String
+    ) {
+        node.regions = node.regions.orEmpty().minus(srcRegion)
+        if (node.regions.orEmpty().isEmpty()) {
+            super.deleteByPath(node.projectId, node.repoName, node.fullPath, operator)
+        } else {
+            nodeDao.save(node)
+        }
+        if (srcRegion == clusterProperties.region.toString() && node.regions.orEmpty().isNotEmpty()) {
+            node.id = null
+            node.deleted = LocalDateTime.now()
+            nodeDao.insert(node)
+        }
     }
 }

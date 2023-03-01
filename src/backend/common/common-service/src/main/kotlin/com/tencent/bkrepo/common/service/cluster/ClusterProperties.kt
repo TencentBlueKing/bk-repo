@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.service.cluster
 
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
@@ -61,5 +62,5 @@ data class ClusterProperties(
     /**
      * 组网方式
      */
-    var architecture: String = "center"
+    var architecture: ClusterArchitecture = ClusterArchitecture.STANDALONE
 )

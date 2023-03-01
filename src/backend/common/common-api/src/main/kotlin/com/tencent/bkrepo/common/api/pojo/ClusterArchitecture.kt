@@ -25,34 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl.center
+package com.tencent.bkrepo.common.api.pojo
 
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
-import com.tencent.bkrepo.repository.service.repo.QuotaService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-
-abstract class CenterNodeBaseService(
-    override val nodeDao: NodeDao,
-    override val repositoryDao: RepositoryDao,
-    override val fileReferenceService: FileReferenceService,
-    override val storageCredentialService: StorageCredentialService,
-    override val storageService: StorageService,
-    override val quotaService: QuotaService,
-    override val repositoryProperties: RepositoryProperties,
-    override val messageSupplier: MessageSupplier,
-) : NodeBaseService(
-    nodeDao,
-    repositoryDao,
-    fileReferenceService,
-    storageCredentialService,
-    storageService,
-    quotaService,
-    repositoryProperties,
-    messageSupplier
-)
+/**
+ * 集群组网方式
+ */
+enum class ClusterArchitecture {
+    STANDALONE,
+    PROXY,
+    STAR
+}

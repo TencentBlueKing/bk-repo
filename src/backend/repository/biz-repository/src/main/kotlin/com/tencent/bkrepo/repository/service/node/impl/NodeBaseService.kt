@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -38,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
@@ -85,7 +83,6 @@ abstract class NodeBaseService(
     open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
-    open val clusterProperties: ClusterProperties
 ) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
@@ -287,7 +284,7 @@ abstract class NodeBaseService(
     /**
      * 校验仓库是否存在
      */
-    private fun checkRepo(projectId: String, repoName: String): TRepository {
+    open fun checkRepo(projectId: String, repoName: String): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }
@@ -298,9 +295,7 @@ abstract class NodeBaseService(
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            if (!node.isLocalRegion()) {
-                throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
-            }
+            node.checkLocalRegion()
             val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = NodeQueryHelper.nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
@@ -327,7 +322,7 @@ abstract class NodeBaseService(
         }
     }
 
-    fun doCreate(node: TNode, repository: TRepository? = null): TNode {
+    open fun doCreate(node: TNode, repository: TRepository? = null): TNode {
         try {
             nodeDao.insert(node)
             if (!node.folder) {
@@ -378,7 +373,7 @@ abstract class NodeBaseService(
         return nodes
     }
 
-    private fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
+    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -389,9 +384,6 @@ abstract class NodeBaseService(
                 } else {
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    if (!existNode.isLocalRegion()) {
-                        throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
-                    }
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
                 }
             } else {
