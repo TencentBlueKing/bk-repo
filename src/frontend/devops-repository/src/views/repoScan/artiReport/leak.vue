@@ -15,7 +15,7 @@
                 v-model="filter.severity"
                 :placeholder="$t('vulnerabilityLevel')"
                 @change="handlerPaginationChange()">
-                <bk-option v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="name"></bk-option>
+                <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
             </bk-select>
             <div class="flex-1 flex-end-center">
                 <bk-button theme="default" @click="$emit('rescan')">{{$t('rescan')}}</bk-button>
@@ -57,7 +57,7 @@
             <bk-table-column :label="$t('vulnerability') + 'ID'" prop="vulId" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('vulnerabilityLevel')">
                 <template #default="{ row }">
-                    <div class="status-sign" :class="row.severity" :data-name="leakLevelEnum[row.severity]"></div>
+                    <div class="status-sign" :class="row.severity" :data-name="$t(`leakLevelEnum.${row.severity}`)"></div>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('dependPackage')" prop="pkgName" show-overflow-tooltip></bk-table-column>

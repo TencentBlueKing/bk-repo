@@ -22,9 +22,9 @@
             <div style="color:var(--fontSubsidiaryColor);">{{$t('vulnerabilityStatistics')}}</div><div></div>
             <div class="status-sign"
                 :class="id"
-                v-for="[id, name] in Object.entries(leakLevelEnum)"
+                v-for="[id] in Object.entries(leakLevelEnum)"
                 :key="id"
-                :data-name="`${name}` + $t('vulnerability') + `:${segmentNumberThree(subtaskOverview[id.toLowerCase()])}`">
+                :data-name="$t(`leakLevelEnum.${id}`) + $t('space') + $t('vulnerability') + `:${segmentNumberThree(subtaskOverview[id.toLowerCase()])}`">
             </div>
         </div>
     </div>
