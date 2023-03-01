@@ -28,24 +28,20 @@
 package com.tencent.bkrepo.fs.server.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.service.BlockNodeService
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.withContext
 
 class CoStorageManager(
     private val blockNodeService: BlockNodeService,
-    private val storageService: StorageService,
-    private val rRepositoryClient: RRepositoryClient
+    private val storageService: StorageService
 ) {
 
     suspend fun storeBlock(artifactFile: ArtifactFile, blockNode: TBlockNode) {
@@ -55,26 +51,7 @@ class CoStorageManager(
             val storageCredentials = repo.storageCredentials
             val stored = storageService.store(digest, artifactFile, storageCredentials)
             try {
-                blockNodeService.createBlock(blockNode, repo)
-            } catch (e: Exception) {
-                if (stored > 1) {
-                    storageService.delete(digest, storageCredentials)
-                }
-                throw e
-            }
-        }
-    }
-
-    suspend fun storeNode(
-        artifactFile: ArtifactFile,
-        nodeCreateRequest: NodeCreateRequest,
-        storageCredentials: StorageCredentials?
-    ): NodeDetail? {
-        return withContext(Dispatchers.IO) {
-            val digest = artifactFile.getFileSha256()
-            val stored = storageService.store(digest, artifactFile, storageCredentials)
-            try {
-                rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data
+                blockNodeService.createBlock(blockNode, storageCredentials)
             } catch (e: Exception) {
                 if (stored > 1) {
                     storageService.delete(digest, storageCredentials)
@@ -85,12 +62,12 @@ class CoStorageManager(
     }
 
     suspend fun loadArtifactInputStream(
-        digest: String,
+        blocks: List<RegionResource>,
         range: Range,
         storageCredentials: StorageCredentials?
-    ): InputStream? {
+    ): ArtifactInputStream? {
         return withContext(Dispatchers.IO) {
-            storageService.load(digest, range, storageCredentials)
+            storageService.load(blocks, range, storageCredentials)
         }
     }
 }

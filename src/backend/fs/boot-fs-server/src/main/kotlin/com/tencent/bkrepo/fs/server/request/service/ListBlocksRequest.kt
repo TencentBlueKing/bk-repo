@@ -25,8 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.exception
+package com.tencent.bkrepo.fs.server.request.service
 
-import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
+import com.tencent.bkrepo.fs.server.request.NodeRequest
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.queryParamOrNull
 
-class BlockNodeNotFoundException(fullPath: String) : NotFoundException(FSMessageCode.BLOCK_NODE_NOT_FOUND, fullPath)
+class ListBlocksRequest(request: ServerRequest) : NodeRequest(request) {
+    val startPos: Long
+    val endPos: Long
+    val path: String
+    init {
+        startPos = request.queryParamOrNull("startPos")?.toLong() ?: throw ParameterInvalidException(
+            "required length parameter."
+        )
+        endPos = request.queryParamOrNull("endPos")?.toLong() ?: throw ParameterInvalidException(
+            "required length parameter."
+        )
+        path = request.queryParamOrNull("path") ?: throw ParameterInvalidException(
+            "required length parameter."
+        )
+    }
+}

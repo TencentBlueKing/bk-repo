@@ -84,4 +84,6 @@ const val REPLICATION_SERVICE_NAME = "\${service.prefix:}replication\${service.s
 const val SCANNER_SERVICE_NAME = "\${service.prefix:}analyst\${service.suffix:}"
 const val ANALYSIS_EXECUTOR_SERVICE_NAME = "\${service.prefix:}analysis-executor\${service.suffix:}"
 const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
+const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
+const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"

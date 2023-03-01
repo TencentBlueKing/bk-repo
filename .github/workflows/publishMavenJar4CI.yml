@@ -40,7 +40,7 @@ jobs:
           ./gradlew publishAllPublicationsToAllJarRepository -Drepo_version=${repo_version} \
           -PallJarRepo=${MAVEN_REPO_DEPLOY_URL} \
           -PallJarUsername=${SONATYPE_USERNAME} \
-          -PallJarPassword='${SONATYPE_PASSWORD}'
+          -PallJarPassword=${SONATYPE_PASSWORD}
       - name: Clean Up
         if: ${{ always() }}
         working-directory:

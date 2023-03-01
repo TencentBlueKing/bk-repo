@@ -33,6 +33,16 @@ import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.LoggerFactory
+import org.springframework.core.io.buffer.DataBuffer
+import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.core.io.buffer.DefaultDataBufferFactory
+import reactor.core.publisher.BaseSubscriber
+import reactor.core.publisher.Mono
+import reactor.core.publisher.Sinks
+import reactor.core.scheduler.Schedulers
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
@@ -40,12 +50,6 @@ import java.nio.channels.AsynchronousFileChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import kotlinx.coroutines.reactive.awaitSingle
-import org.slf4j.LoggerFactory
-import org.springframework.core.io.buffer.DataBuffer
-import org.springframework.core.io.buffer.DataBufferUtils
-import org.springframework.core.io.buffer.DefaultDataBufferFactory
-import reactor.core.publisher.Mono
 
 class AsynchronousReceiver(
     receiveProperties: ReceiveProperties,
@@ -85,6 +89,25 @@ class AsynchronousReceiver(
      */
     private var endTime = 0L
 
+    /**
+     * 用于异步计算摘要的流
+     * */
+    private val digestStream = Sinks
+        .many()
+        .unicast()
+        .onBackpressureBuffer<ByteArray>()
+
+    /**
+     * 异步计算摘要执行结果
+     * */
+    val digestResult = Sinks.one<Void>()
+
+    init {
+        digestStream.asFlux()
+            .publishOn(Schedulers.boundedElastic())
+            .subscribe(DigestSubscriber())
+    }
+
     suspend fun receive(buffer: DataBuffer) {
         if (startTime == 0L) {
             startTime = System.nanoTime()
@@ -119,7 +142,7 @@ class AsynchronousReceiver(
         val len = buffer.readableByteCount()
         val digestArray = ByteArray(len)
         buffer.read(digestArray)
-        listener.data(digestArray, 0, len)
+        digestStream.tryEmitNext(digestArray)
     }
 
     override fun unhealthy(fallbackPath: Path?, reason: String?) {
@@ -143,11 +166,12 @@ class AsynchronousReceiver(
         }
     }
 
-    fun finish(): Throughput {
+    suspend fun finish(): Throughput {
         try {
+            digestStream.tryEmitComplete()
+            digestResult.asMono().awaitSingleOrNull()
             endTime = System.nanoTime()
             finished = true
-            listener.finished()
             return Throughput(pos, endTime - startTime)
         } finally {
             if (!inMemory) {
@@ -177,6 +201,21 @@ class AsynchronousReceiver(
             return it.inputStream()
         }
         return ByteArrayInputStream(cache, 0, pos.toInt())
+    }
+
+    private inner class DigestSubscriber : BaseSubscriber<ByteArray>() {
+        override fun hookOnNext(value: ByteArray) {
+            listener.data(value, 0, value.size)
+        }
+
+        override fun hookOnComplete() {
+            listener.finished()
+            digestResult.tryEmitEmpty()
+        }
+
+        override fun hookOnError(throwable: Throwable) {
+            digestResult.tryEmitError(throwable)
+        }
     }
 
     companion object {

@@ -4,6 +4,9 @@ const PREFIX_SCAN = '/analyst/api/scan'
 const PREFIX_SCANNER = '/analyst/api/scanners'
 const PREFIX_PROJECT_SCAN_CONFIGURATION = `${PREFIX_SCAN}/configurations`
 
+export const SCANNER_DISPATCHER_K8S = 'k8s'
+export const SCANNER_DISPATCHER_DOCKER = 'docker'
+
 export const SCANNER_TYPE_STANDARD = 'standard'
 export const SCANNER_TYPE_ARROWHEAD = 'arrowhead'
 export const SCANNER_TYPE_TRIVY = 'trivy'
@@ -18,6 +21,8 @@ export const scanTypes = [
   SCAN_TYPE_LICENSE,
   SCAN_TYPE_SENSITIVE
 ]
+
+export const dispatchers = [SCANNER_DISPATCHER_K8S, SCANNER_DISPATCHER_DOCKER]
 
 export function createScanner(scanner) {
   return request({

@@ -25,20 +25,54 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.listener
+package com.tencent.bkrepo.common.storage.core.overlay
 
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.storage.pojo.RegionResource
+import java.io.InputStream
 
-data class NodeFlushEvent(
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val size: Long,
-    val md5: String?,
-    val repositoryDetail: RepositoryDetail,
-    val userId: String
-) {
-    override fun toString(): String {
-        return "$projectId/$repoName/$fullPath"
+class OverlayArtifactFileInputStream(
+    fileRanges: List<RegionResource>,
+    val loader: (RegionResource) -> InputStream
+) : InputStream() {
+
+    private val it = fileRanges.iterator()
+    private var delegate: InputStream = next()
+
+    override fun read(): Int {
+        val read = delegate.read()
+        if (read == -1) {
+            // 更新到下一条流
+            if (moveToNextInputStream()) {
+                return read()
+            }
+        }
+        return read
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        val read = delegate.read(b, off, len)
+        if (read == -1) {
+            if (moveToNextInputStream()) {
+                return read(b, off, len)
+            }
+        }
+        return read
+    }
+
+    private fun moveToNextInputStream(): Boolean {
+        if (this.hasNext()) {
+            delegate = next()
+            return true
+        }
+        return false
+    }
+
+    private fun hasNext(): Boolean {
+        return it.hasNext()
+    }
+
+    private fun next(): InputStream {
+        val fileRange = it.next()
+        return loader(fileRange)
     }
 }

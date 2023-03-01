@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.filter
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -50,11 +51,19 @@ class AuthHandlerFilterFunction(
         if (request.path().startsWith("/login")) {
             return next(request)
         }
-        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
-            ?: throw AuthenticationException("missing token.")
+        var user = ANONYMOUS_USER
+        val token = if (request.path().startsWith("/service")) {
+            request.headers().header("X-BKREPO-MS-UID").firstOrNull()?.let {
+                user = it
+            }
+            request.headers().header("X-BKREPO-SECURITY-TOKEN").firstOrNull()
+        } else {
+            request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+        } ?: throw AuthenticationException("missing token.")
+
         try {
             val jws = securityManager.validateToken(token)
-            request.exchange().attributes[USER_KEY] = jws.body.subject
+            request.exchange().attributes[USER_KEY] = jws.body.subject ?: user
             return next(request)
         } catch (exception: ExpiredJwtException) {
             throw AuthenticationException("Expired token")

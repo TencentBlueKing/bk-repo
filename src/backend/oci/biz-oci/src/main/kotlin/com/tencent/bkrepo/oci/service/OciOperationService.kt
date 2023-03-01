@@ -112,6 +112,14 @@ interface OciOperationService {
     )
 
     /**
+     * 在先上传manifest.json，后上传blob的情况下，等所有blob上传成功后更新对应的package
+     */
+    fun createPackageForThirdPartyImage(
+        ociArtifactInfo: OciManifestArtifactInfo,
+        manifestPath: String,
+    ): Boolean
+
+    /**
      * 当使用追加上传时，文件已存储，只需存储节点信息
      */
     fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail

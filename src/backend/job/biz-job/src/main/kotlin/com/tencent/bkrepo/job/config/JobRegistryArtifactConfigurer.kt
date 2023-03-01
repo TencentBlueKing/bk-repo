@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,53 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.file
+package com.tencent.bkrepo.job.config
 
-import java.io.InputStream
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.core.annotation.Order
+import org.springframework.stereotype.Component
 
-class MultiArtifactFileInputStream(
-    private val fileRanges: List<FileRange>,
-    val loader: (FileRange) -> InputStream
-) : InputStream() {
+@Component
+@Order(1)
+class JobRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
 
-    private val it = fileRanges.iterator()
-    private var delegate: InputStream = next()
+    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
-    override fun read(): Int {
-        val read = delegate.read()
-        if (read == -1) {
-            // 更新到下一条流
-            if (moveToNextInputStream()) {
-                return read()
-            }
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/job")
         }
-        return read
-    }
-
-    override fun read(b: ByteArray, off: Int, len: Int): Int {
-        val read = delegate.read(b, off, len)
-        if (read == -1) {
-            if (moveToNextInputStream()) {
-                return read(b, off, len)
-            }
-        }
-        return read
-    }
-
-    private fun moveToNextInputStream(): Boolean {
-        if (this.hasNext()) {
-            delegate = next()
-            return true
-        }
-        return false
-    }
-
-    private fun hasNext(): Boolean {
-        return it.hasNext()
-    }
-
-    private fun next(): InputStream {
-        val fileRange = it.next()
-        return loader(fileRange)
     }
 }

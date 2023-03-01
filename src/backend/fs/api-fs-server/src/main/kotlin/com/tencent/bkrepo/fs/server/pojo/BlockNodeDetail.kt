@@ -25,9 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server
+package com.tencent.bkrepo.fs.server.pojo
 
-const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
+import java.time.LocalDateTime
 
-const val JWT_CLAIMS_REPOSITORY = "repository"
-const val JWT_CLAIMS_PERMIT = "permit"
+data class BlockNodeDetail(
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    val nodeFullPath: String,
+    val startPos: Long,
+    var sha256: String,
+    val projectId: String,
+    val repoName: String,
+    val size: Long,
+    val endPos: Long
+)

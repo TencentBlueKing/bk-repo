@@ -60,7 +60,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^(\/[^\\:*?"<>|]{1,50})+$/,
+                            regex: /^(\/[^\\:*?"<>|]{1,255})+$/,
                             message: this.$t('folderPathPlacehodler'),
                             trigger: 'blur'
                         }
@@ -72,7 +72,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^([^\\/:*?"<>|]){1,50}$/,
+                            regex: /^([^\\/:*?"<>|]){1,255}$/,
                             message: this.$t('folderNamePlaceholder'),
                             trigger: 'blur'
                         }
@@ -109,10 +109,15 @@
                     ...data
                 }
                 if (data.type === 'scan') {
+                    let fileNameExt = ''
+                    const lastIndexOfDot = this.genericForm.path.lastIndexOf('.')
+                    if (lastIndexOfDot !== -1) {
+                        fileNameExt = this.genericForm.path.substring(lastIndexOfDot + 1)
+                    }
                     this.getScanAll({
                         projectId: this.projectId,
                         type: 'GENERIC',
-                        fileNameExt: this.genericForm.path.substr(this.genericForm.path.lastIndexOf('.') + 1)
+                        fileNameExt: fileNameExt
                     }).then(res => {
                         this.scanList = res
                     })
