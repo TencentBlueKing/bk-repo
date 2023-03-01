@@ -213,7 +213,8 @@ class ScanTaskServiceImpl(
             logger.info("Failed to checkSubtaskPermission: ", e)
             permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
         }
-        return Converter.convert(subtask)
+        val scanTypes = subtask.planId?.let { scanPlanDao.findById(it) }?.scanTypes ?: emptyList()
+        return Converter.convert(subtask, scanTypes)
     }
 
     private fun subtasks(request: SubtaskInfoRequest, subtaskDao: AbsSubScanTaskDao<*>): Page<SubtaskInfo> {

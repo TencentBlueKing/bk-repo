@@ -118,7 +118,7 @@ object Converter {
         }
     }
 
-    fun convert(subScanTask: SubScanTaskDefinition): SubtaskResultOverview {
+    fun convert(subScanTask: SubScanTaskDefinition, scanTypes: List<String>): SubtaskResultOverview {
         return with(subScanTask) {
             val critical = getCveCount(Level.CRITICAL.levelName, subScanTask)
             val high = getCveCount(Level.HIGH.levelName, subScanTask)
@@ -130,6 +130,7 @@ object Converter {
                 subTaskId = subScanTask.id!!,
                 scanner = scanner,
                 scannerType = scannerType,
+                scanTypes = scanTypes,
                 name = artifactName,
                 packageKey = packageKey,
                 version = version,
