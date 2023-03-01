@@ -44,7 +44,7 @@
                     </template>
                     <div class="leak-title">{{ row.title }}</div>
                     <div class="leak-tip">{{ row.description || '/' }}</div>
-                    <div class="leak-title">{{$t('fixSuggestion')}}}</div>
+                    <div class="leak-title">{{$t('fixSuggestion')}}</div>
                     <div class="leak-tip">{{ row.officialSolution || '/' }}</div>
                     <template v-if="row.reference && row.reference.length">
                         <div class="leak-title">{{ $t('relatedInfo') }}</div>
