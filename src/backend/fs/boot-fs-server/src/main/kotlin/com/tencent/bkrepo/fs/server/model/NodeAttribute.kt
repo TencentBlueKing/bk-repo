@@ -6,7 +6,7 @@ data class NodeAttribute(
     val mode: Int
 ) {
     companion object {
-        const val DEFAULT_MODE = 700
+        const val DEFAULT_MODE = 644
         const val NOBODY = "nobody"
     }
 }
