@@ -16,7 +16,7 @@
                 <div class="pt10 pb10 pl20 pr20">
                     <bk-input
                         v-model.trim="importantSearch"
-                        placeholder="请输入关键字，按Enter键搜索"
+                        :placeholder="$t('keySearchPlaceHolder')"
                         clearable
                         right-icon="bk-icon icon-search"
                         @enter="searchFile"
@@ -37,8 +37,8 @@
                             v-if="item.roadMap === selectedTreeNode.roadMap"
                             :list="[
                                 item.roadMap !== '0' && { clickEvent: () => showDetail(item), label: $t('detail') },
-                                permission.write && repoName !== 'pipeline' && { clickEvent: () => addFolder(item), label: '新建文件夹' },
-                                permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item), label: '上传文件' }
+                                permission.write && repoName !== 'pipeline' && { clickEvent: () => addFolder(item), label: $t('createFolder') },
+                                permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item), label: $t('uploadFile') }
                             ]">
                         </operation-list>
                     </template>
@@ -55,7 +55,7 @@
                         class="w250"
                         v-if="searchFileName"
                         v-model.trim="importantSearch"
-                        placeholder="请输入关键字，按Enter键搜索"
+                        :placeholder="$t('keySearchPlaceHolder')"
                         clearable
                         right-icon="bk-icon icon-search"
                         @enter="searchFile"
@@ -66,7 +66,7 @@
                         <bk-button
                             v-if="multiSelect.length"
                             @click="handlerMultiDelete()">
-                            批量删除
+                            {{ $t('batchDeletion') }}
                         </bk-button>
                         <bk-button class="ml10"
                             @click="getArtifactories">
@@ -146,10 +146,10 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: '扫描制品' }
+                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanProduct') }
                                         ] : [])
                                     ] : []),
-                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
+                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
                                     permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
@@ -331,11 +331,11 @@
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {
                     case 'SCANNING':
-                        return '制品正在扫描中'
+                        return this.$t('forbidTip1')
                     case 'QUALITY_UNPASS':
-                        return '制品扫描质量规则未通过'
+                        return this.$t('forbidTip2')
                     case 'MANUAL':
-                        return `${this.userList[forbidUser]?.name || forbidUser} 手动禁止`
+                        return `${this.userList[forbidUser]?.name || forbidUser}` + this.$t('manualBan')
                     default:
                         return ''
                 }
@@ -384,7 +384,7 @@
                     if (!child) {
                         this.$bkMessage({
                             theme: 'error',
-                            message: '文件路径不存在'
+                            message: this.$t('filePathErrTip')
                         })
                         return
                     }
@@ -558,7 +558,7 @@
                 this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: '扫描制品',
+                    title: this.$t('scanProduct'),
                     type: 'scan',
                     id: '',
                     name,
@@ -596,7 +596,7 @@
                 this.$confirm({
                     theme: 'danger',
                     message: `${this.$t('confirm') + this.$t('delete')}${folder ? this.$t('folder') : this.$t('file')} ${name} ？`,
-                    subMessage: `${folder && totalRecords ? `当前文件夹下存在${totalRecords}个文件` : ''}`,
+                    subMessage: `${folder && totalRecords ? this.$t('totalFilesMsg', [totalRecords]) : ''}`,
                     confirmFn: () => {
                         return this.deleteArtifactory({
                             projectId: this.projectId,
@@ -661,7 +661,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (forbidStatus ? '解除禁止' : '禁止使用') + this.$t('success')
+                        message: (forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.getArtifactories()
                 })
@@ -690,8 +690,8 @@
                 })
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认批量删除已选中的 ${this.multiSelect.length} 项？`,
-                    subMessage: `选中文件夹和文件共计包含 ${totalRecords} 个文件`,
+                    message: this.$t('batchDeleteMsg', [this.multiSelect.length]),
+                    subMessage: this.$t('batchDeleteSubMsg', [totalRecords]),
                     confirmFn: () => {
                         return this.deleteMultiArtifactory({
                             projectId: this.projectId,
@@ -701,7 +701,7 @@
                             this.refreshNodeChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         })
                     }

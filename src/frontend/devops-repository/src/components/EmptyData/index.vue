@@ -21,11 +21,15 @@
             },
             title: {
                 type: String,
-                default: '暂无数据'
+                default () {
+                    return this.$t('No Data')
+                }
             },
             searchTitle: {
                 type: String,
-                default: '搜索结果为空'
+                default () {
+                    return this.$t('Search Result Is Empty')
+                }
             },
             subTitle: String,
             isLoading: {

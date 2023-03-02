@@ -12,19 +12,19 @@
         </div>
         <div v-if="subtaskOverview.qualityRedLine !== null" class="arti-quality">
             <div class="flex-align-center">
-                <span class="mr20" style="color:var(--fontSubsidiaryColor);">质量规则</span>
-                <span v-if="subtaskOverview.qualityRedLine" class="repo-tag SUCCESS">通过</span>
-                <span v-else class="repo-tag FAILED">不通过</span>
+                <span class="mr20" style="color:var(--fontSubsidiaryColor);">{{ $t('qualityRules')}}</span>
+                <span v-if="subtaskOverview.qualityRedLine" class="repo-tag SUCCESS">{{$t('pass')}}</span>
+                <span v-else class="repo-tag FAILED">{{$t('notPass')}}}</span>
             </div>
             <div v-for="item in qualityRules" :key="item">{{ item }}</div>
         </div>
         <div class="arti-leak" v-if="scanTypes.includes(SCAN_TYPE_SECURITY)">
-            <div style="color:var(--fontSubsidiaryColor);">漏洞数量统计</div><div></div>
+            <div style="color:var(--fontSubsidiaryColor);">{{$t('vulnerabilityStatistics')}}</div><div></div>
             <div class="status-sign"
                 :class="id"
-                v-for="[id, name] in Object.entries(leakLevelEnum)"
+                v-for="[id] in Object.entries(leakLevelEnum)"
                 :key="id"
-                :data-name="`${name}漏洞：${segmentNumberThree(subtaskOverview[id.toLowerCase()])}`">
+                :data-name="$t(`leakLevelEnum.${id}`) + $t('space') + $t('vulnerability') + `:${segmentNumberThree(subtaskOverview[id.toLowerCase()])}`">
             </div>
         </div>
     </div>
@@ -50,17 +50,17 @@
         computed: {
             artifactInfo () {
                 const info = [
-                    { label: '持续时间', value: this.subtaskOverview.duration },
-                    { label: '完成时间', value: this.subtaskOverview.finishTime },
-                    { label: '所属仓库', value: this.subtaskOverview.repoName }
+                    { label: this.$t('duration'), value: this.subtaskOverview.duration },
+                    { label: this.$t('finishTime'), value: this.subtaskOverview.finishTime },
+                    { label: this.$t('repo'), value: this.subtaskOverview.repoName }
                 ]
                 if (this.subtaskOverview.packageKey) {
                     info.push(
-                        { label: '制品名称', value: this.subtaskOverview.packageKey },
-                        { label: '制品版本', value: this.subtaskOverview.version }
+                        { label: this.$t('productName'), value: this.subtaskOverview.packageKey },
+                        { label: this.$t('productVersion'), value: this.subtaskOverview.version }
                     )
                 } else {
-                    info.push({ label: '存储路径', value: this.subtaskOverview.fullPath })
+                    info.push({ label: this.$t('storagePath'), value: this.subtaskOverview.fullPath })
                 }
                 return info
             },
@@ -71,14 +71,14 @@
                     Object.keys(leakLevelEnum).forEach(level => {
                         const count = scanQuality[level.toLowerCase()]
                         if (count) {
-                            rules.push(`${leakLevelEnum[level]}漏洞总数 ≦ ${count}`)
+                            rules.push(this.$t(`leakLevelEnum.${level}`) + this.$t('totalNumVulnerability') + ` ≦ ${count}`)
                         }
                     })
 
                     const licenseRule = {
-                        recommend: '仅有推荐使用的许可证',
-                        compliance: '仅有合规的许可证',
-                        unknown: '无未知许可证'
+                        recommend: this.$t('recommendLicenseRule'),
+                        compliance: this.$t('compliantLicenseRule'),
+                        unknown: this.$t('unknownLicenseRule')
                     }
                     Object.keys(licenseRule).forEach(k => {
                         if (scanQuality[k]) {

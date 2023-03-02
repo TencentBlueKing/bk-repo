@@ -1,22 +1,22 @@
 <template>
     <canway-dialog
         v-model="editProjectDialog.show"
-        :title="editProjectDialog.add ? '新建项目' : '编辑项目'"
+        :title="editProjectDialog.add ? $t('createProject') : $t('editProject')"
         width="500"
         height-num="354"
         @cancel="editProjectDialog.show = false">
         <bk-form class="ml10 mr10" :label-width="75" :model="editProjectDialog" :rules="rules" ref="projectInfoForm">
-            <bk-form-item label="项目标识" :required="true" property="id" error-display-type="normal">
+            <bk-form-item :label="$t('projectId')" :required="true" property="id" error-display-type="normal">
                 <bk-input v-model.trim="editProjectDialog.id"
                     :disabled="!editProjectDialog.add" maxlength="100"
                     show-word-limit
-                    placeholder="请输入2-100字符的小写字母、数字、-、_组合，以字母开头">
+                    :placeholder="$t('numCharacterTip')">
                 </bk-input>
             </bk-form-item>
-            <bk-form-item label="项目名称" :required="true" property="name" error-display-type="normal">
+            <bk-form-item :label="$t('projectName')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="editProjectDialog.name" maxlength="100" show-word-limit></bk-input>
             </bk-form-item>
-            <bk-form-item label="项目描述" property="description">
+            <bk-form-item :label="$t('projectDescription')" property="description">
                 <bk-input type="textarea" v-model.trim="editProjectDialog.description" maxlength="200" show-word-limit></bk-input>
             </bk-form-item>
         </bk-form>
@@ -44,29 +44,29 @@
                     id: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + '项目标识',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('projectId'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^[a-z][a-z0-9_-]{1,99}$/,
-                            message: '请输入2-100字符的小写字母、数字、-、_组合，以字母开头',
+                            message: this.$t('numCharacterTip'),
                             trigger: 'blur'
                         },
                         {
                             validator: id => this.asynCheck({ id }),
-                            message: '项目标识已存在',
+                            message: this.$t('projectId') + this.$t('space') + this.$t('exist'),
                             trigger: 'blur'
                         }
                     ],
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + '项目名称',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('projectName'),
                             trigger: 'blur'
                         },
                         {
                             validator: name => this.asynCheck({ name }),
-                            message: '项目名称已存在',
+                            message: this.$t('projectName') + this.$t('space') + this.$t('exist'),
                             trigger: 'blur'
                         }
                     ]
@@ -109,7 +109,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (this.editProjectDialog.add ? '新建项目' : '编辑项目') + this.$t('success')
+                        message: (this.editProjectDialog.add ? this.$t('createProject') : this.$t('editProject')) + this.$t('space') + this.$t('success')
                     })
                     this.editProjectDialog.show = false
                     this.getProjectList()

@@ -15,7 +15,6 @@
 </template>
 <script>
     import {
-        leakLevelEnum,
         SCAN_TYPE_LICENSE,
         SCAN_TYPE_SECURITY,
         SCAN_TYPE_SENSITIVE
@@ -32,9 +31,9 @@
         data () {
             return {
                 allPanels: {
-                    [SCAN_TYPE_SECURITY]: { name: SCAN_TYPE_SECURITY, label: '安全漏洞', count: 10, component: 'leak-component' },
-                    [SCAN_TYPE_LICENSE]: { name: SCAN_TYPE_LICENSE, label: '许可证', count: 10, component: 'license-component' },
-                    [SCAN_TYPE_SENSITIVE]: { name: SCAN_TYPE_SENSITIVE, label: '敏感信息', count: 10, component: 'sensitive-component' }
+                    [SCAN_TYPE_SECURITY]: { name: SCAN_TYPE_SECURITY, label: this.$t('securityHole'), count: 10, component: 'leak-component' },
+                    [SCAN_TYPE_LICENSE]: { name: SCAN_TYPE_LICENSE, label: this.$t('license'), count: 10, component: 'license-component' },
+                    [SCAN_TYPE_SENSITIVE]: { name: SCAN_TYPE_SENSITIVE, label: this.$t('sensitiveInfo'), count: 10, component: 'sensitive-component' }
                 },
                 scanTypes: [],
                 panels: [],
@@ -69,7 +68,7 @@
                 this.panels = res.scanTypes.map(scanType => this.allPanels[scanType])
                 this.subtaskOverview = {
                     ...res,
-                    highestLeakLevel: leakLevelEnum[res.highestLeakLevel],
+                    highestLeakLevel: this.$t(`leakLevelEnum.${res.highestLeakLevel}`),
                     duration: formatDuration(res.duration / 1000),
                     finishTime: formatDate(res.finishTime)
                 }
@@ -89,7 +88,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: '已添加到扫描队列'
+                        message: this.$t('scanArtMsg')
                     })
                     this.back()
                 })

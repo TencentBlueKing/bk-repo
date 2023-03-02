@@ -5,7 +5,7 @@
                 class="search-group"
                 clearable
                 v-model="searchGroup"
-                placeholder="按下Enter键搜索"
+                :placeholder="$t('enterSearch')"
                 :show-condition="false"
                 :data="searchGroupList"
                 @change="handlerSearchSelectChange()"
@@ -15,10 +15,10 @@
             <bk-select
                 class="ml10 w250"
                 v-model="status"
-                placeholder="同步状态"
+                :placeholder="$t('syncStatus')"
                 @change="handlerSearchSelectChange()">
-                <bk-option id="SUCCESS" name="成功"></bk-option>
-                <bk-option id="FAILED" name="失败"></bk-option>
+                <bk-option id="SUCCESS" :name="$t('success')"></bk-option>
+                <bk-option id="FAILED" :name="$t('fail')"></bk-option>
             </bk-select>
         </div>
         <bk-table
@@ -31,38 +31,38 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(searchGroup.length || status)"></empty-data>
             </template>
-            <bk-table-column label="同步节点" show-overflow-tooltip>
+            <bk-table-column :label="$t('syncNode')" show-overflow-tooltip>
                 <template #default="{ row }">{{ `${masterNode.name} - ${row.remoteCluster}` }}</template>
             </bk-table-column>
-            <bk-table-column label="同步仓库" show-overflow-tooltip>
+            <bk-table-column :label="$t('synchronizeRepository')" show-overflow-tooltip>
                 <template #default="{ row }">
                     <Icon class="table-svg" size="16" :name="row.repoType.toLowerCase()" />
                     <span class="ml5">{{ row.localRepoName }}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="同步状态" width="90">
+            <bk-table-column :label="$t('syncStatus')" width="90">
                 <template #default="{ row }">
-                    <div class="status-sign" :class="row.status" :data-name="asyncPlanStatusEnum[row.status] || '未执行'"></div>
+                    <div class="status-sign" :class="row.status" :data-name="$t(`asyncPlanStatusEnum.${row.status}`) || $t('notExecuted')"></div>
                 </template>
             </bk-table-column>
             <template v-if="logDetail.replicaType === 'REAL_TIME' || logDetail.replicaObjectType !== 'REPOSITORY'">
-                <bk-table-column label="制品名称 / 文件路径" show-overflow-tooltip>
+                <bk-table-column :label="$t('productName') + '/' + $t('filePath')" show-overflow-tooltip>
                     <template #default="{ row }">{{ row.packageKey || row.path || '/' }}</template>
                 </bk-table-column>
-                <bk-table-column label="版本" show-overflow-tooltip>
+                <bk-table-column :label="$t('version')" show-overflow-tooltip>
                     <template #default="{ row }">{{ (row.versions || ['/']).join('、') }}</template>
                 </bk-table-column>
             </template>
-            <bk-table-column label="开始时间" width="150">
+            <bk-table-column :label="$t('startTime')" width="150">
                 <template #default="{ row }">{{formatDate(row.startTime)}}</template>
             </bk-table-column>
-            <bk-table-column label="结束时间" width="150">
+            <bk-table-column :label="$t('endTime')" width="150">
                 <template #default="{ row }">{{formatDate(row.endTime)}}</template>
             </bk-table-column>
-            <bk-table-column label="成功数量" prop="success"></bk-table-column>
-            <bk-table-column label="跳过数量" prop="skip"></bk-table-column>
-            <bk-table-column label="失败数量" prop="failed"></bk-table-column>
-            <bk-table-column label="备注" show-overflow-tooltip>
+            <bk-table-column :label="$t('successNum')" prop="success"></bk-table-column>
+            <bk-table-column :label="$t('skipNum')" prop="skip"></bk-table-column>
+            <bk-table-column :label="$t('failNum')" prop="failed"></bk-table-column>
+            <bk-table-column :label="$t('note')" show-overflow-tooltip>
                 <template #default="{ row }">{{row.errorReason || '/'}}</template>
             </bk-table-column>
         </bk-table>
@@ -109,10 +109,10 @@
             },
             searchGroupList () {
                 return [
-                    { name: '节点名称', id: 'clusterName' },
-                    { name: '仓库名称', id: 'repoName' },
-                    ...(this.logDetail.replicaObjectType === 'PACKAGE' ? [{ name: '制品名称', id: 'packageName' }] : []),
-                    ...(this.logDetail.replicaObjectType === 'PATH' ? [{ name: '文件路径', id: 'path' }] : [])
+                    { name: this.$t('nodeName'), id: 'clusterName' },
+                    { name: this.$t('repoName'), id: 'repoName' },
+                    ...(this.logDetail.replicaObjectType === 'PACKAGE' ? [{ name: this.$t('productName'), id: 'packageName' }] : []),
+                    ...(this.logDetail.replicaObjectType === 'PATH' ? [{ name: this.$t('filePath'), id: 'path' }] : [])
                 ]
             }
         },

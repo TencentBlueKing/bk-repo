@@ -5,7 +5,7 @@
             v-model="selectedRepoName"
             searchable
             :disabled="disabled"
-            placeholder="请选择源仓库"
+            :placeholder="$t('selectRepoPlaceHolder')"
             @change="pathConstraints = []">
             <bk-option-group
                 v-for="(list, type) in repoGroupList"
@@ -19,7 +19,8 @@
                 </bk-option>
             </bk-option-group>
         </bk-select>
-        <bk-button v-show="!disabled && selectedRepoName" class="mt10" icon="plus" @click="showAddDialog = true">添加文件路径</bk-button>
+        <bk-button v-show="!disabled && selectedRepoName" class="mt10" icon="plus" @click="showAddDialog = true">
+            {{ $t('addFilePath') }}</bk-button>
         <div class="mt10 path-list" v-show="pathConstraints.length">
             <div class="pl10 pr10 path-item flex-between-center" v-for="(path, ind) in pathConstraints" :key="path">
                 <span class="path-name text-overflow" :title="path">{{ path }}</span>

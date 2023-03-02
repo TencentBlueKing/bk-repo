@@ -1,10 +1,10 @@
 <template>
     <main class="create-node-container" v-bkloading="{ isLoading }">
         <bk-form class="mb20 plan-form" :label-width="100" :model="planForm" :rules="rules" ref="planForm">
-            <bk-form-item label="计划名称" :required="true" property="name" error-display-type="normal">
+            <bk-form-item :label="$t('planName')" :required="true" property="name" error-display-type="normal">
                 <bk-input class="w480" v-model.trim="planForm.name" maxlength="32" show-word-limit :disabled="disabled"></bk-input>
             </bk-form-item>
-            <bk-form-item label="同步策略"
+            <bk-form-item :label="$t('synchronizationPolicy')"
                 :property="{ 'SPECIFIED_TIME': 'time', 'CRON_EXPRESSION': 'cron' }[planForm.executionStrategy]"
                 error-display-type="normal">
                 <bk-radio-group
@@ -12,11 +12,11 @@
                     v-model="planForm.executionStrategy"
                     @change="clearError">
                     <bk-radio value="IMMEDIATELY" :disabled="disabled">
-                        <span>立即执行</span>
+                        <span>{{ $t('executeImmediately') }}</span>
                     </bk-radio>
                     <bk-radio value="SPECIFIED_TIME" :disabled="disabled">
                         <div class="flex-align-center">
-                            指定时间
+                            {{ $t('designatedTime') }}
                             <bk-date-picker
                                 class="ml10"
                                 v-if="planForm.executionStrategy === 'SPECIFIED_TIME'"
@@ -31,7 +31,7 @@
                     </bk-radio>
                     <bk-radio value="CRON_EXPRESSION" :disabled="disabled">
                         <div class="flex-align-center">
-                            定时执行
+                            {{ $t('timedExecution') }}
                             <template v-if="planForm.executionStrategy === 'CRON_EXPRESSION'">
                                 <bk-input v-if="disabled" class="ml10 w250" :value="planForm.cron" :disabled="disabled"></bk-input>
                                 <Cron v-else class="ml10" v-model="planForm.cron" />
@@ -39,11 +39,11 @@
                         </div>
                     </bk-radio>
                     <bk-radio v-if="planForm.replicaObjectType === 'REPOSITORY'" value="REAL_TIME" :disabled="disabled">
-                        <span>实时同步</span>
+                        <span>{{ $t('realTimeSync') }}</span>
                     </bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item label="冲突策略" property="conflictStrategy">
+            <bk-form-item :label="$t('conflictStrategy')" property="conflictStrategy">
                 <bk-radio-group v-model="planForm.conflictStrategy">
                     <bk-radio v-for="strategy in conflictStrategyList" :key="strategy.value"
                         :value="strategy.value" :disabled="disabled">
@@ -51,7 +51,7 @@
                     </bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item label="同步类型">
+            <bk-form-item :label="$t('syncType')">
                 <card-radio-group
                     v-model="planForm.replicaObjectType"
                     :disabled="disabled"
@@ -59,7 +59,7 @@
                     @change="changeReplicaObjectType">
                 </card-radio-group>
             </bk-form-item>
-            <bk-form-item label="同步对象" :required="true" property="config" error-display-type="normal">
+            <bk-form-item :label="$t('syncObject')" :required="true" property="config" error-display-type="normal">
                 <template v-if="planForm.replicaObjectType === 'REPOSITORY'">
                     <repository-table
                         ref="planConfig"
@@ -85,7 +85,7 @@
                     </path-table>
                 </template>
             </bk-form-item>
-            <bk-form-item label="目标节点" :required="true" property="remoteClusterIds" error-display-type="normal">
+            <bk-form-item :label="$t('targetNode')" :required="true" property="remoteClusterIds" error-display-type="normal">
                 <bk-select
                     class="w480"
                     v-model="planForm.remoteClusterIds"
@@ -131,14 +131,14 @@
         data () {
             return {
                 conflictStrategyList: [
-                    { value: 'SKIP', label: '跳过冲突', tip: '当目标节点存在相同制品时，跳过该制品同步，同步剩余制品' },
-                    { value: 'OVERWRITE', label: '替换制品', tip: '当目标节点存在相同制品时，覆盖原制品并继续执行计划' },
-                    { value: 'FAST_FAIL', label: '终止同步', tip: '当目标节点存在相同制品时，终止执行计划' }
+                    { value: 'SKIP', label: this.$t('skipConflictLabel'), tip: this.$t('skipConflictTip') },
+                    { value: 'OVERWRITE', label: this.$t('replacementProductLabel'), tip: this.$t('replacementProductTip') },
+                    { value: 'FAST_FAIL', label: this.$t('terminateSyncLabel'), tip: this.$t('terminateSyncTip') }
                 ],
                 replicaObjectTypeList: [
-                    { value: 'REPOSITORY', label: '仓库', tip: '同步多个仓库' },
-                    { value: 'PACKAGE', label: '制品', tip: '同步同一仓库下多个制品' },
-                    { value: 'PATH', label: '文件', tip: '同步同一仓库下多个文件' }
+                    { value: 'REPOSITORY', label: this.$t('repository'), tip: this.$t('repoTip') },
+                    { value: 'PACKAGE', label: this.$t('products'), tip: this.$t('productTip') },
+                    { value: 'PATH', label: this.$t('file'), tip: this.$t('pathTip') }
                 ],
                 isLoading: false,
                 planForm: {
@@ -156,26 +156,26 @@
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + '计划名称',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('planName'),
                             trigger: 'blur'
                         }
                     ],
                     time: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + '时间',
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('time'),
                             trigger: 'blur'
                         },
                         {
                             validator: date => date > new Date(),
-                            message: '当前时间已过期',
+                            message: this.$t('validateTimeRule'),
                             trigger: 'blur'
                         }
                     ],
                     cron: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + 'cron表达式',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('cronMsg'),
                             trigger: 'blur'
                         }
                     ],
@@ -184,14 +184,14 @@
                             validator: () => {
                                 return this.$refs.planConfig.getConfig()
                             },
-                            message: '请完善同步对象信息',
+                            message: this.$t('configRule'),
                             trigger: 'blur'
                         }
                     ],
                     remoteClusterIds: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + '目标节点',
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('targetNode'),
                             trigger: 'blur'
                         }
                     ]
@@ -322,7 +322,7 @@
                 request.then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('save') + this.$t('success')
+                        message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
                     this.$router.back()
                 }).finally(() => {
@@ -395,5 +395,8 @@
             color: var(--fontSubsidiaryColor);
         }
     }
+}
+.card-radio-group ::v-deep.card-radio{
+    width: 300px;
 }
 </style>

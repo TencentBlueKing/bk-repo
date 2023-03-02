@@ -13,7 +13,7 @@
                 <bk-input
                     v-model.trim="userInput"
                     class="w250"
-                    placeholder="请输入账号/中文名, 按Enter键搜索"
+                    :placeholder="$t('userPlaceHolder')"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
@@ -22,10 +22,10 @@
                 <bk-select
                     class="ml10 w250"
                     v-model="showAdmin"
-                    placeholder="账号权限"
+                    :placeholder="$t('accountPermission')"
                     @change="handlerPaginationChange()">
-                    <bk-option id="true" name="系统管理员"></bk-option>
-                    <bk-option id="false" name="普通用户"></bk-option>
+                    <bk-option id="true" :name="$t('administrator')"></bk-option>
+                    <bk-option id="false" :name="$t('normalUser')"></bk-option>
                 </bk-select>
             </div>
         </div>
@@ -43,18 +43,18 @@
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
             <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
-            <bk-table-column label="电话" prop="phone">
+            <bk-table-column :label="$t('telephone')" prop="phone">
                 <template #default="{ row }">{{row.phone || '/'}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('createdDate')">
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
-            <bk-table-column label="系统管理员">
+            <bk-table-column :label="$t('administrator')">
                 <template #default="{ row }">
                     <bk-switcher class="m5" v-model="row.admin" size="small" theme="primary" @change="changeAdminStatus(row)"></bk-switcher>
                 </template>
             </bk-table-column>
-            <bk-table-column label="启用账号">
+            <bk-table-column :label="$t('activateAccount')">
                 <template #default="{ row }">
                     <bk-switcher class="m5" :value="!row.locked" size="small" theme="primary" @change="changeUserStatus(row)"></bk-switcher>
                 </template>
@@ -63,9 +63,9 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: '编辑', clickEvent: () => showEditUser(row) },
-                            { label: '重置密码', clickEvent: () => resetUserPwd(row) },
-                            { label: '删除', clickEvent: () => deleteUserHandler(row) }
+                            { label: $t('edit'), clickEvent: () => showEditUser(row) },
+                            { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
+                            { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
                         ]"></operation-list>
                 </template>
             </bk-table-column>
@@ -84,15 +84,15 @@
         </bk-pagination>
         <canway-dialog
             v-model="editUserDialog.show"
-            :title="editUserDialog.add ? '创建用户' : '编辑用户'"
+            :title="editUserDialog.add ? $t('createUser') : $t('editUser')"
             width="500"
             height-num="400"
             @cancel="editUserDialog.show = false">
             <bk-form class="mr30" :label-width="90" :model="editUserDialog" :rules="rules" ref="editUserDialog">
-                <bk-form-item label="类型" :required="true">
+                <bk-form-item :label="$t('type')" :required="true">
                     <bk-radio-group v-model="editUserDialog.group">
-                        <bk-radio :value="false" :disabled="!editUserDialog.add">实体用户</bk-radio>
-                        <bk-radio class="ml20" :value="true" :disabled="!editUserDialog.add">虚拟用户</bk-radio>
+                        <bk-radio :value="false" :disabled="!editUserDialog.add">{{ $t('entityUser')}}</bk-radio>
+                        <bk-radio class="ml20" :value="true" :disabled="!editUserDialog.add">{{ $t('virtualUser')}}</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('account')" :required="true" property="userId" error-display-type="normal">
@@ -108,13 +108,13 @@
                 <bk-form-item :label="$t('email')" :required="true" property="email" error-display-type="normal">
                     <bk-input v-model.trim="editUserDialog.email"></bk-input>
                 </bk-form-item>
-                <bk-form-item label="电话">
+                <bk-form-item :label="$t('telephone')">
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
-                <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" label="关联用户">
+                <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" :label="$t('associatedUser')">
                     <bk-tag-input
                         v-model="editUserDialog.asstUsers"
-                        placeholder="请输入，按Enter键确认"
+                        :placeholder="$t('enterPlaceHolder')"
                         trigger="focus"
                         :create-tag-validator="tag => validateUser(tag)"
                         allow-create>
@@ -162,43 +162,43 @@
                     userId: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('account'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('account'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^[a-zA-Z][a-zA-Z0-9_-]{1,31}$/,
-                            message: this.$t('account') + this.$t('include') + this.$t('userIdPlacehodler'),
+                            message: this.$t('account') + this.$t('space') + this.$t('include') + this.$t('space') + this.$t('userIdPlaceHolder'),
                             trigger: 'blur'
                         },
                         {
                             validator: this.asynCheckUserId,
-                            message: this.$t('account') + '已被占用',
+                            message: this.$t('account') + this.$t('space') + this.$t('existed'),
                             trigger: 'blur'
                         }
                     ],
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('chineseName'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('chineseName'),
                             trigger: 'blur'
                         }
                     ],
                     email: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('email'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('email'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^\w[-_.\w]*@\w[-_\w]*\.\w[-_.\w]*$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('email'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('email'),
                             trigger: 'blur'
                         }
                     ],
                     asstUsers: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + '关联账户',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('associated user'),
                             trigger: 'blur'
                         }
                     ]
@@ -283,7 +283,7 @@
                 if (!(/\.xlsx$/.test(file.name))) {
                     this.$bkMessage({
                         theme: 'error',
-                        message: '文件类型错误'
+                        message: this.$t('wrongFileType')
                     })
                     e.target.value = ''
                     return
@@ -325,9 +325,9 @@
                     }
                 })
                 if (errMessage.userId.length || errMessage.name.length || errMessage.email.length) {
-                    const message = (errMessage.userId.length ? `第${errMessage.userId}行账号已存在或格式错误` : '')
-                        + (errMessage.name.length ? `第${errMessage.name}行中文名格式错误` : '')
-                        + (errMessage.email.length ? `第${errMessage.email}行邮箱格式错误` : '')
+                    const message = (errMessage.userId.length ? this.$t('formatWrongTip', [errMessage.userId]) : '')
+                        + (errMessage.name.length ? this.$t('chineseNameWrongTip', [errMessage.name]) : '')
+                        + (errMessage.email.length ? this.$t('emailWrongTip', [errMessage.email]) : '')
                     this.$bkMessage({
                         theme: 'error',
                         message
@@ -338,7 +338,7 @@
                     return this.importUsers({ body: data }).then(() => {
                         this.$bkMessage({
                             theme: 'success',
-                            message: '用户导入' + this.$t('success')
+                            message: this.$t('userImport') + this.$t('success')
                         })
                         this.getRepoUserList()
                         this.handlerPaginationChange()
@@ -367,7 +367,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (this.editUserDialog.add ? '新建用户' : '编辑用户') + this.$t('success')
+                        message: (this.editUserDialog.add ? this.$t('createUser') : this.$t('editUser')) + this.$t('space') + this.$t('success')
                     })
                     this.editUserDialog.show = false
                     this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
@@ -402,7 +402,7 @@
                             this.getUserListHandler()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         })
                     }
@@ -411,12 +411,12 @@
             resetUserPwd (row) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认重置账户 ${row.name} 的密码为默认密码？`,
+                    message: this.$t('resetUserMsg', { 0: row.name }),
                     confirmFn: () => {
                         return this.resetPwd(row.userId).then(() => {
                             this.$bkMessage({
                                 theme: 'success',
-                                message: '重置密码' + this.$t('success')
+                                message: this.$t('resetPassword') + this.$t('space') + this.$t('success')
                             })
                         })
                     }
@@ -431,7 +431,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: !locked ? '已禁用' : '已启用'
+                        message: !locked ? this.$t('forbidden') : this.$t('enabled')
                     })
                 }).finally(() => {
                     this.getUserListHandler()
@@ -446,7 +446,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: `设置为${admin ? '系统管理员' : '普通用户'}`
+                        message: this.$t('set') + this.$t('space') + `${admin ? this.$t('administrator') : this.$t('normalUser')}`
                     })
                 }).finally(() => {
                     this.getUserListHandler()

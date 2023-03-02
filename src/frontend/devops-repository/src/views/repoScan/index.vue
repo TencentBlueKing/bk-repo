@@ -9,7 +9,7 @@
                     class="w250"
                     v-model.trim="scanName"
                     clearable
-                    placeholder="请输入方案名称, 按Enter键搜索"
+                    :placeholder="$t('planNamePlaceHolder')"
                     right-icon="bk-icon icon-search"
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()">
@@ -17,9 +17,9 @@
                 <bk-select
                     class="ml10 w250"
                     v-model="scanType"
-                    placeholder="方案类型"
+                    :placeholder="$t('schemeType')"
                     @change="handlerPaginationChange()">
-                    <bk-option v-for="[id, name] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="name"></bk-option>
+                    <bk-option v-for="[id] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="$t(`scanTypeEnum.${id}`)"></bk-option>
                 </bk-select>
             </div>
         </div>
@@ -34,31 +34,31 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(scanName)"></empty-data>
             </template>
-            <bk-table-column label="方案名称" show-overflow-tooltip>
+            <bk-table-column :label="$t('schemeName')" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span class="hover-btn" @click="showScanReport(row)">{{row.name}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="方案类型">
-                <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
+            <bk-table-column :label="$t('schemeType')">
+                <template #default="{ row }">{{ $t(`scanTypeEnum.${row.planType}`) }}</template>
             </bk-table-column>
             <!-- <bk-table-column label="扫描器" prop="scanner" show-overflow-tooltip></bk-table-column> -->
-            <bk-table-column label="扫描状态">
+            <bk-table-column :label="$t('scanStatus')">
                 <template #default="{ row }">
-                    <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
+                    <span class="repo-tag" :class="row.status">{{ $t(`scanStatusEnum.${row.status}`)}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="最后扫描时间">
+            <bk-table-column :label="$t('lastScanTime')">
                 <template #default="{ row }">{{formatDate(row.lastScanDate)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            !row.readOnly && { label: '设置', clickEvent: () => showScanConfig(row) },
-                            { label: '中止', clickEvent: () => stopScanHandler(row) },
-                            !row.readOnly && { label: '立即扫描', clickEvent: () => startScanHandler(row) },
-                            !row.readOnly && { label: '删除', clickEvent: () => deleteScanHandler(row) }
+                            !row.readOnly && { label: $t('setting'), clickEvent: () => showScanConfig(row) },
+                            { label: $t('suspend'), clickEvent: () => stopScanHandler(row) },
+                            !row.readOnly && { label: $t('scanImmediately'), clickEvent: () => startScanHandler(row) },
+                            !row.readOnly && { label: $t('delete'), clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>
                 </template>
             </bk-table-column>
@@ -151,7 +151,7 @@
             deleteScanHandler ({ id, name }) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认删除扫描方案 ${name} ?`,
+                    message: this.$t('confirmDeleteScanMsg', [name]),
                     confirmFn: () => {
                         return this.deleteScan({
                             projectId: this.projectId,
@@ -160,7 +160,7 @@
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: '删除扫描方案' + this.$t('success')
+                                message: this.$t('deleteScan') + this.$t('space') + this.$t('success')
                             })
                         })
                     }
@@ -207,7 +207,7 @@
             stopScanHandler ({ id, name }) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认中止扫描方案 ${name} 的所有扫描任务?`,
+                    message: this.$t('stopScanMsg', [name]),
                     confirmFn: () => {
                         return this.stopScan({
                             projectId: this.projectId,
@@ -216,7 +216,7 @@
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: '中止方案' + this.$t('success')
+                                message: this.$t('discontinuedProgram') + this.$t('space') + this.$t('success')
                             })
                         })
                     }

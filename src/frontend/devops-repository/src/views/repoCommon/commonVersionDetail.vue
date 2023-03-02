@@ -2,7 +2,7 @@
     <bk-tab class="common-version-container" type="unborder-card" :active.sync="tabName" v-bkloading="{ isLoading }">
         <template #setting>
             <bk-button v-if="!metadataMap.forbidStatus && repoType !== 'docker'"
-                outline class="mr10" @click="$emit('download')">下载</bk-button>
+                outline class="mr10" @click="$emit('download')">{{$t('download')}}</bk-button>
             <operation-list class="mr20"
                 :list="operationBtns">
                 <bk-button icon="ellipsis"></bk-button>
@@ -11,7 +11,7 @@
         <bk-tab-panel v-if="detail.basic" name="basic" :label="$t('baseInfo')">
             <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')">
                 <div class="package-name grid-item">
-                    <label>制品名称</label>
+                    <label>{{$t('productName')}}</label>
                     <span class="flex-1 flex-align-center text-overflow">
                         <span class="text-overflow" :title="packageName">{{ packageName }}</span>
                         <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
@@ -38,7 +38,7 @@
                     </span>
                 </div>
                 <div class="package-description grid-item">
-                    <label>描述</label>
+                    <label>{{ $t('description') }}</label>
                     <span class="flex-1 text-overflow" :title="detail.basic.description">{{ detail.basic.description || '' }}</span>
                 </div>
             </div>
@@ -59,7 +59,7 @@
                 </div>
             </div>
         </bk-tab-panel>
-        <bk-tab-panel v-if="detail.basic.readme" name="readme" label="详细描述">
+        <bk-tab-panel v-if="detail.basic.readme" name="readme" :label="$t('readMe')">
             <div class="version-detail-readme" v-html="readmeContent"></div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
@@ -235,11 +235,11 @@
                 return [
                     ...(!metadataMap.forbidStatus
                         ? [
-                            this.permission.edit && { clickEvent: () => this.$emit('tag'), label: '晋级', disabled: (basic.stageTag || '').includes('@release') },
-                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: '扫描制品' }
+                            this.permission.edit && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
+                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanProduct') }
                         ]
                         : []),
-                    { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? '解除禁止' : '禁止使用' },
+                    { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }
@@ -315,7 +315,7 @@
             }
             > label {
                 line-height: 40px;
-                flex-basis: 80px;
+                flex-basis: 130px;
                 flex-shrink: 0;
                 background-color: var(--bgColor);
             }

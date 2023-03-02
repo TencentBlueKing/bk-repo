@@ -3,7 +3,7 @@
         v-model="show"
         width="380"
         height-num="221"
-        title="操作确认"
+        :title="$t('operationConfirmation')"
         @cancel="cancel">
         <div class="confirm-body">
             <div class="confirm-main">

@@ -1,20 +1,20 @@
 <template>
-    <div class="rule-item flex-align-center">
+    <div class="rule-item flex-align-center" :data-suffix="$t('shortOr')">
         <bk-input
             style="width:180px;"
             :value="path.value"
             @input="path => change({ path })"
             :disabled="disabled"
-            placeholder="请输入文件目录的绝对路径">
+            :placeholder="$t('inputFilePathTip')">
         </bk-input>
         <bk-select
             style="width:100px;"
             v-model="type"
             :clearable="false"
             :disabled="disabled">
-            <bk-option id="name" name="文件名称"></bk-option>
-            <bk-option id="metadata" name="元数据"></bk-option>
-            <bk-option id="all" name="全部"></bk-option>
+            <bk-option id="name" :name="$t('fileName')"></bk-option>
+            <bk-option id="metadata" :name="$t('metadata')"></bk-option>
+            <bk-option id="all" :name="$t('total')"></bk-option>
         </bk-select>
         <bk-input
             v-show="type === 'metadata'"
@@ -22,7 +22,7 @@
             :value="defaultValue.field.replace(/^metadata\.(.*)$/, '$1')"
             @input="field => change({ field: `metadata.${field}` })"
             :disabled="disabled"
-            placeholder="属性键">
+            :placeholder="$t('key')">
         </bk-input>
         <select-input
             v-show="type !== 'all'"
@@ -59,9 +59,9 @@
                     value: ''
                 },
                 typeList: [
-                    { id: 'EQ', name: '等于' },
-                    { id: 'MATCH', name: '包含' },
-                    { id: 'REGEX', name: '正则匹配' }
+                    { id: 'EQ', name: this.$t('equal') },
+                    { id: 'MATCH', name: this.$t('contain') },
+                    { id: 'REGEX', name: this.$t('regular') }
                 ]
             }
         },
@@ -119,7 +119,7 @@
 <style lang="scss" scoped>
 .rule-item {
     &:not(:nth-child(1)):before {
-        content: '或';
+        content: attr(data-suffix);
         position: absolute;
         margin-left: -22px;
         color: var(--fontSubsidiaryColor);
