@@ -188,6 +188,20 @@ class StartCenterNodeServiceImpl(
         )
     }
 
+    override fun deleteBeforeDate(
+        projectId: String,
+        repoName: String,
+        date: LocalDateTime,
+        operator: String
+    ): NodeDeleteResult {
+        return StarCenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
+            projectId,
+            repoName,
+            date,
+            operator
+        )
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StartCenterNodeServiceImpl::class.java)
     }

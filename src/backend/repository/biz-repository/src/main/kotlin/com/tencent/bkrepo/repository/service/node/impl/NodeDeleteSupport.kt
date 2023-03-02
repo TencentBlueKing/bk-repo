@@ -60,7 +60,7 @@ open class NodeDeleteSupport(
 ) : NodeDeleteOperation {
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
-    private val quotaService: QuotaService = nodeBaseService.quotaService
+    val quotaService: QuotaService = nodeBaseService.quotaService
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {

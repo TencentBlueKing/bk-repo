@@ -28,12 +28,21 @@
 package com.tencent.bkrepo.repository.service.node.impl.center
 
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
+import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import org.bson.types.ObjectId
+import org.jboss.logging.Logger
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -63,8 +72,7 @@ class StarCenterNodeDeleteSupport(
         return if (!node.isLocalRegion()) {
             NodeDeleteResult(0,0, LocalDateTime.now())
         } else {
-            val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
-            deleteFileNode(node, srcRegion, operator)
+            deleteFileNode(node, operator)
             NodeDeleteResult(1, node.size, LocalDateTime.now())
         }
     }
@@ -85,10 +93,45 @@ class StarCenterNodeDeleteSupport(
         return NodeDeleteResult(deletedNumber, deletedSize, LocalDateTime.now())
     }
 
-    fun delete(folder: TNode, operator: String): NodeDeleteResult {
+    override fun deleteBeforeDate(
+        projectId: String,
+        repoName: String,
+        date: LocalDateTime,
+        operator: String
+    ): NodeDeleteResult {
+        var deletedSize = 0L
+        var deletedNum = 0L
+        val option = NodeListOption(includeFolder = false, deep = true)
+        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
+            .and(TNode::createdDate).lt(date)
+        val pageSize = 1
+        var queryCount: Int
+        var lastId = ObjectId(MIN_OBJECT_ID)
+        do {
+            val query = Query(criteria).addCriteria(Criteria.where(ID).gt(lastId)).limit(pageSize)
+                .with(Sort.by(Sort.Direction.ASC, TNode::id.name))
+            val nodes = nodeDao.find(query)
+            nodes.forEach {
+                if (!it.isLocalRegion()) {
+                    return@forEach
+                }
+                deleteFileNode(it, operator)
+                deletedNum ++
+                deletedSize += it.size
+            }
+            queryCount = nodes.size
+            lastId = ObjectId(nodes.last().id!!)
+        } while (queryCount == pageSize)
+        logger.info(
+            "Delete node [/$projectId/$repoName] created before $date by [$operator] success. " +
+                "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}"
+        )
+        return NodeDeleteResult(deletedNum, deletedSize, LocalDateTime.now())
+    }
+
+    private fun delete(folder: TNode, operator: String): NodeDeleteResult {
         var deletedNumber = 0L
         var deletedSize = 0L
-        val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
         val criteria = where(TNode::projectId).isEqualTo(folder.projectId)
             .and(TNode::repoName).isEqualTo(folder.repoName)
             .and(TNode::deleted).isEqualTo(null)
@@ -104,7 +147,7 @@ class StarCenterNodeDeleteSupport(
                 if (!it.isLocalRegion()) {
                     return@forEach
                 }
-                deleteFileNode(it, srcRegion, operator)
+                deleteFileNode(it, operator)
                 deletedNumber ++
                 deletedSize += it.size
             }
@@ -123,9 +166,9 @@ class StarCenterNodeDeleteSupport(
 
     private fun deleteFileNode(
         node: TNode,
-        srcRegion: String,
         operator: String
     ) {
+        val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
         node.regions = node.regions.orEmpty().minus(srcRegion)
         if (node.regions.orEmpty().isEmpty()) {
             super.deleteByPath(node.projectId, node.repoName, node.fullPath, operator)
@@ -138,5 +181,9 @@ class StarCenterNodeDeleteSupport(
             node.regions = setOf(clusterProperties.region.toString())
             nodeDao.insert(node)
         }
+    }
+
+    companion object {
+        private val logger = Logger.getLogger(StarCenterNodeDeleteSupport::class.java)
     }
 }

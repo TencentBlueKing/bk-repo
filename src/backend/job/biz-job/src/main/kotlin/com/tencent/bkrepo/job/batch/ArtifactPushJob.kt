@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.TYPE
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
