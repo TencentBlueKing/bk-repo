@@ -69,7 +69,7 @@ class StarCenterNodeDeleteSupport(
             return delete(node, operator)
         }
 
-        return if (!node.isLocalRegion()) {
+        return if (!node.containsLocalRegion()) {
             NodeDeleteResult(0,0, LocalDateTime.now())
         } else {
             deleteFileNode(node, operator)
@@ -112,7 +112,7 @@ class StarCenterNodeDeleteSupport(
                 .with(Sort.by(Sort.Direction.ASC, TNode::id.name))
             val nodes = nodeDao.find(query)
             nodes.forEach {
-                if (!it.isLocalRegion()) {
+                if (!it.containsLocalRegion()) {
                     return@forEach
                 }
                 deleteFileNode(it, operator)
@@ -144,7 +144,7 @@ class StarCenterNodeDeleteSupport(
                 deletedNumber += result.deletedNumber
                 deletedSize += result.deletedSize
             } else {
-                if (!it.isLocalRegion()) {
+                if (!it.containsLocalRegion()) {
                     return@forEach
                 }
                 deleteFileNode(it, operator)

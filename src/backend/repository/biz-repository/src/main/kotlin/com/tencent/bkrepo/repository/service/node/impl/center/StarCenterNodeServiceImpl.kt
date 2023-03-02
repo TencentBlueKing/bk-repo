@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.StartCenterCondition
+import com.tencent.bkrepo.common.service.cluster.StarCenterCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -55,8 +55,8 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-@Conditional(StartCenterCondition::class)
-class StartCenterNodeServiceImpl(
+@Conditional(StarCenterCondition::class)
+class StarCenterNodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,
@@ -96,7 +96,7 @@ class StartCenterNodeServiceImpl(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    existNode.checkLocalRegion()
+                    existNode.checkIsLocalRegion()
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
@@ -143,12 +143,11 @@ class StartCenterNodeServiceImpl(
                 regions.add(region)
                 existNode.regions = regions
                 nodeDao.save(existNode)
-                logger.info("Create edge node[/$projectId/$repoName$fullPath], sha256[$sha256], region[$region] success.")
+                logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256], region[$region] success.")
                 return convertToDetail(existNode)!!
             } else {
                 return super.createNode(createRequest)
             }
-
         }
     }
 
@@ -203,6 +202,6 @@ class StartCenterNodeServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(StartCenterNodeServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(StarCenterNodeServiceImpl::class.java)
     }
 }

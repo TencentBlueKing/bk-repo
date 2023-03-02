@@ -34,7 +34,7 @@ import org.springframework.context.annotation.ConditionContext
 import org.springframework.core.type.AnnotatedTypeMetadata
 
 
-class StartCenterCondition : Condition {
+class StarCenterCondition : Condition {
     override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
         val clusterRoleType = context.environment.getProperty("cluster.role", ClusterNodeType::class.java)
         val clusterArchitecture =
