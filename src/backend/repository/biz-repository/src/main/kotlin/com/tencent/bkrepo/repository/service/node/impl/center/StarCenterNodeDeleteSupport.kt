@@ -69,11 +69,10 @@ class StarCenterNodeDeleteSupport(
             return delete(node, operator)
         }
 
-        return if (!node.containsLocalRegion()) {
-            NodeDeleteResult(0,0, LocalDateTime.now())
-        } else {
-            deleteFileNode(node, operator)
+        return if (deleteFileNode(node, operator)) {
             NodeDeleteResult(1, node.size, LocalDateTime.now())
+        } else {
+            NodeDeleteResult(0, 0, LocalDateTime.now())
         }
     }
 
@@ -112,15 +111,15 @@ class StarCenterNodeDeleteSupport(
                 .with(Sort.by(Sort.Direction.ASC, TNode::id.name))
             val nodes = nodeDao.find(query)
             nodes.forEach {
-                if (!it.containsLocalRegion()) {
-                    return@forEach
+                if (deleteFileNode(it, operator)) {
+                    deletedNum ++
+                    deletedSize += it.size
                 }
-                deleteFileNode(it, operator)
-                deletedNum ++
-                deletedSize += it.size
             }
             queryCount = nodes.size
-            lastId = ObjectId(nodes.last().id!!)
+            if (nodes.isNotEmpty()) {
+                lastId = ObjectId(nodes.last().id!!)
+            }
         } while (queryCount == pageSize)
         logger.info(
             "Delete node [/$projectId/$repoName] created before $date by [$operator] success. " +
@@ -144,9 +143,6 @@ class StarCenterNodeDeleteSupport(
                 deletedNumber += result.deletedNumber
                 deletedSize += result.deletedSize
             } else {
-                if (!it.containsLocalRegion()) {
-                    return@forEach
-                }
                 deleteFileNode(it, operator)
                 deletedNumber ++
                 deletedSize += it.size
@@ -167,7 +163,13 @@ class StarCenterNodeDeleteSupport(
     private fun deleteFileNode(
         node: TNode,
         operator: String
-    ) {
+    ): Boolean {
+        if (!node.containsSrcRegion()) {
+            return false
+        }
+        if (SecurityUtils.getRegion() == null && node.regions.orEmpty().size != 1) {
+            return false
+        }
         val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
         node.regions = node.regions.orEmpty().minus(srcRegion)
         if (node.regions.orEmpty().isEmpty()) {
@@ -175,12 +177,7 @@ class StarCenterNodeDeleteSupport(
         } else {
             nodeDao.save(node)
         }
-        if (srcRegion == clusterProperties.region.toString() && node.regions.orEmpty().isNotEmpty()) {
-            node.id = null
-            node.deleted = LocalDateTime.now()
-            node.regions = setOf(clusterProperties.region.toString())
-            nodeDao.insert(node)
-        }
+        return true
     }
 
     companion object {

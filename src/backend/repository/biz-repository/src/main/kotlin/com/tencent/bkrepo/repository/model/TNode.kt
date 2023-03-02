@@ -98,21 +98,21 @@ data class TNode(
     var repoName: String
 ) {
     @JsonIgnore
-    fun checkContainsLocalRegion() {
-        if (!containsLocalRegion()) {
+    fun checkContainsSrcRegion() {
+        if (!containsSrcRegion()) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
         }
     }
 
     @JsonIgnore
-    fun checkIsLocalRegion() {
-        if (!isLocalRegion()) {
+    fun checkIsSrcRegion() {
+        if (!isSrcRegion()) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
         }
     }
 
     @JsonIgnore
-    fun containsLocalRegion(): Boolean {
+    fun containsSrcRegion(): Boolean {
         val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
         var srcRegion = SecurityUtils.getRegion()
 
@@ -131,8 +131,8 @@ data class TNode(
     }
 
     @JsonIgnore
-    fun isLocalRegion(): Boolean {
-        return containsLocalRegion() && (regions == null || regions!!.size == 1)
+    fun isSrcRegion(): Boolean {
+        return containsSrcRegion() && (regions == null || regions!!.size == 1)
     }
 
     companion object {

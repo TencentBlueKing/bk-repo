@@ -42,10 +42,12 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.slf4j.LoggerFactory
@@ -96,7 +98,7 @@ class StarCenterNodeServiceImpl(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    existNode.checkIsLocalRegion()
+                    existNode.checkIsSrcRegion()
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
@@ -199,6 +201,10 @@ class StarCenterNodeServiceImpl(
             date,
             operator
         )
+    }
+
+    override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
+        return StarCenterNodeRestoreSupport(this).restoreNode(restoreContext)
     }
 
     companion object {

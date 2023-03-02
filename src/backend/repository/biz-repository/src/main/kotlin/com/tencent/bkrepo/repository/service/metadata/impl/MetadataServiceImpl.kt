@@ -79,7 +79,7 @@ class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            node.checkContainsLocalRegion()
+            node.checkContainsSrcRegion()
             val oldMetadata = node.metadata ?: ArrayList()
             val newMetadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata)
             node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
@@ -114,7 +114,7 @@ class MetadataServiceImpl(
 
             // 检查是否有更新权限
             val node = nodeDao.findOne(query) ?: throw NodeNotFoundException(fullPath)
-            node.checkContainsLocalRegion()
+            node.checkContainsSrcRegion()
             node.metadata?.forEach {
                 if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
                     throw PermissionException("No permission to update system metadata[${it.key}]")
