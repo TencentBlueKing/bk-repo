@@ -92,10 +92,9 @@ class StarCenterNodeDeleteSupport(
         val criteria = where(TNode::projectId).isEqualTo(folder.projectId)
             .and(TNode::repoName).isEqualTo(folder.repoName)
             .and(TNode::deleted).isEqualTo(null)
-            .and(TNode::folder).isEqualTo(false)
             .and(TNode::path).isEqualTo(folder.fullPath.ensureSuffix("/"))
         val query = Query(criteria)
-        val subNodes = nodeDao.find(query)
+        var subNodes = nodeDao.find(query)
         subNodes.forEach {
             if (it.folder) {
                 val result = delete(it, operator)
@@ -110,8 +109,14 @@ class StarCenterNodeDeleteSupport(
                 deletedSize += it.size
             }
         }
-        if (subNodes.size.toLong() == deletedNumber) {
-            super.deleteByPath(folder.projectId, folder.repoName, folder.fullPath, operator)
+        subNodes = nodeDao.find(query)
+        if (subNodes.isEmpty()) {
+            deletedNumber += super.deleteByPath(
+                projectId = folder.projectId,
+                repoName = folder.repoName,
+                fullPath = folder.fullPath,
+                operator = operator
+            ).deletedNumber
         }
         return NodeDeleteResult(deletedNumber, deletedSize, LocalDateTime.now())
     }
@@ -130,6 +135,7 @@ class StarCenterNodeDeleteSupport(
         if (srcRegion == clusterProperties.region.toString() && node.regions.orEmpty().isNotEmpty()) {
             node.id = null
             node.deleted = LocalDateTime.now()
+            node.regions = setOf(clusterProperties.region.toString())
             nodeDao.insert(node)
         }
     }
