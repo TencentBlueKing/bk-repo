@@ -261,9 +261,9 @@
             },
             availableList () {
                 return [
-                    { label: this.$t('open within the project'), value: 'project', tip: this.$t('members of the project can use') },
+                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: this.$t('can be downloaded anonymously'), value: 'public', tip: this.$t('no authentication, any terminal can download') }
+                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
                 ]
             }
         },
