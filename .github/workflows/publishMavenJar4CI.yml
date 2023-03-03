@@ -41,8 +41,3 @@ jobs:
           -PallJarRepo=${MAVEN_REPO_DEPLOY_URL} \
           -PallJarUsername=${SONATYPE_USERNAME} \
           -PallJarPassword=${SONATYPE_PASSWORD}
-      - name: Clean Up
-        if: ${{ always() }}
-        working-directory:
-        run: |
-          rm -rf ~/.gnupg
