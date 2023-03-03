@@ -20,7 +20,7 @@
                 <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
                     :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
                 </bk-input>
-                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('The docker repository name does not support capital English letters')}}</div>
+                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
             <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
