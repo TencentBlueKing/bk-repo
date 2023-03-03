@@ -31,8 +31,12 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -67,4 +71,28 @@ data class TRepository(
     var quota: Long? = null,
     var used: Long? = null,
     var regions: Set<String>? = null
-)
+) {
+    @JsonIgnore
+    fun containsSrcRegion(): Boolean {
+        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
+        var srcRegion = SecurityUtils.getRegion()
+
+        if (regions == null && srcRegion.isNullOrBlank()) {
+            // 兼容旧逻辑
+            return true
+        } else if (regions == null) {
+            // edge plus操作center节点
+            return false
+        } else if (srcRegion.isNullOrBlank()) {
+            // center操作节点
+            srcRegion = clusterProperties.region
+        }
+
+        return regions!!.contains(srcRegion)
+    }
+
+    @JsonIgnore
+    fun isSrcRegion(): Boolean {
+        return containsSrcRegion() && (regions == null || regions!!.size == 1)
+    }
+}

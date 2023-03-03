@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -56,7 +57,8 @@ import java.time.LocalDateTime
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val fileReferenceClient: FileReferenceClient
+    private val fileReferenceClient: FileReferenceClient,
+    private val clusterProperties: ClusterProperties
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     private val repoCache = CacheBuilder.newBuilder()
@@ -72,7 +74,8 @@ class DeletedNodeCleanupJob(
         val repoName: String,
         val folder: Boolean,
         val sha256: String?,
-        val deleted: LocalDateTime?
+        val deleted: LocalDateTime?,
+        val regions: List<String>?
     )
 
     data class Repository(
@@ -103,7 +106,8 @@ class DeletedNodeCleanupJob(
             repoName = row[Node::repoName.name].toString(),
             folder = row[Node::folder.name].toString().toBoolean(),
             sha256 = row[Node::sha256.name]?.toString(),
-            deleted = TimeUtils.parseMongoDateTimeStr(row[Node::deleted.name].toString())
+            deleted = TimeUtils.parseMongoDateTimeStr(row[Node::deleted.name].toString()),
+            regions = row[Node::regions.name] as? List<String> ?: emptyList()
         )
     }
 
@@ -116,7 +120,7 @@ class DeletedNodeCleanupJob(
         try {
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(nodeQuery, collectionName)
-            if (!row.folder) {
+            if (!row.folder && (row.regions == null || row.regions.contains(clusterProperties.region))) {
                 fileReferenceChanged = decrementFileReference(row)
             }
         } catch (ignored: Exception) {

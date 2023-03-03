@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl.center
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
+import com.tencent.bkrepo.common.service.cluster.AutonomousCenterCondition
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -37,10 +37,11 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnCenterNode
+@Conditional(AutonomousCenterCondition::class)
 class CenterRepositoryServiceImpl(
     repositoryDao: RepositoryDao,
     nodeService: NodeService,
