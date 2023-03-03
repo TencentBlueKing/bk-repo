@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.packages.impl.edgeplus
+package com.tencent.bkrepo.repository.service.packages.impl.edge
 
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -38,12 +38,13 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.impl.PackageServiceImpl
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusPackageServiceImpl(
+@Conditional(CommitEdgeEdgeCondition::class)
+class EdgePackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
@@ -51,8 +52,7 @@ class EdgePlusPackageServiceImpl(
 ) : PackageServiceImpl(
     packageDao,
     packageVersionDao,
-    packageSearchInterpreter,
-    clusterProperties
+    packageSearchInterpreter
 ) {
 
     private val centerPackageClient: PackageClient

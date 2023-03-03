@@ -31,15 +31,16 @@ import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.service.aop.LogOperateAspect
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
 import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.service.EdgePlusOperateLogServiceImpl
+import com.tencent.bkrepo.common.operate.service.service.CommitEdgeOperateLogServiceImpl
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
@@ -50,7 +51,7 @@ import org.springframework.context.annotation.Import
 class OperateAutoConfiguration {
 
     @Bean
-    @ConditionalOnCenterNode
+    @ConditionalOnMissingBean
     fun operateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,
@@ -60,14 +61,14 @@ class OperateAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnEdgePlusNode
-    fun edgePlusOperateLogService(
+    @Conditional(CommitEdgeEdgeCondition::class)
+    fun commitEdgeOperateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,
         permissionManager: PermissionManager,
         clusterProperties: ClusterProperties
     ): OperateLogService {
-        return EdgePlusOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
+        return CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
     }
 
     @Bean

@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.StarCenterCondition
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -59,7 +59,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-@Conditional(StarCenterCondition::class)
+@Conditional(CommitEdgeCenterCondition::class)
 class StarCenterNodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,

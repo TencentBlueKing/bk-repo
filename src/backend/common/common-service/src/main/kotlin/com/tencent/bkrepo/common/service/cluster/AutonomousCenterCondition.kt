@@ -38,6 +38,6 @@ class AutonomousCenterCondition : Condition {
         val clusterRoleType = context.environment.getProperty("cluster.role", ClusterNodeType::class.java)
         val clusterArchitecture =
             context.environment.getProperty("cluster.architecture", ClusterArchitecture::class.java)
-        return clusterRoleType == ClusterNodeType.CENTER && clusterArchitecture != ClusterArchitecture.STAR
+        return clusterRoleType == ClusterNodeType.CENTER && clusterArchitecture != ClusterArchitecture.COMMIT_EDGE
     }
 }

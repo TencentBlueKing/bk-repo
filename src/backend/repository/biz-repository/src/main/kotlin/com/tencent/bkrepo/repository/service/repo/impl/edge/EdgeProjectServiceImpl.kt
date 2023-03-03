@@ -25,39 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.edgeplus
+package com.tencent.bkrepo.repository.service.repo.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.TemporaryTokenClient
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.repository.service.file.TemporaryTokenService
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusTempTokenServiceImpl(
+@Conditional(CommitEdgeEdgeCondition::class)
+class EdgeProjectServiceImpl(
+    projectDao: ProjectDao,
+    servicePermissionResource: ServicePermissionResource,
     clusterProperties: ClusterProperties
-) : TemporaryTokenService {
+) : ProjectServiceImpl(
+    projectDao,
+    servicePermissionResource
+) {
 
-    private val centerTempTokenClient: TemporaryTokenClient
+    private val centerProjectClient: ProjectClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
 
-    override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
-        return centerTempTokenClient.createToken(request).data!!
-    }
-
-    override fun getTokenInfo(token: String): TemporaryTokenInfo? {
-        return centerTempTokenClient.getTokenInfo(token).data
-    }
-
-    override fun deleteToken(token: String) {
-        centerTempTokenClient.deleteToken(token)
-    }
-
-    override fun decrementPermits(token: String) {
-        centerTempTokenClient.decrementPermits(token)
+    override fun createProject(request: ProjectCreateRequest): ProjectInfo {
+        try {
+            centerProjectClient.createProject(request)
+        } catch (e: RemoteErrorCodeException) {
+            if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
+                throw e
+            }
+        }
+        return super.createProject(request)
     }
 }

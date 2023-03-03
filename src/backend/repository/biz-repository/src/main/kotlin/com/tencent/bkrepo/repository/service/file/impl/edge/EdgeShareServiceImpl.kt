@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.edgeplus
+package com.tencent.bkrepo.repository.service.file.impl.edge
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.NodeShareClient
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
@@ -37,12 +37,13 @@ import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusShareServiceImpl(
+@Conditional(CommitEdgeEdgeCondition::class)
+class EdgeShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
     mongoTemplate: MongoTemplate,

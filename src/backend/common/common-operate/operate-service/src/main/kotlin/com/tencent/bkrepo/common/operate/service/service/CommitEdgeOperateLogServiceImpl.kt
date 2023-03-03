@@ -25,42 +25,53 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata.impl.edgeplus
+package com.tencent.bkrepo.common.operate.service.service
 
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
+import com.tencent.bkrepo.common.operate.service.config.OperateProperties
+import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.repository.api.OperateLogClient
 
-@Service
-@ConditionalOnEdgePlusNode
-class EdgePlusMetadataServiceImpl(
-    nodeDao: NodeDao,
+open class CommitEdgeOperateLogServiceImpl(
+    operateProperties: OperateProperties,
+    operateLogDao: OperateLogDao,
+    permissionManager: PermissionManager,
     clusterProperties: ClusterProperties
-) : MetadataServiceImpl(
-    nodeDao
+) : OperateLogServiceImpl(
+    operateProperties,
+    operateLogDao,
+    permissionManager
 ) {
 
-    private val centerMetadataClient: MetadataClient
+    private val centerOpLogClient: OperateLogClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
 
-    override fun saveMetadata(request: MetadataSaveRequest) {
-        centerMetadataClient.saveMetadata(request)
-        super.saveMetadata(request)
+    override fun saveEventAsync(event: ArtifactEvent, address: String) {
+        if (notNeedRecord(event.type.name, event.projectId, event.repoName)) {
+            return
+        }
+        super.saveEventAsync(event, address)
+        if (event.type == EventType.NODE_DOWNLOADED) {
+            val log = OperateLog(
+                type = event.type.name,
+                resourceKey = event.resourceKey,
+                projectId = event.projectId,
+                repoName = event.repoName,
+                description = event.data,
+                userId = event.userId,
+                clientAddress = address
+            )
+            centerOpLogClient.save(log)
+        }
     }
 
-    override fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
-        centerMetadataClient.deleteMetadata(request)
-        super.deleteMetadata(request, allowDeleteSystemMetadata)
-    }
-
-    override fun addForbidMetadata(request: MetadataSaveRequest) {
-        centerMetadataClient.addForbidMetadata(request)
-        super.addForbidMetadata(request)
+    override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
+        super.saveEventsAsync(eventList, address)
+        centerOpLogClient.batchRecord(eventList)
     }
 }

@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl.edgeplus
+package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -53,14 +53,15 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusNodeServiceImpl(
+@Conditional(CommitEdgeEdgeCondition::class)
+class EdgeNodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,
@@ -70,7 +71,7 @@ class EdgePlusNodeServiceImpl(
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
     override val clusterProperties: ClusterProperties
-) : EdgePlusNodeBaseService(
+) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
     fileReferenceService,

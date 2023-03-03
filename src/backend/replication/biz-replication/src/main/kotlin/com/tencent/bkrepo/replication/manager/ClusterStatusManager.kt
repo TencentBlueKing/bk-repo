@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.replication.manager
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.service.cluster.CenterJob
+import com.tencent.bkrepo.common.service.cluster.StandaloneJob
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -44,7 +44,7 @@ class ClusterStatusManager(
     private val clusterNodeService: ClusterNodeService
 ) {
     @Scheduled(initialDelay = 30 * 1000L, fixedDelay = 30 * 1000L) // 每隔30s检测一次
-    @CenterJob
+    @StandaloneJob
     fun start() {
         val clusterNodeList = clusterNodeService.listClusterNodes(name = null, type = null)
         clusterNodeList.forEach {

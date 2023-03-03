@@ -49,6 +49,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -57,6 +58,7 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.regex
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
@@ -64,7 +66,9 @@ import java.util.regex.Pattern
 /**
  * 仓库服务实现类
  */
-open class ProjectServiceImpl(
+@Service
+@ConditionalOnMissingBean
+class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionResource: ServicePermissionResource
 ) : ProjectService {

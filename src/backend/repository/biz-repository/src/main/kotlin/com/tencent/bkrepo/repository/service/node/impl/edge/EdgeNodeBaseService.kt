@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl.edgeplus
+package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -45,7 +45,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 
-abstract class EdgePlusNodeBaseService(
+abstract class EdgeNodeBaseService(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,

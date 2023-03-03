@@ -6,5 +6,5 @@ import org.springframework.context.annotation.Import
 
 @Configuration
 @EnableConfigurationProperties(ClusterProperties::class)
-@Import(CenterJobAspect::class)
+@Import(StandaloneJobAspect::class)
 class ClusterConfiguration

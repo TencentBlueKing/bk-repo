@@ -27,15 +27,20 @@
 
 package com.tencent.bkrepo.common.service.cluster
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import java.lang.annotation.Inherited
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
+import org.springframework.core.type.AnnotatedTypeMetadata
 
 /**
- * 当集群为EdgePlus时生效
+ * [ClusterArchitecture.COMMIT_EDGE]组网方式的[ClusterNodeType.CENTER]节点
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-@Inherited
-@MustBeDocumented
-@ConditionalOnProperty("cluster.role", havingValue = "EDGE_PLUS")
-annotation class ConditionalOnEdgePlusNode
+class CommitEdgeCenterCondition : Condition {
+    override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
+        val clusterRoleType = context.environment.getProperty("cluster.role", ClusterNodeType::class.java)
+        val clusterArchitecture =
+            context.environment.getProperty("cluster.architecture", ClusterArchitecture::class.java)
+        return clusterRoleType == ClusterNodeType.CENTER && clusterArchitecture == ClusterArchitecture.COMMIT_EDGE
+    }
+}

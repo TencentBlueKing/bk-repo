@@ -33,5 +33,5 @@ package com.tencent.bkrepo.common.api.pojo
 enum class ClusterArchitecture {
     STANDALONE,
     PROXY,
-    STAR
+    COMMIT_EDGE
 }

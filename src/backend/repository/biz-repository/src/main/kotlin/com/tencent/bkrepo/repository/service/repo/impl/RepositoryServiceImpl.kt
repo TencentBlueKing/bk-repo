@@ -77,6 +77,7 @@ import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -86,6 +87,7 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -93,7 +95,9 @@ import java.time.format.DateTimeFormatter
 /**
  * 仓库服务实现类
  */
-open class RepositoryServiceImpl(
+@Service
+@ConditionalOnMissingBean
+class RepositoryServiceImpl(
     val repositoryDao: RepositoryDao,
     val nodeService: NodeService,
     private val projectService: ProjectService,

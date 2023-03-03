@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.service.packages.impl.center
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
@@ -41,10 +40,8 @@ class CenterPackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
-    clusterProperties: ClusterProperties
 ) : PackageServiceImpl(
     packageDao,
     packageVersionDao,
-    packageSearchInterpreter,
-    clusterProperties
+    packageSearchInterpreter
 )

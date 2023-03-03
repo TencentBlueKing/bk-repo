@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.StarCenterCondition
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -59,7 +59,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(StarCenterCondition::class)
+@Conditional(CommitEdgeCenterCondition::class)
 class StarCenterRepositoryServiceImpl(
     repositoryDao: RepositoryDao,
     nodeService: NodeService,

@@ -25,12 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.edgeplus
+package com.tencent.bkrepo.repository.service.repo.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnEdgePlusNode
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -46,12 +46,12 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
-
 @Service
-@ConditionalOnEdgePlusNode
-class EdgePlusRepositoryServiceImpl(
+@Conditional(CommitEdgeEdgeCondition::class)
+class EdgeRepositoryServiceImpl(
     repositoryDao: RepositoryDao,
     nodeService: NodeService,
     projectService: ProjectService,

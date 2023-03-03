@@ -67,16 +67,19 @@ import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-open class PackageServiceImpl(
+@Service
+@ConditionalOnMissingBean
+class PackageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,
     private val packageSearchInterpreter: PackageSearchInterpreter,
-    private val clusterProperties: ClusterProperties
 ) : PackageService {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {

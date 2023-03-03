@@ -34,11 +34,8 @@ enum class ClusterNodeType {
     // 中心节点
     CENTER,
 
-    // 边缘节点, 只读
+    // 边缘节点
     EDGE,
-
-    // 边缘节点, 读写
-    EDGE_PLUS,
 
     // 独立节点
     STANDALONE,
