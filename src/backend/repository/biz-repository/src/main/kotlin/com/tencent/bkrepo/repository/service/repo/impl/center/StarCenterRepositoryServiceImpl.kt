@@ -55,6 +55,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
 @Service
@@ -110,13 +111,15 @@ class StarCenterRepositoryServiceImpl(
                 return super.createRepo(repoCreateRequest)
             }
 
+            val query = repositoryDao.buildSingleQuery(projectId, name, type.name)
             val regions = exitRepo.regions.orEmpty().toMutableSet()
             if (regions.isEmpty()) {
                 regions.add(clusterProperties.region.toString())
             }
             regions.add(SecurityUtils.getRegion() ?: clusterProperties.region.toString())
+            val update = Update().addToSet(TRepository::regions.name).each(regions)
             exitRepo.regions = regions
-            repositoryDao.save(exitRepo)
+            repositoryDao.updateFirst(query, update)
             return convertToDetail(exitRepo)!!
         }
     }
