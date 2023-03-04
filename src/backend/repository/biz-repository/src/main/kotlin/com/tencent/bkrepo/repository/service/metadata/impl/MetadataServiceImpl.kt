@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.service.cluster.ConditionalOnCenterNode
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
@@ -49,6 +48,7 @@ import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedE
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
@@ -60,7 +60,7 @@ import org.springframework.transaction.annotation.Transactional
  * 元数据服务实现类
  */
 @Service
-@ConditionalOnCenterNode
+@ConditionalOnMissingBean(MetadataService::class)
 class MetadataServiceImpl(
     private val nodeDao: NodeDao,
 ) : MetadataService {

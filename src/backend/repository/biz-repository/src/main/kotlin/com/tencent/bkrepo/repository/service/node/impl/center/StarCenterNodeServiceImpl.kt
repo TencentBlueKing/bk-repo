@@ -48,6 +48,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeServiceImpl
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -70,7 +71,7 @@ class StarCenterNodeServiceImpl(
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
     val clusterProperties: ClusterProperties
-) : CenterNodeServiceImpl(
+) : NodeServiceImpl(
     nodeDao,
     repositoryDao,
     fileReferenceService,

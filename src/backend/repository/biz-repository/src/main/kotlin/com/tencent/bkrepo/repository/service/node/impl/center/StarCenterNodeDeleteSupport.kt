@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.bson.types.ObjectId
@@ -50,10 +51,10 @@ import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
 
 class StarCenterNodeDeleteSupport(
-    private val centerNodeBaseService: CenterNodeBaseService,
+    private val nodeBaseService: NodeBaseService,
     private val clusterProperties: ClusterProperties
 ): NodeDeleteSupport(
-    centerNodeBaseService
+    nodeBaseService
 ) {
 
     override fun deleteByPath(

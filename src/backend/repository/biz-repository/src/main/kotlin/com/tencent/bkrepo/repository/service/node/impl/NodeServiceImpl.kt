@@ -25,10 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl.center
+package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.service.cluster.AutonomousCenterCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -44,22 +43,18 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
-import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
-import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
-import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
-import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
+import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import org.springframework.context.annotation.Conditional
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
-@Conditional(AutonomousCenterCondition::class)
-class CenterNodeServiceImpl(
+@ConditionalOnMissingBean(NodeService::class)
+class NodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,
@@ -68,7 +63,7 @@ class CenterNodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier
-) : CenterNodeBaseService(
+) : NodeBaseService(
     nodeDao,
     repositoryDao,
     fileReferenceService,

@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -75,7 +74,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-@ConditionalOnMissingBean
+@ConditionalOnMissingBean(PackageService::class)
 class PackageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,

@@ -67,7 +67,7 @@ import java.util.regex.Pattern
  * 仓库服务实现类
  */
 @Service
-@ConditionalOnMissingBean
+@ConditionalOnMissingBean(ProjectService::class)
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionResource: ServicePermissionResource

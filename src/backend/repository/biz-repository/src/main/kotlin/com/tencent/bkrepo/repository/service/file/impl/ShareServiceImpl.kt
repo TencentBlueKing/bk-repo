@@ -47,12 +47,14 @@ import com.tencent.bkrepo.repository.service.file.ShareService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -60,7 +62,9 @@ import java.util.UUID
 /**
  * 文件分享服务实现类
  */
-open class ShareServiceImpl(
+@Service
+@ConditionalOnMissingBean(ShareService::class)
+class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate

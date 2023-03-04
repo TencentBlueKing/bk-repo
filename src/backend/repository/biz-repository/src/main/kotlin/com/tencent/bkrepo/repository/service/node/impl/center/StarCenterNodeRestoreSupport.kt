@@ -31,13 +31,14 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
+import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 
 class StarCenterNodeRestoreSupport(
-    centerNodeBaseService: CenterNodeBaseService
+    nodeBaseService: NodeBaseService
 ) : NodeRestoreSupport(
-    centerNodeBaseService
+    nodeBaseService
 ) {
 
     override fun resolveConflict(context: RestoreContext, node: TNode) {
@@ -51,7 +52,7 @@ class StarCenterNodeRestoreSupport(
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        existNode!!.checkIsSrcRegion()
+                        existNode?.checkIsSrcRegion()
                         val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
                         nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(operator))
                         conflictCount += 1

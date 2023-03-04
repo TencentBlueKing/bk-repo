@@ -52,6 +52,7 @@ import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
 import com.tencent.bkrepo.repository.util.RepoEventFactory
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -70,7 +71,7 @@ class StarCenterRepositoryServiceImpl(
     messageSupplier: MessageSupplier,
     servicePermissionResource: ServicePermissionResource,
     private val clusterProperties: ClusterProperties
-) : CenterRepositoryServiceImpl(
+) : RepositoryServiceImpl(
     repositoryDao,
     nodeService,
     projectService,

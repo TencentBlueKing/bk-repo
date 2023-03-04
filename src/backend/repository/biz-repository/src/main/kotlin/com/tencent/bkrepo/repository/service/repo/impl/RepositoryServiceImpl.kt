@@ -96,7 +96,7 @@ import java.time.format.DateTimeFormatter
  * 仓库服务实现类
  */
 @Service
-@ConditionalOnMissingBean
+@ConditionalOnMissingBean(RepositoryService::class)
 class RepositoryServiceImpl(
     val repositoryDao: RepositoryDao,
     val nodeService: NodeService,

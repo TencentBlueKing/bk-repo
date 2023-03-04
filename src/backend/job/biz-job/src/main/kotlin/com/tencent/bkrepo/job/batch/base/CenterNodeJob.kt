@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.job.batch.base
 
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
@@ -10,6 +11,9 @@ abstract class CenterNodeJob<C : JobContext>(batchJobProperties: BatchJobPropert
     private lateinit var clusterProperties: ClusterProperties
 
     override fun shouldExecute(): Boolean {
-        return super.shouldExecute() && clusterProperties.role == ClusterNodeType.CENTER
+        val centerNode = clusterProperties.role == ClusterNodeType.CENTER
+        val commitEdgeEdgeNode = clusterProperties.role == ClusterNodeType.EDGE &&
+            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        return super.shouldExecute() && (centerNode || commitEdgeEdgeNode)
     }
 }
