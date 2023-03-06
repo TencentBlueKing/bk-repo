@@ -20,14 +20,14 @@
             <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="tokenFormData.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('expiress')" property="expiredAt">
+            <bk-form-item :label="$t('express')" property="expiredAt">
                 <bk-date-picker
                     style="width:100%"
                     v-model="tokenFormData.expiredAt"
                     :options="{
                         disabledDate: (date) => date < new Date()
                     }"
-                    :placeholder="$t('tokenExpiressTip')">
+                    :placeholder="$t('tokenExpressTip')">
                 </bk-date-picker>
             </bk-form-item>
         </bk-form>
