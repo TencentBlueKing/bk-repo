@@ -35,7 +35,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 
-class StarCenterNodeRestoreSupport(
+class CommitEdgeCenterNodeRestoreSupport(
     nodeBaseService: NodeBaseService
 ) : NodeRestoreSupport(
     nodeBaseService

@@ -50,7 +50,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
 
-class StarCenterNodeDeleteSupport(
+class CommitEdgeCenterNodeDeleteSupport(
     private val nodeBaseService: NodeBaseService,
     private val clusterProperties: ClusterProperties
 ): NodeDeleteSupport(
@@ -182,6 +182,6 @@ class StarCenterNodeDeleteSupport(
     }
 
     companion object {
-        private val logger = Logger.getLogger(StarCenterNodeDeleteSupport::class.java)
+        private val logger = Logger.getLogger(CommitEdgeCenterNodeDeleteSupport::class.java)
     }
 }

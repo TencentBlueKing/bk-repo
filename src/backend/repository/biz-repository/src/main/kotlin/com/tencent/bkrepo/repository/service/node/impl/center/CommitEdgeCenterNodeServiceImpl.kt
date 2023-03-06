@@ -61,7 +61,7 @@ import java.time.LocalDateTime
 
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
-class StarCenterNodeServiceImpl(
+class CommitEdgeCenterNodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,
@@ -163,11 +163,11 @@ class StarCenterNodeServiceImpl(
     }
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        return StarCenterNodeDeleteSupport(this, clusterProperties).deleteNode(deleteRequest)
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteNode(deleteRequest)
     }
 
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        return StarCenterNodeDeleteSupport(this, clusterProperties).deleteNodes(nodesDeleteRequest)
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteNodes(nodesDeleteRequest)
     }
 
     override fun deleteByPath(
@@ -176,7 +176,7 @@ class StarCenterNodeServiceImpl(
         fullPath: String,
         operator: String
     ): NodeDeleteResult {
-        return StarCenterNodeDeleteSupport(this, clusterProperties).deleteByPath(
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteByPath(
             projectId,
             repoName,
             fullPath,
@@ -190,7 +190,7 @@ class StarCenterNodeServiceImpl(
         fullPaths: List<String>,
         operator: String
     ): NodeDeleteResult {
-        return StarCenterNodeDeleteSupport(this, clusterProperties).deleteByPaths(
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteByPaths(
             projectId,
             repoName,
             fullPaths,
@@ -204,7 +204,7 @@ class StarCenterNodeServiceImpl(
         date: LocalDateTime,
         operator: String
     ): NodeDeleteResult {
-        return StarCenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
             projectId,
             repoName,
             date,
@@ -213,10 +213,10 @@ class StarCenterNodeServiceImpl(
     }
 
     override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
-        return StarCenterNodeRestoreSupport(this).restoreNode(restoreContext)
+        return CommitEdgeCenterNodeRestoreSupport(this).restoreNode(restoreContext)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(StarCenterNodeServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(CommitEdgeCenterNodeServiceImpl::class.java)
     }
 }

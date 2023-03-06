@@ -50,6 +50,7 @@ open class HttpAuthSecurity {
     var platformAuthEnabled: Boolean = true
     var jwtAuthEnabled: Boolean = true
     var oauthEnabled: Boolean = true
+    var temporaryTokenEnabled: Boolean = true
     var authenticationManager: AuthenticationManager? = null
     var jwtAuthProperties: JwtAuthProperties? = null
     val customizers: MutableList<HttpAuthSecurityCustomizer> = mutableListOf()

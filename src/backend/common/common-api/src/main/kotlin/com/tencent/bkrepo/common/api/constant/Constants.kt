@@ -97,6 +97,7 @@ const val PLATFORM_AUTH_PREFIX = "Platform "
 const val BEARER_AUTH_PREFIX = "Bearer "
 const val AUTH_HEADER_UID = "X-BKREPO-UID"
 const val OAUTH_AUTH_PREFIX = "Oauth"
+const val TEMPORARY_AUTH_PREFIX = "Temporary"
 
 /**
  * micro service header user id key

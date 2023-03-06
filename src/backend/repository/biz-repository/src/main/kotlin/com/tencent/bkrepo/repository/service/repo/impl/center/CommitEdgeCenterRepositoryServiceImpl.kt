@@ -61,7 +61,7 @@ import org.springframework.stereotype.Service
 
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
-class StarCenterRepositoryServiceImpl(
+class CommitEdgeCenterRepositoryServiceImpl(
     repositoryDao: RepositoryDao,
     nodeService: NodeService,
     projectService: ProjectService,
@@ -173,6 +173,6 @@ class StarCenterRepositoryServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(StarCenterRepositoryServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(CommitEdgeCenterRepositoryServiceImpl::class.java)
     }
 }

@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.http.jwt.JwtAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.http.oauth.OauthAuthHandler
 import com.tencent.bkrepo.common.security.http.platform.PlatformAuthHandler
+import com.tencent.bkrepo.common.security.http.temporary.TemporaryTokenAuthHandler
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Bean
@@ -90,6 +91,9 @@ class HttpAuthSecurityConfiguration(
         }
         if (httpAuthSecurity.oauthEnabled) {
             httpAuthSecurity.addHttpAuthHandler(OauthAuthHandler(authenticationManager))
+        }
+        if (httpAuthSecurity.temporaryTokenEnabled) {
+            httpAuthSecurity.addHttpAuthHandler(TemporaryTokenAuthHandler(authenticationManager))
         }
     }
 }
