@@ -65,5 +65,6 @@ data class TRepository(
     var projectId: String,
 
     var quota: Long? = null,
-    var used: Long? = null
+    var used: Long? = null,
+    var deleted: LocalDateTime? = null
 )
