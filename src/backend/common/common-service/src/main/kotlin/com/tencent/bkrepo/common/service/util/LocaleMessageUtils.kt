@@ -54,10 +54,23 @@ object LocaleMessageUtils {
         params: Array<out Any>? = null,
         locale: Locale = LocaleContextHolder.getLocale()
     ): String {
+        return getLocalizedMessage(messageCode.getKey(), params, locale)
+    }
+
+    /**
+     * 获取本地化消息
+     * @param messageKey messageKey
+     * @param params 替换描述信息占位符的参数数组
+     */
+    fun getLocalizedMessage(
+        messageKey: String,
+        params: Array<out Any>? = null,
+        locale: Locale = LocaleContextHolder.getLocale()
+    ): String {
         return try {
-            messageSource.getMessage(messageCode.getKey(), params, locale)
+            messageSource.getMessage(messageKey, params, locale)
         } catch (exception: NoSuchMessageException) {
-            logger.warn("Can not find [${messageCode.getKey()}] localized message, use default message.")
+            logger.warn("Can not find [$messageKey] localized message, use default message.")
             messageSource.getMessage(CommonMessageCode.SYSTEM_ERROR.getKey(), null, locale)
         }
     }
