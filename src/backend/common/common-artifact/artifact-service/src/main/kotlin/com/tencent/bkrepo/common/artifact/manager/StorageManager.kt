@@ -31,30 +31,18 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
-import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
-import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
-import com.tencent.bkrepo.replication.api.BlobReplicaClient
-import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -75,28 +63,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
-    private val clusterProperties: ClusterProperties,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val fsNodeClient: FsNodeClient
+    private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
 ) {
-
-    /**
-     * 中心节点集群信息
-     */
-    private val centerClusterInfo = ClusterInfo(
-        url = clusterProperties.center.url,
-        certificate = clusterProperties.center.certificate.orEmpty(),
-        appId = clusterProperties.center.appId,
-        accessKey = clusterProperties.center.accessKey,
-        secretKey = clusterProperties.center.secretKey
-    )
-
-    /**
-     * 存储同步client
-     */
-    private val blobReplicaClient: BlobReplicaClient by lazy {
-        FeignClientFactory.create<BlobReplicaClient>(centerClusterInfo)
-    }
 
     /**
      * 存储构件[artifactFile]到[storageCredentials]上，并根据[request]创建节点
@@ -152,21 +120,8 @@ class StorageManager(
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
-        val sha256 = node.sha256.orEmpty()
-        if (isFsFile(node)) {
-            return loadFromFs(node, range, storageCredentials)
-        }
-        /*
-        * 顺序查找
-        * 1.当前仓库存储实例 (正常情况)
-        * 2.中央节点拉取（边缘节点情况）
-        * 3.拷贝存储实例（节点快速拷贝场景）
-        * 4.旧存储实例（仓库迁移场景）
-        * */
-        return storageService.load(sha256, range, storageCredentials)
-            ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
-            ?: loadFromCopyIfNecessary(node, range)
-            ?: loadFromRepoOldIfNecessary(node, range, storageCredentials)
+        val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
+        return nodeResource.getArtifactInputStream()
     }
 
     /**
@@ -180,148 +135,6 @@ class StorageManager(
     ): ArtifactInputStream? {
         return loadArtifactInputStream(node?.nodeInfo, storageCredentials)
     }
-
-    /**
-     * 因为支持快速copy，也就是说源节点的数据可能还未完全上传成功，
-     * 还在本地文件系统上，这时拷贝节点就会从源存储去加载数据。
-     * */
-    private fun loadFromCopyIfNecessary(
-        node: NodeInfo,
-        range: Range
-    ): ArtifactInputStream? {
-        node.copyFromCredentialsKey?.let {
-            val digest = node.sha256!!
-            logger.info("load data [$digest] from copy credentialsKey [$it]")
-            val fromCredentialsKey = storageCredentialsClient.findByKey(it).data
-            return storageService.load(digest, range, fromCredentialsKey)
-        }
-        return null
-    }
-
-    /**
-     * 仓库迁移场景
-     * 仓库还在迁移中，旧的数据还未存储到新的存储实例上去，所以从仓库之前的存储实例中加载
-     * */
-    private fun loadFromRepoOldIfNecessary(
-        node: NodeInfo,
-        range: Range,
-        storageCredentials: StorageCredentials?
-    ): ArtifactInputStream? {
-        val repositoryDetail = getRepoDetail(node)
-        val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
-        if (storageCredentials != oldCredentials) {
-            logger.info(
-                "load data [${node.sha256!!}] from" +
-                    " repo old credentialsKey [${repositoryDetail.oldCredentialsKey}]"
-            )
-            return storageService.load(node.sha256!!, range, oldCredentials)
-        }
-        return null
-    }
-
-    private fun loadFromFs(
-        node: NodeInfo,
-        range: Range,
-        storageCredentials: StorageCredentials?
-    ): ArtifactInputStream? {
-        with(node) {
-            val blocks = fsNodeClient.listBlockResources(
-                projectId = projectId,
-                repoName = repoName,
-                path = fullPath,
-                startPos = range.start,
-                endPos = range.end
-            ).data ?: return null
-            return storageService.load(blocks, range, storageCredentials)
-        }
-    }
-
-    /**
-     * 根据credentialsKey查找StorageCredentials
-     * */
-    private fun findStorageCredentialsByKey(credentialsKey: String?): StorageCredentials? {
-        credentialsKey ?: return null
-        return storageCredentialsClient.findByKey(credentialsKey).data
-    }
-
-    /**
-     * 通过中心节点代理拉取文件
-     */
-    private fun loadFromCenterIfNecessary(
-        sha256: String,
-        range: Range,
-        storageKey: String?
-    ): ArtifactInputStream? {
-        if (clusterProperties.role == RoleType.CENTER || !existInCenter(sha256, storageKey)) {
-            return null
-        }
-        return loadFromCenter(sha256, range, storageKey)
-    }
-
-    /**
-     * 判断数据在中心节点是否存在
-     * 请求异常返回false
-     */
-    private fun existInCenter(sha256: String, storageKey: String?): Boolean {
-        return try {
-            blobReplicaClient.check(sha256, storageKey).data ?: false
-        } catch (exception: Exception) {
-            logger.error("Failed to check blob data[$sha256] in center node.", exception)
-            false
-        }
-    }
-
-    /**
-     * 通过中心节点代理拉取文件
-     */
-    private fun loadFromCenter(
-        sha256: String,
-        range: Range,
-        storageKey: String?
-    ): ArtifactInputStream? {
-        try {
-            val request = BlobPullRequest(sha256, range, storageKey)
-            val response = blobReplicaClient.pull(request)
-            check(response.status() == HttpStatus.OK.value) {
-                "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
-            }
-            val artifactInputStream = response.body()?.asInputStream()?.artifactStream(range)
-            if (artifactInputStream != null && range.isFullContent()) {
-                val listener = ProxyBlobCacheWriter(storageService, sha256)
-                artifactInputStream.addListener(listener)
-            }
-            logger.info("Pull blob data[$sha256] from center node.")
-            return artifactInputStream
-        } catch (exception: Exception) {
-            logger.error("Failed to pull blob data[$sha256] from center node.", exception)
-        }
-        return null
-    }
-
-    /**
-     * 获取RepoDetail
-     * */
-    private fun getRepoDetail(node: NodeInfo): RepositoryDetail {
-        with(node) {
-            // 如果当前上下文存在该node的repo信息则，返回上下文中的repo，大部分请求应该命中这
-            ArtifactContextHolder.getRepoDetail()?.let {
-                if (it.projectId == projectId && it.name == name) {
-                    return it
-                }
-            }
-            // 如果是异步或者请求上下文找不到，则通过查询，并进行缓存
-            val repositoryId = ArtifactContextHolder.RepositoryId(
-                projectId = projectId,
-                repoName = repoName
-            )
-            return ArtifactContextHolder.getRepoDetail(repositoryId)
-        }
-    }
-
-    private fun isFsFile(node: NodeInfo): Boolean {
-        return node.metadata?.containsKey(FS_ATTR_KEY) == true
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(StorageManager::class.java)
     }
