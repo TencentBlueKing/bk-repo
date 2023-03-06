@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConf
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -77,7 +78,7 @@ import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -96,7 +97,7 @@ import java.time.format.DateTimeFormatter
  * 仓库服务实现类
  */
 @Service
-@ConditionalOnMissingBean(type = ["RepositoryService"])
+@Conditional(DefaultCondition::class)
 class RepositoryServiceImpl(
     val repositoryDao: RepositoryDao,
     val nodeService: NodeService,

@@ -32,13 +32,14 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
 import com.tencent.bkrepo.repository.model.TTemporaryToken
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.repository.service.file.TemporaryTokenService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -48,7 +49,7 @@ import java.util.UUID
  * 临时token服务实现类
  */
 @Service
-@ConditionalOnMissingBean(type = ["TemporaryTokenService"])
+@Conditional(DefaultCondition::class)
 class TemporaryTokenServiceImpl(
     private val temporaryTokenDao: TemporaryTokenDao
 ) : TemporaryTokenService, ArtifactService() {
