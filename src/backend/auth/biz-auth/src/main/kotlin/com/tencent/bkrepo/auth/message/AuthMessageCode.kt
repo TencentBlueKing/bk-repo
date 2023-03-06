@@ -71,8 +71,8 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_INVALID_TYPE(34, "auth.invalid.type"),
     AUTH_LOGIN_FAILED(35, "auth.login.failed"),
     AUTH_EXT_PERMISSION_NOT_EXIST(35, "auth.ext.permission.not-exist"),
-    AUTH_USER_FORAUTH_NOT_PERM(36, "auth.user.for-auth.not-perm"),
-    AUTH_ACCOUT_FORAUTH_NOT_PERM(37, "auth.account.for-auth.not-perm"),
+    AUTH_USER_FORAUTH_NOT_PERM(36, "auth.user.forauth.not-perm"),
+    AUTH_ACCOUT_FORAUTH_NOT_PERM(37, "auth.account.forauth.not-perm"),
     AUTH_ENTITY_USER_NOT_EXIST(38, "auth.entity.user.not-exist")
     ;
 

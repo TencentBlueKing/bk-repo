@@ -56,8 +56,8 @@
                 ]
                 if (this.subtaskOverview.packageKey) {
                     info.push(
-                        { label: this.$t('productName'), value: this.subtaskOverview.packageKey },
-                        { label: this.$t('productVersion'), value: this.subtaskOverview.version }
+                        { label: this.$t('artifactName'), value: this.subtaskOverview.packageKey },
+                        { label: this.$t('ArtifactVersion'), value: this.subtaskOverview.version }
                     )
                 } else {
                     info.push({ label: this.$t('storagePath'), value: this.subtaskOverview.fullPath })

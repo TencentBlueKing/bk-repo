@@ -18,7 +18,7 @@
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
                 <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
-                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
+                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('The docker repository name does not support capital English letters')}}</div>
             </bk-form-item>
@@ -92,7 +92,7 @@
                     maxlength="200"
                     :rows="6"
                     v-model.trim="repoBaseInfo.description"
-                    :placeholder="$t('repoDescriptionPlacehodler')">
+                    :placeholder="$t('repoDescriptionPlaceholder')">
                 </bk-input>
             </bk-form-item>
         </bk-form>
@@ -214,7 +214,7 @@
                         },
                         {
                             regex: this.repoBaseInfo.type === 'docker' ? /^[a-z][a-z0-9\-_]{1,31}$/ : /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler'),
+                            message: this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder'),
                             trigger: 'blur'
                         },
                         {
