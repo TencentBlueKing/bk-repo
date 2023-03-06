@@ -74,7 +74,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-@ConditionalOnMissingBean(PackageService::class)
+@ConditionalOnMissingBean(type = ["PackageService"])
 class PackageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,

@@ -48,7 +48,7 @@ import java.util.UUID
  * 临时token服务实现类
  */
 @Service
-@ConditionalOnMissingBean(TemporaryTokenService::class)
+@ConditionalOnMissingBean(type = ["TemporaryTokenService"])
 class TemporaryTokenServiceImpl(
     private val temporaryTokenDao: TemporaryTokenDao
 ) : TemporaryTokenService, ArtifactService() {

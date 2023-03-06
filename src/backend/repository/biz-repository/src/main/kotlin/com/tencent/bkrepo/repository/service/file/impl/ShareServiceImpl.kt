@@ -63,7 +63,7 @@ import java.util.UUID
  * 文件分享服务实现类
  */
 @Service
-@ConditionalOnMissingBean(ShareService::class)
+@ConditionalOnMissingBean(type = ["ShareService"])
 class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,

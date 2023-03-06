@@ -60,7 +60,7 @@ import org.springframework.transaction.annotation.Transactional
  * 元数据服务实现类
  */
 @Service
-@ConditionalOnMissingBean(MetadataService::class)
+@ConditionalOnMissingBean(type = ["MetadataService"])
 class MetadataServiceImpl(
     private val nodeDao: NodeDao,
 ) : MetadataService {
