@@ -31,8 +31,14 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX_DEF
@@ -44,6 +50,8 @@ import com.tencent.bkrepo.repository.model.TNode.Companion.METADATA_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.METADATA_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.PATH_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.PATH_IDX_DEF
+import com.tencent.bkrepo.repository.model.TNode.Companion.REGION_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.REGION_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.SHA256_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.SHA256_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -60,7 +68,8 @@ import java.time.LocalDateTime
     CompoundIndex(name = METADATA_IDX, def = METADATA_IDX_DEF, background = true),
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
     CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
-    CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true)
+    CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true),
+    CompoundIndex(name = REGION_IDX, def = REGION_IDX_DEF, background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -82,11 +91,50 @@ data class TNode(
     var copyFromCredentialsKey: String? = null,
     var copyIntoCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
+    var regions: Set<String>? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String
 ) {
+    @JsonIgnore
+    fun checkContainsSrcRegion() {
+        if (!containsSrcRegion()) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+        }
+    }
+
+    @JsonIgnore
+    fun checkIsSrcRegion() {
+        if (!isSrcRegion()) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+        }
+    }
+
+    @JsonIgnore
+    fun containsSrcRegion(): Boolean {
+        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
+        var srcRegion = SecurityUtils.getRegion()
+
+        if (regions == null && srcRegion.isNullOrBlank()) {
+            // 兼容旧逻辑
+            return true
+        } else if (regions == null) {
+            // edge plus操作center节点
+            return false
+        } else if (srcRegion.isNullOrBlank()) {
+            // center操作节点
+            srcRegion = clusterProperties.region
+        }
+
+        return regions!!.contains(srcRegion)
+    }
+
+    @JsonIgnore
+    fun isSrcRegion(): Boolean {
+        return containsSrcRegion() && (regions == null || regions!!.size == 1)
+    }
+
     companion object {
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         const val PATH_IDX = "projectId_repoName_path_idx"
@@ -100,5 +148,7 @@ data class TNode(
         const val COPY_FROM_IDX_DEF = "{'copyFromCredentialsKey':1}"
         const val FOLDER_IDX = "folder_idx"
         const val FOLDER_IDX_DEF = "{'folder': 1}"
+        const val REGION_IDX = "region_idx"
+        const val REGION_IDX_DEF = "{'region': 1}"
     }
 }

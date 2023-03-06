@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.repository.service.file.ShareService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -62,6 +64,7 @@ import java.util.UUID
  * 文件分享服务实现类
  */
 @Service
+@Conditional(DefaultCondition::class)
 class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
@@ -98,8 +101,7 @@ class ShareServiceImpl(
         }
     }
 
-    override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
-        logger.info("artifact[$artifactInfo] download user: $userId")
+    override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo {
         with(artifactInfo) {
             val query = Query.query(
                 where(TShareRecord::projectId).isEqualTo(artifactInfo.projectId)
@@ -109,13 +111,21 @@ class ShareServiceImpl(
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
                 ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-            val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
             }
+            return convert(shareRecord)
+        }
+    }
+
+    override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
+        logger.info("artifact[$artifactInfo] download user: $userId")
+        val shareRecord = checkToken(userId, token, artifactInfo)
+        with(artifactInfo) {
+            val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
@@ -160,7 +170,8 @@ class ShareServiceImpl(
                     shareUrl = generateShareUrl(it),
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
-                    expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME)
+                    expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
+                    createdBy = it.createdBy
                 )
             }
         }

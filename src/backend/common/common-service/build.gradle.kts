@@ -53,5 +53,7 @@ dependencies {
         implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     }
 
+    api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
+
     compileOnly(project(":common:common-mongo"))
 }

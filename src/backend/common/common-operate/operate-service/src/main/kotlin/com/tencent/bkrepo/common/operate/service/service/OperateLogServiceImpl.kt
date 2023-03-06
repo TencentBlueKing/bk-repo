@@ -61,7 +61,6 @@ import java.time.format.DateTimeFormatter
 /**
  * OperateLogService 实现类
  */
-
 open class OperateLogServiceImpl(
     private val operateProperties: OperateProperties,
     private val operateLogDao: OperateLogDao,
@@ -193,7 +192,7 @@ open class OperateLogServiceImpl(
         }
     }
 
-    private fun notNeedRecord(type: String, projectId: String?, repoName: String?): Boolean {
+    protected fun notNeedRecord(type: String, projectId: String?, repoName: String?): Boolean {
         val projectRepoKey = "$projectId/$repoName"
         if (match(operateProperties.eventType, type)) {
             return true

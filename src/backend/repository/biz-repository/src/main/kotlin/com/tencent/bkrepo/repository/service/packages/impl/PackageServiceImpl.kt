@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -66,6 +67,7 @@ import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
@@ -73,10 +75,11 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
+@Conditional(DefaultCondition::class)
 class PackageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,
-    private val packageSearchInterpreter: PackageSearchInterpreter
+    private val packageSearchInterpreter: PackageSearchInterpreter,
 ) : PackageService {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
@@ -250,11 +253,9 @@ class PackageServiceImpl(
                     publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
                 } else {
                     publishEvent(
-                        (
-                            PackageEventFactory.buildUpdatedEvent(
-                                request, realIpAddress ?: HttpContextHolder.getClientAddress()
-                            )
-                            )
+                        PackageEventFactory.buildUpdatedEvent(
+                            request, realIpAddress ?: HttpContextHolder.getClientAddress()
+                        )
                     )
                 }
                 logger.info("Create package version[$newVersion] success")
@@ -541,7 +542,7 @@ class PackageServiceImpl(
                     versionTag = versionTag.orEmpty(),
                     extension = packageExtension.orEmpty(),
                     description = packageDescription,
-                    historyVersion = mutableSetOf(versionName)
+                    historyVersion = mutableSetOf(versionName),
                 )
                 try {
                     packageDao.save(tPackage)

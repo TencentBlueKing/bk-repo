@@ -37,16 +37,20 @@ import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.springframework.context.annotation.Primary
@@ -122,6 +126,16 @@ class NodeController(
     override fun deleteNode(nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
         nodeService.deleteNode(nodeDeleteRequest)
         return ResponseBuilder.success()
+    }
+
+    override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult> {
+        return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
+    }
+
+    override fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult> {
+        return ResponseBuilder.success(
+            nodeService.restoreNode(nodeRestoreRequest.artifactInfo, nodeRestoreRequest.nodeRestoreOption)
+        )
     }
 
     override fun computeSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {

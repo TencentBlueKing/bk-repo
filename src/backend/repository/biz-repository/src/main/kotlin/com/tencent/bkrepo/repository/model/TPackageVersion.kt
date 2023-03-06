@@ -65,7 +65,8 @@ data class TPackageVersion(
     var stageTag: List<String>,
     var metadata: List<TMetadata>,
     var tags: List<String>? = null,
-    var extension: Map<String, Any>? = null
+    var extension: Map<String, Any>? = null,
+    var region: String? = null
 ) {
     companion object {
         const val VERSION_NAME_IDX = "version_name_idx"

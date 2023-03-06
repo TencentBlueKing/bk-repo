@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.replication.model
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime

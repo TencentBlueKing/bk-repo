@@ -67,7 +67,8 @@ data class TPackage(
     var description: String? = null,
     var versionTag: Map<String, String>? = null,
     var extension: Map<String, Any>? = null,
-    var historyVersion: Set<String> = emptySet()
+    var historyVersion: Set<String> = emptySet(),
+    var region: Set<String>? = null
 ) {
     companion object {
         const val PACKAGE_NAME_IDX = "package_name_idx"

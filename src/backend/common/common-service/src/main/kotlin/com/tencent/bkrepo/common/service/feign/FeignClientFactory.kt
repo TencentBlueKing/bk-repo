@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,46 +10,48 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.service.feign
 
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_REGION
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.constant.urlEncode
-import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
-import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
-import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
-import com.tencent.bkrepo.common.security.util.HttpSigner
-import com.tencent.bkrepo.common.security.util.HttpSigner.ACCESS_KEY
-import com.tencent.bkrepo.common.security.util.HttpSigner.APP_ID
-import com.tencent.bkrepo.common.security.util.HttpSigner.MILLIS_PER_SECOND
-import com.tencent.bkrepo.common.security.util.HttpSigner.REQUEST_TTL
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_ALGORITHM
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_TIME
-import com.tencent.bkrepo.common.security.util.HttpSigner.TIME_SPLIT
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.HttpSigner
+import com.tencent.bkrepo.common.service.util.HttpSigner.ACCESS_KEY
+import com.tencent.bkrepo.common.service.util.HttpSigner.APP_ID
+import com.tencent.bkrepo.common.service.util.HttpSigner.MILLIS_PER_SECOND
+import com.tencent.bkrepo.common.service.util.HttpSigner.REQUEST_TTL
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_ALGORITHM
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
+import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.createSSLSocketFactory
+import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
+import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
 import feign.Client
 import feign.Feign
 import feign.Logger
@@ -67,30 +69,50 @@ object FeignClientFactory {
     /**
      * [remoteClusterInfo]为远程集群信息
      */
-    inline fun <reified T> create(remoteClusterInfo: ClusterInfo): T {
-        return create(T::class.java, remoteClusterInfo)
+    inline fun <reified T> create(
+        remoteClusterInfo: ClusterInfo,
+        serviceName: String? = null,
+        region: String? = null
+    ): T {
+        return create(T::class.java, remoteClusterInfo, serviceName)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> create(target: Class<T>, remoteClusterInfo: ClusterInfo): T {
+    fun <T> create(
+        target: Class<T>,
+        remoteClusterInfo: ClusterInfo,
+        serviceName: String? = null,
+        region: String? = null
+    ): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
+        val url = if (serviceName.isNullOrBlank()) {
+            remoteClusterInfo.url
+        } else {
+            remoteClusterInfo.url.ensureSuffix("/").plus(serviceName)
+        }
         return cache.getOrPut(remoteClusterInfo) {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
                 .client(createClient(remoteClusterInfo))
-                .requestInterceptor(createInterceptor(remoteClusterInfo))
+                .requestInterceptor(createInterceptor(remoteClusterInfo, region))
                 .encoder(SpringContextUtils.getBean())
                 .decoder(SpringContextUtils.getBean())
                 .contract(SpringContextUtils.getBean())
                 .retryer(SpringContextUtils.getBean())
                 .options(options)
                 .errorDecoder(SpringContextUtils.getBean())
-                .target(target, remoteClusterInfo.url) as Any
+                .target(target, url) as Any
         } as T
     }
 
-    private fun createInterceptor(cluster: ClusterInfo): RequestInterceptor {
+    private fun createInterceptor(cluster: ClusterInfo, region: String?): RequestInterceptor {
         return RequestInterceptor {
+            HeaderUtils.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.let { lang ->
+                it.header(HttpHeaders.ACCEPT_LANGUAGE, lang)
+            }
+            if (!region.isNullOrBlank()) {
+                it.header(MS_REQUEST_SRC_REGION, region)
+            }
             if (cluster.appId != null) {
                 // 内部集群请求签名
                 require(cluster.accessKey != null)
@@ -111,6 +133,9 @@ object FeignClientFactory {
                 val bodyHash = Hashing.sha256().hashBytes(bodyToHash).toString()
                 val sig = HttpSigner.sign(it, bodyHash, cluster.secretKey!!, algorithm)
                 it.query(SIGN, sig)
+                HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let { userId ->
+                    it.header(MS_AUTH_HEADER_UID, userId.toString())
+                }
             } else {
                 it.header(HttpHeaders.AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
             }

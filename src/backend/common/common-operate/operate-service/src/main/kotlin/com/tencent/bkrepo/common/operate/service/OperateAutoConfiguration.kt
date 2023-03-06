@@ -31,12 +31,16 @@ import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.service.aop.LogOperateAspect
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
 import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
+import com.tencent.bkrepo.common.operate.service.service.CommitEdgeOperateLogServiceImpl
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
@@ -54,6 +58,17 @@ class OperateAutoConfiguration {
         permissionManager: PermissionManager
     ): OperateLogService {
         return OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
+    }
+
+    @Bean
+    @Conditional(CommitEdgeEdgeCondition::class)
+    fun commitEdgeOperateLogService(
+        operateProperties: OperateProperties,
+        operateLogDao: OperateLogDao,
+        permissionManager: PermissionManager,
+        clusterProperties: ClusterProperties
+    ): OperateLogService {
+        return CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
     }
 
     @Bean

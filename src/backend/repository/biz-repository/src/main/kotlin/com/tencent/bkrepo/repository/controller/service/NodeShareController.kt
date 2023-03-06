@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster
+package com.tencent.bkrepo.repository.controller.service
 
-/**
- * 集群类型
- */
-enum class ClusterNodeType {
-    // 中心节点
-    CENTER,
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.NodeShareClient
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
+import com.tencent.bkrepo.repository.service.file.ShareService
+import org.springframework.web.bind.annotation.RestController
 
-    // 边缘节点
-    EDGE,
+@RestController
+class NodeShareController(
+    private val shareService: ShareService
+): NodeShareClient {
+    override fun create(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        request: ShareRecordCreateRequest
+    ): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.create(userId, artifactInfo, request))
+    }
 
-    // 独立节点
-    STANDALONE,
-
-    // 远端节点
-    REMOTE
+    override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.checkToken(userId, token, artifactInfo))
+    }
 }

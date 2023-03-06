@@ -35,9 +35,11 @@ import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_KEY
+import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_REGION
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
@@ -107,5 +109,12 @@ object SecurityUtils {
             logger.error("check isServiceRequest failed", e)
         }
         return false
+    }
+
+    /**
+     * 获取集群间请求来源地区
+     */
+    fun getRegion(): String? {
+        return HeaderUtils.getHeader(MS_REQUEST_SRC_REGION)
     }
 }

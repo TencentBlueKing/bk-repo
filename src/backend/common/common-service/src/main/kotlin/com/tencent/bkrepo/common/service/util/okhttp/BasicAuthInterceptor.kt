@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,36 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.util
+package com.tencent.bkrepo.common.service.util.okhttp
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
-import org.springframework.util.Base64Utils
-import java.util.Base64
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import okhttp3.Credentials
+import okhttp3.Interceptor
+import okhttp3.Response
 
 /**
- * Basic Auth 工具类
+ * OKHTTP Basic Auth认证拦截器
+ * 向请求头添加header: "Authorization: Basic Base64($username:$password)"
  */
-object BasicAuthUtils {
+class BasicAuthInterceptor(user: String, password: String) : Interceptor {
 
-    /**
-     * basic auth编码
-     * @return Basic base64(username:password)
-     */
-    fun encode(username: String, password: String): String {
-        val byteArray = ("$username${StringPool.COLON}$password").toByteArray(Charsets.UTF_8)
-        val encodedValue = Base64Utils.encodeToString(byteArray)
-        return "$BASIC_AUTH_PREFIX$encodedValue"
-    }
+    private val credentials = Credentials.basic(user, password)
 
-    /**
-     * basic auth解码
-     */
-    fun decode(content: String): Pair<String, String> {
-        val normalized = content.removePrefix(BASIC_AUTH_PREFIX)
-        val decodedHeader = String(Base64.getDecoder().decode(normalized))
-        val parts = decodedHeader.split(StringPool.COLON)
-        require(parts.size >= 2)
-        return Pair(parts[0], parts[1])
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val authenticatedRequest = request.newBuilder()
+            .header(HttpHeaders.AUTHORIZATION, credentials).build()
+        return chain.proceed(authenticatedRequest)
     }
 }

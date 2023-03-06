@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.replication.util
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.replication.model.TClusterNode
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query

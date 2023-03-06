@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.replication.config.startup
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -51,7 +50,7 @@ class ClusterNodeStartLoader(
 ) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
         val userId = SYSTEM_USER
-        val request = initClusterNodeCreateRequest()
+        val request = initClusterNodeCreateRequest() ?: return
         try {
             clusterNodeService.create(userId, request)
         } catch (ex: Exception) {
@@ -59,10 +58,10 @@ class ClusterNodeStartLoader(
         }
     }
 
-    private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest {
+    private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest? {
         return with(clusterProperties) {
             when (role) {
-                RoleType.CENTER -> ClusterNodeCreateRequest(
+                ClusterNodeType.CENTER -> ClusterNodeCreateRequest(
                     name = center.name.orEmpty(),
                     url = center.url,
                     certificate = center.certificate.orEmpty(),
@@ -73,7 +72,7 @@ class ClusterNodeStartLoader(
                     secretKey = self.secretKey,
                     type = ClusterNodeType.CENTER
                 )
-                RoleType.EDGE -> ClusterNodeCreateRequest(
+                ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
                     url = self.url,
                     certificate = self.certificate.orEmpty(),
@@ -84,6 +83,7 @@ class ClusterNodeStartLoader(
                     secretKey = self.secretKey,
                     type = ClusterNodeType.EDGE
                 )
+                else -> null
             }
         }
     }
