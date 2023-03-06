@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.config.startup
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -49,7 +50,7 @@ class ClusterNodeStartLoader(
 ) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
         val userId = SYSTEM_USER
-        val request = initClusterNodeCreateRequest()
+        val request = initClusterNodeCreateRequest() ?: return
         try {
             clusterNodeService.create(userId, request)
         } catch (ex: Exception) {
@@ -57,19 +58,33 @@ class ClusterNodeStartLoader(
         }
     }
 
-    private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest {
+    private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest? {
         return with(clusterProperties) {
-            ClusterNodeCreateRequest(
-                name = center.name.orEmpty(),
-                url = center.url,
-                certificate = center.certificate.orEmpty(),
-                username = center.username.orEmpty(),
-                password = center.password.orEmpty(),
-                appId = self.appId,
-                accessKey = self.accessKey,
-                secretKey = self.secretKey,
-                type = role
-            )
+            when (role) {
+                ClusterNodeType.CENTER -> ClusterNodeCreateRequest(
+                    name = center.name.orEmpty(),
+                    url = center.url,
+                    certificate = center.certificate.orEmpty(),
+                    username = center.username.orEmpty(),
+                    password = center.password.orEmpty(),
+                    appId = self.appId,
+                    accessKey = self.accessKey,
+                    secretKey = self.secretKey,
+                    type = ClusterNodeType.CENTER
+                )
+                ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
+                    name = self.name.orEmpty(),
+                    url = self.url,
+                    certificate = self.certificate.orEmpty(),
+                    username = self.username.orEmpty(),
+                    password = self.password.orEmpty(),
+                    appId = self.appId,
+                    accessKey = self.accessKey,
+                    secretKey = self.secretKey,
+                    type = ClusterNodeType.EDGE
+                )
+                else -> null
+            }
         }
     }
 

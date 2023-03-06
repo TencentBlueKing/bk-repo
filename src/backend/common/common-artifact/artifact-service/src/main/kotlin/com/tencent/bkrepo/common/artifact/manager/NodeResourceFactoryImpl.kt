@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.manager.resource.FsNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.LocalNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.NodeResource
@@ -34,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.manager.resource.RemoteNodeResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -62,7 +62,7 @@ class NodeResourceFactoryImpl(
         storageCredentials: StorageCredentials?
     ): NodeResource {
         val digest = nodeInfo.sha256.orEmpty()
-        if (clusterProperties.role == RoleType.EDGE) {
+        if (clusterProperties.role == ClusterNodeType.EDGE) {
             return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
         }
         if (isFsFile(nodeInfo)) {
