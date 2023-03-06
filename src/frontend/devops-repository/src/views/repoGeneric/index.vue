@@ -636,7 +636,8 @@
                 })
             },
             handlerDownload ({ fullPath }) {
-                const url = `/generic/${this.projectId}/${this.repoName}/${fullPath}?download=true`
+                const transPath = encodeURIComponent(fullPath)
+                const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
                         '/web' + url,
