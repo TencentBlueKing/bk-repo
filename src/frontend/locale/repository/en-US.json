@@ -73,7 +73,7 @@
     "share": "Share",
     "object": "Object",
     "uploadExpiresPlaceholder": "单位天(0代表永久保存)",
-    "express": "Express",
+    "expire": "Expire",
     "overwrite": "Over write",
     "allow": "Allow",
     "notAllow": "Not Allow",

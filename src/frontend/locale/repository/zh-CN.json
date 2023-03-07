@@ -74,7 +74,7 @@
     "share": "共享",
     "object": "对象",
     "uploadExpiresPlaceholder": "单位天(0代表永久保存)",
-    "express": "过期时间",
+    "expire": "过期时间",
     "overwrite": "覆盖",
     "allow": "允许",
     "notAllow": "不允许",

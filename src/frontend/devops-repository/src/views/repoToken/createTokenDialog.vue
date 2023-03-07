@@ -20,7 +20,7 @@
             <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="tokenFormData.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('express')" property="expiredAt">
+            <bk-form-item :label="$t('expire')" property="expiredAt">
                 <bk-date-picker
                     style="width:100%"
                     v-model="tokenFormData.expiredAt"
