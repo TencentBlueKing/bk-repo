@@ -430,7 +430,8 @@ abstract class NodeBaseService(
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
-                    lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
+                    clusterNames = it.clusterNames
                 )
             }
         }
