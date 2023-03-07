@@ -66,12 +66,17 @@ abstract class EdgeNodeBaseService(
     messageSupplier
 ) {
 
-    val centerNodeClient: NodeClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+    val centerNodeClient: NodeClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
 
     override fun buildTNode(request: NodeCreateRequest): TNode {
         val node = super.buildTNode(request)
-        node.regions = setOf(clusterProperties.region!!)
+        node.clusterNames = setOf(clusterProperties.self.name!!)
         return node
     }
 

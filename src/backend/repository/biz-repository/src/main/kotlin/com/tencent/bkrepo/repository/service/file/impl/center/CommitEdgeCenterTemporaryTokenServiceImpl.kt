@@ -25,45 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.edge
+package com.tencent.bkrepo.repository.service.file.impl.center
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.TemporaryTokenClient
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.repository.service.file.TemporaryTokenService
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
+import com.tencent.bkrepo.repository.service.file.impl.TemporaryTokenServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(CommitEdgeEdgeCondition::class)
-class EdgeTempTokenServiceImpl(
-    clusterProperties: ClusterProperties
-) : TemporaryTokenService {
-
-    private val centerTempTokenClient: TemporaryTokenClient by lazy {
-        FeignClientFactory.create(
-            clusterProperties.center,
-            "repository",
-            clusterProperties.self.name
-        )
-    }
-
-    override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
-        return centerTempTokenClient.createToken(request).data!!
-    }
-
-    override fun getTokenInfo(token: String): TemporaryTokenInfo? {
-        return centerTempTokenClient.getTokenInfo(token).data
-    }
-
-    override fun deleteToken(token: String) {
-        centerTempTokenClient.deleteToken(token)
-    }
-
-    override fun decrementPermits(token: String) {
-        centerTempTokenClient.decrementPermits(token)
-    }
-}
+@Conditional(CommitEdgeCenterCondition::class)
+class CommitEdgeCenterTemporaryTokenServiceImpl(
+    temporaryTokenDao: TemporaryTokenDao
+) : TemporaryTokenServiceImpl(
+    temporaryTokenDao
+)

@@ -55,8 +55,13 @@ class EdgePackageServiceImpl(
     packageSearchInterpreter
 ) {
 
-    private val centerPackageClient: PackageClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+    private val centerPackageClient: PackageClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
 
     override fun createPackageVersion(request: PackageVersionCreateRequest, realIpAddress: String?) {
         centerPackageClient.createVersion(request)

@@ -52,8 +52,14 @@ class EdgeProjectServiceImpl(
     servicePermissionResource
 ) {
 
-    private val centerProjectClient: ProjectClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+    private val centerProjectClient: ProjectClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
+
 
     override fun createProject(request: ProjectCreateRequest): ProjectInfo {
         try {

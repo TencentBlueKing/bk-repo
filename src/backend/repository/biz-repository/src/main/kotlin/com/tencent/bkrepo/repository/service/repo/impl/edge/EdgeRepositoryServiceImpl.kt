@@ -72,8 +72,13 @@ class EdgeRepositoryServiceImpl(
     servicePermissionResource
 ) {
 
-    private val centerRepoClient: RepositoryClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+    private val centerRepoClient: RepositoryClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
 
     override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         try {

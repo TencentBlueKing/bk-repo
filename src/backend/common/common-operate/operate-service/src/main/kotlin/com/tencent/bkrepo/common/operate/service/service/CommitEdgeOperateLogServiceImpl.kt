@@ -48,6 +48,14 @@ open class CommitEdgeOperateLogServiceImpl(
     permissionManager
 ) {
 
+    private val centerOpLogClient: OperateLogClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
+
     private val centerOpLogClient: OperateLogClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
 

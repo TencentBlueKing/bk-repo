@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.service.feign
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
-import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_REGION
+import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_CLUSTER
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
@@ -72,9 +72,9 @@ object FeignClientFactory {
     inline fun <reified T> create(
         remoteClusterInfo: ClusterInfo,
         serviceName: String? = null,
-        region: String? = null
+        srcClusterName: String? = null
     ): T {
-        return create(T::class.java, remoteClusterInfo, serviceName)
+        return create(T::class.java, remoteClusterInfo, serviceName, srcClusterName)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -82,7 +82,7 @@ object FeignClientFactory {
         target: Class<T>,
         remoteClusterInfo: ClusterInfo,
         serviceName: String? = null,
-        region: String? = null
+        srcClusterName: String? = null
     ): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
         val url = if (serviceName.isNullOrBlank()) {
@@ -94,7 +94,7 @@ object FeignClientFactory {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
                 .client(createClient(remoteClusterInfo))
-                .requestInterceptor(createInterceptor(remoteClusterInfo, region))
+                .requestInterceptor(createInterceptor(remoteClusterInfo, srcClusterName))
                 .encoder(SpringContextUtils.getBean())
                 .decoder(SpringContextUtils.getBean())
                 .contract(SpringContextUtils.getBean())
@@ -105,13 +105,14 @@ object FeignClientFactory {
         } as T
     }
 
-    private fun createInterceptor(cluster: ClusterInfo, region: String?): RequestInterceptor {
+
+    private fun createInterceptor(cluster: ClusterInfo, srcClusterName: String?): RequestInterceptor {
         return RequestInterceptor {
             HeaderUtils.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.let { lang ->
                 it.header(HttpHeaders.ACCEPT_LANGUAGE, lang)
             }
-            if (!region.isNullOrBlank()) {
-                it.header(MS_REQUEST_SRC_REGION, region)
+            if (!srcClusterName.isNullOrBlank()) {
+                it.header(MS_REQUEST_SRC_CLUSTER, srcClusterName)
             }
             if (cluster.appId != null) {
                 // 内部集群请求签名

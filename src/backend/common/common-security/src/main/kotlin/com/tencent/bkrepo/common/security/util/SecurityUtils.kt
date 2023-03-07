@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_KEY
-import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_REGION
+import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_CLUSTER
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -112,9 +112,11 @@ object SecurityUtils {
     }
 
     /**
-     * 获取集群间请求来源地区
+     * 获取集群间请求来源集群名
      */
-    fun getRegion(): String? {
-        return HeaderUtils.getHeader(MS_REQUEST_SRC_REGION)
+    fun getClusterName(): String? {
+        return HeaderUtils.getHeader(MS_REQUEST_SRC_CLUSTER)
+
+
     }
 }

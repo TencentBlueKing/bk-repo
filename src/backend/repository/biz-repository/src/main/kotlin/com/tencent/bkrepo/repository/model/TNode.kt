@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.repository.model.TNode.Companion.CLUSTER_NAMES_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.CLUSTER_NAMES_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.FOLDER_IDX
@@ -69,7 +71,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
     CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
     CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true),
-    CompoundIndex(name = REGION_IDX, def = REGION_IDX_DEF, background = true)
+    CompoundIndex(name = CLUSTER_NAMES_IDX, def = CLUSTER_NAMES_IDX_DEF, background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -91,48 +93,48 @@ data class TNode(
     var copyFromCredentialsKey: String? = null,
     var copyIntoCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
-    var regions: Set<String>? = null,
+    var clusterNames: Set<String>? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String
 ) {
     @JsonIgnore
-    fun checkContainsSrcRegion() {
-        if (!containsSrcRegion()) {
-            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+    fun checkContainsSrcCluster() {
+        if (!containsSrcCluster()) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
         }
     }
 
     @JsonIgnore
-    fun checkIsSrcRegion() {
-        if (!isSrcRegion()) {
-            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+    fun checkIsSrcCluster() {
+        if (!isSrcCluster()) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
         }
     }
 
     @JsonIgnore
-    fun containsSrcRegion(): Boolean {
+    fun containsSrcCluster(): Boolean {
         val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
-        var srcRegion = SecurityUtils.getRegion()
+        var srcCluster = SecurityUtils.getClusterName()
 
-        if (regions == null && srcRegion.isNullOrBlank()) {
+        if (clusterNames == null && srcCluster.isNullOrBlank()) {
             // 兼容旧逻辑
             return true
-        } else if (regions == null) {
-            // edge plus操作center节点
+        } else if (clusterNames == null) {
+            // edge操作center节点
             return false
-        } else if (srcRegion.isNullOrBlank()) {
+        } else if (srcCluster.isNullOrBlank()) {
             // center操作节点
-            srcRegion = clusterProperties.region
+            srcCluster = clusterProperties.self.name
         }
 
-        return regions!!.contains(srcRegion)
+        return clusterNames!!.contains(srcCluster)
     }
 
     @JsonIgnore
-    fun isSrcRegion(): Boolean {
-        return containsSrcRegion() && (regions == null || regions!!.size == 1)
+    fun isSrcCluster(): Boolean {
+        return containsSrcCluster() && (clusterNames == null || clusterNames!!.size == 1)
     }
 
     companion object {
@@ -148,7 +150,7 @@ data class TNode(
         const val COPY_FROM_IDX_DEF = "{'copyFromCredentialsKey':1}"
         const val FOLDER_IDX = "folder_idx"
         const val FOLDER_IDX_DEF = "{'folder': 1}"
-        const val REGION_IDX = "region_idx"
-        const val REGION_IDX_DEF = "{'region': 1}"
+        const val CLUSTER_NAMES_IDX = "cluster_names_idx"
+        const val CLUSTER_NAMES_IDX_DEF = "{'clusterNames': 1}"
     }
 }
