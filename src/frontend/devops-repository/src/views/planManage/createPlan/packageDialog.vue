@@ -3,7 +3,7 @@
         :value="show"
         width="800"
         height-num="561"
-        :title="$t('AddArtifact')"
+        :title="$t('addArtifact')"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">
         <div class="search-package" v-bkloading="{ isLoading }">

@@ -623,7 +623,7 @@
     "validateTimeRule":"当前时间已过期",
     "cronMsg":"cron表达式",
     "configRule":"请完善同步对象信息",
-    "AddArtifact": "添加制品",
+    "addArtifact": "添加制品",
     "ArtifactList": "制品列表",
     "selectedArtifact": "已选制品",
     "selectRepoPlaceHolder":"请选择源仓库",

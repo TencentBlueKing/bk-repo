@@ -608,7 +608,7 @@
     "validateTimeRule":"current time has expired",
     "cronMsg":"cron",
     "configRule":"Please complete the synchronization object information",
-    "AddArtifact": "Add artifact",
+    "addArtifact": "Add artifact",
     "ArtifactList": "Artifact list",
     "selectedArtifact": "Selected artifact",
     "selectRepoPlaceHolder":"Please select repo",
