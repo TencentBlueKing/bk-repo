@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
 import com.tencent.bkrepo.conan.exception.ConanRecipeNotFoundException
@@ -63,7 +64,7 @@ class ConanServiceImpl : ConanService {
                 emptyMap()
             }
             if (urls.isEmpty())
-                throw ConanRecipeNotFoundException("Could not find ${buildReference(conanFileReference)}")
+                throw ConanRecipeNotFoundException(ConanMessageCode.CONAN_RECIPE_NOT_FOUND, buildReference(conanFileReference))
             return urls
         }
     }
@@ -78,9 +79,7 @@ class ConanServiceImpl : ConanService {
                 projectId, repoName, packageReference, subFileset
             )
             if (urls.isEmpty())
-                throw ConanRecipeNotFoundException(
-                    "Could not find ${buildReference(packageReference.conRef)}/$packageId"
-                )
+                throw ConanRecipeNotFoundException(ConanMessageCode.CONAN_RECIPE_NOT_FOUND, "${buildReference(packageReference.conRef)}/$packageId")
             return urls
         }
     }
@@ -149,7 +148,7 @@ class ConanServiceImpl : ConanService {
             commonService.checkNodeExist(projectId, repoName, buildReference(conanFileReference))
             return commonService.getLastRevision(projectId, repoName, conanFileReference)
                 ?: throw ConanFileNotFoundException(
-                    "Could not find latest revision in ${buildReference(conanFileReference)}"
+                    ConanMessageCode.CONAN_FILE_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()
                 )
         }
     }
@@ -168,8 +167,8 @@ class ConanServiceImpl : ConanService {
             val packageReference = PackageReference(conanFileReference, packageId!!, pRevision)
             return commonService.getLastPackageRevision(projectId, repoName, packageReference)
                 ?: throw ConanFileNotFoundException(
-                    "Could not find latest revision in ${buildPackageReference(packageReference)}"
-                )
+                ConanMessageCode.CONAN_FILE_NOT_FOUND, buildPackageReference(packageReference), getRepoIdentify()
+            )
         }
     }
 }

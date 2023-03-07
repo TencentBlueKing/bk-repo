@@ -44,8 +44,8 @@ object ConanThreadPoolExecutor {
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("conan-worker-%d").build()
         return ThreadPoolExecutor(
-            100, 500, 30, TimeUnit.SECONDS,
-            LinkedBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            5, 10, 60, TimeUnit.SECONDS,
+            LinkedBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }

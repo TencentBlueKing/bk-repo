@@ -31,4 +31,7 @@
 
 package com.tencent.bkrepo.rds.exception
 
-class RdsBadRequestException(message: String) : RdsException(message)
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class RdsBadRequestException(messageCode: MessageCode, vararg params: Any) : ErrorCodeException(messageCode, params)

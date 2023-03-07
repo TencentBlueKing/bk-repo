@@ -31,6 +31,9 @@
 
 package com.tencent.bkrepo.maven.exception
 
-import java.lang.RuntimeException
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
 
-class MavenPathParserException(error: String) : RuntimeException(error)
+class MavenPathParserException(messageCode: MessageCode, vararg params: Any) :
+    ErrorCodeException(messageCode = messageCode, status = HttpStatus.PRECONDITION_FAILED, params = params)

@@ -25,9 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.exception
+package com.tencent.bkrepo.conan.constant
 
-class ConanPackageNotFoundException(
-    message: String,
-    code: Any? = null,
-) : RuntimeException(message)
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+enum class ConanMessageCode(private val key: String) : MessageCode {
+    CONAN_FILE_NOT_FOUND("conan.file.not.found"),
+    CONAN_RECIPE_NOT_FOUND("conan.recipe.not.found"),
+    CONAN_SEARCH_NOT_FOUND("conan.search.not.found"),
+    ;
+    override fun getBusinessCode() = ordinal + 1
+    override fun getKey() = key
+    override fun getModuleCode() = 24
+}

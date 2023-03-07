@@ -30,8 +30,10 @@ package com.tencent.bkrepo.conan.exception
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.conan.pojo.response.ConanErrorResponse
 import com.tencent.bkrepo.conan.pojo.response.ConanResponse
 import org.slf4j.LoggerFactory
@@ -68,6 +70,15 @@ class ConanExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerConanRecipeNotFoundException(exception: ConanSearchNotFoundException) {
         conanResponse(exception.message!!, exception)
+    }
+
+
+    private fun conanResponse(exception: ErrorCodeException) {
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val responseObject = ConanResponse.errorResponse(
+            ConanErrorResponse(errorMessage, exception.status.value)
+        )
+        conanResponse(responseObject, exception)
     }
 
     private fun conanResponse(

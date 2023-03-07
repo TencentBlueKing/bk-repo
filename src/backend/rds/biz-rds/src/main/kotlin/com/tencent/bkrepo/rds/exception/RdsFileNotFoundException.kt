@@ -31,4 +31,8 @@
 
 package com.tencent.bkrepo.rds.exception
 
-class RdsFileNotFoundException(message: String) : RdsException(message)
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class RdsFileNotFoundException(messageCode: MessageCode, vararg params: String)
+    : NotFoundException(messageCode, *params)

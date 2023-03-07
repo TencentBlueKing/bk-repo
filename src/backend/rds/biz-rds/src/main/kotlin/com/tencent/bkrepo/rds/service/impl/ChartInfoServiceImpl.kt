@@ -33,6 +33,7 @@ package com.tencent.bkrepo.rds.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.rds.constants.NODE_METADATA_NAME
 import com.tencent.bkrepo.rds.constants.NODE_METADATA_VERSION
 import com.tencent.bkrepo.rds.constants.PROJECT_ID
 import com.tencent.bkrepo.rds.constants.REPO_NAME
+import com.tencent.bkrepo.rds.constants.RdsMessageCode
 import com.tencent.bkrepo.rds.exception.RdsFileNotFoundException
 import com.tencent.bkrepo.rds.pojo.RdsDomainInfo
 import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo
@@ -57,12 +59,12 @@ import com.tencent.bkrepo.rds.service.ChartInfoService
 import com.tencent.bkrepo.rds.utils.ChartParserUtil
 import com.tencent.bkrepo.rds.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.rds.utils.RdsUtils
-import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class ChartInfoServiceImpl(
@@ -140,11 +142,11 @@ class ChartInfoServiceImpl(
             val fullPath = String.format("/%s-%s.tgz", name, version)
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
                 logger.warn("node [$fullPath] don't found.")
-                throw RdsFileNotFoundException("node [$fullPath] don't found.")
+                throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
             }
             val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
-                throw RdsFileNotFoundException("packageKey [$packageKey] don't found.")
+                throw PackageNotFoundException(packageKey)
             }
             val basicInfo = ObjectBuilderUtil.buildBasicInfo(nodeDetail, packageVersion)
             return PackageVersionInfo(basicInfo, emptyMap())

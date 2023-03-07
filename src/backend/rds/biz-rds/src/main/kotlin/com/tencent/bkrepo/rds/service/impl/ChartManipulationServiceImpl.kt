@@ -34,6 +34,8 @@ package com.tencent.bkrepo.rds.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -42,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.rds.constants.CHART
 import com.tencent.bkrepo.rds.constants.FILE_TYPE
+import com.tencent.bkrepo.rds.constants.RdsMessageCode
 import com.tencent.bkrepo.rds.exception.RdsFileNotFoundException
 import com.tencent.bkrepo.rds.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.rds.listener.event.ChartVersionDeleteEvent
@@ -64,9 +67,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
         val keys = artifactFileMap.keys
         checkRepositoryExistAndCategory(artifactInfo)
         check(keys.contains(CHART)) {
-            throw RdsFileNotFoundException(
-                "no package file found in form fields chart"
-            )
+            throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, "provenance")
         }
         val context = ArtifactUploadContext(artifactFileMap[CHART]!!)
         context.putAttribute(FILE_TYPE, CHART)
@@ -79,9 +80,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
         logger.info("handling delete chart version request: [$artifactInfo]")
         with(artifactInfo) {
             if (!packageVersionExist(projectId, repoName, packageName, version)) {
-                throw RdsFileNotFoundException(
-                    "remove package $packageName for version [$version] failed: no such file or directory"
-                )
+                throw VersionNotFoundException(version)
             }
             val context = ArtifactRemoveContext()
             repository.remove(context)
@@ -106,7 +105,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
         logger.info("handling delete chart request: [$artifactInfo]")
         with(artifactInfo) {
             if (!packageExist(projectId, repoName, packageName)) {
-                throw RdsFileNotFoundException("remove package $packageName failed: no such file or directory")
+                throw PackageNotFoundException(packageName)
             }
             val context = ArtifactRemoveContext()
             repository.remove(context)

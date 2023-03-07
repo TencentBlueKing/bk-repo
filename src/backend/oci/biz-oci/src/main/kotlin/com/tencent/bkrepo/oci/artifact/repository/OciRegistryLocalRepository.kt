@@ -52,6 +52,7 @@ import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
@@ -362,11 +363,11 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo) {
             val fullPath = ociOperationService.getNodeFullPath(this as OciArtifactInfo)
                 ?: throw OciFileNotFoundException(
-                    "node [${getArtifactFullPath()}] in repo ${this.getRepoIdentify()} does not found."
+                    OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data
                 ?: throw OciFileNotFoundException(
-                    "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
+                    OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
             val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)

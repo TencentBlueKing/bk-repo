@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
+import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
@@ -173,7 +174,7 @@ class OciBlobServiceImpl(
                 "with digest [${artifactInfo.digest}] in repo [${artifactInfo.getRepoIdentify()}]"
         )
         if (artifactInfo.digest.isNullOrBlank())
-            throw OciBadRequestException("Blob file only can be deleted by digest..")
+            throw OciBadRequestException(OciMessageCode.OCI_DELETE_RULES, artifactInfo.getArtifactFullPath())
         val context = ArtifactRemoveContext()
         ArtifactContextHolder.getRepository().remove(context)
     }

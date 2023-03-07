@@ -66,6 +66,7 @@ import com.tencent.bkrepo.rds.constants.PROJECT_ID
 import com.tencent.bkrepo.rds.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.rds.constants.REPO_NAME
 import com.tencent.bkrepo.rds.constants.REPO_TYPE
+import com.tencent.bkrepo.rds.constants.RdsMessageCode
 import com.tencent.bkrepo.rds.constants.SIZE
 import com.tencent.bkrepo.rds.exception.RdsBadRequestException
 import com.tencent.bkrepo.rds.exception.RdsFileNotFoundException
@@ -128,13 +129,14 @@ open class AbstractChartService : ArtifactService() {
         val context = ArtifactQueryContext()
         context.putAttribute(FULL_PATH, RdsUtils.getIndexCacheYamlFullPath())
         try {
-            val inputStream = ArtifactContextHolder.getRepository().query(context) ?: throw RdsFileNotFoundException(
-                "Error occurred when querying the index.yaml file.. "
-            )
+            val inputStream = ArtifactContextHolder.getRepository().query(context) ?:
+            throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}")
             return (inputStream as ArtifactInputStream).use { it.readYamlString() }
         } catch (e: Exception) {
             logger.error("Error occurred while querying index.yaml, error: ${e.message}")
-            throw RdsFileNotFoundException(e.message.toString())
+            throw RdsFileNotFoundException(
+                RdsMessageCode.RDS_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}"
+            )
         }
     }
 
@@ -147,7 +149,7 @@ open class AbstractChartService : ArtifactService() {
         val repository = repositoryClient.getRepoDetail(projectId, repoName, RepositoryType.RDS.name).data
             ?: throw RepoNotFoundException("Repository[$repoName] does not exist")
         val inputStream = storageManager.loadArtifactInputStream(nodeDetail, repository.storageCredentials)
-            ?: throw RdsFileNotFoundException("Artifact[$fullPath] does not exist")
+            ?: throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName")
         return inputStream.use { it.readYamlString() }
     }
 
@@ -161,7 +163,9 @@ open class AbstractChartService : ArtifactService() {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
             logger.error("Error occurred while downloading index.yaml, error: ${e.message}")
-            throw RdsFileNotFoundException(e.message.toString())
+            throw RdsFileNotFoundException(
+                RdsMessageCode.RDS_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}"
+            )
         }
     }
     /**
@@ -194,7 +198,7 @@ open class AbstractChartService : ArtifactService() {
         with(artifactInfo) {
             val result = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
                 logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
-                throw RdsRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+                throw RdsRepoNotFoundException(RdsMessageCode.RDS_REPO_NOT_FOUND, "$projectId|$repoName")
             }
             return result
         }
@@ -207,11 +211,11 @@ open class AbstractChartService : ArtifactService() {
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
                 logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
-                throw RdsRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+                throw RdsRepoNotFoundException(RdsMessageCode.RDS_REPO_NOT_FOUND, "$projectId|$repoName")
             }
             when (repo.category) {
                 RepositoryCategory.REMOTE -> throw RdsBadRequestException(
-                    "Unable to upload chart into a remote repository [$projectId/$repoName]"
+                    RdsMessageCode.RDS_FILE_UPLOAD_FORBIDDEN, "$projectId/$repoName"
                 )
                 else -> return
             }
@@ -335,7 +339,7 @@ open class AbstractChartService : ArtifactService() {
         logger.info("repo [$projectId/$repoName] has been created, will download index.yaml...")
         val repoDetail = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
-            throw RdsRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+            throw RdsRepoNotFoundException(RdsMessageCode.RDS_REPO_NOT_FOUND, "$projectId|$repoName")
         }
         if (RepositoryCategory.REMOTE != repoDetail.category) {
             logger.warn("repo [$projectId/$repoName] does not need to download index.yaml")
