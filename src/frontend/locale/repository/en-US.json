@@ -609,7 +609,7 @@
     "cronMsg":"cron",
     "configRule":"Please complete the synchronization object information",
     "addArtifact": "Add artifact",
-    "ArtifactList": "Artifact list",
+    "artifactList": "Artifact list",
     "selectedArtifact": "Selected artifact",
     "selectRepoPlaceHolder":"Please select repo",
     "addFilePath":"add file path",

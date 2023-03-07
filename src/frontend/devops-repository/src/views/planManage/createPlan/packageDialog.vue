@@ -8,7 +8,7 @@
         @confirm="confirmPackageData">
         <div class="search-package" v-bkloading="{ isLoading }">
             <bk-transfer
-                :title="[$t('ArtifactList'), $t('selectedArtifact')]"
+                :title="[$t('artifactList'), $t('selectedArtifact')]"
                 :source-list="packageList"
                 :target-list="targetList"
                 display-key="key"

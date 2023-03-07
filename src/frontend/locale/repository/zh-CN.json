@@ -624,7 +624,7 @@
     "cronMsg":"cron表达式",
     "configRule":"请完善同步对象信息",
     "addArtifact": "添加制品",
-    "ArtifactList": "制品列表",
+    "artifactList": "制品列表",
     "selectedArtifact": "已选制品",
     "selectRepoPlaceHolder":"请选择源仓库",
     "addFilePath":"添加文件路径",
