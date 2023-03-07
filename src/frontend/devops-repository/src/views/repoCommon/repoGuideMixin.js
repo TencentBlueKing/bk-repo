@@ -438,7 +438,7 @@ export default {
                         {
                             subTitle: this.$t('helmCreditGuideSubTitle1'),
                             codeList: [
-                                `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
+                                `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.domain.helm}/${this.projectId}/${this.repoName}/"`
                             ]
                         },
                         {
@@ -455,13 +455,13 @@ export default {
                         {
                             subTitle: this.$t('helmPushGuideSubTitle1'),
                             codeList: [
-                                `curl -F "chart=@<FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
+                                `curl -F "chart=@<FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${this.domain.helm}/api/${this.projectId}/${this.repoName}/charts`
                             ]
                         },
                         {
                             subTitle: this.$t('helmPushGuideSubTitle2'),
                             codeList: [
-                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
+                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${this.domain.helm}/api/${this.projectId}/${this.repoName}/charts`
                             ]
                         }
                     ]
@@ -486,7 +486,7 @@ export default {
                         {
                             subTitle: this.$t('helmInstallGuideSubTitle1'),
                             codeList: [
-                                `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
+                                `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.domain.helm}/${this.projectId}/${this.repoName}/"`
                             ]
                         },
                         {

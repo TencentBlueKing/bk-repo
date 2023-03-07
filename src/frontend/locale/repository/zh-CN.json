@@ -540,7 +540,7 @@
     "helmCreditGuideSubTitle2":"2、更新本地repo信息",
     "helmPushGuideSubTitle1":"使用 cURL 命令推送Chart",
     "helmPushGuideSubTitle2":"使用 cURL 命令推送Chart Provenance",
-    "helmPullGuideSubTitle":"'3、拉取'",
+    "helmPullGuideSubTitle":"3、拉取",
     "helmInstallGuideSubTitle1":"1、手动配置",
     "helmInstallGuideSubTitle2":"2、更新本地的repo信息",
     "rpmCreditGuideSubTitle":"将下列配置添加到 /etc/yum.repos.d/{0}.repo 文件中",
