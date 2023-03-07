@@ -66,28 +66,6 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                           ),
                       )
     ),
-    PROJECT_EDIT(DefaultGroupType.PROJECT_EDIT.value,
-                     mapOf(
-                         ResourceType.PROJECT.id() to listOf(
-                             ActionTypeMapping.PROJECT_VIEW.id(),
-                             ActionTypeMapping.REPO_CREATE.id()
-                         ),
-                         ResourceType.REPO.id() to listOf(
-                             ActionTypeMapping.REPO_MANAGE.id(),
-                             ActionTypeMapping.REPO_VIEW.id(),
-                             ActionTypeMapping.REPO_EDIT.id(),
-                             ActionTypeMapping.REPO_DELETE.id(),
-                             ActionTypeMapping.NODE_CREATE.id()
-                         ),
-                         ResourceType.NODE.id() to listOf(
-                             ActionTypeMapping.NODE_DELETE.id(),
-                             ActionTypeMapping.NODE_EDIT.id(),
-                             ActionTypeMapping.NODE_WRITE.id(),
-                             ActionTypeMapping.NODE_VIEW.id(),
-                             ActionTypeMapping.NODE_DOWNLOAD.id()
-                         )
-                     )
-    ),
     PROJECT_UPLOAD_DELETE(DefaultGroupType.PROJECT_UPLOAD_DELETE.value,
                    mapOf(
                        ResourceType.PROJECT.id() to listOf(ActionTypeMapping.PROJECT_VIEW.id()),

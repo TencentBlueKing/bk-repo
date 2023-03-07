@@ -414,7 +414,6 @@ class BkIamV3ServiceImpl(
             members = setOf(userId),
             groupList = listOf(
                 DefaultGroupType.PROJECT_MANAGER,
-                DefaultGroupType.PROJECT_EDIT,
                 DefaultGroupType.PROJECT_DOWNLOAD,
                 DefaultGroupType.PROJECT_UPLOAD_DELETE
             )

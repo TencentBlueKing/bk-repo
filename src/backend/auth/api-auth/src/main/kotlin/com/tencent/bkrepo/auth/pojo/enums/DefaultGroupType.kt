@@ -34,7 +34,6 @@ enum class DefaultGroupType(val value: String, val displayName: String) {
     PROJECT_MANAGER("project_manager", "项目管理组"), // 管理员
     PROJECT_UPLOAD_DELETE("project_upload_delete", "项目操作组"), // 上传下载删除权限
     PROJECT_DOWNLOAD("project_download", "项目访问组"), // 下载权限
-    PROJECT_EDIT("project_edit", "项目编辑组"), // 可上传下载删除、管理仓库
     REPO_MANAGER("repo_manager", "仓库管理组"), // 管理员
     REPO_UPLOAD_DELETE("repo_upload_delete", "仓库操作组"),
     REPO_DOWNLOAD("repo_download", "仓库访问组"); // 下载权限
