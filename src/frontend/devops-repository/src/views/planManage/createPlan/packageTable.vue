@@ -19,7 +19,7 @@
                 </bk-option>
             </bk-option-group>
         </bk-select>
-        <bk-button v-show="!disabled && selectedRepoName" class="mt10" icon="plus" @click="showAddDialog = true">{{ $t('addProduct') }}</bk-button>
+        <bk-button v-show="!disabled && selectedRepoName" class="mt10" icon="plus" @click="showAddDialog = true">{{ $t('addArtifact') }}</bk-button>
         <div class="mt10 package-list" v-show="packageConstraints.length">
             <div class="pl10 pr10 package-item flex-between-center" v-for="(pkg, ind) in packageConstraints" :key="pkg.fid">
                 <div class="flex-align-center">

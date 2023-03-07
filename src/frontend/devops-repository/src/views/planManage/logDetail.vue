@@ -46,7 +46,7 @@
                 </template>
             </bk-table-column>
             <template v-if="logDetail.replicaType === 'REAL_TIME' || logDetail.replicaObjectType !== 'REPOSITORY'">
-                <bk-table-column :label="$t('productName') + '/' + $t('filePath')" show-overflow-tooltip>
+                <bk-table-column :label="$t('artifactName') + '/' + $t('filePath')" show-overflow-tooltip>
                     <template #default="{ row }">{{ row.packageKey || row.path || '/' }}</template>
                 </bk-table-column>
                 <bk-table-column :label="$t('version')" show-overflow-tooltip>
@@ -111,7 +111,7 @@
                 return [
                     { name: this.$t('nodeName'), id: 'clusterName' },
                     { name: this.$t('repoName'), id: 'repoName' },
-                    ...(this.logDetail.replicaObjectType === 'PACKAGE' ? [{ name: this.$t('productName'), id: 'packageName' }] : []),
+                    ...(this.logDetail.replicaObjectType === 'PACKAGE' ? [{ name: this.$t('artifactName'), id: 'packageName' }] : []),
                     ...(this.logDetail.replicaObjectType === 'PATH' ? [{ name: this.$t('filePath'), id: 'path' }] : [])
                 ]
             }

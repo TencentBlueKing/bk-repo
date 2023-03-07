@@ -7,7 +7,7 @@
         <template #content>
             <div class="sideslider-content flex-column">
                 <bk-form class="p20 flex-1" form-type="vertical">
-                    <bk-form-item :label="$t('productName')">
+                    <bk-form-item :label="$t('artifactName')">
                         <bk-input v-model="filter.name"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('repo')">

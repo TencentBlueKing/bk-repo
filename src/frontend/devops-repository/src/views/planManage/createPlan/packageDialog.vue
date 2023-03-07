@@ -3,12 +3,12 @@
         :value="show"
         width="800"
         height-num="561"
-        :title="$t('addProduct')"
+        :title="$t('addArtifact')"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">
         <div class="search-package" v-bkloading="{ isLoading }">
             <bk-transfer
-                :title="[$t('productList'), $t('selectedProduct')]"
+                :title="[$t('artifactList'), $t('selectedArtifact')]"
                 :source-list="packageList"
                 :target-list="targetList"
                 display-key="key"
