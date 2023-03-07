@@ -165,15 +165,15 @@ class CommitEdgeCenterNodeDeleteSupport(
         node: TNode,
         operator: String
     ): Boolean {
-        if (!node.containsSrcRegion()) {
+        if (!node.containsSrcCluster()) {
             return false
         }
-        if (SecurityUtils.getRegion() == null && node.regions.orEmpty().size != 1) {
+        if (SecurityUtils.getClusterName() == null && node.clusterNames.orEmpty().size != 1) {
             return false
         }
-        val srcRegion = SecurityUtils.getRegion() ?: clusterProperties.region.toString()
-        node.regions = node.regions.orEmpty().minus(srcRegion)
-        if (node.regions.orEmpty().isEmpty()) {
+        val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
+        node.clusterNames = node.clusterNames.orEmpty().minus(srcCluster)
+        if (node.clusterNames.orEmpty().isEmpty()) {
             super.deleteByPath(node.projectId, node.repoName, node.fullPath, operator)
         } else {
             nodeDao.save(node)

@@ -25,49 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.edge
+package com.tencent.bkrepo.repository.service.repo.impl.center
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(CommitEdgeEdgeCondition::class)
-class EdgeProjectServiceImpl(
+@Conditional(CommitEdgeCenterCondition::class)
+class CommitEdgeCenterProjectServiceImpl(
     projectDao: ProjectDao,
-    servicePermissionResource: ServicePermissionResource,
-    clusterProperties: ClusterProperties
+    servicePermissionResource: ServicePermissionResource
 ) : ProjectServiceImpl(
     projectDao,
     servicePermissionResource
-) {
-
-    private val centerProjectClient: ProjectClient by lazy {
-        FeignClientFactory.create(
-            clusterProperties.center,
-            "repository",
-            clusterProperties.self.name
-        )
-    }
-
-    override fun createProject(request: ProjectCreateRequest): ProjectInfo {
-        try {
-            centerProjectClient.createProject(request)
-        } catch (e: RemoteErrorCodeException) {
-            if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
-                throw e
-            }
-        }
-        return super.createProject(request)
-    }
-}
+)

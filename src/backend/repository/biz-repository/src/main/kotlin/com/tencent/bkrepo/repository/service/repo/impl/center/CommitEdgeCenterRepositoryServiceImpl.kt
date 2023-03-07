@@ -92,19 +92,19 @@ class CommitEdgeCenterRepositoryServiceImpl(
         credentialsKey: String?
     ): TRepository {
         val repo = super.buildTRepository(request, repoConfiguration, credentialsKey)
-        repo.regions = setOf(SecurityUtils.getRegion() ?: clusterProperties.region.toString())
+        repo.clusterNames = setOf(SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString())
         return repo
     }
 
     override fun checkExist(projectId: String, name: String, type: String?): Boolean {
         val exitRepo = repositoryDao.findByNameAndType(projectId, name, type)
-        return exitRepo != null && exitRepo.containsSrcRegion()
+        return exitRepo != null && exitRepo.containsSrcCluster()
     }
 
     override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             val exitRepo = repositoryDao.findByNameAndType(projectId, name, type.name)
-            if (exitRepo != null && exitRepo.containsSrcRegion()) {
+            if (exitRepo != null && exitRepo.containsSrcCluster()) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
 
@@ -113,13 +113,13 @@ class CommitEdgeCenterRepositoryServiceImpl(
             }
 
             val query = repositoryDao.buildSingleQuery(projectId, name, type.name)
-            val regions = exitRepo.regions.orEmpty().toMutableSet()
-            if (regions.isEmpty()) {
-                regions.add(clusterProperties.region.toString())
+            val clusterNames = exitRepo.clusterNames.orEmpty().toMutableSet()
+            if (clusterNames.isEmpty()) {
+                clusterNames.add(clusterProperties.self.name.toString())
             }
-            regions.add(SecurityUtils.getRegion() ?: clusterProperties.region.toString())
-            val update = Update().addToSet(TRepository::regions.name).each(regions)
-            exitRepo.regions = regions
+            clusterNames.add(SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString())
+            val update = Update().addToSet(TRepository::clusterNames.name).each(clusterNames)
+            exitRepo.clusterNames = clusterNames
             repositoryDao.updateFirst(query, update)
             return convertToDetail(exitRepo)!!
         }
@@ -137,12 +137,12 @@ class CommitEdgeCenterRepositoryServiceImpl(
                 )
                 nodeService.deleteByPath(projectId, name, PathUtils.ROOT, operator)
             }
-            val regions = repository.regions.orEmpty().toMutableSet()
-            regions.remove(SecurityUtils.getRegion() ?: clusterProperties.region)
-            if (regions.isEmpty()) {
+            val clusterNames = repository.clusterNames.orEmpty().toMutableSet()
+            clusterNames.remove(SecurityUtils.getClusterName() ?: clusterProperties.self.name)
+            if (clusterNames.isEmpty()) {
                 repositoryDao.deleteById(repository.id)
             } else {
-                repository.regions = regions
+                repository.clusterNames = clusterNames
                 repositoryDao.save(repository)
             }
 
@@ -161,15 +161,15 @@ class CommitEdgeCenterRepositoryServiceImpl(
     override fun checkRepository(projectId: String, repoName: String, repoType: String?): TRepository {
         val exitRepo = repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-        if (SecurityUtils.getRegion() == null && exitRepo.isSrcRegion()) {
+        if (SecurityUtils.getClusterName() == null && exitRepo.isSrcCluster()) {
             return exitRepo
         }
 
-        if (SecurityUtils.getRegion() != null && exitRepo.containsSrcRegion()) {
+        if (SecurityUtils.getClusterName() != null && exitRepo.containsSrcCluster()) {
             return exitRepo
         }
 
-        throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_REGION_NOT_ALLOWED)
+        throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
     }
 
     companion object {

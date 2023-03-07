@@ -70,29 +70,29 @@ data class TRepository(
 
     var quota: Long? = null,
     var used: Long? = null,
-    var regions: Set<String>? = null
+    var clusterNames: Set<String>? = null
 ) {
     @JsonIgnore
-    fun containsSrcRegion(): Boolean {
+    fun containsSrcCluster(): Boolean {
         val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
-        var srcRegion = SecurityUtils.getRegion()
+        var srcCluster = SecurityUtils.getClusterName()
 
-        if (regions == null && srcRegion.isNullOrBlank()) {
+        if (clusterNames == null && srcCluster.isNullOrBlank()) {
             // 兼容旧逻辑
             return true
-        } else if (regions == null) {
+        } else if (clusterNames == null) {
             // edge plus操作center节点
             return false
-        } else if (srcRegion.isNullOrBlank()) {
+        } else if (srcCluster.isNullOrBlank()) {
             // center操作节点
-            srcRegion = clusterProperties.region
+            srcCluster = clusterProperties.self.name
         }
 
-        return regions!!.contains(srcRegion)
+        return clusterNames!!.contains(srcCluster)
     }
 
     @JsonIgnore
-    fun isSrcRegion(): Boolean {
-        return containsSrcRegion() && (regions == null || regions!!.size == 1)
+    fun isSrcCluster(): Boolean {
+        return containsSrcCluster() && (clusterNames == null || clusterNames!!.size == 1)
     }
 }

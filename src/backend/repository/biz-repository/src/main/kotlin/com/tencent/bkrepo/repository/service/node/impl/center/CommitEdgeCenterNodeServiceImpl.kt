@@ -85,8 +85,8 @@ class CommitEdgeCenterNodeServiceImpl(
     override fun checkRepo(projectId: String, repoName: String): TRepository {
         val repo = repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-        val region = SecurityUtils.getRegion()
-        if (!region.isNullOrBlank() && !repo.regions.orEmpty().contains(region)) {
+        val region = SecurityUtils.getClusterName()
+        if (!region.isNullOrBlank() && !repo.clusterNames.orEmpty().contains(region)) {
             throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
         return repo
@@ -101,7 +101,7 @@ class CommitEdgeCenterNodeServiceImpl(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    existNode.checkIsSrcRegion()
+                    existNode.checkIsSrcCluster()
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
@@ -115,12 +115,12 @@ class CommitEdgeCenterNodeServiceImpl(
 
     override fun buildTNode(request: NodeCreateRequest): TNode {
         val node = super.buildTNode(request)
-        node.regions = setOf(SecurityUtils.getRegion() ?: clusterProperties.region!!)
+        node.clusterNames = setOf(SecurityUtils.getClusterName() ?: clusterProperties.self.name!!)
         return node
     }
 
     override fun doCreate(node: TNode, repository: TRepository?): TNode {
-        if (SecurityUtils.getRegion().isNullOrBlank()) {
+        if (SecurityUtils.getClusterName().isNullOrBlank()) {
             return super.doCreate(node, repository)
         }
         try {
@@ -136,8 +136,8 @@ class CommitEdgeCenterNodeServiceImpl(
     }
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
-        val region = SecurityUtils.getRegion()
-        if (region.isNullOrBlank()) {
+        val srcCluster = SecurityUtils.getClusterName()
+        if (srcCluster.isNullOrBlank()) {
             return super.createNode(createRequest)
         }
         with(createRequest) {
@@ -145,16 +145,16 @@ class CommitEdgeCenterNodeServiceImpl(
             val existNode = nodeDao.findNode(projectId, repoName, normalizeFullPath)
                 ?: return super.createNode(createRequest)
             if (sha256 == existNode.sha256) {
-                val regions = existNode.regions.orEmpty().toMutableSet()
-                regions.add(region)
+                val clusterNames = existNode.clusterNames.orEmpty().toMutableSet()
+                clusterNames.add(srcCluster)
                 val query = NodeQueryHelper.nodeQuery(projectId, repoName, normalizeFullPath)
-                if (existNode.regions.orEmpty().isEmpty()) {
-                    regions.add(clusterProperties.region.toString())
+                if (existNode.clusterNames.orEmpty().isEmpty()) {
+                    clusterNames.add(clusterProperties.self.name.toString())
                 }
-                val update = Update().push(TNode::regions.name).each(regions)
+                val update = Update().push(TNode::clusterNames.name).each(clusterNames)
                 nodeDao.updateFirst(query, update)
-                existNode.regions = regions
-                logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256], region[$region] success.")
+                existNode.clusterNames = clusterNames
+                logger.info("Create node[/$projectId/$repoName$fullPath],sha256[$sha256],region[$srcCluster] success.")
                 return convertToDetail(existNode)!!
             } else {
                 return super.createNode(createRequest)

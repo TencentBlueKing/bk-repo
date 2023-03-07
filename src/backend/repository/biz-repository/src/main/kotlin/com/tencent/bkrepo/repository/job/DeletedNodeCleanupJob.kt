@@ -109,7 +109,9 @@ class DeletedNodeCleanupJob(
                     .and(TNode::deleted).isEqualTo(node.deleted)
             )
             nodeDao.remove(nodeQuery)
-            if (!node.folder && (node.regions == null || node.regions!!.contains(clusterProperties.region))) {
+            if (!node.folder &&
+                (node.clusterNames == null || node.clusterNames!!.contains(clusterProperties.self.name))
+            ) {
                 fileReferenceChanged = fileReferenceService.decrement(node, repo)
             }
         } catch (ignored: Exception) {

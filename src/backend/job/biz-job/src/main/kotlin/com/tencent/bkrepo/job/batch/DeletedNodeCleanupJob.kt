@@ -75,7 +75,7 @@ class DeletedNodeCleanupJob(
         val folder: Boolean,
         val sha256: String?,
         val deleted: LocalDateTime?,
-        val regions: List<String>?
+        val clusterNames: List<String>?
     )
 
     data class Repository(
@@ -107,7 +107,7 @@ class DeletedNodeCleanupJob(
             folder = row[Node::folder.name].toString().toBoolean(),
             sha256 = row[Node::sha256.name]?.toString(),
             deleted = TimeUtils.parseMongoDateTimeStr(row[Node::deleted.name].toString()),
-            regions = row[Node::regions.name] as? List<String> ?: emptyList()
+            clusterNames = row[Node::clusterNames.name] as? List<String> ?: emptyList()
         )
     }
 
@@ -120,7 +120,7 @@ class DeletedNodeCleanupJob(
         try {
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(nodeQuery, collectionName)
-            if (!row.folder && (row.regions == null || row.regions.contains(clusterProperties.region))) {
+            if (!row.folder && (row.clusterNames == null || row.clusterNames.contains(clusterProperties.self.name))) {
                 fileReferenceChanged = decrementFileReference(row)
             }
         } catch (ignored: Exception) {

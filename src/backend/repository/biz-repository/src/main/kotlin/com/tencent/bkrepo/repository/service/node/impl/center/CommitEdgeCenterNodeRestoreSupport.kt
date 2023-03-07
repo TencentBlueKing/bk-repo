@@ -52,7 +52,7 @@ class CommitEdgeCenterNodeRestoreSupport(
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        existNode?.checkIsSrcRegion()
+                        existNode?.checkIsSrcCluster()
                         val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
                         nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(operator))
                         conflictCount += 1

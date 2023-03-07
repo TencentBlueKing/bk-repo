@@ -47,8 +47,13 @@ class EdgeMetadataServiceImpl(
     nodeDao
 ) {
 
-    private val centerMetadataClient: MetadataClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+    private val centerMetadataClient: MetadataClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
 
     override fun saveMetadata(request: MetadataSaveRequest) {
         centerMetadataClient.saveMetadata(request)

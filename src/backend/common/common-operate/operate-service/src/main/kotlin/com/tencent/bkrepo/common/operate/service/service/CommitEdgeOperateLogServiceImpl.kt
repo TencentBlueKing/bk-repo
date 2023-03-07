@@ -48,8 +48,13 @@ open class CommitEdgeOperateLogServiceImpl(
     permissionManager
 ) {
 
-    private val centerOpLogClient: OperateLogClient
-        by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.region) }
+    private val centerOpLogClient: OperateLogClient by lazy {
+        FeignClientFactory.create(
+            clusterProperties.center,
+            "repository",
+            clusterProperties.self.name
+        )
+    }
 
     override fun saveEventAsync(event: ArtifactEvent, address: String) {
         if (notNeedRecord(event.type.name, event.projectId, event.repoName)) {
