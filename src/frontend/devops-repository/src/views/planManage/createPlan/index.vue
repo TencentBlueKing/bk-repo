@@ -132,7 +132,7 @@
             return {
                 conflictStrategyList: [
                     { value: 'SKIP', label: this.$t('skipConflictLabel'), tip: this.$t('skipConflictTip') },
-                    { value: 'OVERWRITE', label: this.$t('replacementArtifactLabel'), tip: this.$t('replacementartifactTip') },
+                    { value: 'OVERWRITE', label: this.$t('replacementArtifactLabel'), tip: this.$t('replacementArtifactTip') },
                     { value: 'FAST_FAIL', label: this.$t('terminateSyncLabel'), tip: this.$t('terminateSyncTip') }
                 ],
                 replicaObjectTypeList: [
