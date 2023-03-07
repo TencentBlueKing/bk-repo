@@ -1,7 +1,7 @@
 <template>
     <div class="report-overview">
         <div class="flex-between-center">
-            <span class="report-title flex-align-center">方案总览</span>
+            <span class="report-title flex-align-center">{{ $t('overviewTitle') }}</span>
             <div class="flex-align-center">
                 <bk-date-picker
                     class="mr10 w250"
@@ -9,12 +9,12 @@
                     :shortcuts="shortcuts"
                     type="daterange"
                     transfer
-                    placeholder="请选择日期范围"
+                    :placeholder="$t('selectDatePlaceHolder')"
                     @change="changeFilterTime">
                 </bk-date-picker>
-                <bk-button class="mr10" theme="default" @click="stopScanHandler">中止扫描</bk-button>
-                <bk-button v-if="!scanPlan.readOnly" class="mr10" theme="default" @click="startScanHandler">立即扫描</bk-button>
-                <bk-button v-if="!scanPlan.readOnly" theme="default" @click="scanSettingHandler">设置</bk-button>
+                <bk-button class="mr10" theme="default" @click="stopScanHandler">{{ $t('abortScan') }}</bk-button>
+                <bk-button v-if="!scanPlan.readOnly" class="mr10" theme="default" @click="startScanHandler">{{ $t('scanImmediately') }}</bk-button>
+                <bk-button v-if="!scanPlan.readOnly" theme="default" @click="scanSettingHandler">{{ $t('setting') }}</bk-button>
             </div>
         </div>
         <div class="mt10 flex-align-center">
@@ -33,33 +33,12 @@
     const nowTime = new Date(
         `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
     ).getTime() + 3600 * 1000 * 24
-    const shortcuts = [
-        {
-            text: '近7天',
-            value () {
-                return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
-            }
-        },
-        {
-            text: '近15天',
-            value () {
-                return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
-            }
-        },
-        {
-            text: '近30天',
-            value () {
-                return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
-            }
-        }
-    ]
     export default {
         props: {
             scanPlan: Object
         },
         data () {
             return {
-                shortcuts,
                 filterTime: [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)],
                 overview: {
                     artifactCount: 0,
@@ -71,25 +50,45 @@
                     unRecommend: 0,
                     unknown: 0,
                     unCompliance: 0
-                }
+                },
+                shortcuts: [
+                    {
+                        text: this.$t('last 7 days'),
+                        value () {
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                        }
+                    },
+                    {
+                        text: this.$t('last 15 days'),
+                        value () {
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
+                        }
+                    },
+                    {
+                        text: this.$t('last 30 days'),
+                        value () {
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
+                        }
+                    }
+                ]
             }
         },
         computed: {
             overviewList () {
-                const info = [{ key: 'artifactCount', label: '扫描制品数量' }]
+                const info = [{ key: 'artifactCount', label: this.$t('scanProductNum') }]
                 if (this.scanPlan.scanTypes.includes(SCAN_TYPE_SECURITY)) {
                     info.push(
-                        { key: 'critical', label: '危急漏洞', color: '#EA3736' },
-                        { key: 'high', label: '高级漏洞', color: '#FFB549' },
-                        { key: 'medium', label: '中级漏洞', color: '#3A84FF' },
-                        { key: 'low', label: '低级漏洞', color: '#979BA5' })
+                        { key: 'critical', label: this.$t(`leakLevelEnum.${'CRITICAL'}`) + this.$t('space') + this.$t('vulnerability'), color: '#EA3736' },
+                        { key: 'high', label: this.$t(`leakLevelEnum.${'HIGH'}`) + this.$t('space') + this.$t('vulnerability'), color: '#FFB549' },
+                        { key: 'medium', label: this.$t(`leakLevelEnum.${'MEDIUM'}`) + this.$t('space') + this.$t('vulnerability'), color: '#3A84FF' },
+                        { key: 'low', label: this.$t(`leakLevelEnum.${'LOW'}`) + this.$t('space') + this.$t('vulnerability'), color: '#979BA5' })
                 }
                 if (this.scanPlan.scanTypes.includes(SCAN_TYPE_LICENSE)) {
                     info.push(
-                        { key: 'total', label: '许可证总数' },
-                        { key: 'unRecommend', label: '不推荐使用数' },
-                        { key: 'unknown', label: '未知许可证数' },
-                        { key: 'unCompliance', label: '不合规数' }
+                        { key: 'total', label: this.$t('totalLicenses') },
+                        { key: 'unRecommend', label: this.$t('deprecatedNumber') },
+                        { key: 'unknown', label: this.$t('unknownNun') },
+                        { key: 'unCompliance', label: this.$t('non-compliance') }
                     )
                 }
                 return info
@@ -144,7 +143,7 @@
             stopScanHandler () {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认中止扫描方案 ${this.scanPlan.name} 的所有扫描任务?`,
+                    message: this.$t('stopScanMsg', [this.scanPlan.name]),
                     confirmFn: () => {
                         return this.stopScan({
                             projectId: this.scanPlan.projectId,
@@ -152,7 +151,7 @@
                         }).then(() => {
                             this.$bkMessage({
                                 theme: 'success',
-                                message: '中止方案' + this.$t('success')
+                                message: this.$t('discontinuedProgram') + this.$t('space') + this.$t('success')
                             })
                             this.$emit('refresh', false)
                         })

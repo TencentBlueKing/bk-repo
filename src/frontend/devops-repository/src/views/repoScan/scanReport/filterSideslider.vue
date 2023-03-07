@@ -1,16 +1,16 @@
 <template>
     <bk-sideslider
         :is-show.sync="showSideslider"
-        title="筛选"
+        :title="$t('filter')"
         @click.native.stop="() => {}"
         :quick-close="true">
         <template #content>
             <div class="sideslider-content flex-column">
                 <bk-form class="p20 flex-1" form-type="vertical">
-                    <bk-form-item label="制品名称">
+                    <bk-form-item :label="$t('productName')">
                         <bk-input v-model="filter.name"></bk-input>
                     </bk-form-item>
-                    <bk-form-item label="所属仓库">
+                    <bk-form-item :label="$t('repo')">
                         <bk-select
                             v-model="filter.repoName"
                             searchable>
@@ -27,16 +27,16 @@
                             </bk-option-group>
                         </bk-select>
                     </bk-form-item>
-                    <bk-form-item v-if="!scanType.includes('LICENSE')" label="风险等级">
+                    <bk-form-item v-if="!scanType.includes('LICENSE')" :label="$t('riskLevel')">
                         <bk-select
                             v-model="filter.highestLeakLevel">
-                            <bk-option v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="name"></bk-option>
+                            <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
                         </bk-select>
                     </bk-form-item>
-                    <bk-form-item label="扫描状态">
+                    <bk-form-item :label="$t('scanStatus')">
                         <bk-select
                             v-model="filter.status">
-                            <bk-option v-for="[id, name] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="name"></bk-option>
+                            <bk-option v-for="[id] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="$t(`scanStatusEnum.${id}`)"></bk-option>
                         </bk-select>
                     </bk-form-item>
                     <!-- <bk-form-item label="质量规则状态">
@@ -48,8 +48,8 @@
                     </bk-form-item> -->
                 </bk-form>
                 <div class="pr30 sideslider-footer flex-end-center">
-                    <bk-button class="mr10" theme="default" @click="reset()">重置</bk-button>
-                    <bk-button theme="primary" @click="filterHandler()">筛选</bk-button>
+                    <bk-button class="mr10" theme="default" @click="reset()">{{ $t('reset') }}</bk-button>
+                    <bk-button theme="primary" @click="filterHandler()">{{ $t('filter') }}</bk-button>
                 </div>
             </div>
         </template>

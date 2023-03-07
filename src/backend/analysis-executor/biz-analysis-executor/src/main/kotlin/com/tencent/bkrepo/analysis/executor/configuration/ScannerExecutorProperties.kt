@@ -59,5 +59,9 @@ data class ScannerExecutorProperties(
     /**
      * 是否主动轮询拉取任务
      */
-    var pull: Boolean = true
+    var pull: Boolean = true,
+    /**
+     * 是否输出分析工具容器执行日志
+     */
+    var showContainerLogs: Boolean = true
 )

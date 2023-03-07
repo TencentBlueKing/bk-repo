@@ -168,6 +168,11 @@ object NodeQueryHelper {
             expireDate?.let { set(TNode::expireDate.name, expireDate) } ?: run { unset(TNode::expireDate.name) }
         }
     }
+    fun nodeSetLength(newLength: Long, operator: String): Update {
+        return update(operator).apply {
+            set(TNode::size.name, newLength)
+        }
+    }
 
     fun nodeDeleteUpdate(operator: String, deleteTime: LocalDateTime = LocalDateTime.now()): Update {
         return update(operator).set(TNode::deleted.name, deleteTime)

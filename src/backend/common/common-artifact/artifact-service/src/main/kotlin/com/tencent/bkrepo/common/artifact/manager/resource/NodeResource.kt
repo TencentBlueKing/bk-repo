@@ -25,8 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.exception
+package com.tencent.bkrepo.common.artifact.manager.resource
 
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-
-class BlockNodeNotFoundException(fullPath: String) : NotFoundException(FSMessageCode.BLOCK_NODE_NOT_FOUND, fullPath)
+/**
+ * 节点资源
+ * */
+interface NodeResource : ArtifactInputStreamSource {
+    /**
+     * 判断节点资源是否存在
+     * */
+    fun exists(): Boolean
+}

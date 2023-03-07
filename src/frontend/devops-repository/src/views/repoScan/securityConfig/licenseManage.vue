@@ -6,7 +6,7 @@
                 <bk-input
                     v-model.trim="name"
                     class="w250"
-                    placeholder="请输入名称, 按Enter键搜索"
+                    :placeholder="$t('nameSearchPlaceHolder')"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
@@ -15,10 +15,10 @@
                 <bk-select
                     class="ml10 w250"
                     v-model="isTrust"
-                    placeholder="请选择合规性"
+                    :placeholder="$t('compliancePlaceHolder')"
                     @change="handlerPaginationChange()">
-                    <bk-option id="true" name="合规"></bk-option>
-                    <bk-option id="false" name="不合规"></bk-option>
+                    <bk-option id="true" :name="$t('compliance')"></bk-option>
+                    <bk-option id="false" :name="$t('notCompliance')"></bk-option>
                 </bk-select>
             </div>
         </div>
@@ -32,7 +32,7 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(name || isTrust)"></empty-data>
             </template>
-            <bk-table-column label="名称">
+            <bk-table-column :label="$t('name')">
                 <template #default="{ row }">
                     <span class="hover-btn"
                         v-bk-tooltips="{ content: row.name, placements: ['top'] }"
@@ -40,19 +40,19 @@
                     >{{ row.licenseId }}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="OSI认证" width="120">
-                <template #default="{ row }">{{ `${row.isOsiApproved ? '已' : '未'}认证` }}</template>
+            <bk-table-column :label="`OSI` + $t('authenticated')" width="120">
+                <template #default="{ row }">{{ `${row.isOsiApproved ? $t('authenticated') : $t('notAuthenticated')}` }}</template>
             </bk-table-column>
-            <bk-table-column label="FSF开源" width="120">
-                <template #default="{ row }">{{ `${row.isFsfLibre ? '已' : '未'}开源` }}</template>
+            <bk-table-column :label="`FSF` + $t('openSource')" width="120">
+                <template #default="{ row }">{{ `${row.isFsfLibre ? $t('openSource') : $t('notOpenSource')}` }}</template>
             </bk-table-column>
-            <bk-table-column label="推荐使用" width="120">
-                <template #default="{ row }">{{ `${row.isDeprecatedLicenseId ? '不' : ''}推荐` }}</template>
+            <bk-table-column :label="$t('recommendUse')" width="120">
+                <template #default="{ row }">{{ `${row.isDeprecatedLicenseId ? $t('notRecommended') : $t('recommended')}` }}</template>
             </bk-table-column>
-            <bk-table-column label="合规性" width="150">
+            <bk-table-column :label="$t('compliance')" width="150">
                 <template #default="{ row }">
-                    <span class="repo-tag" :class="row.isTrust ? 'SUCCESS' : 'FAILED'">{{ `${row.isTrust ? '' : '不'}合规` }}</span>
-                    <bk-button class="hover-visible ml5" text theme="primary" @click="changeTrust(row)">切换</bk-button>
+                    <span class="repo-tag" :class="row.isTrust ? 'SUCCESS' : 'FAILED'">{{ `${row.isTrust ? $t('compliance') : $t('notCompliance')}` }}</span>
+                    <bk-button class="hover-visible ml5" text theme="primary" @click="changeTrust(row)">{{ $t('switch') }}</bk-button>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -71,14 +71,14 @@
         <generic-upload-dialog ref="genericUploadDialog" @update="getLicenseListHandler"></generic-upload-dialog>
         <canway-dialog
             v-model="licenseInfo.show"
-            title="证书详细信息"
+            :title="$t('certificateDetails')"
             :height-num="400"
             @cancel="licenseInfo.show = false">
             <bk-form class="mr10" :label-width="90">
-                <bk-form-item label="证书信息">
+                <bk-form-item :label="$t('licenceInfo')">
                     <a style="word-break:break-all;" :href="licenseInfo.reference" target="_blank">{{ licenseInfo.reference }}</a>
                 </bk-form-item>
-                <bk-form-item label="参考文档">
+                <bk-form-item :label="$t('referenceDocuments')">
                     <div v-for="url in licenseInfo.seeAlso" :key="url">
                         <a style="word-break:break-all;" :href="url" target="_blank">{{ url }}</a>
                     </div>
@@ -147,7 +147,7 @@
                     projectId: 'public-global',
                     repoName: 'vuldb-repo',
                     show: true,
-                    title: '上传许可证',
+                    title: this.$t('uploadLicense'),
                     fullPath: '/spdx-license'
                 })
             },
@@ -158,7 +158,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: `设置证书${!isTrust ? '合规' : '不合规'}`
+                        message: this.$t('setCertificate') + this.$t('space') + `${!isTrust ? this.$t('compliance') : this.$t('notCompliance')}`
                     })
                 }).finally(() => {
                     this.getLicenseListHandler()

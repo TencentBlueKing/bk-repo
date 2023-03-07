@@ -31,21 +31,21 @@
             </div>
         </div> -->
         <bk-form style="margin-top:-15px" ref="genericShareForm" :label-width="90" form-type="vertical">
-            <bk-form-item label="授权用户">
+            <bk-form-item :label="$t('authorizedUser')">
                 <bk-tag-input
                     v-model="genericShare.user"
                     :list="Object.values(userList).filter(user => user.id !== 'anonymous')"
                     :search-key="['id', 'name']"
-                    placeholder="授权访问用户，为空则任意用户可访问，按Enter键确认"
+                    :placeholder="$t('sharePlaceHolder')"
                     trigger="focus"
                     allow-create
                     has-delete-icon>
                 </bk-tag-input>
             </bk-form-item>
-            <bk-form-item label="授权IP">
+            <bk-form-item :label="$t('authorizedIp')">
                 <bk-tag-input
                     v-model="genericShare.ip"
-                    placeholder="授权访问IP，为空则任意IP可访问，按Enter键确认"
+                    :placeholder="$t('sharePlaceHolder1')"
                     trigger="focus"
                     :create-tag-validator="tag => {
                         return /((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}/g.test(tag)
@@ -53,8 +53,8 @@
                     allow-create>
                 </bk-tag-input>
             </bk-form-item>
-            <bk-form-item label="访问次数">
-                <bk-input v-model="genericShare.permits" placeholder="请输入访问次数，为空则不限制"></bk-input>
+            <bk-form-item :label="$t('visits')">
+                <bk-input v-model="genericShare.permits" :placeholder="$t('sharePlaceHolder2')"></bk-input>
             </bk-form-item>
             <bk-form-item :label="`${$t('validity')}(${$t('day')})`">
                 <bk-select
@@ -64,7 +64,7 @@
                     <bk-option :id="1" name="1"></bk-option>
                     <bk-option :id="7" name="7"></bk-option>
                     <bk-option :id="30" name="30"></bk-option>
-                    <bk-option :id="0" name="永久"></bk-option>
+                    <bk-option :id="0" :name="$t('permanent')"></bk-option>
                 </bk-select>
             </bk-form-item>
         </bk-form>
@@ -139,7 +139,7 @@
                     // this.shareUrl = url
                     this.$bkMessage({
                         theme: 'success',
-                        message: '共享成功'
+                        message: this.$t('share') + this.$t('space') + this.$t('success')
                     })
                     this.cancel()
                 }).finally(() => {
@@ -150,12 +150,12 @@
                 copyToClipboard(text).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('copy') + this.$t('success')
+                        message: this.$t('copy') + this.$t('space') + this.$t('success')
                     })
                 }).catch(() => {
                     this.$bkMessage({
                         theme: 'error',
-                        message: this.$t('copy') + this.$t('fail')
+                        message: this.$t('copy') + this.$t('space') + this.$t('fail')
                     })
                 })
             },

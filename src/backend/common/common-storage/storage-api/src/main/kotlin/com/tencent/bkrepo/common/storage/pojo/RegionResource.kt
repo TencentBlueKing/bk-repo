@@ -25,15 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.exception
+package com.tencent.bkrepo.common.storage.pojo
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+/**
+ * 分块资源
+ * */
+data class RegionResource(
+    /**
+     * 资源sha256
+     * */
+    val digest: String,
+    /**
+     * 资源所在文件的pos
+     * */
+    val pos: Long,
+    /**
+     * 资源原始大小
+     * */
+    val size: Long,
+    /**
+     * 获取资源的偏移量
+     * */
+    val off: Long,
+    /**
+     * 获取资源长度
+     * */
+    val len: Long
+) {
 
-enum class FSMessageCode(private val key: String) : MessageCode {
-    BLOCK_NODE_NOT_FOUND("block-node-not-found"),
-    BLOCK_DATA_MISS("block-data-miss");
+    /**
+     * 获取资源所在文件的结束位置
+     * */
+    val endPos: Long = pos + len - 1
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 22
+    companion object {
+        const val ZERO_RESOURCE = ""
+    }
 }

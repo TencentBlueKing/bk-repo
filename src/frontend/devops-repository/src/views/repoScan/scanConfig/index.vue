@@ -1,13 +1,13 @@
 <template>
     <div class="scan-config-container" v-bkloading="{ isLoading }">
         <bk-tab class="scan-config-tab page-tab" type="unborder-card" :active.sync="tabName">
-            <bk-tab-panel name="baseInfo" label="基础设置">
+            <bk-tab-panel name="baseInfo" :label="$t('baseSetting')">
                 <bk-form :label-width="120">
-                    <bk-form-item label="方案名称">
+                    <bk-form-item :label="$t('schemeName')">
                         <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
                     </bk-form-item>
-                    <bk-form-item label="方案类型">{{ scanTypeEnum[scanBaseInfo.type] }}</bk-form-item>
-                    <bk-form-item label="扫描器">{{ scanBaseInfo.scanner }}</bk-form-item>
+                    <bk-form-item :label="$t('schemeType')">{{ $t(`scanTypeEnum.${scanBaseInfo.type}`) }}</bk-form-item>
+                    <bk-form-item :label="$t('scanner')">{{ scanBaseInfo.scanner }}</bk-form-item>
                     <bk-form-item :label="$t('description')">
                         <bk-input type="textarea"
                             class="w480"
@@ -21,10 +21,10 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" name="autoConfig" label="监控设置">
+            <bk-tab-panel render-directive="if" name="autoConfig" :label="$t('monitorSettings')">
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" name="qualityRule" label="质量规则">
+            <bk-tab-panel render-directive="if" name="qualityRule" :label="$t('qualityRules')">
                 <scan-quality-rule :project-id="projectId" :plan-id="planId" :scan-types="scanBaseInfo.scanTypes">
                 </scan-quality-rule>
             </bk-tab-panel>

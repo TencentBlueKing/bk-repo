@@ -3,11 +3,11 @@
         :value="show"
         width="800"
         height-num="561"
-        title="添加仓库"
+        :title="title"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">
         <bk-transfer
-            :title="['仓库列表', '已选仓库']"
+            :title="[$t('repositoryList'), $t('selectedRepo')]"
             :source-list="repoList"
             :target-list="targetList"
             display-key="name"
@@ -42,7 +42,8 @@
         },
         data () {
             return {
-                checkedRepository: []
+                checkedRepository: [],
+                title: this.$t('addRepo')
             }
         },
         computed: {

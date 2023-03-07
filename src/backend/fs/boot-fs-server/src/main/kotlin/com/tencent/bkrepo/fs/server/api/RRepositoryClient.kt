@@ -30,11 +30,17 @@ package com.tencent.bkrepo.fs.server.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -64,8 +70,24 @@ interface RRepositoryClient {
         @RequestBody option: NodeListOption = NodeListOption()
     ): Mono<Response<Page<NodeInfo>>>
 
-    @PostMapping("/node/create")
+    @DeleteMapping("/node/delete")
+    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Mono<Response<Void>>
+
+    @PostMapping("/node/rename")
+    fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Mono<Response<Void>>
+
+    @PostMapping("/node/fs/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
+
+    @PutMapping("/node/fs/length")
+    fun setLength(@RequestBody nodeSetLengthRequest: NodeSetLengthRequest): Mono<Response<Void>>
+
+    @GetMapping("/node/size/{projectId}/{repoName}")
+    fun computeSize(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Mono<Response<NodeSizeInfo>>
 
     @GetMapping("/repo/detail/{projectId}/{repoName}")
     fun getRepoDetail(
@@ -78,4 +100,15 @@ interface RRepositoryClient {
     fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
 
     @PutMapping("/fileReference/increment")
-    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>> }
+    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
+
+    @PostMapping("/metadata/save")
+    fun saveMetadata(@RequestBody request: MetadataSaveRequest): Mono<Response<Void>>
+
+    @GetMapping("/metadata/list/{projectId}/{repoName}")
+    fun listMetadata(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Mono<Response<Map<String, Any>>>
+}

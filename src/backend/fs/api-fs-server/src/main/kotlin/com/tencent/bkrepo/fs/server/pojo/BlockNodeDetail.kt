@@ -25,53 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.file
+package com.tencent.bkrepo.fs.server.pojo
 
-import java.io.InputStream
+import java.time.LocalDateTime
 
-class MultiArtifactFileInputStream(
-    private val fileRanges: List<FileRange>,
-    val loader: (FileRange) -> InputStream
-) : InputStream() {
-
-    private val it = fileRanges.iterator()
-    private var delegate: InputStream = next()
-
-    override fun read(): Int {
-        val read = delegate.read()
-        if (read == -1) {
-            // 更新到下一条流
-            if (moveToNextInputStream()) {
-                return read()
-            }
-        }
-        return read
-    }
-
-    override fun read(b: ByteArray, off: Int, len: Int): Int {
-        val read = delegate.read(b, off, len)
-        if (read == -1) {
-            if (moveToNextInputStream()) {
-                return read(b, off, len)
-            }
-        }
-        return read
-    }
-
-    private fun moveToNextInputStream(): Boolean {
-        if (this.hasNext()) {
-            delegate = next()
-            return true
-        }
-        return false
-    }
-
-    private fun hasNext(): Boolean {
-        return it.hasNext()
-    }
-
-    private fun next(): InputStream {
-        val fileRange = it.next()
-        return loader(fileRange)
-    }
-}
+data class BlockNodeDetail(
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    val nodeFullPath: String,
+    val startPos: Long,
+    var sha256: String,
+    val projectId: String,
+    val repoName: String,
+    val size: Long,
+    val endPos: Long
+)

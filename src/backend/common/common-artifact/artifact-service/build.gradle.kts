@@ -33,6 +33,7 @@ dependencies {
     api(project(":repository:api-repository"))
     api(project(":auth:api-auth"))
     api(project(":replication:api-replication"))
+    api(project(":fs:api-fs-server"))
     api(project(":common:common-service"))
     api(project(":common:common-security"))
     api(project(":common:common-artifact:artifact-api"))

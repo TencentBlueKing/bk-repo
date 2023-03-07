@@ -29,15 +29,16 @@ package com.tencent.bkrepo.fs.server.config
 
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.fs.server.RepositoryCache
+import com.tencent.bkrepo.fs.server.config.feign.ErrorCodeDecoder
 import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
-import com.tencent.bkrepo.fs.server.filter.ArtifactContextFilterFunction
-import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilter
+import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.filter.ReactiveRequestContextFilter
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
-import com.tencent.bkrepo.fs.server.listener.NodeFlushListener
+import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import com.tencent.bkrepo.fs.server.service.BlockNodeServiceImpl
 import com.tencent.bkrepo.fs.server.service.FileNodeService
@@ -59,6 +60,7 @@ val beans = beans {
     bean<ServiceProperties>()
     bean<NodeOperationsHandler>()
     bean<FileOperationsHandler>()
+    bean<FsNodeHandler>()
     bean<LoginHandler>()
     bean<PermissionService>()
     bean<AuthHandlerFilterFunction>()
@@ -66,19 +68,19 @@ val beans = beans {
     bean<ServerMetrics>()
     bean<ActuatorAuthFilter>()
     bean<GlobalExceptionHandler>()
-    bean<NodeFlushListener>()
     bean<BlockNodeServiceImpl>()
     bean<ReactiveRequestContextFilter>()
     bean<ReactiveArtifactFileFactory>()
-    bean<ArtifactContextFilterFunction>()
     bean<CoStorageManager>()
-    bean<ArtifactFileCleanupFilter>()
+    bean<ArtifactFileCleanupFilterFunction>()
     bean<FileNodeService>()
     bean<FileOperationService>()
     bean<SecurityManager>()
     bean<JwtAuthProperties>()
     bean<SpringContextUtils>()
     bean<NettyWebServerAccessLogCustomizer>()
+    bean<PermissionFilterFunction>()
+    bean<ErrorCodeDecoder>()
     bean {
         RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
     }

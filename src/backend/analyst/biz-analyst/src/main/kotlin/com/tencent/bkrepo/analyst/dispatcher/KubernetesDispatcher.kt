@@ -42,6 +42,8 @@ import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import kotlin.math.max
+import kotlin.math.min
 
 class KubernetesDispatcher(
     private val scannerProperties: ScannerProperties,
@@ -136,7 +138,7 @@ class KubernetesDispatcher(
         val jobName = jobName(subtask)
         val containerImage = scanner.image
         val cmd = buildCmd(subtask)
-        val limitStorageSize = maxStorageSize(subtask.packageSize)
+        val requestStorageSize = maxStorageSize(subtask.packageSize)
         val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
         val body = v1Job {
             metadata {
@@ -157,12 +159,12 @@ class KubernetesDispatcher(
                                 requests(
                                     cpu = k8sProperties.requestCpu,
                                     memory = k8sProperties.requestMem.toBytes(),
-                                    ephemeralStorage = limitStorageSize
+                                    ephemeralStorage = requestStorageSize
                                 )
                                 limits(
                                     cpu = k8sProperties.limitCpu,
                                     memory = k8sProperties.limitMem.toBytes(),
-                                    ephemeralStorage = limitStorageSize
+                                    ephemeralStorage = k8sProperties.limitStorage.toBytes()
                                 )
                             }
                         }
@@ -232,8 +234,8 @@ class KubernetesDispatcher(
     }
 
     private fun maxStorageSize(fileSize: Long): Long {
-        // 先除以文件大小倍率，防止long溢出
-        return (Long.MAX_VALUE / MAX_FILE_SIZE_MULTIPLIER).coerceAtMost(fileSize) * MAX_FILE_SIZE_MULTIPLIER
+        val requestStorage = max(k8sProperties.requestStorage.toBytes(), fileSize * MAX_FILE_SIZE_MULTIPLIER)
+        return min(k8sProperties.limitStorage.toBytes(), requestStorage)
     }
 
     private fun ignoreApiException(action: () -> Boolean): Boolean {

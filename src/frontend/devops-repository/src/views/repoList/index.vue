@@ -6,7 +6,7 @@
                 <bk-input
                     v-model.trim="query.name"
                     class="w250"
-                    placeholder="请输入仓库名称, 按Enter键搜索"
+                    :placeholder="repoEnterTip"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
@@ -39,11 +39,11 @@
             <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
-                        class="mr5 repo-tag SUCCESS" data-name="内置"></span>
+                        class="mr5 repo-tag SUCCESS" :data-name="$t('built-in')"></span>
                     <span v-if="row.configuration.settings.system"
-                        class="mr5 repo-tag" data-name="系统"></span>
+                        class="mr5 repo-tag" :data-name="$t('system')"></span>
                     <span v-if="row.public"
-                        class="mr5 repo-tag WARNING" data-name="公开"></span>
+                        class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
                 </template>
@@ -72,7 +72,7 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: '设置', clickEvent: () => toRepoConfig(row) },
+                            { label: $t('setting'), clickEvent: () => toRepoConfig(row) },
                             row.repoType !== 'generic' && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
                         ]">
                     </operation-list>
