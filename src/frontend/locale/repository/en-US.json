@@ -525,6 +525,7 @@
     "helmCreditGuideSubTitle2":"2. Update local repo information",
     "helmPushGuideSubTitle1":"Push Chart using cURL command",
     "helmPushGuideSubTitle2":"Push Chart Provenance using cURL command",
+    "helmPullGuideSubTitle":"3. Pull",
     "helmInstallGuideSubTitle1":"1. Manual configuration",
     "helmInstallGuideSubTitle2":"2. Update the local repo information",
     "rpmCreditGuideSubTitle":"Add the following configuration to the /etc/yum.repos.d/{0}.repo file",
