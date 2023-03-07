@@ -48,7 +48,8 @@ class RemoteNodeResource(
     private val range: Range,
     private val storageCredentials: StorageCredentials?,
     private val centerClusterInfo: ClusterInfo,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val isCache: Boolean = true,
 ) : AbstractNodeResource() {
 
     private val storageKey = storageCredentials?.key
@@ -59,6 +60,7 @@ class RemoteNodeResource(
     private val blobReplicaClient: BlobReplicaClient by lazy {
         FeignClientFactory.create(centerClusterInfo)
     }
+
     override fun exists(): Boolean {
         return try {
             blobReplicaClient.check(sha256, storageKey).data ?: false
@@ -82,7 +84,7 @@ class RemoteNodeResource(
                 "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
             }
             val artifactInputStream = response.body()?.asInputStream()?.artifactStream(range)
-            if (artifactInputStream != null && range.isFullContent()) {
+            if (isCache && artifactInputStream != null && range.isFullContent()) {
                 val listener = ProxyBlobCacheWriter(storageService, sha256)
                 artifactInputStream.addListener(listener)
             }
