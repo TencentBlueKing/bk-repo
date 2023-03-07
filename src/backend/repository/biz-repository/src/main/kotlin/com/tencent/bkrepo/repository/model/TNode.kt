@@ -149,6 +149,6 @@ data class TNode(
         const val FOLDER_IDX = "folder_idx"
         const val FOLDER_IDX_DEF = "{'folder': 1}"
         const val CLUSTER_NAMES_IDX = "cluster_names_idx"
-        const val CLUSTER_NAMES_IDX_DEF = "{'region': 1}"
+        const val CLUSTER_NAMES_IDX_DEF = "{'clusterNames': 1}"
     }
 }
