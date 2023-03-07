@@ -34,7 +34,9 @@ package com.tencent.bkrepo.repository.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.repository.service.packages.StageService
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -53,5 +55,10 @@ class StageController(
     ): Response<List<String>> {
         val tagList = stageService.query(projectId, repoName, packageKey, version)
         return ResponseBuilder.success(tagList)
+    }
+
+    override fun upgrade(@RequestBody request: StageUpgradeRequest): Response<Void> {
+        stageService.upgrade(request)
+        return ResponseBuilder.success()
     }
 }

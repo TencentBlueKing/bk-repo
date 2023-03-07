@@ -31,15 +31,19 @@
 
 package com.tencent.bkrepo.repository.service.packages.impl
 
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageDependentsDao
+import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.repository.service.packages.PackageDependentsService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
+@Conditional(DefaultCondition::class)
 class PackageDependentsServiceImpl(
     private val packageDao: PackageDao,
     private val packageDependentsDao: PackageDependentsDao
@@ -49,7 +53,7 @@ class PackageDependentsServiceImpl(
         with(request) {
             var addCount = 0L
             dependencies.forEach {
-                if (packageDao.findByKey(projectId, repoName, it) != null) {
+                if (checkPackage(projectId, repoName, it) != null) {
                     addCount += packageDependentsDao.addDependent(projectId, repoName, it, packageKey)
                 }
             }
@@ -61,7 +65,7 @@ class PackageDependentsServiceImpl(
         with(request) {
             var reduceCount = 0L
             dependencies.forEach {
-                if (packageDao.findByKey(projectId, repoName, it) != null) {
+                if (checkPackage(projectId, repoName, it) != null) {
                     reduceCount += packageDependentsDao.reduceDependent(projectId, repoName, it, packageKey)
                 }
             }
@@ -71,6 +75,10 @@ class PackageDependentsServiceImpl(
 
     override fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String> {
         return packageDependentsDao.findByPackageKey(projectId, repoName, packageKey)?.dependents.orEmpty()
+    }
+
+    protected fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage? {
+        return packageDao.findByKey(projectId, repoName, packageKey)
     }
 
     companion object {

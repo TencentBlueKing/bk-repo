@@ -31,9 +31,12 @@
 
 package com.tencent.bkrepo.repository.dao
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 /**
@@ -56,6 +59,23 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
 
     fun deleteByPackageId(packageId: String) {
         this.remove(PackageQueryHelper.versionQuery(packageId))
+    }
+
+    /**
+     * PackageVersion的clusterName只有一个值时，可根据[packageId]与[clusterName]删除所有关联的PackageVersion
+     */
+    fun deleteByPackageIdAndClusterName(packageId: String, clusterName: String) {
+        this.remove(PackageQueryHelper.clusterNameQuery(packageId, clusterName))
+    }
+
+    fun existsByPackageIdAndClusterName(packageId: String, clusterName: String): Boolean {
+        return exists(PackageQueryHelper.clusterNameQuery(packageId, clusterName))
+    }
+
+    fun removeClusterByKey(packageId: String, cluster: String): UpdateResult? {
+        val query = PackageQueryHelper.clusterNameQuery(packageId, cluster)
+        val update = Update().pull(TPackage::clusterNames.name, cluster)
+        return updateFirst(query, update)
     }
 
     fun deleteByName(packageId: String, name: String) {
