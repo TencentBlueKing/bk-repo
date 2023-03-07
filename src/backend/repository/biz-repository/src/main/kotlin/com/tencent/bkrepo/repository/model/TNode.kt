@@ -52,6 +52,8 @@ import com.tencent.bkrepo.repository.model.TNode.Companion.METADATA_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.METADATA_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.PATH_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.PATH_IDX_DEF
+import com.tencent.bkrepo.repository.model.TNode.Companion.REGION_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.REGION_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.SHA256_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.SHA256_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -149,6 +151,6 @@ data class TNode(
         const val FOLDER_IDX = "folder_idx"
         const val FOLDER_IDX_DEF = "{'folder': 1}"
         const val CLUSTER_NAMES_IDX = "cluster_names_idx"
-        const val CLUSTER_NAMES_IDX_DEF = "{'region': 1}"
+        const val CLUSTER_NAMES_IDX_DEF = "{'clusterNames': 1}"
     }
 }
