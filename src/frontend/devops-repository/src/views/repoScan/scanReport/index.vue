@@ -81,7 +81,7 @@
                             <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('ArtifactVersion') + '/' + $t('storagePath')" show-overflow-tooltip>
+                    <bk-table-column :label="$t('artifactVersion') + '/' + $t('storagePath')" show-overflow-tooltip>
                         <template #default="{ row }">{{ row.version || row.fullPath }}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('repo')" show-overflow-tooltip>
