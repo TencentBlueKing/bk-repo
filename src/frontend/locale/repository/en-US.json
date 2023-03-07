@@ -123,7 +123,7 @@
     "token": "Token",
     "createToken": "Create Token",
     "tokenSubTitle": "Replace the value of <PERSONAL_ACCESS_TOKEN>, please jump to manage access token",
-    "tokenExpressTip": "Please select an expiration time, the default is permanent",
+    "tokenExpireTip": "Please select an expiration time, the default is permanent",
     "tokenIs": "tokenIs：",
     "tokenCopyTip": "Please make sure you have copied the above token. We don't store it and you won't be able to see it again later",
     "neverExpires": "neverExpires",

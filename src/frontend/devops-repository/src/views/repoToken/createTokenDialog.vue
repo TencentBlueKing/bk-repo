@@ -27,7 +27,7 @@
                     :options="{
                         disabledDate: (date) => date < new Date()
                     }"
-                    :placeholder="$t('tokenExpressTip')">
+                    :placeholder="$t('tokenExpireTip')">
                 </bk-date-picker>
             </bk-form-item>
         </bk-form>
