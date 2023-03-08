@@ -29,10 +29,39 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    compileOnly("org.springframework:spring-web")
+package com.tencent.bkrepo.auth.resource
+
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.auth.service.TemporaryTokenService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
+
+/**
+ * 临时token服务接口实现类
+ */
+@RestController
+class ServiceTemporaryTokenResourceImpl(
+    private val temporaryTokenService: TemporaryTokenService
+) : ServiceTemporaryTokenResource {
+
+    override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
+        return ResponseBuilder.success(temporaryTokenService.createToken(request))
+    }
+
+    override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
+        return ResponseBuilder.success(temporaryTokenService.getTokenInfo(token))
+    }
+
+    override fun deleteToken(token: String): Response<Void> {
+        temporaryTokenService.deleteToken(token)
+        return ResponseBuilder.success()
+    }
+
+    override fun decrementPermits(token: String): Response<Void> {
+        temporaryTokenService.decrementPermits(token)
+        return ResponseBuilder.success()
+    }
 }

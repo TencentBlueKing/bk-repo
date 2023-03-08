@@ -31,10 +31,11 @@
 
 package com.tencent.bkrepo.common.security.http.temporary
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.TEMPORARY_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.TEMPORARY_TOKEN_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import org.slf4j.LoggerFactory
 import javax.servlet.http.HttpServletRequest
 
@@ -53,13 +53,13 @@ open class TemporaryTokenAuthHandler(
     private val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
 
-    private val temporaryTokenClient by lazy { SpringContextUtils.getBean<TemporaryTokenClient>() }
+    private val temporaryTokenClient by lazy { SpringContextUtils.getBean<ServiceTemporaryTokenResource>() }
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty().trim()
-        return if (authorizationHeader.startsWith(TEMPORARY_AUTH_PREFIX)) {
+        return if (authorizationHeader.startsWith(TEMPORARY_TOKEN_AUTH_PREFIX)) {
             try {
-                val token = authorizationHeader.removePrefix(TEMPORARY_AUTH_PREFIX).trim()
+                val token = authorizationHeader.removePrefix(TEMPORARY_TOKEN_AUTH_PREFIX).trim()
                 require(token.isNotBlank())
                 TemporaryTokenAuthCredentials(token)
             } catch (exception: IllegalArgumentException) {

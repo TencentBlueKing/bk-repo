@@ -31,6 +31,10 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -55,10 +59,6 @@ import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.TemporaryTokenClient
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.repository.pojo.token.TokenType
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
 import org.springframework.stereotype.Service
@@ -71,7 +71,7 @@ import java.time.format.DateTimeFormatter
  */
 @Service
 class TemporaryAccessService(
-    private val temporaryTokenClient: TemporaryTokenClient,
+    private val temporaryTokenClient: ServiceTemporaryTokenResource,
     private val repositoryClient: RepositoryClient,
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
