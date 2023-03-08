@@ -34,4 +34,5 @@ package com.tencent.bkrepo.helm.exception
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.MessageCode
 
-class HelmFileNotFoundException(messageCode: MessageCode, vararg params: String) : NotFoundException(messageCode, *params)
+class HelmFileNotFoundException(messageCode: MessageCode, vararg params: String)
+    : NotFoundException(code = messageCode, params = params)

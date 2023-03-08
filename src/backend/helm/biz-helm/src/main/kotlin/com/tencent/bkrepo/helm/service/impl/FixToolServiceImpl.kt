@@ -177,11 +177,15 @@ class FixToolServiceImpl(
         val nodeDetail =
             nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
                 logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName")
+                throw HelmFileNotFoundException(
+                    HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+                )
             }
         val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
             logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
-            throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName")
+            throw HelmFileNotFoundException(
+                HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+            )
         }
         return inputStream.use { it.readYamlString() }
     }
@@ -219,13 +223,17 @@ class FixToolServiceImpl(
             val nodeDetail =
                 nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
                     logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName")
+                    throw HelmFileNotFoundException(
+                        HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+                    )
                 }
             // sleep 0.1s
             Thread.sleep(100)
             val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
-                throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName")
+                throw HelmFileNotFoundException(
+                    HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+                )
             }
             val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
             if (helmIndexYamlMetadata.entries.isEmpty()) {

@@ -115,7 +115,8 @@ class MavenExceptionHandler {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
-            "User[$userId] access maven resource[$uri] failed[${exception.javaClass.simpleName}]: ${responseObject.error}"
+            "User[$userId] access maven resource[$uri] failed" +
+                "[${exception.javaClass.simpleName}]: ${responseObject.error}"
         )
     }
 

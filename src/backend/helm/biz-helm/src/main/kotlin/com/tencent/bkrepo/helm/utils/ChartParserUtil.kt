@@ -184,7 +184,10 @@ object ChartParserUtil {
             }
             chartList.forEach { convertUtcTime(it) }
         }
-        return chartList ?: throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "$name|$version", Strings.EMPTY)
+        return chartList ?:
+        throw HelmFileNotFoundException(
+            HelmMessageCode.HELM_FILE_NOT_FOUND, "$name|$version", Strings.EMPTY
+        )
     }
 
     /**
@@ -208,7 +211,9 @@ object ChartParserUtil {
                     if (!compareTime(startTime, helmChartMetadataList.first().created)) {
                         convertUtcTime(helmChartMetadataList.first())
                     } else {
-                        throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, chartVersion, Strings.EMPTY)
+                        throw HelmFileNotFoundException(
+                            HelmMessageCode.HELM_FILE_NOT_FOUND, chartVersion, Strings.EMPTY
+                        )
                     }
                 }
             }

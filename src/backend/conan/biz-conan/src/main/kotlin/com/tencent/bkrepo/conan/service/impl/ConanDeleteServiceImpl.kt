@@ -138,7 +138,9 @@ class ConanDeleteServiceImpl : ConanDeleteService {
             for (file in files) {
                 path = joinString(rootPath, file)
                 nodeClient.getNodeDetail(projectId, repoName, path).data
-                    ?: throw ConanFileNotFoundException(ConanMessageCode.CONAN_FILE_NOT_FOUND, path, "$projectId|$repoName")
+                    ?: throw ConanFileNotFoundException(
+                        ConanMessageCode.CONAN_FILE_NOT_FOUND, path, "$projectId|$repoName"
+                    )
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
             }

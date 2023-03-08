@@ -134,7 +134,9 @@ class OciOperationServiceImpl(
             repoName = repoName,
             packageKey = packageKey,
             version = version
-        ).data ?: throw OciVersionNotFoundException(OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName")
+        ).data ?: throw OciVersionNotFoundException(
+            OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName"
+        )
     }
 
     /**
@@ -976,13 +978,17 @@ class OciOperationServiceImpl(
         val context = ArtifactQueryContext()
         try {
             val inputStream = ArtifactContextHolder.getRepository().query(context) ?: OciFileNotFoundException(
-                OciMessageCode.OCI_FILE_NOT_FOUND, context.artifactInfo.getArtifactFullPath(), context.artifactInfo.getRepoIdentify()
+                OciMessageCode.OCI_FILE_NOT_FOUND,
+                context.artifactInfo.getArtifactFullPath(),
+                context.artifactInfo.getRepoIdentify()
             )
             return (inputStream as ArtifactInputStream).readBytes().toString(Charset.defaultCharset())
         } catch (e: Exception) {
             logger.warn(e.message.toString())
             throw OciFileNotFoundException(
-                OciMessageCode.OCI_FILE_NOT_FOUND, context.artifactInfo.getArtifactFullPath(), context.artifactInfo.getRepoIdentify()
+                OciMessageCode.OCI_FILE_NOT_FOUND,
+                context.artifactInfo.getArtifactFullPath(),
+                context.artifactInfo.getRepoIdentify()
             )
         }
     }

@@ -34,4 +34,5 @@ package com.tencent.bkrepo.helm.exception
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.MessageCode
 
-class HelmErrorInvalidProvenanceFileException(messageCode: MessageCode, params: String) : SystemErrorException(messageCode, params)
+class HelmErrorInvalidProvenanceFileException(messageCode: MessageCode, params: String)
+    : SystemErrorException(messageCode, params)

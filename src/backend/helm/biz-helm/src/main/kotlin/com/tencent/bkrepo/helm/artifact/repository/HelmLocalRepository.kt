@@ -203,7 +203,9 @@ class HelmLocalRepository(
     override fun query(context: ArtifactQueryContext): ArtifactInputStream? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
         return this.onQuery(context) ?:
-        throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "${context.projectId}|${context.repoName}")
+        throw HelmFileNotFoundException(
+            HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "${context.projectId}|${context.repoName}"
+        )
     }
 
     private fun onQuery(context: ArtifactQueryContext): ArtifactInputStream? {

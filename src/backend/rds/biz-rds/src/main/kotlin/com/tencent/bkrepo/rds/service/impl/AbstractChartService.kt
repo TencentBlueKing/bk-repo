@@ -130,7 +130,9 @@ open class AbstractChartService : ArtifactService() {
         context.putAttribute(FULL_PATH, RdsUtils.getIndexCacheYamlFullPath())
         try {
             val inputStream = ArtifactContextHolder.getRepository().query(context) ?:
-            throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}")
+            throw RdsFileNotFoundException(
+                RdsMessageCode.RDS_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}"
+            )
             return (inputStream as ArtifactInputStream).use { it.readYamlString() }
         } catch (e: Exception) {
             logger.error("Error occurred while querying index.yaml, error: ${e.message}")

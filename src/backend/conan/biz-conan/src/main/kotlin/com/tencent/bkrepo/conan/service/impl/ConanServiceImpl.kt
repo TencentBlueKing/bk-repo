@@ -64,7 +64,9 @@ class ConanServiceImpl : ConanService {
                 emptyMap()
             }
             if (urls.isEmpty())
-                throw ConanRecipeNotFoundException(ConanMessageCode.CONAN_RECIPE_NOT_FOUND, buildReference(conanFileReference))
+                throw ConanRecipeNotFoundException(
+                    ConanMessageCode.CONAN_RECIPE_NOT_FOUND, buildReference(conanFileReference)
+                )
             return urls
         }
     }
@@ -79,7 +81,9 @@ class ConanServiceImpl : ConanService {
                 projectId, repoName, packageReference, subFileset
             )
             if (urls.isEmpty())
-                throw ConanRecipeNotFoundException(ConanMessageCode.CONAN_RECIPE_NOT_FOUND, "${buildReference(packageReference.conRef)}/$packageId")
+                throw ConanRecipeNotFoundException(
+                    ConanMessageCode.CONAN_RECIPE_NOT_FOUND, "${buildReference(packageReference.conRef)}/$packageId"
+                )
             return urls
         }
     }

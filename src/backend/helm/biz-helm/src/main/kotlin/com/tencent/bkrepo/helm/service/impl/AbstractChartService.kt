@@ -147,11 +147,15 @@ open class AbstractChartService : ArtifactService() {
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
         try {
             val inputStream = ArtifactContextHolder.getRepository().query(context)
-                ?: throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}")
+                ?: throw HelmFileNotFoundException(
+                    HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}"
+                )
             return (inputStream as ArtifactInputStream).use { it.readYamlString() }
         } catch (e: Exception) {
             logger.warn("Error occurred while querying index.yaml, error: ${e.message}")
-            throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}")
+            throw HelmFileNotFoundException(
+                HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}"
+            )
         }
     }
 
@@ -163,11 +167,13 @@ open class AbstractChartService : ArtifactService() {
         val repository = repositoryClient.getRepoDetail(projectId, repoName, RepositoryType.HELM.name).data
             ?: throw RepoNotFoundException("Repository[$repoName] does not exist")
         val inputStream = storageManager.loadArtifactInputStream(nodeDetail, repository.storageCredentials)
-            ?: throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName")
+            ?: throw HelmFileNotFoundException(
+                HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+            )
         return inputStream.use { it.readYamlString() }
     }
 
-    fun getOriginalIndexNode(projectId: String, repoName: String): NodeDetail? {
+    private fun getOriginalIndexNode(projectId: String, repoName: String): NodeDetail? {
         val fullPath = HelmUtils.getIndexCacheYamlFullPath()
         return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
     }
