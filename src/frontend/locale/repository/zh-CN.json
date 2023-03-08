@@ -678,5 +678,6 @@
     "scanConfig":"方案设置",
     "operationConfirmation":"操作确认",
     "executeScanSuccessMsg":"执行扫描成功",
-    "scanRulePreMsg":"不填写则跳过规则"
+    "scanRulePreMsg":"不填写则跳过规则",
+    "isDisplay": "是否展示"
 }

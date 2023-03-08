@@ -236,7 +236,8 @@ class RepositoryServiceImpl(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now(),
                 quota = quota,
-                used = 0
+                used = 0,
+                display = display
             )
             return try {
                 if (repoConfiguration is CompositeConfiguration) {
@@ -280,6 +281,7 @@ class RepositoryServiceImpl(
                 updateRepoConfiguration(it, cryptoConfigurationPwd(oldConfiguration), repository, operator)
                 repository.configuration = cryptoConfigurationPwd(it, false).toJsonString()
             }
+            repository.display = display
             repositoryDao.save(repository)
         }
         val event = buildUpdatedEvent(repoUpdateRequest)
@@ -603,7 +605,8 @@ class RepositoryServiceImpl(
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
-                    used = it.used
+                    used = it.used,
+                    display = it.display
                 )
             }
         }
