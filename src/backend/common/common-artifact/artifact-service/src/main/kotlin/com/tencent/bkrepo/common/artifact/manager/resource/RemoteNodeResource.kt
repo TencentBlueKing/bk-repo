@@ -65,15 +65,17 @@ class RemoteNodeResource(
         return try {
             blobReplicaClient.check(sha256, storageKey).data ?: false
         } catch (exception: Exception) {
-            logger.error("Failed to check blob data[$sha256] in center node.", exception)
+            logger.error("Failed to check blob data[$sha256] in remote node.", exception)
             false
         }
     }
 
     override fun getArtifactInputStream(): ArtifactInputStream? {
         try {
-            storageService.load(sha256, range, storageCredentials)?.let {
-                return it
+            if (isCache) {
+                storageService.load(sha256, range, storageCredentials)?.let {
+                    return it
+                }
             }
             if (!exists()) {
                 return null
@@ -81,17 +83,17 @@ class RemoteNodeResource(
             val request = BlobPullRequest(sha256, range, storageKey)
             val response = blobReplicaClient.pull(request)
             check(response.status() == HttpStatus.OK.value) {
-                "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
+                "Failed to pull blob[$sha256] from remote node, status: ${response.status()}"
             }
             val artifactInputStream = response.body()?.asInputStream()?.artifactStream(range)
             if (isCache && artifactInputStream != null && range.isFullContent()) {
                 val listener = ProxyBlobCacheWriter(storageService, sha256)
                 artifactInputStream.addListener(listener)
             }
-            logger.info("Pull blob data[$sha256] from center node.")
+            logger.info("Pull blob data[$sha256] from remote node.")
             return artifactInputStream
         } catch (exception: Exception) {
-            logger.error("Failed to pull blob data[$sha256] from center node.", exception)
+            logger.error("Failed to pull blob data[$sha256] from remote node.", exception)
         }
         return null
     }

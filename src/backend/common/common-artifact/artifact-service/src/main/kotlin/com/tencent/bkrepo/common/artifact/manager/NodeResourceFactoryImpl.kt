@@ -98,6 +98,8 @@ class NodeResourceFactoryImpl(
                 appId = it.appId,
                 accessKey = it.accessKey,
                 secretKey = it.secretKey,
+                username = it.username,
+                password = it.password
             )
         }
     }
