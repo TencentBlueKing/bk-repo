@@ -69,7 +69,7 @@ export default (r) => {
             crossdomain: true
         }).then(response => {
             const messages = response.data
-            
+
             i18n.setLocaleMessage(locale, {
                 ...i18n.messages[locale],
                 [module]: messages
@@ -89,11 +89,12 @@ export default (r) => {
         setLsLocale(localeLang)
         locale.use(lang[localeLang.replace('-', '')])
         axios.defaults.headers.common['Accept-Language'] = localeLang
+        Vue.prototype.$ajax.defaults.headers.common['Accept-Language'] = localeLang
         document.querySelector('html').setAttribute('lang', localeLang)
-        
+
         return localeLang
     }
- 
+
     return {
         i18n,
         setLocale,
@@ -110,7 +111,7 @@ function importAll (r) {
     const localeList = []
     const messages = r.keys().reduce((acc, key) => {
         const mod = r(key)
-        
+
         const matchLocaleKey = key.match(/\/([\w-]+)?\.json$/)
         const localeKey = (matchLocaleKey ? matchLocaleKey[1] : '')
         if (localeKey) {
