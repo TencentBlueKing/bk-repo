@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,10 +29,34 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    compileOnly("org.springframework:spring-web")
-}
+package com.tencent.bkrepo.auth.model
+
+import com.tencent.bkrepo.auth.pojo.token.TokenType
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
+
+/**
+ * 临时访问token
+ */
+@Document("temporary_token")
+@CompoundIndexes(
+    CompoundIndex(def = "{'token': 1, 'type': 1}", background = true)
+)
+data class TTemporaryToken(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var projectId: String,
+    var repoName: String,
+    var fullPath: String,
+    var token: String,
+    var authorizedUserList: Set<String>,
+    var authorizedIpList: Set<String>,
+    var expireDate: LocalDateTime? = null,
+    var permits: Int? = null,
+    var type: TokenType
+)

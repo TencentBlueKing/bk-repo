@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,33 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.pojo
+package com.tencent.bkrepo.auth.service.impl.center
 
-import com.tencent.bkrepo.auth.pojo.token.TokenType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-import java.time.Duration
+import com.tencent.bkrepo.auth.repository.TemporaryTokenRepository
+import com.tencent.bkrepo.auth.service.impl.TemporaryTokenServiceImpl
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Service
 
-@ApiModel("创建临时访问url请求")
-data class TemporaryUrlCreateRequest(
-    @ApiModelProperty("项目id")
-    val projectId: String,
-    @ApiModelProperty("仓库名称")
-    val repoName: String,
-    @ApiModelProperty("授权路径列表")
-    val fullPathSet: Set<String>,
-    @ApiModelProperty("授权用户")
-    val authorizedUserSet: Set<String> = emptySet(),
-    @ApiModelProperty("授权IP")
-    val authorizedIpSet: Set<String> = emptySet(),
-    @ApiModelProperty("有效时间，单位秒")
-    val expireSeconds: Long = Duration.ofDays(1).seconds,
-    @ApiModelProperty("允许访问次数，为空表示无限制")
-    val permits: Int? = null,
-    @ApiModelProperty("token类型")
-    val type: TokenType,
-    @ApiModelProperty("指定临时访问链接host")
-    val host: String? = null,
-    @ApiModelProperty("是否通知用户")
-    val needsNotify: Boolean = false
+@Service
+@Conditional(CommitEdgeCenterCondition::class)
+class CommitEdgeCenterTemporaryTokenServiceImpl(
+    temporaryTokenRepository: TemporaryTokenRepository
+) : TemporaryTokenServiceImpl(
+    temporaryTokenRepository
 )

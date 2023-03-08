@@ -29,10 +29,37 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    compileOnly("org.springframework:spring-web")
+package com.tencent.bkrepo.auth.service
+
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+
+
+/**
+ * 临时访问服务接口
+ */
+interface TemporaryTokenService {
+
+    /**
+     * 创建临时token
+     * @param request 创建请求
+     */
+    fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo>
+
+    /**
+     * 查询临时token信息
+     * @param token 临时token
+     */
+    fun getTokenInfo(token: String): TemporaryTokenInfo?
+
+    /**
+     * 删除临时token信息
+     * @param token 临时token
+     */
+    fun deleteToken(token: String)
+
+    /**
+     * 根据[token]删除临时token信息
+     */
+    fun decrementPermits(token: String)
 }

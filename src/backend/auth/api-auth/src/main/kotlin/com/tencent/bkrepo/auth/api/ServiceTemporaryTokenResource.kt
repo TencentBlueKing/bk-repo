@@ -29,12 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.api
+package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
@@ -48,10 +48,9 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("临时token服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "TemporaryTokenClient")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceTemporaryTokenResource")
 @RequestMapping("/service/temporary/token")
-@Deprecated(message = "replace with ServiceTemporaryTokenResource")
-interface TemporaryTokenClient {
+interface ServiceTemporaryTokenResource {
 
     @ApiOperation("创建临时token")
     @PostMapping("/create")

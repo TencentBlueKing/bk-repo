@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,10 +29,28 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    compileOnly("org.springframework:spring-web")
-}
+package com.tencent.bkrepo.auth.pojo.token
+
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.Duration
+
+@ApiModel("创建临时token请求")
+data class TemporaryTokenCreateRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String,
+    @ApiModelProperty("授权路径列表")
+    val fullPathSet: Set<String>,
+    @ApiModelProperty("授权用户")
+    val authorizedUserSet: Set<String> = emptySet(),
+    @ApiModelProperty("授权IP")
+    val authorizedIpSet: Set<String> = emptySet(),
+    @ApiModelProperty("有效时间，单位秒")
+    val expireSeconds: Long = Duration.ofDays(1).seconds,
+    @ApiModelProperty("允许访问次数，为空表示无限制")
+    val permits: Int? = null,
+    @ApiModelProperty("token类型")
+    val type: TokenType
+)
