@@ -203,6 +203,10 @@ open class PermissionManager(
             if (platformId == null && !isAdminUser(userId)) {
                 throw PermissionException()
             }
+        } else if (principalType == PrincipalType.GENERAL) {
+            if (userId.isNullOrEmpty() || userId == ANONYMOUS_USER) {
+                throw PermissionException()
+            }
         }
     }
 
@@ -433,14 +437,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
-                        " nodes$paths, code[${it.code}], response[$content]"
+                            " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url}], project[$projectId], " +
-                    "repo[$repoName], nodes$paths, $e"
+                        "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }
