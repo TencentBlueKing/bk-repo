@@ -50,7 +50,7 @@
                                         repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
                                         showRepoScan && { label: $t('scanProduct'), clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('lift the ban') : $t('forbidden to use') },
+                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
                                     permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
@@ -266,7 +266,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (row.metadata.forbidStatus ? this.$t('lift the ban') : this.$t('forbidden to use')) + this.$t('success')
+                        message: (row.metadata.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.refresh(row.name)
                 })
