@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -38,8 +37,7 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.conan.constant.CONANS_URL_TAG
+import com.tencent.bkrepo.conan.config.ConanProperties
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.constant.MD5
 import com.tencent.bkrepo.conan.constant.UPLOAD_URL_PREFIX
@@ -54,7 +52,6 @@ import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.utils.ConanInfoLoadUtil
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildOriginalConanFileName
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
@@ -75,7 +72,9 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 @Component
-class CommonService {
+class CommonService(
+    private val properties: ConanProperties
+) {
     @Autowired
     lateinit var nodeClient: NodeClient
     @Autowired
@@ -591,12 +590,8 @@ class CommonService {
      * 获取请求URL前缀，用于生成上传或者下载路径
      */
     private fun getRequestUrlPrefix(conanFileReference: ConanFileReference): String {
-        val requestUrl = HttpContextHolder.getRequest().requestURL.toString()
-        val prefixUrl = requestUrl.substring(
-            0, requestUrl.indexOf(buildOriginalConanFileName(conanFileReference))
-        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG)
         return joinString(
-            prefixUrl,
+            properties.domain,
             UPLOAD_URL_PREFIX
         )
     }
