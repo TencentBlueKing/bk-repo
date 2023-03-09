@@ -274,6 +274,7 @@ class PackageServiceImpl(
     ) {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
         val tPackageVersion = packageVersionDao.findByName(tPackage.id.orEmpty(), versionName) ?: return
+        checkCluster(tPackageVersion)
         packageVersionDao.deleteByName(tPackageVersion.packageId, tPackageVersion.name)
         tPackage.versions -= 1
         if (tPackage.versions <= 0L) {

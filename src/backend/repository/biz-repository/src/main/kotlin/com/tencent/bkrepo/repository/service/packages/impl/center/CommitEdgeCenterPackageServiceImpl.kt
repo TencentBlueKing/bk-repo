@@ -128,48 +128,20 @@ class CommitEdgeCenterPackageServiceImpl(
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
         val srcCluster = srcCluster()
 
-        // 是Package唯一的cluster时可以直接删除
         if (ClusterUtils.isUniqueSrcCluster(tPackage.clusterNames)) {
+            // 是Package唯一的cluster时可以直接删除
             super.deletePackage(projectId, repoName, packageKey, realIpAddress)
-        }
-
-        // Package包含cluster，但不是Package的唯一cluster时只能清理单个cluster的值
-        if (ClusterUtils.containsSrcCluster(tPackage.clusterNames)) {
+        } else if (ClusterUtils.containsSrcCluster(tPackage.clusterNames)) {
+            // Package包含cluster，但不是Package的唯一cluster时只能清理单个cluster的值
             packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
+            // 因为目前packageVersion只会属于一个cluster,所以此处可以直接删除与该cluster关联的所有packageVersion
             packageVersionDao.deleteByPackageIdAndClusterName(tPackage.id!!, srcCluster)
             logger.info("Remove package [$projectId/$repoName/$packageKey] cluster[$srcCluster] success")
+        } else {
+            // Package不包含cluster时候直接报错
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
         }
 
-        // Package不包含cluster时候直接报错
-        throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
-    }
-
-    override fun deleteVersion(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        versionName: String,
-        realIpAddress: String?
-    ) {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
-        val tPackageVersion = packageVersionDao.findByName(tPackage.id.orEmpty(), versionName) ?: return
-        val srcCluster = srcCluster()
-
-        if (ClusterUtils.isUniqueSrcCluster(tPackageVersion.clusterNames)) {
-            super.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
-            return
-        }
-
-        if (ClusterUtils.containsSrcCluster(tPackageVersion.clusterNames)) {
-            packageVersionDao.removeClusterByKey(tPackageVersion.packageId, srcCluster)
-            if (!packageVersionDao.existsByPackageIdAndClusterName(tPackageVersion.packageId, srcCluster)) {
-                packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
-            }
-            return
-        }
-
-        // Package不包含cluster时候直接报错
-        throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
     }
 
     private fun createPackage(tPackage: TPackage): TPackage {

@@ -71,8 +71,7 @@ object PackageQueryHelper {
     }
 
     fun clusterNameQuery(packageId: String, clusterName: String): Query {
-        val criteria = where(TPackageVersion::packageId)
-            .isEqualTo(packageId)
+        val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
             .and(TPackageVersion::clusterNames.name).inValues(clusterName)
         return Query(criteria)
     }
