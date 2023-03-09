@@ -75,8 +75,8 @@ data class TPackage(
         return this.clusterNames
     }
 
-    override fun writeClusterNames(region: Set<String>) {
-        this.clusterNames = region
+    override fun writeClusterNames(clusterNames: Set<String>) {
+        this.clusterNames = clusterNames
     }
 
     companion object {

@@ -49,7 +49,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 
 /**
- * Star组网方式的Center节点Package管理服务
+ * CommitEdge组网方式的Center节点Package管理服务
  */
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
@@ -64,27 +64,27 @@ class CommitEdgeCenterPackageServiceImpl(
     packageSearchInterpreter,
 ) {
     override fun buildPackage(request: PackageVersionCreateRequest): TPackage {
-        return super.buildPackage(request).also { addSrcRegionToResource(it) }
+        return super.buildPackage(request).also { addSrcClusterToResource(it) }
     }
 
     override fun buildPackage(request: PackagePopulateRequest): TPackage {
-        return super.buildPackage(request).also { addSrcRegionToResource(it) }
+        return super.buildPackage(request).also { addSrcClusterToResource(it) }
     }
 
     /**
-     * 获取已存在的Package或创建Package，会将当前的操作来源region添加到package region中
+     * 获取已存在的Package或创建Package，会将当前的操作来源cluster添加到package cluster中
      */
     override fun findOrCreatePackage(tPackage: TPackage): TPackage {
         with(tPackage) {
             val savedPackage = packageDao.findByKey(projectId, repoName, key)
-            val srcRegion = srcRegion()
+            val srcCluster = srcCluster()
 
             if (savedPackage != null &&
-                srcRegion.isNotEmpty() &&
-                savedPackage.clusterNames?.contains(srcRegion) == false) {
-                val result = packageDao.addClusterByKey(projectId, repoName, key, srcRegion)
-                addSrcRegionToResource(savedPackage, srcRegion)
-                logger.info("Update package[$tPackage] region[$srcRegion] result[${result?.modifiedCount}]")
+                srcCluster.isNotEmpty() &&
+                savedPackage.clusterNames?.contains(srcCluster) == false) {
+                val result = packageDao.addClusterByKey(projectId, repoName, key, srcCluster)
+                addSrcClusterToResource(savedPackage, srcCluster)
+                logger.info("Update package[$tPackage] cluster[$srcCluster] result[${result?.modifiedCount}]")
             }
 
             return savedPackage ?: createPackage(tPackage)
@@ -92,55 +92,55 @@ class CommitEdgeCenterPackageServiceImpl(
     }
 
     override fun buildPackageVersion(request: PackageVersionCreateRequest, packageId: String): TPackageVersion {
-        return super.buildPackageVersion(request, packageId).also { addSrcRegionToResource(it) }
+        return super.buildPackageVersion(request, packageId).also { addSrcClusterToResource(it) }
     }
 
     override fun buildPackageVersion(
         populatedPackageVersion: PopulatedPackageVersion,
         packageId: String
     ): TPackageVersion {
-        return super.buildPackageVersion(populatedPackageVersion, packageId).also { addSrcRegionToResource(it) }
+        return super.buildPackageVersion(populatedPackageVersion, packageId).also { addSrcClusterToResource(it) }
     }
 
     /**
      * 只允许覆盖节点自身创建的包
      */
     override fun checkPackageVersionOverwrite(overwrite: Boolean, packageName: String, oldVersion: TPackageVersion) {
-        ClusterUtils.checkIsSrcRegion(oldVersion.clusterNames)
+        ClusterUtils.checkIsSrcCluster(oldVersion.clusterNames)
         super.checkPackageVersionOverwrite(overwrite, packageName, oldVersion)
     }
 
-    override fun populateRegion(tPackage: TPackage) {
+    override fun populateCluster(tPackage: TPackage) {
         with(tPackage) {
-            val srcRegion = srcRegion()
-            if (tPackage.clusterNames?.contains(srcRegion) == false) {
-                packageDao.addClusterByKey(projectId, repoName, key, srcRegion)
+            val srcCluster = srcCluster()
+            if (tPackage.clusterNames?.contains(srcCluster) == false) {
+                packageDao.addClusterByKey(projectId, repoName, key, srcCluster)
             }
-            tPackage.clusterNames = tPackage.clusterNames.orEmpty() + srcRegion
+            tPackage.clusterNames = tPackage.clusterNames.orEmpty() + srcCluster
         }
     }
 
-    override fun checkRegion(clusterResource: ClusterResource) {
-        ClusterUtils.checkIsSrcRegion(clusterResource.readClusterNames())
+    override fun checkCluster(clusterResource: ClusterResource) {
+        ClusterUtils.checkIsSrcCluster(clusterResource.readClusterNames())
     }
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
-        val srcRegion = srcRegion()
+        val srcCluster = srcCluster()
 
-        // 是Package唯一的region时可以直接删除
+        // 是Package唯一的cluster时可以直接删除
         if (ClusterUtils.isUniqueSrcCluster(tPackage.clusterNames)) {
             super.deletePackage(projectId, repoName, packageKey, realIpAddress)
         }
 
-        // Package包含region，但不是Package的唯一region时只能清理单个region的值
+        // Package包含cluster，但不是Package的唯一cluster时只能清理单个cluster的值
         if (ClusterUtils.containsSrcCluster(tPackage.clusterNames)) {
-            packageDao.removeClusterByKey(projectId, repoName, packageKey, srcRegion)
-            packageVersionDao.deleteByPackageIdAndClusterName(tPackage.id!!, srcRegion)
-            logger.info("Remove package [$projectId/$repoName/$packageKey] region[$srcRegion] success")
+            packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
+            packageVersionDao.deleteByPackageIdAndClusterName(tPackage.id!!, srcCluster)
+            logger.info("Remove package [$projectId/$repoName/$packageKey] cluster[$srcCluster] success")
         }
 
-        // Package不包含region时候直接报错
+        // Package不包含cluster时候直接报错
         throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
     }
 
@@ -153,7 +153,7 @@ class CommitEdgeCenterPackageServiceImpl(
     ) {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
         val tPackageVersion = packageVersionDao.findByName(tPackage.id.orEmpty(), versionName) ?: return
-        val srcRegion = srcRegion()
+        val srcCluster = srcCluster()
 
         if (ClusterUtils.isUniqueSrcCluster(tPackageVersion.clusterNames)) {
             super.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
@@ -161,19 +161,19 @@ class CommitEdgeCenterPackageServiceImpl(
         }
 
         if (ClusterUtils.containsSrcCluster(tPackageVersion.clusterNames)) {
-            packageVersionDao.removeClusterByKey(tPackageVersion.packageId, srcRegion)
-            if (!packageVersionDao.existsByPackageIdAndClusterName(tPackageVersion.packageId, srcRegion)) {
-                packageDao.removeClusterByKey(projectId, repoName, packageKey, srcRegion)
+            packageVersionDao.removeClusterByKey(tPackageVersion.packageId, srcCluster)
+            if (!packageVersionDao.existsByPackageIdAndClusterName(tPackageVersion.packageId, srcCluster)) {
+                packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
             }
             return
         }
 
-        // Package不包含region时候直接报错
+        // Package不包含cluster时候直接报错
         throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
     }
 
     private fun createPackage(tPackage: TPackage): TPackage {
-        val srcRegion = srcRegion()
+        val srcCluster = srcCluster()
         with(tPackage) {
             try {
                 val savedPackage = packageDao.save(tPackage)
@@ -181,19 +181,19 @@ class CommitEdgeCenterPackageServiceImpl(
                 return savedPackage
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Create package[$tPackage] error: [${exception.message}]")
-                val result = packageDao.addClusterByKey(projectId, repoName, key, srcRegion)
-                logger.info("Update package[$tPackage] region[$srcRegion] result[${result?.modifiedCount}]")
+                val result = packageDao.addClusterByKey(projectId, repoName, key, srcCluster)
+                logger.info("Update package[$tPackage] cluster[$srcCluster] result[${result?.modifiedCount}]")
             }
             return packageDao.findByKey(projectId, repoName, key)!!
         }
     }
 
-    private fun addSrcRegionToResource(clusterResource: ClusterResource, srcRegion: String = srcRegion()) {
-        val oldRegion = clusterResource.readClusterNames() ?: mutableSetOf()
-        clusterResource.writeClusterNames(oldRegion + srcRegion)
+    private fun addSrcClusterToResource(clusterResource: ClusterResource, srcCluster: String = srcCluster()) {
+        val oldCluster = clusterResource.readClusterNames() ?: mutableSetOf()
+        clusterResource.writeClusterNames(oldCluster + srcCluster)
     }
 
-    private fun srcRegion() = SecurityUtils.getClusterName() ?: clusterProperties.region!!
+    private fun srcCluster() = SecurityUtils.getClusterName() ?: clusterProperties.self.name!!
 
     companion object {
         private val logger = LoggerFactory.getLogger(CommitEdgeCenterPackageServiceImpl::class.java)

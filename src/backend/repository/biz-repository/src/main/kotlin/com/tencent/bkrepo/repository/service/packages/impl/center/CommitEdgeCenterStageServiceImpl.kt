@@ -45,7 +45,7 @@ class CommitEdgeCenterStageServiceImpl(
     override fun upgrade(request: StageUpgradeRequest) {
         with(request) {
             val packageVersion = findPackageVersion(projectId, repoName, packageKey, version)
-            ClusterUtils.checkIsSrcRegion(packageVersion.clusterNames)
+            ClusterUtils.checkIsSrcCluster(packageVersion.clusterNames)
             super.upgrade(request)
         }
     }

@@ -39,16 +39,16 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 object ClusterUtils {
 
     /**
-     * 检查请求来源region是否是资源的唯一拥有者
+     * 检查请求来源cluster是否是资源的唯一拥有者
      */
-    fun checkIsSrcRegion(regions: Set<String>?) {
-        if (!isUniqueSrcCluster(regions)) {
+    fun checkIsSrcCluster(clusterNames: Set<String>?) {
+        if (!isUniqueSrcCluster(clusterNames)) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
         }
     }
 
     /**
-     * 判断请求来源region是否拥有资源
+     * 判断请求来源cluster是否拥有资源
      */
     fun containsSrcCluster(clusterNames: Set<String>?): Boolean {
         val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
@@ -62,14 +62,14 @@ object ClusterUtils {
             return false
         } else if (srcCluster.isNullOrBlank()) {
             // center操作节点
-            srcCluster = clusterProperties.region
+            srcCluster = clusterProperties.self.name
         }
 
         return clusterNames.contains(srcCluster)
     }
 
     /**
-     * 判断请求来源region是否是资源的唯一拥有者
+     * 判断请求来源cluster是否是资源的唯一拥有者
      */
     fun isUniqueSrcCluster(clusterNames: Set<String>?): Boolean {
         return containsSrcCluster(clusterNames) && (clusterNames == null || clusterNames.size <= 1)

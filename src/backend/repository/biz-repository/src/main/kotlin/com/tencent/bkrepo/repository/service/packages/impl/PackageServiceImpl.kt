@@ -228,7 +228,7 @@ class PackageServiceImpl(
                 tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
                 tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
                 packageDao.save(tPackage)
-                populateRegion(tPackage)
+                populateCluster(tPackage)
 
                 if (!isOverride) {
                     publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
@@ -306,7 +306,7 @@ class PackageServiceImpl(
         val repoName = request.repoName
         val packageKey = request.packageKey
         val tPackage = checkPackage(projectId, repoName, packageKey).apply {
-            checkRegion(this)
+            checkCluster(this)
             name = request.name ?: name
             description = request.description ?: description
             versionTag = request.versionTag ?: versionTag
@@ -331,7 +331,7 @@ class PackageServiceImpl(
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val packageId = tPackage.id.orEmpty()
         val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
-            checkRegion(this)
+            checkCluster(this)
             size = request.size ?: size
             manifestPath = request.manifestPath ?: manifestPath
             artifactPath = request.artifactPath ?: artifactPath
@@ -445,7 +445,7 @@ class PackageServiceImpl(
             // 更新包
             tPackage.latest = latestVersion?.name ?: tPackage.latest
             packageDao.save(tPackage)
-            populateRegion(tPackage)
+            populateCluster(tPackage)
             logger.info("Update package version[$tPackage] success")
         }
     }

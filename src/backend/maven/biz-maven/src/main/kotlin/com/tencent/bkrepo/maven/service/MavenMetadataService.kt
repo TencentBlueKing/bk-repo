@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 
 @Service
 @Conditional(DefaultCondition::class)
-class MavenMetadataService(
+open class MavenMetadataService(
     private val mavenMetadataDao: MavenMetadataDao
 ) {
 

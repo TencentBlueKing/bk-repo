@@ -40,13 +40,13 @@ import org.springframework.stereotype.Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterPackageDependentsServiceImpl(
     private val packageDao: PackageDao,
-    private val packageDependentsDao: PackageDependentsDao
+    packageDependentsDao: PackageDependentsDao
 ) : PackageDependentsServiceImpl(
     packageDao, packageDependentsDao
 ) {
     override fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage? {
         return packageDao
             .findByKey(projectId, repoName, packageKey)
-            ?.also { ClusterUtils.checkIsSrcRegion(it.clusterNames) }
+            ?.also { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
     }
 }

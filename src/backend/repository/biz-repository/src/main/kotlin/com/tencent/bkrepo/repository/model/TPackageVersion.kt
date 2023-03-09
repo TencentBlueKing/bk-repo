@@ -68,7 +68,7 @@ data class TPackageVersion(
     var extension: Map<String, Any>? = null,
     /**
      * PackageVersion 所在区域
-     * 由于比较版本间内容是否相似成本较高，不支持不同区域相同PackageVersion，所以目前region只会有一个值
+     * 由于比较版本间内容是否相似成本较高，不支持不同区域相同PackageVersion，所以目前clusterNames只会有一个值
      */
     var clusterNames: Set<String>? = null
 ): ClusterResource {
@@ -76,8 +76,8 @@ data class TPackageVersion(
         return this.clusterNames
     }
 
-    override fun writeClusterNames(region: Set<String>) {
-        this.clusterNames = region
+    override fun writeClusterNames(clusterNames: Set<String>) {
+        this.clusterNames = clusterNames
     }
 
     companion object {

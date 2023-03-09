@@ -40,5 +40,5 @@ interface ClusterResource {
     /**
      * 设置资源所在集群
      */
-    fun writeClusterNames(region: Set<String>)
+    fun writeClusterNames(clusterNames: Set<String>)
 }

@@ -56,16 +56,16 @@ abstract class PackageBaseService(protected val packageDao: PackageDao) : Packag
     }
 
     /**
-     * 设置Package的region
+     * 设置Package的cluster
      */
-    protected open fun populateRegion(tPackage: TPackage) {
+    protected open fun populateCluster(tPackage: TPackage) {
         // do nothing
     }
 
     /**
      * 检查当前请求来源节点是否允许操作资源
      */
-    protected open fun checkRegion(clusterResource: ClusterResource) {
+    protected open fun checkCluster(clusterResource: ClusterResource) {
         // do nothing
     }
 
