@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,63 +30,28 @@ package com.tencent.bkrepo.repository.service.packages.impl.edge
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
-import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
-import com.tencent.bkrepo.repository.service.packages.impl.PackageServiceImpl
+import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
+import com.tencent.bkrepo.repository.service.packages.impl.StageServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
-
 @Service
 @Conditional(CommitEdgeEdgeCondition::class)
-class EdgePackageServiceImpl(
+class EdgeStageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
-    packageSearchInterpreter: PackageSearchInterpreter,
     clusterProperties: ClusterProperties
-) : PackageServiceImpl(
-    packageDao,
-    packageVersionDao,
-    packageSearchInterpreter
-) {
+) : StageServiceImpl(packageDao, packageVersionDao) {
 
-    private val centerPackageClient: PackageClient by lazy {
+    private val stageClient: StageClient by lazy {
         FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name)
     }
 
-    override fun createPackageVersion(request: PackageVersionCreateRequest, realIpAddress: String?) {
-        centerPackageClient.createVersion(request)
-        super.createPackageVersion(request, realIpAddress)
-    }
-
-    override fun updateVersion(request: PackageVersionUpdateRequest, realIpAddress: String?) {
-        centerPackageClient.updateVersion(request)
-        super.updateVersion(request, realIpAddress)
-    }
-
-    override fun updatePackage(request: PackageUpdateRequest, realIpAddress: String?) {
-        centerPackageClient.updatePackage(request)
-        super.updatePackage(request, realIpAddress)
-    }
-
-    override fun deleteVersion(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        versionName: String,
-        realIpAddress: String?
-    ) {
-        centerPackageClient.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
-        super.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
-    }
-
-    override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
-        centerPackageClient.deletePackage(projectId, repoName, packageKey, realIpAddress)
-        super.deletePackage(projectId, repoName, packageKey, realIpAddress)
+    override fun upgrade(request: StageUpgradeRequest) {
+        stageClient.upgrade(request)
+        super.upgrade(request)
     }
 }
