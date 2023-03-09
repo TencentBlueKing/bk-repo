@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.conan.config.ConanProperties
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.constant.MD5
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.utils.ConanInfoLoadUtil
+import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
@@ -590,8 +592,13 @@ class CommonService(
      * 获取请求URL前缀，用于生成上传或者下载路径
      */
     private fun getRequestUrlPrefix(conanFileReference: ConanFileReference): String {
+        val requestUri = HttpContextHolder.getRequest().requestURI
+        val prefixPath = requestUri.substring(
+            0, requestUri.indexOf(PathUtils.buildOriginalConanFileName(conanFileReference))
+        )
         return joinString(
             properties.domain,
+            prefixPath,
             UPLOAD_URL_PREFIX
         )
     }
