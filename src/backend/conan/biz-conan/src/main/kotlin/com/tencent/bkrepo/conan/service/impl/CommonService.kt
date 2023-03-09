@@ -597,7 +597,7 @@ class CommonService(
         val requestUri = HttpContextHolder.getRequest().requestURI
         val prefixPath = requestUri.substring(
             0, requestUri.indexOf(PathUtils.buildOriginalConanFileName(conanFileReference))
-        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG)
+        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG).trimEnd(CharPool.SLASH)
         return joinString(
             properties.domain,
             prefixPath,
