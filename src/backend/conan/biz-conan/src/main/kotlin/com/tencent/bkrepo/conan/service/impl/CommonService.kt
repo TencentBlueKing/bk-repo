@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -39,6 +40,7 @@ import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.conan.config.ConanProperties
+import com.tencent.bkrepo.conan.constant.CONANS_URL_TAG
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.constant.MD5
 import com.tencent.bkrepo.conan.constant.UPLOAD_URL_PREFIX
@@ -595,7 +597,7 @@ class CommonService(
         val requestUri = HttpContextHolder.getRequest().requestURI
         val prefixPath = requestUri.substring(
             0, requestUri.indexOf(PathUtils.buildOriginalConanFileName(conanFileReference))
-        )
+        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG)
         return joinString(
             properties.domain,
             prefixPath,
