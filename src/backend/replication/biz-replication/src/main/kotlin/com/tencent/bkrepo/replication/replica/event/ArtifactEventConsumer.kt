@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.replica.base.executor.EventConsumerThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.stereotype.Component
@@ -56,10 +57,11 @@ class ArtifactEventConsumer(
     }
 
     override fun action(event: ArtifactEvent) {
-        executors.execute {
+        executors.execute( Runnable {
             replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
                 eventBasedReplicaJobExecutor.execute(it, event)
             }
-        }
+        }.trace()
+        )
     }
 }

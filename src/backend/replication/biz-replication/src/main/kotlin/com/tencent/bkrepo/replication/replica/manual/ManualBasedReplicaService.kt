@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.manual
 
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.base.AbstractReplicaService
@@ -34,6 +35,7 @@ import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.stereotype.Component
+import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.Semaphore
 
@@ -55,26 +57,30 @@ class ManualBasedReplicaService(
             taskObject.packageConstraints.orEmpty().forEach {
                 semaphore.acquire()
                 futureList.add(
-                    executor.submit {
-                        try {
-                            replicaByPackageConstraint(this, it)
-                        } finally {
-                            semaphore.release()
-                        }
-                    }
+                    executor.submit(
+                        Callable{
+                            try {
+                                replicaByPackageConstraint(this, it)
+                            } finally {
+                                semaphore.release()
+                            }
+                        }.trace()
+                )
                 )
             }
             // 按路径同步
             taskObject.pathConstraints.orEmpty().forEach {
                 semaphore.acquire()
                 futureList.add(
-                    executor.submit {
-                        try {
-                            replicaByPathConstraint(this, it)
-                        } finally {
-                            semaphore.release()
-                        }
-                    }
+                    executor.submit(
+                        Callable {
+                            try {
+                                replicaByPathConstraint(this, it)
+                            } finally {
+                                semaphore.release()
+                            }
+                        }.trace()
+                    )
                 )
             }
             futureList.forEach { it.get() }
