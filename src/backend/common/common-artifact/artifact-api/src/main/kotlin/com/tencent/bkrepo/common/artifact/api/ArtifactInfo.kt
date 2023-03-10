@@ -48,7 +48,7 @@ open class ArtifactInfo(
     /**
      * 仓库名称
      */
-    val repoName: String,
+    var repoName: String,
     /**
      * 构件完整uri，如/archive/file/tmp.data
      */

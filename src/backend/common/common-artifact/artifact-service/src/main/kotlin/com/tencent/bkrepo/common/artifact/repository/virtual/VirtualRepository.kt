@@ -32,13 +32,16 @@
 package com.tencent.bkrepo.common.artifact.repository.virtual
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.constant.TRAVERSED_LIST
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualRepositoryMember
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -76,11 +79,20 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         }
     }
 
+    override fun upload(context: ArtifactUploadContext) {
+        context.getVirtualConfiguration().deploymentRepo.takeUnless { it.isNullOrBlank() }?.let {
+            val repositoryDetail = repositoryClient.getRepoDetail(context.projectId, it).data!!
+            val newContext = context.copy(repositoryDetail) as ArtifactUploadContext
+            super.upload(newContext)
+        } ?: throw MethodNotAllowedException()
+    }
+
     @Suppress("UNCHECKED_CAST")
-    protected fun getTraversedList(context: ArtifactContext): MutableList<RepositoryIdentify> {
-        return context.getAttribute(TRAVERSED_LIST) as? MutableList<RepositoryIdentify> ?: let {
+    protected fun getTraversedList(context: ArtifactContext): MutableList<VirtualRepositoryMember> {
+        return context.getAttribute(TRAVERSED_LIST) as? MutableList<VirtualRepositoryMember> ?: let {
             val selfRepoInfo = context.repositoryDetail
-            val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo.projectId, selfRepoInfo.name))
+            val traversedList =
+                mutableListOf(VirtualRepositoryMember(selfRepoInfo.name, selfRepoInfo.category))
             context.putAttribute(TRAVERSED_LIST, traversedList)
             return traversedList
         }
@@ -89,26 +101,63 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     /**
      * 遍历虚拟仓库，直到第一个仓库返回数据
      */
-    private fun <R> mapFirstRepo(context: ArtifactContext, action: (ArtifactContext, ArtifactRepository) -> R?): R? {
+    protected fun <R> mapFirstRepo(
+        context: ArtifactContext,
+        category: RepositoryCategory? = null,
+        action: (ArtifactContext, ArtifactRepository) -> R?
+    ): R? {
         val virtualConfiguration = context.getVirtualConfiguration()
         val repoList = virtualConfiguration.repositoryList
+            .filter { repo -> category?.run { repo.category == this } ?: true }
         val traversedList = getTraversedList(context)
-        for (repoIdentify in repoList) {
-            if (repoIdentify in traversedList) {
+        for (member in repoList) {
+            if (member in traversedList) {
                 continue
             }
-            traversedList.add(repoIdentify)
+            traversedList.add(member)
             try {
-                permissionManager.checkRepoPermission(PermissionAction.READ, repoIdentify.projectId, repoIdentify.name)
-                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                permissionManager.checkRepoPermission(PermissionAction.READ, context.projectId, member.name)
+                val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail)
                 action(subContext, repository)?.let { return it }
             } catch (ignored: Exception) {
-                logger.warn("Failed to execute map with repo[$repoIdentify]: ${ignored.message}")
+                logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
         }
         return null
+    }
+
+    /**
+     * 遍历虚拟仓库包含的一种类型的或全部类型的子仓库，执行[action]操作，并将结果聚合成[List]返回
+     * category为null时，遍历所有仓库类型
+     */
+    protected fun <R> mapEachSubRepo(
+        context: ArtifactContext,
+        category: RepositoryCategory?,
+        action: (ArtifactContext, ArtifactRepository) -> R?
+    ): MutableList<R> {
+        val virtualConfiguration = context.getVirtualConfiguration()
+        val repoList = virtualConfiguration.repositoryList
+            .filter { repo -> category?.run { repo.category == this } ?: true }
+        val traversedList = getTraversedList(context)
+        val mapResult = mutableListOf<R>()
+        for (member in repoList) {
+            if (member in traversedList) {
+                continue
+            }
+            traversedList.add(member)
+            try {
+                permissionManager.checkRepoPermission(PermissionAction.READ, context.projectId, member.name)
+                val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
+                val subContext = context.copy(subRepoDetail)
+                action(subContext, repository)?.let { mapResult.add(it) }
+            } catch (ignored: Exception) {
+                logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
+            }
+        }
+        return mapResult
     }
 
     companion object {

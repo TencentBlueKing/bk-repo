@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -48,6 +49,9 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConf
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualRepositoryMember
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
@@ -64,6 +68,8 @@ import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.ConnectionStatusInfo
+import com.tencent.bkrepo.repository.pojo.repo.RemoteUrlRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
@@ -92,6 +98,8 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -131,8 +139,13 @@ class RepositoryServiceImpl(
         }
     }
 
-    override fun listRepo(projectId: String, name: String?, type: String?): List<RepositoryInfo> {
-        val query = buildListQuery(projectId, name, type)
+    override fun listRepo(
+        projectId: String,
+        name: String?,
+        type: String?,
+        category: List<String>?
+    ): List<RepositoryInfo> {
+        val query = buildListQuery(projectId, name, type, category)
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
 
@@ -140,10 +153,9 @@ class RepositoryServiceImpl(
         projectId: String,
         pageNumber: Int,
         pageSize: Int,
-        name: String?,
-        type: String?
+        option: RepoListOption
     ): Page<RepositoryInfo> {
-        val query = buildListQuery(projectId, name, type)
+        val query = buildListQuery(projectId, option.name, option.type, option.category)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = repositoryDao.count(query)
         val records = repositoryDao.find(query.with(pageRequest)).map { convertToInfo(it)!! }
@@ -168,6 +180,8 @@ class RepositoryServiceImpl(
             .and(TRepository::name).inValues(names)
             .and(TRepository::deleted).isEqualTo(null)
         option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
+        option.category?.takeIf { it.isNotEmpty() }
+            ?.apply { criteria.and(TRepository::category).inValues(this.map { it.toUpperCase() }) }
         val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
@@ -210,6 +224,7 @@ class RepositoryServiceImpl(
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
+            Preconditions.checkArgument(checkConfigurationType(category, configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
@@ -227,8 +242,12 @@ class RepositoryServiceImpl(
                     it
                 )
             }
-            // 初始化仓库配置
-            val repoConfiguration = configuration ?: buildRepoConfiguration(this)
+            // 校验或初始化仓库配置
+            val repoConfiguration = configuration?.also {
+                if (it is VirtualConfiguration) {
+                    checkVirtualConfiguration(it, projectId, type.name)
+                }
+            } ?: buildRepoConfiguration(this)
             // 创建仓库
             val repository = buildTRepository(this, repoConfiguration, credentialsKey)
             return try {
@@ -342,6 +361,9 @@ class RepositoryServiceImpl(
                     deleteProxyRepo(repository, it)
                 }
             }
+            if (repository.category == RepositoryCategory.LOCAL || repository.category == RepositoryCategory.REMOTE) {
+                updateAssociatedVirtualRepos(projectId, name, repository.type.name, operator)
+            }
         }
         publishEvent(buildDeletedEvent(repoDeleteRequest))
         logger.info("Delete repository [$repoDeleteRequest] success.")
@@ -354,6 +376,21 @@ class RepositoryServiceImpl(
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         val result = repositoryDao.find(Query(criteria))
         return result.map { convertToInfo(it) }
+    }
+
+    override fun testRemoteUrl(remoteUrlRequest: RemoteUrlRequest): ConnectionStatusInfo {
+        val remoteRepository = ArtifactContextHolder.getRepository(RepositoryCategory.REMOTE) as RemoteRepository
+        return try {
+            val response = remoteRepository.getRemoteUrlResponse(remoteUrlRequest)
+            val reason = HttpStatus.valueOf(response.code).reasonPhrase
+            ConnectionStatusInfo(response.code < 400, "${response.code} $reason")
+        } catch (exception: SocketTimeoutException) {
+            ConnectionStatusInfo(false, "${HttpStatus.REQUEST_TIMEOUT.value} ${HttpStatus.REQUEST_TIMEOUT.name}")
+        } catch (exception: UnknownHostException) {
+            ConnectionStatusInfo(false, ("Unknown Host" + exception.message?.let { ": $it" }))
+        } catch (exception: Exception) {
+            ConnectionStatusInfo(false, exception.message ?: exception.javaClass.simpleName)
+        }
     }
 
     /**
@@ -381,12 +418,19 @@ class RepositoryServiceImpl(
     /**
      * 构造list查询条件
      */
-    private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
+    private fun buildListQuery(
+        projectId: String,
+        repoName: String? = null,
+        repoType: String? = null,
+        category: List<String>? = null
+    ): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
         criteria.and(TRepository::display).ne(false)
         criteria.and(TRepository::deleted).isEqualTo(null)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
         repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
+        category?.takeIf { it.isNotEmpty() }
+            ?.apply { criteria.and(TRepository::category).inValues(this.map { it.toUpperCase() }) }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
     }
 
@@ -418,6 +462,9 @@ class RepositoryServiceImpl(
         }
         if (new is CompositeConfiguration && old is CompositeConfiguration) {
             updateCompositeConfiguration(new, old, repository, operator)
+        }
+        if (new is VirtualConfiguration) {
+            checkVirtualConfiguration(new, repository.projectId, repository.type.name)
         }
     }
 
@@ -604,6 +651,74 @@ class RepositoryServiceImpl(
             } else {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoName)
             }
+        }
+    }
+
+    private fun checkConfigurationType(category: RepositoryCategory, configuration: RepositoryConfiguration?): Boolean {
+        return configuration?.let {
+            when (category) {
+                RepositoryCategory.COMPOSITE -> it is CompositeConfiguration
+                RepositoryCategory.LOCAL -> it is LocalConfiguration && it !is CompositeConfiguration
+                RepositoryCategory.REMOTE -> it is RemoteConfiguration
+                RepositoryCategory.VIRTUAL -> it is VirtualConfiguration
+            }
+        } ?: true
+    }
+
+    private fun checkVirtualConfiguration(
+        configuration: VirtualConfiguration,
+        projectId: String,
+        type: String
+    ) {
+        with (configuration) {
+            repositoryList = repositoryList.distinctBy { it.name }
+            // 校验虚拟仓库配置中的仓库列表
+            repositoryList.forEach {
+                val repoCategory = checkRepository(projectId, it.name, type).category
+                if (it.category == null) {
+                    it.category = repoCategory
+                }
+                Preconditions.checkArgument(
+                    repoCategory == it.category &&
+                            (repoCategory == RepositoryCategory.LOCAL || repoCategory == RepositoryCategory.REMOTE),
+                    this::repositoryList.name
+                )
+            }
+            // 校验部署仓库
+            deploymentRepo.takeUnless { it.isNullOrBlank() }?.run {
+                Preconditions.checkArgument(
+                    VirtualRepositoryMember(this, RepositoryCategory.LOCAL) in repositoryList,
+                    configuration::deploymentRepo.name
+                )
+            }
+        }
+    }
+
+    private fun updateAssociatedVirtualRepos(
+        projectId: String,
+        repoName: String,
+        type: String,
+        operator: String
+    ) {
+        listRepo(
+            projectId = projectId,
+            type = type,
+            category = listOf(RepositoryCategory.VIRTUAL.name)
+        ).forEach {
+            val virtualConfiguration = it.configuration as VirtualConfiguration
+            val newRepoList = virtualConfiguration.repositoryList.toMutableList()
+            virtualConfiguration.repositoryList = newRepoList.apply {
+                removeIf { member -> member.name == repoName }
+            }
+            if (virtualConfiguration.deploymentRepo == repoName) {
+                virtualConfiguration.deploymentRepo = null
+            }
+            val tRepository = checkRepository(projectId, it.name, type).apply {
+                configuration = virtualConfiguration.toJsonString()
+                lastModifiedBy = operator
+                lastModifiedDate = LocalDateTime.now()
+            }
+            repositoryDao.save(tRepository)
         }
     }
 

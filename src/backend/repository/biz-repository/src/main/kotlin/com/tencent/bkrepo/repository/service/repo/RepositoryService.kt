@@ -30,6 +30,8 @@ package com.tencent.bkrepo.repository.service.repo
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
+import com.tencent.bkrepo.repository.pojo.repo.ConnectionStatusInfo
+import com.tencent.bkrepo.repository.pojo.repo.RemoteUrlRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
@@ -63,7 +65,12 @@ interface RepositoryService {
     /**
      * 查询项目[projectId]下的所有仓库
      */
-    fun listRepo(projectId: String, name: String? = null, type: String? = null): List<RepositoryInfo>
+    fun listRepo(
+        projectId: String,
+        name: String? = null,
+        type: String? = null,
+        category: List<String>? = null
+    ): List<RepositoryInfo>
 
     /**
      * 分页查询仓库列表
@@ -71,15 +78,13 @@ interface RepositoryService {
      * @param projectId 项目id
      * @param pageNumber 当前页
      * @param pageSize 分页数量
-     * @param name 仓库名称
-     * @param type 仓库类型
+     * @param option 仓库查询选项
      */
     fun listRepoPage(
         projectId: String,
         pageNumber: Int,
         pageSize: Int,
-        name: String? = null,
-        type: String? = null
+        option: RepoListOption
     ): Page<RepositoryInfo>
 
     /**
@@ -158,4 +163,6 @@ interface RepositoryService {
 
 
     fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?>
+
+    fun testRemoteUrl(remoteUrlRequest: RemoteUrlRequest): ConnectionStatusInfo
 }

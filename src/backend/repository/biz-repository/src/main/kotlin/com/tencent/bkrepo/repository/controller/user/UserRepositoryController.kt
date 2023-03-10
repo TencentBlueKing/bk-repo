@@ -34,12 +34,14 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.repo.ConnectionStatusInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RemoteUrlRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.QuotaService
@@ -230,5 +232,13 @@ class UserRepositoryController(
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void> {
         return this.createRepo(userId, userRepoCreateRequest)
+    }
+
+    @ApiOperation("测试远程仓库URL")
+    @PostMapping("/testremote")
+    fun testRemoteUrl(
+        @RequestBody remoteUrlRequest: RemoteUrlRequest
+    ): Response<ConnectionStatusInfo> {
+        return ResponseBuilder.success(repositoryService.testRemoteUrl(remoteUrlRequest))
     }
 }

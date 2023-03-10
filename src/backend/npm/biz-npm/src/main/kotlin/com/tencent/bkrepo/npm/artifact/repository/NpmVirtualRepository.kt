@@ -31,15 +31,22 @@
 
 package com.tencent.bkrepo.npm.artifact.repository
 
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.InputStream
 
 @Component
 class NpmVirtualRepository : VirtualRepository() {
@@ -57,7 +64,7 @@ class NpmVirtualRepository : VirtualRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoInfo = repositoryClient.getRepoDetail(context.projectId, repoIdentify.name).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryDetail = subRepoInfo) as ArtifactSearchContext
                 repository.search(subContext).let { map ->
@@ -71,6 +78,44 @@ class NpmVirtualRepository : VirtualRepository() {
             }
         }
         return list.subList(0, searchRequest.size)
+    }
+
+    override fun query(context: ArtifactQueryContext): InputStream? {
+        val localResult = mapEachSubRepo(context, RepositoryCategory.LOCAL) { subContext, repository ->
+            require(subContext is ArtifactQueryContext)
+            repository.query(subContext) as? InputStream
+        }.map {
+            inputStream -> inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
+        }
+
+        val remoteResult = mapFirstRepo(context, RepositoryCategory.REMOTE) { subContext, repository ->
+            require(subContext is ArtifactQueryContext)
+            repository.query(subContext) as? InputStream
+        }?.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
+
+        val metadataList = remoteResult?.run { localResult + this } ?: localResult
+        if (metadataList.isEmpty()) return null
+        // 聚合多个仓库的包级别元数据
+        val packageMetadata = metadataList.reduce { acc, element -> aggregateMetadata(acc, element) }
+        val metadataString = JsonUtils.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(packageMetadata)
+        return ArtifactFileFactory.build(metadataString.byteInputStream()).getInputStream()
+    }
+
+    private fun aggregateMetadata(
+        originMetadata: NpmPackageMetaData,
+        newMetadata: NpmPackageMetaData
+    ): NpmPackageMetaData {
+        return originMetadata.apply {
+            for ((version, metadata) in newMetadata.versions.map) {
+                versions.map.putIfAbsent(version, metadata)
+            }
+            for ((tag, newVersion) in newMetadata.distTags.getMap()) {
+                val originVersion = distTags.getMap()[tag]
+                if (originVersion.isNullOrEmpty() || SemVersion.parse(originVersion) < SemVersion.parse(newVersion)) {
+                    distTags.set(tag, newVersion)
+                }
+            }
+        }
     }
 
     companion object {

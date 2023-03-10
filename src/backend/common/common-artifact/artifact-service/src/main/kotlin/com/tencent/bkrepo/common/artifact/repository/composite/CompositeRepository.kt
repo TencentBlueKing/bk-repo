@@ -58,6 +58,7 @@ import org.springframework.stereotype.Service
 /**
  * 组合仓库抽象逻辑
  */
+@Deprecated("组合仓库模式转变为虚拟仓库模式", replaceWith = ReplaceWith("VirtualRepository"))
 @Service
 class CompositeRepository(
     private val localRepository: LocalRepository,

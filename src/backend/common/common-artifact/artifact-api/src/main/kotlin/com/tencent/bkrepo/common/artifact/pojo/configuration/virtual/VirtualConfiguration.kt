@@ -31,14 +31,20 @@
 
 package com.tencent.bkrepo.common.artifact.pojo.configuration.virtual
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 
 /**
  * 虚拟仓库配置
  */
 data class VirtualConfiguration(
-    var repositoryList: List<RepositoryIdentify> = emptyList()
+    /**
+     * 虚拟仓库成员列表
+     */
+    var repositoryList: List<VirtualRepositoryMember> = emptyList(),
+    /**
+     * 对虚拟仓库内容进行修改（上传、删除等）时，将操作映射到的本地仓库名称
+     */
+    var deploymentRepo: String? = null
 ) : RepositoryConfiguration() {
     companion object {
         const val type = "virtual"
