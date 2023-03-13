@@ -151,7 +151,7 @@ class CommitEdgeCenterNodeServiceImpl(
                 if (existNode.clusterNames.orEmpty().isEmpty()) {
                     clusterNames.add(clusterProperties.self.name.toString())
                 }
-                val update = Update().push(TNode::clusterNames.name).each(clusterNames)
+                val update = Update().addToSet(TNode::clusterNames.name).each(clusterNames)
                 nodeDao.updateFirst(query, update)
                 existNode.clusterNames = clusterNames
                 logger.info("Create node[/$projectId/$repoName$fullPath],sha256[$sha256],region[$srcCluster] success.")
