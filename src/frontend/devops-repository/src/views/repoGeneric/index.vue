@@ -146,7 +146,7 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanProduct') }
+                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
@@ -558,7 +558,7 @@
                 this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: this.$t('scanProduct'),
+                    title: this.$t('scanArtifact'),
                     type: 'scan',
                     id: '',
                     name,

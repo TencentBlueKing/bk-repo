@@ -82,7 +82,7 @@
                             maxlength="200"
                             :rows="6"
                             v-model.trim="repoBaseInfo.description"
-                            :placeholder="$t('repoDescriptionPlacehodler')">
+                            :placeholder="$t('repoDescriptionPlaceholder')">
                         </bk-input>
                     </bk-form-item>
                     <bk-form-item>

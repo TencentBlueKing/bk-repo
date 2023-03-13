@@ -15,7 +15,7 @@
             <bk-table-column :label="$t('createdDate')">
                 <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('expiress')">
+            <bk-table-column :label="$t('expire')">
                 <template #default="{ row }">{{ transformFormatDate(row.expiredAt) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
