@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -75,10 +76,11 @@ import java.time.LocalDateTime
 @Service
 @Conditional(DefaultCondition::class)
 class PackageServiceImpl(
+    repositoryDao: RepositoryDao,
     packageDao: PackageDao,
     protected val packageVersionDao: PackageVersionDao,
     private val packageSearchInterpreter: PackageSearchInterpreter
-) : PackageBaseService(packageDao) {
+) : PackageBaseService(repositoryDao, packageDao) {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey)

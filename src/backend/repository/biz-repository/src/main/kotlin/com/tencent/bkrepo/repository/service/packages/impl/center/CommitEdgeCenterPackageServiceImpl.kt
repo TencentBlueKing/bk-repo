@@ -34,9 +34,11 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.ClusterResource
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
@@ -54,11 +56,13 @@ import org.springframework.stereotype.Service
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterPackageServiceImpl(
+    repositoryDao: RepositoryDao,
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
     private val clusterProperties: ClusterProperties
 ) : PackageServiceImpl(
+    repositoryDao,
     packageDao,
     packageVersionDao,
     packageSearchInterpreter,
@@ -73,9 +77,11 @@ class CommitEdgeCenterPackageServiceImpl(
 
     /**
      * 获取已存在的Package或创建Package，会将当前的操作来源cluster添加到package cluster中
+     * 目前依赖源仓库只允许属于一个cluster，所以packageCluster中只会有一个值
      */
     override fun findOrCreatePackage(tPackage: TPackage): TPackage {
         with(tPackage) {
+            checkRepo(projectId, repoName)
             val savedPackage = packageDao.findByKey(projectId, repoName, key)
             val srcCluster = srcCluster()
 
@@ -142,6 +148,14 @@ class CommitEdgeCenterPackageServiceImpl(
             throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
         }
 
+    }
+
+    override fun checkRepo(projectId: String, repoName: String): TRepository {
+        val repo = super.checkRepo(projectId, repoName)
+        if (!ClusterUtils.containsSrcCluster(repo.clusterNames)) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
+        }
+        return repo
     }
 
     private fun createPackage(tPackage: TPackage): TPackage {

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
@@ -45,11 +46,13 @@ import org.springframework.stereotype.Service
 @Service
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgePackageServiceImpl(
+    repositoryDao: RepositoryDao,
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
     clusterProperties: ClusterProperties
 ) : PackageServiceImpl(
+    repositoryDao,
     packageDao,
     packageVersionDao,
     packageSearchInterpreter
