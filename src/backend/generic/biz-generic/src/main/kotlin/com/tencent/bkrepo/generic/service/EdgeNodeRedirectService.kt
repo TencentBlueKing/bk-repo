@@ -68,7 +68,7 @@ class EdgeNodeRedirectService(
     fun redirectToSpecificCluster(downloadContext: ArtifactDownloadContext, clusterName: String) {
         // 节点来自其他集群，重定向到其他节点。
         val clusterInfo = clusterNodeClient.getCluster(clusterName).data
-            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_CENTER_NODE_EXISTS, clusterName)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
         val edgeDomain = getEdgeDomain(clusterInfo)
         val requestPath = downloadContext.request.requestURI
         val queryString = downloadContext.request.queryString

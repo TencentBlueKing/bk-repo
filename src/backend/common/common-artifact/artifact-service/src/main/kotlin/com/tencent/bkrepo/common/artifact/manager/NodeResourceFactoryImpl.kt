@@ -76,7 +76,7 @@ class NodeResourceFactoryImpl(
         val clusterName = getClusterName(nodeInfo)
         if (clusterName != null) {
             val clusterInfo = getClusterInfo(clusterName)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_CENTER_NODE_EXISTS, clusterName)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
             return RemoteNodeResource(digest, range, storageCredentials, clusterInfo, storageService, false)
         }
         return LocalNodeResource(nodeInfo, range, storageCredentials, storageService, storageCredentialsClient)
@@ -87,7 +87,7 @@ class NodeResourceFactoryImpl(
     }
 
     private fun getClusterName(node: NodeInfo): String? {
-        return node.clusterNames?.first { it != clusterProperties.self.name }
+        return node.clusterNames?.firstOrNull { it != clusterProperties.self.name }
     }
 
     private fun getClusterInfo(name: String): ClusterInfo? {
