@@ -35,9 +35,12 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_MAPPING_URI
@@ -50,7 +53,9 @@ import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.CompressedFileService
+import com.tencent.bkrepo.generic.service.EdgeNodeRedirectService
 import com.tencent.bkrepo.generic.service.UploadService
+import org.springframework.http.HttpMethod
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -67,7 +72,8 @@ class GenericController(
     private val uploadService: UploadService,
     private val downloadService: DownloadService,
     private val permissionManager: PermissionManager,
-    private val compressedFileService: CompressedFileService
+    private val compressedFileService: CompressedFileService,
+    private val redirectService: EdgeNodeRedirectService,
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -80,7 +86,7 @@ class GenericController(
     @DeleteMapping(GENERIC_MAPPING_URI)
     fun delete(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.delete(userId, artifactInfo)
         return ResponseBuilder.success()
@@ -89,6 +95,10 @@ class GenericController(
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
+        if (shouldRedirect(artifactInfo)) {
+            // 节点来自其他集群，重定向到其他节点。
+            redirectService.redirectToDefaultCluster(ArtifactDownloadContext())
+        }
         downloadService.download(artifactInfo)
     }
 
@@ -96,7 +106,7 @@ class GenericController(
     @PostMapping(BLOCK_MAPPING_URI)
     fun startBlockUpload(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<UploadTransactionInfo> {
         return ResponseBuilder.success(uploadService.startBlockUpload(userId, artifactInfo))
     }
@@ -106,7 +116,7 @@ class GenericController(
     fun abortBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
         return ResponseBuilder.success()
@@ -117,7 +127,7 @@ class GenericController(
     fun completeBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.completeBlockUpload(userId, uploadId, artifactInfo)
         return ResponseBuilder.success()
@@ -128,7 +138,7 @@ class GenericController(
     fun listBlock(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
@@ -137,7 +147,7 @@ class GenericController(
     fun batchDownload(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestBody batchDownloadPaths: BatchDownloadPaths
+        @RequestBody batchDownloadPaths: BatchDownloadPaths,
     ) {
         val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
             .distinctBy { it.getArtifactFullPath() }
@@ -145,7 +155,7 @@ class GenericController(
             action = PermissionAction.READ,
             projectId = projectId,
             repoName = repoName,
-            path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray()
+            path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray(),
         )
         downloadService.batchDownload(artifacts)
     }
@@ -153,7 +163,7 @@ class GenericController(
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping("/compressed/list/$GENERIC_MAPPING_URI")
     fun listCompressedFile(
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<List<CompressedFileInfo>> {
         return ResponseBuilder.success(compressedFileService.listCompressedFile(artifactInfo))
     }
@@ -162,8 +172,18 @@ class GenericController(
     @GetMapping("/compressed/preview/$GENERIC_MAPPING_URI")
     fun previewCompressedFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-        @RequestParam filePath: String
+        @RequestParam filePath: String,
     ) {
         compressedFileService.previewCompressedFile(artifactInfo, filePath)
+    }
+
+    private fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
+        val method = HttpContextHolder.getRequest().method
+        if (!method.equals(HttpMethod.GET.name, true)) {
+            // 只重定向下载请求
+            return false
+        }
+        val edgeClusterName = redirectService.getEdgeClusterName(artifactInfo)
+        return edgeClusterName != null
     }
 }
