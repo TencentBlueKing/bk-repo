@@ -29,15 +29,11 @@ package com.tencent.bkrepo.opdata.message
 
 import com.tencent.bkrepo.common.api.message.MessageCode
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
+enum class AuthMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
 
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid"),
-    CONFIG_CLIENT_NOT_FOUND("config.client.not-found"),
-    REGISTRY_CLIENT_NOT_FOUND("registry.client.not-found");
+    AUTH_DUP_UID(1, "auth.dup.uid");
 
-    override fun getBusinessCode() = ordinal + 1
+    override fun getBusinessCode() = businessCode
     override fun getKey() = key
-    override fun getModuleCode() = 14
+    override fun getModuleCode() = 20
 }

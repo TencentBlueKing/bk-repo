@@ -71,5 +71,5 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
-    override fun getModuleCode() = 4
+    override fun getModuleCode() = 10
 }
