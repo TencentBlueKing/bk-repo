@@ -615,9 +615,10 @@
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
                                 })
                             } else {
+                                const failNum = folder ? totalRecords - res.deletedNumber : 1
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: this.$t('delete') + this.$t('space') + this.$t('fail')
+                                    message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
                                 })
                             }
                         })
@@ -718,9 +719,10 @@
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
                                 })
                             } else {
+                                const failNum = totalRecords - res.deletedNumber
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: this.$t('delete') + this.$t('space') + this.$t('fail')
+                                    message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
                                 })
                             }
                         })
