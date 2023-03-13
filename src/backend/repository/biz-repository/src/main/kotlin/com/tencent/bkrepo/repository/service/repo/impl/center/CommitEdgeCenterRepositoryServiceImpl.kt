@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -92,7 +93,13 @@ class CommitEdgeCenterRepositoryServiceImpl(
         credentialsKey: String?
     ): TRepository {
         val repo = super.buildTRepository(request, repoConfiguration, credentialsKey)
-        repo.clusterNames = setOf(SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString())
+        val selfClusterName = clusterProperties.self.name.toString()
+        val srcCluster = SecurityUtils.getClusterName() ?: selfClusterName
+        repo.clusterNames = if (request.type == RepositoryType.GENERIC) {
+            setOf(srcCluster, selfClusterName)
+        } else {
+            setOf(srcCluster)
+        }
         return repo
     }
 
@@ -106,6 +113,9 @@ class CommitEdgeCenterRepositoryServiceImpl(
             val exitRepo = repositoryDao.findByNameAndType(projectId, name, type.name)
             if (exitRepo != null && exitRepo.containsSrcCluster()) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
+            } else if (exitRepo != null && exitRepo.type != RepositoryType.GENERIC) {
+                // 不允许非GENERIC仓库属于多个cluster
+                throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
             }
 
             if (exitRepo == null) {

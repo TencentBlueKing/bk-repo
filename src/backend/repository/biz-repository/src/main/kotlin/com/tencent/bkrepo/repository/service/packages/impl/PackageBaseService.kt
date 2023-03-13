@@ -31,9 +31,11 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.repository.dao.PackageDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.ClusterResource
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
@@ -43,7 +45,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
 
-abstract class PackageBaseService(protected val packageDao: PackageDao) : PackageService {
+abstract class PackageBaseService(
+    protected val repositoryDao: RepositoryDao,
+    protected val packageDao: PackageDao
+) : PackageService {
 
     protected open fun checkPackageVersionOverwrite(
         overwrite: Boolean,
@@ -165,6 +170,14 @@ abstract class PackageBaseService(protected val packageDao: PackageDao) : Packag
             metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
             extension = extension.orEmpty()
         )
+    }
+
+    /**
+     * 校验仓库是否存在
+     */
+    open fun checkRepo(projectId: String, repoName: String): TRepository {
+        return repositoryDao.findByNameAndType(projectId, repoName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }
 
     /**
