@@ -25,24 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.api
+package com.tencent.bkrepo.replication.controller.service
 
-import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import io.swagger.annotations.Api
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
+import com.tencent.bkrepo.replication.service.ClusterNodeService
+import org.springframework.web.bind.annotation.RestController
 
-@Api("分发服务操作接口")
-@Primary
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ServiceClusterNodeClient")
-@RequestMapping("/service/cluster")
-interface ClusterNodeClient {
-
-    @GetMapping("/{name}")
-    fun getCluster(@PathVariable name: String): Response<ClusterNodeInfo?>
+@RestController
+class ServiceClusterNodeController(
+    private val clusterNodeService: ClusterNodeService
+) : ClusterNodeClient {
+    override fun getCluster(name: String): Response<ClusterNodeInfo?> {
+        return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
+    }
 }

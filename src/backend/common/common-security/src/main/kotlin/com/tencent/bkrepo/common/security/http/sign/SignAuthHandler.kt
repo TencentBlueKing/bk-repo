@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.HttpSigner.ACCESS_KEY
 import com.tencent.bkrepo.common.service.util.HttpSigner.APP_ID
@@ -77,7 +76,7 @@ class SignAuthHandler(
         val secretKey = authenticationManager.findSecretKey(authCredentials.appId, authCredentials.accessKey)
             // 账号非法
             ?: throw AuthenticationException("AppId or accessKey error.")
-        val uri = getUrlPath(this.javaClass.name)!!
+        val uri = getUrlPath(request)
         val bodyHash = request.getAttribute(SIGN_BODY).toString()
         val sig = HttpSigner.sign(request, uri, bodyHash, secretKey, HmacAlgorithms.HMAC_SHA_1.getName())
         if (sig != authCredentials.sig) {
@@ -94,11 +93,8 @@ class SignAuthHandler(
         return request.getHeader(MS_AUTH_HEADER_UID) ?: SYSTEM_USER
     }
 
-    private fun getUrlPath(className: String): String? {
-        val request = HttpContextHolder.getRequestOrNull() ?: return null
+    private fun getUrlPath(request: HttpServletRequest): String {
         val realPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-        val serviceName = regex.find(className)?.groupValues?.get(1)
-        val security = httpAuthSecurity.prefix
         var path = realPath
         if (httpAuthSecurity.prefixEnabled) {
             path = realPath.removePrefix(httpAuthSecurity.prefix)

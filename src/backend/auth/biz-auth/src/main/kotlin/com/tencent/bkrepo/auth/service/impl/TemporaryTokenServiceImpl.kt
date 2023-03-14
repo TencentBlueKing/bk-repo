@@ -47,7 +47,7 @@ import java.util.UUID
 /**
  * 临时token服务实现类
  */
-@Service
+@Service("authTemporaryTokenServiceImpl")
 @Conditional(DefaultCondition::class)
 class TemporaryTokenServiceImpl(
     private val temporaryTokenRepository: TemporaryTokenRepository

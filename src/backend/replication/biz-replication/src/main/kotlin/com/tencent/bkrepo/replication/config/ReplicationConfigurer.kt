@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.security.http.sign.SignAuthHandler
 import org.quartz.Scheduler
 import org.quartz.impl.StdSchedulerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -52,8 +51,7 @@ class ReplicationConfigurer : ArtifactConfigurerSupport() {
     override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
     override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer { httpAuthSecurity ->
-        val httpAuthHandler = SignAuthHandler(httpAuthSecurity.authenticationManager!!, httpAuthSecurity)
-        httpAuthSecurity.withPrefix("/replication").addHttpAuthHandler(httpAuthHandler)
+        httpAuthSecurity.withPrefix("/replication")
     }
 
     @Bean

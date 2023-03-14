@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.api.cluster.ClusterProjectClient
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -52,7 +52,7 @@ class EdgeProjectServiceImpl(
     servicePermissionResource
 ) {
 
-    private val centerProjectClient: ProjectClient by lazy {
+    private val centerProjectClient: ClusterProjectClient by lazy {
         FeignClientFactory.create(
             clusterProperties.center,
             "repository",

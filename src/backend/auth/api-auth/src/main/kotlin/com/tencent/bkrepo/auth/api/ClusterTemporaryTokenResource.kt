@@ -25,49 +25,50 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.impl.edge
+package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.api.ClusterTemporaryTokenResource
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.auth.repository.TemporaryTokenRepository
-import com.tencent.bkrepo.auth.service.impl.TemporaryTokenServiceImpl
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Service
-@Conditional(CommitEdgeEdgeCondition::class)
-class CommitEdgeTemporaryTokenServiceImpl(
-    temporaryTokenRepository: TemporaryTokenRepository,
-    private val clusterProperties: ClusterProperties
-) : TemporaryTokenServiceImpl(
-    temporaryTokenRepository
-) {
+@Api("临时token服务接口")
+@Primary
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterTemporaryTokenResource")
+@RequestMapping("/cluster/temporary/token")
+interface ClusterTemporaryTokenResource {
 
-    private val centerTemporaryTokenClient: ClusterTemporaryTokenResource by lazy {
-        FeignClientFactory.create(
-            clusterProperties.center,
-            "auth",
-            clusterProperties.self.name
-        )
-    }
+    @ApiOperation("创建临时token")
+    @PostMapping("/create")
+    fun createToken(
+        @RequestBody request: TemporaryTokenCreateRequest
+    ): Response<List<TemporaryTokenInfo>>
 
-    override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
-        return centerTemporaryTokenClient.createToken(request).data!!
-    }
+    @ApiOperation("查询临时token信息")
+    @GetMapping("/info/{token}")
+    fun getTokenInfo(
+        @PathVariable token: String
+    ): Response<TemporaryTokenInfo?>
 
-    override fun deleteToken(token: String) {
-        centerTemporaryTokenClient.deleteToken(token)
-    }
+    @ApiOperation("删除临时token信息")
+    @DeleteMapping("/delete/{token}")
+    fun deleteToken(
+        @PathVariable token: String
+    ): Response<Void>
 
-    override fun getTokenInfo(token: String): TemporaryTokenInfo? {
-        return centerTemporaryTokenClient.getTokenInfo(token).data
-    }
-
-    override fun decrementPermits(token: String) {
-        centerTemporaryTokenClient.decrementPermits(token)
-    }
+    @ApiOperation("减少token 允许访问次数")
+    @PostMapping("/permits/decrement/{token}")
+    fun decrementPermits(
+        @PathVariable token: String
+    ): Response<Void>
 }
