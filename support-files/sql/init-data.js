@@ -211,3 +211,55 @@ db.repository.updateOne(
     { upsert: true }
 );
 
+db.scanner.updateOne(
+    {
+        name: "bkrepo-trivy"
+    },
+    {
+        $setOnInsert: {
+            name: "bkrepo-trivy",
+            type: "standard",
+            version: "0.0.35",
+            description: "",
+            config: "{\n  \"name\" : \"bkrepo-trivy\",\n  \"image\" : \"ghcr.io/tencentblueking/ci-repoanalysis/bkrepo-trivy:0.0.35\",\n  \"cmd\" : \"/bkrepo-trivy\",\n  \"version\" : \"0.0.35\",\n  \"args\" : [ {\n    \"type\" : \"BOOLEAN\",\n    \"key\" : \"scanSensitive\",\n    \"value\" : \"true\",\n    \"des\" : \"\"\n  } ],\n  \"type\" : \"standard\",\n  \"description\" : \"\",\n  \"rootPath\" : \"/standard\",\n  \"cleanWorkDir\" : true,\n  \"maxScanDurationPerMb\" : 6000,\n  \"supportFileNameExt\" : [],\n  \"supportPackageTypes\" : [ \"DOCKER\" ],\n  \"supportDispatchers\" : [ \"docker\", \"k8s\" ],\n  \"supportScanTypes\" : [ \"SENSITIVE\", \"SECURITY\" ]\n}",
+            supportFileNameExt: [],
+            supportPackageTypes: ["DOCKER"],
+            supportScanTypes: ["SECURITY", "SENSITIVE"],
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.scan_plan.updateOne(
+    {
+        projectId: "blueking",
+        name: "ImageScan",
+        type: "DOCKER"
+    },
+    {
+        $setOnInsert: {
+            projectId: "blueking",
+            name: "ImageScan",
+            type: "DOCKER",
+            repoNames: [],
+            scanner: "bkrepo-trivy",
+            scanTypes: ["SENSITIVE", "SECURITY"],
+            description: "",
+            scanOnNewArtifact: false,
+            rule: "{\n  \"rules\" : [ {\n    \"field\" : \"projectId\",\n    \"value\" : \"blueking\",\n    \"operation\" : \"EQ\"\n  }, {\n    \"field\" : \"type\",\n    \"value\" : \"DOCKER\",\n    \"operation\" : \"EQ\"\n  } ],\n  \"relation\" : \"AND\"\n}",
+            scanResultOverview: {},
+            scanQuality: {},
+            readOnly: false,
+            latestScanTaskId: null,
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
