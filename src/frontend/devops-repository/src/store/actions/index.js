@@ -62,9 +62,15 @@ export default {
         })) // 前端隐藏report仓库/log仓库
     },
     // 查询所有仓库
-    getRepoListWithoutPage (_, { projectId }) {
+    getRepoListWithoutPage (_, { projectId, name, type }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/repo/list/${projectId}`
+            `${prefix}/repo/list/${projectId}`,
+            {
+                params: {
+                    name: name || undefined,
+                    type: type || undefined
+                }
+            }
         ).then(res => ({
             ...res,
             records: MODE_CONFIG === 'ci'
