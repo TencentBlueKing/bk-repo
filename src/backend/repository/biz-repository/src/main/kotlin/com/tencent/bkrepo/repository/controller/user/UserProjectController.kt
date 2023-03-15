@@ -62,7 +62,6 @@ class UserProjectController(
     private val projectService: ProjectService
 ) {
     @ApiOperation("创建项目")
-    @Principal(PrincipalType.PLATFORM)
     @PostMapping("/create")
     fun createProject(
         @RequestAttribute userId: String,

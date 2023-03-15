@@ -25,20 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.service
+package com.tencent.bkrepo.repository.api.cluster
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.ClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.service.ClusterNodeService
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@RestController
-class ClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterNodeClient {
-    override fun getCluster(name: String): Response<ClusterNodeInfo?> {
-        return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
-    }
+@Api(description = "项目集群接口")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterProjectClient")
+@RequestMapping("/cluster/project")
+interface ClusterProjectClient {
+
+    @ApiOperation("创建项目")
+    @PostMapping("/create")
+    fun createProject(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>
 }

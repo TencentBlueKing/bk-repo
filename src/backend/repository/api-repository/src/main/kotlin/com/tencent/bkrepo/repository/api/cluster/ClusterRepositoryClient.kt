@@ -25,24 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.api
+package com.tencent.bkrepo.repository.api.cluster
 
-import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("分发服务操作接口")
-@Primary
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ServiceClusterNodeClient")
-@RequestMapping("/service/cluster")
-interface ClusterNodeClient {
+@Api("仓库集群接口")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterRepositoryClient")
+@RequestMapping("/cluster/repo")
+interface ClusterRepositoryClient {
 
-    @GetMapping("/{name}")
-    fun getCluster(@PathVariable name: String): Response<ClusterNodeInfo?>
+    @ApiOperation("创建仓库")
+    @PostMapping("/create")
+    fun createRepo(@RequestBody request: RepoCreateRequest): Response<RepositoryDetail>
+
+    @ApiOperation("修改仓库")
+    @PostMapping("/update")
+    fun updateRepo(@RequestBody request: RepoUpdateRequest): Response<Void>
+
+    @ApiOperation("删除仓库")
+    @DeleteMapping("/delete")
+    fun deleteRepo(@RequestBody request: RepoDeleteRequest): Response<Void>
 }

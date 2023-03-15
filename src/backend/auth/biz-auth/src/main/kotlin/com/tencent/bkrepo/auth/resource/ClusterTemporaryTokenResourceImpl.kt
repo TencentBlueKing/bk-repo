@@ -25,49 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.impl.edge
+package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ClusterTemporaryTokenResource
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.auth.repository.TemporaryTokenRepository
-import com.tencent.bkrepo.auth.service.impl.TemporaryTokenServiceImpl
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.auth.service.TemporaryTokenService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-@Service
-@Conditional(CommitEdgeEdgeCondition::class)
-class CommitEdgeTemporaryTokenServiceImpl(
-    temporaryTokenRepository: TemporaryTokenRepository,
-    private val clusterProperties: ClusterProperties
-) : TemporaryTokenServiceImpl(
-    temporaryTokenRepository
-) {
-
-    private val centerTemporaryTokenClient: ClusterTemporaryTokenResource by lazy {
-        FeignClientFactory.create(
-            clusterProperties.center,
-            "auth",
-            clusterProperties.self.name
-        )
+@RestController
+class ClusterTemporaryTokenResourceImpl(
+    private val temporaryTokenService: TemporaryTokenService
+) : ClusterTemporaryTokenResource {
+    override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
+        return ResponseBuilder.success(temporaryTokenService.createToken(request))
     }
 
-    override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
-        return centerTemporaryTokenClient.createToken(request).data!!
+    override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
+        return ResponseBuilder.success(temporaryTokenService.getTokenInfo(token))
     }
 
-    override fun deleteToken(token: String) {
-        centerTemporaryTokenClient.deleteToken(token)
+    override fun deleteToken(token: String): Response<Void> {
+        temporaryTokenService.deleteToken(token)
+        return ResponseBuilder.success()
     }
 
-    override fun getTokenInfo(token: String): TemporaryTokenInfo? {
-        return centerTemporaryTokenClient.getTokenInfo(token).data
-    }
-
-    override fun decrementPermits(token: String) {
-        centerTemporaryTokenClient.decrementPermits(token)
+    override fun decrementPermits(token: String): Response<Void> {
+        temporaryTokenService.decrementPermits(token)
+        return ResponseBuilder.success()
     }
 }

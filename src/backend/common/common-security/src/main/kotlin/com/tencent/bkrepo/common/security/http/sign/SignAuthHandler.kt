@@ -25,13 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.security
+package com.tencent.bkrepo.common.security.http.sign
 
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
@@ -45,14 +45,18 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
+import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
 /**
  * 检查签名
  * */
 class SignAuthHandler(
-    private val authenticationManager: AuthenticationManager
+    private val authenticationManager: AuthenticationManager,
+    private val httpAuthSecurity: HttpAuthSecurity
 ) : HttpAuthHandler {
+
+    private val regex = Regex("""com\.tencent\.bkrepo\.(\w+)\..*""")
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val sig = request.getParameter(SIGN)
         val appId = request.getParameter(APP_ID)
@@ -72,7 +76,7 @@ class SignAuthHandler(
         val secretKey = authenticationManager.findSecretKey(authCredentials.appId, authCredentials.accessKey)
             // 账号非法
             ?: throw AuthenticationException("AppId or accessKey error.")
-        val uri = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
+        val uri = getUrlPath(request)
         val bodyHash = request.getAttribute(SIGN_BODY).toString()
         val sig = HttpSigner.sign(request, uri, bodyHash, secretKey, HmacAlgorithms.HMAC_SHA_1.getName())
         if (sig != authCredentials.sig) {
@@ -87,6 +91,15 @@ class SignAuthHandler(
             throw PermissionException("Request timeout.")
         }
         return request.getHeader(MS_AUTH_HEADER_UID) ?: SYSTEM_USER
+    }
+
+    private fun getUrlPath(request: HttpServletRequest): String {
+        val realPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        var path = realPath
+        if (httpAuthSecurity.prefixEnabled) {
+            path = realPath.removePrefix(httpAuthSecurity.prefix)
+        }
+        return path
     }
 
     private data class SignAuthCredentials(

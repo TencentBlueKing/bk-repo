@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.pypi.artifact.repository.PypiLocalRepository
@@ -56,11 +55,8 @@ class PypiArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getLocalRepository() = SpringContextUtils.getBean<PypiLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<PypiRemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<PypiVirtualRepository>()
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/pypi")
-        }
-    }
+    override fun getAuthSecurityCustomizer() =
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/pypi") }
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {

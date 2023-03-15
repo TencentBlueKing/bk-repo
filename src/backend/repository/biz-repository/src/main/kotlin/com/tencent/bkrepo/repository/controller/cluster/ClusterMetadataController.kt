@@ -25,48 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata.impl.edge
+package com.tencent.bkrepo.repository.controller.cluster
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterMetadataClient
-import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.repository.service.metadata.MetadataService
+import org.springframework.web.bind.annotation.RestController
 
-@Service
-@Conditional(CommitEdgeEdgeCondition::class)
-class EdgeMetadataServiceImpl(
-    nodeDao: NodeDao,
-    clusterProperties: ClusterProperties
-) : MetadataServiceImpl(
-    nodeDao
-) {
-
-    private val centerMetadataClient: ClusterMetadataClient by lazy {
-        FeignClientFactory.create(
-            clusterProperties.center,
-            "repository",
-            clusterProperties.self.name
-        )
+@RestController
+class ClusterMetadataController(
+    private val permissionManager: PermissionManager,
+    private val metadataService: MetadataService
+) : ClusterMetadataClient {
+    override fun saveMetadata(request: MetadataSaveRequest): Response<Void> {
+        with(request) {
+            permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, fullPath)
+            metadataService.saveMetadata(this)
+            return ResponseBuilder.success()
+        }
     }
 
-    override fun saveMetadata(request: MetadataSaveRequest) {
-        centerMetadataClient.saveMetadata(request)
-        super.saveMetadata(request)
+    override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
+        with(request) {
+            permissionManager.checkNodePermission(PermissionAction.DELETE, projectId, repoName, fullPath)
+            metadataService.deleteMetadata(this)
+            return ResponseBuilder.success()
+        }
     }
 
-    override fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
-        centerMetadataClient.deleteMetadata(request)
-        super.deleteMetadata(request, allowDeleteSystemMetadata)
-    }
-
-    override fun addForbidMetadata(request: MetadataSaveRequest) {
-        centerMetadataClient.addForbidMetadata(request)
-        super.addForbidMetadata(request)
+    override fun addForbidMetadata(request: MetadataSaveRequest): Response<Void> {
+        with(request) {
+            permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, fullPath)
+            metadataService.addForbidMetadata(this)
+            return ResponseBuilder.success()
+        }
     }
 }

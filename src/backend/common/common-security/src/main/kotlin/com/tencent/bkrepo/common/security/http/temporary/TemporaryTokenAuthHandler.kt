@@ -74,7 +74,7 @@ open class TemporaryTokenAuthHandler(
         val tokenInfo = temporaryTokenClient.getTokenInfo(token).data ?: return ANONYMOUS_USER
         val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
             .takeIf { it.isNotEmpty() }?.apply { checkUserId(this) } ?: ANONYMOUS_USER
-        if (tokenInfo.authorizedUserList.isNotEmpty() && !tokenInfo.authorizedUserList.contains(userId)) {
+        if (!tokenInfo.authorizedUserList.contains(userId)) {
             return ANONYMOUS_USER
         }
         request.setAttribute(USER_KEY, userId)

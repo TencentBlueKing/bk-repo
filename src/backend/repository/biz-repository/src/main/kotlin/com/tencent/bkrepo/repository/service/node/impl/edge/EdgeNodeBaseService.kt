@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -66,7 +66,7 @@ abstract class EdgeNodeBaseService(
     messageSupplier
 ) {
 
-    val centerNodeClient: NodeClient by lazy {
+    val centerNodeClient: ClusterNodeClient by lazy {
         FeignClientFactory.create(
             clusterProperties.center,
             "repository",

@@ -25,24 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.api
+package com.tencent.bkrepo.repository.api.cluster
 
-import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("分发服务操作接口")
-@Primary
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ServiceClusterNodeClient")
-@RequestMapping("/service/cluster")
-interface ClusterNodeClient {
+@Api("节点元数据集群接口")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterMetadataClient")
+@RequestMapping("/cluster/metadata")
+interface ClusterMetadataClient {
 
-    @GetMapping("/{name}")
-    fun getCluster(@PathVariable name: String): Response<ClusterNodeInfo?>
+    @ApiOperation("创建/更新元数据列表")
+    @PostMapping("/save")
+    fun saveMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
+
+    @ApiOperation("删除元数据")
+    @DeleteMapping("/delete")
+    fun deleteMetadata(@RequestBody request: MetadataDeleteRequest): Response<Void>
+
+    @ApiOperation("添加禁用元数据")
+    @PostMapping("/forbid")
+    fun addForbidMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
 }
