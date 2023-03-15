@@ -61,8 +61,8 @@ data class RepoCreateRequest(
     val storageCredentialsKey: String? = null,
     @ApiModelProperty("仓库配额", required = false)
     val quota: Long? = null,
-
     @ApiModelProperty("操作用户", required = false)
-    val operator: String = SYSTEM_USER
-
+    val operator: String = SYSTEM_USER,
+    @ApiModelProperty("是否展示", required = true)
+    val display: Boolean = true
 ) : RepoRequest

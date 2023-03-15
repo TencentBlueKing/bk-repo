@@ -665,5 +665,6 @@
     "scanConfig":"Program settings",
     "operationConfirmation":"Operation Confirmation",
     "executeScanSuccessMsg":"Scan performed successfully",
-    "scanRulePreMsg":"Skip rule if blank"
+    "scanRulePreMsg":"Skip rule if blank",
+    "isDisplay": "Whether to display"
 }

@@ -18,6 +18,12 @@
                             :list="availableList">
                         </card-radio-group>
                     </bk-form-item>
+                    <bk-form-item :label="$t('isDisplay')">
+                        <bk-radio-group v-model="repoBaseInfo.display">
+                            <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                            <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                        </bk-radio-group>
+                    </bk-form-item>
                     <template v-if="repoType === 'generic'">
                         <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -162,6 +168,7 @@
                     public: false,
                     system: false,
                     repoType: '',
+                    display: true,
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
@@ -348,6 +355,7 @@
                 const body = {
                     public: this.repoBaseInfo.public,
                     description: this.repoBaseInfo.description,
+                    display: this.repoBaseInfo.display,
                     configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
