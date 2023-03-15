@@ -55,17 +55,17 @@ import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
-import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
-import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OCI_NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
+import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
+import com.tencent.bkrepo.oci.exception.OciVersionNotFoundException
 import com.tencent.bkrepo.oci.model.Descriptor
 import com.tencent.bkrepo.oci.model.ManifestSchema2
 import com.tencent.bkrepo.oci.model.TOciReplicationRecord
@@ -134,10 +134,8 @@ class OciOperationServiceImpl(
             repoName = repoName,
             packageKey = packageKey,
             version = version
-        ).data ?: throw OciFileNotFoundException(
-            "Could not get $packageKey/$version manifest file in repo: [$projectId/$repoName]",
-            MANIFEST_UNKNOWN_CODE,
-            MANIFEST_UNKNOWN_DESCRIPTION
+        ).data ?: throw OciVersionNotFoundException(
+            OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName"
         )
     }
 
@@ -400,8 +398,8 @@ class OciOperationServiceImpl(
                 repoName = repoName,
                 name = name,
                 version = version
-            ) ?: throw OciFileNotFoundException(
-                "Could not find the packageKey [$packageKey] in repo ${artifactInfo.getRepoIdentify()}"
+            ) ?: throw OciVersionNotFoundException(
+                OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName"
             )
             val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data!!
             val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion)
@@ -979,13 +977,19 @@ class OciOperationServiceImpl(
     override fun getManifest(artifactInfo: OciManifestArtifactInfo): String {
         val context = ArtifactQueryContext()
         try {
-            val inputStream = ArtifactContextHolder.getRepository().query(context) ?: throw OciFileNotFoundException(
-                "Error occurred when querying the manifest file.. "
+            val inputStream = ArtifactContextHolder.getRepository().query(context) ?: OciFileNotFoundException(
+                OciMessageCode.OCI_FILE_NOT_FOUND,
+                context.artifactInfo.getArtifactFullPath(),
+                context.artifactInfo.getRepoIdentify()
             )
             return (inputStream as ArtifactInputStream).readBytes().toString(Charset.defaultCharset())
         } catch (e: Exception) {
             logger.warn(e.message.toString())
-            throw OciFileNotFoundException(e.message.toString())
+            throw OciFileNotFoundException(
+                OciMessageCode.OCI_FILE_NOT_FOUND,
+                context.artifactInfo.getArtifactFullPath(),
+                context.artifactInfo.getRepoIdentify()
+            )
         }
     }
 

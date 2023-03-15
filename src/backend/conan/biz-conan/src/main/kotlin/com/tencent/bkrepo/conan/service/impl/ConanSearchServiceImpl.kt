@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
+import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
@@ -82,7 +83,9 @@ class ConanSearchServiceImpl : ConanSearchService {
                 emptyMap()
             }
             if (result.isEmpty()) {
-                throw ConanSearchNotFoundException("Could not find ${buildReference(conanFileReference)}")
+                throw ConanSearchNotFoundException(
+                    ConanMessageCode.CONAN_SEARCH_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()
+                )
             }
             return result
         }

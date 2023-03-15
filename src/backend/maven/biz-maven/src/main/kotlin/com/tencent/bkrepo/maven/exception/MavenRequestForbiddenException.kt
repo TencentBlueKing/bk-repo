@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.maven.exception
 
-class MavenRequestForbiddenException(
-    error: String? = "The request has been forbidden by the server"
-) : RuntimeException(error)
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class MavenRequestForbiddenException(messageCode: MessageCode, vararg params: Any) :
+ErrorCodeException(messageCode = messageCode, status = HttpStatus.FORBIDDEN, params = params)

@@ -57,6 +57,7 @@ import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.SCOPE
 import com.tencent.bkrepo.oci.constant.SERVICE
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
@@ -94,7 +95,7 @@ class OciRegistryRemoteRepository(
         with(context) {
             val message = "Forbidden to upload chart into a remote repository [$projectId/$repoName]"
             logger.warn(message)
-            throw OciForbiddenRequestException(message)
+            throw OciForbiddenRequestException(OciMessageCode.OCI_FILE_UPLOAD_FORBIDDEN, "$projectId|$repoName")
         }
     }
 

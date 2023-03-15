@@ -31,4 +31,7 @@
 
 package com.tencent.bkrepo.rds.exception
 
-class RdsIndexFreshFailException(message: String) : RdsException(message)
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class RdsIndexFreshFailException(messageCode: MessageCode, params: String) : SystemErrorException(messageCode, params)
