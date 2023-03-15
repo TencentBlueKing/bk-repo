@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -306,7 +307,7 @@ open class OperateLogServiceImpl(
         }
         return OperateLogResponse(
             createdDate = tOperateLog.createdDate,
-            operate = EventType.nick(tOperateLog.type),
+            operate = eventName(tOperateLog.type),
             userId = tOperateLog.userId,
             clientAddress = tOperateLog.clientAddress,
             result = true,
@@ -339,6 +340,20 @@ open class OperateLogServiceImpl(
             userId = userId,
             clientAddress = clientAddress
         )
+    }
+
+    /**
+     * 获取事件名称
+     *
+     * @param type 事件类型
+     * @return [type]对应的名称，没有对应名称时返回[type]
+     */
+    private fun eventName(type: String): String {
+        return try {
+            LocaleMessageUtils.getLocalizedMessage(EventType.valueOf(type).msgKey)
+        } catch (_: IllegalArgumentException) {
+            type
+        }
     }
 
     companion object {
