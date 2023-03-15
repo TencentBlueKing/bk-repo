@@ -6,12 +6,19 @@ spring:
     name: bkrepo
   cloud:
     function:
-      definition: scanEventConsumer
+      definition: artifactEventWebhook;scanEventConsumer
     stream:
       default-binder: memoryMessageChannelBinder
       bindings:
         scanEventConsumer-in-0:
           group: scanner
+          destination: artifactEvent
+          binder: memoryMessageChannelBinder
+        artifactEvent-out-0:
+          destination: artifactEvent
+          binder: memoryMessageChannelBinder
+        artifactEventWebhook-in-0:
+          group: webhook
           destination: artifactEvent
           binder: memoryMessageChannelBinder
   data:
