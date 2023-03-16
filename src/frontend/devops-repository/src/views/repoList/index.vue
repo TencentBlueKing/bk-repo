@@ -146,7 +146,10 @@
             ]),
             getListData () {
                 this.isLoading = true
-                this.getRepoListWithoutPage({ projectId: this.projectId }).then(({ records, totalRecords }) => {
+                this.getRepoListWithoutPage({
+                    projectId: this.projectId,
+                    ...this.query
+                }).then(({ records, totalRecords }) => {
                     this.pagination.count = records.length
                     let allRepo
                     if (this.MODE_CONFIG === 'ci') {
