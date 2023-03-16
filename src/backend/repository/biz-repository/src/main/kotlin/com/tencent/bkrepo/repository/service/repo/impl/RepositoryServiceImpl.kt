@@ -160,7 +160,11 @@ class RepositoryServiceImpl(
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::display).ne(false)
             .and(TRepository::name).inValues(names)
-        option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
+        if (!option.type.isNullOrBlank()) {
+            criteria.and(TRepository::type).isEqualTo(option.type?.toUpperCase())
+        } else {
+            criteria.and(TRepository::type).ne(RepositoryType.RDS.name)
+        }
         val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
