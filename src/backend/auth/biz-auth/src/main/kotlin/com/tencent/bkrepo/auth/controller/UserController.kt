@@ -245,7 +245,7 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(RsaUtils.publicKey)
     }
 
-    @ApiOperation("校验用户会话token")
+    @ApiOperation("校验登陆会话")
     @PostMapping("/login")
     fun loginUser(@RequestParam("uid") uid: String, @RequestParam("token") token: String): Response<Boolean> {
         val decryptToken: String?

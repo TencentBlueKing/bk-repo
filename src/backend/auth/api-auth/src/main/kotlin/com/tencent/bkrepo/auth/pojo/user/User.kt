@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo.user
 
-import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
@@ -49,7 +49,7 @@ data class User(
     @ApiModelProperty("是否锁定")
     val locked: Boolean = false,
     @ApiModelProperty("用户token")
-    val tokens: List<Token> = emptyList(),
+    val tokens: List<TokenResult> = emptyList(),
     @ApiModelProperty("所属角色")
     val roles: List<String> = emptyList(),
     @ApiModelProperty("关联用户")
