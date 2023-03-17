@@ -74,7 +74,7 @@ export default {
         ).then(res => ({
             ...res,
             records: MODE_CONFIG === 'ci'
-                ? res.filter(v => v.name !== 'report' && v.name !== 'log')
+                ? res.filter(v => v.name !== 'report' && v.name !== 'log' && v.type !== 'RDS')
                 : res
         }))
     },
@@ -84,7 +84,7 @@ export default {
             `${prefix}/repo/list/${projectId}`
         ).then(res => {
             // 前端隐藏report仓库/log仓库
-            commit('SET_REPO_LIST_ALL', res.filter(v => v.name !== 'report' && v.name !== 'log'))
+            commit('SET_REPO_LIST_ALL', res.filter(v => v.name !== 'report' && v.name !== 'log' && v.type !== 'RDS'))
         })
     },
     // 查询仓库信息
