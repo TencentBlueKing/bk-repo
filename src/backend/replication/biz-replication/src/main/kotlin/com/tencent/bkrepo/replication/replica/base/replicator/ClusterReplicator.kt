@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.base.replicator
 
+import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
@@ -190,12 +191,20 @@ class ClusterReplicator(
                                 "will be pushed to the remote server!"
                         )
                         // 1. 同步文件数据
-                        pushBlob(
-                            inputStream = rateLimitInputStream,
-                            size = it.size!!,
-                            sha256 = it.sha256.orEmpty(),
-                            storageKey = remoteRepo?.storageCredentials?.key
-                        )
+
+                        try {
+                            pushBlob(
+                                inputStream = rateLimitInputStream,
+                                size = it.size!!,
+                                sha256 = it.sha256.orEmpty(),
+                                storageKey = remoteRepo?.storageCredentials?.key
+                            )
+                        } catch (throwable: Throwable) {
+                            logger.error("File replica push error $throwable，" +
+                                             "${Throwables.getStackTraceAsString(throwable)} " +
+                                             "and message : ${throwable.message}")
+                            throw throwable
+                        }
                     }
                     logger.info(
                         "The node [${node.fullPath}] will be pushed to the remote server!"
