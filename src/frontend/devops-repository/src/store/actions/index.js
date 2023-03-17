@@ -75,7 +75,7 @@ export default {
             ...res,
             records: MODE_CONFIG === 'ci'
                 ? res.filter(v => v.name !== 'report' && v.name !== 'log' && v.type !== 'RDS')
-                : res
+                : res.filter(v => v.type !== 'RDS')
         }))
     },
     // 查询仓库列表
