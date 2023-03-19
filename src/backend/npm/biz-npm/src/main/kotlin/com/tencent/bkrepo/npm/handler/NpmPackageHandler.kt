@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -137,7 +138,7 @@ class NpmPackageHandler {
      */
     fun createVersion(
         userId: String,
-        artifactInfo: NpmArtifactInfo,
+        artifactInfo: ArtifactInfo,
         versionMetaData: NpmVersionMetadata,
         size: Long
     ) {

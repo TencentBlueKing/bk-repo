@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -217,7 +218,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         artifactResource: ArtifactResource,
         throughput: Throughput
     ) {
-        if (artifactResource.channel == ArtifactChannel.LOCAL) {
+        if (artifactResource.channel == ArtifactChannel.LOCAL || context.repo.category == RepositoryCategory.REMOTE) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
                 publishPackageDownloadEvent(context, it)
