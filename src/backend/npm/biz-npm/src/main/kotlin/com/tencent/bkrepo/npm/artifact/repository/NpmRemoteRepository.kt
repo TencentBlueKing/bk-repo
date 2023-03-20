@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
@@ -54,6 +55,7 @@ import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
@@ -199,6 +201,18 @@ class NpmRemoteRepository(
             with(packageInfo) {
                 return PackageDownloadRecord(projectId, repoName, PackageKeys.ofNpm(first), second)
             }
+        }
+    }
+
+    override fun remove(context: ArtifactRemoveContext) {
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
+        val fullPath = context.getAttribute<List<*>>(NPM_FILE_FULL_PATH)
+        val userId = context.userId
+        fullPath?.forEach {
+            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
+            logger.info("delete artifact $it success in repo [${context.artifactInfo.getRepoIdentify()}].")
         }
     }
 

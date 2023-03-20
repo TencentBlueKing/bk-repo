@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.npm.service.impl
 
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -124,7 +126,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     override fun deleteVersion(artifactInfo: NpmArtifactInfo, deleteRequest: PackageVersionDeleteRequest) {
         logger.info("npm delete package version request: [$deleteRequest]")
         with(deleteRequest) {
-            checkRepositoryExist(projectId, repoName)
+            val repoCategory = checkRepositoryExist(projectId, repoName).category
+            if (repoCategory == RepositoryCategory.VIRTUAL) {
+                throw MethodNotAllowedException()
+            }
             val packageMetadata = queryPackageInfo(artifactInfo, name, false)
             val versionEntries = packageMetadata.versions.map.entries
             val iterator = versionEntries.iterator()
@@ -140,7 +145,9 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 ).orEmpty()
             npmClientService.deleteVersion(artifactInfo, name, version, tgzPath)
             // 修改package.json文件的内容
-            updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
+            if (repoCategory != RepositoryCategory.REMOTE) {
+                updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
+            }
         }
     }
 
