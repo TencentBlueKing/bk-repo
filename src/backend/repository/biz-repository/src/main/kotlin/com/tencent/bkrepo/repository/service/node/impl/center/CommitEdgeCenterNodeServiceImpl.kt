@@ -138,11 +138,8 @@ class CommitEdgeCenterNodeServiceImpl(
     }
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
-        val srcCluster = SecurityUtils.getClusterName()
-        if (srcCluster.isNullOrBlank()) {
-            return super.createNode(createRequest)
-        }
         with(createRequest) {
+            val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             val existNode = nodeDao.findNode(projectId, repoName, normalizeFullPath)
                 ?: return super.createNode(createRequest)
