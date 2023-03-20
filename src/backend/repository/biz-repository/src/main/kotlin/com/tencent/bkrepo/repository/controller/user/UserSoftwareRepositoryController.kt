@@ -2,8 +2,8 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.repo.SoftwareRepositoryService
 import io.swagger.annotations.Api
@@ -33,18 +33,13 @@ class UserSoftwareRepositoryController(
         @PathVariable pageSize: Int,
         @ApiParam(value = "项目id", required = false)
         @RequestParam projectId: String?,
-        @ApiParam(value = "仓库名", required = false)
-        @RequestParam name: String?,
-        @ApiParam(value = "仓库类型", required = false)
-        @RequestParam type: String?
+        option: RepoListOption
     ): Response<Page<RepositoryInfo>> {
-        val repoType = type?.let { RepositoryType.valueOf(it.toUpperCase()) }
         val page = softwareRepositoryService.listRepoPage(
             projectId,
             pageNumber,
             pageSize,
-            name,
-            repoType
+            option
         )
         return ResponseBuilder.success(page)
     }

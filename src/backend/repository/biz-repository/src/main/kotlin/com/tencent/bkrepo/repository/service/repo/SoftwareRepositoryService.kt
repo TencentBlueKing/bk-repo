@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 
 interface SoftwareRepositoryService {
@@ -10,14 +10,12 @@ interface SoftwareRepositoryService {
         projectId: String? = null,
         pageNumber: Int,
         pageSize: Int,
-        name: String? = null,
-        type: RepositoryType? = null
+        option: RepoListOption
     ): Page<RepositoryInfo>
 
     fun listRepo(
         projectId: String? = null,
-        name: String? = null,
-        type: RepositoryType? = null,
+        option: RepoListOption,
         includeGeneric: Boolean
     ): List<RepositoryInfo>
 }

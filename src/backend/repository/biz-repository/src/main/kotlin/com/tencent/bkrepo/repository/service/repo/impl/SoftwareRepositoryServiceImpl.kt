@@ -8,11 +8,13 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.repo.SoftwareRepositoryService
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
@@ -27,10 +29,9 @@ class SoftwareRepositoryServiceImpl(
         projectId: String?,
         pageNumber: Int,
         pageSize: Int,
-        name: String?,
-        type: RepositoryType?
+        option: RepoListOption
     ): Page<RepositoryInfo> {
-        val query = buildListQuery(projectId, name, type, includeGeneric = false)
+        val query = buildListQuery(projectId, option, includeGeneric = false)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = repositoryDao.count(query)
         val records = repositoryDao.find(query.with(pageRequest)).map { convertToInfo(it)!! }
@@ -39,11 +40,10 @@ class SoftwareRepositoryServiceImpl(
 
     override fun listRepo(
         projectId: String?,
-        name: String?,
-        type: RepositoryType?,
+        option: RepoListOption,
         includeGeneric: Boolean
     ): List<RepositoryInfo> {
-        val query = buildListQuery(projectId, name, type, includeGeneric)
+        val query = buildListQuery(projectId, option, includeGeneric)
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
 
@@ -52,10 +52,10 @@ class SoftwareRepositoryServiceImpl(
      */
     private fun buildListQuery(
         projectId: String?,
-        repoName: String? = null,
-        repoType: RepositoryType? = null,
+        option: RepoListOption,
         includeGeneric: Boolean
     ): Query {
+        val repoType = option.type?.let { RepositoryType.valueOf(it.toUpperCase()) }
         val publicCriteria = where(TRepository::public).`is`(true)
         val systemCriteria = where(TRepository::configuration).regex("\\\"system\\\"( )?:( )?true")
         val criteria = where(TRepository::deleted).isEqualTo(null)
@@ -72,7 +72,9 @@ class SoftwareRepositoryServiceImpl(
             criteria.and(TRepository::type).isEqualTo(repoType)
         }
         criteria.orOperator(publicCriteria, systemCriteria)
-        repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
+        option.name?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
+        option.category?.takeIf { it.isNotEmpty() }
+            ?.apply { criteria.and(TRepository::category).inValues(this.map { it.toUpperCase() }) }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
     }
 
