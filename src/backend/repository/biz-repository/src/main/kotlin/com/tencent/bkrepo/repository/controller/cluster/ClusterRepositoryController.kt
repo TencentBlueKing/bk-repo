@@ -46,7 +46,10 @@ class ClusterRepositoryController(
 ) : ClusterRepositoryClient {
     override fun createRepo(request: RepoCreateRequest): Response<RepositoryDetail> {
         with(request) {
-            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
+            permissionManager.checkProjectPermission(
+                action = if (pluginRequest) PermissionAction.WRITE else PermissionAction.MANAGE,
+                projectId = projectId
+            )
             return ResponseBuilder.success(repositoryService.createRepo(this))
         }
     }
