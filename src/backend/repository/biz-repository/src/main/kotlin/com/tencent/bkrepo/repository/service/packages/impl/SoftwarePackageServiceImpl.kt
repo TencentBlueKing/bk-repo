@@ -15,6 +15,7 @@ import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.pojo.software.SoftwarePackageSearchPojo
 import com.tencent.bkrepo.repository.search.software.packages.SoftwarePackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.SoftwarePackageService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.SoftwareRepositoryService
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Service
 class SoftwarePackageServiceImpl(
     private val packageDao: PackageDao,
     private val softwareRepositoryService: SoftwareRepositoryService,
-    private val softwarePackageSearchInterpreter: SoftwarePackageSearchInterpreter
+    private val softwarePackageSearchInterpreter: SoftwarePackageSearchInterpreter,
+    private val repositoryService: RepositoryService
 ) : SoftwarePackageService {
 
     override fun packageOverview(
@@ -95,6 +97,7 @@ class SoftwarePackageServiceImpl(
         list.map { pojo ->
             val repoOverview = ProjectPackageOverview.RepoPackageOverview(
                 repoName = pojo.id.repoName,
+                repoCategory = repositoryService.getRepoInfo(pojo.id.projectId, pojo.id.repoName)?.category,
                 packages = pojo.count
             )
             projectSet.filter { it.projectId == pojo.id.projectId }.apply {

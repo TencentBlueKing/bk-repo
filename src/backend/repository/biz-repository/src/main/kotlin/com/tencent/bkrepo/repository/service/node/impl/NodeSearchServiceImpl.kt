@@ -100,6 +100,7 @@ class NodeSearchServiceImpl(
         repoNamelist.map { pojo ->
             val repoOverview = ProjectPackageOverview.RepoPackageOverview(
                 repoName = pojo,
+                repoCategory = repositoryService.getRepoInfo(projectId, pojo)?.category,
                 packages = 0L
             )
             projectSet.first().repos.add(repoOverview)

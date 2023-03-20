@@ -6,13 +6,15 @@ import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.pojo.software.CountResult
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.service.packages.PackageStatisticsService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 
 @Service
 class PackageStatisticsServiceImpl(
-    private val packageDao: PackageDao
+    private val packageDao: PackageDao,
+    private val repositoryService: RepositoryService
 ) : PackageStatisticsService {
 
     override fun packageOverview(
@@ -48,6 +50,7 @@ class PackageStatisticsServiceImpl(
         list.map { pojo ->
             val repoOverview = ProjectPackageOverview.RepoPackageOverview(
                 repoName = pojo.id,
+                repoCategory = repositoryService.getRepoInfo(projectId, pojo.id)?.category,
                 packages = pojo.count
             )
             projectSet.first().repos.add(repoOverview)

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.software
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import io.swagger.annotations.ApiModel
 
 @ApiModel("软件源包搜索结果总览")
@@ -10,6 +11,7 @@ data class ProjectPackageOverview(
 ) {
     data class RepoPackageOverview(
         val repoName: String,
+        val repoCategory: RepositoryCategory?,
         val packages: Long
     )
 
