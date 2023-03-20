@@ -45,6 +45,7 @@ import org.jboss.logging.Logger
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -168,15 +169,14 @@ class CommitEdgeCenterNodeDeleteSupport(
         if (!node.containsSrcCluster()) {
             return false
         }
-        if (SecurityUtils.getClusterName() == null && node.clusterNames.orEmpty().size != 1) {
-            return false
-        }
         val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
         node.clusterNames = node.clusterNames.orEmpty().minus(srcCluster)
         if (node.clusterNames.orEmpty().isEmpty()) {
             super.deleteByPath(node.projectId, node.repoName, node.fullPath, operator)
         } else {
-            nodeDao.save(node)
+            val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
+            val update = Update().pull(TNode::clusterNames.name, srcCluster)
+            nodeDao.updateFirst(query, update)
         }
         return true
     }
