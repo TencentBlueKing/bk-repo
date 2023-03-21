@@ -179,19 +179,19 @@ class ClusterReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             return buildNodeCreateRequest(this, node)?.let {
-                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { _ ->
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
                     ) {
+                        logger.info("The file [${node.fullPath}] with sha256 [${node.sha256}] " +
+                                        "will be pushed to the remote server, try the $retry time!")
                         val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
                         val rateLimitInputStream = artifactInputStream.rateLimit(
                             replicationProperties.rateLimit.toBytes()
                         )
                         logger.info(
-                            "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
-                                "will be pushed to the remote server!"
+                            "The file [${node.fullPath}] with sha256 [${node.sha256}] will be sent!"
                         )
                         // 1. 同步文件数据
-
                         try {
                             pushBlob(
                                 inputStream = rateLimitInputStream,
@@ -200,9 +200,8 @@ class ClusterReplicator(
                                 storageKey = remoteRepo?.storageCredentials?.key
                             )
                         } catch (throwable: Throwable) {
-                            logger.error("File replica push error $throwable，" +
-                                             "${Throwables.getStackTraceAsString(throwable)} " +
-                                             "and message : ${throwable.message}")
+                            logger.warn("File replica push error $throwable, trace is " +
+                                             "${Throwables.getStackTraceAsString(throwable)}!")
                             throw throwable
                         }
                     }
