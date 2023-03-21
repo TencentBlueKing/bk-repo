@@ -666,5 +666,10 @@
     "operationConfirmation":"Operation Confirmation",
     "executeScanSuccessMsg":"Scan performed successfully",
     "scanRulePreMsg":"Skip rule if blank",
-    "isDisplay": "Display"
+    "isDisplay": "Display",
+    "manualInput": "Manual input",
+    "autoEdit": "Auto edit",
+    "intervalMsg":"can be performed within the range",
+    "circleMsg1":"can be executed, and every",
+    "circleMsg2":"can be executed"
 }
