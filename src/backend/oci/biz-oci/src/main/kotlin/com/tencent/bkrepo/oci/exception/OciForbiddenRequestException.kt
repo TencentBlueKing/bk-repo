@@ -27,8 +27,9 @@
 
 package com.tencent.bkrepo.oci.exception
 
-class OciForbiddenRequestException(
-    message: String,
-    code: Any? = null,
-    detail: String? = null
-) : OciException(message, code, detail)
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+import org.springframework.http.HttpStatus
+
+class OciForbiddenRequestException(messageCode: MessageCode, vararg params: String)
+    : ErrorCodeException(messageCode, params, HttpStatus.FORBIDDEN)

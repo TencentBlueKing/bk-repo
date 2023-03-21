@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.maven.service
 
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -7,7 +8,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.beans.factory.annotation.Value
@@ -51,7 +51,7 @@ class MavenExtService(
         listOf(a, v, c).map {
             result = it.isNullOrBlank() && result
         }
-        if (result) throw MavenBadRequestException()
+        if (result) throw ParameterInvalidException("$g|$a|$v|$c")
     }
 
     private fun buildGavcQuery(

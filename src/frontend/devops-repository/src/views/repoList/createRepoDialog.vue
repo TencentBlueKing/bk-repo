@@ -28,6 +28,12 @@
                     :list="availableList">
                 </card-radio-group>
             </bk-form-item>
+            <bk-form-item :label="$t('isDisplay')">
+                <bk-radio-group v-model="repoBaseInfo.display">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
             <template v-if="repoBaseInfo.type === 'generic'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -118,6 +124,7 @@
             interceptors: [],
             groupXmlSet: [],
             description: '',
+            display: true,
             mobile: {
                 enable: false,
                 filename: '',
@@ -317,6 +324,7 @@
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
                         public: this.repoBaseInfo.public,
+                        display: this.repoBaseInfo.display,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         configuration: {
@@ -339,7 +347,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('create') + this.$t('repository') + this.$t('success')
+                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('success')
                     })
                     this.cancel()
                     this.$emit('refresh')

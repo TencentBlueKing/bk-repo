@@ -30,6 +30,7 @@ package com.tencent.bkrepo.conan.service.impl
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeDeleteEvent
@@ -137,7 +138,9 @@ class ConanDeleteServiceImpl : ConanDeleteService {
             for (file in files) {
                 path = joinString(rootPath, file)
                 nodeClient.getNodeDetail(projectId, repoName, path).data
-                    ?: throw ConanFileNotFoundException("Could not find file $path in repo $projectId|$repoName")
+                    ?: throw ConanFileNotFoundException(
+                        ConanMessageCode.CONAN_FILE_NOT_FOUND, path, "$projectId|$repoName"
+                    )
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
             }

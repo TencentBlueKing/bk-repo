@@ -73,7 +73,13 @@
                     <operation-list
                         :list="[
                             { label: $t('setting'), clickEvent: () => toRepoConfig(row) },
-                            row.repoType !== 'generic' && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
+                            (row.repoType !== 'generic' ||
+                                (row.repoType === 'generic'
+                                    && row.name !== 'custom'
+                                    && row.name !== 'report'
+                                    && row.name !== 'log'
+                                    && row.name !== 'pipeline'
+                                )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
                         ]">
                     </operation-list>
                 </template>
@@ -141,20 +147,41 @@
             convertFileSize,
             ...mapActions([
                 'getRepoList',
-                'deleteRepoList'
+                'deleteRepoList',
+                'getRepoListWithoutPage'
             ]),
             getListData () {
                 this.isLoading = true
-                this.getRepoList({
+                this.getRepoListWithoutPage({
                     projectId: this.projectId,
-                    ...this.pagination,
                     ...this.query
                 }).then(({ records, totalRecords }) => {
-                    this.repoList = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
-                    this.pagination.count = totalRecords
+                    this.pagination.count = records.length
+                    let allRepo
+                    if (this.MODE_CONFIG === 'ci') {
+                        const resRecords = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
+                        allRepo = this.shiftListByName('pipeline', this.shiftListByName('custom', resRecords))
+                    } else {
+                        allRepo = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
+                    }
+                    this.repoList = allRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= records.length ? records.length : this.pagination.current * this.pagination.limit)
                 }).finally(() => {
                     this.isLoading = false
                 })
+            },
+            shiftListByName (name, records) {
+                let target = null
+                for (let i = 0; i < records.length; i++) {
+                    if (records[i].name === name) {
+                        target = records[i]
+                        records.splice(i, 1)
+                        break
+                    }
+                }
+                if (target !== null) {
+                    records.unshift(target)
+                }
+                return records
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
