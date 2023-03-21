@@ -679,5 +679,10 @@
     "operationConfirmation":"操作确认",
     "executeScanSuccessMsg":"执行扫描成功",
     "scanRulePreMsg":"不填写则跳过规则",
-    "isDisplay": "是否展示"
+    "isDisplay": "是否展示",
+    "manualInput": "手动输入",
+    "autoEdit": "自动编辑",
+    "intervalMsg":"的区间内可以执行",
+    "circleMsg1":"可以执行，此后每隔",
+    "circleMsg2":"可以执行"
 }
