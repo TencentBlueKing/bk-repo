@@ -189,7 +189,7 @@ class ClusterReplicator(
                             replicationProperties.rateLimit.toBytes()
                         )
                         logger.info(
-                            "The file [${node.fullPath}] with sha256 [${node.sha256}] will be sent"
+                            "The file [${node.fullPath}] with sha256 [${node.sha256}] will be sent!"
                         )
                         // 1. 同步文件数据
                         try {
@@ -200,8 +200,8 @@ class ClusterReplicator(
                                 storageKey = remoteRepo?.storageCredentials?.key
                             )
                         } catch (throwable: Throwable) {
-                            logger.warn("File replica push error $throwable，" +
-                                             "${Throwables.getStackTraceAsString(throwable)} ")
+                            logger.warn("File replica push error $throwable, trace is " +
+                                             "${Throwables.getStackTraceAsString(throwable)}!")
                             throw throwable
                         }
                     }
