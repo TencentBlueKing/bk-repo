@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.base.replicator
 
+import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
@@ -178,24 +179,31 @@ class ClusterReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             return buildNodeCreateRequest(this, node)?.let {
-                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { _ ->
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
                     ) {
+                        logger.info("The file [${node.fullPath}] with sha256 [${node.sha256}] " +
+                                        "will be pushed to the remote server, try the $retry time!")
                         val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
                         val rateLimitInputStream = artifactInputStream.rateLimit(
                             replicationProperties.rateLimit.toBytes()
                         )
                         logger.info(
-                            "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
-                                "will be pushed to the remote server!"
+                            "The file [${node.fullPath}] with sha256 [${node.sha256}] will be sent!"
                         )
                         // 1. 同步文件数据
-                        pushBlob(
-                            inputStream = rateLimitInputStream,
-                            size = it.size!!,
-                            sha256 = it.sha256.orEmpty(),
-                            storageKey = remoteRepo?.storageCredentials?.key
-                        )
+                        try {
+                            pushBlob(
+                                inputStream = rateLimitInputStream,
+                                size = it.size!!,
+                                sha256 = it.sha256.orEmpty(),
+                                storageKey = remoteRepo?.storageCredentials?.key
+                            )
+                        } catch (throwable: Throwable) {
+                            logger.warn("File replica push error $throwable, trace is " +
+                                             "${Throwables.getStackTraceAsString(throwable)}!")
+                            throw throwable
+                        }
                     }
                     logger.info(
                         "The node [${node.fullPath}] will be pushed to the remote server!"

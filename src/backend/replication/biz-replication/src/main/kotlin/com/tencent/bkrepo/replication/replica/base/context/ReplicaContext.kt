@@ -158,6 +158,7 @@ class ReplicaContext(
             .tag(RequestTag::class.java, tag)
             .build()
         httpClient.newCall(httpRequest).execute().use {
+            logger.info("push blob response code ${it.code}")
             check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
         }
     }
