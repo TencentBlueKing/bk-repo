@@ -316,7 +316,8 @@
                 'previewCompressedBasicFile',
                 'previewCompressedFileList',
                 'forbidMetadata',
-                'refreshSupportFileNameExtList'
+                'refreshSupportFileNameExtList',
+                'getMultiFolderNumOfFolder'
             ]),
             showRepoScan (node) {
                 const indexOfLastDot = node.name.lastIndexOf('.')
@@ -586,11 +587,18 @@
             async deleteRes ({ name, folder, fullPath }) {
                 if (!fullPath) return
                 let totalRecords
+                let totalFolderNum
                 if (folder) {
-                    totalRecords = await this.getFileNumOfFolder({
+                    totalRecords = await this.getMultiFileNumOfFolder({
                         projectId: this.projectId,
                         repoName: this.repoName,
-                        fullPath
+                        paths: this.multiSelect.map(r => r.fullPath)
+                    })
+                    totalFolderNum = await this.getMultiFolderNumOfFolder({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        paths: this.multiSelect.map(r => r.fullPath),
+                        isFolder: true
                     })
                 }
                 this.$confirm({
@@ -604,7 +612,7 @@
                             fullPath
                         }).then(res => {
                             this.refreshNodeChange()
-                            if (folder && totalRecords === res.deletedNumber) {
+                            if (folder && totalRecords === res.deletedNumber - totalFolderNum) {
                                 this.$bkMessage({
                                     theme: 'success',
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
@@ -615,7 +623,7 @@
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
                                 })
                             } else {
-                                const failNum = folder ? totalRecords - res.deletedNumber : 1
+                                const failNum = folder ? totalRecords + totalFolderNum - res.deletedNumber : 1
                                 this.$bkMessage({
                                     theme: 'error',
                                     message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
@@ -700,7 +708,13 @@
                 const totalRecords = await this.getMultiFileNumOfFolder({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    paths
+                    paths: paths
+                })
+                const folderNum = await this.getMultiFolderNumOfFolder({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    paths: paths,
+                    isFolder: true
                 })
                 this.$confirm({
                     theme: 'danger',
@@ -713,13 +727,13 @@
                             paths
                         }).then(res => {
                             this.refreshNodeChange()
-                            if (res.deletedNumber === totalRecords) {
+                            if (res.deletedNumber === totalRecords + folderNum) {
                                 this.$bkMessage({
                                     theme: 'success',
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
                                 })
                             } else {
-                                const failNum = totalRecords - res.deletedNumber
+                                const failNum = totalRecords + folderNum - res.deletedNumber
                                 this.$bkMessage({
                                     theme: 'error',
                                     message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
