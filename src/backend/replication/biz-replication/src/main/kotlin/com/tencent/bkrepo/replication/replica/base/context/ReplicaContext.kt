@@ -125,16 +125,19 @@ class ReplicaContext(
 
         targetVersions = initImageTargetTag()
         val readTimeout = Duration.ofMillis(READ_TIMEOUT)
+        val writeTimeout = Duration.ofMillis(WRITE_TIMEOUT)
         httpClient = if (cluster.username != null) {
             OkHttpClientPool.getHttpClient(
                 cluster,
                 readTimeout,
+                writeTimeout,
                 BasicAuthInterceptor(cluster.username!!, cluster.password!!)
             )
         } else {
             OkHttpClientPool.getHttpClient(
                 cluster,
                 readTimeout,
+                writeTimeout,
                 SignInterceptor(cluster)
             )
         }
@@ -158,7 +161,6 @@ class ReplicaContext(
             .tag(RequestTag::class.java, tag)
             .build()
         httpClient.newCall(httpRequest).execute().use {
-            logger.info("push blob response code ${it.code}")
             check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
         }
     }
@@ -178,5 +180,6 @@ class ReplicaContext(
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
         private const val READ_TIMEOUT = 60 * 60 * 1000L
+        private const val WRITE_TIMEOUT = 30 * 1000L
     }
 }
