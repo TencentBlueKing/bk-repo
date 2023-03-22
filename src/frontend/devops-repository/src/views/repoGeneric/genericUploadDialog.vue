@@ -103,10 +103,17 @@
                 }).catch(e => {
                     this.uploadDialog.uploadStatus = 'primary'
                     this.uploadDialog.uploadProgress = 0
-                    e && this.$bkMessage({
-                        theme: 'error',
-                        message: e.message || e
-                    })
+                    if (!e) {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: 'Error: File size too large'
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message || e
+                        })
+                    }
                 }).finally(() => {
                     this.uploadDialog.loading = false
                 })
