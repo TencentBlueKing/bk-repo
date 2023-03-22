@@ -27,12 +27,17 @@
 
 package com.tencent.bkrepo.replication.controller.service
 
+import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
+import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.api.MetadataClient
@@ -68,7 +73,9 @@ class ArtifactReplicaController(
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
-    private val metadataClient: MetadataClient
+    private val metadataClient: MetadataClient,
+    private val userResource: ServiceUserResource,
+    private val permissionManager: PermissionManager
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -131,6 +138,25 @@ class ArtifactReplicaController(
 
     override fun replicaRepoDeleteRequest(request: RepoDeleteRequest): Response<Void> {
         return repositoryClient.deleteRepo(request)
+    }
+
+    override fun checkRepoPermission(request: CheckPermissionRequest): Response<Boolean> {
+        try {
+            // 认证
+            if (userResource.checkToken(request.username, request.password).data != true) {
+                throw PermissionException()
+            }
+            // 鉴权
+            permissionManager.checkRepoPermission(
+                action = PermissionAction.valueOf(request.action),
+                projectId = request.projectId,
+                repoName = request.repoName,
+                userId = request.username
+            )
+        } catch (e: PermissionException) {
+            return ResponseBuilder.success(false)
+        }
+        return ResponseBuilder.success(true)
     }
 
     override fun replicaProjectCreateRequest(request: ProjectCreateRequest): Response<ProjectInfo> {
