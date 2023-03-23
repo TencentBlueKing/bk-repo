@@ -124,7 +124,7 @@ data class TNode(
             return false
         } else if (srcCluster.isNullOrBlank()) {
             // center操作节点
-            srcCluster = clusterProperties.self.name
+            srcCluster = clusterProperties.self.name.toString()
         }
 
         return clusterNames!!.contains(srcCluster)
