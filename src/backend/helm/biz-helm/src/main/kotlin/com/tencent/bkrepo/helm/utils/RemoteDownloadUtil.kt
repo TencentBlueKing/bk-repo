@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import okhttp3.Authenticator
 import okhttp3.Credentials
@@ -71,7 +72,7 @@ object RemoteDownloadUtil {
             val artifactFile = ArtifactFileFactory.build(response.body!!.byteStream())
             val size = artifactFile.getSize()
             artifactFile.getInputStream().artifactStream(Range.full(size))
-        } else throw HelmBadRequestException("The response of request $downloadUrl is ${response.code}")
+        } else throw HelmBadRequestException(HelmMessageCode.HELM_REMOTE_DOWNLOAD_FAILED, downloadUrl, response.code)
     }
 
     /**

@@ -30,10 +30,13 @@ package com.tencent.bkrepo.common.artifact.event.listener
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -126,11 +129,11 @@ class ArtifactDownloadListener(
             val nodeList =
                 nodeClient.listNode(projectId, repoName, node.fullPath, includeFolder = false, deep = true).data!!
             addToCache(projectId, repoName, node.fullPath)
-            val eventList = nodeList.map { buildDownloadEvent(NodeDetail(it), userId) }
+            val eventList = nodeList.map { buildDownloadEvent(event.context, NodeDetail(it)) }
             operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
         } else {
             addToCache(projectId, repoName, node.fullPath)
-            val downloadedEvent = buildDownloadEvent(node, userId)
+            val downloadedEvent = buildDownloadEvent(event.context, node)
             operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
         }
     }
@@ -185,17 +188,20 @@ class ArtifactDownloadListener(
     }
 
     private fun buildDownloadEvent(
-        node: NodeDetail,
-        userId: String
+        context: ArtifactDownloadContext,
+        node: NodeDetail
     ): NodeDownloadedEvent {
+        val request = HttpContextHolder.getRequestOrNull()
         val data = node.metadata.toMutableMap()
-        data[MD5] = node.md5 ?: ""
-        data[SHA256] = node.sha256 ?: ""
+        data[MD5] = node.md5 ?: StringPool.EMPTY
+        data[SHA256] = node.sha256 ?: StringPool.EMPTY
+        data[SHARE_USER_ID] = context.shareUserId
+        data[USER_AGENT] = request?.getHeader(HttpHeaders.USER_AGENT) ?: StringPool.EMPTY
         return NodeDownloadedEvent(
             projectId = node.projectId,
             repoName = node.repoName,
             resourceKey = node.fullPath,
-            userId = userId,
+            userId = context.userId,
             data = data
         )
     }
@@ -204,5 +210,7 @@ class ArtifactDownloadListener(
         private val logger = LoggerFactory.getLogger(ArtifactDownloadListener::class.java)
         private const val MD5 = "md5"
         private const val SHA256 = "sha256"
+        private const val SHARE_USER_ID = "shareUserId"
+        private const val USER_AGENT = "userAgent"
     }
 }

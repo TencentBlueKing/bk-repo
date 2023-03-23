@@ -99,8 +99,8 @@ import java.time.format.DateTimeFormatter
 @Service
 @Conditional(DefaultCondition::class)
 class RepositoryServiceImpl(
-    val repositoryDao: RepositoryDao,
-    val nodeService: NodeService,
+    private val repositoryDao: RepositoryDao,
+    private val nodeService: NodeService,
     private val projectService: ProjectService,
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
@@ -269,7 +269,8 @@ class RepositoryServiceImpl(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now(),
                 quota = quota,
-                used = 0
+                used = 0,
+                display = display
             )
         }
     }
@@ -293,6 +294,7 @@ class RepositoryServiceImpl(
                 updateRepoConfiguration(it, cryptoConfigurationPwd(oldConfiguration), repository, operator)
                 repository.configuration = cryptoConfigurationPwd(it, false).toJsonString()
             }
+            repository.display = display
             repositoryDao.save(repository)
         }
         val event = buildUpdatedEvent(repoUpdateRequest)
@@ -616,7 +618,8 @@ class RepositoryServiceImpl(
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
-                    used = it.used
+                    used = it.used,
+                    display = it.display
                 )
             }
         }

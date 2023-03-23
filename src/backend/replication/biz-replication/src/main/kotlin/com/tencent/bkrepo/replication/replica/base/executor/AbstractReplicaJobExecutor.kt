@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.base.executor
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.replication.replica.base.ReplicaService
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import org.slf4j.LoggerFactory
+import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -65,7 +67,7 @@ open class AbstractReplicaJobExecutor(
         clusterNodeName: ClusterNodeName,
         event: ArtifactEvent? = null
     ): Future<ExecutionResult> {
-        return threadPoolExecutor.submit<ExecutionResult> {
+        return threadPoolExecutor.submit<ExecutionResult>( Callable {
             try {
                 val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
                 require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
@@ -96,7 +98,8 @@ open class AbstractReplicaJobExecutor(
                 logger.error("同步任务执行失败", exception)
                 ExecutionResult.fail(exception.message)
             }
-        }
+        }.trace()
+        )
     }
 
     companion object {

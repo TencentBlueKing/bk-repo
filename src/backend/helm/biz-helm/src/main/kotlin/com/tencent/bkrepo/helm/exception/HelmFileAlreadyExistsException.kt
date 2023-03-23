@@ -31,4 +31,9 @@
 
 package com.tencent.bkrepo.helm.exception
 
-class HelmFileAlreadyExistsException(message: String) : HelmException(message)
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class HelmFileAlreadyExistsException(messageCode: MessageCode, fullPath: String)
+    : ErrorCodeException(messageCode = messageCode, status = HttpStatus.CONFLICT, params = arrayOf(fullPath))

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.util
+package com.tencent.bkrepo.rds.constants
 
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
-import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_CODE
-import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_DESCRIPTION
-import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_MESSAGE
-import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
-import com.tencent.bkrepo.oci.exception.OciBadRequestException
-import com.tencent.bkrepo.oci.model.ManifestSchema2
-import java.io.InputStream
+import com.tencent.bkrepo.common.api.message.MessageCode
 
-object OciAttributesUtils {
-
-    fun streamToManifest(inputStream: InputStream): ManifestSchema2 {
-        try {
-            return JsonUtils.objectMapper.readValue(
-                inputStream, ManifestSchema2::class.java
-            )
-        } catch (e: Exception) {
-            throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)
-        }
-    }
-
-    fun createMetadata(mediaType: String, version: String = ""): Map<String, String> {
-        return mapOf(MEDIA_TYPE to mediaType, IMAGE_VERSION to version)
-    }
+enum class RdsMessageCode(private val key: String) : MessageCode {
+    RDS_CHART_BROKEN("rds.chart.broken"),
+    RDS_FILE_ALREADY_EXISTS("rds.file.already.exists"),
+    RDS_FILE_NOT_FOUND("rds.file.not.found"),
+    RDS_FILE_UPLOAD_FORBIDDEN("rds.file.upload.forbidden"),
+    RDS_REPO_NOT_FOUND("rds.repo.not.found"),
+    RDS_ILLEGAL_REQUEST("rds.illegal.request"),
+    INVALID_PROVENANCE_FILE("invalid.provenance.file")
+    ;
+    override fun getBusinessCode() = ordinal + 1
+    override fun getKey() = key
+    override fun getModuleCode() = 23
 }

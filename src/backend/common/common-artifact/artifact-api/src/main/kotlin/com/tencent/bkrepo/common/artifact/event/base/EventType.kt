@@ -30,141 +30,125 @@ package com.tencent.bkrepo.common.artifact.event.base
 /**
  * 事件类型
  */
-enum class EventType(val nick: String) {
+enum class EventType(val msgKey: String) {
     // PROJECT
-    PROJECT_CREATED("创建项目"),
+    PROJECT_CREATED("artifact.event.project-created"),
 
     // REPOSITORY
-    REPO_CREATED("创建仓库"),
-    REPO_UPDATED("更新仓库"),
-    REPO_DELETED("删除仓库"),
+    REPO_CREATED("artifact.event.repo-created"),
+    REPO_UPDATED("artifact.event.repo-updated"),
+    REPO_DELETED("artifact.event.repo-deleted"),
     // 主要针对代理仓库需要定时从远程将相关信息同步到本地
-    REPO_REFRESHED("刷新仓库信息"),
-    REPO_VOLUME_SYNC("同步仓库使用容量"),
+    REPO_REFRESHED("artifact.event.repo-refreshed"),
+    REPO_VOLUME_SYNC("artifact.event.repo-volume-sync"),
 
     // NODE
-    NODE_CREATED("创建节点"),
-    NODE_RENAMED("重命名节点"),
-    NODE_MOVED("移动节点"),
-    NODE_COPIED("复制节点"),
-    NODE_DELETED("删除节点"),
-    NODE_DOWNLOADED("下载节点"),
+    NODE_CREATED("artifact.event.node-created"),
+    NODE_RENAMED("artifact.event.node-renamed"),
+    NODE_MOVED("artifact.event.node-moved"),
+    NODE_COPIED("artifact.event.node-copied"),
+    NODE_DELETED("artifact.event.node-deleted"),
+    NODE_DOWNLOADED("artifact.event.node-downloaded"),
 
     // METADATA
-    METADATA_DELETED("删除元数据"),
-    METADATA_SAVED("添加元数据"),
+    METADATA_DELETED("artifact.event.metadata-deleted"),
+    METADATA_SAVED("artifact.event.metadata-saved"),
 
     // VERSION
-    VERSION_CREATED("创建制品"),
-    VERSION_DELETED("删除制品"),
-    VERSION_DOWNLOAD("下载制品"),
-    VERSION_UPDATED("更新制品"),
-    VERSION_STAGED("晋级制品"),
+    VERSION_CREATED("artifact.event.version-created"),
+    VERSION_DELETED("artifact.event.version-deleted"),
+    VERSION_DOWNLOAD("artifact.event.version-download"),
+    VERSION_UPDATED("artifact.event.version-updated"),
+    VERSION_STAGED("artifact.event.version-staged"),
 
 
     // ADMIN
-    ADMIN_ADD("添加管理员"),
-    ADMIN_DELETE("移除管理员"),
+    ADMIN_ADD("artifact.event.admin-add"),
+    ADMIN_DELETE("artifact.event.admin-delete"),
 
     // WebHook
-    WEBHOOK_TEST("webhook测试"),
-    WEBHOOK_LIST("webhook查询"),
-    WEBHOOK_CREATE("webhook创建"),
-    WEBHOOK_UPDATE("webhook更新"),
-    WEBHOOK_DELETE("webhook删除"),
-    WEBHOOK_LOG_LIST("webhook日志查询"),
+    WEBHOOK_TEST("artifact.event.webhook-test"),
+    WEBHOOK_LIST("artifact.event.webhook-list"),
+    WEBHOOK_CREATE("artifact.event.webhook-create"),
+    WEBHOOK_UPDATE("artifact.event.webhook-update"),
+    WEBHOOK_DELETE("artifact.event.webhook-delete"),
+    WEBHOOK_LOG_LIST("artifact.event.webhook-log-list"),
 
     // ACCOUNT
-    ACCOUNT_CREATE("平台账户创建"),
-    ACCOUNT_DELETE("平台账户删除"),
-    ACCOUNT_UPDATE("平台账户修改"),
-    ACCOUNT_LIST("平台账户查询"),
+    ACCOUNT_CREATE("artifact.event.account-create"),
+    ACCOUNT_DELETE("artifact.event.account-delete"),
+    ACCOUNT_UPDATE("artifact.event.account-update"),
+    ACCOUNT_LIST("artifact.event.account-list"),
 
     // AK/SK
-    KEYS_CREATE("账户AK/SK新增"),
-    KEYS_DELETE("账户AK/SK删除"),
-    KEYS_STATUS_UPDATE("账户AK/SK状态修改"),
+    KEYS_CREATE("artifact.event.keys-create"),
+    KEYS_DELETE("artifact.event.keys-delete"),
+    KEYS_STATUS_UPDATE("artifact.event.keys-status-update"),
 
     // SERVICE
-    SERVICE_INSTANCE_DOWN("服务实例下线"),
-    SERVICE_INSTANCE_UP("服务实例上线"),
-    SERVICE_INSTANCE("服务实例详情查询"),
-    SERVICE_INSTANCE_LIST("服务实例列表查询"),
-    SERVICE_LIST("服务列表查询"),
+    SERVICE_INSTANCE_DOWN("artifact.event.service-instance-down"),
+    SERVICE_INSTANCE_UP("artifact.event.service-instance-up"),
+    SERVICE_INSTANCE("artifact.event.service-instance"),
+    SERVICE_INSTANCE_LIST("artifact.event.service-instance-list"),
+    SERVICE_LIST("artifact.event.service-list"),
 
     // EXT-PERMISSION
-    EXT_PERMISSION_LIST("外部权限查询"),
-    EXT_PERMISSION_CREAT("外部权限创建"),
-    EXT_PERMISSION_UPDATE("外部权限修改"),
-    EXT_PERMISSION_DELETE("外部权限删除"),
+    EXT_PERMISSION_LIST("artifact.event.ext-permission-list"),
+    EXT_PERMISSION_CREAT("artifact.event.ext-permission-creat"),
+    EXT_PERMISSION_UPDATE("artifact.event.ext-permission-update"),
+    EXT_PERMISSION_DELETE("artifact.event.ext-permission-delete"),
 
     // JOB
-    JOB_LIST("任务管理查询"),
-    JOB_STATUS_UPDATE("任务状态更改"),
+    JOB_LIST("artifact.event.job-list"),
+    JOB_STATUS_UPDATE("artifact.event.job-status-update"),
 
     // SHED_LOCK
-    SHED_LOCK_LIST("数据库锁查询"),
+    SHED_LOCK_LIST("artifact.event.shed-lock-list"),
 
     // PLUGIN
-    PLUGIN_LIST("插件查询"),
-    PLUGIN_CREATE("插件新建"),
-    PLUGIN_DELETE("插件删除"),
-    PLUGIN_UPDATE("插件更新"),
-    PLUGIN_LOAD("插件加载"),
-    PLUGIN_UNLOAD("插件卸载"),
+    PLUGIN_LIST("artifact.event.plugin-list"),
+    PLUGIN_CREATE("artifact.event.plugin-create"),
+    PLUGIN_DELETE("artifact.event.plugin-delete"),
+    PLUGIN_UPDATE("artifact.event.plugin-update"),
+    PLUGIN_LOAD("artifact.event.plugin-load"),
+    PLUGIN_UNLOAD("artifact.event.plugin-unload"),
 
     // FILESYSTEM
-    FILE_SYSTEM_METRICS("挂载分布式文件系统节点统计功能"),
-    FILE_SYSTEM_METRICS_DETAIL("统计某个挂载路径下子目录文件大小"),
-    STORAGE_CREDENTIALS_LIST("存储管理凭证查询"),
-    STORAGE_CREDENTIALS_CREATE("存储管理凭证创建"),
-    STORAGE_CREDENTIALS_DELETE("存储管理凭证删除"),
-    STORAGE_CREDENTIALS_UPDATE("存储管理凭证更新"),
+    FILE_SYSTEM_METRICS("artifact.event.file-system-metrics"),
+    FILE_SYSTEM_METRICS_DETAIL("artifact.event.file-system-metrics-detail"),
+    STORAGE_CREDENTIALS_LIST("artifact.event.storage-credentials-list"),
+    STORAGE_CREDENTIALS_CREATE("artifact.event.storage-credentials-create"),
+    STORAGE_CREDENTIALS_DELETE("artifact.event.storage-credentials-delete"),
+    STORAGE_CREDENTIALS_UPDATE("artifact.event.storage-credentials-update"),
 
     // EMPLTY_FOLDER
-    EMPTY_FOLDER_LIST("空目录查询"),
-    EMPTY_FOLDER_DELETE("清空空目录"),
+    EMPTY_FOLDER_LIST("artifact.event.empty-folder-list"),
+    EMPTY_FOLDER_DELETE("artifact.event.empty-folder-delete"),
 
     // FIRST_FOLDER
-    FIRST_LEVEL_FOLDER_STATISTICS("一级目录统计"),
+    FIRST_LEVEL_FOLDER_STATISTICS("artifact.event.first-level-folder-statistics"),
 
     // NOTIFY
-    NOTIFY_LIST("通知凭证查询"),
-    NOTIFY_CREATE("通知凭证新增"),
-    NOTIFY_UPDATE("通知凭证修改"),
-    NOTIFY_DELETE("通知凭证删除"),
+    NOTIFY_LIST("artifact.event.notify-list"),
+    NOTIFY_CREATE("artifact.event.notify-create"),
+    NOTIFY_UPDATE("artifact.event.notify-update"),
+    NOTIFY_DELETE("artifact.event.notify-delete"),
 
     // SCAN
-    SCANNER_CREATE("制品扫描器新增"),
-    SCANNER_UPDATE("制品扫描器修改"),
-    SCANNER_DELETE("制品扫描器删除"),
-    SCANNER_LIST("制品扫描器查询"),
+    SCANNER_CREATE("artifact.event.scanner-create"),
+    SCANNER_UPDATE("artifact.event.scanner-update"),
+    SCANNER_DELETE("artifact.event.scanner-delete"),
+    SCANNER_LIST("artifact.event.scanner-list"),
 
     // SCAN CONFIG
-    PROJECT_SCAN_CONFIG_CREATE("制品项目配置新增"),
-    PROJECT_SCAN_CONFIG_UPDATE("制品项目配置修改"),
-    PROJECT_SCAN_CONFIG_DELETE("制品项目配置删除"),
-    PROJECT_SCAN_CONFIG_LIST("制品项目配置查询"),
+    PROJECT_SCAN_CONFIG_CREATE("artifact.event.project-scan-config-create"),
+    PROJECT_SCAN_CONFIG_UPDATE("artifact.event.project-scan-config-update"),
+    PROJECT_SCAN_CONFIG_DELETE("artifact.event.project-scan-config-delete"),
+    PROJECT_SCAN_CONFIG_LIST("artifact.event.project-scan-config-list"),
 
     // CONFIG
-    CONFIG_UPDATE("配置更新"),
+    CONFIG_UPDATE("artifact.event.config-update"),
 
     // 第三方同步
-    REPLICATION_THIRD_PARTY("外部制品同步");
-
-    companion object {
-        /**
-         * 获取事件名称
-         *
-         * @param type 事件类型
-         * @return [type]对应的名称，没有对应名称时返回[type]
-         */
-        fun nick(type: String): String {
-            return try {
-                EventType.valueOf(type).nick
-            } catch (_: IllegalArgumentException) {
-                type
-            }
-        }
-    }
+    REPLICATION_THIRD_PARTY("artifact.event.replication-third-party");
 }

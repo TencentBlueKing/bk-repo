@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.Executors
 import java.util.function.Consumer
 
-@Component("artifactEvent")
+@Component("artifactEventFs")
 class NodeModifyListener(
     private val rRepositoryClient: RRepositoryClient,
     private val fileNodeService: FileNodeService

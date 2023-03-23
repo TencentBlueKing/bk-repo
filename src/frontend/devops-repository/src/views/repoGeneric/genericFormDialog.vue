@@ -10,7 +10,7 @@
                 <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path" error-display-type="normal">
                     <bk-input v-model.trim="genericForm.path"
                         type="textarea" :rows="6"
-                        :placeholder="$t('folderPathPlacehodler')">
+                        :placeholder="$t('folderPathPlaceholder')">
                     </bk-input>
                     <div class="form-tip">{{$t('genericFormTip')}}</div>
                 </bk-form-item>
@@ -61,7 +61,7 @@
                         },
                         {
                             regex: /^(\/[^\\:*?"<>|]{1,255})+$/,
-                            message: this.$t('folderPathPlacehodler'),
+                            message: this.$t('folderPathPlaceholder'),
                             trigger: 'blur'
                         }
                     ],

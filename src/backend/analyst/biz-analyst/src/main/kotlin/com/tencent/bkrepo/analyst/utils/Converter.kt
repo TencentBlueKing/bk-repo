@@ -27,17 +27,20 @@
 
 package com.tencent.bkrepo.analyst.utils
 
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.model.TScanTask
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import java.time.format.DateTimeFormatter
 
 object Converter {
@@ -47,7 +50,7 @@ object Converter {
         force: Boolean = false
     ): ScanTask = with(scanTask) {
         ScanTask(
-            name = scanTask.name,
+            name = scanTaskName(triggerType, scanTask.name),
             taskId = id!!,
             projectId = projectId,
             createdBy = createdBy,
@@ -175,5 +178,16 @@ object Converter {
             }
         }
         return null
+    }
+
+    private fun scanTaskName(triggerType: String, name: String?): String {
+        val defaultName = LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
+        return when (triggerType) {
+            ScanTriggerType.PIPELINE.name -> name ?: defaultName
+            ScanTriggerType.MANUAL_SINGLE.name -> {
+                LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
+            }
+            else -> defaultName
+        }
     }
 }

@@ -50,6 +50,7 @@ import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.META_DETAIL
 import com.tencent.bkrepo.helm.constants.NAME
@@ -82,7 +83,7 @@ class HelmRemoteRepository(
         with(context) {
             val message = "Forbidden to upload chart into a remote repository [$projectId/$repoName]"
             logger.warn(message)
-            throw HelmForbiddenRequestException(message)
+            throw HelmForbiddenRequestException(HelmMessageCode.HELM_FILE_UPLOAD_FORBIDDEN, "$projectId/$repoName")
         }
     }
 

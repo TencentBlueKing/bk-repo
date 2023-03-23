@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.service.file.impl
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -128,7 +127,8 @@ class ShareServiceImpl(
             val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-            val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
+            val context = ArtifactDownloadContext(repo = repo, userId = userId)
+            context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
         }

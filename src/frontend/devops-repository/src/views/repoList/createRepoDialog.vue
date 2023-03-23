@@ -18,15 +18,21 @@
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
                 <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
-                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
+                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
                 </bk-input>
-                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('The docker repository name does not support capital English letters')}}</div>
+                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
             <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
                     v-model="available"
                     :list="availableList">
                 </card-radio-group>
+            </bk-form-item>
+            <bk-form-item :label="$t('isDisplay')">
+                <bk-radio-group v-model="repoBaseInfo.display">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
             </bk-form-item>
             <template v-if="repoBaseInfo.type === 'generic'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
@@ -92,7 +98,7 @@
                     maxlength="200"
                     :rows="6"
                     v-model.trim="repoBaseInfo.description"
-                    :placeholder="$t('repoDescriptionPlacehodler')">
+                    :placeholder="$t('repoDescriptionPlaceholder')">
                 </bk-input>
             </bk-form-item>
         </bk-form>
@@ -118,6 +124,7 @@
             interceptors: [],
             groupXmlSet: [],
             description: '',
+            display: true,
             mobile: {
                 enable: false,
                 filename: '',
@@ -214,7 +221,7 @@
                         },
                         {
                             regex: this.repoBaseInfo.type === 'docker' ? /^[a-z][a-z0-9\-_]{1,31}$/ : /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler'),
+                            message: this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder'),
                             trigger: 'blur'
                         },
                         {
@@ -261,9 +268,9 @@
             },
             availableList () {
                 return [
-                    { label: this.$t('open within the project'), value: 'project', tip: this.$t('members of the project can use') },
+                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: this.$t('can be downloaded anonymously'), value: 'public', tip: this.$t('no authentication, any terminal can download') }
+                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
                 ]
             }
         },
@@ -317,6 +324,7 @@
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
                         public: this.repoBaseInfo.public,
+                        display: this.repoBaseInfo.display,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         configuration: {
@@ -339,7 +347,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('create') + this.$t('repository') + this.$t('success')
+                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('success')
                     })
                     this.cancel()
                     this.$emit('refresh')

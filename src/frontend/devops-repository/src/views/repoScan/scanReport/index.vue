@@ -62,7 +62,7 @@
                     <div class="overview-value">{{ formatDate(taskSelected.startDateTime) }}</div>
                     <div class="overview-key">{{ $t('endTime') }}</div>
                     <div class="overview-value">{{ formatDate(taskSelected.finishedDateTime) }}</div>
-                    <div class="overview-key">{{ $t('scanProductNum') }}</div>
+                    <div class="overview-key">{{ $t('scanArtifactNum') }}</div>
                     <div class="overview-value">{{ taskSelected.total }}</div>
                 </div>
                 <bk-table
@@ -75,13 +75,13 @@
                     <template #empty>
                         <empty-data :is-loading="isLoading"></empty-data>
                     </template>
-                    <bk-table-column :label="$t('productName')" show-overflow-tooltip>
+                    <bk-table-column :label="$t('artifactName')" show-overflow-tooltip>
                         <template #default="{ row }">
                             <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
                             <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('productVersion') + '/' + $t('storagePath')" show-overflow-tooltip>
+                    <bk-table-column :label="$t('artifactVersion') + '/' + $t('storagePath')" show-overflow-tooltip>
                         <template #default="{ row }">{{ row.version || row.fullPath }}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('repo')" show-overflow-tooltip>

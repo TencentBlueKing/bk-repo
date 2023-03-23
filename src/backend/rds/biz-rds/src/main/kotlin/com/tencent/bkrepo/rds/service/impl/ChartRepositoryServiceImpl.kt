@@ -46,6 +46,7 @@ import com.tencent.bkrepo.rds.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.rds.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.rds.constants.NODE_METADATA
 import com.tencent.bkrepo.rds.constants.NODE_SHA256
+import com.tencent.bkrepo.rds.constants.RdsMessageCode
 import com.tencent.bkrepo.rds.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.rds.exception.RdsFileNotFoundException
 import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo
@@ -145,7 +146,9 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
             throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while installing chart, error: ${e.message}")
-            throw RdsFileNotFoundException(e.message.toString())
+            throw RdsFileNotFoundException(
+                RdsMessageCode.RDS_FILE_NOT_FOUND, "chart", artifactInfo.getRepoIdentify()
+            )
         }
     }
 

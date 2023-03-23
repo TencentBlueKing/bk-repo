@@ -99,7 +99,7 @@
                     <bk-input v-model.trim="editUserDialog.userId"
                         :disabled="!editUserDialog.add"
                         maxlength="32" show-word-limit
-                        :placeholder="$t('userIdPlacehodler')">
+                        :placeholder="$t('userIdPlaceHolder')">
                     </bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('chineseName')" :required="true" property="name" error-display-type="normal">

@@ -75,7 +75,7 @@
         },
         computed: {
             overviewList () {
-                const info = [{ key: 'artifactCount', label: this.$t('scanProductNum') }]
+                const info = [{ key: 'artifactCount', label: this.$t('scanArtifactNum') }]
                 if (this.scanPlan.scanTypes.includes(SCAN_TYPE_SECURITY)) {
                     info.push(
                         { key: 'critical', label: this.$t(`leakLevelEnum.${'CRITICAL'}`) + this.$t('space') + this.$t('vulnerability'), color: '#EA3736' },

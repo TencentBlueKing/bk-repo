@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.context
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
@@ -54,6 +55,7 @@ open class ArtifactDownloadContext(
 
     val repo = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
     val artifacts = artifacts
+    var shareUserId: String = StringPool.EMPTY
 
     @Suppress("UNCHECKED_CAST")
     fun getInterceptors(): List<DownloadInterceptor<*, NodeDetail>> {

@@ -31,4 +31,7 @@
 
 package com.tencent.bkrepo.helm.exception
 
-class HelmRepoNotFoundException(message: String) : HelmException(message)
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class HelmRepoNotFoundException(messageCode: MessageCode, params: String) : NotFoundException(messageCode, params)

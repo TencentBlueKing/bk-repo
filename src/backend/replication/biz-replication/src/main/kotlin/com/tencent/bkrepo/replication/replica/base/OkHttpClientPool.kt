@@ -14,11 +14,17 @@ import java.util.concurrent.ConcurrentHashMap
  * */
 object OkHttpClientPool {
     private val clientCache = ConcurrentHashMap<ClusterInfo, OkHttpClient>()
-    fun getHttpClient(clusterInfo: ClusterInfo, readTimeout: Duration, vararg interceptors: Interceptor): OkHttpClient {
+    fun getHttpClient(
+        clusterInfo: ClusterInfo,
+        readTimeout: Duration,
+        writeTimeout: Duration,
+        vararg interceptors: Interceptor
+    ): OkHttpClient {
         return clientCache.getOrPut(clusterInfo) {
             val builder = HttpClientBuilderFactory.create(clusterInfo.certificate)
                 .protocols(listOf(Protocol.HTTP_1_1))
                 .readTimeout(readTimeout)
+                .writeTimeout(writeTimeout)
             interceptors.forEach {
                 builder.addInterceptor(
                     it
