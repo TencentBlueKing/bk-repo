@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.codec
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import kotlin.experimental.and
+import kotlin.experimental.inv
+import kotlin.experimental.or
+
+/**
+ * fdtp帧的标志位
+ * */
+class FdtpFlags(var value: Short) {
+
+    constructor() : this(0)
+
+    fun value(): Short {
+        return value
+    }
+
+    fun endOfStream(endOfStream: Boolean): FdtpFlags {
+        return setFlags(endOfStream, END_STREAM)
+    }
+
+    fun endOfStream(): Boolean {
+        return isFlagSet(END_STREAM)
+    }
+
+    private fun setFlags(on: Boolean, mask: Short): FdtpFlags {
+        if (on) {
+            value = value or mask
+        } else {
+            value = value and (mask.inv())
+        }
+        return this
+    }
+
+    private fun isFlagSet(mask: Short): Boolean {
+        return (value and mask) != 0.toShort()
+    }
+
+    companion object {
+
+        const val END_STREAM: Short = 0x1
+    }
 }

@@ -46,7 +46,7 @@ import java.io.InputStream
 class ChunkedArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
-    private val storageCredentials: StorageCredentials
+    private val storageCredentials: StorageCredentials,
 ) : ArtifactFile {
 
     /**
@@ -70,7 +70,7 @@ class ChunkedArtifactFile(
             storageProperties.receive,
             storageProperties.monitor,
             path,
-            randomPath = true
+            randomPath = true,
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {
@@ -94,7 +94,9 @@ class ChunkedArtifactFile(
         require(receiver.finished)
         return if (!isInMemory()) {
             receiver.filePath.toFile()
-        } else null
+        } else {
+            null
+        }
     }
 
     override fun flushToFile(): File {
@@ -145,6 +147,10 @@ class ChunkedArtifactFile(
      */
     fun write(chunk: ByteArray, offset: Int, length: Int) {
         receiver.receiveChunk(chunk, offset, length)
+    }
+
+    fun write(chunk: ByteArray) {
+        receiver.receiveChunk(chunk, 0, chunk.size)
     }
 
     /**

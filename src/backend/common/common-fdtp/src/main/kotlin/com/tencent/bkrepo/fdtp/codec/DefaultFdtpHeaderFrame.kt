@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.codec
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+/**
+ * 默认的fdtp头部帧实现
+ * */
+class DefaultFdtpHeaderFrame(val headers: FdtpHeaders, val endStream: Boolean) :
+    AbstractFdtpStreamFrame(),
+    FdtpHeaderFrame {
+    constructor(headers: FdtpHeaders) : this(headers, false)
+
+    override fun headers(): FdtpHeaders {
+        return headers
+    }
+
+    override fun isEndStream(): Boolean {
+        return endStream
+    }
+
+    override fun stream(stream: FdtpFrameStream): DefaultFdtpHeaderFrame {
+        super.stream(stream)
+        return this
+    }
+
+    override fun name(): String {
+        return "HEADERS"
+    }
+
+    override fun toString(): String {
+        return "${this.javaClass.simpleName} (stream=${stream()}, " +
+            "headers=$$headers, endStream=$endStream)"
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import io.netty.bootstrap.Bootstrap
+import io.netty.channel.pool.AbstractChannelPoolMap
+import io.netty.channel.pool.ChannelPoolHandler
+import io.netty.channel.pool.FixedChannelPool
+import java.net.InetSocketAddress
+
+/**
+ * 简单的channel连接池实现
+ * */
+class SimpleChannelPoolMap(
+    private val bootstrap: Bootstrap,
+    private val channelPoolHandler: ChannelPoolHandler,
+) : AbstractChannelPoolMap<InetSocketAddress, FixedChannelPool>() {
+
+    override fun newPool(key: InetSocketAddress): FixedChannelPool {
+        return FixedChannelPool(bootstrap.remoteAddress(key), channelPoolHandler, POOL_SIZE, MAX_PENDING_SIZE)
+    }
+
+    companion object {
+        private val POOL_SIZE = Runtime.getRuntime().availableProcessors() * 2
+        private const val MAX_PENDING_SIZE = 128
+    }
 }

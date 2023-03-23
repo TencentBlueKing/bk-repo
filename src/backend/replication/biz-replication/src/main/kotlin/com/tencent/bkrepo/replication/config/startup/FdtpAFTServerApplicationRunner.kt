@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.replication.config.startup
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.replication.fdtp.FdtpAFTServer
+import kotlin.system.measureNanoTime
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.DisposableBean
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.stereotype.Component
+
+@Component
+@ConditionalOnProperty("fdtp.server.enabled")
+class FdtpAFTServerApplicationRunner(
+    val fdtpAFTServer: FdtpAFTServer,
+) : ApplicationRunner, DisposableBean {
+    override fun run(args: ApplicationArguments?) {
+        val nanos = measureNanoTime { fdtpAFTServer.start() }
+        val port = fdtpAFTServer.getPort()
+        logger.info("FdtAFTServer started on port(s) $port in ${HumanReadable.time(nanos)}")
+    }
+
+    override fun destroy() {
+        fdtpAFTServer.stop()
+        logger.info("FdtAFTServer stopped")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FdtpAFTServerApplicationRunner::class.java)
+    }
 }

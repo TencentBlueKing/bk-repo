@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.replication.fdtp
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
-}
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+/**
+ * fdtp服务端配置
+ * */
+@ConfigurationProperties("fdtp.server")
+data class FdtpServerProperties(
+    /**
+     * fdtp server port
+     * */
+    var port: Int = 9000,
+    /**
+     * server accept thread num
+     * */
+    var accepts: Int = 1,
+    /**
+     * server worker thread num
+     * */
+    var workers: Int = Runtime.getRuntime().availableProcessors() * 2,
+    /**
+     * server接受队列大小
+     * */
+    var backLog: Int = 128,
+    /**
+     * ssl 私钥
+     * */
+    var privateKey: String? = null,
+    /**
+     * ssl 证书
+     * */
+    var certificates: String? = null,
+    /**
+     * ssl 私钥的密钥
+     * */
+    var privateKeyPassword: String? = null,
+    /**
+     * 连接认证密钥
+     * */
+    var secretKey: String = "secret",
+)
