@@ -80,5 +80,7 @@ data class NodeInfo(
     val copyIntoCredentialsKey: String? = null,
     @ApiModelProperty("删除时间")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    val deleted: String? = null
+    val deleted: String? = null,
+    @ApiModelProperty("集群信息")
+    val clusterNames: Set<String>? = null
 )

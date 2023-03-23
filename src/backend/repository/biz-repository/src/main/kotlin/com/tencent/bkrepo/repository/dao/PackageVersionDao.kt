@@ -58,6 +58,13 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         this.remove(PackageQueryHelper.versionQuery(packageId))
     }
 
+    /**
+     * PackageVersion的clusterName只有一个值时，可根据[packageId]与[clusterName]删除所有关联的PackageVersion
+     */
+    fun deleteByPackageIdAndClusterName(packageId: String, clusterName: String) {
+        this.remove(PackageQueryHelper.clusterNameQuery(packageId, clusterName))
+    }
+
     fun deleteByName(packageId: String, name: String) {
         this.remove(PackageQueryHelper.versionQuery(packageId, name = name))
     }
