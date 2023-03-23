@@ -99,8 +99,8 @@ import java.time.format.DateTimeFormatter
 @Service
 @Conditional(DefaultCondition::class)
 class RepositoryServiceImpl(
-    private val repositoryDao: RepositoryDao,
-    private val nodeService: NodeService,
+    val repositoryDao: RepositoryDao,
+    val nodeService: NodeService,
     private val projectService: ProjectService,
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
