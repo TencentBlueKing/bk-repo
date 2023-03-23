@@ -166,7 +166,7 @@ open class PermissionManager(
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (allowReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
             return
         }
         // 禁止批量下载流水线节点
@@ -242,7 +242,6 @@ open class PermissionManager(
         if (action != PermissionAction.READ) {
             return false
         }
-        val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
         // 加载仓库信息
