@@ -24,6 +24,7 @@ object OkHttpClientPool {
             val builder = HttpClientBuilderFactory.create(clusterInfo.certificate)
                 .protocols(listOf(Protocol.HTTP_1_1))
                 .readTimeout(readTimeout)
+                .retryOnConnectionFailure(false)
                 .writeTimeout(writeTimeout)
             interceptors.forEach {
                 builder.addInterceptor(
