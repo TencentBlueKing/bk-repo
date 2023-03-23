@@ -31,7 +31,7 @@ object OkHttpClientPool {
                     it
                 )
             }
-            builder.addNetworkInterceptor(ProgressInterceptor())
+//            builder.addNetworkInterceptor(ProgressInterceptor())
             builder.build()
         }
     }
