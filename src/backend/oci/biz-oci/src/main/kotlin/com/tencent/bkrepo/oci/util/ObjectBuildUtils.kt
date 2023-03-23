@@ -58,14 +58,34 @@ object ObjectBuildUtils {
         fullPath: String,
         metadata: List<MetadataModel>? = null
     ): NodeCreateRequest {
+        return buildNodeCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            fullPath = fullPath,
+            metadata = metadata
+        )
+    }
+
+    fun buildNodeCreateRequest(
+        projectId: String,
+        repoName: String,
+        size: Long,
+        fullPath: String,
+        sha256: String,
+        md5: String,
+        metadata: List<MetadataModel>? = null
+    ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
             folder = false,
             fullPath = fullPath,
-            size = artifactFile.getSize(),
-            sha256 = artifactFile.getFileSha256(),
-            md5 = artifactFile.getFileMd5(),
+            size = size,
+            sha256 = sha256,
+            md5 = md5,
             operator = SecurityUtils.getUserId(),
             overwrite = true,
             nodeMetadata = metadata
