@@ -47,7 +47,7 @@ class OtelWebFilter : Filter {
     /**
      * Undertow对于url没有实现RFC 2396, []不编码也能正常处理。
      *
-     * 但是sleuth实现日志追踪[org.springframework.cloud.sleuth.otel.bridge.SpringHttpServerAttributesExtractor.target]时，
+     * 但是sleuth实现日志追踪[org.springframework.cloud.sleuth.otel.bridge.SpringHttpServerAttributesGetter.target]时，
      * 使用了[java.net.URI.create],在有未编码的特殊字符时会导致500
      */
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
@@ -61,7 +61,7 @@ class OtelWebFilter : Filter {
                     request.exchange.requestURI = URLEncoder.encode(
                         URLDecoder.decode(request.exchange.requestURI.replace("+",  "%2b"), Charsets.UTF_8.name()),
                         Charsets.UTF_8.name()
-                    ).replace("+", "%20").replace("%2f", "/")
+                    ).replace("+", "%20").replace("%2F", "/")
                 } catch (e: Exception) {
                     require(response is HttpServletResponse)
                     response.status = HttpStatus.BAD_REQUEST.value

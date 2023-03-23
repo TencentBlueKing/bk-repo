@@ -45,13 +45,8 @@ allprojects {
     dependencyManagement {
         applyMavenExclusions(false)
 
-        imports {
-            mavenBom("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
-        }
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
-            dependency("org.apache.skywalking:apm-toolkit-logback-1.x:${Versions.SkyWalkingApmToolkit}")
-            dependency("org.apache.skywalking:apm-toolkit-trace:${Versions.SkyWalkingApmToolkit}")
             dependency("net.javacrumbs.shedlock:shedlock-spring:${Versions.Shedlock}")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:${Versions.Shedlock}")
             dependency("com.google.code.gson:gson:${Versions.Gson}")
@@ -72,6 +67,7 @@ allprojects {
                 entry("swagger-models")
             }
             dependency("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter:${Versions.ReactiveFeign}")
+            dependency("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
         }
     }
     ext["netty.version"] = Versions.Netty

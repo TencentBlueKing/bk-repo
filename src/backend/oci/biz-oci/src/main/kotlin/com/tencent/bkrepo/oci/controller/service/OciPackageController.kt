@@ -37,9 +37,11 @@ import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/third")
 class OciPackageController(
     private val operationService: OciOperationService,
     private val ociReplicationRecordDao: OciReplicationRecordDao

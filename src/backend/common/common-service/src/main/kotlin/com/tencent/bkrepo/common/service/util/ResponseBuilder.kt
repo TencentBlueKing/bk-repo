@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.service.util
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.otel.web.OtelWebConfiguration.Companion.TRACE_ID_BAGGAGE_KEY
 import org.springframework.beans.BeansException
 import org.springframework.cloud.sleuth.Tracer
 
@@ -58,7 +59,8 @@ object ResponseBuilder {
 
     private fun getTraceId(): String? {
         return try {
-            SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
+            val tracer = SpringContextUtils.getBean<Tracer>()
+            tracer.getBaggage(TRACE_ID_BAGGAGE_KEY)?.get() ?: tracer.currentSpan()?.context()?.traceId()
         } catch (_: BeansException) {
             null
         }

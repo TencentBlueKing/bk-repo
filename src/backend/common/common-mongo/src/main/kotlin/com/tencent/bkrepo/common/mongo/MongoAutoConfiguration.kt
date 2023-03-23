@@ -75,7 +75,7 @@ class MongoAutoConfiguration {
         mappingContext.isAutoIndexCreation = mongoProperties.isAutoIndexCreation
 
         val converter = MappingMongoConverter(dbRefResolver, mappingContext)
-        converter.typeMapper = DefaultMongoTypeMapper(null)
+        converter.setTypeMapper(DefaultMongoTypeMapper(null))
         converter.afterPropertiesSet()
         converter.setMapKeyDotReplacement("#dot#")
         return converter

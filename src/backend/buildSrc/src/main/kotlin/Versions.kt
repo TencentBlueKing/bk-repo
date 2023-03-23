@@ -37,7 +37,6 @@ object Versions {
     const val Jersey = "2.35"
     const val Jsoup = "1.15.1"
     const val Redline = "1.2.10"
-    const val SkyWalkingApmToolkit = "8.10.0"
     const val Gson = "2.9.0"
     const val ProtobufJava = "3.19.4"
     const val Guava = "31.1-jre"
@@ -60,7 +59,7 @@ object Versions {
     const val DockerJava = "3.2.13"
     const val Mockk = "1.12.2"
     const val Swagger = "1.6.2"
-    const val SleuthOtel = "1.0.0-M13"
+    const val SleuthOtel = "1.1.2"
     const val KubernetesClient = "11.0.2"
     const val ReactiveFeign = "3.2.6"
 }

@@ -27,13 +27,19 @@
 
 package com.tencent.bkrepo.common.service.otel.web
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.web.servlet.FilterRegistrationBean
+import org.springframework.cloud.sleuth.Span
+import org.springframework.cloud.sleuth.Tracer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
+import javax.servlet.Filter
+import javax.servlet.http.HttpServletResponse
 
 @Configuration
-class OtelWebConfiguration {
+@ConditionalOnProperty(value = ["spring.sleuth.enabled"], matchIfMissing = true)
+class OtelWebConfiguration  {
 
     @Bean
     fun otelWebFilter(): FilterRegistrationBean<OtelWebFilter> {
@@ -43,4 +49,24 @@ class OtelWebConfiguration {
         registrationBean.addUrlPatterns("/*")
         return registrationBean
     }
+
+    @Bean
+    fun traceIdInResponseFilter(tracer: Tracer): Filter {
+        return Filter { request, response, chain ->
+            val currentSpan: Span? = tracer.currentSpan()
+            if (currentSpan != null) {
+                val resp = response as HttpServletResponse
+                resp.addHeader(HEADER_TRACE_ID, currentSpan.context().traceId())
+                resp.addHeader(HEADER_BKREPO_TRACE_ID, tracer.getBaggage(TRACE_ID_BAGGAGE_KEY)?.get().toString())
+            }
+            chain.doFilter(request, response)
+        }
+    }
+
+    companion object {
+        const val HEADER_TRACE_ID = "Trace-Id"
+        const val HEADER_BKREPO_TRACE_ID = "X-BkRepo-Trace-Id"
+        const val TRACE_ID_BAGGAGE_KEY = "X-BKREPO-TRACE-ID"
+    }
+
 }

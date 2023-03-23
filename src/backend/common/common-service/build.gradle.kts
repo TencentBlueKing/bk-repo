@@ -29,7 +29,6 @@
  * SOFTWARE.
  */
 
-val otelExporterEnabled: String? by project
 dependencies {
     api(project(":common:common-api"))
     api("com.tencent.devops:devops-boot-starter-service")
@@ -43,15 +42,13 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
 
     api("com.google.guava:guava")
+    api(platform("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies"))
     api("org.springframework.cloud:spring-cloud-starter-sleuth") {
         exclude("org.springframework.cloud", "spring-cloud-sleuth-brave")
     }
     api("org.springframework.cloud:spring-cloud-sleuth-otel-autoconfigure")
     implementation("io.opentelemetry:opentelemetry-sdk-extension-resources")
-    // 默认不添加otel exporter
-    if (otelExporterEnabled.toBoolean()) {
-        implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    }
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
 
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
 

@@ -36,14 +36,11 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-
 
 
 @Api("oci")
 @Primary
-@FeignClient(OCI_SERVICE_NAME, contextId = "OciClient")
-@RequestMapping("/service/third")
+@FeignClient(OCI_SERVICE_NAME, contextId = "OciClient", path = "/service/third")
 interface OciClient {
 
     @ApiOperation("更新第三方同步时，先传manifest文件，再传其他文件")
