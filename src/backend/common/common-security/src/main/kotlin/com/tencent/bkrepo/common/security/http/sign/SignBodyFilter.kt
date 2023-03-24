@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.replication.filter
+package com.tencent.bkrepo.common.security.http.sign
 
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -23,6 +23,14 @@ import javax.servlet.http.HttpServletRequest
  * */
 class SignBodyFilter(private val limit: Long) : Filter {
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
+        val sig = request.getParameter(HttpSigner.SIGN)
+        val appId = request.getParameter(HttpSigner.APP_ID)
+        val accessKey = request.getParameter(HttpSigner.ACCESS_KEY)
+        if (sig == null || appId == null || accessKey == null) {
+            chain.doFilter(request, response)
+            return
+        }
+
         if (request.contentLength > 0 &&
             !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE)
         ) {

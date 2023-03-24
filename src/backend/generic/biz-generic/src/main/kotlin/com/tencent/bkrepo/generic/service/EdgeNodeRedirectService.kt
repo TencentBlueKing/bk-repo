@@ -40,8 +40,9 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import java.time.Duration
 import org.springframework.stereotype.Service
+import java.time.Duration
+import javax.servlet.http.HttpServletRequest
 
 /**
  * 边缘节点重定向服务
@@ -70,10 +71,11 @@ class EdgeNodeRedirectService(
         val clusterInfo = clusterNodeClient.getCluster(clusterName).data
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
         val edgeDomain = getEdgeDomain(clusterInfo)
-        val requestPath = downloadContext.request.requestURI
-        val queryString = downloadContext.request.queryString
+        val request = downloadContext.request
+        val requestPath = buildPath(request)
+        val queryString = buildQueryString(request)
         val token = createTempToken(downloadContext)
-        val redirectUrl = "$edgeDomain$GENERIC_SERVICE_NAME/temporary/download$requestPath?token=$token&$queryString"
+        val redirectUrl = "$edgeDomain$GENERIC_SERVICE_NAME$requestPath?token=$token&$queryString"
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
@@ -110,8 +112,30 @@ class EdgeNodeRedirectService(
         }
     }
 
+    private fun buildQueryString(request: HttpServletRequest): String {
+        val builder = StringBuilder()
+        request.parameterMap.filterKeys { it != TOKEN }.forEach { (k, v) ->
+            v.forEach {
+                builder.append("$k=$it&")
+            }
+        }
+        if (builder.isNotEmpty()) {
+            return builder.removeSuffix("&").toString()
+        }
+        return builder.toString()
+    }
+
+    private fun buildPath(request: HttpServletRequest): String {
+        if (request.requestURI.startsWith(TEMPORARY_REQUEST_PREFIX)) {
+            return request.requestURI
+        }
+        return "$TEMPORARY_REQUEST_PREFIX${request.requestURI}"
+    }
+
     companion object {
         const val REPLICATION_SERVICE_NAME = "replication"
         const val GENERIC_SERVICE_NAME = "generic"
+        const val TOKEN = "token"
+        const val TEMPORARY_REQUEST_PREFIX = "/temporary/download"
     }
 }

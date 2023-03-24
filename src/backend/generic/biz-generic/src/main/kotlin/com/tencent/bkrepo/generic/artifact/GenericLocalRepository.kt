@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.service.EdgeNodeRedirectService
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -72,9 +74,13 @@ import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpMethod
 
 @Component
 class GenericLocalRepository : LocalRepository() {
+    @Autowired
+    lateinit var redirectService:EdgeNodeRedirectService
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -117,6 +123,11 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        if (shouldRedirect(context.artifactInfo)) {
+            // 节点来自其他集群，重定向到其他节点。
+            redirectService.redirectToDefaultCluster(context)
+            return
+        }
         super.onDownloadBefore(context)
         // 文件默认下载，设置Content-Dispostition响应头
         // preview == true时不设置Content-Dispostition响应头
@@ -393,6 +404,16 @@ class GenericLocalRepository : LocalRepository() {
             logger.warn("$header is not in valid Base64 scheme.")
         }
         return metadata
+    }
+
+    private fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
+        val method = HttpContextHolder.getRequest().method
+        if (!method.equals(HttpMethod.GET.name, true)) {
+            // 只重定向下载请求
+            return false
+        }
+        val edgeClusterName = redirectService.getEdgeClusterName(artifactInfo)
+        return edgeClusterName != null
     }
 
     companion object {

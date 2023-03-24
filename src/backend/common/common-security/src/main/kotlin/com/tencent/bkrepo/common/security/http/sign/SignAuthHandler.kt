@@ -56,7 +56,6 @@ class SignAuthHandler(
     private val httpAuthSecurity: HttpAuthSecurity
 ) : HttpAuthHandler {
 
-    private val regex = Regex("""com\.tencent\.bkrepo\.(\w+)\..*""")
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val sig = request.getParameter(SIGN)
         val appId = request.getParameter(APP_ID)
