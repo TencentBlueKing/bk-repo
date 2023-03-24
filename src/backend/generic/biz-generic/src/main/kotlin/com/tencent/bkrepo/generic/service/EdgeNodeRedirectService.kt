@@ -72,10 +72,10 @@ class EdgeNodeRedirectService(
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
         val edgeDomain = getEdgeDomain(clusterInfo)
         val request = downloadContext.request
-        val requestPath = request.requestURI
+        val requestPath = buildPath(request)
         val queryString = buildQueryString(request)
         val token = createTempToken(downloadContext)
-        val redirectUrl = "$edgeDomain$GENERIC_SERVICE_NAME/temporary/download$requestPath?token=$token&$queryString"
+        val redirectUrl = "$edgeDomain$GENERIC_SERVICE_NAME$requestPath?token=$token&$queryString"
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
@@ -125,9 +125,17 @@ class EdgeNodeRedirectService(
         return builder.toString()
     }
 
+    private fun buildPath(request: HttpServletRequest): String {
+        if (request.requestURI.startsWith(TEMPORARY_REQUEST_PREFIX)) {
+            return request.requestURI
+        }
+        return "$TEMPORARY_REQUEST_PREFIX${request.requestURI}"
+    }
+
     companion object {
         const val REPLICATION_SERVICE_NAME = "replication"
         const val GENERIC_SERVICE_NAME = "generic"
         const val TOKEN = "token"
+        const val TEMPORARY_REQUEST_PREFIX = "/temporary/download"
     }
 }
