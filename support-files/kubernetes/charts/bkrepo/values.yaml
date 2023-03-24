@@ -129,8 +129,6 @@ cluster:
     appId: bkrepo
     accessKey:
     secretKey:
-    ## 当role是edge时需要配置
-    password: password
   ## self集群相关配置
   self:
     name: edge
