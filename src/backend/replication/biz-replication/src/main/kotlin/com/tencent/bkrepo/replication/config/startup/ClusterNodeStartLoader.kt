@@ -27,8 +27,13 @@
 
 package com.tencent.bkrepo.replication.config.startup
 
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.replication.api.ClusterClusterNodeClient
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -38,6 +43,7 @@ import org.springframework.boot.ApplicationRunner
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
+import java.net.URI
 
 /**
  * 初始化加载node节点配置保存
@@ -52,6 +58,7 @@ class ClusterNodeStartLoader(
         val userId = SYSTEM_USER
         val request = initClusterNodeCreateRequest() ?: return
         try {
+            createEdgeClusterNodeOnCenter(request)
             clusterNodeService.create(userId, request)
         } catch (ex: Exception) {
             logger.warn("init cluster node failed, reason: ${ex.message}")
@@ -63,7 +70,7 @@ class ClusterNodeStartLoader(
             when (role) {
                 ClusterNodeType.CENTER -> ClusterNodeCreateRequest(
                     name = center.name.orEmpty(),
-                    url = center.url,
+                    url = normalizeUrl(center.url),
                     certificate = center.certificate.orEmpty(),
                     username = center.username.orEmpty(),
                     password = center.password.orEmpty(),
@@ -74,7 +81,7 @@ class ClusterNodeStartLoader(
                 )
                 ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
-                    url = self.url,
+                    url = normalizeUrl(self.url),
                     certificate = self.certificate.orEmpty(),
                     username = self.username.orEmpty(),
                     password = self.password.orEmpty(),
@@ -88,7 +95,37 @@ class ClusterNodeStartLoader(
         }
     }
 
+    private fun normalizeUrl(url: String): String {
+        val normalizeUrl = if (url.startsWith("https://") || url.startsWith("http://")) {
+            URI(url).normalize().toURL()
+        } else {
+            URI("http://$url").normalize().toURL()
+        }
+        return normalizeUrl.toString().removeSuffix(normalizeUrl.path).ensureSuffix("/$REPLICATION_SERVICE_NAME")
+    }
+
+    private fun createEdgeClusterNodeOnCenter(request: ClusterNodeCreateRequest) {
+        if (request.type != ClusterNodeType.EDGE) {
+            return
+        }
+
+        try {
+            val centerClusterNodeClient: ClusterClusterNodeClient = FeignClientFactory.create(
+                remoteClusterInfo = clusterProperties.center,
+                serviceName = REPLICATION_SERVICE_NAME,
+                srcClusterName = clusterProperties.self.name
+            )
+            request.ping = false
+            centerClusterNodeClient.create(SYSTEM_USER, request)
+        } catch (e: RemoteErrorCodeException) {
+            if (e.errorCode != ReplicationMessageCode.CLUSTER_NODE_EXISTS.getCode()) {
+                throw e
+            }
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterNodeStartLoader::class.java)
+        private const val REPLICATION_SERVICE_NAME = "replication"
     }
 }

@@ -59,6 +59,7 @@ import feign.Request
 import feign.RequestInterceptor
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.cloud.openfeign.FeignLoggerFactory
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /**
@@ -85,11 +86,7 @@ object FeignClientFactory {
         srcClusterName: String? = null
     ): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
-        val url = if (serviceName.isNullOrBlank()) {
-            remoteClusterInfo.url
-        } else {
-            remoteClusterInfo.url.ensureSuffix("/").plus(serviceName)
-        }
+        val url = normalizeUrl(remoteClusterInfo.url, serviceName)
         return cache.getOrPut(remoteClusterInfo) {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
@@ -152,7 +149,21 @@ object FeignClientFactory {
         return Client.Default(sslContextFactory, hostnameVerifier)
     }
 
+    private fun normalizeUrl(url: String, serviceName: String?): String {
+        val normalizeUrl = if (url.startsWith("https://") || url.startsWith("http://")) {
+            URI(url).normalize().toURL()
+        } else {
+            URI("http://$url").normalize().toURL()
+        }
+        return if (serviceName.isNullOrBlank()) {
+            normalizeUrl.toString().removeSuffix(normalizeUrl.path).ensureSuffix("/$REPLICATION_SERVICE_NAME")
+        } else {
+            normalizeUrl.toString().removeSuffix(normalizeUrl.path).ensureSuffix("/$serviceName")
+        }
+    }
+
     private const val TIME_OUT_SECONDS = 60L
+    private const val REPLICATION_SERVICE_NAME = "replication"
     private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<ClusterInfo, Any>>()
     private val options = Request.Options(TIME_OUT_SECONDS, TimeUnit.SECONDS, TIME_OUT_SECONDS, TimeUnit.SECONDS, true)
 }
