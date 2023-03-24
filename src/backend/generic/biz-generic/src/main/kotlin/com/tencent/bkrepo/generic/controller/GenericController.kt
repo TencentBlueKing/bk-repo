@@ -35,12 +35,9 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_MAPPING_URI
@@ -53,9 +50,7 @@ import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.CompressedFileService
-import com.tencent.bkrepo.generic.service.EdgeNodeRedirectService
 import com.tencent.bkrepo.generic.service.UploadService
-import org.springframework.http.HttpMethod
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -73,7 +68,6 @@ class GenericController(
     private val downloadService: DownloadService,
     private val permissionManager: PermissionManager,
     private val compressedFileService: CompressedFileService,
-    private val redirectService: EdgeNodeRedirectService,
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -95,10 +89,6 @@ class GenericController(
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
-        if (shouldRedirect(artifactInfo)) {
-            // 节点来自其他集群，重定向到其他节点。
-            redirectService.redirectToDefaultCluster(ArtifactDownloadContext())
-        }
         downloadService.download(artifactInfo)
     }
 
@@ -175,15 +165,5 @@ class GenericController(
         @RequestParam filePath: String,
     ) {
         compressedFileService.previewCompressedFile(artifactInfo, filePath)
-    }
-
-    private fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
-        val method = HttpContextHolder.getRequest().method
-        if (!method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向下载请求
-            return false
-        }
-        val edgeClusterName = redirectService.getEdgeClusterName(artifactInfo)
-        return edgeClusterName != null
     }
 }
