@@ -125,12 +125,13 @@ cluster:
   center:
     ## center节点相关配置
     name: center
-    ## 当role是edge时需要配置
-    url: 'https://center.bkrepo.example.com'
-    ## 当role是edge时需要配置
-    username: admin
+    url: https://center.bkrepo.example.com
+    appId: bkrepo
+    accessKey:
+    secretKey:
     ## 当role是edge时需要配置
     password: password
+  ## self集群相关配置
   self:
     name: edge
 
