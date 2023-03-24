@@ -42,6 +42,32 @@ data:
     plugin.path: /data/workspace/plugin/
     cluster:
       region: {{ .Values.common.region }}
+      architecture: {{ .Values.cluster.architecture }}
+      role: {{ .Values.cluster.role }}
+     {{- if eq .Values.cluster.role "CENTER" }}
+      center:
+        name: {{ .Values.cluster.center.name }}
+        {{- if or .Values.ingress.tls .Values.forceHttps }}
+        url: https://{{ .Values.gateway.host }}
+        {{- else }}
+        url: http://{{ .Values.gateway.host }}
+        {{- end }}
+        username: {{ .Values.common.username }}
+        password: {{ .Values.common.username }}
+      {{- else }}
+      center:
+        name: {{ .Values.cluster.center.name }}
+        url: {{ .Values.cluster.center.url }}
+        username: {{ .Values.cluster.center.username }}
+        password: {{ .Values.cluster.center.password }}
+      {{- end }}
       self:
-        url: {{ .Values.gateway.host }}
+        name: {{ .Values.cluster.self.name }}
+        {{- if or .Values.ingress.tls .Values.forceHttps }}
+        url: https://{{ .Values.gateway.host }}
+        {{- else }}
+        url: http://{{ .Values.gateway.host }}
+        {{- end }}
+        username: {{ .Values.common.username }}
+        password: {{ .Values.common.password }}
     {{- toYaml .Values.common.config | nindent 4 }}
