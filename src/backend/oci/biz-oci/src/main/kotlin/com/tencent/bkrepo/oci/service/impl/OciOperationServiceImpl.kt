@@ -794,19 +794,17 @@ class OciOperationServiceImpl(
     ): Boolean {
         with(ociArtifactInfo) {
             val blobExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
-            // blob不存在有两种可能，一种是第三方同步到制品库时，先传了manifest，blob还在传输
-            if (!blobExist && !storageService.exist(descriptor.sha256, storageCredentials)) return false
+            // blob节点不存在，但是在同一仓库下存在digest文件
             if (!blobExist) {
-                // 可能在同一个仓库存在着同一sha256的文件，根据sha256查出对应的md5
-                val md5: String = getNodeByDigest(projectId, repoName, descriptor.digest).second
-                    ?: StringPool.UNKNOWN
+                val (existFullPath, md5) = getNodeByDigest(projectId, repoName, descriptor.digest)
+                if (existFullPath == null) return false
                 val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
                     size = descriptor.size,
                     sha256 = descriptor.sha256,
                     fullPath = fullPath,
-                    md5 = md5
+                    md5 = md5 ?: StringPool.UNKNOWN
                 )
                 createNode(nodeCreateRequest, storageCredentials)
             }
