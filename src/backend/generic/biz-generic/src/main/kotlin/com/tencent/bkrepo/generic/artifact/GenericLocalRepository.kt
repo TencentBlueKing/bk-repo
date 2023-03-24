@@ -125,7 +125,7 @@ class GenericLocalRepository : LocalRepository() {
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         if (shouldRedirect(context.artifactInfo)) {
             // 节点来自其他集群，重定向到其他节点。
-            redirectService.redirectToDefaultCluster(ArtifactDownloadContext())
+            redirectService.redirectToDefaultCluster(context)
             return
         }
         super.onDownloadBefore(context)
