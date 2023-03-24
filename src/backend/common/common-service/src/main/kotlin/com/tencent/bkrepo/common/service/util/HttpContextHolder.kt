@@ -48,7 +48,7 @@ object HttpContextHolder {
 
     fun getRequestOrNull(): HttpServletRequest? {
         val requestAttributes = RequestContextHolder.getRequestAttributes() ?: return null
-        require(requestAttributes is ServletRequestAttributes)
+        if (requestAttributes !is ServletRequestAttributes) return null
         return requestAttributes.request
     }
 
