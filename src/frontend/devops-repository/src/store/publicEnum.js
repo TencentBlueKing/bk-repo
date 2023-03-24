@@ -3,7 +3,7 @@ export const repoEnum = MODE_CONFIG === 'ci'
     ? [
         'generic',
         'helm',
-        'rds',
+        // 'rds',
         'docker'
     ]
     : [
@@ -13,7 +13,7 @@ export const repoEnum = MODE_CONFIG === 'ci'
         'pypi',
         'npm',
         'helm',
-        'rds',
+        // 'rds',
         'composer',
         'rpm'
         // 'git',

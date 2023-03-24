@@ -26,7 +26,7 @@
                 <bk-input
                     class="w250"
                     v-model.trim="packageNameVal"
-                    :placeholder="$t('productPlaceHolder')"
+                    :placeholder="$t('artifactPlaceHolder')"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"

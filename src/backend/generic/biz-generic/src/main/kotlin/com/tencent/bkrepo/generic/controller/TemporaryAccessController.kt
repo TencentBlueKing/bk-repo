@@ -64,12 +64,7 @@ class TemporaryAccessController(
 
     @PostMapping("/token/create")
     fun createToken(@RequestBody request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
-        with(request) {
-            fullPathSet.forEach {
-                permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
-            }
-            return ResponseBuilder.success(temporaryAccessService.createToken(request))
-        }
+        return ResponseBuilder.success(temporaryAccessService.createToken(request))
     }
 
     @PostMapping("/url/create")

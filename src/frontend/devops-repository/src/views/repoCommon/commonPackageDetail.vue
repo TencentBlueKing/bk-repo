@@ -14,7 +14,7 @@
         </header>
         <div class="common-version-main flex-align-center">
             <aside class="common-version" v-bkloading="{ isLoading }">
-                <header class="pl30 version-header flex-align-center">{{ $t('productVersion')}}</header>
+                <header class="pl30 version-header flex-align-center">{{ $t('artifactVersion')}}</header>
                 <div class="version-search">
                     <bk-input
                         v-model.trim="versionInput"
@@ -48,9 +48,9 @@
                                             disabled: ($version.stageTag || '').includes('@release')
                                         },
                                         repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
-                                        showRepoScan && { label: $t('scanProduct'), clickEvent: () => scanPackageHandler($version) }
+                                        showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('lift the ban') : $t('forbidden to use') },
+                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
                                     permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
@@ -247,7 +247,7 @@
                 this.$refs.commonFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: this.$t('scanProduct'),
+                    title: this.$t('scanArtifact'),
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,
@@ -266,7 +266,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (row.metadata.forbidStatus ? this.$t('lift the ban') : this.$t('forbidden to use')) + this.$t('success')
+                        message: (row.metadata.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.refresh(row.name)
                 })

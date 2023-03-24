@@ -159,13 +159,14 @@ open class PermissionManager(
         repoName: String,
         vararg path: String,
         public: Boolean? = null,
-        anonymous: Boolean = false
+        anonymous: Boolean = false,
+        userId: String = SecurityUtils.getUserId()
     ) {
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (allowReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
             return
         }
         // 禁止批量下载流水线节点
@@ -179,7 +180,8 @@ open class PermissionManager(
             projectId = projectId,
             repoName = repoName,
             paths = path.toList(),
-            anonymous = anonymous
+            anonymous = anonymous,
+            userId = userId
         )
     }
 
@@ -201,6 +203,10 @@ open class PermissionManager(
                 logger.warn("platform auth with empty userId[$platformId,$userId]")
             }
             if (platformId == null && !isAdminUser(userId)) {
+                throw PermissionException()
+            }
+        } else if (principalType == PrincipalType.GENERAL) {
+            if (userId.isNullOrEmpty() || userId == ANONYMOUS_USER) {
                 throw PermissionException()
             }
         }
@@ -236,7 +242,6 @@ open class PermissionManager(
         if (action != PermissionAction.READ) {
             return false
         }
-        val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
         // 加载仓库信息
@@ -433,14 +438,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
-                        " nodes$paths, code[${it.code}], response[$content]"
+                            " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url}], project[$projectId], " +
-                    "repo[$repoName], nodes$paths, $e"
+                        "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }

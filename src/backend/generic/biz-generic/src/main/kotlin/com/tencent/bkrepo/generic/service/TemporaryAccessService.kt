@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -75,7 +77,8 @@ class TemporaryAccessService(
     private val repositoryClient: RepositoryClient,
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
-    private val deltaSyncService: DeltaSyncService
+    private val deltaSyncService: DeltaSyncService,
+    private val permissionManager: PermissionManager
 ) {
 
     /**
@@ -311,6 +314,14 @@ class TemporaryAccessService(
         if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), tokenInfo.fullPath)) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
         }
+        // 校验创建人权限
+        permissionManager.checkNodePermission(
+            if (tokenInfo.type == TokenType.DOWNLOAD) PermissionAction.READ else PermissionAction.WRITE,
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactInfo.getArtifactFullPath(),
+            userId = tokenInfo.createdBy
+        )
     }
 
     /**

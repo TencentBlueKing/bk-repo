@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
@@ -72,12 +73,12 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.SortedSet
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 
 @Service
 class FixToolServiceImpl(
@@ -177,13 +178,13 @@ class FixToolServiceImpl(
             nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
                 logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
-                    "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                    HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
                 )
             }
         val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
             logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
             throw HelmFileNotFoundException(
-                "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
             )
         }
         return inputStream.use { it.readYamlString() }
@@ -223,7 +224,7 @@ class FixToolServiceImpl(
                 nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
                     logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
                     throw HelmFileNotFoundException(
-                        "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                        HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
                     )
                 }
             // sleep 0.1s
@@ -231,7 +232,7 @@ class FixToolServiceImpl(
             val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
-                    "load index-cache.yaml file stream is null in repo [$projectId/$repoName]"
+                    HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
                 )
             }
             val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
@@ -401,7 +402,10 @@ class FixToolServiceImpl(
                 val message = "Unable to regenerate metadata for remote repository " +
                     "[${artifactInfo.projectId}/${artifactInfo.repoName}]"
                 logger.warn(message)
-                throw HelmBadRequestException(message)
+                throw HelmBadRequestException(
+                    HelmMessageCode.HELM_ILLEGAL_REQUEST,
+                    emptyList<String>()
+                )
             }
         }
         val nodeList = queryNodeList(artifactInfo, false)

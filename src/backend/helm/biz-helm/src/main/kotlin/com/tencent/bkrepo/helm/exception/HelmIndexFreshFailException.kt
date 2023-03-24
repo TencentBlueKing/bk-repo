@@ -31,4 +31,7 @@
 
 package com.tencent.bkrepo.helm.exception
 
-class HelmIndexFreshFailException(message: String) : HelmException(message)
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class HelmIndexFreshFailException(messageCode: MessageCode, params: String) : SystemErrorException(messageCode, params)

@@ -11,7 +11,7 @@
         <bk-tab-panel v-if="detail.basic" name="basic" :label="$t('baseInfo')">
             <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')">
                 <div class="package-name grid-item">
-                    <label>{{$t('productName')}}</label>
+                    <label>{{$t('artifactName')}}</label>
                     <span class="flex-1 flex-align-center text-overflow">
                         <span class="text-overflow" :title="packageName">{{ packageName }}</span>
                         <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
@@ -236,7 +236,7 @@
                     ...(!metadataMap.forbidStatus
                         ? [
                             this.permission.edit && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
-                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanProduct') }
+                            this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanArtifact') }
                         ]
                         : []),
                     { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },

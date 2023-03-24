@@ -146,7 +146,7 @@
                                         ] : []),
                                         ...(!row.folder ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanProduct') }
+                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
@@ -558,7 +558,7 @@
                 this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: this.$t('scanProduct'),
+                    title: this.$t('scanArtifact'),
                     type: 'scan',
                     id: '',
                     name,
@@ -595,19 +595,32 @@
                 }
                 this.$confirm({
                     theme: 'danger',
-                    message: `${this.$t('confirm') + this.$t('delete')}${folder ? this.$t('folder') : this.$t('file')} ${name} ？`,
+                    message: `${this.$t('confirm') + this.$t('space') + this.$t('delete') + this.$t('space')}${folder ? this.$t('folder') : this.$t('file')} ${name} ？`,
                     subMessage: `${folder && totalRecords ? this.$t('totalFilesMsg', [totalRecords]) : ''}`,
                     confirmFn: () => {
                         return this.deleteArtifactory({
                             projectId: this.projectId,
                             repoName: this.repoName,
                             fullPath
-                        }).then(() => {
+                        }).then(res => {
                             this.refreshNodeChange()
-                            this.$bkMessage({
-                                theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
-                            })
+                            if (folder && totalRecords === res.deletedNumber) {
+                                this.$bkMessage({
+                                    theme: 'success',
+                                    message: this.$t('delete') + this.$t('space') + this.$t('success')
+                                })
+                            } else if (!folder && res.deletedNumber === 1) {
+                                this.$bkMessage({
+                                    theme: 'success',
+                                    message: this.$t('delete') + this.$t('space') + this.$t('success')
+                                })
+                            } else {
+                                const failNum = folder ? totalRecords - res.deletedNumber : 1
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
+                                })
+                            }
                         })
                     }
                 })
@@ -698,12 +711,20 @@
                             projectId: this.projectId,
                             repoName: this.repoName,
                             paths
-                        }).then(() => {
+                        }).then(res => {
                             this.refreshNodeChange()
-                            this.$bkMessage({
-                                theme: 'success',
-                                message: this.$t('delete') + this.$t('space') + this.$t('success')
-                            })
+                            if (res.deletedNumber === totalRecords) {
+                                this.$bkMessage({
+                                    theme: 'success',
+                                    message: this.$t('delete') + this.$t('space') + this.$t('success')
+                                })
+                            } else {
+                                const failNum = totalRecords - res.deletedNumber
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
+                                })
+                            }
                         })
                     }
                 })

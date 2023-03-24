@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.conan.exception
 
-class ConanSearchNotFoundException(
-    message: String = "Recipe not found."
-) : RuntimeException(message)
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class ConanSearchNotFoundException(messageCode: MessageCode, vararg params: String)
+: NotFoundException(messageCode, *params)

@@ -128,7 +128,8 @@ class ShareServiceImpl(
             val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-            val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
+            val context = ArtifactDownloadContext(repo = repo, userId = userId)
+            context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
         }

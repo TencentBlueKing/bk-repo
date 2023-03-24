@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":job:biz-job"))
     implementation(project(":analyst:biz-analyst"))
     implementation(project(":replication:biz-replication"))
+    implementation(project(":webhook:biz-webhook"))
 }
 
 configurations.all {

@@ -25,9 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.exception
+package com.tencent.bkrepo.oci.exception
 
-class ConanPackageNotFoundException(
-    message: String,
-    code: Any? = null,
-) : RuntimeException(message)
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+import org.springframework.http.HttpStatus
+
+class OciVersionNotFoundException(messageCode: MessageCode, vararg params: String)
+    : ErrorCodeException(messageCode, *params, HttpStatus.NOT_FOUND)

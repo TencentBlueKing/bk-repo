@@ -132,12 +132,12 @@
             return {
                 conflictStrategyList: [
                     { value: 'SKIP', label: this.$t('skipConflictLabel'), tip: this.$t('skipConflictTip') },
-                    { value: 'OVERWRITE', label: this.$t('replacementProductLabel'), tip: this.$t('replacementProductTip') },
+                    { value: 'OVERWRITE', label: this.$t('replacementArtifactLabel'), tip: this.$t('replacementArtifactTip') },
                     { value: 'FAST_FAIL', label: this.$t('terminateSyncLabel'), tip: this.$t('terminateSyncTip') }
                 ],
                 replicaObjectTypeList: [
                     { value: 'REPOSITORY', label: this.$t('repository'), tip: this.$t('repoTip') },
-                    { value: 'PACKAGE', label: this.$t('products'), tip: this.$t('productTip') },
+                    { value: 'PACKAGE', label: this.$t('artifacts'), tip: this.$t('artifactTip') },
                     { value: 'PATH', label: this.$t('file'), tip: this.$t('pathTip') }
                 ],
                 isLoading: false,

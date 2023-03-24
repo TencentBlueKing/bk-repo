@@ -15,7 +15,7 @@
                     @clearError="clearError">
                 </repo-table>
             </bk-form-item>
-            <bk-form-item :label="$t('productScope')" :required="true" property="arti" error-display-type="normal">
+            <bk-form-item :label="$t('artifactScope')" :required="true" property="arti" error-display-type="normal">
                 <arti-table
                     ref="artiConfig"
                     :init-data="config.artifactRules"
@@ -61,7 +61,7 @@
                             validator: () => {
                                 return this.$refs.artiConfig.getConfig()
                             },
-                            message: this.$t('autoScanProductRule'),
+                            message: this.$t('autoScanArtifactRule'),
                             trigger: 'blur'
                         }
                     ]

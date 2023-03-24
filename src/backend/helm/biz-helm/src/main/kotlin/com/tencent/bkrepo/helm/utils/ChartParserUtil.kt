@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.META_DETAIL
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.PROV
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
+import org.apache.logging.log4j.util.Strings
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.util.SortedSet
@@ -84,7 +86,7 @@ object ChartParserUtil {
         val nameMatch = Regex("\nname:[ *](.+)").findAll(contentStr).toList().flatMap(MatchResult::groupValues)
         val versionMatch = Regex("\nversion:[ *](.+)").findAll(contentStr).toList().flatMap(MatchResult::groupValues)
         if (!hasPGPBegin || nameMatch.size != 2 || versionMatch.size != 2) {
-            throw HelmErrorInvalidProvenanceFileException("invalid provenance file")
+            throw HelmErrorInvalidProvenanceFileException(HelmMessageCode.INVALID_PROVENANCE_FILE, Strings.EMPTY)
         }
         return Pair(nameMatch[1], versionMatch[1])
     }
@@ -182,7 +184,10 @@ object ChartParserUtil {
             }
             chartList.forEach { convertUtcTime(it) }
         }
-        return chartList ?: throw HelmFileNotFoundException("chart not found")
+        return chartList ?:
+        throw HelmFileNotFoundException(
+            HelmMessageCode.HELM_FILE_NOT_FOUND, "$name|$version", Strings.EMPTY
+        )
     }
 
     /**
@@ -206,12 +211,14 @@ object ChartParserUtil {
                     if (!compareTime(startTime, helmChartMetadataList.first().created)) {
                         convertUtcTime(helmChartMetadataList.first())
                     } else {
-                        throw HelmFileNotFoundException("chart version:[$chartVersion] can not be found")
+                        throw HelmFileNotFoundException(
+                            HelmMessageCode.HELM_FILE_NOT_FOUND, chartVersion, Strings.EMPTY
+                        )
                     }
                 }
             }
         } else {
-            throw HelmFileNotFoundException("chart version:[$chartVersion] can not be found")
+            throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, chartVersion, Strings.EMPTY)
         }
     }
 
@@ -239,7 +246,7 @@ object ChartParserUtil {
             }
             else -> {
                 // ERROR_NOT_FOUND
-                throw HelmFileNotFoundException("chart not found")
+                throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, urls, Strings.EMPTY)
             }
         }
     }
