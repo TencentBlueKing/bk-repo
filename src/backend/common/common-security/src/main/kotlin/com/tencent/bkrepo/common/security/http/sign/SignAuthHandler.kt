@@ -27,9 +27,7 @@
 
 package com.tencent.bkrepo.common.security.http.sign
 
-import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
@@ -37,20 +35,17 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.HttpSigner.ACCESS_KEY
 import com.tencent.bkrepo.common.service.util.HttpSigner.APP_ID
 import com.tencent.bkrepo.common.service.util.HttpSigner.MILLIS_PER_SECOND
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_BODY
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
-import org.springframework.http.MediaType
-import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
-import java.io.ByteArrayOutputStream
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -81,7 +76,7 @@ class SignAuthHandler(
             // 账号非法
             ?: throw AuthenticationException("AppId or accessKey error.")
         val uri = getUrlPath(request)
-        val bodyHash = getBodyHash(request)
+        val bodyHash = request.getAttribute(SIGN_BODY).toString()
         val sig = HttpSigner.sign(request, uri, bodyHash, secretKey, HmacAlgorithms.HMAC_SHA_1.getName())
         if (sig != authCredentials.sig) {
             // 签名未通过
@@ -104,20 +99,6 @@ class SignAuthHandler(
             path = realPath.removePrefix(httpAuthSecurity.prefix)
         }
         return path
-    }
-
-    private fun getBodyHash(request: HttpServletRequest): String {
-        return if (request.contentLength > 0 &&
-            !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE)
-        ) {
-            // 限制缓存大小
-            val multiReadRequest = MultipleReadHttpRequest(request, DataSize.ofMegabytes(5).toBytes())
-            val body = ByteArrayOutputStream()
-            multiReadRequest.inputStream.copyTo(body)
-            Hashing.sha256().hashBytes(body.toByteArray()).toString()
-        } else {
-            Hashing.sha256().hashBytes(StringPool.EMPTY.toByteArray()).toString()
-        }
     }
 
     private data class SignAuthCredentials(

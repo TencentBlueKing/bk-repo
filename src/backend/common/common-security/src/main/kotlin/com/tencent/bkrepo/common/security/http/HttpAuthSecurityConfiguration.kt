@@ -40,12 +40,15 @@ import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.http.oauth.OauthAuthHandler
 import com.tencent.bkrepo.common.security.http.platform.PlatformAuthHandler
 import com.tencent.bkrepo.common.security.http.sign.SignAuthHandler
+import com.tencent.bkrepo.common.security.http.sign.SignBodyFilter
 import com.tencent.bkrepo.common.security.http.temporary.TemporaryTokenAuthHandler
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
+import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
@@ -69,6 +72,14 @@ class HttpAuthSecurityConfiguration(
                     .excludePathPatterns(it.getExcludedPatterns())
             }
         }
+    }
+
+    @Bean
+    fun signBodyFilter(): FilterRegistrationBean<SignBodyFilter> {
+        val registrationBean = FilterRegistrationBean<SignBodyFilter>()
+        registrationBean.filter = SignBodyFilter(DataSize.ofMegabytes(5).toBytes())
+        registrationBean.order = 0
+        return registrationBean
     }
 
     private fun configHttpAuthSecurity(httpAuthSecurity: HttpAuthSecurity) {
