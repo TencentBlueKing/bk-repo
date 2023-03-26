@@ -96,6 +96,9 @@ class ClusterNodeStartLoader(
     }
 
     private fun normalizeUrl(url: String): String {
+        if (url.isBlank()) {
+            return url
+        }
         val normalizeUrl = if (url.startsWith("https://") || url.startsWith("http://")) {
             URI(url).normalize().toURL()
         } else {
