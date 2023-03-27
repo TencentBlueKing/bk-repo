@@ -69,14 +69,14 @@ class ClusterNodeStartLoader(
         return with(clusterProperties) {
             when (role) {
                 ClusterNodeType.CENTER -> ClusterNodeCreateRequest(
-                    name = center.name.orEmpty(),
-                    url = normalizeUrl(center.url),
-                    certificate = center.certificate.orEmpty(),
-                    username = center.username.orEmpty(),
-                    password = center.password.orEmpty(),
-                    appId = self.appId,
-                    accessKey = self.accessKey,
-                    secretKey = self.secretKey,
+                    name = self.name ?: center.name.orEmpty(),
+                    url = if (self.url.isNotBlank()) normalizeUrl(self.url) else normalizeUrl(center.url),
+                    certificate = self.certificate ?: center.certificate.orEmpty(),
+                    username = self.username ?: center.username.orEmpty(),
+                    password = self.password ?: center.password.orEmpty(),
+                    appId = self.appId ?: center.appId,
+                    accessKey = self.accessKey ?: center.accessKey,
+                    secretKey = self.secretKey ?: center.secretKey,
                     type = ClusterNodeType.CENTER
                 )
                 ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
