@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_ALGORITHM
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
@@ -85,11 +86,7 @@ object FeignClientFactory {
         srcClusterName: String? = null
     ): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
-        val url = if (serviceName.isNullOrBlank()) {
-            remoteClusterInfo.url
-        } else {
-            remoteClusterInfo.url.ensureSuffix("/").plus(serviceName)
-        }
+        val url = normalizeUrl(remoteClusterInfo.url, serviceName)
         return cache.getOrPut(remoteClusterInfo) {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
@@ -152,7 +149,17 @@ object FeignClientFactory {
         return Client.Default(sslContextFactory, hostnameVerifier)
     }
 
+    private fun normalizeUrl(url: String, serviceName: String?): String {
+        val normalizeUrl = UrlUtils.extractDomain(url)
+        return if (serviceName.isNullOrBlank()) {
+            normalizeUrl.ensureSuffix("/$REPLICATION_SERVICE_NAME")
+        } else {
+            normalizeUrl.ensureSuffix("/$serviceName")
+        }
+    }
+
     private const val TIME_OUT_SECONDS = 60L
+    private const val REPLICATION_SERVICE_NAME = "replication"
     private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<ClusterInfo, Any>>()
     private val options = Request.Options(TIME_OUT_SECONDS, TimeUnit.SECONDS, TIME_OUT_SECONDS, TimeUnit.SECONDS, true)
 }

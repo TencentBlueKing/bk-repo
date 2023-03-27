@@ -132,9 +132,11 @@ class ClusterNodeServiceImpl(
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now(),
             )
-            // 检测远程集群网络连接是否可用
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                tryConnect(convert(clusterNode)!!)
+            if (ping) {
+                // 检测远程集群网络连接是否可用
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                    tryConnect(convert(clusterNode)!!)
+                }
             }
             return try {
                 clusterNodeDao.insert(clusterNode)
