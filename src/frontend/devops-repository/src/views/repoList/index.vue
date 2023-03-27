@@ -6,12 +6,24 @@
                 <bk-input
                     v-model.trim="query.name"
                     class="w250"
-                    :placeholder="repoEnterTip"
+                    :placeholder="$t('repoEnterTip')"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
                     right-icon="bk-icon icon-search">
                 </bk-input>
+                <bk-select
+                    v-model="query.category"
+                    class="ml10 w250"
+                    @change="handlerPaginationChange()"
+                    :placeholder="$t('allStoreTypes')">
+                    <bk-option v-for="category in storeTypeEnum" :key="category.id" :id="category.id" :name="$t(category.name)">
+                        <div class="flex-align-center">
+                            <Icon size="20" :name="category.icon" />
+                            <span class="ml10 flex-1 text-overflow">{{$t(category.name)}}</span>
+                        </div>
+                    </bk-option>
+                </bk-select>
                 <bk-select
                     v-model="query.type"
                     class="ml10 w250"
@@ -46,6 +58,11 @@
                         class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
+                </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('storeTypes')" width="120">
+                <template #default="{ row }">
+                    <span>{{ $t((row.category.toLowerCase() || 'local') + 'Store')}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('repoQuota')" width="250">
@@ -104,7 +121,7 @@
     import OperationList from '@repository/components/OperationList'
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
     import { mapState, mapActions } from 'vuex'
-    import { repoEnum } from '@repository/store/publicEnum'
+    import { repoEnum, storeTypeEnum } from '@repository/store/publicEnum'
     import { formatDate, convertFileSize } from '@repository/utils'
     export default {
         name: 'repoList',
@@ -113,11 +130,13 @@
             return {
                 MODE_CONFIG,
                 repoEnum,
+                storeTypeEnum, // 仓库类型（本地/远程/虚拟）
                 isLoading: false,
                 repoList: [],
                 query: {
                     name: this.$route.query.name,
-                    type: this.$route.query.type
+                    type: this.$route.query.type,
+                    category: this.$route.query.category
                 },
                 value: 20,
                 pagination: {

@@ -36,7 +36,7 @@
     "operation": "操作",
     "publicProxy": "公有源",
     "privateProxy": "私有源",
-    "allTypes": "全部类型",
+    "allTypes": "全部制品类型",
     "enterSearch": "按下Enter键搜索",
     "deleteRepoTitle": "确认删除仓库 {name} ?",
     "deletePackageTitle": "确认删除制品 {name} ?",
@@ -684,5 +684,12 @@
     "autoEdit": "自动编辑",
     "intervalMsg":"的区间内可以执行",
     "circleMsg1":"可以执行，此后每隔",
-    "circleMsg2":"可以执行"
+    "circleMsg2":"可以执行",
+    "repoEnterTip":"请输入仓库名称, 按Enter键搜索",
+    "localStore":"本地仓库",
+    "remoteStore":"远程仓库",
+    "virtualStore":"虚拟仓库",
+    "compositeStore":"组合仓库",
+    "storeTypes":"仓库类型",
+    "allStoreTypes" :"全部仓库类型"
 }

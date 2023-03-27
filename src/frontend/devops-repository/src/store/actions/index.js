@@ -45,13 +45,14 @@ export default {
         )
     },
     // 分页查询仓库列表
-    getRepoList (_, { projectId, current, limit, name, type }) {
+    getRepoList (_, { projectId, current, limit, name, type, category }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/page/${projectId}/${current}/${limit}`,
             {
                 params: {
                     name: name || undefined,
-                    type: type || undefined
+                    type: type || undefined,
+                    category: category || undefined
                 }
             }
         ).then(res => ({
@@ -62,13 +63,14 @@ export default {
         })) // 前端隐藏report仓库/log仓库
     },
     // 查询所有仓库
-    getRepoListWithoutPage (_, { projectId, name, type }) {
+    getRepoListWithoutPage (_, { projectId, name, type, category }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/list/${projectId}`,
             {
                 params: {
                     name: name || undefined,
-                    type: type || undefined
+                    type: type || undefined,
+                    category: category || undefined
                 }
             }
         ).then(res => ({

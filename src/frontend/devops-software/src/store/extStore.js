@@ -13,14 +13,15 @@ export default {
     actions: {
         // 分页查询仓库列表
         // override
-        getRepoList (_, { projectId, current, limit, name, type }) {
+        getRepoList (_, { projectId, current, limit, name, type, category }) {
             return Vue.prototype.$ajax.get(
                 `repository/api/software/repo/page/${current}/${limit}`,
                 {
                     params: {
                         projectId: projectId || undefined,
                         name: name || undefined,
-                        type: type || undefined
+                        type: type || undefined,
+                        category: category || undefined
                     }
                 }
             )

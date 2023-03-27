@@ -125,3 +125,22 @@ export const leakLevelEnum = {
     MEDIUM: '中级',
     LOW: '低级'
 }
+
+// 制品仓库类型(本地/远程/虚拟)
+export const storeTypeEnum = [
+    {
+        id: 'local',
+        name: 'localStore',
+        icon: 'local-store'
+    },
+    {
+        id: 'remote',
+        name: 'remoteStore',
+        icon: 'remote-store'
+    },
+    {
+        id: 'virtual',
+        name: 'virtualStore',
+        icon: 'virtual-store'
+    }
+]
