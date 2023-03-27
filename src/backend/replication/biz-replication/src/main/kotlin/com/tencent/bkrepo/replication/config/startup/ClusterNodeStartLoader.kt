@@ -77,7 +77,8 @@ class ClusterNodeStartLoader(
                     appId = self.appId ?: center.appId,
                     accessKey = self.accessKey ?: center.accessKey,
                     secretKey = self.secretKey ?: center.secretKey,
-                    type = ClusterNodeType.CENTER
+                    type = ClusterNodeType.CENTER,
+                    ping = false
                 )
                 ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
@@ -88,7 +89,8 @@ class ClusterNodeStartLoader(
                     appId = self.appId,
                     accessKey = self.accessKey,
                     secretKey = self.secretKey,
-                    type = ClusterNodeType.EDGE
+                    type = ClusterNodeType.EDGE,
+                    ping = false
                 )
                 else -> null
             }
@@ -118,7 +120,6 @@ class ClusterNodeStartLoader(
                 serviceName = REPLICATION_SERVICE_NAME,
                 srcClusterName = clusterProperties.self.name
             )
-            request.ping = false
             centerClusterNodeClient.create(SYSTEM_USER, request)
         } catch (e: RemoteErrorCodeException) {
             if (e.errorCode != ReplicationMessageCode.CLUSTER_NODE_EXISTS.getCode()) {
