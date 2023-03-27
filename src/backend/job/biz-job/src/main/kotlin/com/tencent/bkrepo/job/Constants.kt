@@ -56,6 +56,7 @@ const val TYPE = "type"
 const val CATEGORY = "category"
 const val CREATED_DATE = "createdDate"
 const val LAST_MODIFIED_DATE = "lastModifiedDate"
+const val DELETED_DATE = "deleted"
 
 /**
  * metrics

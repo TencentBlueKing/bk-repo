@@ -97,6 +97,7 @@ import java.time.format.DateTimeFormatter
  * 仓库服务实现类
  */
 @Service
+@Suppress("TooManyFunctions")
 class RepositoryServiceImpl(
     private val repositoryDao: RepositoryDao,
     private val nodeService: NodeService,
@@ -248,15 +249,7 @@ class RepositoryServiceImpl(
                     updateCompositeConfiguration(repoConfiguration, old, repository, operator)
                 }
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
-
-                // 查找是否存在假删除的仓库，如果存在则删除旧仓库再插入新数据
-                val criteria = where(TRepository::projectId).isEqualTo(projectId)
-                    .and(TRepository::name).isEqualTo(name)
-                    .and(TRepository::deleted).ne(null)
-                if (repositoryDao.remove(Query(criteria)).deletedCount != 0L) {
-                    logger.info("Retrieved deleted record of Repository[$projectId/$name] before creating")
-                }
-
+                checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
                 publishEvent(event)
@@ -579,6 +572,24 @@ class RepositoryServiceImpl(
         }
 
         return true
+    }
+
+    /**
+     * 查找是否存在已被逻辑删除的仓库，如果存在且存储凭证相同，则删除旧仓库再插入新数据；如果存在且存储凭证不同，则禁止创建仓库
+     */
+    private fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
+        val query = Query(where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).ne(null)
+        )
+        repositoryDao.findOne(query)?.let {
+            if (credentialsKey == it.credentialsKey) {
+                repositoryDao.remove(query)
+                logger.info("Retrieved deleted record of Repository[$projectId/$repoName] before creating")
+            } else {
+                throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoName)
+            }
+        }
     }
 
     companion object {
