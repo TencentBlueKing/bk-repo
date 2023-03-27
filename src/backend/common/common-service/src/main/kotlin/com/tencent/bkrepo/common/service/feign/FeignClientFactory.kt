@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_ALGORITHM
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
@@ -59,7 +60,6 @@ import feign.Request
 import feign.RequestInterceptor
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.cloud.openfeign.FeignLoggerFactory
-import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /**
@@ -150,15 +150,11 @@ object FeignClientFactory {
     }
 
     private fun normalizeUrl(url: String, serviceName: String?): String {
-        val normalizeUrl = if (url.startsWith("https://") || url.startsWith("http://")) {
-            URI(url).normalize().toURL()
-        } else {
-            URI("http://$url").normalize().toURL()
-        }
+        val normalizeUrl = UrlUtils.extractDomain(url)
         return if (serviceName.isNullOrBlank()) {
-            normalizeUrl.toString().removeSuffix(normalizeUrl.path).ensureSuffix("/$REPLICATION_SERVICE_NAME")
+            normalizeUrl.ensureSuffix("/$REPLICATION_SERVICE_NAME")
         } else {
-            normalizeUrl.toString().removeSuffix(normalizeUrl.path).ensureSuffix("/$serviceName")
+            normalizeUrl.ensureSuffix("/$serviceName")
         }
     }
 

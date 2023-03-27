@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.replication.api.ClusterClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
@@ -43,7 +44,6 @@ import org.springframework.boot.ApplicationRunner
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import java.net.URI
 
 /**
  * 初始化加载node节点配置保存
@@ -101,12 +101,7 @@ class ClusterNodeStartLoader(
         if (url.isBlank()) {
             return url
         }
-        val normalizeUrl = if (url.startsWith("https://") || url.startsWith("http://")) {
-            URI(url).normalize().toURL()
-        } else {
-            URI("http://$url").normalize().toURL()
-        }
-        return normalizeUrl.toString().removeSuffix(normalizeUrl.path).ensureSuffix("/$REPLICATION_SERVICE_NAME")
+        return UrlUtils.extractDomain(url).ensureSuffix("/$REPLICATION_SERVICE_NAME")
     }
 
     private fun createEdgeClusterNodeOnCenter(request: ClusterNodeCreateRequest) {
