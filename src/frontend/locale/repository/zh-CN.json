@@ -316,7 +316,7 @@
     "artifactName": "制品名称",
     "readMe": "详细描述",
     "or": "或者",
-    "emptyGuideTip": "请参考下方使用指引来推送你的第一个制品",
+    "emptyGuideTip": "请参考下方使用指引来使用仓库",
     "emptyGuide": "暂无制品",
     "quickSet":"快速设置",
     "configureProxy":"配置代理",

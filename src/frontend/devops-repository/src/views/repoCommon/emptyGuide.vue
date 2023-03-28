@@ -4,11 +4,11 @@
             <div class="mb10 empty-guide-tip">{{$t('emptyGuide')}}</div>
             <div class="empty-guide-subtip">
                 <span>{{$t('emptyGuideTip')}}</span>
-                <template v-if="showRepoConfigRoute">
+                <!-- <template v-if="showRepoConfigRoute">
                     <span>，{{$t('or')}}</span>
                     <router-link :to="{ name: 'repoConfig', query: { repoName: this.$route.query.repoName } }">{{ $t('configureProxy') }}</router-link>
                     <span>{{ $t('emptyGuideProxyMsg') }}</span>
-                </template>
+                </template> -->
             </div>
         </div>
         <div class="empty-guide-main">
@@ -73,7 +73,7 @@
     .empty-guide-header {
         position: sticky;
         top: -137px;
-        padding: 40px 0 80px;
+        padding: 40px 0 ;
         z-index: 1;
         color: var(--fontPrimaryColor);
         background-color: white;

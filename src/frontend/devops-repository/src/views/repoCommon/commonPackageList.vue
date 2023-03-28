@@ -248,7 +248,7 @@
         }
     }
     .common-package-list {
-        height: calc(100% - 150px);
+        height: calc(100% - 120px);
         padding: 0 20px;
         background-color: white;
         .list-count {
@@ -257,7 +257,7 @@
         }
     }
     .empty-guide {
-        height: calc(100% - 100px);
+        height: calc(100% - 70px);
         background-color: white;
         overflow-y: auto;
     }
