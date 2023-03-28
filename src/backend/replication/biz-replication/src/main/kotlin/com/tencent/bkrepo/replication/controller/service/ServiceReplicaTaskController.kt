@@ -25,22 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.cluster
+package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.replication.api.ReplicaTaskClient
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterClusterNodeClient {
-
-    override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
-        clusterNodeService.create(userId, clusterNodeCreateRequest)
-        return ResponseBuilder.success()
+class ServiceReplicaTaskController(
+    private val replicaTaskService: ReplicaTaskService
+) : ReplicaTaskClient {
+    override fun create(request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo> {
+        return ResponseBuilder.success(replicaTaskService.create(request))
     }
 }

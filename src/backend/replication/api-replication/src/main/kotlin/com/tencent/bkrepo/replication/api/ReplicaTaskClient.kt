@@ -25,22 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.cluster
+package com.tencent.bkrepo.replication.api
 
+import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.service.ClusterNodeService
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@RestController
-class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterClusterNodeClient {
+@Api("同步任务服务操作接口")
+@Primary
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ReplicaTaskClient")
+@RequestMapping("/service/task")
+interface ReplicaTaskClient {
 
-    override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
-        clusterNodeService.create(userId, clusterNodeCreateRequest)
-        return ResponseBuilder.success()
-    }
+    @ApiOperation("创建任务")
+    @PostMapping("/create")
+    fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo>
+
 }

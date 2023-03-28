@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.controller.cluster
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -52,6 +53,13 @@ class ClusterNodeController(
     private val permissionManager: PermissionManager,
     private val nodeService: NodeService
 ) : ClusterNodeClient {
+
+    override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+        permissionManager.checkNodePermission(PermissionAction.READ, projectId, repoName, fullPath)
+        val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+        return ResponseBuilder.success(nodeService.getNodeDetail(artifactInfo))
+    }
+
     override fun createNode(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
         with(nodeCreateRequest) {
             permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName)

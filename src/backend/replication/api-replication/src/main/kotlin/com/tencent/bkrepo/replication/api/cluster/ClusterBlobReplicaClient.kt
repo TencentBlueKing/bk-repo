@@ -25,22 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.cluster
+package com.tencent.bkrepo.replication.api.cluster
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.service.ClusterNodeService
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
+import com.tencent.bkrepo.replication.api.BlobReplicaClient.Companion.BLOB_PULL_URI
+import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.core.io.InputStreamResource
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@RestController
-class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterClusterNodeClient {
+@RequestMapping("/cluster")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterBlobReplicaClient")
+interface ClusterBlobReplicaClient {
 
-    override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
-        clusterNodeService.create(userId, clusterNodeCreateRequest)
-        return ResponseBuilder.success()
-    }
+    @PostMapping(BLOB_PULL_URI)
+    fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource>
 }

@@ -27,20 +27,27 @@
 
 package com.tencent.bkrepo.replication.controller.cluster
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.api.cluster.ClusterBlobReplicaClient
+import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.springframework.core.io.InputStreamResource
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterClusterNodeClient {
-
-    override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
-        clusterNodeService.create(userId, clusterNodeCreateRequest)
-        return ResponseBuilder.success()
+class ClusterBlobReplicaController(
+    private val storageService: StorageService,
+    private val storageCredentialsClient: StorageCredentialsClient
+) : ClusterBlobReplicaClient {
+    override fun pull(request: BlobPullRequest): ResponseEntity<InputStreamResource> {
+        with(request) {
+            val credentials = storageCredentialsClient.findByKey(storageKey).data
+            val inputStream = storageService.load(sha256, range, credentials)
+                ?: throw NotFoundException(ArtifactMessageCode.ARTIFACT_DATA_NOT_FOUND)
+            return ResponseEntity.ok(InputStreamResource(inputStream))
+        }
     }
 }

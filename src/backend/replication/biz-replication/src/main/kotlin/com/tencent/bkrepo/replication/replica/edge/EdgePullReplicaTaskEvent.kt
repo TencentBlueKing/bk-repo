@@ -25,22 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.cluster
+package com.tencent.bkrepo.replication.replica.edge
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.service.ClusterNodeService
-import org.springframework.web.bind.annotation.RestController
-
-@RestController
-class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterClusterNodeClient {
-
-    override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
-        clusterNodeService.create(userId, clusterNodeCreateRequest)
-        return ResponseBuilder.success()
-    }
-}
+data class EdgePullReplicaTaskEvent(
+    val lastId: String,
+    val size: Int
+)

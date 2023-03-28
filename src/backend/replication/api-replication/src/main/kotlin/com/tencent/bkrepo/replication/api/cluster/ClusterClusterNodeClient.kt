@@ -25,22 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.cluster
+package com.tencent.bkrepo.replication.api.cluster
 
+import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.service.ClusterNodeService
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
-@RestController
-class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
-) : ClusterClusterNodeClient {
+@RequestMapping("/cluster/cluster/node")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterClusterNodeClient")
+interface ClusterClusterNodeClient {
 
-    override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
-        clusterNodeService.create(userId, clusterNodeCreateRequest)
-        return ResponseBuilder.success()
-    }
+    @PostMapping("/create")
+    fun create(
+        @RequestParam userId: String,
+        @RequestBody clusterNodeCreateRequest: ClusterNodeCreateRequest
+    ): Response<Void>
 }

@@ -71,6 +71,11 @@ import org.quartz.JobBuilder
 import org.quartz.JobKey
 import org.quartz.TriggerBuilder
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -136,6 +141,22 @@ class ReplicaTaskServiceImpl(
         }
     }
 
+    override fun listTaskByType(
+        type: ReplicaType,
+        lastId: String,
+        size: Int,
+        status: ReplicaStatus?
+    ): List<ReplicaTaskInfo> {
+        val criteria = where(TReplicaTask::replicaType).isEqualTo(type).and(TReplicaTask::id).gte(lastId)
+            .apply { status?.let { and(TReplicaTask::status).isEqualTo(status) } }
+        val query = Query(criteria).with(Sort.by(Sort.Direction.ASC, TReplicaTask::id.name)).limit(size)
+        return replicaTaskDao.find(query).map { convert(it)!! }
+    }
+
+    override fun listTaskObject(key: String): List<ReplicaObjectInfo> {
+        return replicaObjectDao.findByTaskKey(key).map { convert(it)!! }
+    }
+
     override fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskDetail> {
         return listTasks(projectId, repoName, ReplicaType.REAL_TIME, true)
     }
@@ -149,7 +170,9 @@ class ReplicaTaskServiceImpl(
             val clusterNodeSet = remoteClusterIds.map {
                 val clusterNodeName = clusterNodeService.getClusterNameById(it)
                 // 验证连接可用
-                clusterNodeService.tryConnect(clusterNodeName.name)
+                if (replicaType != ReplicaType.EDGE_PULL) {
+                    clusterNodeService.tryConnect(clusterNodeName.name)
+                }
                 clusterNodeName
             }.toSet()
             val task = TReplicaTask(
@@ -161,7 +184,7 @@ class ReplicaTaskServiceImpl(
                 setting = setting,
                 remoteClusters = clusterNodeSet,
                 status = when (replicaType) {
-                    ReplicaType.SCHEDULED -> ReplicaStatus.WAITING
+                    ReplicaType.SCHEDULED, ReplicaType.EDGE_PULL -> ReplicaStatus.WAITING
                     else -> ReplicaStatus.REPLICATING
                 },
                 totalBytes = computeSize(

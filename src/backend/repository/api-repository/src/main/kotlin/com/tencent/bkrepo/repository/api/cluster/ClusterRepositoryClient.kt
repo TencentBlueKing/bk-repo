@@ -35,8 +35,11 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -45,6 +48,15 @@ import org.springframework.web.bind.annotation.RequestMapping
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterRepositoryClient")
 @RequestMapping("/cluster/repo")
 interface ClusterRepositoryClient {
+
+    @ApiOperation("查询仓库信息")
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getRepoDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String
+    ): Response<RepositoryDetail?>
 
     @ApiOperation("创建仓库")
     @PostMapping("/create")
