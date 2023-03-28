@@ -25,7 +25,7 @@
             <template v-if="storeType === 'remote'">
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
                     <bk-input style="width:400px" v-model.trim="repoBaseInfo.url"></bk-input>
-                    <bk-button theme="primary" :disabled="disableTestUrl" @click="onClickTestRemoteUrl">{{ $t('testRemoteUrl') }}</bk-button>
+                    <bk-button theme="primary" :disabled="disableTestUrl" :loading="disableTestUrl" @click="onClickTestRemoteUrl">{{ $t('testRemoteUrl') }}</bk-button>
                 </bk-form-item>
                 <bk-form-item :label="$t('account')" property="credentials.username" error-display-type="normal">
                     <bk-input style="width:400px" v-model.trim="repoBaseInfo.credentials.username"></bk-input>
