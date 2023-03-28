@@ -20,6 +20,13 @@ export const repoEnum = MODE_CONFIG === 'ci'
         // 'nuget'
     ]
 
+export const repoRemoteSupportEnum = [
+    'maven',
+    'npm',
+    'pypi',
+    'nuget'
+]
+
 // 文件类型
 export const fileType = [
     'apk',

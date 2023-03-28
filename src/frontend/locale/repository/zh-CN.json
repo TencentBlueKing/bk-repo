@@ -691,5 +691,16 @@
     "virtualStore":"虚拟仓库",
     "compositeStore":"组合仓库",
     "storeTypes":"仓库类型",
-    "allStoreTypes" :"全部仓库类型"
+    "allStoreTypes" :"全部仓库类型",
+    "testRemoteUrl":"测试链接",
+    "storageStore":"存储库",
+    "networkProxy":"网络代理",
+    "port":"端口",
+    "uploadTargetStore":"上传目标仓库",
+    "select":"选择",
+    "successConnectServer":"成功连接到服务器",
+    "connectFailed":"连接失败",
+    "noSelectStorageStore":"请选择仓库后",
+    "noAddedLocalStore":"未添加任何本地仓库，请选中本地仓库后再选择",
+    "addPackagePrompt":"虚拟仓库中上传包仅可上传到已添加的本地仓库中，未设置目标仓库将无法上传"
 }

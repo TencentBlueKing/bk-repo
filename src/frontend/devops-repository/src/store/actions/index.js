@@ -126,5 +126,12 @@ export default {
             cookie.remove('bkrepo_ticket')
             commit('SHOW_LOGIN_DIALOG', true)
         }
+    },
+    // 创建远程仓库时测试链接
+    testRemoteUrl (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/repo/testremote`,
+            body
+        )
     }
 }

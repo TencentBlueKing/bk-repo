@@ -1,7 +1,31 @@
 <template>
     <div class="repo-list-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="createRepo">{{ $t('create') }}</bk-button>
+            <bk-dropdown-menu
+                ref="dropdownHover"
+                align="left"
+                trigger="click"
+                @show="isDropdownShow = true"
+                @hide="isDropdownShow = false">
+                <div slot="dropdown-trigger">
+                    <bk-button
+                        icon="plus"
+                        theme="primary"
+                        :icon-right="isDropdownShow ? 'angle-up' : 'angle-down'"
+                    >{{ $t('create') }}</bk-button>
+                </div>
+                <!-- 使用bk-link替代之前的 a 标签可以设置某个操作的禁用 -->
+                <ul class="bk-dropdown-list" slot="dropdown-content">
+                    <li v-for="item in storeTypeEnum" :key="item.name">
+                        <bk-link theme="default" href="javascript:;" @click="handlerCreateStore(item.id)">
+                            <div class="flex-align-center">
+                                <Icon class="pr5" :name="item.icon" size="16" />
+                                <span> {{$t(item.name)}} </span>
+                            </div>
+                        </bk-link>
+                    </li>
+                </ul>
+            </bk-dropdown-menu>
             <div class="flex-align-center">
                 <bk-input
                     v-model.trim="query.name"
@@ -114,7 +138,7 @@
             @change="current => handlerPaginationChange({ current })"
             @limit-change="limit => handlerPaginationChange({ limit })">
         </bk-pagination>
-        <create-repo-dialog ref="createRepo" @refresh="handlerPaginationChange()"></create-repo-dialog>
+        <create-repo-dialog ref="createRepo" :store-type="currentStoreType" @refresh="handlerPaginationChange()" @close="onCloseDialog"></create-repo-dialog>
     </div>
 </template>
 <script>
@@ -144,7 +168,9 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                isDropdownShow: false,
+                currentStoreType: '' // 当前选择的仓库类型
             }
         },
         computed: {
@@ -169,6 +195,10 @@
                 'deleteRepoList',
                 'getRepoListWithoutPage'
             ]),
+            // 关闭弹窗后需要将当前选中的仓库类型置为初始值，否则会导致再次打开同一种类型的弹窗时逻辑错误，(远程仓库和虚拟仓库也会默认选中generic仓库)
+            onCloseDialog () {
+                this.currentStoreType = ''
+            },
             getListData () {
                 this.isLoading = true
                 this.getRepoListWithoutPage({
@@ -210,7 +240,14 @@
                 })
                 this.getListData()
             },
-            createRepo () {
+            // 点击下拉菜单，隐藏下拉框，打开创建仓库弹窗
+            handlerCreateStore (type) {
+                this.$refs.dropdownHover.hide()
+                this.isDropdownShow = false
+                this.createRepo(type)
+            },
+            createRepo (type) {
+                this.currentStoreType = type
                 this.$refs.createRepo.showDialogHandler()
             },
             toPackageList ({ projectId, repoType, name }) {
@@ -272,6 +309,10 @@
         ::v-deep .bk-tooltip-ref {
             display: block;
         }
+    }
+    // 解决创建按钮右边icon图标没有垂直居中的问题
+    ::v-deep .bk-dropdown-menu .bk-dropdown-trigger .right-icon {
+        top: 0;
     }
 }
 </style>

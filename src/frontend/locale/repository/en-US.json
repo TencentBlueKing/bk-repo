@@ -678,5 +678,16 @@
     "virtualStore":"Virtual store",
     "compositeStore":"Composite store",
     "storeTypes":"Store types",
-    "allStoreTypes" :"All store types"
+    "allStoreTypes" :"All store types",
+    "testRemoteUrl":"Test remote url",
+    "storageStore":"Storage store",
+    "networkProxy":"Network proxy",
+    "port":"Port",
+    "uploadTargetStore":"Upload target store",
+    "select":"Select",
+    "successConnectServer":"Success connect server",
+    "connectFailed":"Connect failed",
+    "noSelectStorageStore":"Please select the store",
+    "noAddedLocalStore":"No local store has been added, please select the local store and then select",
+    "addPackagePrompt":"The uploaded package in the virtual store can only be uploaded to the added local store, if the target store is not set, it will not be uploaded"
 }
