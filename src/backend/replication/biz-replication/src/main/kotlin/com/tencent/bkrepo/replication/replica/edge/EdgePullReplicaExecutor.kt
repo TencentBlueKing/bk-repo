@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.edge
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
@@ -37,15 +39,19 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.replication.api.cluster.ClusterBlobReplicaClient
+import com.tencent.bkrepo.common.service.util.UrlUtils
+import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
+import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
+import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -56,23 +62,30 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.time.LocalDateTime
 
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgePullReplicaExecutor(
     private val clusterProperties: ClusterProperties,
-    private val clusterBlobReplicaClient: ClusterBlobReplicaClient,
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val replicaTaskService: ReplicaTaskService,
     private val storageManager: StorageManager
 ) {
 
+    private val centerBlobReplicaClient = OkHttpClientPool.getHttpClient(
+        clusterProperties.center,
+        Duration.ofMillis(READ_TIMEOUT), Duration.ofMillis(WRITE_TIMEOUT),
+        SignInterceptor(clusterProperties.center)
+    )
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center) }
     private val centerNodeClient: ClusterNodeClient
@@ -102,22 +115,33 @@ class EdgePullReplicaExecutor(
 
                         val localRepo = repositoryClient.getRepoDetail(localProjectId, localRepoName).data
                             ?: createProjectAndRepo(centerRepo, localProjectId, localRepoName)
-                        val pullRequest = BlobPullRequest(
+                        val blobPullRequest = BlobPullRequest(
                             sha256 = nodeDetail.sha256!!,
                             range = Range.full(nodeDetail.size),
                             storageKey = centerRepo.storageCredentials?.key
                         )
-                        val inputStream = clusterBlobReplicaClient.pull(pullRequest).body!!.inputStream
+                        val url = "${UrlUtils.extractDomain(clusterProperties.center.url)}/replication/cluster/replica/blob/pull"
+                        val requestBody = blobPullRequest.toJsonString()
+                            .toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
+                        val request = Request.Builder().url(url).post(requestBody).build()
+                        val inputStream = centerBlobReplicaClient.newCall(request).execute().body!!.byteStream()
                         val artifactFile = ArtifactFileFactory.build(inputStream, nodeDetail.size)
                         val nodeCreateRequest = buildNodeCreateRequest(taskObject, task, nodeDetail)
-                        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, localRepo.storageCredentials)
+                        val localNodeDetail = storageManager.storeArtifactFile(
+                            request = nodeCreateRequest,
+                            artifactFile = artifactFile,
+                            storageCredentials = localRepo.storageCredentials
+                        )
+                        logger.info("replicate node[$localNodeDetail] success")
                     } catch (e: Exception) {
                         logger.warn("replicate taskObject[$taskObject] failed: ${e.localizedMessage}")
                         if (task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                            task.lastExecutionStatus = ExecutionStatus.FAILED
                             throw e
                         }
                     }
                 }
+                replicaTaskService.updateStatus(task.key, ReplicaStatus.COMPLETED, ExecutionStatus.SUCCESS)
             }
     }
 
@@ -168,5 +192,8 @@ class EdgePullReplicaExecutor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(EdgePullReplicaExecutor::class.java)
+
+        private const val READ_TIMEOUT = 60 * 1000L
+        private const val WRITE_TIMEOUT = 60 * 1000L
     }
 }

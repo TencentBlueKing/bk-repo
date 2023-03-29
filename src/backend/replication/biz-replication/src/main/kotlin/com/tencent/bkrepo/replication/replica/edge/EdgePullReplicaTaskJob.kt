@@ -61,7 +61,7 @@ class EdgePullReplicaTaskJob(
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center) }
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(cron = "0 */1 * * * ?")
     @SchedulerLock(name = "pullReplicaTask", lockAtMostFor = "PT1M")
     fun pullReplicaTask() {
         val event = getLocalReplicaTask() ?: getCenterReplicaTask()

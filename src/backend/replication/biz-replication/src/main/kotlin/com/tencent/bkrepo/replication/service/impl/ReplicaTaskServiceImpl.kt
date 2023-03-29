@@ -67,12 +67,14 @@ import com.tencent.bkrepo.replication.util.TaskQueryHelper.buildListQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskObjectQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskQueryByType
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoScheduledTaskQuery
+import org.bson.types.ObjectId
 import org.quartz.JobBuilder
 import org.quartz.JobKey
 import org.quartz.TriggerBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -147,7 +149,7 @@ class ReplicaTaskServiceImpl(
         size: Int,
         status: ReplicaStatus?
     ): List<ReplicaTaskInfo> {
-        val criteria = where(TReplicaTask::replicaType).isEqualTo(type).and(TReplicaTask::id).gte(lastId)
+        val criteria = where(TReplicaTask::replicaType).isEqualTo(type).and(TReplicaTask::id).gte(ObjectId(lastId))
             .apply { status?.let { and(TReplicaTask::status).isEqualTo(status) } }
         val query = Query(criteria).with(Sort.by(Sort.Direction.ASC, TReplicaTask::id.name)).limit(size)
         return replicaTaskDao.find(query).map { convert(it)!! }
@@ -508,6 +510,14 @@ class ReplicaTaskServiceImpl(
                 }
             }
         }
+    }
+
+    override fun updateStatus(taskKey: String, replicaStatus: ReplicaStatus, executionStatus: ExecutionStatus) {
+        val query = Query(where(TReplicaTask::key).isEqualTo(taskKey))
+        val update = Update().set(TReplicaTask::status.name, replicaStatus)
+            .set(TReplicaTask::lastExecutionStatus.name, executionStatus)
+            .set(TReplicaTask::lastExecutionTime.name, LocalDateTime.now())
+        replicaTaskDao.updateFirst(query, update)
     }
 
     companion object {
