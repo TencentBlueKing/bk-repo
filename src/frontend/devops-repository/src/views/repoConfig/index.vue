@@ -123,7 +123,7 @@
                             </template>
                         </bk-form-item>
                     </template>
-                    <template v-if="repoType === 'rpm'">
+                    <template v-if="repoType === 'rpm' && !(repoBaseInfo.category === 'VIRTUAL') ">
                         <bk-form-item :label="$t('enabledFileLists')">
                             <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                         </bk-form-item>
