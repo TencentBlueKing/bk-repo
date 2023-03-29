@@ -197,7 +197,10 @@
                     name: 'commonPackage',
                     query: {
                         repoName: this.repoName,
-                        packageKey: pkg.key
+                        packageKey: pkg.key,
+                        storeType: this.storeType,
+                        // 虚拟仓库中需要添加仓库来源，供制品详情页获取制品版本列表数据使用
+                        sourceName: this.storeType === 'virtual' ? pkg.repoName || '' : undefined
                     }
                 })
             }

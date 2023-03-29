@@ -48,7 +48,8 @@
                 type: [Array, Object]
             },
             metadataLabelList: {
-                type: Array
+                type: Array,
+                default: () => []
             }
         },
         computed: {

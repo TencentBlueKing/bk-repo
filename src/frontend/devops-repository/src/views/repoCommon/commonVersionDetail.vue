@@ -16,6 +16,12 @@
                         <span class="text-overflow" :title="packageName">{{ packageName }}</span>
                         <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
                     </span>
+                    <template v-if="storeType === 'virtual'">
+                        <label class="grid-store-source">{{$t('storeSource')}}</label>
+                        <span class="flex-1 flex-align-center text-overflow">
+                            <span class="text-overflow" :title="sourceRepoName || repoName">{{ sourceRepoName || repoName }}</span>
+                        </span>
+                    </template>
                 </div>
                 <div class="grid-item"
                     v-for="{ name, label, value } in detailInfoMap"
@@ -227,7 +233,7 @@
                 }, {})
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual')
             },
             operationBtns () {
                 const basic = this.detail.basic
@@ -235,12 +241,12 @@
                 return [
                     ...(!metadataMap.forbidStatus
                         ? [
-                            this.permission.edit && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
+                            (this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual')) && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
                             this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanArtifact') }
                         ]
                         : []),
-                    { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
-                    this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
+                    !(this.storeType === 'virtual') && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
+                    (this.permission.delete && !(this.storeType === 'virtual')) && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }
         },
@@ -270,7 +276,7 @@
                 this.getVersionDetail({
                     projectId: this.projectId,
                     repoType: this.repoType,
-                    repoName: this.repoName,
+                    repoName: this.storeType === 'virtual' ? this.sourceRepoName : this.repoName,
                     packageKey: this.packageKey,
                     version: this.version
                 }).then(res => {
@@ -390,6 +396,10 @@
         .block-header {
             border-bottom: 1px solid var(--borderWeightColor);
         }
+    }
+    .grid-store-source {
+        border-left: 1px solid var(--borderColor);;
+        margin:0 1px 0 0;
     }
     .version-history {
         height: 100%;

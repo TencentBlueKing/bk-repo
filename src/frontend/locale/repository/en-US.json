@@ -689,5 +689,6 @@
     "connectFailed":"Connect failed",
     "noSelectStorageStore":"Please select the store",
     "noAddedLocalStore":"No local store has been added, please select the local store and then select",
-    "addPackagePrompt":"The uploaded package in the virtual store can only be uploaded to the added local store, if the target store is not set, it will not be uploaded"
+    "addPackagePrompt":"The uploaded package in the virtual store can only be uploaded to the added local store, if the target store is not set, it will not be uploaded",
+    "storeSource":"Store source"
 }

@@ -36,6 +36,10 @@ export default {
         storeType () {
             return this.$route.query.storeType || ''
         },
+        // 虚拟仓库的仓库来源，虚拟仓库时需要更换repoName为此值
+        sourceRepoName () {
+            return this.$route.query.sourceName || ''
+        },
         dockerGuide () {
             return [
                 {

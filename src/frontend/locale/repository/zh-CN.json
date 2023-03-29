@@ -702,5 +702,6 @@
     "connectFailed":"连接失败",
     "noSelectStorageStore":"请选择仓库后",
     "noAddedLocalStore":"未添加任何本地仓库，请选中本地仓库后再选择",
-    "addPackagePrompt":"虚拟仓库中上传包仅可上传到已添加的本地仓库中，未设置目标仓库将无法上传"
+    "addPackagePrompt":"虚拟仓库中上传包仅可上传到已添加的本地仓库中，未设置目标仓库将无法上传",
+    "storeSource":"仓库来源"
 }

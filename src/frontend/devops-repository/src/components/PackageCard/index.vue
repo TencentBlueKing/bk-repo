@@ -22,6 +22,7 @@
                     <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
                     <div class="card-metadata" :title="$t('versions') + ':' + `${cardData.versions}`"></div>
                     <div class="card-metadata" :title="$t('downloadStats') + ':' + `${cardData.downloads}`"></div>
+                    <div v-if="storeType === 'virtual'" class="card-metadata" :title="$t('storeSource') + ':' + `${cardData.repoName}`"></div>
                 </template>
                 <template v-else>
                     <div class="card-metadata" :title="$t('repo') + ':' + `${cardData.repoName}`"></div>
@@ -32,7 +33,7 @@
             </div>
         </div>
         <div class="card-operation flex-center">
-            <Icon class="hover-btn" v-if="!readonly" size="24" name="icon-delete" @click.native.stop="deleteCard" />
+            <Icon class="hover-btn" v-if="!readonly && !(storeType === 'virtual') " size="24" name="icon-delete" @click.native.stop="deleteCard" />
             <operation-list
                 v-if="!cardData.type"
                 :list="[
@@ -70,6 +71,10 @@
             },
             showRepoScan () {
                 return this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+            },
+            // 当前仓库类型
+            storeType () {
+                return this.$route.query.storeType || ''
             }
         },
         methods: {
@@ -136,7 +141,7 @@
         }
         .package-card-data {
             display: grid;
-            grid-template: auto / repeat(4, 1fr);
+            grid-template: auto / repeat(5, 1fr);
             .card-metadata {
                 padding: 0 5px;
                 overflow: hidden;
