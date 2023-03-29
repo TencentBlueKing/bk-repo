@@ -64,7 +64,7 @@
             repoGroupList () {
                 return this.repoListAll
                     .filter(r => {
-                        return ['DOCKER', 'MAVEN', 'NPM'].includes(r.type)
+                        return ['DOCKER', 'MAVEN', 'NPM'].includes(r.type) && r.category !== 'REMOTE' && r.category !== 'VIRTUAL'
                     })
                     .reduce((target, repo) => {
                         if (!target[repo.type]) target[repo.type] = []
@@ -106,8 +106,8 @@
                         repoType: this.selectedRepo.type,
                         packageConstraints: this.packageConstraints.map(pkg => ({ packageKey: pkg.key, versions: pkg.versions }))
                     }]
-                    // eslint-disable-next-line prefer-promise-reject-errors
-                    this.selectedRepoName && this.packageConstraints.length ? resolve(replicaTaskObjects) : reject()
+                    
+                    this.selectedRepoName && this.packageConstraints.length ? resolve(replicaTaskObjects) : reject(new Error())
                 })
             }
         }
