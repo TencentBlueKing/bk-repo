@@ -233,7 +233,7 @@
                 }, {})
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual')
+                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
             },
             operationBtns () {
                 const basic = this.detail.basic
@@ -241,12 +241,12 @@
                 return [
                     ...(!metadataMap.forbidStatus
                         ? [
-                            (this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual')) && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
+                            (this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')) && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
                             this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanArtifact') }
                         ]
                         : []),
-                    !(this.storeType === 'virtual') && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
-                    (this.permission.delete && !(this.storeType === 'virtual')) && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
+                    (!(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')) && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
+                    (this.permission.delete && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')) && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }
         },
