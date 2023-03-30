@@ -51,7 +51,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -141,7 +141,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -239,7 +239,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -463,7 +463,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -540,7 +540,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -633,7 +633,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -699,7 +699,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -756,7 +756,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -780,7 +780,7 @@ export default {
                         }
                     ]
                 },
-                this.storeType === 'remote'
+                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('delete'),
