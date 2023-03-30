@@ -28,6 +28,6 @@
 package com.tencent.bkrepo.replication.replica.edge
 
 data class EdgePullReplicaTaskEvent(
-    val lastId: String,
+    val taskId: String,
     val size: Int
 )

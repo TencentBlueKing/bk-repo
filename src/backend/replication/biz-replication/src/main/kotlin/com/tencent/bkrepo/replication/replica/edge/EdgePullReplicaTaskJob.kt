@@ -27,18 +27,21 @@
 
 package com.tencent.bkrepo.replication.replica.edge
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.context.ApplicationEventPublisher
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockingTaskExecutor
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
@@ -47,43 +50,62 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgePullReplicaTaskJob(
     private val clusterProperties: ClusterProperties,
     private val replicaTaskDao: ReplicaTaskDao,
-    private val applicationEventPublisher: ApplicationEventPublisher
+    private val edgePullReplicaExecutor: EdgePullReplicaExecutor,
+    private val lockingTaskExecutor: LockingTaskExecutor
 ) {
 
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center) }
+    private val executor = ThreadPoolExecutor(
+        Runtime.getRuntime().availableProcessors(),
+        Runtime.getRuntime().availableProcessors(),
+        60,
+        TimeUnit.SECONDS,
+        SynchronousQueue(),
+        ThreadFactoryBuilder().setNameFormat("edge-pull-replica-%d").build()
+    )
 
-    @Scheduled(cron = "0 */1 * * * ?")
-    @SchedulerLock(name = "pullReplicaTask", lockAtMostFor = "PT1M")
-    fun pullReplicaTask() {
-        val event = getLocalReplicaTask() ?: getCenterReplicaTask()
-        if (event != null) {
-            applicationEventPublisher.publishEvent(event)
+    @Scheduled(fixedDelay = FIXED_DELAY, fixedRate = FIXED_RATE)
+    fun getReplicaTask() {
+        if (executor.activeCount == Runtime.getRuntime().availableProcessors()) {
+            return
         }
+        val atLeastDuration = Duration.ofMillis(FIXED_RATE)
+        val atMostDuration = Duration.ofMillis(2 * FIXED_RATE)
+        val lockConfiguration = LockConfiguration(javaClass.simpleName, atMostDuration, atLeastDuration)
+        lockingTaskExecutor.executeWithLock(run(), lockConfiguration)
     }
 
-    private fun getLocalReplicaTask(): EdgePullReplicaTaskEvent? {
+    private fun run(): Runnable {
+        return Runnable {
+            val taskId = getLocalReplicaTask() ?: getCenterReplicaTask()
+            if (taskId != null) {
+                executor.execute(Runnable { edgePullReplicaExecutor.pullReplica(taskId) }.trace())
+            }
+        }.trace()
+    }
+
+    private fun getLocalReplicaTask(): String? {
         val query = Query(
             where(TReplicaTask::replicaType).isEqualTo(ReplicaType.EDGE_PULL)
                 .and(TReplicaTask::status).isEqualTo(ReplicaStatus.WAITING)
-        ).with(Sort.by(Sort.Direction.DESC, TReplicaTask::id.name))
-        val latestTask = replicaTaskDao.find(query.limit(1)).firstOrNull()
-        if (latestTask != null) {
-            val size = replicaTaskDao.count(query).toInt()
-            return EdgePullReplicaTaskEvent(latestTask.id!!, size)
-        }
-        return null
+        ).with(Sort.by(Sort.Direction.ASC, TReplicaTask::id.name))
+        return replicaTaskDao.find(query.limit(1)).firstOrNull()?.id
     }
 
-    private fun getCenterReplicaTask(): EdgePullReplicaTaskEvent? {
+    private fun getCenterReplicaTask(): String? {
         val query = Query(where(TReplicaTask::replicaType).isEqualTo(ReplicaType.EDGE_PULL))
             .with(Sort.by(Sort.Direction.DESC, TReplicaTask::id.name)).limit(1)
         val latestTask = replicaTaskDao.find(query)
@@ -92,12 +114,8 @@ class EdgePullReplicaTaskJob(
             replicaType = ReplicaType.EDGE_PULL,
             lastId = lastId,
             size = 100,
-        ).data?.filter { it.id == lastId }?.map { convert(it) }.orEmpty()
-        if (newTaskList.isNotEmpty()) {
-            replicaTaskDao.insert(newTaskList)
-            return EdgePullReplicaTaskEvent(lastId, newTaskList.size)
-        }
-        return null
+        ).data?.filter { it.id != lastId }?.map { convert(it) }.orEmpty()
+        return newTaskList.firstOrNull()?.id
     }
 
     private fun convert(replicaTaskInfo: ReplicaTaskInfo): TReplicaTask {
@@ -126,5 +144,12 @@ class EdgePullReplicaTaskJob(
                 lastModifiedDate = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             )
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(EdgePullReplicaTaskJob::class.java)
+        private const val FIXED_DELAY = 60 * 1000L
+        private const val FIXED_RATE = 30 * 1000L
+        private const val DEFAULT_QUEUE_SIZE = 32
     }
 }

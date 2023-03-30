@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.edge
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
@@ -66,7 +66,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
@@ -93,56 +92,74 @@ class EdgePullReplicaExecutor(
     private val centerRepoClient: ClusterRepositoryClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name) }
 
-    @EventListener(EdgePullReplicaTaskEvent::class)
-    fun pullReplica(event: EdgePullReplicaTaskEvent) {
-        replicaTaskService.listTaskByType(ReplicaType.EDGE_PULL, event.lastId, event.size, ReplicaStatus.WAITING)
-            .forEach { task ->
-                val taskObjectList = centerReplicaTaskClient.listObject(task.key).data.orEmpty()
-                taskObjectList.forEach { taskObject ->
-                    try {
-                        val centerProjectId = task.projectId
-                        val centerRepoName = taskObject.localRepoName
-                        val localProjectId = taskObject.remoteProjectId ?: task.projectId
-                        val localRepoName = taskObject.remoteRepoName ?: taskObject.localRepoName
-                        val fullPath = taskObject.pathConstraints!!.first().path!!
-                        val centerRepo = centerRepoClient.getRepoDetail(centerProjectId, centerRepoName).data
-                            ?: throw RepoNotFoundException(centerRepoName)
-                        val nodeDetail = centerNodeClient.getNodeDetail(
-                            projectId = centerProjectId,
-                            repoName = centerRepoName,
-                            fullPath = fullPath
-                        ).data ?: throw NodeNotFoundException(fullPath)
-
-                        val localRepo = repositoryClient.getRepoDetail(localProjectId, localRepoName).data
-                            ?: createProjectAndRepo(centerRepo, localProjectId, localRepoName)
-                        val blobPullRequest = BlobPullRequest(
-                            sha256 = nodeDetail.sha256!!,
-                            range = Range.full(nodeDetail.size),
-                            storageKey = centerRepo.storageCredentials?.key
-                        )
-                        val url = "${UrlUtils.extractDomain(clusterProperties.center.url)}/replication/cluster/replica/blob/pull"
-                        val requestBody = blobPullRequest.toJsonString()
-                            .toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
-                        val request = Request.Builder().url(url).post(requestBody).build()
-                        val inputStream = centerBlobReplicaClient.newCall(request).execute().body!!.byteStream()
-                        val artifactFile = ArtifactFileFactory.build(inputStream, nodeDetail.size)
-                        val nodeCreateRequest = buildNodeCreateRequest(taskObject, task, nodeDetail)
-                        val localNodeDetail = storageManager.storeArtifactFile(
-                            request = nodeCreateRequest,
-                            artifactFile = artifactFile,
-                            storageCredentials = localRepo.storageCredentials
-                        )
-                        logger.info("replicate node[$localNodeDetail] success")
-                    } catch (e: Exception) {
-                        logger.warn("replicate taskObject[$taskObject] failed: ${e.localizedMessage}")
-                        if (task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
-                            task.lastExecutionStatus = ExecutionStatus.FAILED
-                            throw e
-                        }
-                    }
+    fun pullReplica(taskId: String) {
+        val task = replicaTaskService.getByTaskId(taskId)!!
+        val taskObjectList = centerReplicaTaskClient.listObject(task.key).data.orEmpty()
+        taskObjectList.forEach { taskObject ->
+            try {
+                replicateCenterNode(
+                    centerProjectId = task.projectId,
+                    centerRepoName = taskObject.localRepoName,
+                    fullPath = taskObject.pathConstraints!!.first().path!!,
+                    localProjectId = taskObject.remoteProjectId ?: task.projectId,
+                    localRepoName = taskObject.remoteRepoName ?: taskObject.localRepoName,
+                    taskObject = taskObject,
+                    task = task
+                )
+            } catch (e: Exception) {
+                logger.warn("replicate taskObject[$taskObject] failed: ${e.localizedMessage}")
+                if (task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                    task.lastExecutionStatus = ExecutionStatus.FAILED
+                    throw e
                 }
-                replicaTaskService.updateStatus(task.key, ReplicaStatus.COMPLETED, ExecutionStatus.SUCCESS)
             }
+        }
+        replicaTaskService.updateStatus(task.key, ReplicaStatus.COMPLETED, ExecutionStatus.SUCCESS)
+    }
+
+    private fun replicateCenterNode(
+        centerProjectId: String,
+        centerRepoName: String,
+        fullPath: String,
+        localProjectId: String,
+        localRepoName: String,
+        taskObject: ReplicaObjectInfo,
+        task: ReplicaTaskInfo
+    ) {
+        val centerRepo = centerRepoClient.getRepoDetail(centerProjectId, centerRepoName).data
+            ?: throw RepoNotFoundException(centerRepoName)
+        val nodeDetail = centerNodeClient.getNodeDetail(
+            projectId = centerProjectId,
+            repoName = centerRepoName,
+            fullPath = fullPath
+        ).data ?: throw NodeNotFoundException(fullPath)
+
+        val localRepo = repositoryClient.getRepoDetail(localProjectId, localRepoName).data
+            ?: createProjectAndRepo(centerRepo, localProjectId, localRepoName)
+        val blobPullRequest = BlobPullRequest(
+            sha256 = nodeDetail.sha256!!,
+            range = Range.full(nodeDetail.size),
+            storageKey = centerRepo.storageCredentials?.key
+        )
+        val url = UrlUtils.extractDomain(clusterProperties.center.url) +
+            "/replication/cluster/replica/blob/pull"
+        val requestBody = blobPullRequest.toJsonString()
+            .toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
+        val request = Request.Builder().url(url).post(requestBody).build()
+        centerBlobReplicaClient.newCall(request).execute().use {
+            if (!it.isSuccessful) {
+                throw ArtifactReceiveException("Blob[${nodeDetail.sha256}] receive error")
+            }
+            val inputStream = it.body!!.byteStream()
+            val artifactFile = ArtifactFileFactory.build(inputStream, nodeDetail.size)
+            val nodeCreateRequest = buildNodeCreateRequest(taskObject, task, nodeDetail)
+            val localNodeDetail = storageManager.storeArtifactFile(
+                request = nodeCreateRequest,
+                artifactFile = artifactFile,
+                storageCredentials = localRepo.storageCredentials
+            )
+            logger.info("replicate node[$localNodeDetail] success")
+        }
     }
 
     private fun createProjectAndRepo(
@@ -183,6 +200,7 @@ class EdgePullReplicaExecutor(
         overwrite = task.setting.conflictStrategy == ConflictStrategy.OVERWRITE,
         sha256 = nodeDetail.sha256,
         md5 = nodeDetail.md5,
+        size = nodeDetail.size,
         nodeMetadata = nodeDetail.nodeMetadata,
         createdBy = nodeDetail.createdBy,
         createdDate = LocalDateTime.parse(nodeDetail.createdDate),
