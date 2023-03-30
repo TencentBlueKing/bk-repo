@@ -116,7 +116,6 @@ interface ReplicaTaskService {
 
     /**
      * 创建同步任务
-     * 目前只允许创建ReplicaType.SCHEDULED类型的任务
      *
      * @param request 创建请求
      */

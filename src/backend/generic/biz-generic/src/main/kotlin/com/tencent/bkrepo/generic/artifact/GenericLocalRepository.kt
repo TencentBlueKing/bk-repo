@@ -99,7 +99,7 @@ class GenericLocalRepository(
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(30, TimeUnit.MINUTES)
+        .expireAfterWrite(10, TimeUnit.MINUTES)
         .maximumSize(1)
         .build<String, List<ClusterNodeInfo>>(
             CacheLoader.from { _ -> clusterNodeClient.listEdgeNodes().data.orEmpty() }
@@ -167,7 +167,7 @@ class GenericLocalRepository(
                 )),
                 replicaType = ReplicaType.EDGE_PULL,
                 setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
-                remoteClusterIds = remoteClusterIds
+                remoteClusterIds = emptySet()
             ))
         }
     }

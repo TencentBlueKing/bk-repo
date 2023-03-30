@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -97,17 +98,9 @@ class EdgePullReplicaExecutor(
         val taskObjectList = centerReplicaTaskClient.listObject(task.key).data.orEmpty()
         taskObjectList.forEach { taskObject ->
             try {
-                replicateCenterNode(
-                    centerProjectId = task.projectId,
-                    centerRepoName = taskObject.localRepoName,
-                    fullPath = taskObject.pathConstraints!!.first().path!!,
-                    localProjectId = taskObject.remoteProjectId ?: task.projectId,
-                    localRepoName = taskObject.remoteRepoName ?: taskObject.localRepoName,
-                    taskObject = taskObject,
-                    task = task
-                )
+                retry(3) { replicateCenterNode(taskObject = taskObject, task = task) }
             } catch (e: Exception) {
-                logger.warn("replicate taskObject[$taskObject] failed: ${e.localizedMessage}")
+                logger.warn("replicate task[$taskId] taskObject[$taskObject] failed: ${e.localizedMessage}")
                 if (task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
                     task.lastExecutionStatus = ExecutionStatus.FAILED
                     throw e
@@ -118,14 +111,14 @@ class EdgePullReplicaExecutor(
     }
 
     private fun replicateCenterNode(
-        centerProjectId: String,
-        centerRepoName: String,
-        fullPath: String,
-        localProjectId: String,
-        localRepoName: String,
         taskObject: ReplicaObjectInfo,
         task: ReplicaTaskInfo
     ) {
+        val centerProjectId = task.projectId
+        val centerRepoName = taskObject.localRepoName
+        val fullPath = taskObject.pathConstraints!!.first().path!!
+        val localProjectId = taskObject.remoteProjectId ?: task.projectId
+        val localRepoName = taskObject.remoteRepoName ?: taskObject.localRepoName
         val centerRepo = centerRepoClient.getRepoDetail(centerProjectId, centerRepoName).data
             ?: throw RepoNotFoundException(centerRepoName)
         val nodeDetail = centerNodeClient.getNodeDetail(
@@ -152,6 +145,11 @@ class EdgePullReplicaExecutor(
             }
             val inputStream = it.body!!.byteStream()
             val artifactFile = ArtifactFileFactory.build(inputStream, nodeDetail.size)
+            if (artifactFile.getFileSha256() != nodeDetail.sha256) {
+                throw ArtifactReceiveException(
+                    "Blob[${nodeDetail.sha256}] receive error: ${artifactFile.getFileSha256()}"
+                )
+            }
             val nodeCreateRequest = buildNodeCreateRequest(taskObject, task, nodeDetail)
             val localNodeDetail = storageManager.storeArtifactFile(
                 request = nodeCreateRequest,

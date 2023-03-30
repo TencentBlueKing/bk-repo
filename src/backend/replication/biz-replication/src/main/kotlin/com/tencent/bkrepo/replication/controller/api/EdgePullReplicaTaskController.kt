@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.executor
+package com.tencent.bkrepo.replication.controller.api
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.replica.edge.EdgePullReplicaExecutor
+import org.springframework.context.annotation.Conditional
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 用于执行边缘节点主动拉取任务的Node分发
- */
-object EdgePullThreadPoolExecutor {
-    /**
-     * 线程池实例
-     */
-    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+@RestController
+@RequestMapping("/api/task/edge/")
+@Conditional(CommitEdgeEdgeCondition::class)
+class EdgePullReplicaTaskController(
+    private val edgePullReplicaExecutor: EdgePullReplicaExecutor
+) {
 
-    /**
-     * 创建线程池
-     */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("edge-pull-worker-%d").build()
-        val corePoolSize = Runtime.getRuntime().availableProcessors()
-        return ThreadPoolExecutor(
-            corePoolSize, corePoolSize, 60, TimeUnit.SECONDS,
-            SynchronousQueue(), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
+    @PostMapping("/{taskId}")
+    fun execute(
+        @PathVariable taskId: String
+    ): Response<Void> {
+        edgePullReplicaExecutor.pullReplica(taskId)
+        return ResponseBuilder.success()
     }
 }

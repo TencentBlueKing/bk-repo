@@ -67,7 +67,7 @@ class EdgePullReplicaTaskJob(
         by lazy { FeignClientFactory.create(clusterProperties.center) }
     private val executor = EdgePullThreadPoolExecutor.instance
 
-    @Scheduled(fixedDelay = FIXED_DELAY, fixedRate = FIXED_RATE)
+    @Scheduled(initialDelay = INIT_DELAY, fixedRate = FIXED_RATE)
     fun getReplicaTask() {
         if (executor.activeCount == Runtime.getRuntime().availableProcessors()) {
             return
@@ -140,7 +140,7 @@ class EdgePullReplicaTaskJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(EdgePullReplicaTaskJob::class.java)
-        private const val FIXED_DELAY = 60 * 1000L
+        private const val INIT_DELAY = 60 * 1000L
         private const val FIXED_RATE = 30 * 1000L
     }
 }

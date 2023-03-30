@@ -43,6 +43,7 @@ import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -169,14 +170,7 @@ class ReplicaTaskServiceImpl(
             val key = uniqueId()
             val userId = SecurityUtils.getUserId()
             // 查询集群节点信息
-            val clusterNodeSet = remoteClusterIds.map {
-                val clusterNodeName = clusterNodeService.getClusterNameById(it)
-                // 验证连接可用
-                if (replicaType != ReplicaType.EDGE_PULL) {
-                    clusterNodeService.tryConnect(clusterNodeName.name)
-                }
-                clusterNodeName
-            }.toSet()
+            val clusterNodeSet = getClusterNodeSet(this)
             val task = TReplicaTask(
                 key = key,
                 name = name,
@@ -233,6 +227,22 @@ class ReplicaTaskServiceImpl(
         }
     }
 
+    private fun getClusterNodeSet(request: ReplicaTaskCreateRequest): Set<ClusterNodeName> {
+        val clusterIds = if (request.replicaType == ReplicaType.EDGE_PULL && request.remoteClusterIds.isEmpty()) {
+            clusterNodeService.listEdgeNodes().map { it.id!! }
+        } else {
+            request.remoteClusterIds
+        }
+        return clusterIds.map {
+            val clusterNodeName = clusterNodeService.getClusterNameById(it)
+            // 验证连接可用
+            if (request.replicaType != ReplicaType.EDGE_PULL) {
+                clusterNodeService.tryConnect(clusterNodeName.name)
+            }
+            clusterNodeName
+        }.toSet()
+    }
+
     private fun computeSize(
         localProjectId: String,
         replicaType: ReplicaType,
@@ -279,7 +289,9 @@ class ReplicaTaskServiceImpl(
             Preconditions.checkNotBlank(name, this::name.name)
             Preconditions.checkNotBlank(localProjectId, this::localProjectId.name)
             Preconditions.checkNotBlank(replicaTaskObjects, this::replicaTaskObjects.name)
-            Preconditions.checkNotBlank(remoteClusterIds, this::remoteClusterIds.name)
+            if (replicaType != ReplicaType.EDGE_PULL) {
+                Preconditions.checkNotBlank(remoteClusterIds, this::remoteClusterIds.name)
+            }
             // 校验计划名称长度
             if (name.length < TASK_NAME_LENGTH_MIN || name.length > TASK_NAME_LENGTH_MAX) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
