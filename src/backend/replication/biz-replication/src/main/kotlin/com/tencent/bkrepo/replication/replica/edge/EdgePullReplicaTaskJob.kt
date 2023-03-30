@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.replication.replica.edge
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
@@ -39,6 +38,7 @@ import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.replica.base.executor.EdgePullThreadPoolExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.slf4j.LoggerFactory
@@ -53,9 +53,6 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
@@ -68,14 +65,7 @@ class EdgePullReplicaTaskJob(
 
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center) }
-    private val executor = ThreadPoolExecutor(
-        Runtime.getRuntime().availableProcessors(),
-        Runtime.getRuntime().availableProcessors(),
-        60,
-        TimeUnit.SECONDS,
-        SynchronousQueue(),
-        ThreadFactoryBuilder().setNameFormat("edge-pull-replica-%d").build()
-    )
+    private val executor = EdgePullThreadPoolExecutor.instance
 
     @Scheduled(fixedDelay = FIXED_DELAY, fixedRate = FIXED_RATE)
     fun getReplicaTask() {
@@ -90,22 +80,24 @@ class EdgePullReplicaTaskJob(
 
     private fun run(): Runnable {
         return Runnable {
-            val taskId = getLocalReplicaTask() ?: getCenterReplicaTask()
-            if (taskId != null) {
-                executor.execute(Runnable { edgePullReplicaExecutor.pullReplica(taskId) }.trace())
+            val task = getLocalReplicaTask() ?: getCenterReplicaTask()
+            if (task != null) {
+                executor.execute(Runnable { edgePullReplicaExecutor.pullReplica(task.id!!) }.trace())
+                task.status = ReplicaStatus.REPLICATING
+                replicaTaskDao.save(task)
             }
         }.trace()
     }
 
-    private fun getLocalReplicaTask(): String? {
+    private fun getLocalReplicaTask(): TReplicaTask? {
         val query = Query(
             where(TReplicaTask::replicaType).isEqualTo(ReplicaType.EDGE_PULL)
                 .and(TReplicaTask::status).isEqualTo(ReplicaStatus.WAITING)
         ).with(Sort.by(Sort.Direction.ASC, TReplicaTask::id.name))
-        return replicaTaskDao.find(query.limit(1)).firstOrNull()?.id
+        return replicaTaskDao.find(query.limit(1)).firstOrNull()
     }
 
-    private fun getCenterReplicaTask(): String? {
+    private fun getCenterReplicaTask(): TReplicaTask? {
         val query = Query(where(TReplicaTask::replicaType).isEqualTo(ReplicaType.EDGE_PULL))
             .with(Sort.by(Sort.Direction.DESC, TReplicaTask::id.name)).limit(1)
         val latestTask = replicaTaskDao.find(query)
@@ -115,7 +107,7 @@ class EdgePullReplicaTaskJob(
             lastId = lastId,
             size = 100,
         ).data?.filter { it.id != lastId }?.map { convert(it) }.orEmpty()
-        return newTaskList.firstOrNull()?.id
+        return newTaskList.firstOrNull()
     }
 
     private fun convert(replicaTaskInfo: ReplicaTaskInfo): TReplicaTask {
@@ -150,6 +142,5 @@ class EdgePullReplicaTaskJob(
         private val logger = LoggerFactory.getLogger(EdgePullReplicaTaskJob::class.java)
         private const val FIXED_DELAY = 60 * 1000L
         private const val FIXED_RATE = 30 * 1000L
-        private const val DEFAULT_QUEUE_SIZE = 32
     }
 }
