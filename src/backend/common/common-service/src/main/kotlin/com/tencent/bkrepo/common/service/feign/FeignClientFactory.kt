@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.service.feign
 
 import com.google.common.hash.Hashing
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_CLUSTER
@@ -131,7 +132,8 @@ object FeignClientFactory {
                 val sig = HttpSigner.sign(it, bodyHash, cluster.secretKey!!, algorithm)
                 it.query(SIGN, sig)
                 HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let { userId ->
-                    it.header(MS_AUTH_HEADER_UID, userId.toString())
+                    val msUserId = if (userId.toString() == ANONYMOUS_USER) SYSTEM_USER else userId.toString()
+                    it.header(MS_AUTH_HEADER_UID, msUserId)
                 }
             } else {
                 it.header(HttpHeaders.AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
@@ -158,6 +160,8 @@ object FeignClientFactory {
         }
     }
 
+
+    private const val SYSTEM_USER = "system"
     private const val TIME_OUT_SECONDS = 60L
     private const val REPLICATION_SERVICE_NAME = "replication"
     private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<ClusterInfo, Any>>()

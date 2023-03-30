@@ -87,6 +87,7 @@ import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
@@ -152,7 +153,8 @@ class GenericLocalRepository(
                 return
             }
             replicaTaskClient.create(ReplicaTaskCreateRequest(
-                name = context.getArtifactSha256(),
+                name = context.artifactInfo.getArtifactFullPath() +
+                    "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
                 localProjectId = context.projectId,
                 replicaObjectType = ReplicaObjectType.PATH,
                 replicaTaskObjects = listOf(ReplicaObjectInfo(

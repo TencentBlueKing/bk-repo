@@ -91,8 +91,8 @@ class EdgePullReplicaTaskJob(
         val newTaskList = centerReplicaTaskClient.list(
             replicaType = ReplicaType.EDGE_PULL,
             lastId = lastId,
-            size = 100
-        ).data?.map { convert(it) }.orEmpty()
+            size = 100,
+        ).data?.filter { it.id == lastId }?.map { convert(it) }.orEmpty()
         if (newTaskList.isNotEmpty()) {
             replicaTaskDao.insert(newTaskList)
             return EdgePullReplicaTaskEvent(lastId, newTaskList.size)
