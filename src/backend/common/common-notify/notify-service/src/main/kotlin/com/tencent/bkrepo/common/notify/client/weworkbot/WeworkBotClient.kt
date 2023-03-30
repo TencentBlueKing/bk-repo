@@ -41,7 +41,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.slf4j.LoggerFactory
 
 class WeworkBotClient(
@@ -60,7 +61,7 @@ class WeworkBotClient(
             put("msgtype", message.body.type())
             put(message.body.type(), message.body)
         }
-        val body = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), bodyMap.toJsonString())
+        val body = bodyMap.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
 
         // 构造url
         val host = notifyProperties.weworkApiHost.ifEmpty { DEFAULT_API_HOST }
@@ -72,12 +73,21 @@ class WeworkBotClient(
         // 发送请求
         val request = Request.Builder().url(url).post(body).build()
         okHttpClient.newCall(request).execute().use {
-            val bodyContent = it.body?.string()
-            if (!it.isSuccessful || bodyContent?.readJsonString<WeworkBotResponse>()?.errCode != 0) {
-                logger.error(
-                    "send wework bot message failed, " +
-                        "notifyChannelName[${credential.name}], res[$bodyContent]"
-                )
+            logErr(credential.name, it)
+        }
+    }
+
+    private fun logErr(credentialName: String, res: Response) {
+        val bodyContent = res.body?.string()
+        val errMsg = "send wework bot message failed, notifyChannelName[$credentialName], res[$bodyContent]"
+        if (!res.isSuccessful) {
+            logger.error(errMsg)
+        } else {
+            val weworkBotResponse = bodyContent?.readJsonString<WeworkBotResponse>()
+            if (weworkBotResponse?.errCode == ERR_CODE_INVALID_CHAT_ID) {
+                logger.warn(errMsg)
+            } else if (weworkBotResponse?.errCode != 0) {
+                logger.error(errMsg)
             }
         }
     }
@@ -93,5 +103,6 @@ class WeworkBotClient(
         private val logger = LoggerFactory.getLogger(WeworkBotClient::class.java)
         private const val DEFAULT_API_HOST = "https://qyapi.weixin.qq.com"
         private const val API_SEND_MESSAGE = "/cgi-bin/webhook/send"
+        private const val ERR_CODE_INVALID_CHAT_ID = 93006
     }
 }
