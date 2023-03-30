@@ -64,7 +64,7 @@
                     <breadcrumb v-else :list="breadcrumb"></breadcrumb>
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
-                            v-if="multiSelect.length"
+                            v-if="multiSelect.length && !$route.path.startsWith('/software')"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
@@ -140,17 +140,17 @@
                                     ...(!row.metadata.forbidStatus ? [
                                         { clickEvent: () => handlerDownload(row), label: $t('download') },
                                         ...(repoName !== 'pipeline' ? [
-                                            permission.edit && { clickEvent: () => renameRes(row), label: $t('rename') },
-                                            permission.write && { clickEvent: () => moveRes(row), label: $t('move') },
-                                            permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
+                                            (permission.edit && !$route.path.startsWith('/software')) && { clickEvent: () => renameRes(row), label: $t('rename') },
+                                            (permission.write && !$route.path.startsWith('/software')) && { clickEvent: () => moveRes(row), label: $t('move') },
+                                            (permission.write && !$route.path.startsWith('/software')) && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
+                                            (showRepoScan(row) && !$route.path.startsWith('/software')) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
-                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
+                                    (!row.folder && !$route.path.startsWith('/software')) && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    (permission.delete && repoName !== 'pipeline' && !$route.path.startsWith('/software')) && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
                         </template>
