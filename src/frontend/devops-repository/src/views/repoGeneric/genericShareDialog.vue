@@ -108,6 +108,9 @@
             parseFn (data) {
                 if (data !== '') {
                     const users = data.toString().split(',')
+                    for (let i = 0; i < users.length; i++) {
+                        users[i] = users[i].toString().trim()
+                    }
                     const newUser = this.genericShare.user.concat(users)
                     this.genericShare.user = Array.from(new Set(newUser))
                 }
