@@ -169,13 +169,15 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestBody @Size(max = 200, message = "操作个数必须在0和200之间") fullPaths: List<String>
+        @RequestBody @Size(max = 200, message = "操作个数必须在0和200之间") fullPaths: List<String>,
+        isFolder: Boolean = false
     ): Response<Long> {
         val nodesDeleteRequest = NodesDeleteRequest(
             projectId = projectId,
             repoName = repoName,
             fullPaths = fullPaths,
-            operator = userId
+            operator = userId,
+            isFolder = isFolder
         )
         return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
