@@ -103,7 +103,7 @@ open class NodeDeleteSupport(
             val criteria = where(TNode::projectId).isEqualTo(projectId)
                 .and(TNode::repoName).isEqualTo(repoName)
                 .and(TNode::deleted).isEqualTo(null)
-                .and(TNode::folder).isEqualTo(false)
+                .and(TNode::folder).isEqualTo(isFolder)
                 .orOperator(*orOperation.toTypedArray())
             return nodeDao.count(Query(criteria))
         }

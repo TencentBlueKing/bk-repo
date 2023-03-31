@@ -50,6 +50,18 @@ export default {
             paths
         )
     },
+    // 批量查询所有文件夹数量（递归）
+    getMultiFolderNumOfFolder (_, { projectId, repoName, paths, isFolder }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/node/batch/${projectId}/${repoName}`,
+            paths,
+            {
+                params: {
+                    isFolder: isFolder
+                }
+            }
+        )
+    },
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
         let request
