@@ -592,12 +592,12 @@
                     totalRecords = await this.getMultiFileNumOfFolder({
                         projectId: this.projectId,
                         repoName: this.repoName,
-                        paths: this.multiSelect.map(r => r.fullPath)
+                        paths: [fullPath]
                     })
                     totalFolderNum = await this.getMultiFolderNumOfFolder({
                         projectId: this.projectId,
                         repoName: this.repoName,
-                        paths: this.multiSelect.map(r => r.fullPath),
+                        paths: [fullPath],
                         isFolder: true
                     })
                 }
