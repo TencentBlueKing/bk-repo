@@ -165,7 +165,8 @@
                                 repoName: child.repoName,
                                 roadMap: '0,' + i,
                                 leaf: true,
-                                sum: child.packages || child.nodes
+                                sum: child.packages || child.nodes,
+                                repoCategory: child.repoCategory || ''
                             }
                         }),
                         sum: item.sum
@@ -250,6 +251,14 @@
                         }
                     })
                 } else {
+                    // 依赖源仓库进入制品详情需要知道仓库类型，根据仓库类型限制操作
+                    if (this.repoList[0].children.length > 0) {
+                        this.repoList[0].children.forEach((item) => {
+                            if (item.name === pkg.repoName) {
+                                pkg.repoCategory = item.repoCategory || ''
+                            }
+                        })
+                    }
                     this.$router.push({
                         name: 'commonPackage',
                         params: {
@@ -258,7 +267,8 @@
                         },
                         query: {
                             repoName: pkg.repoName,
-                            packageKey: pkg.key
+                            packageKey: pkg.key,
+                            storeType: pkg.repoCategory?.toLowerCase() || ''
                         }
                     })
                 }
