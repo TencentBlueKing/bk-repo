@@ -641,4 +641,7 @@
 .virtual-check-container{
     width: 96%;
 }
+::v-deep .bk-button-hover.bk-primary{
+    font-size: 12px;
+}
 </style>

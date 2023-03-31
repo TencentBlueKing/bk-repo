@@ -673,4 +673,7 @@
 .card-radio-group ::v-deep.card-radio{
     width: 274px;
 }
+::v-deep .bk-button-hover.bk-primary{
+    font-size: 12px;
+}
 </style>
