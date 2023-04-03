@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.replication.controller.cluster
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -37,9 +39,13 @@ import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@Principal(PrincipalType.ADMIN)
 class ClusterReplicaTaskController(
-    private val replicaTaskService: ReplicaTaskService,
+    private val replicaTaskService: ReplicaTaskService
 ) : ClusterReplicaTaskClient {
+    override fun info(taskId: String): Response<ReplicaTaskInfo?> {
+        return ResponseBuilder.success(replicaTaskService.getByTaskId(taskId))
+    }
 
     override fun list(
         replicaType: ReplicaType,

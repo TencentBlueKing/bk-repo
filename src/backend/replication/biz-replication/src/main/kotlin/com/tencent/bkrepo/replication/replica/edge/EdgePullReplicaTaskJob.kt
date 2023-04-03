@@ -83,8 +83,6 @@ class EdgePullReplicaTaskJob(
             val task = getLocalReplicaTask() ?: getCenterReplicaTask()
             if (task != null) {
                 executor.execute(Runnable { edgePullReplicaExecutor.pullReplica(task.id!!) }.trace())
-                task.status = ReplicaStatus.REPLICATING
-                replicaTaskDao.save(task)
             }
         }.trace()
     }
@@ -105,8 +103,11 @@ class EdgePullReplicaTaskJob(
         val newTaskList = centerReplicaTaskClient.list(
             replicaType = ReplicaType.EDGE_PULL,
             lastId = lastId,
-            size = 100,
+            size = 10,
         ).data?.filter { it.id != lastId }?.map { convert(it) }.orEmpty()
+        if (newTaskList.isNotEmpty()) {
+            replicaTaskDao.insert(newTaskList)
+        }
         return newTaskList.firstOrNull()
     }
 

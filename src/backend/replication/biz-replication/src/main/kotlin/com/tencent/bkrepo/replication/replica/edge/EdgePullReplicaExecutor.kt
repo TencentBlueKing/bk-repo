@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.edge
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
@@ -40,20 +41,20 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
-import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
@@ -77,8 +78,8 @@ class EdgePullReplicaExecutor(
     private val clusterProperties: ClusterProperties,
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
-    private val replicaTaskService: ReplicaTaskService,
-    private val storageManager: StorageManager
+    private val storageManager: StorageManager,
+    private val replicaRecordService: ReplicaRecordService
 ) {
 
     private val centerBlobReplicaClient = OkHttpClientPool.getHttpClient(
@@ -94,20 +95,28 @@ class EdgePullReplicaExecutor(
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name) }
 
     fun pullReplica(taskId: String) {
-        val task = replicaTaskService.getByTaskId(taskId)!!
+        logger.info("start to execute task: $taskId")
+        val task = centerReplicaTaskClient.info(taskId).data!!
+        val record = replicaRecordService.startNewRecord(task.key)
         val taskObjectList = centerReplicaTaskClient.listObject(task.key).data.orEmpty()
-        taskObjectList.forEach { taskObject ->
-            try {
+        var executionStatus = ExecutionStatus.FAILED
+        var errorReason: String? = null
+        try {
+            taskObjectList.forEach { taskObject ->
                 retry(3) { replicateCenterNode(taskObject = taskObject, task = task) }
-            } catch (e: Exception) {
-                logger.warn("replicate task[$taskId] taskObject[$taskObject] failed: ${e.localizedMessage}")
-                if (task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
-                    task.lastExecutionStatus = ExecutionStatus.FAILED
-                    throw e
-                }
+                executionStatus = ExecutionStatus.SUCCESS
+                errorReason = null
             }
+        } catch (e: Exception) {
+            logger.warn("replicate task[$taskId] failed: ${e.localizedMessage}")
+            executionStatus = ExecutionStatus.FAILED
+            errorReason = e.localizedMessage
+            if (task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                throw e
+            }
+        } finally {
+            replicaRecordService.completeRecord(record.id, executionStatus, errorReason)
         }
-        replicaTaskService.updateStatus(task.key, ReplicaStatus.COMPLETED, ExecutionStatus.SUCCESS)
     }
 
     private fun replicateCenterNode(
@@ -129,6 +138,8 @@ class EdgePullReplicaExecutor(
 
         val localRepo = repositoryClient.getRepoDetail(localProjectId, localRepoName).data
             ?: createProjectAndRepo(centerRepo, localProjectId, localRepoName)
+        // 手动重试时，需要把仓库信息添加到request attribute中
+        HttpContextHolder.getRequestOrNull()?.setAttribute(REPO_KEY, localRepo)
         val blobPullRequest = BlobPullRequest(
             sha256 = nodeDetail.sha256!!,
             range = Range.full(nodeDetail.size),
@@ -165,7 +176,7 @@ class EdgePullReplicaExecutor(
         localProjectId: String,
         localRepoName: String,
     ): RepositoryDetail {
-        val projectCreateRequest = ProjectCreateRequest(localProjectId, localRepoName, null, centerRepo.createdBy)
+        val projectCreateRequest = ProjectCreateRequest(localProjectId, localProjectId, null, centerRepo.createdBy)
         try {
             projectClient.createProject(projectCreateRequest)
         } catch (e: RemoteErrorCodeException) {

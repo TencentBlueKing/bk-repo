@@ -27,17 +27,15 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
-import com.tencent.bkrepo.replication.replica.edge.EdgePullReplicaExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import org.springframework.context.annotation.Conditional
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -45,10 +43,9 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/task/edge/")
-@Conditional(CommitEdgeEdgeCondition::class)
 class EdgePullReplicaTaskController(
     private val replicaTaskService: ReplicaTaskService,
-    private val edgePullReplicaExecutor: EdgePullReplicaExecutor
+    private val permissionManager: PermissionManager
 ) {
 
     @PostMapping("/create")
@@ -57,15 +54,10 @@ class EdgePullReplicaTaskController(
             expression = request.replicaType == ReplicaType.EDGE_PULL,
             name = ReplicaTaskCreateRequest::replicaType.name
         )
+        request.replicaTaskObjects.forEach {
+            permissionManager.checkRepoPermission(PermissionAction.READ, request.localProjectId, it.localRepoName)
+        }
         replicaTaskService.create(request)
-        return ResponseBuilder.success()
-    }
-
-    @PostMapping("/{taskId}")
-    fun execute(
-        @PathVariable taskId: String
-    ): Response<Void> {
-        edgePullReplicaExecutor.pullReplica(taskId)
         return ResponseBuilder.success()
     }
 }

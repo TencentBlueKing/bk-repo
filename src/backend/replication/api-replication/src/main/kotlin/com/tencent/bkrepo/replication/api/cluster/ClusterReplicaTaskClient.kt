@@ -39,12 +39,15 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-
 @RequestMapping("/cluster/task")
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaTaskClient")
 interface ClusterReplicaTaskClient {
 
     @ApiOperation("查询同步任务")
+    @GetMapping("/info/{taskId}")
+    fun info(@PathVariable taskId: String): Response<ReplicaTaskInfo?>
+
+    @ApiOperation("查询同步任务列表")
     @GetMapping("/list/{replicaType}")
     fun list(
         @PathVariable replicaType: ReplicaType,

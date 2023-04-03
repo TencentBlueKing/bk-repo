@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -146,9 +145,4 @@ interface ReplicaTaskService {
      * 手动执行任务
      */
     fun execute(key: String)
-
-    /**
-     * 更新任务状态
-     */
-    fun updateStatus(taskKey: String, replicaStatus: ReplicaStatus, executionStatus: ExecutionStatus)
 }

@@ -77,7 +77,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -528,14 +527,6 @@ class ReplicaTaskServiceImpl(
                 }
             }
         }
-    }
-
-    override fun updateStatus(taskKey: String, replicaStatus: ReplicaStatus, executionStatus: ExecutionStatus) {
-        val query = Query(where(TReplicaTask::key).isEqualTo(taskKey))
-        val update = Update().set(TReplicaTask::status.name, replicaStatus)
-            .set(TReplicaTask::lastExecutionStatus.name, executionStatus)
-            .set(TReplicaTask::lastExecutionTime.name, LocalDateTime.now())
-        replicaTaskDao.updateFirst(query, update)
     }
 
     companion object {
