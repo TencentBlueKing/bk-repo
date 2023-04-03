@@ -28,12 +28,18 @@
 package com.tencent.bkrepo.replication.controller.api
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.replica.edge.EdgePullReplicaExecutor
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.context.annotation.Conditional
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -41,8 +47,19 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/task/edge/")
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgePullReplicaTaskController(
+    private val replicaTaskService: ReplicaTaskService,
     private val edgePullReplicaExecutor: EdgePullReplicaExecutor
 ) {
+
+    @PostMapping("/create")
+    fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo> {
+        Preconditions.checkArgument(
+            expression = request.replicaType == ReplicaType.EDGE_PULL,
+            name = ReplicaTaskCreateRequest::replicaType.name
+        )
+        replicaTaskService.create(request)
+        return ResponseBuilder.success()
+    }
 
     @PostMapping("/{taskId}")
     fun execute(

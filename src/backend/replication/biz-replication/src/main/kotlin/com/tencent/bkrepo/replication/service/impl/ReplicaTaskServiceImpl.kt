@@ -56,6 +56,7 @@ import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
+import com.tencent.bkrepo.replication.replica.edge.EdgePullReplicaExecutor
 import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
 import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
@@ -73,6 +74,7 @@ import org.quartz.JobBuilder
 import org.quartz.JobKey
 import org.quartz.TriggerBuilder
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -90,7 +92,8 @@ class ReplicaTaskServiceImpl(
     private val replicaRecordService: ReplicaRecordService,
     private val clusterNodeService: ClusterNodeService,
     private val replicaTaskScheduler: ReplicaTaskScheduler,
-    private val localDataManager: LocalDataManager
+    private val localDataManager: LocalDataManager,
+    private val edgePullReplicaExecutor: ObjectProvider<EdgePullReplicaExecutor>
 ) : ReplicaTaskService {
     override fun getByTaskId(taskId: String): ReplicaTaskInfo? {
         return replicaTaskDao.findById(taskId)?.let { convert(it) }
@@ -503,6 +506,9 @@ class ReplicaTaskServiceImpl(
                     throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, key)
                 }
                 replicaTaskScheduler.triggerJob(JobKey.jobKey(tReplicaTask.id!!, REPLICA_JOB_GROUP))
+            } else if (tReplicaTask.replicaType == ReplicaType.EDGE_PULL) {
+                edgePullReplicaExecutor.ifAvailable?.pullReplica(tReplicaTask.id!!)
+                    ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, TReplicaTask::replicaType.name)
             } else {
                 // 如果任务不存在，并且状态不为waiting状态，则不会被reloadTask加载，将其添加进调度器
                 if (tReplicaTask.status != ReplicaStatus.WAITING) {
