@@ -31,12 +31,15 @@
 
 package com.tencent.bkrepo.repository.search.software.interceptor
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.search.common.CommonQueryContext
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -45,7 +48,9 @@ import org.springframework.stereotype.Component
  * 在 service 层只加载系统级仓库，这里不再做权限校验
  */
 @Component
-class SoftwareRepoNameRuleInterceptor : QueryRuleInterceptor {
+class SoftwareRepoNameRuleInterceptor(
+    private val repositoryService: RepositoryService
+) : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
         return rule is Rule.QueryRule && rule.field == NodeInfo::repoName.name
@@ -56,7 +61,7 @@ class SoftwareRepoNameRuleInterceptor : QueryRuleInterceptor {
             require(context is CommonQueryContext)
             val queryRule = when (operation) {
                 OperationType.EQ -> {
-                    Rule.QueryRule(NodeInfo::repoName.name, value, OperationType.EQ)
+                    handleRepoNameEq(context.findProjectId(), value.toString())
                 }
                 OperationType.IN -> {
                     val listValue = value
@@ -71,5 +76,40 @@ class SoftwareRepoNameRuleInterceptor : QueryRuleInterceptor {
             }.toFixed()
             return context.interpreter.resolveRule(queryRule, context)
         }
+    }
+
+    private fun handleRepoNameEq(
+        projectId: String,
+        value: String
+    ): Rule.QueryRule {
+        val repoInfo = repositoryService.getRepoInfo(projectId, value)
+        if (repoInfo?.category == RepositoryCategory.VIRTUAL) {
+            val memberList = (repoInfo.configuration as VirtualConfiguration).repositoryList.map { it.name }
+            if (memberList.isNotEmpty()) {
+                return handleRepoNameIn(projectId, memberList)
+            }
+        }
+        return Rule.QueryRule(NodeInfo::repoName.name, value, OperationType.EQ)
+    }
+
+    private fun handleRepoNameIn(
+        projectId: String,
+        value: List<String>
+    ): Rule.QueryRule {
+        val repoNameList = value.filter { isSystemOrPublicRepo(projectId, it) }
+        return if (repoNameList.size == 1) {
+            Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
+        } else {
+            Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
+        }
+    }
+
+    private fun isSystemOrPublicRepo(
+        projectId: String,
+        repoName: String
+    ): Boolean {
+        return repositoryService.getRepoInfo(projectId, repoName)?.run {
+            public || configuration.settings["system"] as? Boolean ?: false
+        } ?: false
     }
 }

@@ -95,7 +95,7 @@ class RepoNameRuleInterceptor(
         if (repoInfo?.category == RepositoryCategory.VIRTUAL) {
             val memberList = (repoInfo.configuration as VirtualConfiguration).repositoryList.map { it.name }
             if (memberList.isNotEmpty()) {
-                return Rule.QueryRule(NodeInfo::repoName.name, memberList, OperationType.IN)
+                return handleRepoNameIn(projectId, memberList)
             }
         }
         if (!hasRepoPermission(projectId, value)) {
@@ -107,9 +107,9 @@ class RepoNameRuleInterceptor(
     private fun handleRepoNameIn(
         projectId: String,
         value: List<*>,
-        context: CommonQueryContext
+        context: CommonQueryContext? = null
     ): Rule.QueryRule {
-        val repoNameList = if (context.repoList != null) {
+        val repoNameList = if (context?.repoList != null) {
             context.repoList!!.filter { hasRepoPermission(projectId, it.name, it.public) }.map { it.name }
         } else {
             value.filter { hasRepoPermission(projectId, it.toString()) }.map { it.toString() }
