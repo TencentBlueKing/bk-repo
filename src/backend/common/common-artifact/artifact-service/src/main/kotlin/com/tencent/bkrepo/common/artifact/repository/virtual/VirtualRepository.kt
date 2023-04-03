@@ -62,20 +62,18 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     lateinit var permissionManager: PermissionManager
 
     override fun query(context: ArtifactQueryContext): Any? {
-        val originRepoDetail = context.repositoryDetail
-        val localResult = mapEachSubRepo(context, RepositoryCategory.LOCAL) {
+        val localResultList = mapEachSubRepo(context = context, category = RepositoryCategory.LOCAL) {
             require(it is ArtifactQueryContext)
             val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
             repository.query(it)
         }
-        val remoteList = mutableListOf<Any>()
-        mapFirstRepo(context, RepositoryCategory.REMOTE) {
+        val remoteResultList = mutableListOf<Any>()
+        mapFirstRepo(context = context, category = RepositoryCategory.REMOTE) {
             require(it is ArtifactQueryContext)
             val repository = ArtifactContextHolder.getRepository(RepositoryCategory.REMOTE)
             repository.query(it)
-        }?.let { remoteList.add(it) }
-        modifyContext(context, originRepoDetail)
-        return Pair(localResult, remoteList)
+        }?.let { remoteResultList.add(it) }
+        return Pair(localResultList, remoteResultList)
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
@@ -87,7 +85,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return mapFirstRepo(context) {
+        return mapFirstRepo(context, false) {
             require(it is ArtifactDownloadContext)
             val category = it.repositoryDetail.category
             val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
@@ -137,11 +135,15 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     /**
      * 遍历虚拟仓库，直到第一个仓库返回数据
      */
+    @Suppress("NestedBlockDepth")
     protected fun <R> mapFirstRepo(
         context: ArtifactContext,
+        // 遍历完成后是否恢复为虚拟仓库的上下文
+        recoverContext: Boolean = true,
         category: RepositoryCategory? = null,
         action: (ArtifactContext) -> R?
     ): R? {
+        val originRepoDetail = context.repositoryDetail
         val repoList = queryMemberList(context, category)
         val traversedList = getTraversedList(context)
         for (member in repoList) {
@@ -153,7 +155,12 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 permissionManager.checkRepoPermission(PermissionAction.READ, context.projectId, member.name)
                 val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
                 modifyContext(context, subRepoDetail)
-                action(context)?.let { return it }
+                action(context)?.let {
+                    if (recoverContext) {
+                        modifyContext(context, originRepoDetail)
+                    }
+                    return it
+                }
             } catch (ignored: Exception) {
                 logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
@@ -167,9 +174,12 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
      */
     protected fun <R> mapEachSubRepo(
         context: ArtifactContext,
+        // 遍历完成后是否恢复为虚拟仓库的上下文
+        recoverContext: Boolean = true,
         category: RepositoryCategory? = null,
         action: (ArtifactContext) -> R?
     ): MutableList<R> {
+        val originRepoDetail = context.repositoryDetail
         val repoList = queryMemberList(context, category)
         val traversedList = getTraversedList(context)
         val mapResult = mutableListOf<R>()
@@ -187,12 +197,52 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
         }
+        if (recoverContext) {
+            modifyContext(context, originRepoDetail)
+        }
+        return mapResult
+    }
+
+    /**
+     * 遍历虚拟仓库包含的本地仓库（所有）、远程仓库（直到第一个远程仓库返回数据），执行[action]操作，并将结果聚合成[List]返回
+     */
+    protected fun <R> mapEachLocalAndFirstRemote(
+        context: ArtifactContext,
+        // 遍历完成后是否恢复为虚拟仓库的上下文
+        recoverContext: Boolean = true,
+        action: (ArtifactContext) -> R?
+    ): MutableList<R> {
+        val originRepoDetail = context.repositoryDetail
+        val repoList = queryMemberList(context)
+        val traversedList = getTraversedList(context)
+        val mapResult = mutableListOf<R>()
+        var remoteSuccess = false
+        for (member in repoList) {
+            if (member in traversedList || (remoteSuccess && member.category == RepositoryCategory.REMOTE)) {
+                continue
+            }
+            traversedList.add(member)
+            try {
+                permissionManager.checkRepoPermission(PermissionAction.READ, context.projectId, member.name)
+                val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
+                modifyContext(context, subRepoDetail)
+                action(context)?.let {
+                    mapResult.add(it)
+                    remoteSuccess = remoteSuccess || member.category == RepositoryCategory.REMOTE
+                }
+            } catch (ignored: Exception) {
+                logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
+            }
+        }
+        if (recoverContext) {
+            modifyContext(context, originRepoDetail)
+        }
         return mapResult
     }
 
     private fun queryMemberList(
         context: ArtifactContext,
-        category: RepositoryCategory?
+        category: RepositoryCategory? = null
     ): List<VirtualRepositoryMember> {
         if (context.repositoryDetail.category != RepositoryCategory.VIRTUAL) {
             modifyContext(context, HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail)
@@ -201,7 +251,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         return virtualConfiguration.repositoryList.filter { repo -> category?.run { repo.category == this } ?: true }
     }
 
-    private fun modifyContext(context: ArtifactContext, repoDetail: RepositoryDetail) {
+    protected fun modifyContext(context: ArtifactContext, repoDetail: RepositoryDetail) {
         context.repositoryDetail = repoDetail
         context.storageCredentials = repoDetail.storageCredentials
         context.artifactInfo.repoName = repoDetail.name
