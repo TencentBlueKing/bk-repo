@@ -78,7 +78,10 @@ abstract class AbstractReplicaService(
                     fullPath = PathUtils.ROOT
                 ).nodeInfo
                 replicaByPath(context, root)
-                logger.info("replicaByRepo for generic finished ${replicaContext.localProjectId}|${replicaContext.localRepoName}")
+                logger.info(
+                    "replicaByRepo for generic finished" +
+                        " ${replicaContext.localProjectId}|${replicaContext.localRepoName}"
+                )
                 return
             }
             // 同步包
