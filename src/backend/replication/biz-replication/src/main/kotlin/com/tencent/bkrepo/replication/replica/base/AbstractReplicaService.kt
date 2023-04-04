@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.base
 
+import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -77,6 +78,7 @@ abstract class AbstractReplicaService(
                     fullPath = PathUtils.ROOT
                 ).nodeInfo
                 replicaByPath(context, root)
+                logger.info("replicaByRepo for generic finished ${replicaContext.localProjectId}|${replicaContext.localRepoName}")
                 return
             }
             // 同步包
@@ -97,9 +99,10 @@ abstract class AbstractReplicaService(
                     option = option
                 )
             }
+            logger.info("replicaByRepo finished ${replicaContext.localProjectId}|${replicaContext.localRepoName}")
         } catch (throwable: Throwable) {
             setErrorStatus(context, throwable)
-            logger.error("replicaByRepo failed,error is ${throwable.message}")
+            logger.error("replicaByRepo failed,error is ${Throwables.getStackTraceAsString(throwable)}")
         } finally {
             completeRecordDetail(context)
         }
