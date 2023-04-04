@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
@@ -55,6 +57,10 @@ import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -249,6 +255,27 @@ class ReplicaRecordServiceImpl(
         return null
     }
 
+    override fun writeBack(replicaRecordInfo: ReplicaRecordInfo) {
+        val task = replicaTaskDao.findByKey(replicaRecordInfo.taskKey)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, replicaRecordInfo.taskKey)
+        replicaRecordDao.insert(convert(replicaRecordInfo))
+        logger.info("write back record success: $replicaRecordInfo")
+
+        val query = Query(where(TReplicaTask::key).isEqualTo(task.key))
+        val update = Update().set(TReplicaTask::lastExecutionStatus.name, replicaRecordInfo.status)
+            .set(TReplicaTask::lastExecutionTime.name, replicaRecordInfo.startTime)
+        if (replicaRecordInfo.status == ExecutionStatus.SUCCESS) {
+            val srcCluster = SecurityUtils.getClusterName()
+            task.remoteClusters.find { it.name == srcCluster }?.run {
+                update.pull(TReplicaTask::remoteClusters.name, this)
+                if (task.remoteClusters.size == 1) {
+                    update.set(TReplicaTask::status.name, ReplicaStatus.COMPLETED)
+                }
+            }
+        }
+        replicaTaskDao.upsert(query, update)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaRecordServiceImpl::class.java)
 
@@ -268,6 +295,16 @@ class ReplicaRecordServiceImpl(
                     errorReason = it.errorReason
                 )
             }
+        }
+
+        private fun convert(replicaRecordInfo: ReplicaRecordInfo): TReplicaRecord {
+            return TReplicaRecord(
+                taskKey = replicaRecordInfo.taskKey,
+                status = replicaRecordInfo.status,
+                startTime = replicaRecordInfo.startTime,
+                endTime = replicaRecordInfo.endTime,
+                errorReason = replicaRecordInfo.errorReason
+            )
         }
 
         private fun convert(tReplicaRecordDetail: TReplicaRecordDetail?): ReplicaRecordDetail? {

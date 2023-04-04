@@ -25,37 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.api.cluster
+package com.tencent.bkrepo.replication.controller.cluster
 
-import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaRecordClient
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import org.springframework.web.bind.annotation.RestController
 
-@RequestMapping("/cluster/task")
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaTaskClient")
-interface ClusterReplicaTaskClient {
-
-    @ApiOperation("查询同步任务")
-    @GetMapping("/info/{taskId}")
-    fun info(@PathVariable taskId: String): Response<ReplicaTaskInfo?>
-
-    @ApiOperation("查询同步任务列表")
-    @GetMapping("/list/{replicaType}")
-    fun list(
-        @PathVariable replicaType: ReplicaType,
-        @RequestParam lastId: String,
-        @RequestParam size: Int
-    ): Response<List<ReplicaTaskInfo>>
-
-    @ApiOperation("查询同步任务对象")
-    @GetMapping("/object/list/{taskKey}")
-    fun listObject(@PathVariable taskKey: String): Response<List<ReplicaObjectInfo>>
+@RestController
+@Principal(PrincipalType.ADMIN)
+class ClusterReplicaRecordController(
+    private val replicaRecordService: ReplicaRecordService
+) : ClusterReplicaRecordClient {
+    override fun writeBack(replicaRecordInfo: ReplicaRecordInfo): Response<Void> {
+        replicaRecordService.writeBack(replicaRecordInfo)
+        return ResponseBuilder.success()
+    }
 }

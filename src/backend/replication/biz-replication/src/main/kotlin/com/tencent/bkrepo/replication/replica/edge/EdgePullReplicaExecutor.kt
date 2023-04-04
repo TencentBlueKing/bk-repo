@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
 import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaRecordClient
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -88,11 +89,13 @@ class EdgePullReplicaExecutor(
         SignInterceptor(clusterProperties.center)
     )
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
-        by lazy { FeignClientFactory.create(clusterProperties.center) }
+        by lazy { FeignClientFactory.create(clusterProperties.center,"replication", clusterProperties.self.name) }
     private val centerNodeClient: ClusterNodeClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name) }
     private val centerRepoClient: ClusterRepositoryClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name) }
+    private val centerReplicaRecordClient: ClusterReplicaRecordClient
+        by lazy { FeignClientFactory.create(clusterProperties.center, "replication", clusterProperties.self.name) }
 
     fun pullReplica(taskId: String) {
         logger.info("start to execute task: $taskId")
@@ -116,6 +119,7 @@ class EdgePullReplicaExecutor(
             }
         } finally {
             replicaRecordService.completeRecord(record.id, executionStatus, errorReason)
+            centerReplicaRecordClient.writeBack(replicaRecordService.getRecordById(record.id)!!)
         }
     }
 
