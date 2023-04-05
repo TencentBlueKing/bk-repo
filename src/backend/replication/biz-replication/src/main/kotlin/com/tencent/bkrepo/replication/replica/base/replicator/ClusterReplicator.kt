@@ -31,6 +31,7 @@ import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
@@ -47,11 +48,13 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 集群数据同步类
@@ -65,6 +68,8 @@ class ClusterReplicator(
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
+
+    private val remoteRepoCache = ConcurrentHashMap<String, RepositoryDetail>()
 
     override fun checkVersion(context: ReplicaContext) {
         with(context) {
@@ -95,17 +100,20 @@ class ClusterReplicator(
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return
             val localRepo = localDataManager.findRepoByName(localProjectId, localRepoName, localRepoType.name)
-            val request = RepoCreateRequest(
-                projectId = remoteProjectId,
-                name = remoteRepoName,
-                type = remoteRepoType,
-                category = localRepo.category,
-                public = localRepo.public,
-                description = localRepo.description,
-                configuration = localRepo.configuration,
-                operator = localRepo.createdBy
-            )
-            context.remoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+            val key = buildRemoteRepoCacheKey(cluster, remoteProjectId, remoteRepoName)
+            context.remoteRepo = remoteRepoCache.getOrPut(key) {
+                val request = RepoCreateRequest(
+                    projectId = remoteProjectId,
+                    name = remoteRepoName,
+                    type = remoteRepoType,
+                    category = localRepo.category,
+                    public = localRepo.public,
+                    description = localRepo.description,
+                    configuration = localRepo.configuration,
+                    operator = localRepo.createdBy
+                )
+                artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+            }
         }
     }
 
@@ -264,5 +272,9 @@ class ClusterReplicator(
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
         private const val RETRY_COUNT = 2
         private const val DELAY_IN_SECONDS: Long = 1
+
+        fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
+            return "$projectId/$repoName/${clusterInfo.hashCode()}"
+        }
     }
 }
