@@ -192,12 +192,14 @@ class ClusterReplicator(
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
-            return buildNodeCreateRequest(this, node)?.let {
-                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+                return buildNodeCreateRequest(this, node)?.let {
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
                     ) {
-                        logger.info("The file [${node.fullPath}] with sha256 [${node.sha256}] " +
-                                        "will be pushed to the remote server, try the $retry time!")
+                        logger.info(
+                            "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
+                                "will be pushed to the remote server, try the $retry time!"
+                        )
                         val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
                         val rateLimitInputStream = artifactInputStream.rateLimit(
                             replicationProperties.rateLimit.toBytes()
@@ -214,8 +216,10 @@ class ClusterReplicator(
                                 storageKey = remoteRepo?.storageCredentials?.key
                             )
                         } catch (throwable: Throwable) {
-                            logger.warn("File replica push error $throwable, trace is " +
-                                             "${Throwables.getStackTraceAsString(throwable)}!")
+                            logger.warn(
+                                "File replica push error $throwable, trace is " +
+                                    "${Throwables.getStackTraceAsString(throwable)}!"
+                            )
                             throw throwable
                         }
                     }
@@ -225,8 +229,8 @@ class ClusterReplicator(
                     // 2. 同步节点信息
                     artifactReplicaClient!!.replicaNodeCreateRequest(it)
                     true
-                }
-            } ?: false
+                } ?: false
+            }
         }
     }
 
