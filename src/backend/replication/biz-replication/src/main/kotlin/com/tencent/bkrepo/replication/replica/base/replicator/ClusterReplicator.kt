@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.base.replicator
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -152,11 +153,16 @@ class ClusterReplicator(
                 packageVersion = packageVersion,
                 type = localRepoType
             ).forEach {
-                val node = localDataManager.findNodeDetail(
-                    projectId = localProjectId,
-                    repoName = localRepoName,
-                    fullPath = it
-                )
+                val node = try {
+                    localDataManager.findNodeDetail(
+                        projectId = localProjectId,
+                        repoName = localRepoName,
+                        fullPath = it
+                    )
+                } catch (e: NodeNotFoundException) {
+                    logger.warn("Node $it not found in repo $localProjectId|$localRepoName")
+                    throw e
+                }
                 replicaFile(context, node.nodeInfo)
             }
             val packageMetadata = packageVersion.packageMetadata as MutableList<MetadataModel>
