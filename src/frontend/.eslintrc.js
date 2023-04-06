@@ -21,7 +21,8 @@ module.exports = {
         MODE_CONFIG: true,
         RELEASE_MODE: true,
         DEVOPS_SITE_URL: true,
-        SHOW_PROJECT_CONFIG_MENU: true
+        SHOW_PROJECT_CONFIG_MENU: true,
+        SHOW_ANALYST_MENU: true
     },
     // add your custom rules hered
     rules: {

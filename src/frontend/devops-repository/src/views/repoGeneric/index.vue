@@ -293,7 +293,7 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initPage()
-            if (!this.community) {
+            if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
         },
@@ -326,7 +326,8 @@
                 } else {
                     supportFileNameExt = this.scannerSupportFileNameExt.includes(node.name.substring(indexOfLastDot + 1))
                 }
-                return !node.folder && !this.community && supportFileNameExt
+                const show = !this.community || SHOW_ANALYST_MENU
+                return !node.folder && show && supportFileNameExt
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {
