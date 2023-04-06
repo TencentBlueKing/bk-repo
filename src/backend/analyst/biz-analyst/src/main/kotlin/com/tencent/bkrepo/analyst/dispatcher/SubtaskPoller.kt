@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
@@ -51,7 +52,7 @@ open class SubtaskPoller(
     private val scannerService: ScannerService,
     private val temporaryScanTokenService: TemporaryScanTokenService,
     private val subtaskStateMachine: StateMachine,
-    private val executorClient: ExecutorClient
+    private val executorClient: ObjectProvider<ExecutorClient>
 ) {
     @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
     open fun dispatch() {
@@ -82,7 +83,7 @@ open class SubtaskPoller(
         }
         if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher.isNullOrEmpty()) {
             val subtaskId = event.subtask.latestSubScanTaskId!!
-            val result = executorClient.stop(subtaskId)
+            val result = executorClient.ifAvailable?.stop(subtaskId)
             logger.info("stop subtask[$subtaskId] executor result[$result]")
         }
     }
