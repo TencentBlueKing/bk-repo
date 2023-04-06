@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
@@ -80,7 +81,8 @@ class EdgePullReplicaExecutor(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val storageManager: StorageManager,
-    private val replicaRecordService: ReplicaRecordService
+    private val replicaRecordService: ReplicaRecordService,
+    private val permissionManager: PermissionManager
 ) {
 
     private val centerBlobReplicaClient = OkHttpClientPool.getHttpClient(
