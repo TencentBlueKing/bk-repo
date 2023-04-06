@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.base
 
+import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -254,7 +255,10 @@ abstract class AbstractReplicaService(
             } catch (throwable: Throwable) {
                 status = ExecutionStatus.FAILED
                 errorReason = throwable.message.orEmpty()
-                logger.error("replica file failed, error is $errorReason")
+                logger.error(
+                    "replica file failed, " +
+                                 "error is ${Throwables.getStackTraceAsString(throwable)}"
+                )
                 progress.failed += 1
                 setErrorStatus(this, throwable)
                 if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
@@ -377,5 +381,7 @@ abstract class AbstractReplicaService(
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractReplicaService::class.java)
         private const val PAGE_SIZE = 1000
+        const val RETRY_COUNT = 2
+        const val DELAY_IN_SECONDS: Long = 2
     }
 }
