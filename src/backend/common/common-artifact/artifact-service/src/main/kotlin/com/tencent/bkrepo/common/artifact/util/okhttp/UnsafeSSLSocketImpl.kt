@@ -170,7 +170,12 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
         return delegate.applicationProtocol
     }
 
-    override fun setHandshakeApplicationProtocolSelector(selector: BiFunction<SSLSocket, MutableList<String>, String>?) {
+    override fun setHandshakeApplicationProtocolSelector(
+        selector: BiFunction<
+            SSLSocket,
+            MutableList<String>, String,
+            >?,
+    ) {
         delegate.handshakeApplicationProtocolSelector = selector
     }
 
