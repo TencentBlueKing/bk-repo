@@ -228,6 +228,7 @@ export default {
             xhr.setRequestHeader('X-BKREPO-OVERWRITE', headers['X-BKREPO-OVERWRITE'])
             xhr.setRequestHeader('X-BKREPO-EXPIRES', headers['X-BKREPO-EXPIRES'])
             xhr.setRequestHeader('X-CSRFToken', cookies.get((MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket'))
+            xhr.setRequestHeader('Accept-Language', cookies.get('blueking_language') || 'zh-CN')
             xhr.addEventListener('error', e => reject(e.target.response))
             xhr.send(body)
         })
