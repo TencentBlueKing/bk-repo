@@ -37,12 +37,14 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import org.springframework.stereotype.Service
 import java.time.Duration
 import javax.servlet.http.HttpServletRequest
+import org.springframework.http.HttpMethod
 
 /**
  * 边缘节点重定向服务
@@ -79,13 +81,30 @@ class EdgeNodeRedirectService(
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
+    fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
+        val method = HttpContextHolder.getRequest().method
+        if (!method.equals(HttpMethod.GET.name, true)) {
+            // 只重定向下载请求
+            return false
+        }
+        val node = ArtifactContextHolder.getNodeDetail()
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        node.clusterNames ?: return false
+        // 自身集群不需要重定向
+        if (node.clusterNames!!.contains(clusterProperties.self.name)) {
+            return false
+        }
+        val edgeClusterName = getEdgeClusterName(artifactInfo)
+        return edgeClusterName != null
+    }
+
     /**
      * 获取边缘节点名称
      * */
-    fun getEdgeClusterName(artifactInfo: ArtifactInfo): String? {
+    private fun getEdgeClusterName(artifactInfo: ArtifactInfo): String? {
         val node = ArtifactContextHolder.getNodeDetail()
             ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-        return node.clusterNames?.firstOrNull { it != clusterProperties.self.name }
+        return node.clusterNames?.firstOrNull()
     }
 
     /**
