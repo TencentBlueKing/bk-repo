@@ -39,7 +39,7 @@ const val DEPENDENCY = "dependency"
 const val TARGET_FRAMEWORKS = "targetFramework"
 const val REFERENCE = "reference"
 const val FRAMEWORKS = "frameworks"
-
+const val MANIFEST = "manifest"
 const val METADATA = "nuget_metadata"
 
 const val REMOTE_URL = "remote_url"
@@ -47,11 +47,11 @@ const val REMOTE_URL = "remote_url"
 const val INDEX = "index.json"
 
 const val NUGET_V3_NOT_FOUND =
-    """
-    <Error>
-        <Code>BlobNotFound</Code>
-        <Message>
-            The specified blob does not exist.
-        </Message>
-    </Error>
+"""<?xml version="1.0" encoding="utf-8"?>
+<Error>
+    <Code>BlobNotFound</Code>
+    <Message>
+        The specified blob does not exist.
+    </Message>
+</Error>
 """

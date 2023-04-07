@@ -38,6 +38,7 @@ interface NugetPackageMetadataService {
         artifactInfo: NugetRegistrationArtifactInfo,
         proxyChannelName: String,
         url: String,
-        registrationPath: String
+        registrationPath: String,
+        isSemver2Endpoint: Boolean
     ): ResponseEntity<Any>
 }

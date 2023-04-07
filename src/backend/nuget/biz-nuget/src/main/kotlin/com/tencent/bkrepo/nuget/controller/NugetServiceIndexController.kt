@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Suppress("MVCPathVariableInspection")
 @RestController
 @RequestMapping("/{projectId}/{repoName}/v3")
 class NugetServiceIndexController(
@@ -25,6 +24,6 @@ class NugetServiceIndexController(
     fun feed(
         artifactInfo: NugetArtifactInfo
     ): ResponseEntity<Any> {
-        return nugetServiceIndexService.getFeed(artifactInfo)
+        return ResponseEntity.ok(nugetServiceIndexService.getFeed(artifactInfo))
     }
 }

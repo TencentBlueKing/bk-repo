@@ -49,12 +49,12 @@ object NugetV3RegistrationUtils {
         lowerVersion: String,
         upperVersion: String,
         v3RegistrationUrl: String
-    ): RegistrationPage {
-        val registrationPageItemList = sortedPackageVersionList.stream().filter {
+    ): RegistrationPage? {
+        val registrationPageItemList = sortedPackageVersionList.filter {
             betweenVersions(lowerVersion, upperVersion, it.name)
         }.map {
             metadataToRegistrationPageItem(it, v3RegistrationUrl)
-        }.toList()
+        }.takeIf { it.isNotEmpty() } ?: return null
         // 涉及到分页的问题需要处理
         return registrationPageItemToRegistrationPage(
             registrationPageItemList, packageId, lowerVersion, upperVersion, v3RegistrationUrl

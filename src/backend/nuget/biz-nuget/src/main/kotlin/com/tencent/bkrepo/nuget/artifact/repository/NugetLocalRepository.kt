@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -51,14 +50,17 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.constant.NUGET_V3_NOT_FOUND
+import com.tencent.bkrepo.nuget.constant.MANIFEST
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
-import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspecMetadata
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
@@ -67,9 +69,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
-import java.io.IOException
 import kotlin.streams.toList
 
 @Component
@@ -77,37 +77,20 @@ class NugetLocalRepository(
     private val nugetPackageHandler: NugetPackageHandler
 ) : LocalRepository(), NugetRepository {
 
-    override fun query(context: ArtifactQueryContext): Any? {
-        return with(context) {
-            val packageName = getStringAttribute(PACKAGE)!!
-            packageClient.listExistPackageVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
-                .takeUnless { it.isNullOrEmpty() } ?: null.also {
-                    logger.info("Package [$packageName] not found in nuget-repo [$projectId/$repoName]")
-                }
-            }
+    override fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+        return packageClient.listExistPackageVersion(
+            context.projectId, context.repoName, PackageKeys.ofNuget(packageId)
+        ).data
     }
 
-    override fun feed(artifactInfo: NugetArtifactInfo): ResponseEntity<Any> {
-        return try {
-            var feedResource = NugetUtils.getFeedResource()
-            feedResource = feedResource.replace(
-                "@NugetV2Url", NugetUtils.getV2Url(artifactInfo)
-            ).replace(
-                "@NugetV3Url", NugetUtils.getV3Url(artifactInfo)
-            )
-            ResponseEntity.ok(feedResource)
-        } catch (exception: IOException) {
-            logger.error("unable to read resource: $exception")
-            throw exception
-        }
+    override fun feed(artifactInfo: NugetArtifactInfo): Feed {
+        return NugetUtils.renderServiceIndex(artifactInfo)
     }
 
-    fun registrationIndex(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): RegistrationIndex? {
-        with(artifactInfo) {
+    override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+        with(context) {
+            val packageName = (artifactInfo as NugetRegistrationArtifactInfo).packageName
+            val registrationPath = context.getStringAttribute("registrationPath")
             val packageVersionList =
                 packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
             if (packageVersionList.isNullOrEmpty()) return null
@@ -124,28 +107,25 @@ class NugetLocalRepository(
         }
     }
 
-    override fun registrationPage(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        with(artifactInfo) {
+    override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+        with(context) {
+            val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
+            val registrationPath = context.getStringAttribute("registrationPath")
+            val packageKey = PackageKeys.ofNuget(nugetArtifactInfo.packageName)
             val packageVersionList =
-                packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
-            if (packageVersionList == null || packageVersionList.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
-                    .body(NUGET_V3_NOT_FOUND)
-            }
+                packageClient.listAllVersion(projectId, repoName, packageKey).data
+            if (packageVersionList.isNullOrEmpty()) return null
             val sortedVersionList = packageVersionList.stream().sorted { o1, o2 ->
                 NugetVersionUtils.compareSemVer(o1.name, o2.name)
             }.toList()
             try {
                 val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
-                return ResponseEntity.ok(
-                    NugetV3RegistrationUtils.metadataToRegistrationPage(
-                        sortedVersionList, packageName, lowerVersion, upperVersion, v3RegistrationUrl
-                    )
+                return NugetV3RegistrationUtils.metadataToRegistrationPage(
+                    sortedVersionList,
+                    nugetArtifactInfo.packageName,
+                    nugetArtifactInfo.lowerVersion,
+                    nugetArtifactInfo.upperVersion,
+                    v3RegistrationUrl
                 )
             } catch (ignored: JsonProcessingException) {
                 logger.error("failed to deserialize metadata to registration index json")
@@ -154,21 +134,18 @@ class NugetLocalRepository(
         }
     }
 
-    override fun registrationLeaf(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        with(artifactInfo) {
+    override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+        with(context) {
+            val registrationPath = context.getStringAttribute("registrationPath")
+            val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
+            val packageKey = PackageKeys.ofNuget(nugetArtifactInfo.packageName)
             // 确保version一定存在
-            packageClient.findVersionByName(projectId, repoName, PackageKeys.ofNuget(packageName), version).data
-                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
-                    .body(NUGET_V3_NOT_FOUND)
+            packageClient.findVersionByName(projectId, repoName, packageKey, nugetArtifactInfo.version).data
+                ?: return null
             try {
                 val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
-                return ResponseEntity.ok(
-                    NugetV3RegistrationUtils.metadataToRegistrationLeaf(packageName, version, true, v3RegistrationUrl)
+                return NugetV3RegistrationUtils.metadataToRegistrationLeaf(
+                    nugetArtifactInfo.packageName, nugetArtifactInfo.version, true, v3RegistrationUrl
                 )
             } catch (ignored: JsonProcessingException) {
                 logger.error("failed to deserialize metadata to registration index json")
@@ -212,25 +189,11 @@ class NugetLocalRepository(
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         // download package manifest
-        return with(context) {
-            if (request.requestURL.endsWith(".nuspec")) {
-                val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-                val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
-                val responseName = artifactInfo.getResponseName()
-                val byteInputStream = inputStream.use { it.resolverNuspecMetadata() }.byteInputStream()
-                val artifactFile = ArtifactFileFactory.build(byteInputStream)
-                val size = artifactFile.getSize()
-                val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-                val artifactResource = ArtifactResource(
-                    artifactStream, responseName, node, ArtifactChannel.LOCAL, useDisposition
-                )
-                // 临时文件删除
-                artifactFile.delete()
-                artifactResource.contentType = MediaTypes.APPLICATION_XML
-                artifactResource
-            } else {
-                super.onDownload(context)
-            }
+        val nugetArtifactInfo = context.artifactInfo as NugetDownloadArtifactInfo
+        return if (nugetArtifactInfo.type == MANIFEST) {
+            onDownloadManifest(context)
+        } else {
+            super.onDownload(context)
         }
     }
 
@@ -268,6 +231,35 @@ class NugetLocalRepository(
                 val request = NodeDeleteRequest(projectId, repoName, nugetPath, userId)
                 nodeClient.deleteNode(request)
             }
+        }
+    }
+
+    private fun onDownloadManifest(context: ArtifactDownloadContext): ArtifactResource? {
+        with(context) {
+            val nugetArtifactInfo = artifactInfo as NugetDownloadArtifactInfo
+            val nuspecFullPath = NugetUtils.getNuspecFullPath(nugetArtifactInfo.packageName, nugetArtifactInfo.version)
+            val nuspecNode = nodeClient.getNodeDetail(projectId, repoName, nuspecFullPath).data
+            val inputStream = if (nuspecNode != null) {
+                storageManager.loadArtifactInputStream(nuspecNode, storageCredentials)
+            } else {
+                val nupkgFullPath =
+                    NugetUtils.getNupkgFullPath(nugetArtifactInfo.packageName, nugetArtifactInfo.version)
+                val nupkgNode = nodeClient.getNodeDetail(projectId, repoName, nupkgFullPath).data
+                storageManager.loadArtifactInputStream(nupkgNode, storageCredentials)?.use {
+                    it.resolverNuspecMetadata().byteInputStream()
+                }
+            } ?: return null
+            val responseName = artifactInfo.getResponseName()
+            val artifactFile = ArtifactFileFactory.build(inputStream)
+            val size = artifactFile.getSize()
+            val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+            val artifactResource = ArtifactResource(
+                artifactStream, responseName, nuspecNode, ArtifactChannel.LOCAL, useDisposition
+            )
+            // 临时文件删除
+            artifactFile.delete()
+            artifactResource.contentType = MediaTypes.APPLICATION_XML
+            return artifactResource
         }
     }
 

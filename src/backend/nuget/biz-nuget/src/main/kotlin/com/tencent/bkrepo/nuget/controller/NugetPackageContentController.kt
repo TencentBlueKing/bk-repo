@@ -64,7 +64,7 @@ class NugetPackageContentController(
         artifactInfo: NugetArtifactInfo,
         @PathVariable packageId: String
     ): ResponseEntity<VersionListResponse> {
-        val versionList = packageContentService.packageVersions(packageId)
+        val versionList = packageContentService.packageVersions(artifactInfo, packageId)
         return ResponseEntity.ok(versionList)
     }
 }

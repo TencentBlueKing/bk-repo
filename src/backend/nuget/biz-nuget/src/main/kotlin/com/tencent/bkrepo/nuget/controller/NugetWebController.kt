@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("NUGET web页面操作接口")
-@Suppress("MVCPathVariableInspection")
 @RestController
 @RequestMapping("/ext")
 class NugetWebController(

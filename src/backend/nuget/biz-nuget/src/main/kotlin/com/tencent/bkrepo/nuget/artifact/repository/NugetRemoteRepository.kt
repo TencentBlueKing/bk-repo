@@ -31,12 +31,11 @@
 
 package com.tencent.bkrepo.nuget.artifact.repository
 
-import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -46,179 +45,134 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
-import com.tencent.bkrepo.nuget.constant.INDEX
-import com.tencent.bkrepo.nuget.constant.PACKAGE
+import com.tencent.bkrepo.nuget.constant.MANIFEST
 import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
-import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_SEMVER2_URL
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
 import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.response.VersionListResponse
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Resource
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.nuget.util.NugetUtils
-import com.tencent.bkrepo.nuget.util.NugetUtils.getPackageDownloadUri
 import com.tencent.bkrepo.nuget.util.NugetUtils.getServiceIndexFullPath
-import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils
-import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils.convertOriginalToBkrepoResource
-import okhttp3.Request
+import com.tencent.bkrepo.nuget.util.RemoteRegistrationUtils
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import java.io.InputStream
 import java.net.URLEncoder
-import java.util.Objects
-import java.util.stream.Collectors
 
+@Suppress("TooManyFunctions")
 @Component
 class NugetRemoteRepository(
     private val commonUtils: NugetRemoteAndVirtualCommon
 ) : RemoteRepository(), NugetRepository {
 
-    // Query Package Versions
-    override fun query(context: ArtifactQueryContext): Any? {
-        with(context) {
-            val configuration = getRemoteConfiguration()
-            val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, context) ?: return null
-            val requestUrl = UrlFormatter.format(packageBaseAddress, getStringAttribute(PACKAGE) + SLASH + INDEX)
-            val response = executeRequest(configuration, requestUrl)
-            return getJsonObjectFromResponse(response, VersionListResponse::class.java)?.versions
+    override fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+        val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, context)
+        val requestUrl = NugetUtils.buildPackageVersionsUrl(packageBaseAddress, packageId)
+        context.putAttribute(REMOTE_URL, requestUrl)
+        return query(context)?.let {
+            JsonUtils.objectMapper.readValue(it as InputStream, VersionListResponse::class.java).versions
         }
     }
 
-    @SuppressWarnings("ReturnCount")
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        whitelistInterceptor(context)
-        return getCacheArtifactResource(context) ?: run {
-            val remoteConfiguration = context.getRemoteConfiguration()
-            logger.info(
-                "Remote download: not found artifact in cache, " +
-                        "download from remote repository: $remoteConfiguration"
-            )
-            // Construct download url
-            val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, context) ?: return null
-            val packageName = context.artifactInfo.getArtifactName()
-            val packageVersion = context.artifactInfo.getArtifactVersion()!!
-            val packageUri = getPackageDownloadUri(packageName, packageVersion)
-            val downloadUrl = UrlFormatter.format(packageBaseAddress, packageUri)
-
-            val httpClient = createHttpClient(remoteConfiguration)
-            val request = Request.Builder().url(downloadUrl).build()
-            logger.info("Remote download: download url: $downloadUrl")
-            val response = downloadRetry(request, httpClient)
-            return if (response != null && checkResponse(response)) {
-                onDownloadResponse(context, response)
-            } else null
-        }
+        val nugetArtifactInfo = context.artifactInfo as NugetDownloadArtifactInfo
+        val feedContext = ArtifactQueryContext(context.repositoryDetail, nugetArtifactInfo)
+        val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, feedContext)
+        val packageName = nugetArtifactInfo.getArtifactName()
+        val version = nugetArtifactInfo.getArtifactVersion()
+        val uri = if (nugetArtifactInfo.type == MANIFEST) NugetUtils.getPackageManifestUri(packageName, version)
+            else NugetUtils.getPackageContentUri(packageName, version)
+        val downloadUrl = UrlFormatter.format(packageBaseAddress, uri)
+        context.putAttribute(REMOTE_URL, downloadUrl)
+        return super.onDownload(context)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun feed(artifactInfo: NugetArtifactInfo): ResponseEntity<Any> {
+    override fun feed(artifactInfo: NugetArtifactInfo): Feed {
         // 1、请求远程索引文件
         // 2、将resource里面的内容进行更改
         // 先使用type进行匹配筛选，然后在进行id的替换
-        val feed = commonUtils.downloadRemoteFeed()
+        val feed = downloadServiceIndex(ArtifactQueryContext())
         val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
         val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
-        val convertResource = feed.resources.stream()
-//            .filter(NugetRemoteAndVirtualCommon.distinctByKey { Resource::type.name })
-            .map { resource -> convertOriginalToBkrepoResource(resource, v2BaseUrl, v3BaseUrl) }
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList())
-        return ResponseEntity.ok(Feed(feed.version, convertResource as List<Resource>))
+        val rewriteResource = feed.resources.mapNotNull { rewriteResource(it, v2BaseUrl, v3BaseUrl) }
+        return Feed(feed.version, rewriteResource)
     }
 
-    override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream {
+    override fun checkQueryResponse(response: Response): Boolean {
+        return super.checkQueryResponse(response) && checkJsonFormat(response)
+    }
+
+    override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream? {
         val artifactFile = createTempFile(response.body!!)
+        context.getAndRemoveAttribute<ArtifactContext>("cacheContext")?.let {
+            cacheArtifactFile(it, artifactFile)
+        }
         return artifactFile.getInputStream()
     }
 
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
-        return context.getStringAttribute(REMOTE_URL).orEmpty()
+        return context.getStringAttribute(REMOTE_URL) ?: context.getRemoteConfiguration().url
     }
 
-    fun registrationIndex(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        context: ArtifactQueryContext
-    ): RegistrationIndex? {
-        with(context) {
-            val configuration = getRemoteConfiguration()
-            val registrationsBaseUrl = getResourceId(REGISTRATIONS_BASE_SEMVER2_URL, context) ?: return null
-            val requestUrl = UrlFormatter.format(registrationsBaseUrl, "${artifactInfo.packageName}/$INDEX")
-            logger.info("Query Remote Registrations from [$requestUrl] on configuration[$configuration]")
-            val response = executeRequest(configuration, requestUrl)
-            return getJsonObjectFromResponse(response, RegistrationIndex::class.java)
-        }
+    override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+        // 1、先根据请求URL匹配对应的远程URL地址的type，在根据type去找到对应的key
+        // 2、根据匹配到的URL去添加请求packageId之后去请求远程索引文件
+        // 3、缓存索引文件，然后将文件中的URL改成对应的仓库URL进行返回
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
+        val registrationIndex = downloadRemoteRegistrationIndex(
+            context, nugetArtifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
+        ) ?: return null
+        return RemoteRegistrationUtils.rewriteRegistrationIndexUrls(
+            registrationIndex, nugetArtifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+        )
     }
 
-//    override fun registrationIndex(
-//        artifactInfo: NugetRegistrationArtifactInfo,
-//        registrationPath: String,
-//        isSemver2Endpoint: Boolean
-//    ): ResponseEntity<Any> {
-//        // 1、先根据请求URL匹配对应的远程URL地址的type，在根据type去找到对应的key
-//        // 2、根据匹配到的URL去添加请求packageId之后去请求远程索引文件
-//        // 3、缓存索引文件，然后将文件中的URL改成对应的仓库URL进行返回
-//        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
-//        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
-//        val registrationIndex = commonUtils.downloadRemoteRegistrationIndex(
-//            artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
-//        )
-//        val rewriteRegistrationIndex = registrationIndex?.let {
-//            NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-//                registrationIndex, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
-//            )
-//        } ?: throw NugetFeedNotFoundException(
-//            "Failed to parse registration json for package: [${artifactInfo.packageName}]," +
-//                " in repo: [${artifactInfo.getRepoIdentify()}]"
-//        )
-//        return ResponseEntity.ok(rewriteRegistrationIndex)
-//    }
-
-    override fun registrationPage(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
-        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
-        val registrationPage = commonUtils.downloadRemoteRegistrationPage(
-            artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
+    override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
+        val registrationPage = downloadRemoteRegistrationPage(
+            context, nugetArtifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
+        ) ?: return null
+        return RemoteRegistrationUtils.rewriteRegistrationPageUrls(
+            registrationPage, nugetArtifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
         )
-        val rewriteRegistrationPage = NugetV3RemoteRepositoryUtils.rewriteRegistrationPageUrls(
-            registrationPage, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
-        )
-        return ResponseEntity.ok(rewriteRegistrationPage)
     }
 
     fun proxyRegistrationPage(
         context: ArtifactQueryContext,
         url: String
     ): RegistrationPage? {
-        val configuration = context.getRemoteConfiguration()
-        logger.info("Query Remote Registration Page from [$url] on configuration[$configuration]")
-        val response = executeRequest(configuration, url)
-        return getJsonObjectFromResponse(response, RegistrationPage::class.java)
+        context.putAttribute(REMOTE_URL, url)
+        logger.info("Query Remote Registration Page from [$url]")
+        return query(context)?.let {
+            JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
+        }
     }
 
-    override fun registrationLeaf(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
-        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
-        val registrationLeaf = commonUtils.downloadRemoteRegistrationLeaf(
-            artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
+    override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
+        val registrationLeaf = downloadRemoteRegistrationLeaf(
+            context, nugetArtifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
+        ) ?: return null
+        return RemoteRegistrationUtils.rewriteRegistrationLeafUrls(
+            registrationLeaf, nugetArtifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
         )
-        val rewriteRegistrationLeaf = NugetV3RemoteRepositoryUtils.rewriteRegistrationLeafUrls(
-            registrationLeaf, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
-        )
-        return ResponseEntity.ok(rewriteRegistrationLeaf)
     }
 
     override fun upload(context: ArtifactUploadContext) {
@@ -231,67 +185,132 @@ class NugetRemoteRepository(
     }
 
     // 获取服务地址
-    private fun getResourceId(resource: String, context: ArtifactContext): String? {
-        val configuration = context.getRemoteConfiguration()
-        val feed = queryRemoteFeed(context)
-            ?: throw NugetFeedNotFoundException("Query service index from NuGet source[${configuration.url}] failed!")
-        return feed.resources.find { it.type == resource }?.id ?: null.also {
-            logger.error("Resource Type[$resource] Not Found in Service Index[${configuration.url}]")
-        }
+    private fun getResourceId(resourceType: String, context: ArtifactQueryContext): String {
+        val url = context.getRemoteConfiguration().url
+        val feed = downloadServiceIndex(context)
+        return feed.resources.find { it.type == resourceType }?.id
+            ?: throw MethodNotAllowedException(
+                "Resource Type[$resourceType] Not Found in Service Index[$url]"
+            )
     }
 
     // 向代理源请求服务索引文件，优先查询缓存
-    private fun queryRemoteFeed(context: ArtifactContext): Feed? {
-        val serviceIndexContext = buildServiceIndexContext(context)
-        return getCacheArtifactResource(serviceIndexContext)?.getSingleStream()?.let {
-            JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java)
+    private fun downloadServiceIndex(context: ArtifactQueryContext): Feed {
+        val downloadContext = buildServiceIndexDownloadContext(context)
+        context.putAttribute("cacheContext", downloadContext)
+        return getCacheArtifactResource(downloadContext)?.let {
+            context.getAndRemoveAttribute<ArtifactContext>("cacheContext")
+            it.getSingleStream().use { inputStream -> JsonUtils.objectMapper.readValue(inputStream, Feed::class.java) }
         } ?: run {
-            val configuration = context.getRemoteConfiguration()
-            val response = executeRequest(configuration)
-            return getJsonObjectFromResponse(response, Feed::class.java, serviceIndexContext)
+            val requestUrl = context.getRemoteConfiguration().url
+            logger.info("Query Remote Service Index from [$requestUrl]")
+            query(context)?.let { JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java) }
+                ?: throw NugetFeedNotFoundException("query remote feed index.json for [$requestUrl] failed!")
         }
     }
 
-    private fun buildServiceIndexContext(context: ArtifactContext): ArtifactDownloadContext {
+    private fun downloadRemoteRegistrationIndex(
+        context: ArtifactQueryContext,
+        artifactInfo: NugetRegistrationArtifactInfo,
+        registrationPath: String,
+        v2BaseUrl: String,
+        v3BaseUrl: String
+    ): RegistrationIndex? {
+        val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
+        val remoteRegistrationBaseUrl = convertToRemoteUrl(context, registrationBaseUrl, v2BaseUrl, v3BaseUrl)
+        val remoteIndexUrl = NugetUtils.buildRegistrationIndexUrl(
+            remoteRegistrationBaseUrl, artifactInfo.packageName
+        ).toString()
+        context.putAttribute(REMOTE_URL, remoteIndexUrl)
+        logger.info("Query Remote Registration Index from [$remoteIndexUrl]")
+        return query(context)?.let {
+            JsonUtils.objectMapper.readValue(it as InputStream, RegistrationIndex::class.java)
+        }
+    }
+
+    private fun downloadRemoteRegistrationPage(
+        context: ArtifactQueryContext,
+        artifactInfo: NugetRegistrationArtifactInfo,
+        registrationPath: String,
+        v2BaseUrl: String,
+        v3BaseUrl: String
+    ): RegistrationPage? {
+        val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
+        val remoteRegistrationBaseUrl = convertToRemoteUrl(context, registrationBaseUrl, v2BaseUrl, v3BaseUrl)
+        val remotePageUrl = NugetUtils.buildRegistrationPageUrl(
+            remoteRegistrationBaseUrl, artifactInfo.packageName, artifactInfo.lowerVersion, artifactInfo.upperVersion
+        )
+        context.putAttribute(REMOTE_URL, remotePageUrl)
+        logger.info("Query Remote Registration Page from [$remotePageUrl]")
+        return query(context)?.let {
+            JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
+        }
+    }
+
+    fun downloadRemoteRegistrationLeaf(
+        context: ArtifactQueryContext,
+        artifactInfo: NugetRegistrationArtifactInfo,
+        registrationPath: String,
+        v2BaseUrl: String,
+        v3BaseUrl: String
+    ): RegistrationLeaf? {
+        val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
+        val remoteRegistrationBaseUrl = convertToRemoteUrl(context, registrationBaseUrl, v2BaseUrl, v3BaseUrl)
+        val remoteLeafUrl = NugetUtils.buildRegistrationLeafUrl(
+            remoteRegistrationBaseUrl, artifactInfo.packageName, artifactInfo.version
+        )
+        context.putAttribute(REMOTE_URL, remoteLeafUrl)
+        logger.info("Query Remote Registration Leaf from [$remoteLeafUrl]")
+        return query(context)?.let {
+            JsonUtils.objectMapper.readValue(it as InputStream, RegistrationLeaf::class.java)
+        }
+    }
+
+    private fun rewriteResource(
+        originalResource: Resource,
+        v2BaseUrl: String,
+        v3BaseUrl: String
+    ): Resource? {
+        val urlConverter = commonUtils.urlConvertersMap[originalResource.type] ?: return null
+        val convertedUrl = urlConverter.convert(v2BaseUrl, v3BaseUrl)
+        return Resource(convertedUrl, originalResource.type, originalResource.comment, originalResource.clientVersion)
+    }
+
+    private fun buildServiceIndexDownloadContext(context: ArtifactContext): ArtifactDownloadContext {
         with(context) {
             val configuration = getRemoteConfiguration()
-            val serviceIndexFullPath = getServiceIndexFullPath(URLEncoder.encode(configuration.url, UTF_8))
-            val serviceIndexArtifactInfo = ArtifactInfo(projectId, repoName, serviceIndexFullPath)
+            val fullPath = getServiceIndexFullPath(URLEncoder.encode(configuration.url, UTF_8))
+            val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
             return ArtifactDownloadContext(
-                artifact = serviceIndexArtifactInfo,
+                artifact = artifactInfo,
                 repo = repositoryDetail
             )
         }
     }
 
-    private fun executeRequest(configuration: RemoteConfiguration, url: String = configuration.url): Response {
-        val httpClient = createHttpClient(configuration)
-        val request = Request.Builder().url(url).build()
-        return httpClient.newCall(request).execute()
+    private fun convertToRemoteUrl(
+        context: ArtifactQueryContext,
+        resourceId: String,
+        v2BaseUrl: String,
+        v3BaseUrl: String
+    ): String {
+        val feed = downloadServiceIndex(context)
+        val matchTypes = commonUtils.urlConvertersMap.filterValues {
+            it.convert(v2BaseUrl, v3BaseUrl).trimEnd('/') == resourceId
+        }.keys.takeIf { it.isNotEmpty() } ?: throw IllegalStateException("Failed to extract type by url [$resourceId]")
+        return feed.resources.firstOrNull { matchTypes.contains(it.type) }?.id
+            ?: throw IllegalStateException("Failed to match url for types: [$matchTypes]")
     }
 
-    private fun <T> getJsonObjectFromResponse(
-        response: Response,
-        clazz: Class<T>,
-        cacheContext: ArtifactDownloadContext? = null
-    ): T? {
-        return if (checkJsonResponse(response)) {
-            val artifactFile = createTempFile(response.body()!!)
-            cacheContext?.let { cacheArtifactFile(it, artifactFile) }
-            JsonUtils.objectMapper.readValue(artifactFile.getInputStream(), clazz)
-        } else null
-    }
-
-    private fun checkJsonResponse(response: Response): Boolean {
-        val contentType = response.body()!!.contentType()
-        return checkResponse(response) && contentType?.let {
-            if (it.toString().contains("application/json")) {
-                return@let true
-            } else {
-                logger.error("Response from nuget proxy source[${response.request().url()}] is not JSON format")
-                return@let false
-            }
-        } ?: false
+    private fun checkJsonFormat(response: Response): Boolean {
+        val contentType = response.body!!.contentType()
+        if (!contentType.toString().contains("application/json")) {
+            logger.warn("Query Failed: Response from [${response.request.url}] is not JSON format. " +
+                    "Content-Type: $contentType"
+            )
+            return false
+        }
+        return true
     }
 
     companion object {

@@ -138,7 +138,7 @@ class CompositeRepository(
     /**
      * 遍历代理仓库列表，执行[action]操作，当遇到代理仓库[action]操作返回非`null`时，立即返回结果[R]
      */
-    private fun <R> mapFirstProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> R?): R? {
+    fun <R> mapFirstProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> R?): R? {
         val proxyChannelList = getProxyChannelList(context)
         for (setting in proxyChannelList) {
             try {
@@ -183,14 +183,14 @@ class CompositeRepository(
     /**
      * 获取代理源设置列表
      */
-    private fun getProxyChannelList(context: ArtifactContext): List<ProxyChannelSetting> {
+    fun getProxyChannelList(context: ArtifactContext): List<ProxyChannelSetting> {
         return context.getCompositeConfiguration().proxy.channelList
     }
 
     /**
      * 根据原始上下文[context]以及代理源设置[setting]生成新的[ArtifactContext]
      */
-    private fun getContextFromProxyChannel(
+    fun getContextFromProxyChannel(
         context: ArtifactContext,
         setting: ProxyChannelSetting
     ): ArtifactContext {

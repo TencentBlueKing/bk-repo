@@ -1,19 +1,18 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.constant.NUGET_V3_NOT_FOUND
 import com.tencent.bkrepo.nuget.exception.NugetException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.nuget.util.NugetUtils
-import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils
+import com.tencent.bkrepo.nuget.util.RemoteRegistrationUtils
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import org.springframework.context.annotation.Primary
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 
 @Component
@@ -24,59 +23,58 @@ class NugetCompositeRepository(
     proxyChannelClient: ProxyChannelClient
 ) : CompositeRepository(localRepository, remoteRepository, proxyChannelClient), NugetRepository {
 
-    override fun query(context: ArtifactQueryContext): Any? {
-        val localQueryResult = (localRepository.query(context) as? List<*>)?.map { it.toString() }
+    override fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+        val localQueryResult = localRepository.enumerateVersions(context, packageId) ?: emptyList()
         val remoteQueryResult = mapFirstProxyRepo(context) {
             require(it is ArtifactQueryContext)
-            (remoteRepository.query(it) as? List<*>)?.map { element -> element.toString() }
-        } ?: return localQueryResult
-        return if (localQueryResult.isNullOrEmpty()) remoteQueryResult else
-            localQueryResult.minus(remoteQueryResult.toSet()).plus(remoteQueryResult).sorted()
+            remoteRepository.enumerateVersions(it, packageId)
+        } ?: emptyList()
+        return localQueryResult.union(remoteQueryResult).sorted()
     }
 
-    override fun feed(artifactInfo: NugetArtifactInfo): ResponseEntity<Any> {
+    override fun feed(artifactInfo: NugetArtifactInfo): Feed {
         return localRepository.feed(artifactInfo)
     }
 
-    fun registrationIndex(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        val context = ArtifactQueryContext()
-        val localResult = localRepository.registrationIndex(artifactInfo, registrationPath, isSemver2Endpoint)
+    override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val localResult = localRepository.registrationIndex(context)
         val remoteResult = mapFirstProxyRepo(context) {
             require(it is ArtifactQueryContext)
-            remoteRepository.registrationIndex(artifactInfo, it)
+            remoteRepository.registrationIndex(it)
         }
-        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
-        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
-        val proxyChannelName = context.getStringAttribute("proxyChannelName")
-        // 本地和远程均无查询结果
-        return if (localResult == null && remoteResult == null) {
-            ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
-                .body(NUGET_V3_NOT_FOUND)
-        // 仅远程查询结果
-        } else if (localResult == null && remoteResult != null) {
-            val rewriteRemoteResult = NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-                remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath, proxyChannelName
-            )
-            rewriteRemoteResult.items.forEach { it.items?.forEach { item -> item.sourceType = "PROXY" } }
-            ResponseEntity.ok(rewriteRemoteResult)
-        // 仅本地查询结果
+        return if (localResult == null) {
+            remoteResult
         } else if (remoteResult == null) {
-            ResponseEntity.ok(localResult)
-        // 合并本地结果和远程结果
+            localResult
         } else {
-            val rewriteRemoteResult = NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-                remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath, proxyChannelName
+            RemoteRegistrationUtils.combineRegistrationIndex(
+                localResult, remoteResult, nugetArtifactInfo, v3RegistrationUrl
             )
-            val compositeRegistrationIndex = NugetV3RemoteRepositoryUtils.combineRegistrationIndex(
-                localResult!!, rewriteRemoteResult, artifactInfo, v3RegistrationUrl
+        }
+    }
+
+    override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val localResult = localRepository.registrationPage(context)
+        val remoteResult = mapFirstProxyRepo(context) {
+            require(it is ArtifactQueryContext)
+            remoteRepository.registrationPage(it)
+        }
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
+        val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
+        return if (localResult == null) {
+            remoteResult
+        } else if (remoteResult == null) {
+            localResult
+        } else {
+            RemoteRegistrationUtils.combineRegistrationPage(
+                localResult, remoteResult, nugetArtifactInfo, v3RegistrationUrl
             )
-            ResponseEntity.ok(compositeRegistrationIndex)
         }
     }
 
@@ -84,39 +82,23 @@ class NugetCompositeRepository(
         artifactInfo: NugetRegistrationArtifactInfo,
         proxyChannelName: String,
         url: String,
-        registrationPath: String
-    ): ResponseEntity<Any> {
+        registrationPath: String,
+        isSemver2Endpoint: Boolean
+    ): RegistrationPage? {
         val context = ArtifactQueryContext()
         val proxySetting = getProxyChannelList(context).find { it.name == proxyChannelName } ?:
             throw NugetException("Proxy channel [$proxyChannelName] not found in [${artifactInfo.getRepoIdentify()}]")
         val remoteContext = getContextFromProxyChannel(context, proxySetting)
         require(remoteContext is ArtifactQueryContext)
-        val remoteResult = remoteRepository.proxyRegistrationPage(remoteContext, url)
-            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
-                .body(NUGET_V3_NOT_FOUND)
+        val remoteResult = remoteRepository.proxyRegistrationPage(remoteContext, url) ?: return null
         val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
         val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
-        val rewriteRemoteResult = NugetV3RemoteRepositoryUtils.rewriteRegistrationPageUrls(
+        return RemoteRegistrationUtils.rewriteRegistrationPageUrls(
             remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
         )
-        rewriteRemoteResult.items.forEach { it.sourceType = "PROXY" }
-        return ResponseEntity.ok(rewriteRemoteResult)
     }
 
-    override fun registrationPage(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        return localRepository.registrationPage(artifactInfo, registrationPath, isSemver2Endpoint)
-    }
-
-    override fun registrationLeaf(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        return localRepository.registrationLeaf(artifactInfo, registrationPath, isSemver2Endpoint)
+    override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+        return localRepository.registrationLeaf(context)
     }
 }
