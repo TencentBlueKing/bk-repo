@@ -7,11 +7,10 @@ import com.tencent.bkrepo.common.artifact.repository.composite.CompositeReposito
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.NUGET_V3_NOT_FOUND
+import com.tencent.bkrepo.nuget.exception.NugetException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.util.NugetUtils
-import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils
-import com.tencent.bkrepo.nuget.util.NugetVersionUtils
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import org.springframework.context.annotation.Primary
 import org.springframework.http.ResponseEntity
@@ -52,39 +51,57 @@ class NugetCompositeRepository(
         }
         val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
         val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
+        val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
+        val proxyChannelName = context.getStringAttribute("proxyChannelName")
+        // 本地和远程均无查询结果
         return if (localResult == null && remoteResult == null) {
             ResponseEntity.status(HttpStatus.NOT_FOUND.value)
                 .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
                 .body(NUGET_V3_NOT_FOUND)
+        // 仅远程查询结果
         } else if (localResult == null && remoteResult != null) {
             val rewriteRemoteResult = NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-                remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+                remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath, proxyChannelName
             )
             rewriteRemoteResult.items.forEach { it.items?.forEach { item -> item.sourceType = "PROXY" } }
             ResponseEntity.ok(rewriteRemoteResult)
+        // 仅本地查询结果
         } else if (remoteResult == null) {
             ResponseEntity.ok(localResult)
+        // 合并本地结果和远程结果
         } else {
-            val localLeafList = localResult!!.items.mapNotNull { it.items }.flatten().toMutableList()
-            val localVersions = localLeafList.map { it.catalogEntry.version }
             val rewriteRemoteResult = NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-                remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+                remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath, proxyChannelName
             )
-            val remoteLeafList =
-                rewriteRemoteResult.items.mapNotNull { it.items }.flatten().onEach { it.sourceType = "PROXY" }
-            remoteLeafList.forEach {
-                if (!localVersions.contains(it.catalogEntry.version)) {
-                    localLeafList.add(it)
-                }
-            }
-            val sortedLeafList = localLeafList.sortedWith { o1, o2 ->
-                NugetVersionUtils.compareSemVer(o1.catalogEntry.version, o2.catalogEntry.version)
-            }
-            val registrationIndex = NugetV3RegistrationUtils.registrationPageItemToRegistrationIndex(
-                sortedLeafList, v3BaseUrl
+            val compositeRegistrationIndex = NugetV3RemoteRepositoryUtils.combineRegistrationIndex(
+                localResult!!, rewriteRemoteResult, artifactInfo, v3RegistrationUrl
             )
-            ResponseEntity.ok(registrationIndex)
+            ResponseEntity.ok(compositeRegistrationIndex)
         }
+    }
+
+    fun proxyRegistrationPage(
+        artifactInfo: NugetRegistrationArtifactInfo,
+        proxyChannelName: String,
+        url: String,
+        registrationPath: String
+    ): ResponseEntity<Any> {
+        val context = ArtifactQueryContext()
+        val proxySetting = getProxyChannelList(context).find { it.name == proxyChannelName } ?:
+            throw NugetException("Proxy channel [$proxyChannelName] not found in [${artifactInfo.getRepoIdentify()}]")
+        val remoteContext = getContextFromProxyChannel(context, proxySetting)
+        require(remoteContext is ArtifactQueryContext)
+        val remoteResult = remoteRepository.proxyRegistrationPage(remoteContext, url)
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
+                .body(NUGET_V3_NOT_FOUND)
+        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
+        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
+        val rewriteRemoteResult = NugetV3RemoteRepositoryUtils.rewriteRegistrationPageUrls(
+            remoteResult, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+        )
+        rewriteRemoteResult.items.forEach { it.sourceType = "PROXY" }
+        return ResponseEntity.ok(rewriteRemoteResult)
     }
 
     override fun registrationPage(

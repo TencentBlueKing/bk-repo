@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.nuget.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Resource
@@ -10,6 +12,7 @@ import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationPageItem
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import java.net.URI
+import java.net.URLEncoder
 import java.util.Objects
 
 object NugetV3RemoteRepositoryUtils {
@@ -27,30 +30,72 @@ object NugetV3RemoteRepositoryUtils {
         }
     }
 
+    @SuppressWarnings("LongParameterList")
     fun rewriteRegistrationIndexUrls(
         originalRegistrationIndex: RegistrationIndex,
         artifactInfo: NugetRegistrationArtifactInfo,
         v2BaseUrl: String,
         v3BaseUrl: String,
-        registrationPath: String
+        registrationPath: String,
+        proxyChannelName: String? = null
     ): RegistrationIndex {
         val v3RegistrationUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
         val itemList = originalRegistrationIndex.items.map { item ->
-            registrationResultItemRewriter(item, artifactInfo.packageName, v2BaseUrl, v3RegistrationUrl)
+            registrationResultItemRewriter(
+                item, artifactInfo.packageName, v2BaseUrl, v3RegistrationUrl, proxyChannelName
+            )
         }
-        return RegistrationIndex(count = originalRegistrationIndex.count, items = itemList)
+        return RegistrationIndex(
+            id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, artifactInfo.packageName),
+            count = originalRegistrationIndex.count,
+            items = itemList
+        )
+    }
+
+    fun combineRegistrationIndex(
+        localRegistrationIndex: RegistrationIndex,
+        remoteRegistrationIndex: RegistrationIndex,
+        artifactInfo: NugetRegistrationArtifactInfo,
+        v3RegistrationUrl: String
+    ): RegistrationIndex {
+        // 提取远程查询结果不折叠的分页
+        val remoteLeafList =
+            remoteRegistrationIndex.items.mapNotNull { it.items }.flatten().onEach { it.sourceType = "PROXY" }
+        // 远程Registration Index查询结果为折叠的分页结果时，本地结果也折叠不显示具体版本元数据
+        return if (remoteRegistrationIndex.items.isNotEmpty() && remoteLeafList.isEmpty()) {
+            localRegistrationIndex.items.forEach { it.items = null }
+            RegistrationIndex(
+                id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, artifactInfo.packageName),
+                count = localRegistrationIndex.count + remoteRegistrationIndex.count,
+                items = localRegistrationIndex.items + remoteRegistrationIndex.items
+            )
+        // 远程Registration Index查询结果不折叠时，与本地版本聚合并重新分页
+        } else {
+            // 提取本地包每个版本的元数据和版本列表
+            val localLeafList = localRegistrationIndex.items.mapNotNull { it.items }.flatten().toMutableList()
+            val localVersions = localLeafList.map { it.catalogEntry.version }
+            remoteLeafList.forEach {
+                if (!localVersions.contains(it.catalogEntry.version)) { localLeafList.add(it) }
+            }
+            val sortedLeafList = localLeafList.sortedWith { o1, o2 ->
+                NugetVersionUtils.compareSemVer(o1.catalogEntry.version, o2.catalogEntry.version)
+            }
+            NugetV3RegistrationUtils.registrationPageItemToRegistrationIndex(sortedLeafList, v3RegistrationUrl)
+        }
     }
 
     private fun registrationResultItemRewriter(
         originalItem: RegistrationItem,
         packageName: String,
         v2BaseUrl: String,
-        v3RegistrationUrl: String
+        v3RegistrationUrl: String,
+        proxyChannelName: String? = null
     ): RegistrationItem {
         val isPaged = Objects.isNull(originalItem.items)
         val registrationIndexUrl = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, packageName)
-        val registrationPageUrl =
-            NugetUtils.buildRegistrationPageUrl(v3RegistrationUrl, packageName, originalItem.lower, originalItem.upper)
+        val registrationPageUrl = buildRegistrationPageProxyUrl(
+            originalItem.id, packageName, v3RegistrationUrl, proxyChannelName
+        )
         val pageItemList = originalItem.items?.map { item ->
             registrationResultPageItemRewriter(item, packageName, v2BaseUrl, v3RegistrationUrl)
         }
@@ -62,6 +107,19 @@ object NugetV3RemoteRepositoryUtils {
             upper = originalItem.upper,
             parent = if (isPaged) null else registrationIndexUrl
         )
+    }
+
+    private fun buildRegistrationPageProxyUrl(
+        remoteRegistrationPageUrl: URI,
+        packageName: String,
+        v3RegistrationUrl: String,
+        proxyChannelName: String?
+    ): URI {
+        val encodedRemoteUrl = URLEncoder.encode(remoteRegistrationPageUrl.toString(), StringPool.UTF_8)
+        val encodedProxyChannelName = URLEncoder.encode(proxyChannelName, StringPool.UTF_8)
+        val queryString = "proxyChannelName=$encodedProxyChannelName&url=$encodedRemoteUrl"
+        val proxyPageUrl = UrlFormatter.format(v3RegistrationUrl, "proxy/page/$packageName", queryString)
+        return URI.create(proxyPageUrl)
     }
 
     fun registrationResultPageItemRewriter(

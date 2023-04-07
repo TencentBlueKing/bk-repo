@@ -6,6 +6,7 @@ import com.tencent.bkrepo.nuget.service.NugetPackageMetadataService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -46,5 +47,16 @@ class NugetPackageMetadataController(
         artifactInfo: NugetRegistrationArtifactInfo
     ): ResponseEntity<Any> {
         return nugetPackageMetadataService.registrationLeaf(artifactInfo, "registration-semver2", true)
+    }
+
+    @GetMapping("/registration-semver2/proxy/page/{id}", produces = [MediaTypes.APPLICATION_JSON])
+    fun proxyRegistrationPage(
+        artifactInfo: NugetRegistrationArtifactInfo,
+        @RequestParam proxyChannelName: String,
+        @RequestParam url: String
+    ): ResponseEntity<Any> {
+        return nugetPackageMetadataService.proxyRegistrationPage(
+            artifactInfo, proxyChannelName, url, "registration-semver2"
+        )
     }
 }

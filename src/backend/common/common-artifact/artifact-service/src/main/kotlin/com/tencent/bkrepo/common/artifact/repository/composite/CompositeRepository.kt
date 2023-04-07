@@ -204,6 +204,7 @@ class CompositeRepository(
         // 构造proxyConfiguration
         val remoteConfiguration = convertConfig(proxyChannel)
         val remoteRepoDetail = convert(remoteConfiguration, context.repositoryDetail)
+        context.putAttribute("proxyChannelName", setting.name)
         return context.copy(remoteRepoDetail)
     }
 

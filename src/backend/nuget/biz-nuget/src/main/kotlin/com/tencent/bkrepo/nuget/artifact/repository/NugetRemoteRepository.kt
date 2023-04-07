@@ -57,6 +57,7 @@ import com.tencent.bkrepo.nuget.pojo.response.VersionListResponse
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Resource
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetUtils.getPackageDownloadUri
 import com.tencent.bkrepo.nuget.util.NugetUtils.getServiceIndexFullPath
@@ -192,6 +193,16 @@ class NugetRemoteRepository(
             registrationPage, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
         )
         return ResponseEntity.ok(rewriteRegistrationPage)
+    }
+
+    fun proxyRegistrationPage(
+        context: ArtifactQueryContext,
+        url: String
+    ): RegistrationPage? {
+        val configuration = context.getRemoteConfiguration()
+        logger.info("Query Remote Registration Page from [$url] on configuration[$configuration]")
+        val response = executeRequest(configuration, url)
+        return getJsonObjectFromResponse(response, RegistrationPage::class.java)
     }
 
     override fun registrationLeaf(
