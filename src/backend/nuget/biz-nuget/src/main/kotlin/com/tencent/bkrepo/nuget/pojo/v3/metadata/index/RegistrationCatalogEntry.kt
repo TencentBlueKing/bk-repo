@@ -35,5 +35,5 @@ data class RegistrationCatalogEntry(
     val tags: List<String>? = null,
     val title: String? = null,
     val version: String,
-    val vulnerabilities: Vulnerability? = null
+    val vulnerabilities: List<Vulnerability>? = null
 )

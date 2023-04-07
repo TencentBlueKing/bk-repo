@@ -11,6 +11,8 @@ data class RegistrationPageItem(
     val id: URI,
     @JsonProperty("@type")
     val type: String? = TYPE_PACKAGE,
+    @JsonProperty("@sourceType")
+    var sourceType: String? = "LOCAL",
     val catalogEntry: RegistrationCatalogEntry,
     val packageContent: URI
 )

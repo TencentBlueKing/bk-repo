@@ -2,6 +2,7 @@ package com.tencent.bkrepo.nuget.service.impl
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.nuget.artifact.repository.NugetCompositeRepository
 import com.tencent.bkrepo.nuget.artifact.repository.NugetRepository
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.service.NugetPackageMetadataService
@@ -16,7 +17,7 @@ class NugetPackageMetadataServiceImpl : NugetPackageMetadataService, ArtifactSer
         registrationPath: String,
         isSemver2Endpoint: Boolean
     ): ResponseEntity<Any> {
-        val repository = ArtifactContextHolder.getRepository() as NugetRepository
+        val repository = ArtifactContextHolder.getRepository() as NugetCompositeRepository
         return repository.registrationIndex(artifactInfo, registrationPath, isSemver2Endpoint)
     }
 

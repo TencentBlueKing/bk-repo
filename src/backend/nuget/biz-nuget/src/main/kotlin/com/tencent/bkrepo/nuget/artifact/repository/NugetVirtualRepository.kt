@@ -74,7 +74,7 @@ class NugetVirtualRepository(
         }
     }
 
-    override fun registrationIndex(
+    fun registrationIndex(
         artifactInfo: NugetRegistrationArtifactInfo,
         registrationPath: String,
         isSemver2Endpoint: Boolean

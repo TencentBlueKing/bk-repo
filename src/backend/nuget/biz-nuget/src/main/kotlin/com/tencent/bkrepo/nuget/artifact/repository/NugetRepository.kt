@@ -8,15 +8,6 @@ import org.springframework.http.ResponseEntity
 interface NugetRepository : ArtifactRepository {
 
     /**
-     * 根据RegistrationsBaseUrl获取registration index metadata
-     */
-    fun registrationIndex(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any>
-
-    /**
      * 根据RegistrationsBaseUrl获取registration page metadata
      */
     fun registrationPage(

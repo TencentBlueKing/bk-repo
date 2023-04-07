@@ -58,6 +58,7 @@ import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
 import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspecMetadata
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
@@ -101,27 +102,21 @@ class NugetLocalRepository(
         }
     }
 
-    override fun registrationIndex(
+    fun registrationIndex(
         artifactInfo: NugetRegistrationArtifactInfo,
         registrationPath: String,
         isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
+    ): RegistrationIndex? {
         with(artifactInfo) {
             val packageVersionList =
                 packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
-            if (packageVersionList == null || packageVersionList.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
-                    .body(NUGET_V3_NOT_FOUND)
-            }
+            if (packageVersionList.isNullOrEmpty()) return null
             val sortedVersionList = packageVersionList.stream().sorted { o1, o2 ->
                 NugetVersionUtils.compareSemVer(o1.name, o2.name)
             }.toList()
             try {
                 val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
-                return ResponseEntity.ok(
-                    NugetV3RegistrationUtils.metadataToRegistrationIndex(sortedVersionList, v3RegistrationUrl)
-                )
+                return NugetV3RegistrationUtils.metadataToRegistrationIndex(sortedVersionList, v3RegistrationUrl)
             } catch (ignored: JsonProcessingException) {
                 logger.error("failed to deserialize metadata to registration index json")
                 throw ignored

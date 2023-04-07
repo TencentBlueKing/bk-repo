@@ -2,6 +2,7 @@ package com.tencent.bkrepo.nuget.constant
 
 // Service resource type
 const val PACKAGE_BASE_ADDRESS = "PackageBaseAddress/3.0.0"
+const val REGISTRATIONS_BASE_SEMVER2_URL = "RegistrationsBaseUrl/3.6.0"
 
 // Registration resource type
 const val CATALOG_ROOT = "catalog:CatalogRoot"

@@ -49,12 +49,14 @@ import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
 import com.tencent.bkrepo.nuget.constant.INDEX
 import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_SEMVER2_URL
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
 import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.response.VersionListResponse
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Resource
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetUtils.getPackageDownloadUri
 import com.tencent.bkrepo.nuget.util.NugetUtils.getServiceIndexFullPath
@@ -87,6 +89,7 @@ class NugetRemoteRepository(
         }
     }
 
+    @SuppressWarnings("ReturnCount")
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         whitelistInterceptor(context)
         return getCacheArtifactResource(context) ?: run {
@@ -137,29 +140,43 @@ class NugetRemoteRepository(
         return context.getStringAttribute(REMOTE_URL).orEmpty()
     }
 
-    override fun registrationIndex(
+    fun registrationIndex(
         artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
-        // 1、先根据请求URL匹配对应的远程URL地址的type，在根据type去找到对应的key
-        // 2、根据匹配到的URL去添加请求packageId之后去请求远程索引文件
-        // 3、缓存索引文件，然后将文件中的URL改成对应的仓库URL进行返回
-        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
-        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
-        val registrationIndex = commonUtils.downloadRemoteRegistrationIndex(
-            artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
-        )
-        val rewriteRegistrationIndex = registrationIndex?.let {
-            NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-                registrationIndex, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
-            )
-        } ?: throw NugetFeedNotFoundException(
-            "Failed to parse registration json for package: [${artifactInfo.packageName}]," +
-                " in repo: [${artifactInfo.getRepoIdentify()}]"
-        )
-        return ResponseEntity.ok(rewriteRegistrationIndex)
+        context: ArtifactQueryContext
+    ): RegistrationIndex? {
+        with(context) {
+            val configuration = getRemoteConfiguration()
+            val registrationsBaseUrl = getResourceId(REGISTRATIONS_BASE_SEMVER2_URL, context) ?: return null
+            val requestUrl = UrlFormatter.format(registrationsBaseUrl, "${artifactInfo.packageName}/$INDEX")
+            logger.info("Query Remote Registrations from [$requestUrl] on configuration[$configuration]")
+            val response = executeRequest(configuration, requestUrl)
+            return getJsonObjectFromResponse(response, RegistrationIndex::class.java)
+        }
     }
+
+//    override fun registrationIndex(
+//        artifactInfo: NugetRegistrationArtifactInfo,
+//        registrationPath: String,
+//        isSemver2Endpoint: Boolean
+//    ): ResponseEntity<Any> {
+//        // 1、先根据请求URL匹配对应的远程URL地址的type，在根据type去找到对应的key
+//        // 2、根据匹配到的URL去添加请求packageId之后去请求远程索引文件
+//        // 3、缓存索引文件，然后将文件中的URL改成对应的仓库URL进行返回
+//        val v2BaseUrl = NugetUtils.getV2Url(artifactInfo)
+//        val v3BaseUrl = NugetUtils.getV3Url(artifactInfo)
+//        val registrationIndex = commonUtils.downloadRemoteRegistrationIndex(
+//            artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
+//        )
+//        val rewriteRegistrationIndex = registrationIndex?.let {
+//            NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
+//                registrationIndex, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+//            )
+//        } ?: throw NugetFeedNotFoundException(
+//            "Failed to parse registration json for package: [${artifactInfo.packageName}]," +
+//                " in repo: [${artifactInfo.getRepoIdentify()}]"
+//        )
+//        return ResponseEntity.ok(rewriteRegistrationIndex)
+//    }
 
     override fun registrationPage(
         artifactInfo: NugetRegistrationArtifactInfo,
