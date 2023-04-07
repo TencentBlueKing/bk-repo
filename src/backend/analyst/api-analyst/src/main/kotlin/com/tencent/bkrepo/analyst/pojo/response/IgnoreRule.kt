@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,35 +25,58 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request.standard
+package com.tencent.bkrepo.analyst.pojo.response
 
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
+import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@Suppress("LongParameterList")
-data class StandardLoadResultArguments(
-    @ApiModelProperty("需要的cve列表")
-    val vulIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的漏洞严重性等级列表")
-    val vulnerabilityLevels: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可id列表")
-    val licenseIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可id列表")
-    val sensitiveContent: String? = null,
-    @ApiModelProperty("需要的许可id列表")
-    val sensitiveType: String? = null,
-    @ApiModelProperty("扫描结果类型")
-    val reportType: String,
-    @ApiModelProperty("分页参数")
-    val pageLimit: PageLimit = PageLimit(),
+@ApiModel("制品扫描结果忽略规则")
+data class IgnoreRule(
+    @ApiModelProperty("id")
+    var id: String? = null,
+
+    @ApiModelProperty("规则名")
+    val name: String,
+
+    @ApiModelProperty("规则描述")
+    val description: String,
+
+    @ApiModelProperty("目标项目，系统级的规则为空字符串")
+    val projectId: String,
+
+    @ApiModelProperty("需要应用规则的项目，为空表示全部应用，该字段仅对系统级规则有效")
+    val projectIds: List<String>? = null,
+
+    @ApiModelProperty("目标仓库名")
+    val repoName: String? = null,
+
+    @ApiModelProperty("目标扫描方案ID")
+    val planId: String? = null,
+
+    @ApiModelProperty("目标路径")
+    val fullPath: String? = null,
+
+    @ApiModelProperty("目标包名")
+    val packageKey: String? = null,
+
+    @ApiModelProperty("目标版本")
+    val packageVersion: String? = null,
+
     @ApiModelProperty("需要忽略的漏洞")
-    val ignoreVulIds: Set<String>? = null,
+    val vulIds: Set<String>? = null,
+
     @ApiModelProperty("小于该等级的漏洞将被忽略")
-    val minSeverityLevel: Int? = null,
+    val severity: Int? = null,
+
     @ApiModelProperty("需要忽略的许可证")
-    val ignoreLicenses: Set<String>? = null,
-    @ApiModelProperty("是否仅包含被忽略的结果")
-    val ignored: Boolean = false
-) : LoadResultArguments(StandardScanner.TYPE)
+    val licenseNames: Set<String>? = null
+) {
+    fun shouldIgnore(vulId: String, severity: Int? = null): Boolean {
+        return vulIds != null && vulId in vulIds ||
+            this.severity != null && severity != null && severity < this.severity
+    }
+
+    fun shouldIgnore(licenseName: String): Boolean {
+        return licenseNames != null && licenseName in licenseNames
+    }
+}

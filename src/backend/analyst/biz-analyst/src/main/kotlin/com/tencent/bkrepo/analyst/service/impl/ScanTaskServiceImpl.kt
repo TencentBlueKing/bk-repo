@@ -60,7 +60,9 @@ import com.tencent.bkrepo.analyst.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.analyst.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.analyst.pojo.request.ignore.MatchIgnoreRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
+import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultOverview
@@ -68,11 +70,13 @@ import com.tencent.bkrepo.analyst.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.analyst.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
+import com.tencent.bkrepo.analyst.service.IgnoreRuleService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
@@ -90,7 +94,8 @@ class ScanTaskServiceImpl(
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
     private val resultManagers: Map<String, ScanExecutorResultManager>,
-    private val scannerConverters: Map<String, ScannerConverter>
+    private val scannerConverters: Map<String, ScannerConverter>,
+    private val ignoreRuleService: IgnoreRuleService
 ) : ScanTaskService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -175,8 +180,13 @@ class ScanTaskServiceImpl(
             val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
 
             val scanner = scannerService.get(scanner)
+            val matchIgnoreRuleRequest = MatchIgnoreRuleRequest(
+                projectId = node.projectId,
+                repoName = node.repoName,
+                fullPath = node.fullPath
+            )
             val scanResultDetail = resultManagers[scanner.type]?.load(
-                repo.storageCredentialsKey, node.sha256!!, scanner, arguments
+                repo.storageCredentialsKey, node.sha256!!, scanner, addIgnoreRule(matchIgnoreRuleRequest, arguments)
             )
             val status = if (scanResultDetail == null) {
                 subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
@@ -262,6 +272,15 @@ class ScanTaskServiceImpl(
         val subtask = subScanTaskDao.findById(subtaskId)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
 
+        val matchIgnoreRuleRequest = MatchIgnoreRuleRequest(
+            projectId = subtask.projectId,
+            repoName = subtask.repoName,
+            planId = subtask.planId,
+            fullPath = subtask.fullPath,
+            packageKey = subtask.packageKey,
+            packageVersion = subtask.version
+        )
+
         try {
             permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         } catch (e: RepoNotFoundException) {
@@ -271,7 +290,7 @@ class ScanTaskServiceImpl(
 
         val scanner = scannerService.get(subtask.scanner)
         val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)] ?: return null
-        val arguments = convertToArgs(scannerConverter, request)
+        val arguments = addIgnoreRule(matchIgnoreRuleRequest, convertToArgs(scannerConverter, request))
         val scanResultManager = resultManagers[subtask.scannerType]
         return scanResultManager
             ?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
@@ -286,5 +305,32 @@ class ScanTaskServiceImpl(
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
         permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         return ScanLicenseConverter.convert(subtask)
+    }
+
+    private fun addIgnoreRule(
+        request: MatchIgnoreRuleRequest,
+        arguments: LoadResultArguments
+    ): LoadResultArguments {
+        if (arguments is StandardLoadResultArguments) {
+            val rules = ignoreRuleService.match(request)
+            val ignoreVulIds = HashSet<String>()
+            val ignoreLicenses = HashSet<String>()
+            var minSeverityLevel = Level.LOW.level
+            for (rule in rules) {
+                rule.vulIds?.let { ignoreVulIds.addAll(it) }
+                rule.licenseNames?.let { ignoreLicenses.addAll(it) }
+                if (rule.severity != null && rule.severity!! > minSeverityLevel) {
+                    minSeverityLevel = rule.severity!!
+                }
+            }
+            if (ignoreVulIds.isNotEmpty() || ignoreLicenses.isNotEmpty() || minSeverityLevel != Level.LOW.level) {
+                return arguments.copy(
+                    ignoreVulIds = ignoreVulIds,
+                    minSeverityLevel = minSeverityLevel,
+                    ignoreLicenses = ignoreLicenses
+                )
+            }
+        }
+        return arguments
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.pojo.request.ignore
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("获取制品漏洞详情请求")
-data class ArtifactVulnerabilityRequest(
-    @ApiModelProperty("项目id")
-    var projectId: String? = null,
-    @ApiModelProperty("子任务id")
-    var subScanTaskId: String? = null,
-    @ApiModelProperty("vulId")
-    val vulId: String? = null,
-    @ApiModelProperty("漏洞等级")
-    var leakType: String? = null,
-    @ApiModelProperty("为true时将仅获取被忽略漏洞")
-    var ignored: Boolean = false,
-    @ApiModelProperty("报告类型")
-    val reportType: String = CveSecItem.TYPE,
-    @ApiModelProperty("页数")
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("每页数量")
-    val pageSize: Int = DEFAULT_PAGE_SIZE
+@ApiModel("创建或更新扫描结果忽略规则")
+data class UpdateIgnoreRuleRequest(
+    @ApiModelProperty("id")
+    var id: String? = null,
+
+    @ApiModelProperty("规则名")
+    val name: String,
+
+    @ApiModelProperty("规则描述")
+    val description: String,
+
+    @ApiModelProperty("目标项目，系统级的规则为空字符串")
+    val projectId: String,
+
+    @ApiModelProperty("需要应用规则的项目，为空表示全部应用，该字段仅对系统级规则有效")
+    val projectIds: List<String>? = null,
+
+    @ApiModelProperty("目标仓库名")
+    val repoName: String? = null,
+
+    @ApiModelProperty("目标扫描方案ID")
+    val planId: String? = null,
+
+    @ApiModelProperty("目标路径")
+    val fullPath: String? = null,
+
+    @ApiModelProperty("目标包名")
+    val packageKey: String? = null,
+
+    @ApiModelProperty("目标版本")
+    val packageVersion: String? = null,
+
+    @ApiModelProperty("需要忽略的漏洞，空集合表示忽略所有")
+    val vulIds: Set<String>? = null,
+
+    @ApiModelProperty("小于该等级的漏洞将被忽略")
+    val severity: Int? = null,
+
+    @ApiModelProperty("需要忽略的许可证，空集合表示忽略所有")
+    val licenseNames: Set<String>? = null,
 )

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResu
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResultData
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -41,18 +42,49 @@ import org.springframework.stereotype.Repository
 @Repository
 class SecurityResultDao : ResultItemDao<TSecurityResult>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        require(arguments is StandardLoadResultArguments)
-        if (arguments.vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TSecurityResultData::severity.name)).inValues(arguments.vulnerabilityLevels)
+        with(arguments as StandardLoadResultArguments) {
+            if (vulnerabilityLevels.isNotEmpty()) {
+                criteria.and(dataKey(TSecurityResultData::severity.name)).inValues(vulnerabilityLevels)
+            }
+            if (vulIds.isNotEmpty()) {
+                criteria.and(dataKey(TSecurityResultData::vulId.name)).inValues(vulIds)
+            }
+            criteria.addIgnoreCriteria(ignoreVulIds, minSeverityLevel, ignored)
+            return criteria
         }
-        if (arguments.vulIds.isNotEmpty()) {
-            criteria.and(dataKey(TSecurityResultData::vulId.name)).inValues(arguments.vulIds)
-        }
-        return criteria
     }
 
     override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
         query.with(Sort.by(Sort.Direction.DESC, dataKey(TSecurityResultData::severityLevel.name)))
         return query
+    }
+
+    private fun Criteria.addIgnoreCriteria(ignoreVulIds: Set<String>?, minSeverityLevel: Int?, ignored: Boolean) {
+        if (ignoreVulIds?.isNotEmpty() == true) {
+            val criteria = and(dataKey(TSecurityResultData::vulId.name))
+            if (ignored) {
+                criteria.inValues(ignoreVulIds)
+            } else {
+                criteria.not().inValues(ignoreVulIds)
+            }
+        } else if (ignoreVulIds != null && !ignored) {
+            // ignoreVulIds为空集合时表示忽略所有
+            // 设置一个永远为false的条件，让数据库查询结果返回空
+            and(ID).exists(false)
+            return
+        } else if (ignoreVulIds != null) {
+            // ignoreVulIds为空集合时表示忽略所有
+            // ignored为true表示返回所有被忽略的漏洞
+            // 此处要返回所有被忽略的漏洞相当于返回所有漏洞，可以不设置忽略条件直接返回，直接返回
+            return
+        }
+        if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
+            val criteria = and(dataKey(TSecurityResultData::severityLevel.name))
+            if (ignored) {
+                criteria.lt(minSeverityLevel)
+            } else {
+                criteria.gte(minSeverityLevel)
+            }
+        }
     }
 }
