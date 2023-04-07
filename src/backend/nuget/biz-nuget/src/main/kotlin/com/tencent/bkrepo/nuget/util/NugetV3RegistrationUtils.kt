@@ -122,7 +122,7 @@ object NugetV3RegistrationUtils {
         // nuspec文件的dependencies可能是"简单依赖列表"或"依赖项组"，都需要转换到DependencyGroups
         val dependencyMaps = dependencies?.map { it as Map<*, *> }
         val first = dependencyMaps?.firstOrNull() ?: return emptyList()
-        return if (first.containsKey(ID) && first.containsKey(VERSION)) {
+        return if (first.containsKey(ID)) {
             // 简单依赖列表的targetFramework为空
             listOf(resolveSingleFlatList(source = dependencyMaps, v3RegistrationUrl = v3RegistrationUrl))
         } else {
@@ -142,7 +142,10 @@ object NugetV3RegistrationUtils {
     ): DependencyGroups {
         val singleFlatList = mutableListOf<Dependency>()
         source.forEach {
-            singleFlatList.add(Dependency(packageId = it[ID].toString()))
+            val version = it[VERSION]?.toString()
+            singleFlatList.add(
+                Dependency(packageId = it[ID].toString(), range = versionToRange(version))
+            )
         }
         return DependencyGroups(dependencies = singleFlatList, targetFramework = targetFramework)
     }
@@ -166,12 +169,15 @@ object NugetV3RegistrationUtils {
             val targetFramework = it[TARGET_FRAMEWORKS]?.toString()
             // 解析单个依赖项组
             val dependencyGroup = when (dependencyObject) {
-                // 当依赖项组中的依赖项只有1个时，dependency是包含键为ID和Version的Map
+                // 当依赖项组中的依赖项只有1个时，dependency是1个包含键为id的Map
                 is Map<*, *> -> {
-                    val singleFlatList = listOf(Dependency(packageId = dependencyObject[ID].toString()))
+                    val version = dependencyObject[VERSION]?.toString()
+                    val singleFlatList = listOf(
+                        Dependency(packageId = dependencyObject[ID].toString(), range = versionToRange(version))
+                    )
                     DependencyGroups(dependencies = singleFlatList, targetFramework = targetFramework)
                 }
-                // 当依赖项组中的依赖项有多个时，dependency是一个列表，包含多个Map，每个Map对应一个依赖项，包含ID和Version的键
+                // 当依赖项组中的依赖项有多个时，dependency是一个List，包含多个Map，每个Map对应一个依赖项，且包含key:id
                 is List<*> -> {
                     val dependencyMaps = dependencyObject.map { dependency -> dependency as Map<*, *> }
                     resolveSingleFlatList(dependencyMaps, targetFramework, v3RegistrationUrl)
@@ -211,6 +217,12 @@ object NugetV3RegistrationUtils {
                 title = title,
                 version = version
             )
+        }
+    }
+
+    private fun versionToRange(version: String?): String? {
+        return version?.let {
+            if (version.startsWith("[") || version.startsWith("(")) version else "[$version, )"
         }
     }
 
