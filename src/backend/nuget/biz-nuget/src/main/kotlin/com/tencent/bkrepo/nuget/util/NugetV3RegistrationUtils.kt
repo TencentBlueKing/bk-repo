@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.github.zafarkhaja.semver.Version
-import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.nuget.constant.*
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseData
+import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseDataTypes
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseDataVersion
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.*
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
@@ -279,10 +279,9 @@ object NugetV3RegistrationUtils {
         val latestVersionPackage = sortedPackageVersionList.last()
         val searchResponseDataVersionList =
             sortedPackageVersionList.filter {
-                searchRequest.prerelease ?: false || !isPreRelease(latestVersionPackage.name)
+                searchRequest.prerelease ?: false || !isPreRelease(it.name)
             }.map { buildSearchResponseDataVersion(it, packageSummary.name, v3RegistrationUrl) }
-        val writeValueAsString = JsonUtils.objectMapper.writeValueAsString(latestVersionPackage.metadata)
-        val nuspecMetadata = JsonUtils.objectMapper.readValue(writeValueAsString, NuspecMetadata::class.java)
+        val nuspecMetadata = NugetUtils.resolveVersionMetadata(latestVersionPackage)
         return buildSearchResponseData(v3RegistrationUrl, searchResponseDataVersionList, nuspecMetadata, packageSummary)
     }
 
@@ -294,7 +293,8 @@ object NugetV3RegistrationUtils {
     ): SearchResponseData {
         with(nuspecMetadata) {
             return SearchResponseData(
-                id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, id),
+                registration = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, id),
+                id = id,
                 version = version,
                 description = description,
                 versions = searchResponseDataVersionList,
@@ -303,13 +303,13 @@ object NugetV3RegistrationUtils {
                 licenseUrl = licenseUrl?.let { URI.create(it) },
                 owners = owners?.split(','),
                 projectUrl = projectUrl?.let { URI.create(it) },
-                registration = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, id),
                 summary = summary,
                 tags = tags?.split(','),
                 title = title,
                 totalDownloads = packageSummary.downloads.toInt(),
                 verified = false,
-                packageTypes = emptyList()
+                packageTypes = packageTypes?.map { SearchResponseDataTypes(it.name) }
+                    ?: listOf(SearchResponseDataTypes())
             )
         }
     }

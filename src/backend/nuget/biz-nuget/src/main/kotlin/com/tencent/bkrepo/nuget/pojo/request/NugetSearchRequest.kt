@@ -5,7 +5,7 @@ package com.tencent.bkrepo.nuget.pojo.request
  */
 data class NugetSearchRequest(
     // The search terms to used to filter packages
-    // 如果为空，怎返回所有数据
+    // 如果为空，则返回所有数据
     val q: String? = null,
     // The number of results to skip, for pagination
     val skip: Int = 0,
@@ -18,5 +18,6 @@ data class NugetSearchRequest(
     // 如果为空，返回1.0.0的版本数据，如果semVerLevel=2.0.0, 则SemVer 1.0.0和SemVer 2.0.0 都会返回
     val semVerLevel: String? = null,
     // The package type to use to filter packages(added in SearchQueryService/3.5.0)
+    // If the provided package type is empty, no filter will be applied.
     val packageType: String? = null
 )

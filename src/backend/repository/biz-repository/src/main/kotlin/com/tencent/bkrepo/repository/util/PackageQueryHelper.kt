@@ -104,7 +104,7 @@ object PackageQueryHelper {
         return where(TPackage::projectId).isEqualTo(projectId)
             .and(TPackage::repoName).isEqualTo(repoName)
             .apply {
-                packageName?.let { and(TPackage::name).regex("^$packageName") }
+                packageName?.let { and(TPackage::name).regex("^$packageName", "i") }
             }
     }
 

@@ -70,7 +70,7 @@ class Repository {
 
 data class PackageType(
     @JacksonXmlProperty(isAttribute = true)
-    val name: String?,
+    val name: String,
     @JacksonXmlProperty(isAttribute = true)
     val version: String?
 )
