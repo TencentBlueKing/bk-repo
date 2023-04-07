@@ -4,7 +4,8 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.nuget.constant.NugetProperties
 import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -17,6 +18,7 @@ object NugetUtils {
     private const val NUGET_PACKAGE_NAME = "%s.%s.nupkg"
     private const val INDEX_FULL_PATH = "/.index/%s"
     private const val PACKAGE_DOWNLOAD_URI = "/%s/%s/%s.%s.nupkg"
+    private val nugetProperties = SpringContextUtils.getBean(NugetProperties::class.java)
 
     fun getNupkgFullPath(id: String, version: String): String {
         return String.format(NUGET_FULL_PATH, id, id, version).toLowerCase()
@@ -45,15 +47,13 @@ object NugetUtils {
     }
 
     fun getV2Url(artifactInfo: ArtifactInfo): String {
-        val url = HttpContextHolder.getRequest().requestURL
-        val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
-        return domain.append(artifactInfo.getRepoIdentify()).toString()
+        val domain = UrlFormatter.formatHost(nugetProperties.domain)
+        return domain + artifactInfo.getRepoIdentify()
     }
 
     fun getV3Url(artifactInfo: ArtifactInfo): String {
-        val url = HttpContextHolder.getRequest().requestURL
-        val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
-        return domain.append(artifactInfo.getRepoIdentify()).append(CharPool.SLASH).append("v3").toString()
+        val domain = UrlFormatter.formatHost(nugetProperties.domain)
+        return domain + artifactInfo.getRepoIdentify() + CharPool.SLASH + "v3"
     }
 
     fun buildPackageContentUrl(v3RegistrationUrl: String, packageId: String, version: String): URI {
