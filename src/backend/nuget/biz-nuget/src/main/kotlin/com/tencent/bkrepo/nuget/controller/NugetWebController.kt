@@ -9,7 +9,7 @@ import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.domain.NugetDomainInfo
 import com.tencent.bkrepo.nuget.pojo.user.PackageVersionInfo
-import com.tencent.bkrepo.nuget.service.NugetPackageService
+import com.tencent.bkrepo.nuget.service.NugetWebService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -24,8 +24,8 @@ import org.springframework.web.bind.annotation.RestController
 @Suppress("MVCPathVariableInspection")
 @RestController
 @RequestMapping("/ext")
-class NugetPackageController(
-    private val nugetPackageService: NugetPackageService
+class NugetWebController(
+    private val nugetWebService: NugetWebService
 ) {
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包")
@@ -36,7 +36,7 @@ class NugetPackageController(
         @ApiParam(value = "包名称", required = true)
         @RequestParam packageKey: String
     ): Response<Void> {
-        nugetPackageService.deletePackage(userId, artifactInfo)
+        nugetWebService.deletePackage(userId, artifactInfo)
         return ResponseBuilder.success()
     }
 
@@ -51,7 +51,7 @@ class NugetPackageController(
         @ApiParam(value = "包版本", required = true)
         @RequestParam version: String
     ): Response<Void> {
-        nugetPackageService.deleteVersion(userId, artifactInfo)
+        nugetWebService.deleteVersion(userId, artifactInfo)
         return ResponseBuilder.success()
     }
 
@@ -67,12 +67,12 @@ class NugetPackageController(
         @ApiParam(value = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
-        return ResponseBuilder.success(nugetPackageService.detailVersion(artifactInfo, packageKey, version))
+        return ResponseBuilder.success(nugetWebService.detailVersion(artifactInfo, packageKey, version))
     }
 
     @ApiOperation("获取nuget域名地址")
     @GetMapping("/address")
     fun getRegistryDomain(): Response<NugetDomainInfo> {
-        return ResponseBuilder.success(nugetPackageService.getRegistryDomain())
+        return ResponseBuilder.success(nugetWebService.getRegistryDomain())
     }
 }
