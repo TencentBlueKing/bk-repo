@@ -1,13 +1,21 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.github.zafarkhaja.semver.Version
-import com.tencent.bkrepo.nuget.constant.*
+import com.tencent.bkrepo.nuget.constant.DEPENDENCY
+import com.tencent.bkrepo.nuget.constant.ID
+import com.tencent.bkrepo.nuget.constant.TARGET_FRAMEWORKS
+import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseData
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseDataTypes
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseDataVersion
-import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.*
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.Dependency
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.DependencyGroups
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationCatalogEntry
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationItem
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationPageItem
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -15,7 +23,6 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.stream.IntStream
 import kotlin.streams.toList
 
 object NugetV3RegistrationUtils {
@@ -106,7 +113,7 @@ object NugetV3RegistrationUtils {
             NugetUtils.buildRegistrationLeafUrl(v3RegistrationUrl, nuspecMetadata.id, nuspecMetadata.version)
         val packageContent =
             NugetUtils.buildPackageContentUrl(v3RegistrationUrl, nuspecMetadata.id, nuspecMetadata.version)
-        val dependencyGroups = metadataToDependencyGroups(nuspecMetadata.dependencies, v3RegistrationUrl)
+        val dependencyGroups = metadataToDependencyGroups(nuspecMetadata.dependencies)
         val catalogEntry = metadataToRegistrationCatalogEntry(nuspecMetadata, v3RegistrationUrl, dependencyGroups)
         return RegistrationPageItem(
             id = registrationPageItemId,
@@ -116,17 +123,16 @@ object NugetV3RegistrationUtils {
     }
 
     fun metadataToDependencyGroups(
-        dependencies: List<Any>?,
-        v3RegistrationUrl: String? = null
+        dependencies: List<Any>?
     ): List<DependencyGroups> {
         // nuspec文件的dependencies可能是"简单依赖列表"或"依赖项组"，都需要转换到DependencyGroups
         val dependencyMaps = dependencies?.map { it as Map<*, *> }
         val first = dependencyMaps?.firstOrNull() ?: return emptyList()
         return if (first.containsKey(ID)) {
             // 简单依赖列表的targetFramework为空
-            listOf(resolveSingleFlatList(source = dependencyMaps, v3RegistrationUrl = v3RegistrationUrl))
+            listOf(resolveSingleFlatList(source = dependencyMaps))
         } else {
-            resolveDependencyGroups(dependencyMaps, v3RegistrationUrl)
+            resolveDependencyGroups(dependencyMaps)
         }
     }
 
@@ -137,8 +143,7 @@ object NugetV3RegistrationUtils {
      */
     private fun resolveSingleFlatList(
         source: List<Map<*, *>>,
-        targetFramework: String? = null,
-        v3RegistrationUrl: String? = null,
+        targetFramework: String? = null
     ): DependencyGroups {
         val singleFlatList = mutableListOf<Dependency>()
         source.forEach {
@@ -160,8 +165,7 @@ object NugetV3RegistrationUtils {
      * 4.dependency和targetFramework都为空，表示默认或回落情况下没有依赖
      */
     private fun resolveDependencyGroups(
-        source: List<Map<*, *>>,
-        v3RegistrationUrl: String? = null
+        source: List<Map<*, *>>
     ): List<DependencyGroups> {
         val dependencyGroupList = mutableListOf<DependencyGroups>()
         source.forEach {
@@ -180,7 +184,7 @@ object NugetV3RegistrationUtils {
                 // 当依赖项组中的依赖项有多个时，dependency是一个List，包含多个Map，每个Map对应一个依赖项，且包含key:id
                 is List<*> -> {
                     val dependencyMaps = dependencyObject.map { dependency -> dependency as Map<*, *> }
-                    resolveSingleFlatList(dependencyMaps, targetFramework, v3RegistrationUrl)
+                    resolveSingleFlatList(dependencyMaps, targetFramework)
                 }
                 else -> {
                     DependencyGroups(dependencies = null, targetFramework = targetFramework)
@@ -233,55 +237,35 @@ object NugetV3RegistrationUtils {
         if (registrationLeafList.isEmpty()) {
             throw IllegalArgumentException("Cannot build registration with no package version")
         } else {
-            val versionCount = registrationLeafList.size
-            val pagesCount = versionCount / 64 + if (versionCount % 64 != 0) 1 else 0
             val packageId = registrationLeafList[0].catalogEntry.packageId
             val registrationPageList =
-                buildRegistrationItems(registrationLeafList, v3RegistrationUrl, versionCount, pagesCount, packageId)
+                buildRegistrationPages(registrationLeafList, v3RegistrationUrl, packageId)
             return RegistrationIndex(
                 id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, packageId),
-                count = pagesCount,
+                count = registrationPageList.size,
                 items = registrationPageList
             )
         }
     }
 
-    private fun buildRegistrationItems(
+    private fun buildRegistrationPages(
         registrationLeafList: List<RegistrationPageItem>,
         v3RegistrationUrl: String,
-        versionCount: Int,
-        pagesCount: Int,
         packageId: String
     ): List<RegistrationItem> {
-        return IntStream.range(0, pagesCount).mapToObj { i ->
-            // 计算每一页中的最小版本与最大版本
-            val lowerVersion = registrationLeafList[64 * i].catalogEntry.version
-            val isLastPage = i == pagesCount - 1
-            val lastPackageIndexInPage = if (isLastPage) versionCount - 1 else 64 * i + 63
-            val upperVersion = registrationLeafList[lastPackageIndexInPage].catalogEntry.version
-            val packagesInPageCount = computedPageCount(isLastPage, versionCount)
+        val pageList = registrationLeafList.chunked(64)
+        return pageList.map {
+            val lowerVersion = it.first().catalogEntry.version
+            val upperVersion = it.last().catalogEntry.version
             RegistrationItem(
                 id = NugetUtils.buildRegistrationPageUrl(v3RegistrationUrl, packageId, lowerVersion, upperVersion),
-                count = packagesInPageCount,
-                items = registrationLeafList,
+                count = it.size,
+                items = it,
                 lower = lowerVersion,
                 parent = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, packageId),
                 upper = upperVersion
             )
-        }.toList()
-    }
-
-    private fun computedPageCount(lastPage: Boolean, versionCount: Int): Int {
-        if (!lastPage && versionCount < 64) {
-            val message = "Number of packages in a page must be 64 unless it's the last page"
-            logger.error(message)
-            throw IllegalArgumentException(message)
         }
-        val versionCountPrePage = 64
-        if (versionCount % versionCountPrePage != 0 && lastPage) {
-            return versionCount % versionCountPrePage
-        }
-        return versionCountPrePage
     }
 
     private fun isPreRelease(version: String): Boolean {
