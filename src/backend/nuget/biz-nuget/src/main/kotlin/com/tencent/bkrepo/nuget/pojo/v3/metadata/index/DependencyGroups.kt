@@ -12,5 +12,5 @@ data class DependencyGroups(
     @JsonProperty("@type")
     val type: String? = PACKAGE_DEPENDENCY_GROUP,
     val dependencies: List<Dependency>? = null,
-    val targetFramework: String? = null
+    var targetFramework: String? = null
 )

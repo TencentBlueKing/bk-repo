@@ -17,6 +17,7 @@ import com.tencent.bkrepo.nuget.pojo.nuspec.DependencyGroup
 import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
 import com.tencent.bkrepo.nuget.pojo.nuspec.Reference
 import com.tencent.bkrepo.nuget.pojo.nuspec.ReferenceGroup
+import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -49,8 +50,7 @@ class NugetPackageHandler {
                 val metadata = mutableMapOf<String, Any>()
                 metadata[ID] = id
                 metadata[VERSION] = version
-                // 暂时不将依赖项解析到元数据中
-//                dependencies?.let { metadata[DEPENDENCY] = buildDependencies(it) }
+                dependencies?.let { metadata[DEPENDENCY] = NugetV3RegistrationUtils.metadataToDependencyGroups(it) }
                 references?.let { metadata[REFERENCE] = buildReferences(it) }
                 frameworkAssemblies?.let { metadata[FRAMEWORKS] = buildFrameworks(it) }
 

@@ -115,16 +115,16 @@ object NugetV3RegistrationUtils {
         )
     }
 
-    private fun metadataToDependencyGroups(
+    fun metadataToDependencyGroups(
         dependencies: List<Any>?,
-        v3RegistrationUrl: String
+        v3RegistrationUrl: String? = null
     ): List<DependencyGroups> {
         // nuspec文件的dependencies可能是"简单依赖列表"或"依赖项组"，都需要转换到DependencyGroups
         val dependencyMaps = dependencies?.map { it as Map<*, *> }
         val first = dependencyMaps?.firstOrNull() ?: return emptyList()
         return if (first.containsKey(ID) && first.containsKey(VERSION)) {
             // 简单依赖列表的targetFramework为空
-            listOf(resolveSingleFlatList(dependencyMaps, v3RegistrationUrl))
+            listOf(resolveSingleFlatList(source = dependencyMaps, v3RegistrationUrl = v3RegistrationUrl))
         } else {
             resolveDependencyGroups(dependencyMaps, v3RegistrationUrl)
         }
@@ -137,8 +137,8 @@ object NugetV3RegistrationUtils {
      */
     private fun resolveSingleFlatList(
         source: List<Map<*, *>>,
-        v3RegistrationUrl: String,
-        targetFramework: String? = null
+        targetFramework: String? = null,
+        v3RegistrationUrl: String? = null,
     ): DependencyGroups {
         val singleFlatList = mutableListOf<Dependency>()
         source.forEach {
@@ -156,7 +156,10 @@ object NugetV3RegistrationUtils {
      * 3.dependency不为空，targetFramework为空，这样的Map最多只有1个，表示匹配不到框架时的默认或回落依赖
      * 4.dependency和targetFramework都为空，表示默认或回落情况下没有依赖
      */
-    private fun resolveDependencyGroups(source: List<Map<*, *>>, v3RegistrationUrl: String): List<DependencyGroups> {
+    private fun resolveDependencyGroups(
+        source: List<Map<*, *>>,
+        v3RegistrationUrl: String? = null
+    ): List<DependencyGroups> {
         val dependencyGroupList = mutableListOf<DependencyGroups>()
         source.forEach {
             val dependencyObject = it[DEPENDENCY]
@@ -171,7 +174,7 @@ object NugetV3RegistrationUtils {
                 // 当依赖项组中的依赖项有多个时，dependency是一个列表，包含多个Map，每个Map对应一个依赖项，包含ID和Version的键
                 is List<*> -> {
                     val dependencyMaps = dependencyObject.map { dependency -> dependency as Map<*, *> }
-                    resolveSingleFlatList(dependencyMaps, v3RegistrationUrl, targetFramework)
+                    resolveSingleFlatList(dependencyMaps, targetFramework, v3RegistrationUrl)
                 }
                 else -> {
                     DependencyGroups(dependencies = null, targetFramework = targetFramework)
