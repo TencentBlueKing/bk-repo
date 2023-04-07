@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
-import com.tencent.bkrepo.nuget.exception.NugetFeedNofFoundException
+import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
@@ -27,7 +27,7 @@ class NugetRemoteAndVirtualCommon {
         context.putAttribute(REMOTE_URL, requestUrl)
         val repository = ArtifactContextHolder.getRepository()
         return repository.query(context)?.let { JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java) }
-            ?: throw NugetFeedNofFoundException(
+            ?: throw NugetFeedNotFoundException(
                 "query remote feed index.json for [${context.getRemoteConfiguration().url}] failed!"
             )
     }
@@ -71,7 +71,7 @@ class NugetRemoteAndVirtualCommon {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
         }
         // 这里不应该抛这个异常
-            ?: throw NugetFeedNofFoundException(
+            ?: throw NugetFeedNotFoundException(
                 "query remote registrationIndex for [$originalRegistrationPageUrl] failed!"
             )
     }
@@ -95,7 +95,7 @@ class NugetRemoteAndVirtualCommon {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationLeaf::class.java)
         }
         // 这里不应该抛这个异常
-            ?: throw NugetFeedNofFoundException(
+            ?: throw NugetFeedNotFoundException(
                 "query remote registrationIndex for [$originalRegistrationLeafUrl] failed!"
             )
     }

@@ -15,9 +15,19 @@ import java.util.StringJoiner
 object NugetUtils {
     private const val NUGET_FULL_PATH = "/%s/%s.%s.nupkg"
     private const val NUGET_PACKAGE_NAME = "%s.%s.nupkg"
+    private const val INDEX_FULL_PATH = "/.index/%s"
+    private const val PACKAGE_DOWNLOAD_URI = "/%s/%s/%s.%s.nupkg"
 
     fun getNupkgFullPath(id: String, version: String): String {
         return String.format(NUGET_FULL_PATH, id, id, version).toLowerCase()
+    }
+
+    fun getServiceIndexFullPath(remoteUrl: String): String {
+        return String.format(INDEX_FULL_PATH, remoteUrl)
+    }
+
+    fun getPackageDownloadUri(name: String, version: String): String {
+        return String.format(PACKAGE_DOWNLOAD_URI, name, version, name, version)
     }
 
     private fun getNupkgFileName(id: String, version: String): String {

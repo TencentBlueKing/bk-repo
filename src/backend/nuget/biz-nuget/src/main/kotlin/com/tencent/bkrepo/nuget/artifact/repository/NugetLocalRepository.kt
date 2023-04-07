@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.NUGET_V3_NOT_FOUND
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
+import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
@@ -73,6 +75,16 @@ import kotlin.streams.toList
 class NugetLocalRepository(
     private val nugetPackageHandler: NugetPackageHandler
 ) : LocalRepository(), NugetRepository {
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        return with(context) {
+            val packageName = getStringAttribute(PACKAGE)!!
+            packageClient.listExistPackageVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
+                .takeUnless { it.isNullOrEmpty() } ?: null.also {
+                    logger.info("Package [$packageName] not found in nuget-repo [$projectId/$repoName]")
+                }
+            }
+    }
 
     override fun feed(artifactInfo: NugetArtifactInfo): ResponseEntity<Any> {
         return try {

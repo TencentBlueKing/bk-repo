@@ -43,6 +43,8 @@ const val METADATA = "nuget_metadata"
 
 const val REMOTE_URL = "remote_url"
 
+const val INDEX = "index.json"
+
 const val NUGET_V3_NOT_FOUND =
     """
     <Error>

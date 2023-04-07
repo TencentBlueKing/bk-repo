@@ -31,27 +31,43 @@
 
 package com.tencent.bkrepo.nuget.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
+import com.tencent.bkrepo.nuget.constant.INDEX
+import com.tencent.bkrepo.nuget.constant.PACKAGE
+import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
-import com.tencent.bkrepo.nuget.exception.NugetFeedNofFoundException
+import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.response.VersionListResponse
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Resource
 import com.tencent.bkrepo.nuget.util.NugetUtils
+import com.tencent.bkrepo.nuget.util.NugetUtils.getPackageDownloadUri
+import com.tencent.bkrepo.nuget.util.NugetUtils.getServiceIndexFullPath
 import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils.convertOriginalToBkrepoResource
+import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import java.io.InputStream
+import java.net.URLEncoder
 import java.util.Objects
 import java.util.stream.Collectors
 
@@ -59,6 +75,42 @@ import java.util.stream.Collectors
 class NugetRemoteRepository(
     private val commonUtils: NugetRemoteAndVirtualCommon
 ) : RemoteRepository(), NugetRepository {
+
+    // Query Package Versions
+    override fun query(context: ArtifactQueryContext): Any? {
+        with(context) {
+            val configuration = getRemoteConfiguration()
+            val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, context) ?: return null
+            val requestUrl = UrlFormatter.format(packageBaseAddress, getStringAttribute(PACKAGE) + SLASH + INDEX)
+            val response = executeRequest(configuration, requestUrl)
+            return getJsonObjectFromResponse(response, VersionListResponse::class.java)?.versions
+        }
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        whitelistInterceptor(context)
+        return getCacheArtifactResource(context) ?: run {
+            val remoteConfiguration = context.getRemoteConfiguration()
+            logger.info(
+                "Remote download: not found artifact in cache, " +
+                        "download from remote repository: $remoteConfiguration"
+            )
+            // Construct download url
+            val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, context) ?: return null
+            val packageName = context.artifactInfo.getArtifactName()
+            val packageVersion = context.artifactInfo.getArtifactVersion()!!
+            val packageUri = getPackageDownloadUri(packageName, packageVersion)
+            val downloadUrl = UrlFormatter.format(packageBaseAddress, packageUri)
+
+            val httpClient = createHttpClient(remoteConfiguration)
+            val request = Request.Builder().url(downloadUrl).build()
+            logger.info("Remote download: download url: $downloadUrl")
+            val response = downloadRetry(request, httpClient)
+            return if (response != null && checkResponse(response)) {
+                onDownloadResponse(context, response)
+            } else null
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     override fun feed(artifactInfo: NugetArtifactInfo): ResponseEntity<Any> {
@@ -102,7 +154,7 @@ class NugetRemoteRepository(
             NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
                 registrationIndex, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
             )
-        } ?: throw NugetFeedNofFoundException(
+        } ?: throw NugetFeedNotFoundException(
             "Failed to parse registration json for package: [${artifactInfo.packageName}]," +
                 " in repo: [${artifactInfo.getRepoIdentify()}]"
         )
@@ -148,6 +200,70 @@ class NugetRemoteRepository(
             // return 400 bad request
             response.status = HttpStatus.BAD_REQUEST.value
         }
+    }
+
+    // 获取服务地址
+    private fun getResourceId(resource: String, context: ArtifactContext): String? {
+        val configuration = context.getRemoteConfiguration()
+        val feed = queryRemoteFeed(context)
+            ?: throw NugetFeedNotFoundException("Query service index from NuGet source[${configuration.url}] failed!")
+        return feed.resources.find { it.type == resource }?.id ?: null.also {
+            logger.error("Resource Type[$resource] Not Found in Service Index[${configuration.url}]")
+        }
+    }
+
+    // 向代理源请求服务索引文件，优先查询缓存
+    private fun queryRemoteFeed(context: ArtifactContext): Feed? {
+        val serviceIndexContext = buildServiceIndexContext(context)
+        return getCacheArtifactResource(serviceIndexContext)?.getSingleStream()?.let {
+            JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java)
+        } ?: run {
+            val configuration = context.getRemoteConfiguration()
+            val response = executeRequest(configuration)
+            return getJsonObjectFromResponse(response, Feed::class.java, serviceIndexContext)
+        }
+    }
+
+    private fun buildServiceIndexContext(context: ArtifactContext): ArtifactDownloadContext {
+        with(context) {
+            val configuration = getRemoteConfiguration()
+            val serviceIndexFullPath = getServiceIndexFullPath(URLEncoder.encode(configuration.url, UTF_8))
+            val serviceIndexArtifactInfo = ArtifactInfo(projectId, repoName, serviceIndexFullPath)
+            return ArtifactDownloadContext(
+                artifact = serviceIndexArtifactInfo,
+                repo = repositoryDetail
+            )
+        }
+    }
+
+    private fun executeRequest(configuration: RemoteConfiguration, url: String = configuration.url): Response {
+        val httpClient = createHttpClient(configuration)
+        val request = Request.Builder().url(url).build()
+        return httpClient.newCall(request).execute()
+    }
+
+    private fun <T> getJsonObjectFromResponse(
+        response: Response,
+        clazz: Class<T>,
+        cacheContext: ArtifactDownloadContext? = null
+    ): T? {
+        return if (checkJsonResponse(response)) {
+            val artifactFile = createTempFile(response.body()!!)
+            cacheContext?.let { cacheArtifactFile(it, artifactFile) }
+            JsonUtils.objectMapper.readValue(artifactFile.getInputStream(), clazz)
+        } else null
+    }
+
+    private fun checkJsonResponse(response: Response): Boolean {
+        val contentType = response.body()!!.contentType()
+        return checkResponse(response) && contentType?.let {
+            if (it.toString().contains("application/json")) {
+                return@let true
+            } else {
+                logger.error("Response from nuget proxy source[${response.request().url()}] is not JSON format")
+                return@let false
+            }
+        } ?: false
     }
 
     companion object {
