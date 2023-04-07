@@ -28,19 +28,19 @@
 package com.tencent.bkrepo.common.artifact.util.okhttp
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.SocketAddress
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ThreadPoolExecutor
+import java.time.Duration
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.function.BiFunction
 import javax.net.ssl.HandshakeCompletedListener
 import javax.net.ssl.SSLParameters
 import javax.net.ssl.SSLSession
 import javax.net.ssl.SSLSocket
-import okio.AsyncTimeout
+import kotlin.system.measureNanoTime
 import org.slf4j.LoggerFactory
 import sun.security.ssl.SSLSocketImpl
 
@@ -53,6 +53,8 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
     init {
         require(closeTimeout >= 0)
     }
+
+    private val closeLock = Any()
 
     override fun getSupportedCipherSuites(): Array<String> {
         return delegate.supportedCipherSuites
@@ -194,32 +196,22 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
         if (logger.isDebugEnabled) {
             logger.debug("Close socket $delegate")
         }
-        if (closeTimeout == 0L) {
-            delegate.close()
+        if (delegate.isClosed) {
             return
         }
-        try {
-            threadPool.execute { asyncClose() }
-        } catch (e: RejectedExecutionException) {
-            closeImmediately()
-        }
-    }
-
-    /**
-     * 异步关闭，超时后会强制关闭socket
-     * */
-    private fun asyncClose() {
-        try {
-            object : AsyncTimeout() {
-                override fun timedOut() {
-                    closeImmediately()
-                }
-            }.apply {
-                timeout(closeTimeout, TimeUnit.SECONDS)
-                withTimeout { delegate.close() }
+        synchronized(closeLock) {
+            if (delegate.isClosed) {
+                return
             }
-        } catch (ignore: Exception) {
-            // close quietly
+            if (closeTimeout == 0L) {
+                delegate.close()
+                return
+            }
+            val timeoutFuture = threadPool.schedule({ closeImmediately() }, closeTimeout, TimeUnit.SECONDS)
+            val closeTime = measureNanoTime { delegate.closeQuietly() }
+            if (closeTime < Duration.ofSeconds(closeTimeout).toNanos()) {
+                timeoutFuture.cancel(false)
+            }
         }
     }
 
@@ -237,8 +229,6 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
                 tlsIsClosedField.isAccessible = true
                 tlsIsClosedField.set(delegate, true)
                 logger.info("Success close socket $delegate")
-            } else {
-                logger.info("Already closed $delegate")
             }
         } catch (e: Exception) {
             logger.warn("Unable close socket $delegate", e)
@@ -247,13 +237,8 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
 
     companion object {
         private val logger = LoggerFactory.getLogger(UnsafeSSLSocketImpl::class.java)
-        private val threadPool = ThreadPoolExecutor(
-            1,
-            1,
-            0L,
-            TimeUnit.MILLISECONDS,
-            ArrayBlockingQueue(8192),
-            ThreadFactoryBuilder().setNameFormat("unsafe-sslSocket-watchDog-%d").setDaemon(true).build(),
-        )
+        private val defaultFactory =
+            ThreadFactoryBuilder().setNameFormat("unsafe-sslSocket-watchDog-%d").setDaemon(true).build()
+        private val threadPool = Executors.newSingleThreadScheduledExecutor(defaultFactory)
     }
 }
