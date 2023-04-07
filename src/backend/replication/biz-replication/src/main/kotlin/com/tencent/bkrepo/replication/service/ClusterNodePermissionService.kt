@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.api
+package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.common.api.constant.OCI_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 
-
-
-@Api("oci")
-@Primary
-@FeignClient(OCI_SERVICE_NAME, contextId = "OciClient")
-@RequestMapping("/service/third")
-interface OciClient {
-
-    @ApiOperation("更新第三方同步时，先传manifest文件，再传其他文件")
-    @PostMapping("/packageCreate")
-    fun packageCreate(
-        @RequestBody record: OciReplicationRecordInfo
-    ): Response<Void>
+interface ClusterNodePermissionService {
+    /**
+     * 校验是否有目标仓库权限
+     *
+     * @param clusterNodeInfo 目标集群信息
+     * @param remoteUsername 同步使用的目标集群用户
+     * @param remotePassword 同步使用的目标集群用户的密码
+     * @param remoteProjectId 目标项目
+     * @param remoteRepoName 目标仓库
+     */
+    fun checkRepoPermission(
+        clusterNodeInfo: ClusterNodeInfo,
+        remoteUsername: String?,
+        remotePassword: String?,
+        remoteProjectId: String?,
+        remoteRepoName: String?
+    )
 }

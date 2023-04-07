@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.service.file.impl
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -109,7 +108,6 @@ class ShareServiceImpl(
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
                 ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-            val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
@@ -118,7 +116,8 @@ class ShareServiceImpl(
             }
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-            val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
+            val context = ArtifactDownloadContext(repo = repo, userId = userId)
+            context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
         }

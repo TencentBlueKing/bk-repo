@@ -149,7 +149,7 @@ interface OciOperationService {
         projectId: String,
         repoName: String,
         digestStr: String
-    ): String?
+    ): Pair<String?, String?>
 
     /**
      * 针对老的docker仓库的数据做兼容性处理

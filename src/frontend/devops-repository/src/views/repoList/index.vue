@@ -73,7 +73,13 @@
                     <operation-list
                         :list="[
                             { label: $t('setting'), clickEvent: () => toRepoConfig(row) },
-                            row.repoType !== 'generic' && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
+                            (row.repoType !== 'generic' ||
+                                (row.repoType === 'generic'
+                                    && row.name !== 'custom'
+                                    && row.name !== 'report'
+                                    && row.name !== 'log'
+                                    && row.name !== 'pipeline'
+                                )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
                         ]">
                     </operation-list>
                 </template>
@@ -146,7 +152,10 @@
             ]),
             getListData () {
                 this.isLoading = true
-                this.getRepoListWithoutPage({ projectId: this.projectId }).then(({ records, totalRecords }) => {
+                this.getRepoListWithoutPage({
+                    projectId: this.projectId,
+                    ...this.query
+                }).then(({ records, totalRecords }) => {
                     this.pagination.count = records.length
                     let allRepo
                     if (this.MODE_CONFIG === 'ci') {

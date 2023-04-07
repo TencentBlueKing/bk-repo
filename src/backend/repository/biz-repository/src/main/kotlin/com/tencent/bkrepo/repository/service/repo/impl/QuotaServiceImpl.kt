@@ -105,6 +105,7 @@ class QuotaServiceImpl(
     private fun buildQuery(projectId: String, repoName: String): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).isEqualTo(null)
         return Query(criteria)
     }
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.api
+package com.tencent.bkrepo.replication.pojo.request
 
-import com.tencent.bkrepo.common.api.constant.OCI_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 
-
-
-@Api("oci")
-@Primary
-@FeignClient(OCI_SERVICE_NAME, contextId = "OciClient")
-@RequestMapping("/service/third")
-interface OciClient {
-
-    @ApiOperation("更新第三方同步时，先传manifest文件，再传其他文件")
-    @PostMapping("/packageCreate")
-    fun packageCreate(
-        @RequestBody record: OciReplicationRecordInfo
-    ): Response<Void>
-}
+/**
+ * 校验是否有目标Standalone类型集群的权限
+ */
+data class CheckPermissionRequest(
+    val username: String,
+    val password: String,
+    val projectId: String,
+    val repoName: String,
+    val resourceType: String = ResourceType.REPO.name,
+    val action: String = PermissionAction.WRITE.name
+)

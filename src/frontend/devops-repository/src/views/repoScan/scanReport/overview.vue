@@ -130,7 +130,7 @@
                 )).then(res => {
                     res.forEach(planCount =>
                         Object.keys(this.overview).forEach(key => {
-                            this.overview[key] = planCount[key] || this.overview[key]
+                            this.overview[key] = planCount[key] ?? this.overview[key]
                         })
                     )
                 })

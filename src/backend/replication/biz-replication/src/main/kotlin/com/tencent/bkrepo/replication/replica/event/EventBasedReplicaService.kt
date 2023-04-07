@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.event
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
@@ -49,7 +50,9 @@ class EventBasedReplicaService(
     override fun replica(context: ReplicaContext) {
         with(context) {
             // 同步仓库
-            replicator.replicaRepo(this)
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                replicator.replicaRepo(this)
+            }
             when (event.type) {
                 EventType.NODE_CREATED -> {
                     // 只有非third party集群支持该消息

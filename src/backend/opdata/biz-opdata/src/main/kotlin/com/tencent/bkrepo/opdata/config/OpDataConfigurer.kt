@@ -38,9 +38,11 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 
 @Component
+@Order(1)
 class OpDataConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NONE
