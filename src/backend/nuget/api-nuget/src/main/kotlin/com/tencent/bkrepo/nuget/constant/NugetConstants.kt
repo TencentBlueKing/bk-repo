@@ -36,6 +36,7 @@ const val LOWER_VERSION = "lowerVersion"
 const val UPPER_VERSION = "upperVersion"
 const val PACKAGE = "package"
 const val DEPENDENCY = "dependency"
+const val TARGET_FRAMEWORKS = "targetFramework"
 const val REFERENCE = "reference"
 const val FRAMEWORKS = "frameworks"
 

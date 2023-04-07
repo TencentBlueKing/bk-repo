@@ -49,7 +49,8 @@ class NugetPackageHandler {
                 val metadata = mutableMapOf<String, Any>()
                 metadata[ID] = id
                 metadata[VERSION] = version
-                dependencies?.let { metadata[DEPENDENCY] = buildDependencies(it) }
+                // 暂时不将依赖项解析到元数据中
+//                dependencies?.let { metadata[DEPENDENCY] = buildDependencies(it) }
                 references?.let { metadata[REFERENCE] = buildReferences(it) }
                 frameworkAssemblies?.let { metadata[FRAMEWORKS] = buildFrameworks(it) }
 
@@ -205,7 +206,7 @@ class NugetPackageHandler {
         } ?: values.add("::${dependency.targetFramework}")
     }
 
-    fun getDependencyValue(dependency: Dependency, targetFramework: String): String {
+    fun getDependencyValue(dependency: Dependency, targetFramework: String?): String {
         return StringJoiner(":").add(dependency.id).add(dependency.version).add(targetFramework).toString()
     }
 

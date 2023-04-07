@@ -2,16 +2,12 @@ package com.tencent.bkrepo.nuget.util
 
 import com.github.zafarkhaja.semver.Version
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
+import com.tencent.bkrepo.nuget.constant.*
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseData
 import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseDataVersion
-import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.DependencyGroups
-import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationCatalogEntry
-import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
-import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationItem
-import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationPageItem
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.*
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -105,7 +101,6 @@ object NugetV3RegistrationUtils {
             NugetUtils.buildRegistrationLeafUrl(v3RegistrationUrl, nuspecMetadata.id, nuspecMetadata.version)
         val packageContent =
             NugetUtils.buildPackageContentUrl(v3RegistrationUrl, nuspecMetadata.id, nuspecMetadata.version)
-        // dependency 需要处理
         val dependencyGroups = metadataToDependencyGroups(nuspecMetadata.dependencies, v3RegistrationUrl)
         val catalogEntry = metadataToRegistrationCatalogEntry(nuspecMetadata, v3RegistrationUrl, dependencyGroups)
         return RegistrationPageItem(
@@ -116,20 +111,76 @@ object NugetV3RegistrationUtils {
     }
 
     private fun metadataToDependencyGroups(
-        dependencies: List<Dependency>?,
+        dependencies: List<Any>?,
         v3RegistrationUrl: String
-    ): List<DependencyGroups>? {
-        return dependencies?.let {
-            val dependencyGroups = mutableListOf<DependencyGroups>()
-            v3RegistrationUrl + ""
-            dependencyGroups
+    ): List<DependencyGroups> {
+        // nuspec文件的dependencies可能是"简单依赖列表"或"依赖项组"，都需要转换到DependencyGroups
+        val dependencyMaps = dependencies?.map { it as Map<*, *> }
+        val first = dependencyMaps?.firstOrNull() ?: return emptyList()
+        return if (first.containsKey(ID) && first.containsKey(VERSION)) {
+            // 简单依赖列表的targetFramework为空
+            listOf(resolveSingleFlatList(dependencyMaps, v3RegistrationUrl))
+        } else {
+            resolveDependencyGroups(dependencyMaps, v3RegistrationUrl)
         }
+    }
+
+    /**
+     * reference: https://learn.microsoft.com/en-us/nuget/reference/nuspec#dependencies-element
+     *
+     * 简单依赖列表: 包含1个或多个Map，每个Map一定会包含ID和Version的键，对应一个依赖项
+     */
+    private fun resolveSingleFlatList(
+        source: List<Map<*, *>>,
+        v3RegistrationUrl: String,
+        targetFramework: String? = null
+    ): DependencyGroups {
+        val singleFlatList = mutableListOf<Dependency>()
+        source.forEach {
+            singleFlatList.add(Dependency(it[ID].toString()))
+        }
+        return DependencyGroups(singleFlatList, targetFramework)
+    }
+
+    /**
+     * reference: https://learn.microsoft.com/en-us/nuget/reference/nuspec#dependencies-element
+     *
+     * 依赖项组: 包含1个或多个Map，每个Map可能有如下情况
+     * 1.dependency和targetFramework都不为空，表示targetFramework下有dependency这些依赖
+     * 2.dependency为空，targetFramework不为空，表示targetFramework下没有依赖
+     * 3.dependency不为空，targetFramework为空，这样的Map最多只有1个，表示匹配不到框架时的默认或回落依赖
+     * 4.dependency和targetFramework都为空，表示默认或回落情况下没有依赖
+     */
+    private fun resolveDependencyGroups(source: List<Map<*, *>>, v3RegistrationUrl: String): List<DependencyGroups> {
+        val dependencyGroupList = mutableListOf<DependencyGroups>()
+        source.forEach {
+            val dependencyObject = it[DEPENDENCY]
+            val targetFramework = it[TARGET_FRAMEWORKS]?.toString()
+            // 解析单个依赖项组
+            val dependencyGroup = when (dependencyObject) {
+                // 当依赖项组中的依赖项只有1个时，dependency是包含键为ID和Version的Map
+                is Map<*, *> -> {
+                    val singleFlatList = listOf(Dependency(dependencyObject[ID].toString()))
+                    DependencyGroups(singleFlatList, targetFramework)
+                }
+                // 当依赖项组中的依赖项有多个时，dependency是一个列表，包含多个Map，每个Map对应一个依赖项，包含ID和Version的键
+                is List<*> -> {
+                    val dependencyMaps = dependencyObject.map { dependency -> dependency as Map<*, *> }
+                    resolveSingleFlatList(dependencyMaps, v3RegistrationUrl, targetFramework)
+                }
+                else -> {
+                    DependencyGroups(null, targetFramework)
+                }
+            }
+            dependencyGroupList.add(dependencyGroup)
+        }
+        return dependencyGroupList
     }
 
     private fun metadataToRegistrationCatalogEntry(
         nupkgMetadata: NuspecMetadata,
         v3RegistrationUrl: String,
-        dependencyGroups: List<DependencyGroups>?
+        dependencyGroups: List<DependencyGroups>
     ): RegistrationCatalogEntry {
         with(nupkgMetadata) {
             return RegistrationCatalogEntry(
