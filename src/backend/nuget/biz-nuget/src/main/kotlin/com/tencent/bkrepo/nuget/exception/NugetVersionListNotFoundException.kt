@@ -9,4 +9,4 @@ import com.tencent.bkrepo.nuget.constant.NugetMessageCode
  */
 class NugetVersionListNotFoundException(
     reason: String
-) : ErrorCodeException(NugetMessageCode.PACKAGE_VERSIONS_NOT_EXISTED, reason, HttpStatus.NOT_FOUND)
+) : ErrorCodeException(NugetMessageCode.PACKAGE_VERSIONS_NOT_EXISTED, reason, status = HttpStatus.NOT_FOUND)
