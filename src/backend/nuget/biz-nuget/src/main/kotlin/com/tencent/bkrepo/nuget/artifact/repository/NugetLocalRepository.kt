@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -236,9 +237,9 @@ class NugetLocalRepository(
                     removeVersion(this, it, context.userId)
                 } ?: throw VersionNotFoundException(version)
             } else {
-                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
-                    removeVersion(this, it, context.userId)
-                }
+                packageClient.listAllVersion(projectId, repoName, packageName).data.takeUnless { it.isNullOrEmpty() }
+                    ?.forEach { removeVersion(this, it, context.userId) }
+                    ?: throw PackageNotFoundException(packageName)
             }
         }
     }
