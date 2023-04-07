@@ -57,6 +57,10 @@ object UserRequestUtil {
         return tokens.map { TokenResult(it.name, it.createdAt, it.expiredAt) }
     }
 
+    fun convTokenInfo(tokens: List<Token>): List<Token> {
+        return tokens.map { Token(it.name, StringPool.EMPTY, it.createdAt, it.expiredAt) }
+    }
+
     fun convToCreateProjectUserRequest(request: CreateUserToProjectRequest): CreateUserRequest {
         return CreateUserRequest(
             request.userId,
@@ -93,7 +97,7 @@ object UserRequestUtil {
             pwd = StringPool.EMPTY,
             admin = user.admin,
             locked = user.locked,
-            tokens = convTokenResult(user.tokens),
+            tokens = convTokenInfo(user.tokens),
             roles = user.roles
         )
     }
