@@ -45,7 +45,7 @@ class NuspecMetadata {
 
     // collection elements
     val packageTypes: MutableList<PackageType>? = null
-    val dependencies: List<Dependency>? = null
+    val dependencies: List<Any>? = null
     val frameworkAssemblies: MutableList<FrameworkAssembly>? = null
     val references: MutableList<Any>? = null
 
@@ -88,9 +88,11 @@ data class Dependency(
 
 @JacksonXmlRootElement(localName = "group")
 data class DependencyGroup(
+    // The <group> element without a targetFramework attribute is used as the default or fallback list of dependencies.
     @JacksonXmlProperty(isAttribute = true)
-    val targetFramework: String,
-    @JacksonXmlElementWrapper(localName = "dependency")
+    val targetFramework: String?,
+    @JacksonXmlProperty(localName = "dependency")
+    @JacksonXmlElementWrapper
     val dependencies: MutableList<Dependency>?
 )
 
@@ -110,8 +112,10 @@ data class Reference(
 
 @JacksonXmlRootElement(localName = "group")
 data class ReferenceGroup(
+    // The <group> element without a targetFramework attribute is used as the default or fallback list of references.
     @JacksonXmlProperty(isAttribute = true)
-    val targetFramework: String,
-    @JacksonXmlElementWrapper(localName = "reference")
+    val targetFramework: String?,
+    @JacksonXmlProperty(localName = "reference")
+    @JacksonXmlElementWrapper
     val references: MutableList<Reference>?
 )
