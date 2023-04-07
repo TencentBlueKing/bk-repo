@@ -88,8 +88,11 @@ class NugetRemoteRepository(
         val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, feedContext)
         val packageName = nugetArtifactInfo.getArtifactName()
         val version = nugetArtifactInfo.getArtifactVersion()
-        val uri = if (nugetArtifactInfo.type == MANIFEST) NugetUtils.getPackageManifestUri(packageName, version)
-            else NugetUtils.getPackageContentUri(packageName, version)
+        val uri = if (nugetArtifactInfo.type == MANIFEST) {
+            NugetUtils.getPackageManifestUri(packageName, version)
+        } else {
+            NugetUtils.getPackageContentUri(packageName, version)
+        }
         val downloadUrl = UrlFormatter.format(packageBaseAddress, uri)
         context.putAttribute(REMOTE_URL, downloadUrl)
         return super.onDownload(context)
@@ -305,7 +308,8 @@ class NugetRemoteRepository(
     private fun checkJsonFormat(response: Response): Boolean {
         val contentType = response.body!!.contentType()
         if (!contentType.toString().contains("application/json")) {
-            logger.warn("Query Failed: Response from [${response.request.url}] is not JSON format. " +
+            logger.warn(
+                "Query Failed: Response from [${response.request.url}] is not JSON format. " +
                     "Content-Type: $contentType"
             )
             return false

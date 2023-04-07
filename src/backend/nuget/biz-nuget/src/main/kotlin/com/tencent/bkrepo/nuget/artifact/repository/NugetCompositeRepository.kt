@@ -86,8 +86,10 @@ class NugetCompositeRepository(
         isSemver2Endpoint: Boolean
     ): RegistrationPage? {
         val context = ArtifactQueryContext()
-        val proxySetting = getProxyChannelList(context).find { it.name == proxyChannelName } ?:
-            throw NugetException("Proxy channel [$proxyChannelName] not found in [${artifactInfo.getRepoIdentify()}]")
+        val proxySetting = getProxyChannelList(context).find { it.name == proxyChannelName }
+            ?: throw NugetException(
+                "Proxy channel [$proxyChannelName] not found in [${artifactInfo.getRepoIdentify()}]"
+            )
         val remoteContext = getContextFromProxyChannel(context, proxySetting)
         require(remoteContext is ArtifactQueryContext)
         val remoteResult = remoteRepository.proxyRegistrationPage(remoteContext, url) ?: return null

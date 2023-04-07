@@ -35,7 +35,7 @@ class NugetSearchServiceImpl(
                 val page = packageClient.listPackagePage(
                     artifactInfo.projectId, artifactInfo.repoName, packageListOption
                 ).data?.records.takeUnless { it.isNullOrEmpty() } ?: break
-                packageListOption.pageNumber ++
+                packageListOption.pageNumber++
                 val pageResult = page.map {
                     buildSearchResponseData(it, this, v3RegistrationUrl)
                 }.filter {
