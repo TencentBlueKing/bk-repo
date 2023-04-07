@@ -198,7 +198,7 @@ object NugetV3RegistrationUtils {
                 packageId = id,
                 licenseUrl = licenseUrl?.let { URI.create(it) },
                 licenseExpression = null,
-                listed = false,
+                listed = true,
                 minClientVersion = minClientVersion,
                 projectUrl = projectUrl?.let { URI.create(it) },
                 published = null,

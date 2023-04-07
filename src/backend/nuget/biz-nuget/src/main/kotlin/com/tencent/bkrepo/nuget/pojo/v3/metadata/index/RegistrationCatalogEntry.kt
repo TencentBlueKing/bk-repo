@@ -24,7 +24,8 @@ data class RegistrationCatalogEntry(
     val packageId: String,
     val licenseUrl: URI? = null,
     val licenseExpression: String? = null,
-    val listed: Boolean? = null,
+    // Should be considered as listed if absent
+    val listed: Boolean = true,
     val minClientVersion: String? = null,
     val projectUrl: URI? = null,
     val published: String? = null,
