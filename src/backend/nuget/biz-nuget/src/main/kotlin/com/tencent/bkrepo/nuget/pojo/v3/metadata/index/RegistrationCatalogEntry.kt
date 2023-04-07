@@ -3,6 +3,7 @@ package com.tencent.bkrepo.nuget.pojo.v3.metadata.index
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.nuget.constant.PACKAGE_DETAILS
 import java.net.URI
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -10,6 +11,8 @@ import java.net.URI
 data class RegistrationCatalogEntry(
     @JsonProperty("@id")
     val id: URI,
+    @JsonProperty("@type")
+    val type: String? = PACKAGE_DETAILS,
     // string or array of strings
     val authors: String? = null,
     // The dependencies of the package, grouped by target framework

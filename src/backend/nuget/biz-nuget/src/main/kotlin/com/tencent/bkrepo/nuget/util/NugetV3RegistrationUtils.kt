@@ -74,7 +74,12 @@ object NugetV3RegistrationUtils {
             val count = registrationPageItemList.size
             val registrationUrl: URI = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, packageId)
             return RegistrationPage(
-                pageURI, count, registrationPageItemList, lowerVersion, registrationUrl, upperVersion
+                id = pageURI,
+                count = count,
+                items = registrationPageItemList,
+                lower = lowerVersion,
+                parent = registrationUrl,
+                upper = upperVersion
             )
         }
     }
@@ -137,9 +142,9 @@ object NugetV3RegistrationUtils {
     ): DependencyGroups {
         val singleFlatList = mutableListOf<Dependency>()
         source.forEach {
-            singleFlatList.add(Dependency(it[ID].toString()))
+            singleFlatList.add(Dependency(packageId = it[ID].toString()))
         }
-        return DependencyGroups(singleFlatList, targetFramework)
+        return DependencyGroups(dependencies = singleFlatList, targetFramework = targetFramework)
     }
 
     /**
@@ -160,8 +165,8 @@ object NugetV3RegistrationUtils {
             val dependencyGroup = when (dependencyObject) {
                 // 当依赖项组中的依赖项只有1个时，dependency是包含键为ID和Version的Map
                 is Map<*, *> -> {
-                    val singleFlatList = listOf(Dependency(dependencyObject[ID].toString()))
-                    DependencyGroups(singleFlatList, targetFramework)
+                    val singleFlatList = listOf(Dependency(packageId = dependencyObject[ID].toString()))
+                    DependencyGroups(dependencies = singleFlatList, targetFramework = targetFramework)
                 }
                 // 当依赖项组中的依赖项有多个时，dependency是一个列表，包含多个Map，每个Map对应一个依赖项，包含ID和Version的键
                 is List<*> -> {
@@ -169,7 +174,7 @@ object NugetV3RegistrationUtils {
                     resolveSingleFlatList(dependencyMaps, v3RegistrationUrl, targetFramework)
                 }
                 else -> {
-                    DependencyGroups(null, targetFramework)
+                    DependencyGroups(dependencies = null, targetFramework = targetFramework)
                 }
             }
             dependencyGroupList.add(dependencyGroup)
@@ -218,7 +223,11 @@ object NugetV3RegistrationUtils {
             val packageId = registrationLeafList[0].catalogEntry.packageId
             val registrationPageList =
                 buildRegistrationItems(registrationLeafList, v3RegistrationUrl, versionCount, pagesCount, packageId)
-            return RegistrationIndex(pagesCount, registrationPageList)
+            return RegistrationIndex(
+                id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, packageId),
+                count = pagesCount,
+                items = registrationPageList
+            )
         }
     }
 

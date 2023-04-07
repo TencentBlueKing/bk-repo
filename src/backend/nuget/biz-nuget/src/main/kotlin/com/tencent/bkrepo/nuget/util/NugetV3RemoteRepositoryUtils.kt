@@ -38,7 +38,7 @@ object NugetV3RemoteRepositoryUtils {
         val itemList = originalRegistrationIndex.items.map { item ->
             registrationResultItemRewriter(item, artifactInfo.packageName, v2BaseUrl, v3RegistrationUrl)
         }
-        return RegistrationIndex(originalRegistrationIndex.count, itemList)
+        return RegistrationIndex(count = originalRegistrationIndex.count, items = itemList)
     }
 
     private fun registrationResultItemRewriter(
@@ -75,7 +75,11 @@ object NugetV3RemoteRepositoryUtils {
         val id = NugetUtils.buildRegistrationLeafUrl(v3RegistrationUrl, packageName, version)
         val rewriteCatalogEntry =
             registrationCatalogEntryRewriter(originalPageItem.catalogEntry, packageContentUrl, v3RegistrationUrl)
-        return RegistrationPageItem(id, rewriteCatalogEntry, packageContentUrl)
+        return RegistrationPageItem(
+            id = id,
+            catalogEntry = rewriteCatalogEntry,
+            packageContent = packageContentUrl
+        )
     }
 
     /**

@@ -7,6 +7,8 @@ import java.net.URI
 data class RegistrationPage(
     @JsonProperty("@id")
     val id: URI,
+    @JsonProperty("@type")
+    val type: String? = null,
     val count: Int,
     val items: List<RegistrationPageItem>,
     val lower: String,

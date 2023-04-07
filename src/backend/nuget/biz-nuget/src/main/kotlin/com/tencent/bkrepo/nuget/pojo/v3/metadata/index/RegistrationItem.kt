@@ -7,6 +7,8 @@ data class RegistrationItem(
     /* The URL to the registration page */
     @JsonProperty("@id")
     val id: URI,
+    @JsonProperty("@type")
+    val type: String? = null,
     /* The number of registration leaves in the page */
     val count: Int,
     // 当包的版本数过多时，可以不显示items列表，必须使用@id中指定的URL来获取有关各个包版本的元数据。
