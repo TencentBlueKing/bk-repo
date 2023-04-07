@@ -24,4 +24,6 @@ data class UserInfo(
     val group: Boolean,
     @ApiModelProperty("关联用户")
     val asstUsers: List<String> = emptyList(),
+    @ApiModelProperty("用户token")
+    val tokens: List<String> = emptyList(),
 )
