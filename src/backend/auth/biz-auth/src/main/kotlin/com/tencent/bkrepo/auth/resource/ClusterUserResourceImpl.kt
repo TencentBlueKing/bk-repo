@@ -27,39 +27,21 @@
 
 package com.tencent.bkrepo.auth.resource
 
-import com.tencent.bkrepo.auth.api.ClusterTemporaryTokenResource
-import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.auth.api.ClusterUserResource
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.service.PermissionService
-import com.tencent.bkrepo.auth.service.TemporaryTokenService
+import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ClusterTemporaryTokenResourceImpl(
-    private val temporaryTokenService: TemporaryTokenService,
+class ClusterUserResourceImpl(
+    private val userService: UserService,
     permissionService: PermissionService
-) : ClusterTemporaryTokenResource, OpenResourceImpl(permissionService) {
-    override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
+) : ClusterUserResource, OpenResourceImpl(permissionService) {
+    override fun detail(uid: String): Response<User?> {
         checkPlatformPermission()
-        return ResponseBuilder.success(temporaryTokenService.createToken(request))
-    }
-
-    override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
-        checkPlatformPermission()
-        return ResponseBuilder.success(temporaryTokenService.getTokenInfo(token))
-    }
-
-    override fun deleteToken(token: String): Response<Void> {
-        checkPlatformPermission()
-        temporaryTokenService.deleteToken(token)
-        return ResponseBuilder.success()
-    }
-
-    override fun decrementPermits(token: String): Response<Void> {
-        checkPlatformPermission()
-        temporaryTokenService.decrementPermits(token)
-        return ResponseBuilder.success()
+        return ResponseBuilder.success(userService.getUserById(uid))
     }
 }

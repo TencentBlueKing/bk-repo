@@ -304,7 +304,7 @@ open class PermissionManager(
             repoName = repoName,
             path = paths?.first()
         )
-        if (permissionResource.checkPermission(checkRequest).data != true) {
+        if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
             var reason = "user[$userId] does not have $action permission in project[$projectId]"
             repoName?.let { reason += " repo[$repoName]" }
@@ -313,6 +313,10 @@ open class PermissionManager(
         if (logger.isDebugEnabled) {
             logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")
         }
+    }
+
+    open fun checkPermissionFromAuthService(request: CheckPermissionRequest): Boolean? {
+        return permissionResource.checkPermission(request).data
     }
 
     /**
@@ -501,7 +505,7 @@ open class PermissionManager(
     /**
      * 判断是否为管理员
      */
-    private fun isAdminUser(userId: String): Boolean {
+    open fun isAdminUser(userId: String): Boolean {
         return userResource.detail(userId).data?.admin == true
     }
 
