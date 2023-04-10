@@ -65,7 +65,7 @@ class ReplicaContext(
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
-    val remoteCluster: ClusterNodeInfo
+    val remoteCluster: ClusterNodeInfo,
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -108,7 +108,7 @@ class ReplicaContext(
             certificate = remoteCluster.certificate,
             appId = remoteCluster.appId,
             accessKey = remoteCluster.accessKey,
-            secretKey = remoteCluster.secretKey
+            secretKey = remoteCluster.secretKey,
         )
 
         // 远端集群仓库特殊处理, 远端集群走对应制品类型协议传输
@@ -126,19 +126,22 @@ class ReplicaContext(
         targetVersions = initImageTargetTag()
         val readTimeout = Duration.ofMillis(READ_TIMEOUT)
         val writeTimeout = Duration.ofMillis(WRITE_TIMEOUT)
+        val closeTimeout = Duration.ofMillis(CLOSE_TIMEOUT)
         httpClient = if (cluster.username != null) {
             OkHttpClientPool.getHttpClient(
                 cluster,
                 readTimeout,
                 writeTimeout,
-                BasicAuthInterceptor(cluster.username!!, cluster.password!!)
+                closeTimeout,
+                BasicAuthInterceptor(cluster.username!!, cluster.password!!),
             )
         } else {
             OkHttpClientPool.getHttpClient(
                 cluster,
                 readTimeout,
                 writeTimeout,
-                SignInterceptor(cluster)
+                closeTimeout,
+                SignInterceptor(cluster),
             )
         }
     }
@@ -181,5 +184,6 @@ class ReplicaContext(
         private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
         private const val READ_TIMEOUT = 60 * 60 * 1000L
         private const val WRITE_TIMEOUT = 30 * 1000L
+        private const val CLOSE_TIMEOUT = 10 * 1000L
     }
 }
