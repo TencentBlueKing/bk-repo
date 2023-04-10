@@ -51,6 +51,7 @@ auth:
     enablePrefix: true
 
 scanner:
+  defaultDispatcher: docker
   dispatcher:
     docker:
       enabled: ${BK_REPO_ANALYST_DISPATCHER_DOCKER_ENABLED:false}

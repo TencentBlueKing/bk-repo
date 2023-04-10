@@ -233,7 +233,8 @@
                 }, {})
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
+                const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
             },
             operationBtns () {
                 const basic = this.detail.basic

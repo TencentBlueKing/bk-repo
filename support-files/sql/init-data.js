@@ -211,3 +211,138 @@ db.repository.updateOne(
     { upsert: true }
 );
 
+db.scanner.updateOne(
+    {
+        name: "bkrepo-trivy"
+    },
+    {
+        $setOnInsert: {
+            name: "bkrepo-trivy",
+            type: "standard",
+            version: "0.0.35",
+            description: "",
+            config: "{\n  \"name\" : \"bkrepo-trivy\",\n  \"image\" : \"ghcr.io/tencentblueking/ci-repoanalysis/bkrepo-trivy:0.0.35\",\n  \"cmd\" : \"/bkrepo-trivy\",\n  \"version\" : \"0.0.35\",\n  \"args\" : [ {\n    \"type\" : \"BOOLEAN\",\n    \"key\" : \"scanSensitive\",\n    \"value\" : \"true\",\n    \"des\" : \"\"\n  } ],\n  \"type\" : \"standard\",\n  \"description\" : \"\",\n  \"rootPath\" : \"/standard\",\n  \"cleanWorkDir\" : true,\n  \"maxScanDurationPerMb\" : 6000,\n  \"supportFileNameExt\" : [],\n  \"supportPackageTypes\" : [ \"DOCKER\" ],\n  \"supportDispatchers\" : [ \"docker\", \"k8s\" ],\n  \"supportScanTypes\" : [ \"SENSITIVE\", \"SECURITY\" ]\n}",
+            supportFileNameExt: [],
+            supportPackageTypes: ["DOCKER"],
+            supportScanTypes: ["SECURITY", "SENSITIVE"],
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.scanner.updateOne(
+    {
+        name: "bkrepo-dependency-check"
+    },
+    {
+        $setOnInsert: {
+            name: "bkrepo-dependency-check",
+            type: "standard",
+            version: "0.0.5",
+            description: "dependency-check分析工具",
+            config: "{\n  \"name\" : \"bkrepo-dependency-check\",\n  \"image\" : \"ghcr.io/tencentblueking/ci-repoanalysis/bkrepo-dependency-check:0.0.5\",\n  \"cmd\" : \"/bkrepo-dependency-check\",\n  \"version\" : \"0.0.5\",\n  \"args\" : [ {\n    \"type\" : \"BOOLEAN\",\n    \"key\" : \"offline\",\n    \"value\" : \"false\",\n    \"des\" : \"\"\n  } ],\n  \"type\" : \"standard\",\n  \"description\" : \"dependency-check\",\n  \"rootPath\" : \"/standard\",\n  \"cleanWorkDir\" : true,\n  \"maxScanDurationPerMb\" : 6000,\n  \"supportFileNameExt\" : [ \"tar\", \"zip\", \"exe\", \"jar\" ],\n  \"supportPackageTypes\" : [ \"GENERIC\", \"MAVEN\" ],\n  \"supportScanTypes\" : [ \"SECURITY\" ],\n  \"supportDispatchers\" : [ \"docker\", \"k8s\" ],\n  \"memory\" : 34359738368\n}",
+            supportFileNameExt: ["tar", "zip", "exe", "jar"],
+            supportPackageTypes: ["GENERIC", "MAVEN"],
+            supportScanTypes: ["SECURITY"],
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.scan_plan.updateOne(
+    {
+        projectId: "blueking",
+        name: "ImageScan",
+        type: "DOCKER"
+    },
+    {
+        $setOnInsert: {
+            projectId: "blueking",
+            name: "ImageScan",
+            type: "DOCKER",
+            repoNames: [],
+            scanner: "bkrepo-trivy",
+            scanTypes: ["SENSITIVE", "SECURITY"],
+            description: "",
+            scanOnNewArtifact: false,
+            rule: "{\n  \"rules\" : [ {\n    \"field\" : \"projectId\",\n    \"value\" : \"blueking\",\n    \"operation\" : \"EQ\"\n  }, {\n    \"field\" : \"type\",\n    \"value\" : \"DOCKER\",\n    \"operation\" : \"EQ\"\n  } ],\n  \"relation\" : \"AND\"\n}",
+            scanResultOverview: {},
+            scanQuality: {},
+            readOnly: false,
+            latestScanTaskId: null,
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.scan_plan.updateOne(
+    {
+        projectId: "blueking",
+        name: "MavenScan",
+        type: "MAVEN"
+    },
+    {
+        $setOnInsert: {
+            projectId: "blueking",
+            name: "MavenScan",
+            type: "MAVEN",
+            repoNames: [],
+            scanner: "bkrepo-dependency-check",
+            scanTypes: ["SECURITY"],
+            description: "",
+            scanOnNewArtifact: false,
+            rule: "{\n  \"rules\" : [ {\n    \"field\" : \"projectId\",\n    \"value\" : \"blueking\",\n    \"operation\" : \"EQ\"\n  }, {\n    \"field\" : \"type\",\n    \"value\" : \"MAVEN\",\n    \"operation\" : \"EQ\"\n  } ],\n  \"relation\" : \"AND\"\n}",
+            scanResultOverview: {},
+            scanQuality: {},
+            readOnly: false,
+            latestScanTaskId: null,
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.scan_plan.updateOne(
+    {
+        projectId: "blueking",
+        name: "GenericScan",
+        type: "MAVEN"
+    },
+    {
+        $setOnInsert: {
+            projectId: "blueking",
+            name: "GenericScan",
+            type: "GENERIC",
+            repoNames: [],
+            scanner: "bkrepo-dependency-check",
+            scanTypes: ["SECURITY"],
+            description: "",
+            scanOnNewArtifact: false,
+            rule: "{\n  \"rules\" : [ {\n    \"field\" : \"projectId\",\n    \"value\" : \"blueking\",\n    \"operation\" : \"EQ\"\n  }, {\n    \"field\" : \"type\",\n    \"value\" : \"GENERIC\",\n    \"operation\" : \"EQ\"\n  } ],\n  \"relation\" : \"AND\"\n}",
+            scanResultOverview: {},
+            scanQuality: {},
+            readOnly: false,
+            latestScanTaskId: null,
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);

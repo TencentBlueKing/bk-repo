@@ -148,7 +148,8 @@
             showRepoScan () {
                 // 虚拟仓库屏蔽安全扫描操作
                 // 软件源屏蔽安全扫描操作
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
+                const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
             },
             showPromotion () {
                 // 远程或虚拟仓库不显示晋级操作
@@ -163,7 +164,7 @@
         created () {
             this.getPackageInfoHandler()
             this.handlerPaginationChange()
-            if (RELEASE_MODE !== 'community') {
+            if (RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU) {
                 this.refreshSupportPackageTypeList()
             }
         },
