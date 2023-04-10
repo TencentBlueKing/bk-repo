@@ -52,12 +52,13 @@
             ...mapState(['userInfo', 'projectList']),
             menuList () {
                 if (MODE_CONFIG === 'ci' || this.projectList.length) {
+                    const showRepoScan = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                     return {
                         project: [
                             'repoList',
                             'repoSearch',
                             MODE_CONFIG === 'ci' && 'repoToken',
-                            RELEASE_MODE !== 'community' && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
+                            showRepoScan && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
                             SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                         ].filter(Boolean),
                         global: [

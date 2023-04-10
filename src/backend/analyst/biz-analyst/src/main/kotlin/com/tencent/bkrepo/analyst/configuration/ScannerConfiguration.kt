@@ -89,7 +89,7 @@ class ScannerConfiguration {
         temporaryScanTokenService: TemporaryScanTokenService,
         @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
         subtaskStateMachine: StateMachine,
-        executorClient: ExecutorClient
+        executorClient: ObjectProvider<ExecutorClient>
     ): SubtaskPoller {
         return SubtaskPoller(
             dispatcher, scanService, scannerService, temporaryScanTokenService, subtaskStateMachine, executorClient
