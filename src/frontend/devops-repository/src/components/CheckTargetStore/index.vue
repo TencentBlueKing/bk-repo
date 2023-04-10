@@ -30,8 +30,10 @@
                 </bk-table-column>
                 <bk-table-column :label="$t('storeTypes')" width="150">
                     <template #default="{ row }">
-                        <Icon class="mr5" :name="(row.category.toLowerCase() || 'local') + '-store'" size="16" />
-                        <span>{{ $t((row.category.toLowerCase() || 'local') + 'Store')}}</span>
+                        <div class="flex-align-center">
+                            <Icon class="mr5" :name="(row.category.toLowerCase() || 'local') + '-store'" size="16" />
+                            <span>{{ $t((row.category.toLowerCase() || 'local') + 'Store')}}</span>
+                        </div>
                     </template>
                 </bk-table-column>
             </bk-table>
