@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.nuget.handler
 
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
@@ -11,10 +10,10 @@ import com.tencent.bkrepo.nuget.constant.ID
 import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.REFERENCE
 import com.tencent.bkrepo.nuget.constant.VERSION
-import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
 import com.tencent.bkrepo.nuget.pojo.nuspec.DependencyGroup
 import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
+import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.pojo.nuspec.Reference
 import com.tencent.bkrepo.nuget.pojo.nuspec.ReferenceGroup
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
@@ -39,20 +38,22 @@ class NugetPackageHandler {
      * 创建包版本
      */
     fun createPackageVersion(
-        context: ArtifactUploadContext
+        userId: String,
+        artifactInfo: NugetArtifactInfo,
+        nuspecMetadata: NuspecMetadata,
+        size: Long
     ) {
-        with(context.artifactInfo as NugetPublishArtifactInfo) {
-            nuspecPackage.metadata.apply {
-                logger.info(
-                    "start index nuget metadata for package [$id] and version [$version] " +
-                        "in repo [${getRepoIdentify()}]"
-                )
-                val metadata = mutableMapOf<String, Any>()
-                metadata[ID] = id
-                metadata[VERSION] = version
-                dependencies?.let { metadata[DEPENDENCY] = NugetV3RegistrationUtils.metadataToDependencyGroups(it) }
-                references?.let { metadata[REFERENCE] = buildReferences(it) }
-                frameworkAssemblies?.let { metadata[FRAMEWORKS] = buildFrameworks(it) }
+        nuspecMetadata.apply {
+            logger.info(
+                "start index nuget metadata for package [$id] and version [$version] " +
+                    "in repo [${artifactInfo.getRepoIdentify()}]"
+            )
+            val metadata = mutableMapOf<String, Any>()
+            metadata[ID] = id
+            metadata[VERSION] = version
+            dependencies?.let { metadata[DEPENDENCY] = NugetV3RegistrationUtils.metadataToDependencyGroups(it) }
+            references?.let { metadata[REFERENCE] = buildReferences(it) }
+            frameworkAssemblies?.let { metadata[FRAMEWORKS] = buildFrameworks(it) }
 
 //                measureTimeMillis { metadata = indexMetadata(this) }.apply {
 //                    logger.info(
@@ -60,31 +61,30 @@ class NugetPackageHandler {
 //                            "in repo [${getRepoIdentify()}], elapse [$this] ms."
 //                    )
 //                }
-                // versionExtension
-                val versionExtension = mutableMapOf<String, Any>(
-                    PACKAGE to this.toJsonString()
+            // versionExtension
+            val versionExtension = mutableMapOf<String, Any>(
+                PACKAGE to this.toJsonString()
+            )
+            val packageVersionCreateRequest = PackageVersionCreateRequest(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                packageName = id,
+                packageKey = PackageKeys.ofNuget(id.toLowerCase()),
+                packageType = PackageType.NUGET,
+                packageDescription = description,
+                versionName = version,
+                size = size,
+                artifactPath = artifactInfo.getArtifactFullPath(),
+                packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
+                extension = versionExtension,
+                overwrite = true,
+                createdBy = userId
+            )
+            packageClient.createVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress())
+            if (logger.isDebugEnabled) {
+                logger.info(
+                    "user: [$userId] create package version [$packageVersionCreateRequest] success!"
                 )
-                val packageVersionCreateRequest = PackageVersionCreateRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    packageName = id,
-                    packageKey = PackageKeys.ofNuget(id.toLowerCase()),
-                    packageType = PackageType.NUGET,
-                    packageDescription = description,
-                    versionName = version,
-                    size = size,
-                    artifactPath = getArtifactFullPath(),
-                    packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
-                    extension = versionExtension,
-                    overwrite = true,
-                    createdBy = context.userId
-                )
-                packageClient.createVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress())
-                if (logger.isDebugEnabled) {
-                    logger.info(
-                        "user: [${context.userId}] create package version [$packageVersionCreateRequest] success!"
-                    )
-                }
             }
         }
     }
