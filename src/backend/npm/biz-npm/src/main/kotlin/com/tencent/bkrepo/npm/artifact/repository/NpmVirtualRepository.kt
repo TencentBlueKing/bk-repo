@@ -83,7 +83,7 @@ class NpmVirtualRepository : VirtualRepository() {
     override fun query(context: ArtifactQueryContext): InputStream? {
         val result = mapEachLocalAndFirstRemote(context) {
             require(it is ArtifactQueryContext)
-            val repository = ArtifactContextHolder.getRepository()
+            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
             repository.query(it)
         } as List<InputStream>
         val metadataList = result.map {

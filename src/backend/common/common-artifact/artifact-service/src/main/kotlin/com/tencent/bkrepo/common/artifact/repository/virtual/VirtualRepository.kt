@@ -117,8 +117,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     override fun upload(context: ArtifactUploadContext) {
         context.getVirtualConfiguration().deploymentRepo.takeUnless { it.isNullOrBlank() }?.let {
             val repositoryDetail = repositoryClient.getRepoDetail(context.projectId, it).data!!
-            val newContext = context.copy(repositoryDetail) as ArtifactUploadContext
-            super.upload(newContext)
+            modifyContext(context, repositoryDetail)
+            ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL).upload(context)
         } ?: throw MethodNotAllowedException()
     }
 

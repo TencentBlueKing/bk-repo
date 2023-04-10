@@ -32,11 +32,14 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
+import com.tencent.bkrepo.nuget.constant.NugetQueryType
+import com.tencent.bkrepo.nuget.constant.QUERY_TYPE
 import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
 import com.tencent.bkrepo.nuget.constant.SEMVER2_ENDPOINT
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
@@ -62,50 +65,64 @@ class NugetVirtualRepository(
     private val commonUtils: NugetRemoteAndVirtualCommon
 ) : VirtualRepository() {
 
+    override fun query(context: ArtifactQueryContext): Any? {
+        return when(context.getAttribute<NugetQueryType>(QUERY_TYPE)!!) {
+            NugetQueryType.PACKAGE_VERSIONS -> enumerateVersions(context)
+            NugetQueryType.SERVICE_INDEX -> feed(context.artifactInfo as NugetArtifactInfo)
+            NugetQueryType.REGISTRATION_INDEX -> registrationIndex(context)
+            NugetQueryType.REGISTRATION_PAGE -> registrationPage(context)
+            NugetQueryType.REGISTRATION_LEAF -> registrationLeaf(context)
+        }
+    }
+
     private fun feed(artifactInfo: NugetArtifactInfo): Feed {
         return NugetUtils.renderServiceIndex(artifactInfo)
     }
 
-    private fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
-        return emptyList()
+    @Suppress("UNCHECKED_CAST")
+    private fun enumerateVersions(context: ArtifactQueryContext): List<String>? {
+        val result = mapEachLocalAndFirstRemote(context) {
+            require(it is ArtifactQueryContext)
+            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
+            repository.query(it) as List<String>?
+        }.takeIf { it.isNotEmpty() } ?: return null
+        return result.flatten().toSet().sortedWith {
+            v1, v2 -> NugetVersionUtils.compareSemVer(v1, v2)
+        }
     }
 
     private fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
-        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
-        val allRegistrationPageItems = try {
-            collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
-        } catch (ex: IllegalStateException) {
-            logger.warn(
-                "an issue occur when collecting registration indexes" +
-                        "from [${nugetArtifactInfo.getRepoIdentify()}]: ${ex.message}"
-            )
-            return null
+        val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
+        val virtualRepoName = context.repoName
+        val result = mapEachLocalAndFirstRemote(context) {
+            require(it is ArtifactQueryContext)
+            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
+            it.artifactInfo.repoName = virtualRepoName
+            repository.query(it) as RegistrationIndex?
+        }.takeIf { it.isNotEmpty() } ?: return null
+        return result.reduce { acc, element ->
+            RemoteRegistrationUtils.combineRegistrationIndex(acc, element, nugetArtifactInfo, v3RegistrationUrl)
         }
-        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(nugetArtifactInfo) + "/" + registrationPath
-        return NugetV3RegistrationUtils.registrationPageItemToRegistrationIndex(
-            allRegistrationPageItems, virtualV3RegistrationUrl
-        )
     }
 
     private fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
-        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
-        val allRegistrationPageItems = try {
-            collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
-        } catch (ex: IllegalStateException) {
-            return null
+        val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
+        val virtualRepoName = context.repoName
+        val result = mapEachLocalAndFirstRemote(context) {
+            require(it is ArtifactQueryContext)
+            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
+            it.artifactInfo.repoName = virtualRepoName
+            repository.query(it) as RegistrationPage?
+        }.takeIf { it.isNotEmpty() } ?: return null
+        return result.reduce { acc, element ->
+            RemoteRegistrationUtils.combineRegistrationPage(acc, element, nugetArtifactInfo, v3RegistrationUrl)
         }
-        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(nugetArtifactInfo) + "/" + registrationPath
-        return NugetV3RegistrationUtils.registrationPageItemToRegistrationPage(
-            allRegistrationPageItems,
-            nugetArtifactInfo.packageName,
-            nugetArtifactInfo.lowerVersion,
-            nugetArtifactInfo.upperVersion,
-            virtualV3RegistrationUrl
-        )
     }
 
     private fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {

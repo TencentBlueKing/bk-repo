@@ -38,36 +38,35 @@ object RemoteRegistrationUtils {
         )
     }
 
+    @Suppress("ComplexCondition")
     fun combineRegistrationIndex(
-        localIndex: RegistrationIndex,
-        remoteIndex: RegistrationIndex,
+        originIndex: RegistrationIndex,
+        newIndex: RegistrationIndex,
         artifactInfo: NugetRegistrationArtifactInfo,
         v3RegistrationUrl: String
     ): RegistrationIndex {
-        // 提取远程查询结果不折叠的分页
-        val remoteLeafList =
-            remoteIndex.items.mapNotNull { it.items }.flatten()
+        val originLeafList = originIndex.items.mapNotNull { it.items }.flatten().toMutableList()
+        val newLeafList = newIndex.items.mapNotNull { it.items }.flatten()
         // 远程Registration Index查询结果为折叠的分页结果时，本地结果也折叠不显示具体版本元数据
-        return if (remoteIndex.items.isNotEmpty() && remoteLeafList.isEmpty()) {
-            localIndex.items.forEach {
-                it.sourceType = ArtifactChannel.LOCAL
-                it.items = null
-            }
-            remoteIndex.items.forEach { it.sourceType = ArtifactChannel.PROXY }
+        return if (
+            originIndex.items.isNotEmpty() && originLeafList.isEmpty() ||
+            newIndex.items.isNotEmpty() && newLeafList.isEmpty()
+        ) {
+            originIndex.items.forEach { it.items = null }
+            newIndex.items.forEach { it.items = null }
             RegistrationIndex(
                 id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, artifactInfo.packageName),
-                count = localIndex.count + remoteIndex.count,
-                items = localIndex.items + remoteIndex.items
+                count = originIndex.count + newIndex.count,
+                items = originIndex.items + newIndex.items
             )
-        // 远程Registration Index查询结果不折叠时，与本地版本聚合并重新分页
+        // RegistrationIndex不折叠时，聚合并重新分页
         } else {
-            // 提取本地包每个版本的元数据和版本列表
-            val localLeafList = localIndex.items.mapNotNull { it.items }.flatten().toMutableList()
-            val localVersions = localLeafList.map { it.catalogEntry.version }
-            remoteLeafList.forEach {
-                if (!localVersions.contains(it.catalogEntry.version)) { localLeafList.add(it) }
+            // 提取原Registration每个版本的元数据和版本列表
+            val originVersions = originLeafList.map { it.catalogEntry.version }
+            newLeafList.forEach {
+                if (!originVersions.contains(it.catalogEntry.version)) { originLeafList.add(it) }
             }
-            val sortedLeafList = localLeafList.sortedWith { o1, o2 ->
+            val sortedLeafList = originLeafList.sortedWith { o1, o2 ->
                 NugetVersionUtils.compareSemVer(o1.catalogEntry.version, o2.catalogEntry.version)
             }
             NugetV3RegistrationUtils.registrationPageItemToRegistrationIndex(sortedLeafList, v3RegistrationUrl)
@@ -75,15 +74,15 @@ object RemoteRegistrationUtils {
     }
 
     fun combineRegistrationPage(
-        localPage: RegistrationPage,
-        remotePage: RegistrationPage,
+        originPage: RegistrationPage,
+        newPage: RegistrationPage,
         artifactInfo: NugetRegistrationArtifactInfo,
         v3RegistrationUrl: String
     ): RegistrationPage {
-        val leafList = localPage.items.toMutableList()
-        val localVersions = leafList.map { it.catalogEntry.version }
-        remotePage.items.forEach {
-            if (!localVersions.contains(it.catalogEntry.version)) { leafList.add(it) }
+        val leafList = originPage.items.toMutableList()
+        val originVersions = leafList.map { it.catalogEntry.version }
+        newPage.items.forEach {
+            if (!originVersions.contains(it.catalogEntry.version)) { leafList.add(it) }
         }
         val sortedLeafList = leafList.sortedWith { o1, o2 ->
             NugetVersionUtils.compareSemVer(o1.catalogEntry.version, o2.catalogEntry.version)
