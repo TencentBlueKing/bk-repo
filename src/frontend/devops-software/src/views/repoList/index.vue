@@ -66,10 +66,9 @@
             </bk-table-column>
             <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <span v-if="row.public"
-                        class="mr5 repo-tag WARNING" data-name="公开"></span>
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
+                    <span v-if="row.public" class="mr5 repo-tag WARNING" data-name="公开"></span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('storeTypes')" width="120">

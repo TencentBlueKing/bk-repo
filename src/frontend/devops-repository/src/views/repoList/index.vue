@@ -74,14 +74,12 @@
             </template>
             <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
-                        class="mr5 repo-tag SUCCESS" :data-name="$t('built-in')"></span>
-                    <span v-if="row.configuration.settings.system"
-                        class="mr5 repo-tag" :data-name="$t('system')"></span>
-                    <span v-if="row.public"
-                        class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
+                    <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
+                        class="mr5 repo-tag SUCCESS" :data-name="$t('built-in')"></span>
+                    <span v-if="row.configuration.settings.system" class="mr5 repo-tag" :data-name="$t('system')"></span>
+                    <span v-if="row.public" class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('storeTypes')" width="120">
