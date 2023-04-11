@@ -198,7 +198,7 @@ class ClusterReplicator(
                     ) {
                         logger.info(
                             "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
-                                "will be pushed to the remote server, try the $retry time!"
+                                "will be pushed to the remote server ${cluster.name}, try the $retry time!"
                         )
                         val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
                         val rateLimitInputStream = artifactInputStream.rateLimit(

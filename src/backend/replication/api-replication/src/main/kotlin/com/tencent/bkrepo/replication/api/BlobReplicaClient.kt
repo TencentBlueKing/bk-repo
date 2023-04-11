@@ -68,5 +68,8 @@ interface BlobReplicaClient {
         const val BLOB_PULL_URI = "/replica/blob/pull"
         const val BLOB_PUSH_URI = "/replica/blob/push"
         const val BLOB_CHECK_URI = "/replica/blob/check"
+        // blobs upload
+        const val BOLBS_UPLOAD_FIRST_STEP_URL = "/replica/blobs/uploads/"
+        const val BOLBS_UPLOAD_SECOND_STEP_URL = "/replica/blobs/uploads/{uuid}"
     }
 }
