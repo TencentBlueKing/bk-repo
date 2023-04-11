@@ -68,5 +68,4 @@ class OtelWebConfiguration  {
         const val HEADER_BKREPO_TRACE_ID = "X-BkRepo-Trace-Id"
         const val TRACE_ID_BAGGAGE_KEY = "X-BKREPO-TRACE-ID"
     }
-
 }

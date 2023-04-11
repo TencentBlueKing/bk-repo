@@ -16,8 +16,6 @@ data:
       config: classpath:logback-config.xml
       path: /data/workspace/logs
     spring:
-      sleuth:
-        enabled: true
       data:
         mongodb:
           uri: {{ include "bkrepo.mongodbUri" . }}

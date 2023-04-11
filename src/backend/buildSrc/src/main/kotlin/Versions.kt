@@ -62,4 +62,5 @@ object Versions {
     const val SleuthOtel = "1.1.2"
     const val KubernetesClient = "11.0.2"
     const val ReactiveFeign = "3.2.6"
+    const val Mongo = "4.6.1"
 }

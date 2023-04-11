@@ -68,6 +68,13 @@ allprojects {
             }
             dependency("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter:${Versions.ReactiveFeign}")
             dependency("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
+            dependencySet("org.mongodb:${Versions.Mongo}") {
+                entry("bson")
+                entry("bson-record")
+                entry("mongodb-driver-core")
+                entry("mongodb-driver-reactivestreams")
+                entry("mongodb-driver-sync")
+            }
         }
     }
     ext["netty.version"] = Versions.Netty
