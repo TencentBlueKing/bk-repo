@@ -47,10 +47,14 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
     /**
      * only admin or user self have the permission
      */
-    fun checkUserId(pathUid: String) {
-        val userId = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdmin() && userId.isNotEmpty() && userId != pathUid) {
-            logger.warn("user not match [${SecurityUtils.getPrincipal()}, $pathUid]")
+    fun userPreCheck(userId: String?) {
+        val userIdCtx = SecurityUtils.getUserId()
+        if (userId == null && !SecurityUtils.isAdmin()) {
+            logger.warn("user not match [$userIdCtx]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+        }
+        if (userId != null && !SecurityUtils.isAdmin() && userIdCtx.isNotEmpty() && userIdCtx != userId) {
+            logger.warn("user not match [$userIdCtx, $userId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
