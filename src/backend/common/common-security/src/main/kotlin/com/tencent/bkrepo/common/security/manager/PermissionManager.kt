@@ -241,7 +241,6 @@ open class PermissionManager(
         if (action != PermissionAction.READ) {
             return false
         }
-        val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
         // 加载仓库信息
