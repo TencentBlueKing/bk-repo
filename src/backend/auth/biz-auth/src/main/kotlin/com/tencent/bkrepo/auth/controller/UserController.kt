@@ -92,7 +92,7 @@ class UserController @Autowired constructor(
     @PostMapping("/create")
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
         if (request.admin) {
-            checkPlatformPermission()
+            preCheckPlatformPermission()
         }
         userService.createUser(request)
         return ResponseBuilder.success(true)
@@ -102,9 +102,9 @@ class UserController @Autowired constructor(
     @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
         if (request.admin) {
-            checkPlatformPermission()
+            preCheckPlatformPermission()
         }
-        checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
+        preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToProject(request)
         val createRoleRequest = buildProjectAdminRequest(request.projectId)
         val roleId = roleService.createRole(createRoleRequest)
@@ -116,9 +116,9 @@ class UserController @Autowired constructor(
     @PostMapping("/create/repo")
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
         if (request.admin) {
-            checkPlatformPermission()
+            preCheckPlatformPermission()
         }
-        checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
+        preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToRepo(request)
         val createRoleRequest = buildRepoAdminRequest(request.projectId, request.repoName)
         val roleId = roleService.createRole(createRoleRequest)
@@ -133,12 +133,6 @@ class UserController @Autowired constructor(
             UserResult(it.userId, it.name)
         }
         return ResponseBuilder.success(result)
-    }
-
-    @ApiOperation("权限用户列表")
-    @GetMapping("/listall")
-    fun listAllUser(@RequestBody rids: List<String>?): Response<List<User>> {
-        return ResponseBuilder.success(userService.listUser(rids.orEmpty()))
     }
 
     @ApiOperation("删除用户")
@@ -162,7 +156,7 @@ class UserController @Autowired constructor(
     fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
         if (request.admin != null && request.admin) {
-            checkPlatformPermission()
+            preCheckPlatformPermission()
         }
         userService.updateUserById(uid, request)
         return ResponseBuilder.success(true)
@@ -173,7 +167,7 @@ class UserController @Autowired constructor(
     fun updateUserInfoById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
         if (request.admin != null && request.admin) {
-            checkPlatformPermission()
+            preCheckPlatformPermission()
         }
         userService.updateUserById(uid, request)
         return ResponseBuilder.success(true)
@@ -368,7 +362,7 @@ class UserController @Autowired constructor(
     @ApiOperation("判断用户是否为项目管理员")
     @GetMapping("/admin/{projectId}")
     fun isProjectAdmin(@PathVariable projectId: String): Response<Boolean> {
-        return ResponseBuilder.success(checkProjectAdmin(projectId))
+        return ResponseBuilder.success(preCheckProjectAdmin(projectId))
     }
 
     @ApiOperation("检验实体用户是否存在此userid")
