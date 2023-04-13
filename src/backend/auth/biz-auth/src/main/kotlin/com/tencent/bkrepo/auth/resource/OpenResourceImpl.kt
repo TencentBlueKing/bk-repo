@@ -45,16 +45,12 @@ import org.springframework.beans.factory.annotation.Autowired
 open class OpenResourceImpl @Autowired constructor(private val permissionService: PermissionService) {
 
     /**
-     * only admin or user self have the permission
+     * the userContext should equal userId or be admin
      */
-    fun userPreCheck(userId: String?) {
-        val userIdCtx = SecurityUtils.getUserId()
-        if (userId == null && !SecurityUtils.isAdmin()) {
-            logger.warn("user not match [$userIdCtx]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
-        }
-        if (userId != null && !SecurityUtils.isAdmin() && userIdCtx.isNotEmpty() && userIdCtx != userId) {
-            logger.warn("user not match [$userIdCtx, $userId]")
+    fun preCheckContextUser(userId: String) {
+        val userContext = SecurityUtils.getUserId()
+        if (!SecurityUtils.isAdmin() && userContext.isNotEmpty() && userContext != userId) {
+            logger.warn("user not match [$userContext, $userId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
