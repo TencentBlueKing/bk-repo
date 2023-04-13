@@ -61,7 +61,7 @@
                         <package-card
                             class="mb10"
                             v-for="pkg in packageList"
-                            :key="pkg.key"
+                            :key="pkg.repoName + pkg.key"
                             :card-data="pkg"
                             :readonly="!permission.delete"
                             @click.native="showCommonPackageDetail(pkg)"
