@@ -508,7 +508,7 @@ open class PermissionManager(
      * 判断是否为管理员
      */
     private fun isAdminUser(userId: String): Boolean {
-        return userResource.detail(userId).data?.admin == true
+        return userResource.userInfoById(userId).data?.admin == true
     }
 
 
