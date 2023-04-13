@@ -227,21 +227,19 @@ class ReplicaExtServiceImpl(
     }
 
     private fun findDifferenceForNonGeneric(request: CheckRepoDifferenceRequest): MutableMap<String, List<String>> {
-        with(request) {
-            val result: MutableMap<String, List<String>> = mutableMapOf()
-            val option = PackageListOption(pageNumber = 1, pageSize = replicationProperties.pageSize)
-            do {
-                val packages = listPackages(request, option)
-                packages.forEach {
-                    val versionDifference = findVersionDifference(request, it.key)
-                    if (versionDifference.isNotEmpty()) {
-                        result[it.key] = versionDifference
-                    }
+        val result: MutableMap<String, List<String>> = mutableMapOf()
+        val option = PackageListOption(pageNumber = 1, pageSize = replicationProperties.pageSize)
+        do {
+            val packages = listPackages(request, option)
+            packages.forEach {
+                val versionDifference = findVersionDifference(request, it.key)
+                if (versionDifference.isNotEmpty()) {
+                    result[it.key] = versionDifference
                 }
-                option.pageNumber += 1
-            } while (packages.isNotEmpty())
-            return result
-        }
+            }
+            option.pageNumber += 1
+        } while (packages.isNotEmpty())
+        return result
     }
 
     private fun findVersionDifference(
