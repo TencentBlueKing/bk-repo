@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
@@ -82,6 +83,7 @@ class ArtifactTransferListener(
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp
             )
+            logger.info(toJson(record))
             queue.offer(record)
             ArtifactMetrics.getUploadedDistributionSummary().record(throughput.bytes.toDouble())
         }
@@ -108,6 +110,7 @@ class ArtifactTransferListener(
             )
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
+            logger.info(toJson(record))
             queue.offer(record)
         }
     }
