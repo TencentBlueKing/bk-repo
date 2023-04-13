@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.pojo.cluster
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -50,6 +51,7 @@ data class ClusterNodeInfo(
     @ApiModelProperty("集群访问用户名，独立集群需要此字段")
     val username: String?,
     @ApiModelProperty("集群访问密码，独立集群需要此字段")
+    @JsonIgnore
     val password: String?,
     @ApiModelProperty("集群的证书，独立集群需要此字段")
     val certificate: String?,
