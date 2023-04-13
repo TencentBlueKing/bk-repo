@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.oci.pojo.artifact
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 
@@ -43,7 +45,12 @@ class OciBlobArtifactInfo(
     val mount: String? = null,
     val from: String? = null
 ) : OciArtifactInfo(projectId, repoName, packageName, version) {
-    private val ociDigest = OciDigest(digest)
+    private val ociDigest =
+        try {
+            OciDigest(digest)
+        } catch (e: IllegalArgumentException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, digest!!)
+        }
 
     fun getDigestAlg(): String {
         return ociDigest.getDigestAlg()
