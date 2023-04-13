@@ -70,7 +70,7 @@
             // 根据元数据的 key 和 value，获取 value 的配色
             getColorMap () {
                 return function (key, value) {
-                    const label = this.metadataLabelList.find(item => item.labelKey === key)
+                    const label = this.metadataLabelList?.find(item => item.labelKey === key)
                     return label?.labelColorMap[value] || '#333333'
                 }
             }

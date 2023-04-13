@@ -4,7 +4,7 @@
             <bk-input
                 v-model.trim="query.name"
                 class="w250"
-                placeholder="请输入仓库名称, 按Enter键搜索"
+                :placeholder="$t('repoEnterTip')"
                 clearable
                 @enter="handlerPaginationChange()"
                 @clear="handlerPaginationChange()"
@@ -38,7 +38,7 @@
                 v-model="query.projectId"
                 class="ml10 w250"
                 searchable
-                placeholder="请选择项目"
+                :placeholder="$t('inputProject')"
                 @change="handlerPaginationChange()"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
                 :list="projectList">
@@ -59,7 +59,7 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
             </template>
-            <bk-table-column label="所属项目" show-overflow-tooltip width="200">
+            <bk-table-column :label="$t('belongProject')" show-overflow-tooltip width="200">
                 <template #default="{ row }">
                     {{ (projectList.find(p => p.id === row.projectId) || {}).name || '/' }}
                 </template>
@@ -68,7 +68,7 @@
                 <template #default="{ row }">
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
-                    <span v-if="row.public" class="mr5 repo-tag WARNING" data-name="公开"></span>
+                    <span v-if="row.public" class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('storeTypes')" width="120">
