@@ -54,10 +54,13 @@ class OtelWebConfiguration  {
     fun traceIdInResponseFilter(tracer: Tracer): Filter {
         return Filter { request, response, chain ->
             val currentSpan: Span? = tracer.currentSpan()
+            val resp = response as HttpServletResponse
             if (currentSpan != null) {
-                val resp = response as HttpServletResponse
-                resp.addHeader(HEADER_TRACE_ID, currentSpan.context().traceId())
-                resp.addHeader(HEADER_BKREPO_TRACE_ID, tracer.getBaggage(TRACE_ID_BAGGAGE_KEY)?.get().toString())
+                resp.addHeader(HEADER_TRACE_ID, currentSpan.context()?.traceId())
+                val baggage = tracer.getBaggage(TRACE_ID_BAGGAGE_KEY)?.get()
+                if (!baggage.isNullOrBlank()) {
+                    resp.addHeader(HEADER_BKREPO_TRACE_ID, baggage)
+                }
             }
             chain.doFilter(request, response)
         }

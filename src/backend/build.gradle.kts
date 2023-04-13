@@ -79,7 +79,7 @@ allprojects {
     }
     ext["netty.version"] = Versions.Netty
     // 2.1.2才支持配置使用信号量隔离
-    ext["spring-cloud-circuitbreaker.version"] = Versions.SpringCloudCircuitbreaker
+//    ext["spring-cloud-circuitbreaker.version"] = Versions.SpringCloudCircuitbreaker
 
     configurations.all {
         // io.netty:netty已替换成io.netty:netty-all

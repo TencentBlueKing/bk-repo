@@ -60,7 +60,16 @@ object ResponseBuilder {
     private fun getTraceId(): String? {
         return try {
             val tracer = SpringContextUtils.getBean<Tracer>()
-            tracer.getBaggage(TRACE_ID_BAGGAGE_KEY)?.get() ?: tracer.currentSpan()?.context()?.traceId()
+            if (tracer.currentSpan() != null) {
+                val baggage = tracer.getBaggage(TRACE_ID_BAGGAGE_KEY)?.get()
+                if (baggage.isNullOrBlank()) {
+                    tracer.currentSpan()!!.context()?.traceId()
+                } else {
+                    baggage
+                }
+            } else {
+                null
+            }
         } catch (_: BeansException) {
             null
         }
