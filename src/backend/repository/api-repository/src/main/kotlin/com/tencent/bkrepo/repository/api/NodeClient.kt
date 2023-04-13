@@ -170,4 +170,12 @@ interface NodeClient {
         @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
         @RequestParam includeMetadata: Boolean = false
     ): Response<List<NodeInfo>>
+
+    @ApiOperation("查询已删除节点")
+    @GetMapping("/deleted/detail/{projectId}/{repoName}")
+    fun getDeletedNodeDetail(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Response<NodeDetail?>
 }

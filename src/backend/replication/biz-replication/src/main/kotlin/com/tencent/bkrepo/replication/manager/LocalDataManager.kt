@@ -153,6 +153,22 @@ class LocalDataManager(
             ?: throw NodeNotFoundException(fullPath)
     }
 
+
+    /**
+     * 查找package对应version下的节点
+     */
+    fun findNodeDetailInVersion(
+        projectId: String, repoName: String, fullPath: String
+    ): NodeDetail {
+        return findNode(projectId, repoName, fullPath) ?: findDeletedNodeDetail(projectId, repoName, fullPath)
+            ?: throw NodeNotFoundException(fullPath)
+    }
+    fun findDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String
+    ): NodeDetail? {
+        return nodeClient.getDeletedNodeDetail(projectId, repoName, fullPath).data
+    }
+
     /**
      * 查找节点
      */
