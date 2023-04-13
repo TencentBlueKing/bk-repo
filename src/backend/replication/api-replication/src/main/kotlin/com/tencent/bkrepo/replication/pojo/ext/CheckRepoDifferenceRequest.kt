@@ -40,3 +40,4 @@ data class CheckRepoDifferenceRequest(
     val remoteUserName: String,
     val remotePassword: String
 )
+

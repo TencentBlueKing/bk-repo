@@ -64,6 +64,4 @@ class UserReplicationController(
     ): Response<Any> {
         return ResponseBuilder.success(replicaExtService.syncRepoDifference(request))
     }
-
-
 }
