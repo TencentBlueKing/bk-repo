@@ -81,7 +81,7 @@ class AuthInterceptor : HandlerInterceptor {
         try {
             // basic认证
             if (authHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
-                return cheUserFromBasic(request, authHeader)
+                return checkUserFromBasic(request, authHeader)
             }
 
             // platform认证
@@ -94,8 +94,9 @@ class AuthInterceptor : HandlerInterceptor {
         }
     }
 
-    private fun cheUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
-        val userAccess = userProjectApiSet.any { request.requestURI.contains(it) }
+    private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
+        val projectAccess = userProjectApiSet.any { request.requestURI.contains(it) }
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
         val encodedCredentials = authHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
@@ -107,8 +108,8 @@ class AuthInterceptor : HandlerInterceptor {
 
         request.setAttribute(USER_KEY, parts[0])
         request.setAttribute(ADMIN_USER, user.admin)
-        // 非项目内认证账号
-        if (!user.admin && !userAccess) {
+        // 非管理员访问非授权endpoint
+        if (!user.admin && !(projectAccess || userAccess)) {
             logger.warn("user [${parts[0]}] can not access this endpoint [${request.requestURI}]")
             throw IllegalArgumentException("check credential fail")
         }
