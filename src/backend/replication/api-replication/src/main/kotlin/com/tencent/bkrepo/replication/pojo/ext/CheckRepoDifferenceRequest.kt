@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,40 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.replication.pojo.ext
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-
-@ConfigurationProperties("replication")
-data class ReplicationProperties(
-
-    /**
-     * 文件发送限速
-     */
-    var rateLimit: DataSize = DataSize.ofBytes(-1),
-
-    /**
-     * oci blob文件上传分块大小
-     */
-    var chunkedSize: Long = 1024 * 1024 * 5,
-    /**
-     * oci blob文件上传并发数
-     */
-    var threadNum: Int = 3,
-
-    /**
-     * manual分发并行数
-     */
-    var manualConcurrencyNum: Int = 3,
-
-    /**
-     * 签名过滤器body限制大小
-     * */
-    var bodyLimit: DataSize = DataSize.ofMegabytes(5),
-
-    /**
-     * 一次性查询的page size
-     */
-    var pageSize: Int = 500
+data class CheckRepoDifferenceRequest(
+    val localProjectId: String,
+    val localRepoName: String,
+    val localHost: String? = null,
+    val localUserName: String? =null,
+    val localPassword: String? = null,
+    val remoteProjectId: String,
+    val remoteRepoName: String,
+    val remoteClusterId: String? = null,
+    val remoteHost: String,
+    val remoteUserName: String,
+    val remotePassword: String
 )
