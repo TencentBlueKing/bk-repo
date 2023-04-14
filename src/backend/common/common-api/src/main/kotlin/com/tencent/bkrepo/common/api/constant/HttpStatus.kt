@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.api.constant
 
 enum class HttpStatus(
     val value: Int,
-    val reasonPhrase: String
+    val reasonPhrase: String,
 ) {
     CONTINUE(100, "Continue"),
 
@@ -165,13 +165,18 @@ enum class HttpStatus(
 
     NOT_EXTENDED(510, "Not Extended"),
 
-    NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
+    NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required"),
+    ;
 
     /**
      * 是否为服务端错误，code >=500
      */
     fun isServerError(): Boolean {
         return value >= INTERNAL_SERVER_ERROR.value
+    }
+
+    fun is4xxClientError(): Boolean {
+        return value >= BAD_REQUEST.value && value < INTERNAL_SERVER_ERROR.value
     }
 
     companion object {

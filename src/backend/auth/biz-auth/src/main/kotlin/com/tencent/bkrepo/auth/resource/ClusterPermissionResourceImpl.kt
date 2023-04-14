@@ -39,7 +39,7 @@ class ClusterPermissionResourceImpl(
     private val permissionService: PermissionService
 ) : ClusterPermissionResource, OpenResourceImpl(permissionService) {
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         return ResponseBuilder.success(permissionService.checkPermission(request))
     }
 }

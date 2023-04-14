@@ -30,7 +30,7 @@
                 <QRCode class="share-qrcode" :text="shareUrl" :size="150" />
             </div>
         </div> -->
-        <bk-form style="margin-top:-15px" ref="genericShareForm" :label-width="90" form-type="vertical">
+        <bk-form style="margin-top:-15px" ref="genericShareForm" :label-width="360" form-type="vertical">
             <bk-form-item :label="$t('authorizedUser')">
                 <bk-tag-input
                     v-model="genericShare.user"
@@ -39,6 +39,7 @@
                     :placeholder="$t('sharePlaceHolder')"
                     trigger="focus"
                     allow-create
+                    :paste-fn="parseFn"
                     has-delete-icon>
                 </bk-tag-input>
             </bk-form-item>
@@ -104,6 +105,16 @@
         },
         methods: {
             ...mapActions(['shareArtifactory', 'sendEmail']),
+            parseFn (data) {
+                if (data !== '') {
+                    const users = data.toString().split(',')
+                    for (let i = 0; i < users.length; i++) {
+                        users[i] = users[i].toString().trim()
+                    }
+                    const newUser = this.genericShare.user.concat(users)
+                    this.genericShare.user = Array.from(new Set(newUser))
+                }
+            },
             setData (data) {
                 this.genericShare = {
                     ...this.genericShare,

@@ -34,6 +34,8 @@ package com.tencent.bkrepo.common.security
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionResource
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
@@ -44,13 +46,10 @@ import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
@@ -68,25 +67,6 @@ import org.springframework.context.annotation.Import
 class SecurityAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean
-    fun permissionManager(
-        repositoryClient: RepositoryClient,
-        permissionResource: ServicePermissionResource,
-        externalPermissionResource: ServiceExternalPermissionResource,
-        userResource: ServiceUserResource,
-        nodeClient: NodeClient
-    ): PermissionManager {
-        return PermissionManager(
-            repositoryClient,
-            permissionResource,
-            externalPermissionResource,
-            userResource,
-            nodeClient
-        )
-    }
-
-    @Bean
-    @Conditional(CommitEdgeEdgeCondition::class)
     fun permissionManager(
         repositoryClient: RepositoryClient,
         permissionResource: ServicePermissionResource,
@@ -95,13 +75,24 @@ class SecurityAutoConfiguration {
         nodeClient: NodeClient,
         clusterProperties: ClusterProperties
     ): PermissionManager {
-        return EdgePermissionManager(
-            repositoryClient,
-            permissionResource,
-            externalPermissionResource,
-            userResource,
-            nodeClient,
-            clusterProperties
-        )
+        if (clusterProperties.role == ClusterNodeType.EDGE && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE) {
+            return EdgePermissionManager(
+                repositoryClient,
+                permissionResource,
+                externalPermissionResource,
+                userResource,
+                nodeClient,
+                clusterProperties
+            )
+        } else {
+            return PermissionManager(
+                repositoryClient,
+                permissionResource,
+                externalPermissionResource,
+                userResource,
+                nodeClient
+            )
+        }
+
     }
 }

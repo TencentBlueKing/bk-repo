@@ -83,6 +83,19 @@ const val AUTH_API_KEY_PREFIX = "/api/key"
 const val AUTH_API_OAUTH_PREFIX = "/api/oauth"
 const val AUTH_SERVICE_OAUTH_PREFIX = "/service/oauth"
 
+const val AUTH_API_PROJECT_ADMIN_PREFIX = "/api/user/admin"
+const val AUTH_API_USER_INFO_PREFIX = "/api/user/userinfo"
+const val AUTH_API_TOKEN_LIST_PREFIX = "api/user/list/token"
+const val AUTH_API_TOKEN_PREFIX = "api/user/token"
+const val AUTH_API_USER_LIST_PREFIX = "api/user/list"
+const val AUTH_API_INFO_PREFIX = "api/user/info"
+const val AUTH_API_ROLE_SYS_LIST_PREFIX = "api/role/sys/list"
+const val AUTH_API_PERMISSION_LIST_PREFIX = "api/permission/list/inproject"
+const val AUTH_API_PERMISSION_USER_PREFIX = "api/permission/user"
+const val AUTH_API_USER_UPDATE_PREFIX = "api/user/update/info"
+
+
+
 const val AUTH_API_EXT_PERMISSION_PREFIX = "/api/ext-permission"
 const val AUTH_SERVICE_EXT_PERMISSION_PREFIX = "/service/ext-permission"
 

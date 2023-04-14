@@ -64,6 +64,6 @@ class EdgePermissionManager(
     }
 
     override fun isAdminUser(userId: String): Boolean {
-        return centerUserClient.detail(userId).data?.admin == true
+        return centerUserClient.info(userId).data?.admin == true
     }
 }

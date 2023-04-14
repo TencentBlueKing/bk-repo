@@ -55,6 +55,7 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
@@ -306,8 +307,14 @@ open class PermissionManager(
         )
         if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
-            var reason = "user[$userId] does not have $action permission in project[$projectId]"
-            repoName?.let { reason += " repo[$repoName]" }
+            var reason: String? = null
+            if (repoName.isNullOrEmpty()) {
+                var param = arrayOf(userId, action, projectId )
+                reason = LocaleMessageUtils.getLocalizedMessage("permission.project.denied", param)
+            } else {
+                var param = arrayOf(userId, action, projectId, repoName )
+                reason = LocaleMessageUtils.getLocalizedMessage("permission.repo.denied", param)
+            }
             throw PermissionException(reason)
         }
         if (logger.isDebugEnabled) {
@@ -506,7 +513,7 @@ open class PermissionManager(
      * 判断是否为管理员
      */
     open fun isAdminUser(userId: String): Boolean {
-        return userResource.detail(userId).data?.admin == true
+        return userResource.userInfoById(userId).data?.admin == true
     }
 
 

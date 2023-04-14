@@ -104,7 +104,7 @@ class CommitEdgeCenterNodeServiceImpl(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    existNode.checkIsSrcCluster()
+                    ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime

@@ -551,10 +551,10 @@
     "totalFilesMsg":"{0} files exist in current folder",
     "batchDeleteMsg":"Confirm to delete the selected {0} items in batches?",
     "batchDeleteSubMsg":"The selected folder and files contain {0} files in total",
-    "authorizedUser":"authorized user",
+    "authorizedUser":"Authorized User (paste multi-user needs, separated)",
     "permanent":"permanent",
     "sharePlaceHolder":"Authorized access user, if it is empty, any user can access, press Enter to confirm",
-    "authorizedIp":"authorized IP",
+    "authorizedIp":"Authorized IP",
     "sharePlaceHolder1":"Authorize to access the IP, if it is empty, any IP can be accessed, press Enter to confirm",
     "visits":"Visits",
     "sharePlaceHolder2":"Please enter the number of visits, if it is empty, there is no limit",
@@ -671,5 +671,9 @@
     "autoEdit": "Auto edit",
     "intervalMsg":"can be performed within the range",
     "circleMsg1":"can be executed, and every",
-    "circleMsg2":"can be executed"
+    "circleMsg2":"can be executed",
+    "repoEnterTip":"Please enter the store name, press Enter to search",
+    "belongProject":"Belongs to project",
+    "searchRelatedResults":"Related results found",
+    "allRepoTotal":"All Artifacts total"
 }

@@ -42,23 +42,23 @@ class ClusterTemporaryTokenResourceImpl(
     permissionService: PermissionService
 ) : ClusterTemporaryTokenResource, OpenResourceImpl(permissionService) {
     override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         return ResponseBuilder.success(temporaryTokenService.createToken(request))
     }
 
     override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         return ResponseBuilder.success(temporaryTokenService.getTokenInfo(token))
     }
 
     override fun deleteToken(token: String): Response<Void> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         temporaryTokenService.deleteToken(token)
         return ResponseBuilder.success()
     }
 
     override fun decrementPermits(token: String): Response<Void> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         temporaryTokenService.decrementPermits(token)
         return ResponseBuilder.success()
     }

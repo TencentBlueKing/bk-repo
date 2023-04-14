@@ -34,8 +34,18 @@ package com.tencent.bkrepo.auth.interceptor
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_EXT_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_INFO_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_LIST_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_USER_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PROJECT_ADMIN_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_SYS_LIST_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_TOKEN_LIST_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_TOKEN_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_USER_INFO_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_USER_LIST_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_USER_UPDATE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
@@ -78,16 +88,14 @@ class AuthInterceptor(
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
         try {
-            val urlMatch = basicAuthApiSet.filter { request.requestURI.contains(it) }.size
-
             // basic认证
             if (authHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
-                return basicAuth(authHeader, request, urlMatch)
+                return checkUserFromBasic(request, authHeader)
             }
 
             // platform认证
             if (authHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
-                return platformAuth(authHeader, request)
+                return checkUserFromPlatform(request, authHeader)
             }
 
             // sign认证
@@ -95,7 +103,7 @@ class AuthInterceptor(
             val appId = request.getParameter(HttpSigner.APP_ID)
             val accessKey = request.getParameter(HttpSigner.ACCESS_KEY)
             if (sig != null && appId != null && accessKey != null) {
-                return signAuth(request)
+                return checkUserFromSign(request)
             }
 
             throw IllegalArgumentException("invalid auth type")
@@ -107,7 +115,48 @@ class AuthInterceptor(
         }
     }
 
-    private fun signAuth(request: HttpServletRequest): Boolean {
+    private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
+        val projectAccess = userProjectApiSet.any { request.requestURI.contains(it) }
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
+        val encodedCredentials = authHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
+        val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
+        val parts = decodedHeader.split(COLON)
+        require(parts.size == 2)
+        val user = userService.findUserByUserToken(parts[0], parts[1]) ?: run {
+            logger.warn("find no user [${parts[0]}]")
+            throw IllegalArgumentException("check credential fail")
+        }
+
+        request.setAttribute(USER_KEY, parts[0])
+        request.setAttribute(ADMIN_USER, user.admin)
+        // 非管理员访问非授权endpoint
+        if (!user.admin && !(projectAccess || userAccess)) {
+            logger.warn("user [${parts[0]}] can not access this endpoint [${request.requestURI}]")
+            throw IllegalArgumentException("check credential fail")
+        }
+        return true
+    }
+
+    private fun checkUserFromPlatform(request: HttpServletRequest, authHeader: String): Boolean {
+        // platform认证
+        val encodedCredentials = authHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
+        val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
+        val parts = decodedHeader.split(COLON)
+        require(parts.size == 2)
+        val appId = accountService.checkCredential(parts[0], parts[1]) ?: run {
+            logger.warn("find no account [$parts[0]]")
+            throw IllegalArgumentException("check auth credential fail")
+        }
+        val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
+        if (userId.isEmpty()) {
+            logger.warn("platform auth with empty userId")
+            throw IllegalArgumentException("userId is empty")
+        }
+        setAuthAttribute(userId, appId, request)
+        return true
+    }
+
+    private fun checkUserFromSign(request: HttpServletRequest): Boolean {
         val sig = request.getParameter(HttpSigner.SIGN)
         val appId = request.getParameter(HttpSigner.APP_ID)
         val accessKey = request.getParameter(HttpSigner.ACCESS_KEY)
@@ -134,59 +183,24 @@ class AuthInterceptor(
         return true
     }
 
-    private fun platformAuth(authHeader: String, request: HttpServletRequest): Boolean {
-        val encodedCredentials = authHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
-        val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-        val parts = decodedHeader.split(COLON)
-        require(parts.size == 2)
-        val appId = accountService.checkCredential(parts[0], parts[1]) ?: run {
-            logger.warn("find no account [$parts[0]]")
-            throw IllegalArgumentException("check auth credential fail")
-        }
-        val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
-        if (userId.isEmpty()) {
-            logger.warn("platform auth with empty userId")
-            throw IllegalArgumentException("userId is empty")
-        }
-        setAuthAttribute(userId, appId, request)
-        return true
-    }
-
     private fun setAuthAttribute(userId: String, appId: String, request: HttpServletRequest) {
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
         val userInfo = userService.getUserInfoById(userId)
         val isAdmin: Boolean = userInfo?.admin ?: false
         if (userId.isNotEmpty() && userInfo == null && userId != ANONYMOUS_USER) {
             val createRequest = CreateUserRequest(userId = userId, name = userId)
             userService.createUser(createRequest)
         }
+
+        if (!isAdmin && !userAccess) {
+            logger.warn("user [$userId] can not access the endpoint [${request.requestURI}]")
+            throw IllegalArgumentException("user access admin endpoint")
+        }
+
         logger.debug("auth userId [$userId], platId [$appId]")
         request.setAttribute(USER_KEY, userId)
         request.setAttribute(PLATFORM_KEY, appId)
         request.setAttribute(ADMIN_USER, isAdmin)
-    }
-
-    private fun basicAuth(
-        basicAuthHeader: String,
-        request: HttpServletRequest,
-        urlMatch: Int
-    ): Boolean {
-        val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
-        val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-        val parts = decodedHeader.split(COLON)
-        require(parts.size == 2)
-        val user = userService.findUserByUserToken(parts[0], parts[1]) ?: run {
-            logger.warn("find no user [${parts[0]}]")
-            throw IllegalArgumentException("check credential fail")
-        }
-
-        request.setAttribute(USER_KEY, parts[0])
-        request.setAttribute(ADMIN_USER, user.admin)
-        // 非项目内认证账号
-        if (urlMatch == 0 && !user.admin) {
-            logger.warn("user [${parts[0]}] is not admin")
-            throw IllegalArgumentException("check credential fail")
-        }
-        return true
     }
 
     private fun getUrlPath(request: HttpServletRequest): String {
@@ -202,13 +216,26 @@ class AuthInterceptor(
 
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
 
-        private val basicAuthApiSet = setOf(
+        private val userProjectApiSet = setOf(
             AUTH_REPO_SUFFIX,
             AUTH_PROJECT_SUFFIX,
             AUTH_API_ACCOUNT_PREFIX,
             AUTH_API_KEY_PREFIX,
             AUTH_API_OAUTH_PREFIX,
             AUTH_API_EXT_PERMISSION_PREFIX
+        )
+
+        private val userAccessApiSet = setOf(
+            AUTH_API_PROJECT_ADMIN_PREFIX,
+            AUTH_API_USER_INFO_PREFIX,
+            AUTH_API_TOKEN_LIST_PREFIX,
+            AUTH_API_TOKEN_PREFIX,
+            AUTH_API_USER_LIST_PREFIX,
+            AUTH_API_INFO_PREFIX,
+            AUTH_API_ROLE_SYS_LIST_PREFIX,
+            AUTH_API_PERMISSION_LIST_PREFIX,
+            AUTH_API_PERMISSION_USER_PREFIX,
+            AUTH_API_USER_UPDATE_PREFIX
         )
     }
 }

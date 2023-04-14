@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ClusterUserResource
-import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -40,8 +40,8 @@ class ClusterUserResourceImpl(
     private val userService: UserService,
     permissionService: PermissionService
 ) : ClusterUserResource, OpenResourceImpl(permissionService) {
-    override fun detail(uid: String): Response<User?> {
-        checkPlatformPermission()
-        return ResponseBuilder.success(userService.getUserById(uid))
+    override fun info(uid: String): Response<UserInfo?> {
+        preCheckPlatformPermission()
+        return ResponseBuilder.success(userService.getUserInfoById(uid))
     }
 }

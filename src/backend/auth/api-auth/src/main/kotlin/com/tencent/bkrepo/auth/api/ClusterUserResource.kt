@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_USER_PREFIX
-import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -46,10 +46,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping(AUTH_CLUSTER_USER_PREFIX)
 interface ClusterUserResource {
 
-    @ApiOperation("用户详情")
-    @GetMapping("/detail/{uid}")
-    fun detail(
+    @ApiOperation("用户信息")
+    @GetMapping("/info/{uid}")
+    fun info(
         @ApiParam(value = "用户id")
         @PathVariable uid: String
-    ): Response<User?>
+    ): Response<UserInfo?>
 }

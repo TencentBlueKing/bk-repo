@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
+import com.tencent.bkrepo.repository.util.ClusterUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger
@@ -166,7 +167,7 @@ class CommitEdgeCenterNodeDeleteSupport(
         node: TNode,
         operator: String
     ): Boolean {
-        if (!node.containsSrcCluster()) {
+        if (!ClusterUtils.containsSrcCluster(node.clusterNames)) {
             return false
         }
         val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()

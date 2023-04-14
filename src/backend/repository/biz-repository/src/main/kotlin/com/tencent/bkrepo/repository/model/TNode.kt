@@ -31,14 +31,8 @@
 
 package com.tencent.bkrepo.repository.model
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.model.TNode.Companion.CLUSTER_NAMES_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.CLUSTER_NAMES_IDX_DEF
@@ -97,43 +91,6 @@ data class TNode(
     var projectId: String,
     var repoName: String
 ) {
-    @JsonIgnore
-    fun checkContainsSrcCluster() {
-        if (!containsSrcCluster()) {
-            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
-        }
-    }
-
-    @JsonIgnore
-    fun checkIsSrcCluster() {
-        if (!isSrcCluster()) {
-            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
-        }
-    }
-
-    @JsonIgnore
-    fun containsSrcCluster(): Boolean {
-        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
-        var srcCluster = SecurityUtils.getClusterName()
-
-        if (clusterNames == null && srcCluster.isNullOrBlank()) {
-            // 兼容旧逻辑
-            return true
-        } else if (clusterNames == null) {
-            // edge操作center节点
-            return false
-        } else if (srcCluster.isNullOrBlank()) {
-            // center操作节点
-            srcCluster = clusterProperties.self.name.toString()
-        }
-
-        return clusterNames!!.contains(srcCluster)
-    }
-
-    @JsonIgnore
-    fun isSrcCluster(): Boolean {
-        return containsSrcCluster() && (clusterNames == null || clusterNames!!.size == 1)
-    }
 
     companion object {
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"

@@ -295,7 +295,6 @@ abstract class NodeBaseService(
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            node.checkContainsSrcCluster()
             val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = NodeQueryHelper.nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
