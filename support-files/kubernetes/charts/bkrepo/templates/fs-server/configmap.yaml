@@ -1,4 +1,4 @@
-{{- if .Values.fs-server.enabled -}}
+{{- if .Values.fsserver.enabled -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
