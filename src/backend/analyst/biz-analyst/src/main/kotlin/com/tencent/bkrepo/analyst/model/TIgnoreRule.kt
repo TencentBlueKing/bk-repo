@@ -37,7 +37,7 @@ import java.time.LocalDateTime
  */
 @Document("ignore_rule")
 @CompoundIndexes(
-    CompoundIndex(name = "project_name_idx", def = "{'projectId': 1}, {'name': 1}", unique = true, background = true)
+    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true, background = true)
 )
 data class TIgnoreRule(
     var id: String? = null,
