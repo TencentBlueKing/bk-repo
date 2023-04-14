@@ -75,24 +75,25 @@ class SecurityAutoConfiguration {
         nodeClient: NodeClient,
         clusterProperties: ClusterProperties
     ): PermissionManager {
-        if (clusterProperties.role == ClusterNodeType.EDGE && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE) {
-            return EdgePermissionManager(
-                repositoryClient,
-                permissionResource,
-                externalPermissionResource,
-                userResource,
-                nodeClient,
-                clusterProperties
+        return if (clusterProperties.role == ClusterNodeType.EDGE
+            && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        ) {
+            EdgePermissionManager(
+                repositoryClient = repositoryClient,
+                permissionResource = permissionResource,
+                externalPermissionResource = externalPermissionResource,
+                userResource = userResource,
+                nodeClient = nodeClient,
+                clusterProperties = clusterProperties
             )
         } else {
-            return PermissionManager(
-                repositoryClient,
-                permissionResource,
-                externalPermissionResource,
-                userResource,
-                nodeClient
+            PermissionManager(
+                repositoryClient = repositoryClient,
+                permissionResource = permissionResource,
+                externalPermissionResource = externalPermissionResource,
+                userResource = userResource,
+                nodeClient = nodeClient
             )
         }
-
     }
 }
