@@ -61,10 +61,9 @@ warning () {
 
 build_backend () {
     log "构建${SERVICE}镜像..."
-    if [ \${SERVICE} = "fs-server" ];
-      then
+    if [[ $SERVICE == "fs-server" ]];then
         $BACKEND_DIR/gradlew -p $BACKEND_DIR :fs:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
-      else
+    else
         $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
     fi
     rm -rf $tmp_dir/*
