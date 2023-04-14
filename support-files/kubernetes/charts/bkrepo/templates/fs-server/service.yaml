@@ -1,4 +1,4 @@
-{{- if .Values.fs-server.enabled -}}
+{{- if .Values.fsserver.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:

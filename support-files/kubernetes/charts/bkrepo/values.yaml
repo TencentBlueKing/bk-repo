@@ -439,7 +439,7 @@ generic:
   priorityClassName: ""
 
 ## fs-server服务配置
-fs-server:
+fsserver:
   enabled: true
   config: {}
   ## Kubernetes 通用配置
