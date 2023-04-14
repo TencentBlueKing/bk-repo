@@ -340,5 +340,38 @@ export default {
                 isTrust
             }
         )
+    },
+    // 获取忽略规则
+    getIgnoreRules (_, { projectId, planId, current = 1, limit = 20 }) {
+        return Vue.prototype.$ajax.get(
+            `analyst/api/project/${projectId}/ignore/rules`,
+            {
+                params: {
+                    planId: planId,
+                    pageNumber: current,
+                    pageSize: limit
+                }
+            }
+        )
+    },
+    // 更新或略规则
+    updateIgnoreRule (_, body) {
+        return Vue.prototype.$ajax.put(
+            `analyst/api/project/${body.projectId}/ignore/rules/${body.ruleId}`,
+            body
+        )
+    },
+    // 创建忽略规则
+    createIgnoreRule (_, body) {
+        return Vue.prototype.$ajax.post(
+            `analyst/api/project/${body.projectId}/ignore/rules`,
+            body
+        )
+    },
+    // 删除忽略规则
+    deleteIgnoreRule (_, { projectId, ruleId }) {
+        return Vue.prototype.$ajax.delete(
+            `analyst/api/project/${projectId}/ignore/rules/${ruleId}`
+        )
     }
 }
