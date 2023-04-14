@@ -16,23 +16,23 @@ spec:
   selector:
     matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: fs-server
-  replicas: {{ default 1 .Values.fs-server.replicaCount }}
+  replicas: {{ default 1 .Values.fsserver.replicaCount }}
   template:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: fs-server
         {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
-        {{- if .Values.fs-server.podLabels }}
-        {{- include "common.tplvalues.render" (dict "value" .Values.fs-server.podLabels "context" $) | nindent 8 }}
+        {{- if .Values.fsserver.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.fsserver.podLabels "context" $) | nindent 8 }}
         {{- end }}
     spec:
       serviceAccountName: {{ template "bkrepo.serviceAccountName" . }}
       {{- include "bkrepo.imagePullSecrets" . | nindent 6 }}
-      {{- if .Values.fs-server.hostAliases }}
-      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.fs-server.hostAliases "context" $) | nindent 8 }}
+      {{- if .Values.fsserver.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.fsserver.hostAliases "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.fs-server.affinity }}
-      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.fs-server.affinity "context" $) | nindent 8 }}
+      {{- if .Values.fsserver.affinity }}
+      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.fsserver.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
         {{- if eq .Values.persistence.accessMode "ReadWriteOnce" }}
@@ -40,20 +40,20 @@ spec:
         {{- else }}
         podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.repository.podAffinityPreset "component" "fs-server" "context" $) | nindent 10 }}
         {{- end }}
-        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.fs-server.podAntiAffinityPreset "component" "fs-server" "context" $) | nindent 10 }}
-        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.fs-server.nodeAffinityPreset.type "key" .Values.fs-server.nodeAffinityPreset.key "values" .Values.fs-server.nodeAffinityPreset.values) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.fsserver.podAntiAffinityPreset "component" "fs-server" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.fsserver.nodeAffinityPreset.type "key" .Values.fsserver.nodeAffinityPreset.key "values" .Values.fsserver.nodeAffinityPreset.values) | nindent 10 }}
       {{- end }}
-      {{- if .Values.fs-server.nodeSelector }}
-      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.fs-server.nodeSelector "context" $) | nindent 8 }}
+      {{- if .Values.fsserver.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.fsserver.nodeSelector "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.fs-server.tolerations }}
-      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.fs-server.tolerations "context" .) | nindent 8 }}
+      {{- if .Values.fsserver.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.fsserver.tolerations "context" .) | nindent 8 }}
       {{- end }}
-      {{- if .Values.fs-server.priorityClassName }}
-      priorityClassName: {{ .Values.fs-server.priorityClassName | quote }}
+      {{- if .Values.fsserver.priorityClassName }}
+      priorityClassName: {{ .Values.fsserver.priorityClassName | quote }}
       {{- end }}
-      {{- if .Values.fs-server.podSecurityContext.enabled }}
-      securityContext: {{- omit .Values.fs-server.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- if .Values.fsserver.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.fsserver.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       containers:
         {{- if .Values.bkstore.enabled }}
@@ -79,13 +79,13 @@ spec:
               mountPath: /data/workspace/plugin/
         {{- end }}
         - name: fs-server
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.fs-server.image "global" .Values.global "bkrepo" .Values.common) }}
-          imagePullPolicy: {{ .Values.fs-server.image.pullPolicy }}
-          {{- if .Values.fs-server.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.fs-server.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.fsserver.image "global" .Values.global "bkrepo" .Values.common) }}
+          imagePullPolicy: {{ .Values.fsserver.image.pullPolicy }}
+          {{- if .Values.fsserver.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.fsserver.containerSecurityContext "enabled" | toYaml | nindent 12 }}
           {{- end }}
-          {{- if .Values.fs-server.resources }}
-          resources: {{- toYaml .Values.fs-server.resources | nindent 12 }}
+          {{- if .Values.fsserver.resources }}
+          resources: {{- toYaml .Values.fsserver.resources | nindent 12 }}
           {{- end }}
           env:
             - name: BK_REPO_JVM_OPTION

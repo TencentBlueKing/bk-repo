@@ -15,7 +15,7 @@ data:
   application.yml: |-
     fs-server:
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/fs-server
-      {{- if keys $.Values.fs-server.config }}
-        {{- toYaml .Values.fs-server.config | nindent 6 }}
+      {{- if keys $.Values.fsserver.config }}
+        {{- toYaml .Values.fsserver.config | nindent 6 }}
       {{- end}}
 {{- end }}
