@@ -71,20 +71,21 @@ class UserIgnoreRuleController(private val ignoreRuleService: IgnoreRuleService)
     }
 
     @ApiOperation("更新规则")
-    @PutMapping
+    @PutMapping("/{ruleId}")
     @Permission(ResourceType.PROJECT, PermissionAction.WRITE)
     fun updateRule(
         @PathVariable("projectId") projectId: String,
+        @PathVariable("ruleId") ruleId: String,
         @RequestBody request: UpdateIgnoreRuleRequest
     ): Response<IgnoreRule> {
         if (request.projectId != projectId) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
         }
-        return ResponseBuilder.success(ignoreRuleService.update(request))
+        return ResponseBuilder.success(ignoreRuleService.update(request.copy(id = ruleId)))
     }
 
     @ApiOperation("删除规则")
-    @DeleteMapping("{ruleId}")
+    @DeleteMapping("/{ruleId}")
     @Permission(ResourceType.PROJECT, PermissionAction.WRITE)
     fun deleteRule(
         @PathVariable("projectId") projectId: String,
