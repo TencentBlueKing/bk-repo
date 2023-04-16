@@ -33,6 +33,7 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
+import java.util.regex.Pattern
 
 class MavenArtifactInfo(
     projectId: String,
@@ -66,6 +67,11 @@ class MavenArtifactInfo(
 
     fun isValid(): Boolean {
         return hasGroupId() && hasArtifactId() && hasVersion()
+    }
+
+    fun isMetadata(): Boolean {
+        val filename = this.getArtifactFullPath().split("/").last()
+        return Pattern.matches("^maven-metadata\\.xml(\\.([a-z0-9]+))*", filename)
     }
 
     fun isSnapshot(): Boolean {
