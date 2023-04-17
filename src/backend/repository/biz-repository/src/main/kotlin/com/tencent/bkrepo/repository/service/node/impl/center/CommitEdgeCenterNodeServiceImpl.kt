@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
@@ -104,7 +105,7 @@ class CommitEdgeCenterNodeServiceImpl(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    existNode.checkIsSrcCluster()
+                    ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
                     return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
@@ -222,6 +223,10 @@ class CommitEdgeCenterNodeServiceImpl(
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).moveNode(moveRequest)
+    }
+
+    override fun renameNode(renameRequest: NodeRenameRequest) {
+        return CommitEdgeCenterNodeRenameSupport(this).renameNode(renameRequest)
     }
 
     companion object {

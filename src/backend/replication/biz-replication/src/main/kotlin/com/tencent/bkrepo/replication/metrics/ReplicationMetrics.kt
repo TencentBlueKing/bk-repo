@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.metrics
 
+import com.tencent.bkrepo.replication.constant.EDGE_PULL_ACTIVE_COUNT
+import com.tencent.bkrepo.replication.constant.EDGE_PULL_ACTIVE_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_ACTIVE_COUNT
 import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_ACTIVE_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.EVENT_CONSUMER_TASK_QUEUE_SIZE
@@ -49,6 +51,7 @@ import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_ACTIVE_COUNT
 import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_ACTIVE_COUNT_DESC
 import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_QUEUE_SIZE
 import com.tencent.bkrepo.replication.constant.RUN_ONCE_EXECUTOR_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.replication.replica.base.executor.EdgePullThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.executor.EventConsumerThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.executor.OciThreadPoolExecutor
@@ -121,6 +124,12 @@ class ReplicationMetrics : MeterBinder {
             MANUAL_TASK_QUEUE_SIZE, ManualThreadPoolExecutor.instance
         ) { it.queue.size.toDouble() }
             .description(MANUAL_TASK_QUEUE_SIZE_DESC)
+            .register(registry)
+
+        Gauge.builder(
+            EDGE_PULL_ACTIVE_COUNT, EdgePullThreadPoolExecutor.instance
+        ) { it.activeCount.toDouble() }
+            .description(EDGE_PULL_ACTIVE_COUNT_DESC)
             .register(registry)
     }
 }

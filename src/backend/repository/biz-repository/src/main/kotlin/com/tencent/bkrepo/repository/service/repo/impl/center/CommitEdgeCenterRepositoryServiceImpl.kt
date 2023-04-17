@@ -54,6 +54,7 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
+import com.tencent.bkrepo.repository.util.ClusterUtils
 import com.tencent.bkrepo.repository.util.RepoEventFactory
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -105,13 +106,13 @@ class CommitEdgeCenterRepositoryServiceImpl(
 
     override fun checkExist(projectId: String, name: String, type: String?): Boolean {
         val exitRepo = repositoryDao.findByNameAndType(projectId, name, type)
-        return exitRepo != null && exitRepo.containsSrcCluster()
+        return exitRepo != null && ClusterUtils.containsSrcCluster(exitRepo.clusterNames)
     }
 
     override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             val exitRepo = repositoryDao.findByNameAndType(projectId, name, type.name)
-            if (exitRepo != null && exitRepo.containsSrcCluster()) {
+            if (exitRepo != null && ClusterUtils.containsSrcCluster(exitRepo.clusterNames)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             } else if (exitRepo != null && exitRepo.type != RepositoryType.GENERIC) {
                 // 不允许非GENERIC仓库属于多个cluster
@@ -171,11 +172,11 @@ class CommitEdgeCenterRepositoryServiceImpl(
     override fun checkRepository(projectId: String, repoName: String, repoType: String?): TRepository {
         val exitRepo = repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-        if (SecurityUtils.getClusterName() == null && exitRepo.isSrcCluster()) {
+        if (SecurityUtils.getClusterName() == null && ClusterUtils.isUniqueSrcCluster(exitRepo.clusterNames)) {
             return exitRepo
         }
 
-        if (SecurityUtils.getClusterName() != null && exitRepo.containsSrcCluster()) {
+        if (SecurityUtils.getClusterName() != null && ClusterUtils.containsSrcCluster(exitRepo.clusterNames)) {
             return exitRepo
         }
 

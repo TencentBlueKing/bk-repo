@@ -191,7 +191,7 @@ class LocalDataManager(
             option = option
         ).data?.records
         if (packages.isNullOrEmpty()) {
-            throw PackageNotFoundException("$projectId/$repoName")
+            return emptyList()
         }
         return packages
     }

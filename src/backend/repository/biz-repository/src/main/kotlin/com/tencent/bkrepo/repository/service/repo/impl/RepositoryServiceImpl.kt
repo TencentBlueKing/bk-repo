@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConf
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -84,6 +85,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -98,6 +100,7 @@ import java.time.format.DateTimeFormatter
  */
 @Service
 @Conditional(DefaultCondition::class)
+@Suppress("TooManyFunctions")
 class RepositoryServiceImpl(
     val repositoryDao: RepositoryDao,
     val nodeService: NodeService,
@@ -163,6 +166,7 @@ class RepositoryServiceImpl(
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::display).ne(false)
             .and(TRepository::name).inValues(names)
+            .and(TRepository::deleted).isEqualTo(null)
         option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
         val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
         return repositoryDao.find(query).map { convertToInfo(it)!! }
@@ -189,6 +193,7 @@ class RepositoryServiceImpl(
         } else {
             where(TRepository::projectId).isEqualTo(projectId).and(TRepository::name).inValues(request.repoNames)
         }
+        criteria.and(TRepository::deleted).isEqualTo(null)
         val totalCount = repositoryDao.count(Query(criteria))
         val records = repositoryDao.find(Query(criteria).limit(limit).skip(skip))
             .map { convertToInfo(it) }
@@ -232,6 +237,7 @@ class RepositoryServiceImpl(
                     updateCompositeConfiguration(repoConfiguration, old, repository, operator)
                 }
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
+                checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
                 publishEvent(event)
@@ -320,7 +326,15 @@ class RepositoryServiceImpl(
                 )
                 nodeService.deleteByPath(projectId, name, ROOT, operator)
             }
-            repositoryDao.deleteById(repository.id)
+
+            // 为避免仓库被删除后节点无法被自动清理的问题，对仓库实行假删除
+            if (!repository.id.isNullOrBlank()) {
+                repositoryDao.updateFirst(
+                    Query(Criteria.where(ID).isEqualTo(repository.id)),
+                    Update().set(TRepository::deleted.name, LocalDateTime.now())
+                )
+            }
+
             // 删除关联的库
             if (repository.category == RepositoryCategory.COMPOSITE) {
                 val configuration = repository.configuration.readJsonString<CompositeConfiguration>()
@@ -334,7 +348,7 @@ class RepositoryServiceImpl(
     }
 
     override fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?> {
-        val criteria = Criteria()
+        val criteria = where(TRepository::deleted).isEqualTo(null)
         projectId?.let { criteria.and(TRepository::projectId.name).`is`(projectId) }
         repoName?.let { criteria.and(TRepository::name.name).`is`(repoName) }
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
@@ -370,6 +384,7 @@ class RepositoryServiceImpl(
     private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
         criteria.and(TRepository::display).ne(false)
+        criteria.and(TRepository::deleted).isEqualTo(null)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
         repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
@@ -516,7 +531,9 @@ class RepositoryServiceImpl(
     }
 
     override fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail> {
-        val query = Query(TRepository::type.isEqualTo(type)).with(Sort.by(TRepository::name.name))
+        val query = Query(TRepository::type.isEqualTo(type))
+            .addCriteria(TRepository::deleted.isEqualTo(null))
+            .with(Sort.by(TRepository::name.name))
         val count = repositoryDao.count(query)
         val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
         val data = repositoryDao.find(pageQuery).map {
@@ -570,6 +587,24 @@ class RepositoryServiceImpl(
         }
 
         return true
+    }
+
+    /**
+     * 查找是否存在已被逻辑删除的仓库，如果存在且存储凭证相同，则删除旧仓库再插入新数据；如果存在且存储凭证不同，则禁止创建仓库
+     */
+    private fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
+        val query = Query(where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).ne(null)
+        )
+        repositoryDao.findOne(query)?.let {
+            if (credentialsKey == it.credentialsKey) {
+                repositoryDao.remove(query)
+                logger.info("Retrieved deleted record of Repository[$projectId/$repoName] before creating")
+            } else {
+                throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoName)
+            }
+        }
     }
 
     companion object {

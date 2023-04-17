@@ -160,7 +160,7 @@ object HttpSigner {
             val s1 = "${it.key}${it.value.joinToString("")}"
             val s2 = if (encode) {
                 s1.urlEncode()
-            } else s1
+            } else s1.replace("/", "%2f")
             stringBuilder.append(s2)
         }
         return stringBuilder.toString()

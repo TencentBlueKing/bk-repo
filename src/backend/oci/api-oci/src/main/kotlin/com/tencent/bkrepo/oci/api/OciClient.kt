@@ -47,7 +47,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface OciClient {
 
     @ApiOperation("更新第三方同步时，先传manifest文件，再传其他文件")
-    @PostMapping("/{projectId}/{repoName}/packageCreate")
+    @PostMapping("/packageCreate")
     fun packageCreate(
         @RequestBody record: OciReplicationRecordInfo
     ): Response<Void>

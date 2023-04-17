@@ -41,4 +41,8 @@ class ServiceClusterNodeController(
     override fun getCluster(name: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
     }
+
+    override fun listEdgeNodes(): Response<List<ClusterNodeInfo>> {
+        return ResponseBuilder.success(clusterNodeService.listEdgeNodes())
+    }
 }

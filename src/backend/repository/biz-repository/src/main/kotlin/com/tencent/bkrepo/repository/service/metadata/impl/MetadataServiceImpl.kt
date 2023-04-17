@@ -44,6 +44,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.metadata.MetadataService
+import com.tencent.bkrepo.repository.util.ClusterUtils
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
@@ -80,7 +81,7 @@ class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            node.checkContainsSrcCluster()
+            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
             val oldMetadata = node.metadata ?: ArrayList()
             val newMetadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata)
             node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
@@ -115,7 +116,7 @@ class MetadataServiceImpl(
 
             // 检查是否有更新权限
             val node = nodeDao.findOne(query) ?: throw NodeNotFoundException(fullPath)
-            node.checkContainsSrcCluster()
+            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
             node.metadata?.forEach {
                 if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
                     throw PermissionException("No permission to update system metadata[${it.key}]")

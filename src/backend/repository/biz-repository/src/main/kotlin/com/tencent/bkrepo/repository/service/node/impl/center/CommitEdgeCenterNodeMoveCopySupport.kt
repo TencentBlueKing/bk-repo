@@ -29,14 +29,12 @@ package com.tencent.bkrepo.repository.service.node.impl.center
 
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
-import org.springframework.context.annotation.Conditional
+import com.tencent.bkrepo.repository.util.ClusterUtils
 import java.time.LocalDateTime
 
-@Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterNodeMoveCopySupport(
     nodeBaseService: NodeBaseService,
     private val clusterProperties: ClusterProperties
@@ -47,11 +45,11 @@ class CommitEdgeCenterNodeMoveCopySupport(
     override fun checkConflict(context: MoveCopyContext, node: TNode, existNode: TNode?) {
         super.checkConflict(context, node, existNode)
         if (context.move) {
-            node.checkIsSrcCluster()
-            existNode?.checkIsSrcCluster()
+            ClusterUtils.checkIsSrcCluster(node.clusterNames)
+            existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
         } else {
-            node.checkContainsSrcCluster()
-            existNode?.checkContainsSrcCluster()
+            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
+            existNode?.let { ClusterUtils.checkContainsSrcCluster(it.clusterNames) }
         }
     }
 

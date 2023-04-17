@@ -30,6 +30,7 @@ package com.tencent.bkrepo.auth.resource
 import com.tencent.bkrepo.auth.api.ClusterTemporaryTokenResource
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -37,22 +38,27 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ClusterTemporaryTokenResourceImpl(
-    private val temporaryTokenService: TemporaryTokenService
-) : ClusterTemporaryTokenResource {
+    private val temporaryTokenService: TemporaryTokenService,
+    permissionService: PermissionService
+) : ClusterTemporaryTokenResource, OpenResourceImpl(permissionService) {
     override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
+        preCheckPlatformPermission()
         return ResponseBuilder.success(temporaryTokenService.createToken(request))
     }
 
     override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
+        preCheckPlatformPermission()
         return ResponseBuilder.success(temporaryTokenService.getTokenInfo(token))
     }
 
     override fun deleteToken(token: String): Response<Void> {
+        preCheckPlatformPermission()
         temporaryTokenService.deleteToken(token)
         return ResponseBuilder.success()
     }
 
     override fun decrementPermits(token: String): Response<Void> {
+        preCheckPlatformPermission()
         temporaryTokenService.decrementPermits(token)
         return ResponseBuilder.success()
     }

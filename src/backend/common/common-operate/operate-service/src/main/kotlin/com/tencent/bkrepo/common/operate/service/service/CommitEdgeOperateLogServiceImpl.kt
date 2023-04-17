@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.OperateLogClient
+import com.tencent.bkrepo.repository.api.cluster.ClusterOperateLogClient
 
 open class CommitEdgeOperateLogServiceImpl(
     operateProperties: OperateProperties,
@@ -48,7 +48,7 @@ open class CommitEdgeOperateLogServiceImpl(
     permissionManager
 ) {
 
-    private val centerOpLogClient: OperateLogClient by lazy {
+    private val centerOpLogClient: ClusterOperateLogClient by lazy {
         FeignClientFactory.create(
             clusterProperties.center,
             "repository",

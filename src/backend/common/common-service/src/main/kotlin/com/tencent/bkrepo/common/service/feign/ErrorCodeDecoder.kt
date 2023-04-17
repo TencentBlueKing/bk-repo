@@ -46,7 +46,7 @@ class ErrorCodeDecoder : ErrorDecoder {
     private val delegate: ErrorDecoder = ErrorDecoder.Default()
 
     override fun decode(methodKey: String, feignResponse: Response): Exception {
-        if (feignResponse.status() == HttpStatus.BAD_REQUEST.value) {
+        if (HttpStatus.valueOf(feignResponse.status()).is4xxClientError()) {
             return try {
                 feignResponse.body().asInputStream().use {
                     val response = it.readJsonString<com.tencent.bkrepo.common.api.pojo.Response<Any>>()

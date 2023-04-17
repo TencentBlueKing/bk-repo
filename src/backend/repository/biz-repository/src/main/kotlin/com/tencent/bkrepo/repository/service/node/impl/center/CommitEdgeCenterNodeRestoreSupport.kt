@@ -33,6 +33,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
+import com.tencent.bkrepo.repository.util.ClusterUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 
 class CommitEdgeCenterNodeRestoreSupport(
@@ -52,7 +53,7 @@ class CommitEdgeCenterNodeRestoreSupport(
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        existNode?.checkIsSrcCluster()
+                        existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
                         val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
                         nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(operator))
                         conflictCount += 1

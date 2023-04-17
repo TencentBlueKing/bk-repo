@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.operate.service
 
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.service.aop.LogOperateAspect
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
@@ -35,12 +37,9 @@ import com.tencent.bkrepo.common.operate.service.service.CommitEdgeOperateLogSer
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
@@ -51,24 +50,19 @@ import org.springframework.context.annotation.Import
 class OperateAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean
     fun operateLogService(
-        operateProperties: OperateProperties,
-        operateLogDao: OperateLogDao,
-        permissionManager: PermissionManager
-    ): OperateLogService {
-        return OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
-    }
-
-    @Bean
-    @Conditional(CommitEdgeEdgeCondition::class)
-    fun commitEdgeOperateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,
         permissionManager: PermissionManager,
         clusterProperties: ClusterProperties
     ): OperateLogService {
-        return CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
+        return if (clusterProperties.role == ClusterNodeType.EDGE
+            && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        ) {
+            CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
+        } else {
+            OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
+        }
     }
 
     @Bean

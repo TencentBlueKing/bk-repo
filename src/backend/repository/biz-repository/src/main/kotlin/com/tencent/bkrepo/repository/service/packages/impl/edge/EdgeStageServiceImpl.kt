@@ -30,7 +30,7 @@ package com.tencent.bkrepo.repository.service.packages.impl.edge
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.api.cluster.ClusterStageClient
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
@@ -46,7 +46,7 @@ class EdgeStageServiceImpl(
     clusterProperties: ClusterProperties
 ) : StageServiceImpl(packageDao, packageVersionDao) {
 
-    private val stageClient: StageClient by lazy {
+    private val stageClient: ClusterStageClient by lazy {
         FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name)
     }
 

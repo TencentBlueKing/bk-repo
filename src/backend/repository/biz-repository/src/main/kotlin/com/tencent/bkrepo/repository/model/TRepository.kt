@@ -31,12 +31,8 @@
 
 package com.tencent.bkrepo.repository.model
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -70,29 +66,6 @@ data class TRepository(
 
     var quota: Long? = null,
     var used: Long? = null,
-    var clusterNames: Set<String>? = null
-) {
-    @JsonIgnore
-    fun containsSrcCluster(): Boolean {
-        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
-        var srcCluster = SecurityUtils.getClusterName()
-
-        if (clusterNames == null && srcCluster.isNullOrBlank()) {
-            // 兼容旧逻辑
-            return true
-        } else if (clusterNames == null) {
-            // edge plus操作center节点
-            return false
-        } else if (srcCluster.isNullOrBlank()) {
-            // center操作节点
-            srcCluster = clusterProperties.self.name
-        }
-
-        return clusterNames!!.contains(srcCluster)
-    }
-
-    @JsonIgnore
-    fun isSrcCluster(): Boolean {
-        return containsSrcCluster() && (clusterNames == null || clusterNames!!.size == 1)
-    }
-}
+    var clusterNames: Set<String>? = null,
+    var deleted: LocalDateTime? = null
+)

@@ -45,4 +45,7 @@ interface ClusterNodeClient {
 
     @GetMapping("/{name}")
     fun getCluster(@PathVariable name: String): Response<ClusterNodeInfo?>
+
+    @GetMapping("/list/edge")
+    fun listEdgeNodes(): Response<List<ClusterNodeInfo>>
 }

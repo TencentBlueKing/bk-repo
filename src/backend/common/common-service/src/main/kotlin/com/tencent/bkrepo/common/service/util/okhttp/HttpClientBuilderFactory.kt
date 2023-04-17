@@ -59,14 +59,20 @@ object HttpClientBuilderFactory {
     fun create(
         certificate: String? = null,
         neverReadTimeout: Boolean = false,
-        beanFactory: BeanFactory? = null
+        beanFactory: BeanFactory? = null,
+        closeTimeout: Long = 0,
     ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
             .apply {
                 certificate?.let {
                     val trustManager = CertTrustManager.createTrustManager(it)
                     val sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
-                    sslSocketFactory(sslSocketFactory, trustManager)
+                    val ssf = if (closeTimeout > 0) {
+                        UnsafeSslSocketFactoryImpl(sslSocketFactory, closeTimeout)
+                    } else {
+                        sslSocketFactory
+                    }
+                    sslSocketFactory(ssf, trustManager)
                 }
 
                 if (neverReadTimeout) {
@@ -84,8 +90,8 @@ object HttpClientBuilderFactory {
                             60L,
                             TimeUnit.SECONDS,
                             SynchronousQueue(),
-                            threadFactory("OkHttp Dispatcher", false)
-                        )
+                            threadFactory("OkHttp Dispatcher", false),
+                        ),
                     )
                     dispatcher(Dispatcher(traceableExecutorService))
                 }

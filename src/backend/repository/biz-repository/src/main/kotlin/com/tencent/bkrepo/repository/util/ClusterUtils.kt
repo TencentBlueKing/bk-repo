@@ -48,6 +48,15 @@ object ClusterUtils {
     }
 
     /**
+     * 检查请求来源cluster是否是资源的拥有者
+     */
+    fun checkContainsSrcCluster(clusterNames: Set<String>?) {
+        if (!containsSrcCluster(clusterNames)) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
+        }
+    }
+
+    /**
      * 判断请求来源cluster是否拥有资源
      */
     fun containsSrcCluster(clusterNames: Set<String>?): Boolean {

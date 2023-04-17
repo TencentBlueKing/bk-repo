@@ -25,24 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.api
+package com.tencent.bkrepo.replication.controller.cluster
 
-import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.web.bind.annotation.RestController
 
-@RequestMapping("/cluster/cluster/node")
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterClusterNodeClient")
-interface ClusterClusterNodeClient {
+@RestController
+@Principal(PrincipalType.ADMIN)
+class ClusterReplicaTaskController(
+    private val replicaTaskService: ReplicaTaskService
+) : ClusterReplicaTaskClient {
+    override fun info(taskId: String): Response<ReplicaTaskInfo?> {
+        return ResponseBuilder.success(replicaTaskService.getByTaskId(taskId))
+    }
 
-    @PostMapping("/create")
-    fun create(
-        @RequestParam userId: String,
-        @RequestBody clusterNodeCreateRequest: ClusterNodeCreateRequest
-    ): Response<Void>
+    override fun list(
+        replicaType: ReplicaType,
+        lastId: String,
+        size: Int
+    ): Response<List<ReplicaTaskInfo>> {
+        return ResponseBuilder.success(replicaTaskService.listTaskByType(replicaType, lastId, size))
+    }
+
+    override fun listObject(taskKey: String): Response<List<ReplicaObjectInfo>> {
+        return ResponseBuilder.success(replicaTaskService.listTaskObject(taskKey))
+    }
 }

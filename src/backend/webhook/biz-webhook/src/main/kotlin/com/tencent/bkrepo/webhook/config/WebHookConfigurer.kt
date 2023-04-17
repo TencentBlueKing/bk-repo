@@ -35,8 +35,10 @@ import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 
 @Configuration
+@Order(1)
 @EnableConfigurationProperties(WebHookProperties::class)
 class WebHookConfigurer : ArtifactConfigurerSupport() {
 

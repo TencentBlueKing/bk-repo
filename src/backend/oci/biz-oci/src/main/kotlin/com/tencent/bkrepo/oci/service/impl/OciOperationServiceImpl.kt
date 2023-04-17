@@ -55,6 +55,7 @@ import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
+import com.tencent.bkrepo.oci.constant.MD5
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OCI_NODE_FULL_PATH
@@ -620,7 +621,7 @@ class OciOperationServiceImpl(
 
             descriptorList.forEach {
                 size += it.size
-                existFlag = doSyncBlob(it, ociArtifactInfo, null)
+                existFlag = doSyncBlob(it, ociArtifactInfo, repositoryDetail.storageCredentials,null)
                 // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
                 if (!existFlag) return false
             }
@@ -728,7 +729,7 @@ class OciOperationServiceImpl(
                 }
                 else -> null
             }
-            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, chartYaml)
+            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials, chartYaml)
         }
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
@@ -758,6 +759,7 @@ class OciOperationServiceImpl(
     private fun doSyncBlob(
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
+        storageCredentials: StorageCredentials?,
         chartYaml: Map<String, Any>? = null
     ): Boolean {
         with(ociArtifactInfo) {
@@ -774,6 +776,7 @@ class OciOperationServiceImpl(
                 fullPath = fullPath,
                 descriptor = descriptor,
                 ociArtifactInfo = this,
+                storageCredentials = storageCredentials,
                 yamlMap = chartYaml
             )
         }
@@ -786,24 +789,33 @@ class OciOperationServiceImpl(
         fullPath: String,
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
+        storageCredentials: StorageCredentials?,
         yamlMap: Map<String, Any>? = null
     ): Boolean {
         with(ociArtifactInfo) {
-            nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
-                logger.info(
-                    "The current blob [${descriptor.digest}] is stored in $fullPath with package $packageName " +
-                            "and version $reference under repo ${getRepoIdentify()}"
-                )
-                updateNodeMetaData(
+            val blobExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
+            // blob节点不存在，但是在同一仓库下存在digest文件
+            if (!blobExist) {
+                val (existFullPath, md5) = getNodeByDigest(projectId, repoName, descriptor.digest)
+                if (existFullPath == null) return false
+                val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
-                    fullPath = it.fullPath,
-                    mediaType = descriptor.mediaType,
-                    chartYaml = yamlMap
+                    size = descriptor.size,
+                    sha256 = descriptor.sha256,
+                    fullPath = fullPath,
+                    md5 = md5 ?: StringPool.UNKNOWN
                 )
-                return true
+                createNode(nodeCreateRequest, storageCredentials)
             }
-            return false
+            updateNodeMetaData(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                mediaType = descriptor.mediaType,
+                chartYaml = yamlMap
+            )
+            return true
         }
     }
 
@@ -905,7 +917,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = artifactInfo.reference
-                )
+                ).first
             }
         }
         return artifactInfo.getArtifactFullPath()
@@ -918,10 +930,10 @@ class OciOperationServiceImpl(
         projectId: String,
         repoName: String,
         digestStr: String
-    ): String? {
+    ): Pair<String?, String?> {
         val ociDigest = OciDigest(digestStr)
         val queryModel = NodeQueryBuilder()
-            .select(NODE_FULL_PATH)
+            .select(NODE_FULL_PATH, MD5)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
@@ -929,12 +941,12 @@ class OciOperationServiceImpl(
         val result = nodeClient.search(queryModel.build()).data ?: run {
             logger.warn(
                 "Could not find $digestStr " +
-                        "in repo $projectId|$repoName"
+                    "in repo $projectId|$repoName"
             )
-            return null
+            return Pair(null, null)
         }
-        if (result.records.isEmpty()) return null
-        return result.records[0][NODE_FULL_PATH] as String
+        if (result.records.isEmpty()) return Pair(null, null)
+        return Pair(result.records[0][NODE_FULL_PATH] as String, result.records[0][MD5] as String?)
     }
 
     /**
@@ -951,7 +963,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = artifactInfo.reference
-                )
+                ).first
             return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
         }
         if (artifactInfo is OciBlobArtifactInfo) {
@@ -960,7 +972,7 @@ class OciOperationServiceImpl(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 digestStr = digestStr
-            )
+            ).first
         }
         return null
     }

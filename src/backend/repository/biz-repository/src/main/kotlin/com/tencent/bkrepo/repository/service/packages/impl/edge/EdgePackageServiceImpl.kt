@@ -30,7 +30,7 @@ package com.tencent.bkrepo.repository.service.packages.impl.edge
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -58,7 +58,7 @@ class EdgePackageServiceImpl(
     packageSearchInterpreter
 ) {
 
-    private val centerPackageClient: PackageClient by lazy {
+    private val centerPackageClient: ClusterPackageClient by lazy {
         FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name)
     }
 
