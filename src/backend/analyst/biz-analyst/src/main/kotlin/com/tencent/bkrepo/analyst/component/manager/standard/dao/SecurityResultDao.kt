@@ -46,10 +46,13 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
             if (vulnerabilityLevels.isNotEmpty()) {
                 criteria.and(dataKey(TSecurityResultData::severity.name)).inValues(vulnerabilityLevels)
             }
-            if (vulIds.isNotEmpty()) {
-                criteria.and(dataKey(TSecurityResultData::vulId.name)).inValues(vulIds)
+
+            if (ignored) {
+                criteria.addIgnoreCriteria(vulIds, ignoreVulIds, minSeverityLevel)
+            } else {
+                criteria.addActiveCriteria(vulIds, ignoreVulIds, minSeverityLevel)
             }
-            criteria.addIgnoreCriteria(ignoreVulIds, minSeverityLevel, ignored)
+
             return criteria
         }
     }
@@ -59,37 +62,51 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
         return query
     }
 
-    private fun Criteria.addIgnoreCriteria(ignoreVulIds: Set<String>?, minSeverityLevel: Int?, ignored: Boolean) {
-        val orCriteria = ArrayList<Criteria>()
-        if (ignoreVulIds?.isNotEmpty() == true) {
-            val key = dataKey(TSecurityResultData::vulId.name)
-            if (ignored) {
-                orCriteria.add(Criteria().and(key).inValues(ignoreVulIds))
-            } else {
-                and(key).not().inValues(ignoreVulIds)
-            }
-        } else if (ignoreVulIds != null && !ignored) {
+
+    private fun Criteria.addActiveCriteria(vulIds: List<String>, ignoreVulIds: Set<String>?, minSeverityLevel: Int?) {
+        val vulIdKey = dataKey(TSecurityResultData::vulId.name)
+        if (ignoreVulIds?.isEmpty() == true) {
             // ignoreVulIds为空集合时表示忽略所有
             // 设置一个永远为false的条件，让数据库查询结果返回空
             and(ID).exists(false)
             return
-        } else if (ignoreVulIds != null) {
+        }
+
+        if (ignoreVulIds == null) {
+            if (vulIds.isNotEmpty()) {
+                and(vulIdKey).inValues(vulIds)
+            }
+        } else {
+            if (vulIds.isNotEmpty()) {
+                and(vulIdKey).inValues(vulIds - ignoreVulIds)
+            } else {
+                and(vulIdKey).not().inValues(ignoreVulIds)
+            }
+        }
+
+        if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
+            and(dataKey(TSecurityResultData::severityLevel.name)).gte(minSeverityLevel)
+        }
+    }
+
+    private fun Criteria.addIgnoreCriteria(vulIds: List<String>, ignoreVulIds: Set<String>?, minSeverityLevel: Int?) {
+        val vulIdKey = dataKey(TSecurityResultData::vulId.name)
+        if (vulIds.isNotEmpty()) {
+            and(dataKey(TSecurityResultData::vulId.name)).inValues(vulIds)
+        }
+
+        val orCriteria = ArrayList<Criteria>()
+        if (ignoreVulIds?.isNotEmpty() == true) {
+            orCriteria.add(Criteria(vulIdKey).inValues(ignoreVulIds))
+        } else if (ignoreVulIds?.isEmpty() == true) {
             // ignoreVulIds为空集合时表示忽略所有
-            // ignored为true表示返回所有被忽略的漏洞
             // 此处要返回所有被忽略的漏洞相当于返回所有漏洞，可以不设置忽略条件直接返回，直接返回
             return
         }
         if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
-            val key = dataKey(TSecurityResultData::severityLevel.name)
-            if (ignored) {
-                orCriteria.add(Criteria().and(key).lt(minSeverityLevel))
-            } else {
-                and(key).gte(minSeverityLevel)
-            }
+            orCriteria.add(Criteria(dataKey(TSecurityResultData::severityLevel.name)).lt(minSeverityLevel))
         }
 
-        if (ignored) {
-            andOperator(orOperator(orCriteria))
-        }
+        andOperator(orOperator(orCriteria))
     }
 }
