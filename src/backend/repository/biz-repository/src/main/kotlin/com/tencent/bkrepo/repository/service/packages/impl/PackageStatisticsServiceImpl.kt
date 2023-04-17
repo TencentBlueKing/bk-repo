@@ -27,7 +27,7 @@ class PackageStatisticsServiceImpl(
         packageName?.let {
             val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(packageName)
             val regexPattern = escapedValue.replace("*", ".*")
-            criteria.and(TPackage::name.name).regex("^$regexPattern$")
+            criteria.and(TPackage::name.name).regex("^$regexPattern$", "i")
         }
         val aggregation = Aggregation.newAggregation(
             TPackage::class.java,
