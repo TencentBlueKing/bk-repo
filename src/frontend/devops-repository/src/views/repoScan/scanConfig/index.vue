@@ -28,6 +28,10 @@
                 <scan-quality-rule :project-id="projectId" :plan-id="planId" :scan-types="scanBaseInfo.scanTypes">
                 </scan-quality-rule>
             </bk-tab-panel>
+            <bk-tab-panel render-directive="if" name="ignoreRules" :label="$t('ignoreRules')">
+                <ignore-rule :project-id="projectId" :plan-id="planId">
+                </ignore-rule>
+            </bk-tab-panel>
         </bk-tab>
     </div>
 </template>
@@ -36,9 +40,11 @@
     import scanQualityRule from './scanQualityRule'
     import { mapActions } from 'vuex'
     import { scanTypeEnum } from '@repository/store/publicEnum'
+    import IgnoreRule from './ignoreRule'
     export default {
         name: 'scanConfig',
         components: {
+            IgnoreRule,
             autoScanConfig,
             scanQualityRule
         },

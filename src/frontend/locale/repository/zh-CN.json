@@ -83,6 +83,7 @@
     "path": "路径",
     "calculate": "计算",
     "create": "创建",
+    "update": "更新",
     "No Data": "暂无数据",
     "Search Result Is Empty": "搜索结果为空",
     "refresh": "刷新",
@@ -355,6 +356,7 @@
     "commandDownload": "命令行下载",
     "genericFormTip": "支持 / 分隔符级联创建文件夹",
     "qualityRules":"质量规则",
+    "ignoreRules": "忽略规则",
     "pass": "通过",
     "notPass": "不通过",
     "vulnerabilityStatistics": "漏洞数量统计",
@@ -661,6 +663,7 @@
         "FAILED": "扫描异常"
     },
     "planNamePlaceHolder": "请输入方案名称, 按Enter键搜索",
+    "ruleNameError": "规则名称错误",
     "scanTypeEnum" : {
         "GENERIC": "Generic制品分析",
         "DOCKER": "Docker制品分析",
@@ -684,5 +687,7 @@
     "autoEdit": "自动编辑",
     "intervalMsg":"的区间内可以执行",
     "circleMsg1":"可以执行，此后每隔",
-    "circleMsg2":"可以执行"
+    "circleMsg2":"可以执行",
+    "ignoreRuleVulIdsPlaceholder": "请输入漏洞id，多个漏洞id用换行分隔",
+    "ignoreRuleMinSeverity": "级别"
 }

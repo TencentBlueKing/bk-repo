@@ -82,6 +82,7 @@
     "path": "Path",
     "calculate": "Calculate",
     "create": "Create",
+    "update": "Update",
     "No Data": "No Data",
     "Search Result Is Empty": "Search Result Is Empty",
     "refresh": "Refresh",
@@ -341,6 +342,7 @@
     "commandDownload":"command line download",
     "genericFormTip":"support / delimiter cascading to create folders",
     "qualityRules":"Quality rules",
+    "ignoreRules": "Ignore Rules",
     "pass": "Pass",
     "notPass": "Fail",
     "vulnerabilityStatistics": "vulnerability statistics",
@@ -648,6 +650,7 @@
         "FAILED": "scan failed"
     },
     "planNamePlaceHolder": "Please enter the scheme name, press Enter to search",
+    "ruleNameError": "Ignore rule name format error",
     "scanTypeEnum" : {
         "GENERIC": "Generic artifact analysis",
         "DOCKER": "Docker artifact analysis",
@@ -671,5 +674,7 @@
     "autoEdit": "Auto edit",
     "intervalMsg":"can be performed within the range",
     "circleMsg1":"can be executed, and every",
-    "circleMsg2":"can be executed"
+    "circleMsg2":"can be executed",
+    "ignoreRuleVulIdsPlaceholder": "Please enter the vulnerability id, multiple vulnerability ids are separated by newlines",
+    "ignoreRuleMinSeverity": "Minimal Severity"
 }
