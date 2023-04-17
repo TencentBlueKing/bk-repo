@@ -29,15 +29,12 @@ package com.tencent.bkrepo.repository.service.node.impl.center
 
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.util.ClusterUtils
-import org.springframework.context.annotation.Conditional
 import java.time.LocalDateTime
 
-@Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterNodeMoveCopySupport(
     nodeBaseService: NodeBaseService,
     private val clusterProperties: ClusterProperties

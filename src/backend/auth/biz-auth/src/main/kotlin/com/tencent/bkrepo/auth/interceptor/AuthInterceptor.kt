@@ -46,6 +46,10 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_TOKEN_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_INFO_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_LIST_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_UPDATE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_CHECK_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_DELETE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_INFO_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
@@ -185,6 +189,7 @@ class AuthInterceptor(
 
     private fun setAuthAttribute(userId: String, appId: String, request: HttpServletRequest) {
         val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
+        val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.contains(it) }
         val userInfo = userService.getUserInfoById(userId)
         val isAdmin: Boolean = userInfo?.admin ?: false
         if (userId.isNotEmpty() && userInfo == null && userId != ANONYMOUS_USER) {
@@ -192,7 +197,7 @@ class AuthInterceptor(
             userService.createUser(createRequest)
         }
 
-        if (!isAdmin && !userAccess) {
+        if (!anonymousAccess && !isAdmin && !userAccess) {
             logger.warn("user [$userId] can not access the endpoint [${request.requestURI}]")
             throw IllegalArgumentException("user access admin endpoint")
         }
@@ -236,6 +241,13 @@ class AuthInterceptor(
             AUTH_API_PERMISSION_LIST_PREFIX,
             AUTH_API_PERMISSION_USER_PREFIX,
             AUTH_API_USER_UPDATE_PREFIX
+        )
+
+        private val anonymousAccessApiSet = setOf(
+            AUTH_CLUSTER_PERMISSION_CHECK_PREFIX,
+            AUTH_CLUSTER_TOKEN_INFO_PREFIX,
+            AUTH_CLUSTER_TOKEN_DELETE_PREFIX,
+            AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX
         )
     }
 }

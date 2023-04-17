@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
@@ -222,6 +223,10 @@ class CommitEdgeCenterNodeServiceImpl(
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).moveNode(moveRequest)
+    }
+
+    override fun renameNode(renameRequest: NodeRenameRequest) {
+        return CommitEdgeCenterNodeRenameSupport(this).renameNode(renameRequest)
     }
 
     companion object {
