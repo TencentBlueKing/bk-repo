@@ -60,12 +60,13 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
     }
 
     private fun Criteria.addIgnoreCriteria(ignoreVulIds: Set<String>?, minSeverityLevel: Int?, ignored: Boolean) {
+        val orCriteria = ArrayList<Criteria>()
         if (ignoreVulIds?.isNotEmpty() == true) {
-            val criteria = and(dataKey(TSecurityResultData::vulId.name))
+            val key = dataKey(TSecurityResultData::vulId.name)
             if (ignored) {
-                criteria.inValues(ignoreVulIds)
+                orCriteria.add(Criteria().and(key).inValues(ignoreVulIds))
             } else {
-                criteria.not().inValues(ignoreVulIds)
+                and(key).not().inValues(ignoreVulIds)
             }
         } else if (ignoreVulIds != null && !ignored) {
             // ignoreVulIds为空集合时表示忽略所有
@@ -79,12 +80,16 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
             return
         }
         if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
-            val criteria = and(dataKey(TSecurityResultData::severityLevel.name))
+            val key = dataKey(TSecurityResultData::severityLevel.name)
             if (ignored) {
-                criteria.lt(minSeverityLevel)
+                orCriteria.add(Criteria().and(key).lt(minSeverityLevel))
             } else {
-                criteria.gte(minSeverityLevel)
+                and(key).gte(minSeverityLevel)
             }
+        }
+
+        if (ignored) {
+            andOperator(orOperator(orCriteria))
         }
     }
 }
