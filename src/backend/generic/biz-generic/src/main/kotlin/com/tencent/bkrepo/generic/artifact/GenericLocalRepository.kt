@@ -173,7 +173,7 @@ class GenericLocalRepository(
     }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
-        if (shouldRedirect(context.artifactInfo)) {
+        if (redirectService.shouldRedirect(context.artifactInfo)) {
             // 节点来自其他集群，重定向到其他节点。
             redirectService.redirectToDefaultCluster(context)
             return
@@ -454,16 +454,6 @@ class GenericLocalRepository(
             logger.warn("$header is not in valid Base64 scheme.")
         }
         return metadata
-    }
-
-    private fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
-        val method = HttpContextHolder.getRequest().method
-        if (!method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向下载请求
-            return false
-        }
-        val edgeClusterName = redirectService.getEdgeClusterName(artifactInfo)
-        return edgeClusterName != null
     }
 
     companion object {
