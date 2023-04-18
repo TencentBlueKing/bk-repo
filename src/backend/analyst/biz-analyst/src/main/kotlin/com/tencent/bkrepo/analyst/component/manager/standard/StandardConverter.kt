@@ -89,7 +89,8 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         val reports = result.records.mapTo(LinkedHashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
-                vulId = it.cveId ?: it.vulId,
+                vulId = it.vulId,
+                cveId = it.cveId,
                 severity = ScanPlanConverter.convertToLeakLevel(it.severity),
                 pkgName = it.pkgName ?: "",
                 installedVersion = it.pkgVersions,

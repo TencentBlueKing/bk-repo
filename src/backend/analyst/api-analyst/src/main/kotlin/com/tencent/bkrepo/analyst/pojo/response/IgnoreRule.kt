@@ -73,10 +73,11 @@ data class IgnoreRule(
 ) {
     fun shouldIgnore(vulId: String, severity: Int? = null): Boolean {
         return vulIds != null && vulId in vulIds ||
+            vulIds?.isEmpty() == true ||
             this.severity != null && severity != null && severity < this.severity
     }
 
     fun shouldIgnore(licenseName: String): Boolean {
-        return licenseNames != null && licenseName in licenseNames
+        return licenseNames != null && licenseName in licenseNames || licenseNames?.isEmpty() == true
     }
 }

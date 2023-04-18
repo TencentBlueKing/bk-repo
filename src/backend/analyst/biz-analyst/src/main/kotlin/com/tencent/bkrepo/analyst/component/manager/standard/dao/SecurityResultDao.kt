@@ -43,13 +43,30 @@ import org.springframework.stereotype.Repository
 class SecurityResultDao : ResultItemDao<TSecurityResult>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
         with(arguments as StandardLoadResultArguments) {
+            val andCriteria = ArrayList<Criteria>()
             if (vulnerabilityLevels.isNotEmpty()) {
-                criteria.and(dataKey(TSecurityResultData::severity.name)).inValues(vulnerabilityLevels)
+                andCriteria.add(Criteria(dataKey(TSecurityResultData::severity.name)).inValues(vulnerabilityLevels))
             }
+
             if (vulIds.isNotEmpty()) {
-                criteria.and(dataKey(TSecurityResultData::vulId.name)).inValues(vulIds)
+                andCriteria.add(
+                    Criteria().orOperator(
+                        Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(vulIds),
+                        Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(vulIds)
+                    )
+                )
             }
-            criteria.addIgnoreCriteria(ignoreVulIds, minSeverityLevel, ignored)
+
+            if (ignored) {
+                ignoreCriteria(ignoreVulIds, minSeverityLevel)?.let { andCriteria.add(it) }
+            } else {
+                andCriteria.addAll(activeCriteria(ignoreVulIds, minSeverityLevel))
+            }
+
+            if (andCriteria.isNotEmpty()) {
+                criteria.andOperator(andCriteria)
+            }
+
             return criteria
         }
     }
@@ -59,32 +76,41 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
         return query
     }
 
-    private fun Criteria.addIgnoreCriteria(ignoreVulIds: Set<String>?, minSeverityLevel: Int?, ignored: Boolean) {
-        if (ignoreVulIds?.isNotEmpty() == true) {
-            val criteria = and(dataKey(TSecurityResultData::vulId.name))
-            if (ignored) {
-                criteria.inValues(ignoreVulIds)
-            } else {
-                criteria.not().inValues(ignoreVulIds)
-            }
-        } else if (ignoreVulIds != null && !ignored) {
+
+    private fun activeCriteria(ignoreVulIds: Set<String>?, minSeverityLevel: Int?): List<Criteria> {
+        val criteriaList = ArrayList<Criteria>()
+        if (ignoreVulIds?.isEmpty() == true) {
             // ignoreVulIds为空集合时表示忽略所有
             // 设置一个永远为false的条件，让数据库查询结果返回空
-            and(ID).exists(false)
-            return
-        } else if (ignoreVulIds != null) {
+            criteriaList.add(Criteria(ID).exists(false))
+            return criteriaList
+        }
+
+        if (ignoreVulIds?.isNotEmpty() == true) {
+            criteriaList.add(Criteria(dataKey(TSecurityResultData::vulId.name)).not().inValues(ignoreVulIds))
+            criteriaList.add(Criteria(dataKey(TSecurityResultData::cveId.name)).not().inValues(ignoreVulIds))
+        }
+
+        if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
+            criteriaList.add(Criteria(dataKey(TSecurityResultData::severityLevel.name)).gte(minSeverityLevel))
+        }
+        return criteriaList
+    }
+
+    private fun ignoreCriteria(ignoreVulIds: Set<String>?, minSeverityLevel: Int?): Criteria? {
+        val orCriteria = ArrayList<Criteria>()
+        if (ignoreVulIds?.isNotEmpty() == true) {
+            orCriteria.add(Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(ignoreVulIds))
+            orCriteria.add(Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(ignoreVulIds))
+        } else if (ignoreVulIds?.isEmpty() == true) {
             // ignoreVulIds为空集合时表示忽略所有
-            // ignored为true表示返回所有被忽略的漏洞
             // 此处要返回所有被忽略的漏洞相当于返回所有漏洞，可以不设置忽略条件直接返回，直接返回
-            return
+            return null
         }
         if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
-            val criteria = and(dataKey(TSecurityResultData::severityLevel.name))
-            if (ignored) {
-                criteria.lt(minSeverityLevel)
-            } else {
-                criteria.gte(minSeverityLevel)
-            }
+            orCriteria.add(Criteria(dataKey(TSecurityResultData::severityLevel.name)).lt(minSeverityLevel))
         }
+
+        return Criteria().orOperator(orCriteria)
     }
 }
