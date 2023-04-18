@@ -67,7 +67,7 @@ class AccountController @Autowired constructor(
     @GetMapping("/list")
     @LogOperate(type = "ACCOUNT_LIST")
     fun listAccount(): Response<List<Account>> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         val accountList = accountService.listAccount()
         return ResponseBuilder.success(accountList)
     }
@@ -88,7 +88,7 @@ class AccountController @Autowired constructor(
     @ApiOperation("根据appId查询账号")
     @GetMapping("/detail/{appId}")
     fun getAccountDetail(@PathVariable appId: String): Response<Account> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         return ResponseBuilder.success(accountService.findAccountByAppId(appId))
     }
 
@@ -96,7 +96,7 @@ class AccountController @Autowired constructor(
     @PostMapping("/create")
     @LogOperate(type = "ACCOUNT_CREATE")
     fun createAccount(@RequestBody request: CreateAccountRequest): Response<Account> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         return ResponseBuilder.success(accountService.createAccount(request))
     }
 
@@ -104,7 +104,7 @@ class AccountController @Autowired constructor(
     @PutMapping("/update")
     @LogOperate(type = "ACCOUNT_UPDATE")
     fun updateAccount(@RequestBody request: UpdateAccountRequest): Response<Boolean> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         accountService.updateAccount(request)
         return ResponseBuilder.success(true)
     }
@@ -113,7 +113,7 @@ class AccountController @Autowired constructor(
     @DeleteMapping("/delete/{appId}")
     @LogOperate(type = "ACCOUNT_DELETE")
     fun deleteAccount(@PathVariable appId: String): Response<Boolean> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         accountService.deleteAccount(appId)
         return ResponseBuilder.success(true)
     }
@@ -121,7 +121,7 @@ class AccountController @Autowired constructor(
     @ApiOperation("卸载账号")
     @DeleteMapping("/uninstall/{appId}")
     fun uninstallAccount(@PathVariable appId: String): Response<Boolean> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         accountService.uninstallAccount(appId)
         return ResponseBuilder.success(true)
     }
@@ -129,7 +129,7 @@ class AccountController @Autowired constructor(
     @ApiOperation("获取账户下的ak/sk对")
     @GetMapping("/credential/list/{appId}")
     fun getCredential(@PathVariable appId: String): Response<List<CredentialSet>> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         val credential = accountService.listCredentials(appId)
         return ResponseBuilder.success(credential)
     }
@@ -141,7 +141,7 @@ class AccountController @Autowired constructor(
         @PathVariable appId: String,
         @RequestParam type: AuthorizationGrantType?
     ): Response<CredentialSet> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM)
         return ResponseBuilder.success(result)
     }
@@ -150,7 +150,7 @@ class AccountController @Autowired constructor(
     @DeleteMapping("/credential/{appId}/{accesskey}")
     @LogOperate(type = "KEYS_DELETE")
     fun deleteCredential(@PathVariable appId: String, @PathVariable accesskey: String): Response<Boolean> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         val result = accountService.deleteCredential(appId, accesskey)
         return ResponseBuilder.success(result)
     }
@@ -163,7 +163,7 @@ class AccountController @Autowired constructor(
         @PathVariable accesskey: String,
         @PathVariable status: CredentialStatus
     ): Response<Boolean> {
-        checkPlatformPermission()
+        preCheckPlatformPermission()
         accountService.updateCredentialStatus(appId, accesskey, status)
         return ResponseBuilder.success(true)
     }

@@ -634,9 +634,6 @@
         }
     }
 }
-.card-radio-group ::v-deep.card-radio{
-    width: 274px !important;
-}
 
 .virtual-check-container{
     width: 96%;
