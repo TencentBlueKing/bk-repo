@@ -34,6 +34,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okio.AsyncTimeout
 import org.slf4j.LoggerFactory
+import java.io.InterruptedIOException
 import java.util.concurrent.TimeUnit
 
 class RequestTimeOutInterceptor(
@@ -86,7 +87,10 @@ class RequestTimeOutInterceptor(
             }
         } catch (e: Exception) {
             logger.warn("Request timeout exception: $e")
-            throw RuntimeException("RequestTimeOut after $estimatedTime seconds")
+            if (e is InterruptedIOException) {
+                throw RuntimeException("RequestTimeOut after $estimatedTime seconds")
+            } else
+                throw e
         }
         return response!!
     }
