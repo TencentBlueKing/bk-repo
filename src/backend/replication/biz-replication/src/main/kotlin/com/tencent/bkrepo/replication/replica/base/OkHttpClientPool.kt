@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 object OkHttpClientPool {
     private val clientCache = ConcurrentHashMap<ClusterInfo, OkHttpClient>()
     fun getHttpClient(
-        timoutCheckHosts: Map<String, Map<String, String>>,
+        timoutCheckHosts: List<Map<String, String>>,
         clusterInfo: ClusterInfo,
         readTimeout: Duration,
         writeTimeout: Duration,
