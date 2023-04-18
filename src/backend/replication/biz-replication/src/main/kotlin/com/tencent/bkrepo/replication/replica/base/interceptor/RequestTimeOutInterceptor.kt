@@ -50,7 +50,6 @@ class RequestTimeOutInterceptor(
 
 
     private fun enableTimeOutCheck(request: Request) : Boolean {
-        if (timoutCheckHosts.isEmpty()) return false
         return timoutCheckHosts.contains(request.url.host)
     }
 
@@ -75,7 +74,6 @@ class RequestTimeOutInterceptor(
                     chain.connection()?.socket()?.close()
                 } catch (e: Exception) {
                     logger.warn("Close socket exception while handling request timeout: $e")
-                    e.printStackTrace()
                 }
             }
         }.apply {
@@ -87,7 +85,6 @@ class RequestTimeOutInterceptor(
             }
         } catch (e: Exception) {
             logger.warn("Request timeout exception: $e")
-            e.printStackTrace()
             throw RuntimeException("RequestTimeOut $estimatedTime")
         }
         return response!!
