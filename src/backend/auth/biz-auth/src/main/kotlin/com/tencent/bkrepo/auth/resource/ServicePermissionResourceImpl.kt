@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ServicePermissionResourceImpl @Autowired constructor(
     private val permissionService: PermissionService
-) : ServicePermissionResource, OpenPermissionImpl() {
+) : ServicePermissionResource, OpenResourceImpl(permissionService) {
 
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
         checkRequest(request)
