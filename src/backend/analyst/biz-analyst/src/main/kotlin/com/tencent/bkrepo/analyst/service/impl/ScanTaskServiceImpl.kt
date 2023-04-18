@@ -313,23 +313,47 @@ class ScanTaskServiceImpl(
     ): LoadResultArguments {
         if (arguments is StandardLoadResultArguments) {
             val rules = ignoreRuleService.match(request)
-            val ignoreVulIds = HashSet<String>()
-            val ignoreLicenses = HashSet<String>()
-            var minSeverityLevel = Level.LOW.level
+            var ignoreVulIds: MutableSet<String>? = HashSet()
+            var ignoreAllVulIds = false
+            var ignoreLicenses: MutableSet<String>? = HashSet()
+            var ignoreAllLicenses = false
+            var minSeverityLevel: Int = Level.LOW.level
             for (rule in rules) {
-                rule.vulIds?.let { ignoreVulIds.addAll(it) }
-                rule.licenseNames?.let { ignoreLicenses.addAll(it) }
+                if (rule.vulIds?.isEmpty() == true) {
+                    ignoreAllVulIds = true
+                }
+                rule.vulIds?.let { ignoreVulIds!!.addAll(it) }
+                if (rule.licenseNames?.isEmpty() == true) {
+                    ignoreAllLicenses = true
+                }
+                rule.licenseNames?.let { ignoreLicenses!!.addAll(it) }
+
                 if (rule.severity != null && rule.severity!! > minSeverityLevel) {
                     minSeverityLevel = rule.severity!!
                 }
             }
-            if (ignoreVulIds.isNotEmpty() || ignoreLicenses.isNotEmpty() || minSeverityLevel != Level.LOW.level) {
-                return arguments.copy(
-                    ignoreVulIds = ignoreVulIds,
-                    minSeverityLevel = minSeverityLevel,
-                    ignoreLicenses = ignoreLicenses
-                )
+
+            ignoreVulIds = if (ignoreAllVulIds) {
+                HashSet()
+            } else if (ignoreVulIds!!.isEmpty()) {
+                null
+            } else {
+                ignoreVulIds
             }
+
+            ignoreLicenses = if (ignoreAllLicenses) {
+                HashSet()
+            } else if (ignoreLicenses!!.isEmpty()) {
+                null
+            } else {
+                ignoreLicenses
+            }
+
+            return arguments.copy(
+                ignoreVulIds = ignoreVulIds,
+                minSeverityLevel = if (minSeverityLevel == Level.LOW.level) null else minSeverityLevel,
+                ignoreLicenses = ignoreLicenses
+            )
         }
         return arguments
     }
