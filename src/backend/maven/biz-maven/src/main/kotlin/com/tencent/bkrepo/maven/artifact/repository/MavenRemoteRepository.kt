@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -54,7 +55,10 @@ import com.tencent.bkrepo.maven.constants.METADATA_KEY_VERSION
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
+import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
 import com.tencent.bkrepo.maven.exception.MavenRequestForbiddenException
+import com.tencent.bkrepo.maven.pojo.Basic
+import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
@@ -77,6 +81,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Component
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 @Component
@@ -98,6 +103,44 @@ class MavenRemoteRepository : RemoteRepository() {
                 onDownloadResponse(context, response)
             } else getCacheArtifactResource(context)
         } else super.onDownload(context)
+    }
+
+    override fun query(context: ArtifactQueryContext): MavenArtifactVersionData? {
+        val packageKey = context.request.getParameter("packageKey")
+        val version = context.request.getParameter("version")
+        val artifactId = packageKey.split(":").last()
+        val groupId = packageKey.removePrefix("gav://").split(":")[0]
+        with(context.artifactInfo) {
+            val trueVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+                ?: throw MavenArtifactNotFoundException(
+                    MavenMessageCode.MAVEN_ARTIFACT_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
+                )
+            val jarNode = nodeClient.getNodeDetail(
+                projectId,
+                repoName,
+                trueVersion.contentPath!!
+            ).data ?: return null
+            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+            val count = packageVersion?.downloads ?: 0
+            val createdDate = packageVersion?.createdDate?.format(DateTimeFormatter.ISO_DATE_TIME)
+                ?: jarNode.createdDate
+            val lastModifiedDate = packageVersion?.lastModifiedDate?.format(DateTimeFormatter.ISO_DATE_TIME)
+                ?: jarNode.lastModifiedDate
+            val mavenArtifactBasic = Basic(
+                groupId,
+                artifactId,
+                version,
+                jarNode.size, jarNode.fullPath,
+                jarNode.createdBy, createdDate,
+                jarNode.lastModifiedBy, lastModifiedDate,
+                count,
+                jarNode.sha256,
+                jarNode.md5,
+                null,
+                null
+            )
+            return MavenArtifactVersionData(mavenArtifactBasic, packageVersion?.packageMetadata)
+        }
     }
 
     override fun remove(context: ArtifactRemoveContext) {
