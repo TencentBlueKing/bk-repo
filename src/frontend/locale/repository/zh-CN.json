@@ -689,5 +689,9 @@
     "circleMsg1":"可以执行，此后每隔",
     "circleMsg2":"可以执行",
     "ignoreRuleVulIdsPlaceholder": "请输入漏洞id，多个漏洞id用换行分隔",
-    "ignoreRuleMinSeverity": "级别"
+    "ignoreRuleMinSeverity": "级别",
+    "ignoredVul": "已忽略的漏洞",
+    "activeVul": "未忽略的漏洞",
+    "ignore": "忽略",
+    "ignoreAll": "忽略所有漏洞"
 }

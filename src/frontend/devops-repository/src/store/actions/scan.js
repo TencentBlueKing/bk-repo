@@ -118,7 +118,7 @@ export default {
         return Vue.prototype.$ajax.get(url)
     },
     // 制品扫描报告漏洞列表
-    getLeakList (_, { projectId, recordId, viewType, vulId, severity, current = 1, limit = 20 }) {
+    getLeakList (_, { projectId, recordId, viewType, vulId, severity, ignored, current = 1, limit = 20 }) {
         let url = `${prefix}/artifact/leak/${projectId}/${recordId}`
         if (viewType === 'TASKVIEW') {
             url = `${prefix}/reports/${recordId}`
@@ -129,6 +129,7 @@ export default {
                 params: {
                     vulId: vulId || undefined,
                     leakType: severity || undefined,
+                    ignored: ignored,
                     pageNumber: current,
                     pageSize: limit
                 }
@@ -357,7 +358,7 @@ export default {
     // 更新或略规则
     updateIgnoreRule (_, body) {
         return Vue.prototype.$ajax.put(
-            `analyst/api/project/${body.projectId}/ignore/rules/${body.ruleId}`,
+            `analyst/api/project/${body.projectId}/ignore/rules/${body.id}`,
             body
         )
     },

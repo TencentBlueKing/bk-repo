@@ -30,10 +30,11 @@
                 <bk-input v-model="ignoreRule.packageVersion"></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('vulnerability') + ' ID'" :required="false">
-                <bk-input type="textarea" :planceholder="$t('ignoreRuleVulIdsPlaceholder')" v-model="vulIds"></bk-input>
+                <bk-checkbox v-model="ignoreAllVul">{{ $t('ignoreAll') }}</bk-checkbox>
+                <bk-input v-if="!ignoreAllVul" type="textarea" :planceholder="$t('ignoreRuleVulIdsPlaceholder')" v-model="vulIds"></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('ignoreRuleMinSeverity')" :required="false" property="severity">
-                <bk-select v-model="ignoreRule.severity" searchable>
+                <bk-select v-model="ignoreRule.severity">
                     <bk-option v-for="s in severities" :key="s.level" :id="s.level" :name="s.name"></bk-option>
                 </bk-select>
             </bk-form-item>
@@ -63,7 +64,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^([\w\d]){1,255}$/,
+                            regex: /^([\w\d_-]){1,255}$/,
                             message: this.$t('ruleNameError'),
                             trigger: 'blur'
                         }
@@ -72,6 +73,7 @@
                 showDialog: false,
                 ignoreRule: {},
                 vulIds: '',
+                ignoreAllVul: false,
                 title: '',
                 repos: [],
                 severities: [
@@ -103,19 +105,13 @@
                         this.ignoreRule = this.updatingRule
                     } else {
                         this.ignoreRule = {
-                            description: '',
                             vulIds: []
                         }
                         this.ignoreRule.projectId = this.projectId
                         this.ignoreRule.planId = this.planId
                     }
                     this.vulIds = this.ignoreRule.vulIds ? this.ignoreRule.vulIds.join('\n') : ''
-                    this.title = newVal.id ? this.$t('update') : this.$t('create')
-                }
-            },
-            updatingRule: function (newVal) {
-                if (newVal && newVal !== this.ignoreRule) {
-                    this.ignoreRule = newVal
+                    this.title = this.ignoreRule.id ? this.$t('update') : this.$t('create')
                 }
             }
         },
@@ -130,8 +126,12 @@
                 })
             },
             updateOrCreate () {
-                this.ignoreRule.vulIds = this.vulIds ? this.vulIds.trim().split('\n') : []
-
+                this.ignoreRule.description = this.ignoreRule.description ? this.ignoreRule.description : ''
+                if (this.ignoreAllVul) {
+                    this.ignoreRule.vulIds = []
+                } else {
+                    this.ignoreRule.vulIds = this.vulIds ? this.vulIds.trim().split('\n') : null
+                }
                 const promise = this.ignoreRule.id
                     ? this.updateIgnoreRule(this.ignoreRule)
                     : this.createIgnoreRule(this.ignoreRule)

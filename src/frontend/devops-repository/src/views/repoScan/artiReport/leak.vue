@@ -17,6 +17,14 @@
                 @change="handlerPaginationChange()">
                 <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
             </bk-select>
+            <bk-select
+                class="ml10 w250"
+                :clearable="false"
+                v-model="filter.ignored"
+                @change="handlerPaginationChange()">
+                <bk-option :id="true" :name="$t('ignoredVul')"></bk-option>
+                <bk-option :id="false" :name="$t('activeVul')"></bk-option>
+            </bk-select>
             <div class="flex-1 flex-end-center">
                 <bk-button theme="default" @click="$emit('rescan')">{{$t('rescan')}}</bk-button>
             </div>
@@ -54,7 +62,11 @@
                     </template>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('vulnerability') + 'ID'" prop="vulId" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('vulnerability') + 'ID'" show-overflow-tooltip>
+                <template #default="{ row }">
+                    {{ row.cveId || row.vulId }}
+                </template>
+            </bk-table-column>
             <bk-table-column :label="$t('vulnerabilityLevel')">
                 <template #default="{ row }">
                     <div class="status-sign" :class="row.severity" :data-name="$t(`leakLevelEnum.${row.severity}`)"></div>
@@ -62,6 +74,11 @@
             </bk-table-column>
             <bk-table-column :label="$t('dependPackage')" prop="pkgName" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('installedVersion')" prop="installedVersion" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('operation')">
+                <template slot-scope="props" v-if="!filter.ignored">
+                    <bk-button theme="primary" text @click="ignoreVul(props.row.cveId || props.row.vulId)">{{ $t('ignore') }}</bk-button>
+                </template>
+            </bk-table-column>
         </bk-table>
         <bk-pagination
             class="p10"
@@ -75,13 +92,22 @@
             :count="pagination.count"
             :limit-list="pagination.limitList">
         </bk-pagination>
+        <create-or-update-ignore-rule-dialog
+            @success="handlerPaginationChange()"
+            :plan-id="planId"
+            :project-id="projectId"
+            :updating-rule="creatingIgnoreRule"
+            :visible.sync="createOrUpdateDialogVisible">
+        </create-or-update-ignore-rule-dialog>
     </div>
 </template>
 <script>
     import { mapActions } from 'vuex'
     import { leakLevelEnum } from '@repository/store/publicEnum'
+    import CreateOrUpdateIgnoreRuleDialog from '../scanConfig/createOrUpdateIgnoreRuleDialog'
     export default {
         name: 'leak',
+        components: { CreateOrUpdateIgnoreRuleDialog },
         props: {
             subtaskOverview: Object,
             projectId: String,
@@ -98,9 +124,12 @@
                     limit: 20,
                     limitList: [10, 20, 40]
                 },
+                createOrUpdateDialogVisible: false,
+                creatingIgnoreRule: {},
                 filter: {
                     vulId: '',
-                    severity: ''
+                    severity: '',
+                    ignored: false
                 }
             }
         },
@@ -129,6 +158,7 @@
                     viewType: this.viewType,
                     vulId: this.filter.vulId,
                     severity: this.filter.severity,
+                    ignored: this.filter.ignored,
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
@@ -140,6 +170,23 @@
                 }).finally(() => {
                     this.isLoading = false
                 })
+            },
+            ignoreVul (vulId) {
+                this.creatingIgnoreRule = {
+                    name: `IGNORE-${this.generateId(10)}`,
+                    projectId: this.projectId,
+                    repoName: this.subtaskOverview.repoName,
+                    planId: this.$route.params.planId,
+                    vulIds: [vulId],
+                    fullPath: this.subtaskOverview.fullPath,
+                    packageKey: this.subtaskOverview.packageKey,
+                    packageVersion: this.subtaskOverview.version
+                }
+                this.createOrUpdateDialogVisible = true
+            },
+            generateId (len) {
+                const randomArr = window.crypto.getRandomValues(new Uint8Array((len || 40) / 2))
+                return Array.from(randomArr, n => n.toString(16).padStart(2, '0')).join('').toUpperCase()
             }
         }
     }

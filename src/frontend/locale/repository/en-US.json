@@ -676,5 +676,9 @@
     "circleMsg1":"can be executed, and every",
     "circleMsg2":"can be executed",
     "ignoreRuleVulIdsPlaceholder": "Please enter the vulnerability id, multiple vulnerability ids are separated by newlines",
-    "ignoreRuleMinSeverity": "Minimal Severity"
+    "ignoreRuleMinSeverity": "Minimal Severity",
+    "ignoredVul": "Ignored Vulnerabilities",
+    "activeVul": "Vulnerabilities Not Ignored",
+    "ignore": "Ignore",
+    "ignoreAll": "Ignore All Vulnerabilities"
 }
