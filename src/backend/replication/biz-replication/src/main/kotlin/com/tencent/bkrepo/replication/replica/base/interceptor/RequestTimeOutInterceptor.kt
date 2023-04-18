@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 class RequestTimeOutInterceptor(
-    private val timoutCheckHosts: Map<String, Double>
+    private val timoutCheckHosts: Map<String, Map<String, String>>
 ): Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         if (!enableTimeOutCheck(chain.request())) return chain.proceed(chain.request())
@@ -50,16 +50,17 @@ class RequestTimeOutInterceptor(
 
 
     private fun enableTimeOutCheck(request: Request) : Boolean {
-        return timoutCheckHosts.contains(request.url.host)
+        return timoutCheckHosts.values.any { it[HOST_KEY] == request.url.host }
     }
 
     private fun getEstimatedTime(tag: RequestTag, host: String): Double {
-        val estimatedTime = if (tag.size <= 200*MB) {
-            UNDER_MB_COST
+        val rate = timoutCheckHosts.values.firstOrNull { it[HOST_KEY] == host }
+            ?.get(AVERAGE_RATE_KEY)?.toDouble() ?: return 0.0
+        val estimatedTime = if (tag.size <= SPECIAL_TIME_COST*MB*rate) {
+            SPECIAL_TIME_COST
         } else {
-            val rate = timoutCheckHosts[host]!!
-            (tag.size/MB/rate)*1.5
-        }
+            (tag.size/MB/rate)
+        } * 1.5
         logger.info("Task ${tag.key} maybe will cost $estimatedTime seconds to transfer, size is ${tag.size}")
         return estimatedTime
     }
@@ -85,14 +86,16 @@ class RequestTimeOutInterceptor(
             }
         } catch (e: Exception) {
             logger.warn("Request timeout exception: $e")
-            throw RuntimeException("RequestTimeOut $estimatedTime")
+            throw RuntimeException("RequestTimeOut after $estimatedTime seconds")
         }
         return response!!
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RequestTimeOutInterceptor::class.java)
-        private const val UNDER_MB_COST: Double = 90.0
+        private const val SPECIAL_TIME_COST: Double = 60.0
+        private const val HOST_KEY = "host"
+        private const val AVERAGE_RATE_KEY = "averageRate"
     }
 }
 

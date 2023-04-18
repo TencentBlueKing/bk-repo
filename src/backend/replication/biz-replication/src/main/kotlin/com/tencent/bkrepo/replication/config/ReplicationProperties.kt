@@ -59,6 +59,11 @@ data class ReplicationProperties(
 
     /**
      * 开启请求超时校验的域名以及对应平均速率（MB/s）
+     * 配置如下：
+     *    timoutCheckHosts:
+     *      bkrepo:
+     *        host: xxx
+     *        averageRate: xxx
      */
-    var timoutCheckHosts: Map<String, Double> = mapOf()
+    var timoutCheckHosts: Map<String, Map<String, String>> = mapOf()
 )
