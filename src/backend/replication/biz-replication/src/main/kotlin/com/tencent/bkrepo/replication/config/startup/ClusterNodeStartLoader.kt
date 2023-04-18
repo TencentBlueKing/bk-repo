@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.config.startup
 
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
@@ -36,6 +37,8 @@ import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.PING
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.REPORT
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
@@ -78,7 +81,8 @@ class ClusterNodeStartLoader(
                     accessKey = self.accessKey ?: center.accessKey,
                     secretKey = self.secretKey ?: center.secretKey,
                     type = ClusterNodeType.CENTER,
-                    ping = false
+                    ping = false,
+                    detectType = PING
                 )
                 ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
@@ -90,7 +94,8 @@ class ClusterNodeStartLoader(
                     accessKey = self.accessKey,
                     secretKey = self.secretKey,
                     type = ClusterNodeType.EDGE,
-                    ping = false
+                    ping = false,
+                    detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING
                 )
                 else -> null
             }

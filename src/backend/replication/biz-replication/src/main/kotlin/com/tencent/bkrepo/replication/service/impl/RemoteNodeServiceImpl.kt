@@ -40,6 +40,7 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.remote.RemoteInfo
@@ -394,7 +395,8 @@ class RemoteNodeServiceImpl(
                 certificate = certificate,
                 username = username,
                 password = password,
-                type = ClusterNodeType.REMOTE
+                type = ClusterNodeType.REMOTE,
+                detectType = DetectType.PING
             )
         }
     }

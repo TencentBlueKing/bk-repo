@@ -29,12 +29,15 @@ package com.tencent.bkrepo.replication.manager
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.cluster.StandaloneJob
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 集群状态管理类
@@ -48,17 +51,38 @@ class ClusterStatusManager(
     fun start() {
         val clusterNodeList = clusterNodeService.listClusterNodes(name = null, type = null)
         clusterNodeList.forEach {
-            try {
-                clusterNodeService.tryConnect(it)
-                if (it.status == ClusterNodeStatus.UNHEALTHY) {
-                    // 设置为HEALTHY状态
-                    updateClusterNodeStatus(it.name, ClusterNodeStatus.HEALTHY)
-                }
-            } catch (exception: ErrorCodeException) {
-                if (it.status == ClusterNodeStatus.HEALTHY) {
-                    updateClusterNodeStatus(it.name, ClusterNodeStatus.UNHEALTHY, exception.message)
-                }
+            when (it.detectType) {
+                null, DetectType.PING -> ping(it)
+                DetectType.REPORT -> report(it)
             }
+        }
+    }
+
+    private fun ping(it: ClusterNodeInfo) {
+        try {
+            clusterNodeService.tryConnect(it)
+            if (it.status == ClusterNodeStatus.UNHEALTHY) {
+                // 设置为HEALTHY状态
+                updateClusterNodeStatus(it.name, ClusterNodeStatus.HEALTHY)
+            }
+        } catch (exception: ErrorCodeException) {
+            if (it.status == ClusterNodeStatus.HEALTHY) {
+                updateClusterNodeStatus(it.name, ClusterNodeStatus.UNHEALTHY, exception.message)
+            }
+        }
+    }
+
+    private fun report(it: ClusterNodeInfo) {
+        if (it.status == ClusterNodeStatus.HEALTHY
+            && it.lastReportTime?.isBefore(LocalDateTime.now().minusMinutes(1)) == true
+        ) {
+            return updateClusterNodeStatus(it.name, ClusterNodeStatus.UNHEALTHY)
+        }
+
+        if (it.status == ClusterNodeStatus.UNHEALTHY
+            && it.lastReportTime?.isAfter(LocalDateTime.now().minusMinutes(1)) == true
+        ) {
+            return updateClusterNodeStatus(it.name, ClusterNodeStatus.HEALTHY)
         }
     }
 

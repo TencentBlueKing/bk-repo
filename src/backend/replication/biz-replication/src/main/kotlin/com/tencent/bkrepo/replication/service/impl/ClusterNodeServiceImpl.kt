@@ -131,6 +131,7 @@ class ClusterNodeServiceImpl(
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now(),
+                detectType = detectType
             )
             if (ping) {
                 // 检测远程集群网络连接是否可用
@@ -217,6 +218,14 @@ class ClusterNodeServiceImpl(
         }
     }
 
+    override fun updateReportTime(name: String) {
+        val tClusterNode = clusterNodeDao.findByName(name)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+        tClusterNode.lastReportTime = LocalDateTime.now()
+        clusterNodeDao.save(tClusterNode)
+        logger.info("update cluster [$name] report time success")
+    }
+
     /**
      * 针对非third party集群做连接判断
      */
@@ -296,7 +305,9 @@ class ClusterNodeServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    detectType = it.detectType,
+                    lastReportTime = it.lastReportTime
                 )
             }
         }
