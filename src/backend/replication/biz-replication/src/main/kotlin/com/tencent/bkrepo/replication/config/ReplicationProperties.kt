@@ -55,5 +55,10 @@ data class ReplicationProperties(
     /**
      * 签名过滤器body限制大小
      * */
-    var bodyLimit: DataSize = DataSize.ofMegabytes(5)
+    var bodyLimit: DataSize = DataSize.ofMegabytes(5),
+
+    /**
+     * 开启请求超时校验的域名以及对应平均速率（MB/s）
+     */
+    var timoutCheckHosts: Map<String, Double> = mapOf()
 )
