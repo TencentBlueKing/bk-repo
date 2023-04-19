@@ -39,8 +39,10 @@ import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
@@ -153,6 +155,9 @@ class CommitEdgeCenterNodeServiceImpl(
                     clusterNames.add(clusterProperties.self.name.toString())
                 }
                 val update = Update().addToSet(TNode::clusterNames.name).each(clusterNames)
+                nodeMetadata?.let { update.set(TNode::metadata.name, it.map { convert(it) }) }
+                update.set(TNode::lastModifiedBy.name, operator)
+                update.set(TNode::lastModifiedDate.name, LocalDateTime.now())
                 nodeDao.updateFirst(query, update)
                 existNode.clusterNames = clusterNames
                 logger.info("Create node[/$projectId/$repoName$fullPath],sha256[$sha256],region[$srcCluster] success.")
@@ -231,5 +236,17 @@ class CommitEdgeCenterNodeServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CommitEdgeCenterNodeServiceImpl::class.java)
+
+        private fun convert(metadataModel: MetadataModel): TMetadata {
+            with(metadataModel) {
+                return TMetadata(
+                    key = key,
+                    value = value,
+                    system = system,
+                    description = description,
+                    link = link
+                )
+            }
+        }
     }
 }
