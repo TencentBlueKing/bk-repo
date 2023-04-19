@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.manual
 
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
@@ -50,8 +51,9 @@ class ManualReplicaJobExecutor(
     clusterNodeService: ClusterNodeService,
     localDataManager: LocalDataManager,
     replicaService: ManualBasedReplicaService,
+    replicationProperties: ReplicationProperties,
     private val replicaRecordService: ReplicaRecordService
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService) {
+) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
 
     /**
      * 执行仅执行一次的同步任务，仅限remote类型节点同步
