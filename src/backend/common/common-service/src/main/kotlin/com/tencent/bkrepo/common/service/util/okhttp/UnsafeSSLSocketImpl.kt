@@ -31,7 +31,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import org.slf4j.LoggerFactory
 import sun.security.ssl.SSLSocketImpl
 import java.io.Closeable
-import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import java.io.InputStream
 import java.io.OutputStream
