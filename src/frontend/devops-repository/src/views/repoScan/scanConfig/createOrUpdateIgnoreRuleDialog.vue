@@ -3,38 +3,39 @@
         v-model="showDialog"
         header-position="left"
         :title="title"
+        :auto-close="false"
         :mask-close="false"
         @confirm="confirm"
         width="800"
         height-num="603"
         @cancel="cancel">
-        <bk-form :label-width="80" :model="ignoreRule" :rules="rules" ref="ignoreRuleForm">
-            <bk-form-item :label="$t('name')" :required="true" property="name">
-                <bk-input v-model="ignoreRule.name"></bk-input>
+        <bk-form :label-width="90" :model="ignoreRule" :rules="rules" ref="ignoreRuleForm">
+            <bk-form-item :desc="$t('ruleNameTip')" desc-type="icon" :label="$t('name')" :required="true" property="name">
+                <bk-input :placeholder="$t('ruleNamePlaceholder')" v-model="ignoreRule.name"></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('description')" :required="false" property="description">
-                <bk-input type="textarea" v-model="ignoreRule.description"></bk-input>
+                <bk-input :placeholder="$t('ruleDescPlaceholder')" type="textarea" v-model="ignoreRule.description"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('repoName')" :required="false" property="repoName">
-                <bk-select v-model="ignoreRule.repoName" searchable>
+            <bk-form-item :desc="$t('ruleRepoNameTip')" desc-type="icon" :label="$t('repoName')" :required="false" property="repoName">
+                <bk-select :placeholder="$t('ruleRepoNamePlaceholder')" v-model="ignoreRule.repoName" searchable>
                     <bk-option v-for="repo in repos" :key="repo.name" :id="repo.name" :name="repo.name"></bk-option>
                 </bk-select>
             </bk-form-item>
-            <bk-form-item :label="$t('path')" :required="false" property="fullPath">
-                <bk-input v-model="ignoreRule.fullPath"></bk-input>
+            <bk-form-item :desc="$t('ruleFullPathTip')" desc-type="icon" :label="$t('path')" :required="false" property="fullPath">
+                <bk-input :placeholder="$t('ruleFullPathPlaceholder')" v-model="ignoreRule.fullPath"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('packageName')" :required="false" property="packageKey">
-                <bk-input v-model="ignoreRule.packageKey"></bk-input>
+            <bk-form-item :desc="$t('rulePackageNameTip')" desc-type="icon" :label="$t('packageName')" :required="false" property="packageKey">
+                <bk-input :placeholder="$t('rulePackageNamePlaceholder')" v-model="ignoreRule.packageKey"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('version')" :required="false" property="packageVersion">
-                <bk-input v-model="ignoreRule.packageVersion"></bk-input>
+            <bk-form-item :desc="$t('rulePackageVersionTip')" desc-type="icon" :label="$t('version')" :required="false" property="packageVersion">
+                <bk-input :placeholder="$t('rulePackageVersionPlaceholder')" v-model="ignoreRule.packageVersion"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('vulnerability') + ' ID'" :required="false">
+            <bk-form-item :desc="$t('ruleVulTip')" desc-type="icon" :label="$t('vulnerability') + ' ID'" :required="false" property="vulIds">
                 <bk-checkbox v-model="ignoreAllVul">{{ $t('ignoreAll') }}</bk-checkbox>
-                <bk-input v-if="!ignoreAllVul" type="textarea" :planceholder="$t('ignoreRuleVulIdsPlaceholder')" v-model="vulIds"></bk-input>
+                <bk-input :placeholder="$t('ruleVulPlaceholder')" v-if="!ignoreAllVul" type="textarea" :planceholder="$t('ignoreRuleVulIdsPlaceholder')" v-model="vulIds"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('ignoreRuleMinSeverity')" :required="false" property="severity">
-                <bk-select v-model="ignoreRule.severity">
+            <bk-form-item v-if="!ignoreAllVul" :desc="$t('ruleSeverityTip')" desc-type="icon" :label="$t('ignoreRuleMinSeverity')" :required="false" property="severity">
+                <bk-select :placeholder="$t('ruleSeverityPlaceholder')" v-model="ignoreRule.severity">
                     <bk-option v-for="s in severities" :key="s.level" :id="s.level" :name="s.name"></bk-option>
                 </bk-select>
             </bk-form-item>
@@ -65,7 +66,42 @@
                         },
                         {
                             regex: /^([\w\d_-]){1,255}$/,
-                            message: this.$t('ruleNameError'),
+                            message: this.$t('ruleFormatErr'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    description: [
+                        {
+                            max: 255,
+                            message: this.$t('ruleTooLong'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    fullPath: [
+                        {
+                            max: 255,
+                            message: this.$t('ruleTooLong'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    packageKey: [
+                        {
+                            max: 255,
+                            message: this.$t('ruleTooLong'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    packageVersion: [
+                        {
+                            max: 255,
+                            message: this.$t('ruleTooLong'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    vulIds: [
+                        {
+                            validator: this.checkVulIds,
+                            message: this.$t('ruleFormatErr'),
                             trigger: 'blur'
                         }
                     ]
@@ -105,18 +141,22 @@
                         this.ignoreRule = this.updatingRule
                     } else {
                         this.ignoreRule = {
+                            name: '',
                             vulIds: []
                         }
                         this.ignoreRule.projectId = this.projectId
                         this.ignoreRule.planId = this.planId
                     }
                     this.vulIds = this.ignoreRule.vulIds ? this.ignoreRule.vulIds.join('\n') : ''
-                    this.title = this.ignoreRule.id ? this.$t('update') : this.$t('create')
+                    this.title = (this.ignoreRule.id ? this.$t('update') : this.$t('create')) + this.$t('rule')
                 }
             }
         },
         methods: {
             ...mapActions(['updateIgnoreRule', 'createIgnoreRule', 'getRepoListWithoutPage']),
+            checkVulIds () {
+                return this.ignoreAllVul || /^[\w\d\\n_-]+$/.test(this.vulIds)
+            },
             cancel () {
                 this.$emit('update:visible', false)
             },

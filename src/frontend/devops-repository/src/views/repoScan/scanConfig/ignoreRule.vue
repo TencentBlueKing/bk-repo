@@ -1,19 +1,19 @@
 <template>
     <div>
         <div>
-            <bk-button style="margin-bottom: 10px" theme="primary" @click="dialogVisible = true">{{ $t('create') }}</bk-button>
+            <bk-button style="margin-bottom: 10px" theme="primary" @click="edit(null)">{{ $t('create') }}</bk-button>
         </div>
         <bk-table
             :data="ignoreRules"
             :pagination="pagination"
             size="small">
-            <bk-table-column :label="$t('name')" width="120" prop="name"></bk-table-column>
-            <bk-table-column :label="$t('description')" width="120" prop="description"></bk-table-column>
-            <bk-table-column :label="$t('repoName')" width="120" prop="repoName"></bk-table-column>
-            <bk-table-column :label="$t('path')" width="120" prop="fullPath"></bk-table-column>
-            <bk-table-column :label="$t('packageName')" width="120" prop="packageKey"></bk-table-column>
-            <bk-table-column :label="$t('version')" width="120" prop="packageVersion"></bk-table-column>
-            <bk-table-column :label="$t('operation')" width="150">
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('name')" width="200" prop="name"></bk-table-column>
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('description')" width="240" prop="description"></bk-table-column>
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('repoName')" width="120" prop="repoName"></bk-table-column>
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('path')" width="200" prop="fullPath"></bk-table-column>
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('packageName')" width="200" prop="packageKey"></bk-table-column>
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('version')" width="200" prop="packageVersion"></bk-table-column>
+            <bk-table-column :label="$t('operation')" width="120">
                 <template slot-scope="props">
                     <bk-button class="mr10" theme="primary" text @click="edit(props.row)">{{ $t('edit') }}</bk-button>
                     <bk-button class="mr10" theme="primary" text @click="remove(props.row)">{{ $t('delete') }}</bk-button>

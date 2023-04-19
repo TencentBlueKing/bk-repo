@@ -650,7 +650,6 @@
         "FAILED": "scan failed"
     },
     "planNamePlaceHolder": "Please enter the scheme name, press Enter to search",
-    "ruleNameError": "Ignore rule name format error",
     "scanTypeEnum" : {
         "GENERIC": "Generic artifact analysis",
         "DOCKER": "Docker artifact analysis",
@@ -684,5 +683,23 @@
     "ignoredVul": "Ignored Vulnerabilities",
     "activeVul": "Vulnerabilities Not Ignored",
     "ignore": "Ignore",
-    "ignoreAll": "Ignore All Vulnerabilities"
+    "ignoreAll": "Ignore All Vulnerabilities",
+    "rule": "Rule",
+    "ruleTooLong": "Text length exceeds limit",
+    "ruleFormatErr": "Formatting error",
+    "ruleNamePlaceholder": "Rule name",
+    "ruleNameTip": "Rule name, unique within the project",
+    "ruleDescPlaceholder": "Rule description",
+    "ruleRepoNamePlaceholder": "Please select repository",
+    "ruleRepoNameTip": "The repository where the rule takes effect, if not selected, it will take effect for all repositories",
+    "ruleFullPathPlaceholder": "Regular expression to match the path, e.g., /.*\\.jar",
+    "ruleFullPathTip": "The path where the rule takes effect. If not set, it will take effect for all file paths",
+    "rulePackageNamePlaceholder": "Package name, e.g., docker://nginx",
+    "rulePackageNameTip": "The rule will take effect on the specified package, and will take effect on all packages if not set",
+    "rulePackageVersionPlaceholder": "Package version, e.g., 1.7",
+    "rulePackageVersionTip": "The rule will take effect for this version, if not set, it will take effect for all versions",
+    "ruleVulPlaceholder": "Vulnerability ID, multiple vulnerability IDs were separated by newlines",
+    "ruleVulTip": "The vulnerability ID that needs to be ignored",
+    "ruleSeverityPlaceholder": "Please select the minimum level",
+    "ruleSeverityTip": "Smaller than this level will be ignored"
 }

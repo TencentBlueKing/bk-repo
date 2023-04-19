@@ -663,7 +663,6 @@
         "FAILED": "扫描异常"
     },
     "planNamePlaceHolder": "请输入方案名称, 按Enter键搜索",
-    "ruleNameError": "规则名称错误",
     "scanTypeEnum" : {
         "GENERIC": "Generic制品分析",
         "DOCKER": "Docker制品分析",
@@ -697,5 +696,23 @@
     "ignoredVul": "已忽略的漏洞",
     "activeVul": "未忽略的漏洞",
     "ignore": "忽略",
-    "ignoreAll": "忽略所有漏洞"
+    "ignoreAll": "忽略所有漏洞",
+    "rule": "规则",
+    "ruleTooLong": "长度超过限制",
+    "ruleFormatErr": "不符合格式要求",
+    "ruleNamePlaceholder": "请输入规则名称",
+    "ruleNameTip": "规则名，项目内不可重复",
+    "ruleDescPlaceholder": "请输入规则描述",
+    "ruleRepoNamePlaceholder": "请选择仓库",
+    "ruleRepoNameTip": "规则生效的仓库，未选择时对所有仓库生效",
+    "ruleFullPathPlaceholder": "请输入路径正则表达式，例如：/.*\\.jar",
+    "ruleFullPathTip": "规则生效的路径，未设置时对所有文件路径生效",
+    "rulePackageNamePlaceholder": "请输入包名，例如：docker://nginx",
+    "rulePackageNameTip": "规则生效的包，未选择时对所有包生效",
+    "rulePackageVersionPlaceholder": "请输入包版本，例如：1.7",
+    "rulePackageVersionTip": "规则生效的包版本，未设置时对所有版本生效",
+    "ruleVulPlaceholder": "请输入漏洞ID，多个漏洞ID通过换行分隔",
+    "ruleVulTip": "需要忽略的漏洞ID，只有设置的漏洞ID会被忽略",
+    "ruleSeverityPlaceholder": "请选择最小漏洞等级",
+    "ruleSeverityTip": "小于该等级的漏洞将被忽略"
 }
