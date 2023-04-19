@@ -16,12 +16,12 @@ import java.util.concurrent.ConcurrentHashMap
 object OkHttpClientPool {
     private val clientCache = ConcurrentHashMap<ClusterInfo, OkHttpClient>()
     fun getHttpClient(
-        timoutCheckHosts: List<Map<String, String>>,
+        timoutCheckHosts: List<Map<String, String>> = emptyList(),
         clusterInfo: ClusterInfo,
         readTimeout: Duration,
         writeTimeout: Duration,
         closeTimeout: Duration = Duration.ZERO,
-        vararg interceptors: Interceptor
+        vararg interceptors: Interceptor,
     ): OkHttpClient {
         return clientCache.getOrPut(clusterInfo) {
             val builder = HttpClientBuilderFactory.create(
@@ -36,7 +36,9 @@ object OkHttpClientPool {
                 )
             }
             builder.addNetworkInterceptor(ProgressInterceptor())
-            builder.addNetworkInterceptor(RequestTimeOutInterceptor(timoutCheckHosts))
+            if (timoutCheckHosts.isNotEmpty()) {
+                builder.addNetworkInterceptor(RequestTimeOutInterceptor(timoutCheckHosts))
+            }
             builder.build()
         }
     }
