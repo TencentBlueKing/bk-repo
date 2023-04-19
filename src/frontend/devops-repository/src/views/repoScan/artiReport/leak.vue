@@ -177,10 +177,13 @@
                     projectId: this.projectId,
                     repoName: this.subtaskOverview.repoName,
                     planId: this.$route.params.planId,
-                    vulIds: [vulId],
-                    fullPath: this.subtaskOverview.fullPath,
-                    packageKey: this.subtaskOverview.packageKey,
-                    packageVersion: this.subtaskOverview.version
+                    vulIds: [vulId]
+                }
+                if (this.subtaskOverview.repoType === 'GENERIC') {
+                    this.creatingIgnoreRule.fullPath = this.subtaskOverview.fullPath
+                } else {
+                    this.creatingIgnoreRule.packageKey = this.subtaskOverview.packageKey
+                    this.creatingIgnoreRule.packageVersion = this.subtaskOverview.version
                 }
                 this.createOrUpdateDialogVisible = true
             },
