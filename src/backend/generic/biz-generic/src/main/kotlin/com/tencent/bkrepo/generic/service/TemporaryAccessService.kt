@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -78,7 +79,8 @@ class TemporaryAccessService(
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
     private val deltaSyncService: DeltaSyncService,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val redirectService: EdgeNodeRedirectService
 ) {
 
     /**
@@ -101,6 +103,11 @@ class TemporaryAccessService(
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
+            if (redirectService.shouldRedirect(context.artifactInfo)) {
+                // 节点来自其他集群，重定向到其他节点。
+                redirectService.redirectToDefaultCluster(context)
+                return
+            }
             ArtifactContextHolder.getRepository(repo.category).download(context)
         }
     }
@@ -122,7 +129,7 @@ class TemporaryAccessService(
                 authorizedIpSet = authorizedIpSet,
                 expireSeconds = expireSeconds,
                 permits = permits,
-                type = type
+                type = type,
             )
             val urlList = temporaryTokenClient.createToken(temporaryTokenRequest).data.orEmpty().map {
                 TemporaryAccessUrl(
@@ -134,13 +141,13 @@ class TemporaryAccessService(
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate,
                     permits = it.permits,
-                    type = it.type.name
+                    type = it.type.name,
                 )
             }
             if (needsNotify) {
                 val context = TemporaryUrlNotifyContext(
                     userId = SecurityUtils.getUserId(),
-                    urlList = urlList
+                    urlList = urlList,
                 )
                 pluginManager.applyExtension<TemporaryUrlNotifyExtension> { notify(context) }
             }
@@ -164,7 +171,7 @@ class TemporaryAccessService(
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate,
                     permits = it.permits,
-                    type = it.type.name
+                    type = it.type.name,
                 )
             }
         }
@@ -194,7 +201,7 @@ class TemporaryAccessService(
     fun validateToken(
         token: String,
         artifactInfo: ArtifactInfo,
-        type: TokenType
+        type: TokenType,
     ): TemporaryTokenInfo {
         val temporaryToken = checkToken(token)
         checkExpireTime(temporaryToken.expireDate)
@@ -320,7 +327,7 @@ class TemporaryAccessService(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            userId = tokenInfo.createdBy
+            userId = tokenInfo.createdBy,
         )
     }
 
@@ -338,7 +345,9 @@ class TemporaryAccessService(
         // 获取需要审计的uid
         val auditedUid = if (SecurityUtils.isAnonymous()) {
             HttpContextHolder.getRequest().getHeader(AUTH_HEADER_UID) ?: tokenInfo.createdBy
-        } else authenticatedUid
+        } else {
+            authenticatedUid
+        }
         // 设置审计uid到session中
         HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, auditedUid)
         // 校验ip授权

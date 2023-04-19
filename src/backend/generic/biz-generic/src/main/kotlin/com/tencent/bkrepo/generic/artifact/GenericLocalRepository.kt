@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
@@ -63,7 +62,6 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.service.EdgeNodeRedirectService
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.api.ReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -82,7 +80,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
@@ -93,7 +90,6 @@ import javax.servlet.http.HttpServletRequest
 
 @Component
 class GenericLocalRepository(
-    private val redirectService: EdgeNodeRedirectService,
     private val replicaTaskClient: ReplicaTaskClient,
     private val clusterNodeClient: ClusterNodeClient
 ) : LocalRepository() {
@@ -173,11 +169,6 @@ class GenericLocalRepository(
     }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
-        if (redirectService.shouldRedirect(context.artifactInfo)) {
-            // 节点来自其他集群，重定向到其他节点。
-            redirectService.redirectToDefaultCluster(context)
-            return
-        }
         super.onDownloadBefore(context)
         // 文件默认下载，设置Content-Dispostition响应头
         // preview == true时不设置Content-Dispostition响应头
