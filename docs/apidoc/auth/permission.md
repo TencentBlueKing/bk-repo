@@ -449,7 +449,7 @@
 |data | object array | result data,具体字段见创建请求 |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新权限绑定用户
+### 更新权限绑定用户
 
 - API:PUT /auth/api/permission/user
 - API 名称: update_permission_user
@@ -498,7 +498,7 @@
 |data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新权限绑定角色
+### 更新权限绑定角色
 
 - API:PUT /auth/api/permission/role
 - API 名称: update_permission_role
@@ -546,7 +546,7 @@
 |traceId|string|请求跟踪id|the trace id|
 
 
-### 更新权限绑定部门
+### 更新权限绑定部门
 
 - API:PUT /auth/api/permission/department
 - API 名称: update_permission_department
@@ -593,7 +593,7 @@
 |data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新权限绑定动作
+### 更新权限绑定动作
 
 - API:PUT /auth/api/permission/action
 - API 名称: update_permission_action
