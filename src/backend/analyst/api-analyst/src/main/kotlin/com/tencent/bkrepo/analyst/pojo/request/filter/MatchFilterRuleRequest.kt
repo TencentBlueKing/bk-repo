@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,32 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request.standard
+package com.tencent.bkrepo.analyst.pojo.request.filter
 
-import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.query.model.PageLimit
+import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@Suppress("LongParameterList")
-data class StandardLoadResultArguments(
-    @ApiModelProperty("需要的cve列表")
-    val vulIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的漏洞严重性等级列表")
-    val vulnerabilityLevels: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可id列表")
-    val licenseIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可id列表")
-    val sensitiveContent: String? = null,
-    @ApiModelProperty("需要的许可id列表")
-    val sensitiveType: String? = null,
-    @ApiModelProperty("扫描结果类型")
-    val reportType: String,
-    @ApiModelProperty("分页参数")
-    val pageLimit: PageLimit = PageLimit(),
-    @ApiModelProperty("漏洞过滤规则")
-    val rule: MergedFilterRule? = null,
-    @ApiModelProperty("是否仅包含被忽略的结果")
-    val ignored: Boolean = false
-) : LoadResultArguments(StandardScanner.TYPE)
+@ApiModel("扫描结果忽略规则匹配请求")
+data class MatchFilterRuleRequest(
+    @ApiModelProperty("项目名")
+    val projectId: String,
+    @ApiModelProperty("仓库名")
+    val repoName: String? = null,
+
+    @ApiModelProperty("扫描方案id")
+    val planId: String? = null,
+
+    @ApiModelProperty("制品路径")
+    val fullPath: String? = null,
+
+    @ApiModelProperty("包名")
+    val packageKey: String? = null,
+
+    @ApiModelProperty("包版本")
+    val packageVersion: String? = null
+)

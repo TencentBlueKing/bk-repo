@@ -25,21 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request.ignore
+package com.tencent.bkrepo.analyst.service
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
+import com.tencent.bkrepo.common.api.pojo.Page
 
-@ApiModel("分页获取忽略规则请求")
-data class ListIgnoreRuleRequest(
-    @ApiModelProperty("项目，空字符串表示列出系统级规则")
-    val projectId: String,
-    @ApiModelProperty("扫描方案id")
-    val planId: String? = null,
-    @ApiModelProperty("页码")
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("页大小")
-    val pageSize: Int = DEFAULT_PAGE_SIZE,
-)
+interface FilterRuleService {
+    fun create(request: UpdateFilterRuleRequest): FilterRule
+    fun delete(ruleId: String): Boolean
+
+    fun delete(projectId: String, ruleId: String): Boolean
+
+    fun update(request: UpdateFilterRuleRequest): FilterRule
+    fun get(ruleId: String): FilterRule
+
+    fun list(request: ListFilterRuleRequest): Page<FilterRule>
+
+    /**
+     * 获取所有匹配的规则合并后返回
+     *
+     * @return 合并后的规则
+     */
+    fun match(request: MatchFilterRuleRequest): MergedFilterRule
+}

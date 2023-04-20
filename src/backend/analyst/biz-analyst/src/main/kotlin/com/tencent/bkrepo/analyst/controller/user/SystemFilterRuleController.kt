@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
-import com.tencent.bkrepo.analyst.pojo.request.ignore.ListIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.UpdateIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.response.IgnoreRule
-import com.tencent.bkrepo.analyst.service.IgnoreRuleService
+import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
+import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -49,19 +49,19 @@ import org.springframework.web.bind.annotation.RestController
 
 @Api("分析结果忽略规则")
 @RestController
-@RequestMapping("/api/ignore/rules")
+@RequestMapping("/api/filter/rules")
 @Principal(PrincipalType.ADMIN)
-class SystemIgnoreRuleController(private val ignoreRuleService: IgnoreRuleService) {
+class SystemFilterRuleController(private val filterRuleService: FilterRuleService) {
     @ApiOperation("增加规则")
     @PostMapping
-    fun addSystemRule(@RequestBody request: UpdateIgnoreRuleRequest): Response<IgnoreRule> {
-        return ResponseBuilder.success(ignoreRuleService.create(request))
+    fun addSystemRule(@RequestBody request: UpdateFilterRuleRequest): Response<FilterRule> {
+        return ResponseBuilder.success(filterRuleService.create(request))
     }
 
     @ApiOperation("更新规则")
     @PutMapping
-    fun updateSystemRule(@RequestBody request: UpdateIgnoreRuleRequest): Response<IgnoreRule> {
-        return ResponseBuilder.success(ignoreRuleService.update(request))
+    fun updateSystemRule(@RequestBody request: UpdateFilterRuleRequest): Response<FilterRule> {
+        return ResponseBuilder.success(filterRuleService.update(request))
     }
 
     @ApiOperation("删除规则")
@@ -69,13 +69,13 @@ class SystemIgnoreRuleController(private val ignoreRuleService: IgnoreRuleServic
     fun deleteSystemRule(
         @PathVariable("ruleId") ruleId: String
     ): Response<Void> {
-        ignoreRuleService.delete(ruleId)
+        filterRuleService.delete(ruleId)
         return ResponseBuilder.success()
     }
 
     @ApiOperation("分页获取规则")
     @GetMapping
-    fun listSystemRules(@RequestBody request: ListIgnoreRuleRequest): Response<Page<IgnoreRule>> {
-        return ResponseBuilder.success(ignoreRuleService.list(request))
+    fun listSystemRules(@RequestBody request: ListFilterRuleRequest): Response<Page<FilterRule>> {
+        return ResponseBuilder.success(filterRuleService.list(request))
     }
 }

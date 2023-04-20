@@ -25,49 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request.ignore
+package com.tencent.bkrepo.analyst.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+object Constant {
+    /**
+     * 分析结果过滤规则类型，匹配规则时忽略
+     */
+    const val FILTER_RULE_TYPE_IGNORE = 0
 
-@ApiModel("创建或更新扫描结果忽略规则")
-data class UpdateIgnoreRuleRequest(
-    @ApiModelProperty("id")
-    var id: String? = null,
-
-    @ApiModelProperty("规则名")
-    val name: String,
-
-    @ApiModelProperty("规则描述")
-    val description: String,
-
-    @ApiModelProperty("目标项目，系统级的规则为空字符串")
-    val projectId: String,
-
-    @ApiModelProperty("需要应用规则的项目，为空表示全部应用，该字段仅对系统级规则有效")
-    val projectIds: List<String>? = null,
-
-    @ApiModelProperty("目标仓库名")
-    val repoName: String? = null,
-
-    @ApiModelProperty("目标扫描方案ID")
-    val planId: String? = null,
-
-    @ApiModelProperty("目标路径")
-    val fullPath: String? = null,
-
-    @ApiModelProperty("目标包名")
-    val packageKey: String? = null,
-
-    @ApiModelProperty("目标版本")
-    val packageVersion: String? = null,
-
-    @ApiModelProperty("需要忽略的漏洞，空集合表示忽略所有")
-    val vulIds: Set<String>? = null,
-
-    @ApiModelProperty("小于该等级的漏洞将被忽略")
-    val severity: Int? = null,
-
-    @ApiModelProperty("需要忽略的许可证，空集合表示忽略所有")
-    val licenseNames: Set<String>? = null,
-)
+    /**
+     * 分析结果过滤规则类型，匹配规则时保留
+     */
+    const val FILTER_RULE_TYPE_INCLUDE = 1
+}

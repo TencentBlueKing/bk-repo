@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.model
 
+import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -35,11 +36,11 @@ import java.time.LocalDateTime
 /**
  * 制品分析结果忽略规则
  */
-@Document("ignore_rule")
+@Document("filter_rule")
 @CompoundIndexes(
     CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true, background = true)
 )
-data class TIgnoreRule(
+data class TFilterRule(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
@@ -104,6 +105,11 @@ data class TIgnoreRule(
      * 需要忽略的许可证
      */
     val licenseNames: Set<String>? = null,
+
+    /**
+     * 规则类型
+     */
+    val type: Int = FILTER_RULE_TYPE_IGNORE
 ) {
     companion object {
         const val SYSTEM_PROJECT_ID = ""

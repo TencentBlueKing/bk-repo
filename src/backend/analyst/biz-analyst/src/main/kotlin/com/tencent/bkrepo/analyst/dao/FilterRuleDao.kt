@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.analyst.dao
 
-import com.tencent.bkrepo.analyst.model.TIgnoreRule
-import com.tencent.bkrepo.analyst.model.TIgnoreRule.Companion.SYSTEM_PROJECT_ID
-import com.tencent.bkrepo.analyst.pojo.request.ignore.MatchIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.UpdateIgnoreRuleRequest
+import com.tencent.bkrepo.analyst.model.TFilterRule
+import com.tencent.bkrepo.analyst.model.TFilterRule.Companion.SYSTEM_PROJECT_ID
+import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.data.domain.PageRequest
@@ -43,66 +43,66 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class IgnoreRuleDao : ScannerSimpleMongoDao<TIgnoreRule>() {
+class FilterRuleDao : ScannerSimpleMongoDao<TFilterRule>() {
     fun exists(projectId: String, name: String): Boolean {
         val query = Query(
             Criteria
-                .where(TIgnoreRule::projectId.name).isEqualTo(projectId)
-                .and(TIgnoreRule::name.name).isEqualTo(name)
+                .where(TFilterRule::projectId.name).isEqualTo(projectId)
+                .and(TFilterRule::name.name).isEqualTo(name)
         )
         return exists(query)
     }
 
-    fun list(projectId: String, planId: String?, pageRequest: PageRequest): Page<TIgnoreRule> {
-        val criteria = Criteria.where(TIgnoreRule::projectId.name).isEqualTo(projectId)
-        planId?.let { criteria.and(TIgnoreRule::planId.name).isEqualTo(planId) }
+    fun list(projectId: String, planId: String?, pageRequest: PageRequest): Page<TFilterRule> {
+        val criteria = Criteria.where(TFilterRule::projectId.name).isEqualTo(projectId)
+        planId?.let { criteria.and(TFilterRule::planId.name).isEqualTo(planId) }
         return page(Query(criteria), pageRequest)
     }
 
     fun remove(projectId: String, ruleId: String): Boolean {
         val query = Query(
-            Criteria.where(TIgnoreRule::projectId.name).isEqualTo(projectId).and(ID).isEqualTo(ruleId)
+            Criteria.where(TFilterRule::projectId.name).isEqualTo(projectId).and(ID).isEqualTo(ruleId)
         )
         return remove(query).deletedCount == 1L
     }
 
-    fun match(request: MatchIgnoreRuleRequest): List<TIgnoreRule> {
+    fun match(request: MatchFilterRuleRequest): List<TFilterRule> {
         with(request) {
             val criteria = Criteria().orOperator(
                 // 查询系统级规则
                 Criteria
-                    .where(TIgnoreRule::projectId.name).isEqualTo(SYSTEM_PROJECT_ID)
-                    .and(TIgnoreRule::projectIds.name).inValues(projectId),
+                    .where(TFilterRule::projectId.name).isEqualTo(SYSTEM_PROJECT_ID)
+                    .and(TFilterRule::projectIds.name).inValues(projectId),
                 // 查询项目级规则
-                Criteria().and(TIgnoreRule::projectId.name).isEqualTo(projectId)
+                Criteria().and(TFilterRule::projectId.name).isEqualTo(projectId)
             ).andOperator(
                 // 仓库匹配
-                notExistsOrEqual(TIgnoreRule::repoName.name, repoName),
+                notExistsOrEqual(TFilterRule::repoName.name, repoName),
                 // 扫描方案id匹配
-                notExistsOrEqual(TIgnoreRule::planId.name, planId)
+                notExistsOrEqual(TFilterRule::planId.name, planId)
             )
 
             return find(Query(criteria))
         }
     }
 
-    fun update(req: UpdateIgnoreRuleRequest): TIgnoreRule? {
+    fun update(req: UpdateFilterRuleRequest): TFilterRule? {
         with(req) {
-            val query = Query(Criteria.where(TIgnoreRule::projectId.name).isEqualTo(projectId).and(ID).isEqualTo(id))
+            val query = Query(Criteria.where(TFilterRule::projectId.name).isEqualTo(projectId).and(ID).isEqualTo(id))
             val update = Update()
-                .set(TIgnoreRule::name.name, name)
-                .set(TIgnoreRule::description.name, description)
-                .set(TIgnoreRule::lastModifiedBy.name, SecurityUtils.getUserId())
-                .set(TIgnoreRule::lastModifiedDate.name, LocalDateTime.now())
-                .set(TIgnoreRule::repoName.name, repoName)
-                .set(TIgnoreRule::planId.name, planId)
-                .set(TIgnoreRule::fullPath.name, fullPath)
-                .set(TIgnoreRule::packageKey.name, packageKey)
-                .set(TIgnoreRule::packageVersion.name, packageVersion)
-                .set(TIgnoreRule::vulIds.name, vulIds)
-                .set(TIgnoreRule::licenseNames.name, licenseNames)
+                .set(TFilterRule::name.name, name)
+                .set(TFilterRule::description.name, description)
+                .set(TFilterRule::lastModifiedBy.name, SecurityUtils.getUserId())
+                .set(TFilterRule::lastModifiedDate.name, LocalDateTime.now())
+                .set(TFilterRule::repoName.name, repoName)
+                .set(TFilterRule::planId.name, planId)
+                .set(TFilterRule::fullPath.name, fullPath)
+                .set(TFilterRule::packageKey.name, packageKey)
+                .set(TFilterRule::packageVersion.name, packageVersion)
+                .set(TFilterRule::vulIds.name, vulIds)
+                .set(TFilterRule::licenseNames.name, licenseNames)
             if (projectId == SYSTEM_PROJECT_ID) {
-                update.set(TIgnoreRule::projectIds.name, projectIds)
+                update.set(TFilterRule::projectIds.name, projectIds)
             }
             updateFirst(query, update)
             return findOne(query)

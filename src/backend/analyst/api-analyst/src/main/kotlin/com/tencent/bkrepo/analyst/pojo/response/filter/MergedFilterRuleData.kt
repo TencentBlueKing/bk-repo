@@ -25,27 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request.ignore
+package com.tencent.bkrepo.analyst.pojo.response.filter
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+data class MergedFilterRuleData(
+    var vulIds: MutableSet<String>? = null,
+    var licenses: MutableSet<String>? = null
+) {
+    fun add(rule: FilterRule) {
+        if (rule.vulIds != null) {
+            if (this.vulIds == null) {
+                this.vulIds = HashSet()
+            }
+            this.vulIds!!.addAll(rule.vulIds)
+        }
 
-@ApiModel("扫描结果忽略规则匹配请求")
-data class MatchIgnoreRuleRequest(
-    @ApiModelProperty("项目名")
-    val projectId: String,
-    @ApiModelProperty("仓库名")
-    val repoName: String? = null,
-
-    @ApiModelProperty("扫描方案id")
-    val planId: String? = null,
-
-    @ApiModelProperty("制品路径")
-    val fullPath: String? = null,
-
-    @ApiModelProperty("包名")
-    val packageKey: String? = null,
-
-    @ApiModelProperty("包版本")
-    val packageVersion: String? = null
-)
+        if (rule.licenseNames != null) {
+            if (this.licenses == null) {
+                this.licenses = HashSet()
+            }
+            this.licenses!!.addAll(rule.licenseNames)
+        }
+    }
+}

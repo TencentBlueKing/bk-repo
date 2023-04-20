@@ -25,13 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.response
+package com.tencent.bkrepo.analyst.pojo.request.filter
 
+import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
+import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_INCLUDE
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("制品扫描结果忽略规则")
-data class IgnoreRule(
+@ApiModel("创建或更新扫描结果忽略规则")
+data class UpdateFilterRuleRequest(
     @ApiModelProperty("id")
     var id: String? = null,
 
@@ -62,22 +66,22 @@ data class IgnoreRule(
     @ApiModelProperty("目标版本")
     val packageVersion: String? = null,
 
-    @ApiModelProperty("需要忽略的漏洞")
+    @ApiModelProperty("需要忽略的漏洞，空集合表示忽略所有")
     val vulIds: Set<String>? = null,
 
     @ApiModelProperty("小于该等级的漏洞将被忽略")
     val severity: Int? = null,
 
-    @ApiModelProperty("需要忽略的许可证")
-    val licenseNames: Set<String>? = null
-) {
-    fun shouldIgnore(vulId: String, severity: Int? = null): Boolean {
-        return vulIds != null && vulId in vulIds ||
-            vulIds?.isEmpty() == true ||
-            this.severity != null && severity != null && severity < this.severity
-    }
+    @ApiModelProperty("需要忽略的许可证，空集合表示忽略所有")
+    val licenseNames: Set<String>? = null,
 
-    fun shouldIgnore(licenseName: String): Boolean {
-        return licenseNames != null && licenseName in licenseNames || licenseNames?.isEmpty() == true
+    @ApiModelProperty("匹配成功后忽略漏洞，false表示匹配成功时候保留漏洞其余的忽略")
+    val type: Int = FILTER_RULE_TYPE_IGNORE
+) {
+    fun check() {
+        // 保留规则不允许设置最小漏洞等级
+        if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ignore[$type], severity[$severity]")
+        }
     }
 }

@@ -41,8 +41,8 @@ import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
-import com.tencent.bkrepo.analyst.pojo.request.ignore.MatchIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.service.IgnoreRuleService
+import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
+import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
@@ -81,7 +81,7 @@ class FinishSubtaskAction(
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val scannerService: ScannerService,
     private val scanQualityService: ScanQualityService,
-    private val ignoreRuleService: IgnoreRuleService,
+    private val filterRuleService: FilterRuleService,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>,
     private val scannerMetrics: ScannerMetrics,
@@ -232,8 +232,8 @@ class FinishSubtaskAction(
     ): Map<String, Any?> {
         val converter = scannerConverters[ScannerConverter.name(result.type)]!!
         return if (converter is StandardConverter && result is StandardScanExecutorResult) {
-            val ignoreRules = ignoreRuleService.match(
-                MatchIgnoreRuleRequest(
+            val filterRules = filterRuleService.match(
+                MatchFilterRuleRequest(
                     projectId = subtask.projectId,
                     repoName = subtask.repoName,
                     planId = subtask.planId,
@@ -246,7 +246,7 @@ class FinishSubtaskAction(
                 result.output?.result?.securityResults,
                 result.output?.result?.sensitiveResults,
                 result.output?.result?.licenseResults,
-                ignoreRules
+                filterRules
             )
         } else {
             converter.convertOverview(result)

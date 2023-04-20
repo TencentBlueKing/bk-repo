@@ -35,7 +35,7 @@ import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesD
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
-import com.tencent.bkrepo.analyst.pojo.response.IgnoreRule
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
@@ -133,15 +133,14 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         securityResults: List<SecurityResult>?,
         sensitiveResults: List<SensitiveResult>?,
         licenseResults: List<LicenseResult>?,
-        ignoreRules: List<IgnoreRule>? = null
+        filterRule: MergedFilterRule? = null
     ): Map<String, Any?> {
         val overview = HashMap<String, Long>()
 
         // security统计
         securityResults?.forEach { securityResult ->
             val severityLevel = Level.valueOf(securityResult.severity.toUpperCase()).level
-            val shouldIgnore = ignoreRules?.any { it.shouldIgnore(securityResult.vulId, severityLevel) } == true
-            if (!shouldIgnore) {
+            if (filterRule?.shouldIgnore(securityResult.vulId, severityLevel) != true) {
                 val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
                 overview[key] = overview.getOrDefault(key, 0L) + 1
             }
@@ -162,7 +161,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
 
         overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseResults.size.toLong()
         for (licenseResult in licenseResults) {
-            if (ignoreRules?.any { it.shouldIgnore(licenseResult.licenseName) } == true) {
+            if (filterRule?.shouldIgnore(licenseResult.licenseName) == true) {
                 val total = overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] as Long
                 overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = total - 1
                 continue

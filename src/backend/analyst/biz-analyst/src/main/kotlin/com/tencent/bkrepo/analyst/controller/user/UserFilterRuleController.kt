@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
-import com.tencent.bkrepo.analyst.pojo.request.ignore.ListIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.UpdateIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.response.IgnoreRule
-import com.tencent.bkrepo.analyst.service.IgnoreRuleService
+import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
+import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
@@ -55,19 +55,19 @@ import org.springframework.web.bind.annotation.RestController
 
 @Api("分析结果忽略规则")
 @RestController
-@RequestMapping("/api/project/{projectId}/ignore/rules")
-class UserIgnoreRuleController(private val ignoreRuleService: IgnoreRuleService) {
+@RequestMapping("/api/project/{projectId}/filter/rules")
+class UserFilterRuleController(private val filterRuleService: FilterRuleService) {
     @ApiOperation("增加规则")
     @PostMapping
     @Permission(ResourceType.PROJECT, PermissionAction.WRITE)
     fun addRule(
         @PathVariable("projectId") projectId: String,
-        @RequestBody request: UpdateIgnoreRuleRequest
-    ): Response<IgnoreRule> {
+        @RequestBody request: UpdateFilterRuleRequest
+    ): Response<FilterRule> {
         if (request.projectId != projectId) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
         }
-        return ResponseBuilder.success(ignoreRuleService.create(request))
+        return ResponseBuilder.success(filterRuleService.create(request))
     }
 
     @ApiOperation("更新规则")
@@ -76,12 +76,12 @@ class UserIgnoreRuleController(private val ignoreRuleService: IgnoreRuleService)
     fun updateRule(
         @PathVariable("projectId") projectId: String,
         @PathVariable("ruleId") ruleId: String,
-        @RequestBody request: UpdateIgnoreRuleRequest
-    ): Response<IgnoreRule> {
+        @RequestBody request: UpdateFilterRuleRequest
+    ): Response<FilterRule> {
         if (request.projectId != projectId) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
         }
-        return ResponseBuilder.success(ignoreRuleService.update(request.copy(id = ruleId)))
+        return ResponseBuilder.success(filterRuleService.update(request.copy(id = ruleId)))
     }
 
     @ApiOperation("删除规则")
@@ -91,7 +91,7 @@ class UserIgnoreRuleController(private val ignoreRuleService: IgnoreRuleService)
         @PathVariable("projectId") projectId: String,
         @PathVariable("ruleId") ruleId: String
     ): Response<Void> {
-        ignoreRuleService.delete(projectId, ruleId)
+        filterRuleService.delete(projectId, ruleId)
         return ResponseBuilder.success()
     }
 
@@ -103,13 +103,13 @@ class UserIgnoreRuleController(private val ignoreRuleService: IgnoreRuleService)
         @RequestParam planId: String? = null,
         @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
-    ): Response<Page<IgnoreRule>> {
-        val request = ListIgnoreRuleRequest(
+    ): Response<Page<FilterRule>> {
+        val request = ListFilterRuleRequest(
             projectId = projectId,
             planId = planId,
             pageNumber = pageNumber,
             pageSize = pageSize
         )
-        return ResponseBuilder.success(ignoreRuleService.list(request))
+        return ResponseBuilder.success(filterRuleService.list(request))
     }
 }

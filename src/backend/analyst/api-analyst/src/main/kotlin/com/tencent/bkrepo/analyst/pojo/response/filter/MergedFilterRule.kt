@@ -25,29 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.service
+package com.tencent.bkrepo.analyst.pojo.response.filter
 
-import com.tencent.bkrepo.analyst.pojo.request.ignore.ListIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.MatchIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.UpdateIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.response.IgnoreRule
-import com.tencent.bkrepo.common.api.pojo.Page
+data class MergedFilterRule(
+    val ignoreRule: MergedFilterRuleData = MergedFilterRuleData(),
+    val includeRule: MergedFilterRuleData = MergedFilterRuleData(),
+    var minSeverityLevel: Int? = null
+) {
+    /**
+     * 不在包含列表或在忽略列表中的漏洞将被忽略
+     */
+    fun shouldIgnore(vulId: String, severity: Int? = null): Boolean {
+        if (shouldIgnore(includeRule.vulIds, ignoreRule.vulIds, vulId)) {
+            return true
+        }
 
-interface IgnoreRuleService {
-    fun create(request: UpdateIgnoreRuleRequest): IgnoreRule
-    fun delete(ruleId: String): Boolean
-
-    fun delete(projectId: String, ruleId: String): Boolean
-
-    fun update(request: UpdateIgnoreRuleRequest): IgnoreRule
-    fun get(ruleId: String): IgnoreRule
-
-    fun list(request: ListIgnoreRuleRequest): Page<IgnoreRule>
+        return minSeverityLevel != null && severity != null && severity < minSeverityLevel!!
+    }
 
     /**
-     * 获取所有匹配的忽略规则
-     *
-     * @return 匹配的忽略规则
+     * 不在包含列表或在忽略列表中的许可证将被忽略
      */
-    fun match(request: MatchIgnoreRuleRequest): List<IgnoreRule>
+    fun shouldIgnore(licenseName: String): Boolean {
+        return shouldIgnore(includeRule.licenses, ignoreRule.licenses, licenseName)
+    }
+
+    private fun shouldIgnore(include: Set<String>?, ignore: Set<String>?, result: String): Boolean {
+        if (!include.isNullOrEmpty() && result !in include) {
+            return true
+        }
+
+        return ignore != null && result in ignore || ignore?.isEmpty() == true
+    }
 }

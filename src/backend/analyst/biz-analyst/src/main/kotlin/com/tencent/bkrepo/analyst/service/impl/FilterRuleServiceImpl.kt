@@ -27,14 +27,17 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.analyst.dao.IgnoreRuleDao
-import com.tencent.bkrepo.analyst.model.TIgnoreRule
-import com.tencent.bkrepo.analyst.model.TIgnoreRule.Companion.SYSTEM_PROJECT_ID
-import com.tencent.bkrepo.analyst.pojo.request.ignore.ListIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.MatchIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.request.ignore.UpdateIgnoreRuleRequest
-import com.tencent.bkrepo.analyst.pojo.response.IgnoreRule
-import com.tencent.bkrepo.analyst.service.IgnoreRuleService
+import com.tencent.bkrepo.analyst.dao.FilterRuleDao
+import com.tencent.bkrepo.analyst.model.TFilterRule
+import com.tencent.bkrepo.analyst.model.TFilterRule.Companion.SYSTEM_PROJECT_ID
+import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
+import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_INCLUDE
+import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
+import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -45,14 +48,15 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRuleService {
-    override fun create(request: UpdateIgnoreRuleRequest): IgnoreRule {
+class FilterRuleServiceImpl(private val filterRuleDao: FilterRuleDao) : FilterRuleService {
+    override fun create(request: UpdateFilterRuleRequest): FilterRule {
         with(request) {
-            if (ignoreRuleDao.exists(projectId, name)) {
+            check()
+            if (filterRuleDao.exists(projectId, name)) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
             }
             logger.info("Create ignore rule[$request] success")
-            return ignoreRuleDao.insert(toPO()).toDTO()
+            return filterRuleDao.insert(toPO()).toDTO()
         }
     }
 
@@ -61,26 +65,27 @@ class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRu
     }
 
     override fun delete(projectId: String, ruleId: String): Boolean {
-        if (ignoreRuleDao.remove(projectId, ruleId)) {
+        if (filterRuleDao.remove(projectId, ruleId)) {
             return true
         } else {
             throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, ruleId)
         }
     }
 
-    override fun update(request: UpdateIgnoreRuleRequest): IgnoreRule {
+    override fun update(request: UpdateFilterRuleRequest): FilterRule {
         logger.info("Update ignore rule[$request]")
-        return ignoreRuleDao.update(request)?.toDTO()
+        request.check()
+        return filterRuleDao.update(request)?.toDTO()
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "ruleId[${request.id}]")
     }
 
-    override fun get(ruleId: String): IgnoreRule {
-        return ignoreRuleDao.findById(ruleId)?.toDTO()
+    override fun get(ruleId: String): FilterRule {
+        return filterRuleDao.findById(ruleId)?.toDTO()
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, ruleId)
     }
 
-    override fun list(request: ListIgnoreRuleRequest): Page<IgnoreRule> {
-        val rules = ignoreRuleDao.list(
+    override fun list(request: ListFilterRuleRequest): Page<FilterRule> {
+        val rules = filterRuleDao.list(
             request.projectId,
             request.planId,
             Pages.ofRequest(request.pageNumber, request.pageSize)
@@ -88,11 +93,11 @@ class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRu
         return Pages.buildPage(rules.records.map { it.toDTO() }, request.pageNumber, request.pageSize)
     }
 
-    override fun match(request: MatchIgnoreRuleRequest): List<IgnoreRule> {
+    override fun match(request: MatchFilterRuleRequest): MergedFilterRule {
         with(request) {
-            val rules = ignoreRuleDao.match(request)
+            val rules = filterRuleDao.match(request)
 
-            val matchedRules = ArrayList<IgnoreRule>(rules.size)
+            val matchedRules = ArrayList<FilterRule>(rules.size)
             for (rule in rules) {
                 var matched = true
                 if (rule.fullPath?.isNotEmpty() == true) {
@@ -111,11 +116,30 @@ class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRu
                     matchedRules.add(rule.toDTO())
                 }
             }
-            return matchedRules
+            return merge(matchedRules)
         }
     }
 
-    private fun UpdateIgnoreRuleRequest.toPO(): TIgnoreRule {
+    private fun merge(rules: List<FilterRule>): MergedFilterRule {
+        val mergedFilterRule = MergedFilterRule()
+        with(mergedFilterRule) {
+            for (rule in rules) {
+                if (rule.type == FILTER_RULE_TYPE_IGNORE) {
+                    val severity = rule.severity
+                    if (severity != null && (minSeverityLevel == null || severity > minSeverityLevel!!)) {
+                        minSeverityLevel = severity
+                    }
+                    mergedFilterRule.ignoreRule.add(rule)
+                } else if (rule.type == FILTER_RULE_TYPE_INCLUDE) {
+                    mergedFilterRule.includeRule.add(rule)
+                }
+            }
+        }
+
+        return mergedFilterRule
+    }
+
+    private fun UpdateFilterRuleRequest.toPO(): TFilterRule {
         val userId = SecurityUtils.getUserId()
         val now = LocalDateTime.now()
         val targetProjectIds = if (projectId == SYSTEM_PROJECT_ID) {
@@ -123,7 +147,7 @@ class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRu
         } else {
             null
         }
-        return TIgnoreRule(
+        return TFilterRule(
             id = null,
             createdBy = userId,
             createdDate = now,
@@ -140,12 +164,13 @@ class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRu
             packageVersion = packageVersion,
             vulIds = vulIds,
             severity = severity,
-            licenseNames = licenseNames
+            licenseNames = licenseNames,
+            type = type
         )
     }
 
-    private fun TIgnoreRule.toDTO(): IgnoreRule {
-        return IgnoreRule(
+    private fun TFilterRule.toDTO(): FilterRule {
+        return FilterRule(
             id = id,
             name = name,
             description = description,
@@ -158,11 +183,12 @@ class IgnoreRuleServiceImpl(private val ignoreRuleDao: IgnoreRuleDao) : IgnoreRu
             packageVersion = packageVersion,
             vulIds = vulIds,
             severity = severity,
-            licenseNames = licenseNames
+            licenseNames = licenseNames,
+            type = type
         )
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(IgnoreRuleServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(FilterRuleServiceImpl::class.java)
     }
 }

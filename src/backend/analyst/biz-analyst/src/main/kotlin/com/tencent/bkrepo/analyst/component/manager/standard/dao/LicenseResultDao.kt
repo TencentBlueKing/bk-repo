@@ -31,6 +31,7 @@ import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResult
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.inValues
@@ -40,21 +41,69 @@ import org.springframework.stereotype.Repository
 class LicenseResultDao : ResultItemDao<TLicenseResult>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
         with(arguments as StandardLoadResultArguments) {
+            val andCriteria = ArrayList<Criteria>()
+
             if (licenseIds.isNotEmpty()) {
-                criteria.and(dataKey(LicenseResult::licenseName.name)).inValues(licenseIds)
+                andCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).inValues(licenseIds))
             }
-            ignoreLicenses?.let { criteria.addIgnoreCriteria(it, ignored) }
+
+            if (rule != null && ignored) {
+                ignoreCriteria(rule!!)?.let { criteria -> andCriteria.add(criteria) }
+            } else if (rule != null) {
+                andCriteria.addAll(activeCriteria(rule!!))
+            }
+
+            if (andCriteria.isNotEmpty()) {
+                criteria.andOperator(andCriteria)
+            }
+
             return criteria
         }
     }
 
-    private fun Criteria.addIgnoreCriteria(ignoreLicenses: Set<String>, ignored: Boolean) {
-        if (ignoreLicenses.isNotEmpty() && ignored) {
-            and(dataKey(LicenseResult::licenseName.name)).inValues(ignoreLicenses)
-        } else if (ignoreLicenses.isNotEmpty()) {
-            and(dataKey(LicenseResult::licenseName.name)).not().inValues(ignoreLicenses)
-        } else if (!ignored) {
-            and(ID).exists(false)
+
+    private fun activeCriteria(rule: MergedFilterRule): List<Criteria> {
+        val andCriteria = ArrayList<Criteria>()
+
+        val ignoreLicenses = rule.ignoreRule.licenses
+        val includeLicenses = rule.includeRule.licenses
+
+        if (ignoreLicenses?.isEmpty() == true) {
+            andCriteria.add(Criteria(ID).exists(false))
+            return andCriteria
+        }
+
+        if (ignoreLicenses?.isNotEmpty() == true) {
+            andCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).not().inValues(ignoreLicenses))
+        }
+
+        if (includeLicenses?.isNotEmpty() == true) {
+            andCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).inValues(includeLicenses))
+        }
+
+        return andCriteria
+    }
+
+    private fun ignoreCriteria(rule: MergedFilterRule): Criteria? {
+        val orCriteria = ArrayList<Criteria>()
+
+        val ignoreLicenses = rule.ignoreRule.licenses
+        val includeLicenses = rule.includeRule.licenses
+
+        if (ignoreLicenses?.isEmpty() == true) {
+            return null
+        } else if (ignoreLicenses?.isNotEmpty() == true) {
+            orCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).inValues(ignoreLicenses))
+        }
+
+        if (includeLicenses?.isNotEmpty() == true) {
+            orCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).not().inValues(includeLicenses))
+        }
+
+        return if (orCriteria.isEmpty()) {
+            Criteria().and(ID).exists(false)
+        } else {
+            Criteria().orOperator(orCriteria)
         }
     }
 }
