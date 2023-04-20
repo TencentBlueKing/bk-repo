@@ -85,8 +85,6 @@ class BkAuthPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
-                // devops直接放过
-                if (appId == bkAuthConfig.devopsAppId) return true
                 return checkProjectPermission(uid, projectId!!, action)
             }
 
