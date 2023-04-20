@@ -195,7 +195,7 @@ class BkAuthPermissionServiceImpl constructor(
     override fun listPermissionProject(userId: String): List<String> {
         val localProjectList  = super.listPermissionProject(userId)
         val devopsProjectList = bkAuthProjectService.listProjectByUser(userId)
-        if (devopsProjectList.size == 1 && devopsProjectList[1] == "*") {
+        if (devopsProjectList.size == 1 && devopsProjectList[0] == "*") {
             return localProjectList
         }
         val allProjectList = localProjectList + devopsProjectList
