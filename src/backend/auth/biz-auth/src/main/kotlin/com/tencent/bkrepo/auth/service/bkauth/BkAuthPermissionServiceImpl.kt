@@ -172,7 +172,7 @@ class BkAuthPermissionServiceImpl constructor(
             val request = buildProjectCheckRequest(projectId, userId, appId)
 
             // devops 体系
-            if (matchDevopsCond(appId) || matchBcsOrRepoCond(appId)) {
+            if (matchDevopsCond(appId)) {
                 if (checkDevopsPermission(request)) {
                     return getAllRepoByProjectId(projectId)
                 }
@@ -194,6 +194,15 @@ class BkAuthPermissionServiceImpl constructor(
         return super.checkPermission(request) || checkDevopsPermission(request)
     }
 
+    override fun listPermissionProject(userId: String): List<String> {
+        val localProjectList  = super.listPermissionProject(userId)
+        val devopsProjectList = bkAuthProjectService.listProjectByUser(userId)
+        if (devopsProjectList.size == 1 && devopsProjectList[1] == "*") {
+            return localProjectList
+        }
+        val allProjectList = localProjectList + devopsProjectList
+        return allProjectList.distinct()
+    }
     private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
         return CheckPermissionRequest(
             uid = userId,
@@ -202,10 +211,6 @@ class BkAuthPermissionServiceImpl constructor(
             projectId = projectId,
             appId = appId
         )
-    }
-
-    private fun matchBcsOrRepoCond(appId: String?): Boolean {
-        return appId == bkAuthConfig.bcsAppId || appId == bkAuthConfig.bkrepoAppId
     }
 
     private fun matchDevopsCond(appId: String?): Boolean {
