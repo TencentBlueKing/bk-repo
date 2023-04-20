@@ -40,7 +40,7 @@
 </template>
 <script>
     import Breadcrumb from '@repository/components/Breadcrumb/topBreadcrumb'
-    import { mapState, mapGetters, mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         components: { Breadcrumb },
         data () {
@@ -50,16 +50,15 @@
         },
         computed: {
             ...mapState(['userInfo', 'projectList']),
-            ...mapGetters(['masterNode']),
             menuList () {
                 if (MODE_CONFIG === 'ci' || this.projectList.length) {
+                    const showRepoScan = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                     return {
                         project: [
                             'repoList',
                             'repoSearch',
-                            this.userInfo.admin && 'planManage',
                             MODE_CONFIG === 'ci' && 'repoToken',
-                            RELEASE_MODE !== 'community' && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
+                            showRepoScan && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
                             SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                         ].filter(Boolean),
                         global: [
@@ -67,7 +66,7 @@
                             'userManage',
                             'nodeManage',
                             // 'securityConfig',
-                            this.isMasterNode && 'planManage',
+                            this.userInfo.admin && 'planManage',
                             'repoAudit'
                         ].filter(Boolean)
                     }
@@ -76,9 +75,6 @@
                     project: [],
                     global: []
                 }
-            },
-            isMasterNode () {
-                return this.masterNode.url && this.masterNode.url.indexOf(location.origin) !== -1
             },
             breadcrumb () {
                 return this.$route.meta.breadcrumb || []

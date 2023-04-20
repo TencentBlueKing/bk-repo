@@ -382,7 +382,4 @@
         }
     }
 }
-.card-radio-group ::v-deep.card-radio{
-    width: 274px !important;
-}
 </style>

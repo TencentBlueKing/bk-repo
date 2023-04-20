@@ -32,7 +32,7 @@ import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import org.springframework.stereotype.Component
 
@@ -60,7 +60,7 @@ class AuthenticationManager(
      * @throws AuthenticationException 校验失败
      */
     fun checkPlatformAccount(accessKey: String, secretKey: String): String {
-        val response = serviceAccountResource.checkCredential(accessKey, secretKey)
+        val response = serviceAccountResource.checkAccountCredential(accessKey, secretKey)
         return response.data ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 
@@ -84,8 +84,8 @@ class AuthenticationManager(
      * 根据用户id[userId]查询用户信息
      * 当用户不存在时返回`null`
      */
-    fun findUserAccount(userId: String): User? {
-        return serviceUserResource.detail(userId).data
+    fun findUserAccount(userId: String): UserInfo? {
+        return serviceUserResource.userInfoById(userId).data
     }
 
     fun findOauthToken(accessToken: String): OauthToken? {

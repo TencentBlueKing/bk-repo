@@ -238,7 +238,7 @@ class UserServiceImpl constructor(
 
     override fun createToken(userId: String): Token? {
         logger.info("create token userId : [$userId]")
-        val token = IDUtil.genRandomId()
+        val token = UserRequestUtil.generateToken()
         return addUserToken(userId, token, null)
     }
 
@@ -247,9 +247,9 @@ class UserServiceImpl constructor(
             logger.info("add user token userId : [$userId] ,token : [$name]")
             checkUserExist(userId)
 
-            val existUserInfo = getUserById(userId)
+            val existUserInfo = userRepository.findFirstByUserId(userId)
             val existTokens = existUserInfo!!.tokens
-            var id = IDUtil.genRandomId()
+            var id = UserRequestUtil.generateToken()
             var createdTime = LocalDateTime.now()
             existTokens.forEach {
                 // 如果临时token已经存在，尝试更新token的过期时间
@@ -276,7 +276,7 @@ class UserServiceImpl constructor(
             val userToken = Token(name = name, id = id, createdAt = createdTime, expiredAt = expiredTime)
             update.addToSet(TUser::tokens.name, userToken)
             mongoTemplate.upsert(query, update, TUser::class.java)
-            val userInfo = getUserById(userId)
+            val userInfo = userRepository.findFirstByUserId(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
                 if (it.name == name) return it
@@ -290,13 +290,7 @@ class UserServiceImpl constructor(
 
     override fun listUserToken(userId: String): List<TokenResult> {
         checkUserExist(userId)
-        val userInfo = getUserById(userId)
-        val tokens = userInfo!!.tokens
-        val result = mutableListOf<TokenResult>()
-        tokens.forEach {
-            result.add(TokenResult(it.name, it.createdAt, it.expiredAt))
-        }
-        return result
+        return UserRequestUtil.convTokenResult(userRepository.findFirstByUserId(userId)!!.tokens)
     }
 
     override fun removeToken(userId: String, name: String): Boolean {
@@ -324,21 +318,23 @@ class UserServiceImpl constructor(
             }
         }
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
-        val query = UserQueryHelper.buildPermissionCheck(userId, pwd, hashPwd)
+        val query = UserQueryHelper.buildUserPasswordCheck(userId, pwd, hashPwd)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
             return null
         }
         // password 匹配成功，返回
-        if (result.pwd == hashPwd && result.userId == userId) {
+        if (result.pwd == hashPwd) {
             return UserRequestUtil.convToUser(result)
         }
 
         // token 匹配成功
         result.tokens.forEach {
             // 永久token，校验通过，临时token校验有效期
-            if (it.id == pwd && it.expiredAt == null) {
+            if (UserRequestUtil.matchToken(pwd, hashPwd, it.id) && it.expiredAt == null) {
                 return UserRequestUtil.convToUser(result)
-            } else if (it.id == pwd && it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())) {
+            } else if (UserRequestUtil.matchToken(pwd, hashPwd, it.id) &&
+                it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())
+            ) {
                 return UserRequestUtil.convToUser(result)
             }
         }

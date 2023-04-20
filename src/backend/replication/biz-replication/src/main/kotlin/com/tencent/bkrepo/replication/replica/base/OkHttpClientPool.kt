@@ -18,16 +18,19 @@ object OkHttpClientPool {
         clusterInfo: ClusterInfo,
         readTimeout: Duration,
         writeTimeout: Duration,
-        vararg interceptors: Interceptor
+        closeTimeout: Duration = Duration.ZERO,
+        vararg interceptors: Interceptor,
     ): OkHttpClient {
         return clientCache.getOrPut(clusterInfo) {
-            val builder = HttpClientBuilderFactory.create(clusterInfo.certificate)
-                .protocols(listOf(Protocol.HTTP_1_1))
+            val builder = HttpClientBuilderFactory.create(
+                clusterInfo.certificate,
+                closeTimeout = closeTimeout.seconds,
+            ).protocols(listOf(Protocol.HTTP_1_1))
                 .readTimeout(readTimeout)
                 .writeTimeout(writeTimeout)
             interceptors.forEach {
                 builder.addInterceptor(
-                    it
+                    it,
                 )
             }
             builder.addNetworkInterceptor(ProgressInterceptor())

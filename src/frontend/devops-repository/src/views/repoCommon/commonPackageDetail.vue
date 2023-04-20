@@ -142,13 +142,14 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {
             this.getPackageInfoHandler()
             this.handlerPaginationChange()
-            if (RELEASE_MODE !== 'community') {
+            if (RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU) {
                 this.refreshSupportPackageTypeList()
             }
         },
