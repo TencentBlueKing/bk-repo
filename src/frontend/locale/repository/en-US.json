@@ -683,7 +683,7 @@
     "ignoredVul": "Ignored Vulnerabilities",
     "activeVul": "Vulnerabilities Not Ignored",
     "ignore": "Ignore",
-    "ignoreAll": "Ignore All Vulnerabilities",
+    "ignoreAll": "All Vulnerabilities",
     "rule": "Rule",
     "ruleTooLong": "Text length exceeds limit",
     "ruleFormatErr": "Formatting error",
@@ -699,7 +699,11 @@
     "rulePackageVersionPlaceholder": "Package version, e.g., 1.7",
     "rulePackageVersionTip": "The rule will take effect for this version, if not set, it will take effect for all versions",
     "ruleVulPlaceholder": "Vulnerability ID, multiple vulnerability IDs were separated by newlines",
-    "ruleVulTip": "The vulnerability ID that needs to be ignored",
+    "ruleVulTip": "The vulnerability ID that needs to be filtered",
     "ruleSeverityPlaceholder": "Please select the minimum level",
-    "ruleSeverityTip": "Smaller than this level will be ignored"
+    "ruleSeverityTip": "Smaller than this level will be ignored",
+    "ruleIgnoreIfMatch": "Ignore",
+    "ruleIgnoreIfNotMatch": "Include",
+    "ruleIgnoreRuleType": "Rule Type",
+    "ruleIgnoreRuleTypeTip": "Ignore: Vulnerability will be ignored if matching rule\nInclude: Vulnerability will be ignored if does not match rule"
 }

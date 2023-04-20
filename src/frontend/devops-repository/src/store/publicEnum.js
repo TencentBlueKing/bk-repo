@@ -125,3 +125,9 @@ export const leakLevelEnum = {
     MEDIUM: '中级',
     LOW: '低级'
 }
+
+// 匹配规则时忽略
+export const FILTER_RULE_IGNORE = 0
+
+// 未匹配规则时忽略
+export const FILTER_RULE_INCLUDE = 1

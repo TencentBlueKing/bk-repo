@@ -103,7 +103,7 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import { leakLevelEnum } from '@repository/store/publicEnum'
+    import { FILTER_RULE_IGNORE, leakLevelEnum } from '@repository/store/publicEnum'
     import CreateOrUpdateIgnoreRuleDialog from '../scanConfig/createOrUpdateIgnoreRuleDialog'
     export default {
         name: 'leak',
@@ -173,6 +173,7 @@
             },
             ignoreVul (vulId) {
                 this.creatingIgnoreRule = {
+                    type: FILTER_RULE_IGNORE,
                     name: `IGNORE-${this.generateId(10)}`,
                     projectId: this.projectId,
                     repoName: this.subtaskOverview.repoName,

@@ -30,20 +30,27 @@
             <bk-form-item :desc="$t('rulePackageVersionTip')" desc-type="icon" :label="$t('version')" :required="false" property="packageVersion">
                 <bk-input :placeholder="$t('rulePackageVersionPlaceholder')" v-model="ignoreRule.packageVersion"></bk-input>
             </bk-form-item>
-            <bk-form-item :desc="$t('ruleVulTip')" desc-type="icon" :label="$t('vulnerability') + ' ID'" :required="false" property="vulIds">
-                <bk-checkbox v-model="ignoreAllVul">{{ $t('ignoreAll') }}</bk-checkbox>
-                <bk-input :placeholder="$t('ruleVulPlaceholder')" v-if="!ignoreAllVul" type="textarea" :planceholder="$t('ignoreRuleVulIdsPlaceholder')" v-model="vulIds"></bk-input>
-            </bk-form-item>
-            <bk-form-item v-if="!ignoreAllVul" :desc="$t('ruleSeverityTip')" desc-type="icon" :label="$t('ignoreRuleMinSeverity')" :required="false" property="severity">
+            <bk-form-item v-if="ignoreRule.type === FILTER_RULE_IGNORE && !ignoreAllVul" :desc="$t('ruleSeverityTip')" desc-type="icon" :label="$t('ignoreRuleMinSeverity')" :required="false" property="severity">
                 <bk-select :placeholder="$t('ruleSeverityPlaceholder')" v-model="ignoreRule.severity">
                     <bk-option v-for="s in severities" :key="s.level" :id="s.level" :name="s.name"></bk-option>
                 </bk-select>
+            </bk-form-item>
+            <bk-form-item :desc="$t('ruleVulTip')" desc-type="icon" :label="$t('vulnerability') + ' ID'" :required="false" property="vulIds">
+                <bk-checkbox v-if="ignoreRule.type === FILTER_RULE_IGNORE" v-model="ignoreAllVul">{{ $t('ignoreAll') }}</bk-checkbox>
+                <bk-input :placeholder="$t('ruleVulPlaceholder')" v-if="!ignoreAllVul" type="textarea" :planceholder="$t('ignoreRuleVulIdsPlaceholder')" v-model="vulIds"></bk-input>
+            </bk-form-item>
+            <bk-form-item :desc="$t('ruleIgnoreRuleTypeTip')" desc-type="icon" :label="$t('ruleIgnoreRuleType')" property="type">
+                <bk-radio-group v-model="ignoreRule.type">
+                    <bk-radio :value="FILTER_RULE_IGNORE">{{ $t('ruleIgnoreIfMatch') }}</bk-radio>
+                    <bk-radio @change="ignoreRule.severity = null;ignoreAllVul = false" :value="FILTER_RULE_INCLUDE">{{ $t('ruleIgnoreIfNotMatch') }}</bk-radio>
+                </bk-radio-group>
             </bk-form-item>
         </bk-form>
     </bk-dialog>
 </template>
 <script>
     import { mapActions } from 'vuex'
+    import { FILTER_RULE_IGNORE, FILTER_RULE_INCLUDE } from '@/store/publicEnum'
     export default {
         name: 'createOrUpdateIgnoreRuleDialog',
         props: {
@@ -106,6 +113,8 @@
                         }
                     ]
                 },
+                FILTER_RULE_IGNORE: FILTER_RULE_IGNORE,
+                FILTER_RULE_INCLUDE: FILTER_RULE_INCLUDE,
                 showDialog: false,
                 ignoreRule: {},
                 vulIds: '',
@@ -141,6 +150,7 @@
                         this.ignoreRule = this.updatingRule
                     } else {
                         this.ignoreRule = {
+                            type: FILTER_RULE_IGNORE,
                             name: '',
                             vulIds: []
                         }
