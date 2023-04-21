@@ -705,5 +705,5 @@
     "ruleIgnoreIfMatch": "Ignore",
     "ruleIgnoreIfNotMatch": "Include",
     "ruleIgnoreRuleType": "Rule Type",
-    "ruleIgnoreRuleTypeTip": "Ignore: Vulnerability will be ignored if matching rule\nInclude: Vulnerability will be ignored if does not match rule"
+    "ruleIgnoreRuleTypeTip": "Ignore: Vulnerability will be ignored if matching rule<br>Include: Vulnerability will be ignored if does not match rule"
 }
