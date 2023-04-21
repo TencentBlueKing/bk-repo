@@ -46,7 +46,7 @@ data class CreateUserToRepoRequest(
     @Sensitive(MaskString::class)
     var pwd: String? = null,
     @ApiModelProperty("管理员")
-    val admin: Boolean = false,
+    var admin: Boolean = false,
     @ApiModelProperty("关联用户")
     val asstUsers: List<String> = emptyList(),
     @ApiModelProperty("群组账号")
