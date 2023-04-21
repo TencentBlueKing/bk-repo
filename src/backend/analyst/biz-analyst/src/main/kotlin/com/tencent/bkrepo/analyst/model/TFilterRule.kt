@@ -110,8 +110,4 @@ data class TFilterRule(
      * 规则类型
      */
     val type: Int = FILTER_RULE_TYPE_IGNORE
-) {
-    companion object {
-        const val SYSTEM_PROJECT_ID = ""
-    }
-}
+)

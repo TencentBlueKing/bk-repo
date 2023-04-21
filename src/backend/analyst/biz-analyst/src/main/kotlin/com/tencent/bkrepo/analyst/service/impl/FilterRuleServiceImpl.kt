@@ -29,9 +29,9 @@ package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.dao.FilterRuleDao
 import com.tencent.bkrepo.analyst.model.TFilterRule
-import com.tencent.bkrepo.analyst.model.TFilterRule.Companion.SYSTEM_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_INCLUDE
+import com.tencent.bkrepo.analyst.pojo.Constant.SYSTEM_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest

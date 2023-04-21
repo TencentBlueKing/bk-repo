@@ -207,12 +207,6 @@ class UserController @Autowired constructor(
         @RequestParam projectId: String?
     ): Response<Token?> {
         preCheckContextUser(uid)
-        // add user to project first
-        projectId?.let {
-            val createRoleRequest = buildProjectAdminRequest(projectId)
-            val roleId = roleService.createRole(createRoleRequest)
-            userService.addUserToRole(uid, roleId!!)
-        }
         // add user token
         val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
