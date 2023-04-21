@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,50 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.replication.controller.api
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
+import com.tencent.bkrepo.replication.service.ReplicaExtService
+import io.swagger.annotations.Api
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@ConfigurationProperties("replication")
-data class ReplicationProperties(
+@Api("同步ext接口")
+@RestController
+@RequestMapping("/ext/")
+class UserReplicationController(
+    private val replicaExtService: ReplicaExtService
+) {
+
 
     /**
-     * 文件发送限速
+     * 检查两个仓库之间的差异
      */
-    var rateLimit: DataSize = DataSize.ofBytes(-1),
+    @PostMapping("/find/repo/difference")
+    fun findRepoDifference(
+        @RequestBody request: CheckRepoDifferenceRequest
+    ): Response<Any> {
+        return ResponseBuilder.success(replicaExtService.findRepoDifference(request))
+    }
 
     /**
-     * oci blob文件上传分块大小
+     * 同步两个仓库之间的差异
      */
-    var chunkedSize: Long = 1024 * 1024 * 5,
-    /**
-     * oci blob文件上传并发数
-     */
-    var threadNum: Int = 3,
-
-    /**
-     * manual分发并行数
-     */
-    var manualConcurrencyNum: Int = 3,
-
-    /**
-     * 签名过滤器body限制大小
-     * */
-    var bodyLimit: DataSize = DataSize.ofMegabytes(5),
-
-    /**
-     * 开启请求超时校验的域名以及对应平均速率（MB/s）
-     * 配置如下：
-     *   timoutCheckHosts
-     *     - host: xx
-     *       rate: x
-     *     - host: xx
-     *       rate: x
-     */
-    var timoutCheckHosts: List<Map<String, String>> = emptyList(),
-    /**
-     * 一次性查询的page size
-     */
-    var pageSize: Int = 500
-)
+    @PostMapping("/sync/repo/difference")
+    fun syncRepoDifference(
+        @RequestBody request: CheckRepoDifferenceRequest
+    ): Response<Any> {
+        return ResponseBuilder.success(replicaExtService.syncRepoDifference(request))
+    }
+}
