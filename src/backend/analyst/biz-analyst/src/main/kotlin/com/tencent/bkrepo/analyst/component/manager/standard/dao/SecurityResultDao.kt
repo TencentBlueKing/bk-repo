@@ -32,8 +32,6 @@ import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResu
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResultData
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -58,14 +56,10 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
                 )
             }
 
-            rule?.let {
-                if (ignored) {
-                    ignoreCriteria(it)?.let { criteria -> andCriteria.add(criteria) }
-                } else {
-                    andCriteria.addAll(activeCriteria(it))
-                }
+            val filterCriteria = SecurityFilterCriteriaBuilder(rule, ignored).build()
+            if (filterCriteria.isNotEmpty()) {
+                andCriteria.addAll(filterCriteria)
             }
-
             if (andCriteria.isNotEmpty()) {
                 criteria.andOperator(andCriteria)
             }
@@ -77,71 +71,5 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
     override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
         query.with(Sort.by(Sort.Direction.DESC, dataKey(TSecurityResultData::severityLevel.name)))
         return query
-    }
-
-
-    private fun activeCriteria(rule: MergedFilterRule): List<Criteria> {
-        val ignoreVulIds = rule.ignoreRule.vulIds
-        val includeVulIds = rule.includeRule.vulIds
-        val minSeverityLevel = rule.minSeverityLevel
-
-        val criteriaList = ArrayList<Criteria>()
-        if (ignoreVulIds?.isEmpty() == true) {
-            // ignoreVulIds为空集合时表示忽略所有
-            // 设置一个永远为false的条件，让数据库查询结果返回空
-            criteriaList.add(Criteria(ID).exists(false))
-            return criteriaList
-        }
-
-        if (ignoreVulIds?.isNotEmpty() == true) {
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::vulId.name)).not().inValues(ignoreVulIds))
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::cveId.name)).not().inValues(ignoreVulIds))
-        }
-
-        if (!includeVulIds.isNullOrEmpty()) {
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(includeVulIds))
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(includeVulIds))
-        }
-
-        if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::severityLevel.name)).gte(minSeverityLevel))
-        }
-        return criteriaList
-    }
-
-    private fun ignoreCriteria(rule: MergedFilterRule): Criteria? {
-        val ignoreVulIds = rule.ignoreRule.vulIds
-        val includeVulIds = rule.includeRule.vulIds
-        val minSeverityLevel = rule.minSeverityLevel
-
-        val orCriteria = ArrayList<Criteria>()
-        if (ignoreVulIds?.isNotEmpty() == true) {
-            orCriteria.add(Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(ignoreVulIds))
-            orCriteria.add(Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(ignoreVulIds))
-        } else if (ignoreVulIds?.isEmpty() == true) {
-            // ignoreVulIds为空集合时表示忽略所有
-            // 此处要返回所有被忽略的漏洞相当于返回所有漏洞，可以不设置忽略条件直接返回，直接返回
-            return null
-        }
-
-        if (!includeVulIds.isNullOrEmpty()) {
-            orCriteria.add(
-                Criteria().andOperator(
-                    Criteria(dataKey(TSecurityResultData::vulId.name)).not().inValues(includeVulIds),
-                    Criteria(dataKey(TSecurityResultData::cveId.name)).not().inValues(includeVulIds)
-                )
-            )
-        }
-
-        if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
-            orCriteria.add(Criteria(dataKey(TSecurityResultData::severityLevel.name)).lt(minSeverityLevel))
-        }
-
-        return if (orCriteria.isEmpty()) {
-            // 没有忽略条件时设置一个永远未false的条件，使查询返回空集合
-            Criteria().and(ID).exists(false)
-        } else {
-            Criteria().orOperator(orCriteria)
-        }
     }
 }

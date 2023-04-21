@@ -122,17 +122,16 @@ class FilterRuleServiceImpl(private val filterRuleDao: FilterRuleDao) : FilterRu
 
     private fun merge(rules: List<FilterRule>): MergedFilterRule {
         val mergedFilterRule = MergedFilterRule()
-        with(mergedFilterRule) {
-            for (rule in rules) {
-                if (rule.type == FILTER_RULE_TYPE_IGNORE) {
-                    val severity = rule.severity
-                    if (severity != null && (minSeverityLevel == null || severity > minSeverityLevel!!)) {
-                        minSeverityLevel = severity
-                    }
-                    mergedFilterRule.ignoreRule.add(rule)
-                } else if (rule.type == FILTER_RULE_TYPE_INCLUDE) {
-                    mergedFilterRule.includeRule.add(rule)
+        for (rule in rules) {
+            if (rule.type == FILTER_RULE_TYPE_IGNORE) {
+                val severity = rule.severity
+                val minSeverityLevel = mergedFilterRule.minSeverityLevel
+                if (severity != null && (minSeverityLevel == null || severity > minSeverityLevel)) {
+                    mergedFilterRule.minSeverityLevel = severity
                 }
+                mergedFilterRule.ignoreRule.add(rule)
+            } else if (rule.type == FILTER_RULE_TYPE_INCLUDE) {
+                mergedFilterRule.includeRule.add(rule)
             }
         }
 

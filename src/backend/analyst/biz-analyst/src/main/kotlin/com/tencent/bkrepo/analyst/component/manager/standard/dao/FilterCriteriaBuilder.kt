@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,34 +27,23 @@
 
 package com.tencent.bkrepo.analyst.component.manager.standard.dao
 
-import com.tencent.bkrepo.analyst.component.manager.ResultItemDao
-import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResult
-import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
 import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
 
-@Repository
-class LicenseResultDao : ResultItemDao<TLicenseResult>() {
-    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        with(arguments as StandardLoadResultArguments) {
-            val andCriteria = ArrayList<Criteria>()
-
-            if (licenseIds.isNotEmpty()) {
-                andCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).inValues(licenseIds))
-            }
-
-            val filterCriteria = LicenseFilterCriteriaBuilder(rule, ignored).build()
-            if (filterCriteria.isNotEmpty()) {
-                andCriteria.addAll(filterCriteria)
-            }
-            if (andCriteria.isNotEmpty()) {
-                criteria.andOperator(andCriteria)
-            }
-
-            return criteria
+abstract class FilterCriteriaBuilder(
+    private val rule: MergedFilterRule?,
+    private val ignored: Boolean
+) {
+    fun build(): List<Criteria> {
+        return if (rule != null && ignored) {
+            ignoreCriteria(rule)?.let { listOf(it) } ?: emptyList()
+        } else if (rule != null) {
+            activeCriteria(rule)
+        } else {
+            emptyList()
         }
     }
+
+    abstract fun ignoreCriteria(rule: MergedFilterRule): Criteria?
+    abstract fun activeCriteria(rule: MergedFilterRule): List<Criteria>
 }
