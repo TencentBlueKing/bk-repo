@@ -163,6 +163,13 @@ export default {
       } else if (this.ignoreRule.projectIds.length === 0) {
         this.ignoreRule.projectIds = null
       }
+
+      if (this.ignoreAllVul) {
+        this.ignoreRule.vulIds = []
+      } else {
+        this.ignoreRule.vulIds = this.vulIds ? this.vulIds.trim().split('\n') : null
+      }
+
       this.$refs['form'].validate((valid) => {
         if (valid) {
           // 根据是否为创建模式发起不同请求
@@ -197,7 +204,7 @@ export default {
         this.ignoreRule = _.cloneDeep(this.updatingRule)
       }
       this.vulIds = this.ignoreRule.vulIds ? this.ignoreRule.vulIds.join('\n') : ''
-      this.ignoreAllVul = this.ignoreRule.vulIds !== undefined && this.ignoreRule.vulIds.length === 0
+      this.ignoreAllVul = this.ignoreRule.vulIds !== undefined && this.ignoreRule.vulIds !== null && this.ignoreRule.vulIds.length === 0
       this.$nextTick(() => {
         this.$refs['form'].clearValidate()
       })
