@@ -1,6 +1,6 @@
 ## bkrepo 用户相关接口
 
-### 创建用户
+### 创建用户
 
 - API: POST /auth/api/user/create
 - API 名称: create_user
@@ -68,8 +68,7 @@
     "pwd":"string",
     "userId":"string",
     "asstUsers":[
-        "owen",
-        "necr"
+        "owen"
     ],
     "group":true,
     "projectId":"test"
@@ -84,7 +83,6 @@
 |name|string|是|无|用户名|the  name|
 |pwd|string|是|无|用户密码|the user password|
 |userId|string|是|无|用户id|the user id|
-|admin|bool|否|false|是否管理员|is admin|
 |asstUsers|string array|否|[]|关联用户|association user|
 |group|boot |否|false|是否群组账号|is group user|
 |projectId|string|是|无|关联到的项目|the association project|
@@ -170,7 +168,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 用户列表
+### 用户列表
 
 - API:GET /auth/api/user/list
 - API 名称: list_user
@@ -222,7 +220,7 @@
 |name|string|用户名|the department name|
 
 
-### 用户详情
+### 用户详情
 
 - API:GET /auth/api/user/detail/{uid}
 - API 名称: user_detail
@@ -256,14 +254,9 @@
         "name":"string",
         "pwd":"string",
         "roles":[
-            "abcdegfffff"
+            "632d9e127er87746e2320df1c"
         ],
         "tokens":[
-            {
-                "createdAt":"2019-12-21T08:47:36.656Z",
-                "expiredAt":"2019-12-21T08:47:36.656Z",
-                "id":"ssss-deeedd"
-            }
         ],
         "uid":"owen"
     },
@@ -298,7 +291,7 @@
 |createdAt|date time| token创建时间|create time |
 |expiredAt|date time|token失效 |expire time |
 
-### 删除用户
+### 删除用户
 
 - API:DELETE /auth/api/user/{uid}
 - API 名称: delete_user
@@ -339,9 +332,9 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新用户信息
+### 更新用户信息
 
-- API:PUT  /auth/api/user/{uid}
+- API:PUT  /auth/api/user/update/info/{uid}
 - API 名称: update_user
 - 功能说明：
 	- 中文：更新用户信息
@@ -391,7 +384,7 @@
 |traceId|string|请求跟踪id|the trace id|
 
 
-### 删除用户所属角色
+### 删除用户所属角色
 
 - API:DELETE  /auth/api/user/role/{uid}/{rid}
 - API 名称: delete_user_role
@@ -404,7 +397,6 @@
 ``` json
 
 ```
-
 
 - input 字段说明
 
@@ -427,11 +419,6 @@
             "string"
         ],
         "tokens":[
-            {
-                "createdAt":"2019-12-21T09:46:37.877Z",
-                "expiredAt":"2019-12-21T09:46:37.877Z",
-                "id":"string"
-            }
         ],
         "uid":"string"
     },
@@ -451,7 +438,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 新增用户所属角色
+### 新增用户所属角色
 
 - API:POST  /auth/api/user/role/{uid}/{rid}
 - API 名称: add_user_role
@@ -486,11 +473,6 @@
             "string"
         ],
         "tokens":[
-            {
-                "createdAt":"2019-12-21T09:46:37.877Z",
-                "expiredAt":"2019-12-21T09:46:37.877Z",
-                "id":"string"
-            }
         ],
         "uid":"string"
     },
@@ -511,7 +493,7 @@
 
 
 
-### 批量新增用户所属角色
+### 批量新增用户所属角色
 
 - API:PATCH /auth/api/user/role/add/{rid}
 - API 名称: patch_create_user_role
@@ -556,7 +538,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 批量删除用户所属角色
+### 批量删除用户所属角色
 
 - API:PATCH /auth/api/user/role/add/{rid}
 - API 名称: patch_delete_user_role
@@ -601,7 +583,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 判断用户是否为项目管理员
+### 判断用户是否为项目管理员
 
 - API:GET /auth/api/user/admin/{projectId}
 - API 名称: is_project_admin

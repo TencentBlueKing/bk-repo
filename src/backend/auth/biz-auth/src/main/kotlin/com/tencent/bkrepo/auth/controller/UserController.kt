@@ -91,9 +91,8 @@ class UserController @Autowired constructor(
     @ApiOperation("创建用户")
     @PostMapping("/create")
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
-        if (request.admin) {
-            preCheckPlatformPermission()
-        }
+        // 限制创建为admin用户
+        request.admin = false
         userService.createUser(request)
         return ResponseBuilder.success(true)
     }
@@ -101,9 +100,8 @@ class UserController @Autowired constructor(
     @ApiOperation("创建项目用户")
     @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
-        if (request.admin) {
-            preCheckPlatformPermission()
-        }
+        // 限制创建为admin用户
+        request.admin = false
         preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToProject(request)
         val createRoleRequest = buildProjectAdminRequest(request.projectId)
@@ -115,9 +113,8 @@ class UserController @Autowired constructor(
     @ApiOperation("创建仓库用户")
     @PostMapping("/create/repo")
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
-        if (request.admin) {
-            preCheckPlatformPermission()
-        }
+        // 限制创建为admin用户
+        request.admin = false
         preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToRepo(request)
         val createRoleRequest = buildRepoAdminRequest(request.projectId, request.repoName)
@@ -210,12 +207,6 @@ class UserController @Autowired constructor(
         @RequestParam projectId: String?
     ): Response<Token?> {
         preCheckContextUser(uid)
-        // add user to project first
-        projectId?.let {
-            val createRoleRequest = buildProjectAdminRequest(projectId)
-            val roleId = roleService.createRole(createRoleRequest)
-            userService.addUserToRole(uid, roleId!!)
-        }
         // add user token
         val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
@@ -325,7 +316,7 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("用户info ")
+    @ApiOperation("用户info")
     @GetMapping("/userinfo/{uid}")
     fun userInfoById(@PathVariable uid: String): Response<UserInfo?> {
         preCheckContextUser(uid)

@@ -25,52 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.artifact
+package com.tencent.bkrepo.replication.controller.api
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import com.tencent.bkrepo.oci.util.OciLocationUtils
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
+import com.tencent.bkrepo.replication.service.ReplicaExtService
+import io.swagger.annotations.Api
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * oci blob信息
- */
-class OciBlobArtifactInfo(
-    projectId: String,
-    repoName: String,
-    packageName: String,
-    version: String,
-    val digest: String? = null,
-    val uuid: String? = null,
-    val mount: String? = null,
-    val from: String? = null
-) : OciArtifactInfo(projectId, repoName, packageName, version) {
-    private val ociDigest =
-        try {
-            OciDigest(digest)
-        } catch (e: IllegalArgumentException) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, digest!!)
-        }
+@Api("同步ext接口")
+@RestController
+@RequestMapping("/ext/")
+class UserReplicationController(
+    private val replicaExtService: ReplicaExtService
+) {
 
-    fun getDigestAlg(): String {
-        return ociDigest.getDigestAlg()
+
+    /**
+     * 检查两个仓库之间的差异
+     */
+    @PostMapping("/find/repo/difference")
+    fun findRepoDifference(
+        @RequestBody request: CheckRepoDifferenceRequest
+    ): Response<Any> {
+        return ResponseBuilder.success(replicaExtService.findRepoDifference(request))
     }
 
-    fun getDigestHex(): String {
-        return ociDigest.getDigestHex()
-    }
-
-    fun getDigest() = ociDigest
-
-    fun blobTempPath(): String {
-        return OciLocationUtils.buildDigestBlobsUploadPath(packageName, ociDigest)
-    }
-
-    override fun getArtifactFullPath(): String {
-        return if (digest.isNullOrBlank()) {
-            ""
-        } else {
-            OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest)
-        }
+    /**
+     * 同步两个仓库之间的差异
+     */
+    @PostMapping("/sync/repo/difference")
+    fun syncRepoDifference(
+        @RequestBody request: CheckRepoDifferenceRequest
+    ): Response<Any> {
+        return ResponseBuilder.success(replicaExtService.syncRepoDifference(request))
     }
 }

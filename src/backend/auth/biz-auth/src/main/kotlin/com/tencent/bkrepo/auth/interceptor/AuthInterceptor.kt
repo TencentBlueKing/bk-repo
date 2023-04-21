@@ -221,6 +221,7 @@ class AuthInterceptor(
 
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
 
+        // 项目内权限校验api,开放给basic访问
         private val userProjectApiSet = setOf(
             AUTH_REPO_SUFFIX,
             AUTH_PROJECT_SUFFIX,
@@ -230,6 +231,7 @@ class AuthInterceptor(
             AUTH_API_EXT_PERMISSION_PREFIX
         )
 
+        // 普通用户可访问api,开放给basic and platform用户访问
         private val userAccessApiSet = setOf(
             AUTH_API_PROJECT_ADMIN_PREFIX,
             AUTH_API_USER_INFO_PREFIX,

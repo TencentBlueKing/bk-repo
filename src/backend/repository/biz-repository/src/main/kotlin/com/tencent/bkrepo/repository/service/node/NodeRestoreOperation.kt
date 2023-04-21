@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.service.node
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
@@ -41,6 +42,12 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
  * 节点恢复接口
  */
 interface NodeRestoreOperation {
+
+    /**
+     * 查询被删除的节点详情
+     */
+    fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail>
+
     /**
      * 恢复被删除的节点
      * @return 恢复节点数量

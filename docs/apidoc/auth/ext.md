@@ -1,7 +1,7 @@
 ## bkrepo 权限扩展接口
 
 
-### 部门列表
+### 部门列表
 
 - API:GET /auth/api/department/list
 - API 名称: list_department

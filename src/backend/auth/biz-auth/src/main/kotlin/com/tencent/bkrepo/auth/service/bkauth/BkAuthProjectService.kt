@@ -37,14 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class BkAuthProjectService @Autowired constructor(
-    private val bkciAuthService: BkciAuthService
-) {
-    fun isProjectMember(
-        user: String,
-        projectCode: String,
-        permissionAction: String
-    ): Boolean {
+class BkAuthProjectService @Autowired constructor(private val bkciAuthService: BkciAuthService) {
+    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
         return bkciAuthService.isProjectSuperAdmin(
             user = user,
             projectCode = projectCode,
@@ -54,10 +48,11 @@ class BkAuthProjectService @Autowired constructor(
         ) || bkciAuthService.isProjectMember(user, projectCode)
     }
 
-    fun isProjectManager(
-        user: String,
-        projectCode: String
-    ): Boolean {
+    fun isProjectManager(user: String, projectCode: String): Boolean {
         return bkciAuthService.isProjectManager(user, projectCode)
+    }
+
+    fun listProjectByUser(user: String): List<String> {
+        return bkciAuthService.getProjectListByUser(user)
     }
 }
