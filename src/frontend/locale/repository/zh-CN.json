@@ -688,5 +688,6 @@
     "repoEnterTip":"请输入仓库名称, 按Enter键搜索",
     "belongProject":"所属项目",
     "searchRelatedResults":"搜索到相关结果",
-    "allRepoTotal":"全部制品共"
+    "allRepoTotal":"全部制品共",
+    "clusterNames": "地点"
 }
