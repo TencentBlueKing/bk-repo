@@ -84,6 +84,7 @@ class EdgePullReplicaExecutor(
 ) {
 
     private val centerBlobReplicaClient = OkHttpClientPool.getHttpClient(
+        timoutCheckHosts = emptyList(),
         clusterInfo = clusterProperties.center,
         readTimeout = Duration.ofMillis(READ_TIMEOUT),
         writeTimeout = Duration.ofMillis(WRITE_TIMEOUT),
