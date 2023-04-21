@@ -8,6 +8,11 @@
             :pagination="pagination"
             size="small">
             <bk-table-column :show-overflow-tooltip="true" :label="$t('name')" width="200" prop="name"></bk-table-column>
+            <bk-table-column :show-overflow-tooltip="true" :label="$t('ruleIgnoreRuleType')" width="80" prop="ruleType">
+                <template slot-scope="props">
+                    {{ props.row.type === FILTER_RULE_IGNORE ? $t('ruleIgnoreIfMatch') : $t('ruleIgnoreIfNotMatch')}}
+                </template>
+            </bk-table-column>
             <bk-table-column :show-overflow-tooltip="true" :label="$t('description')" width="240" prop="description"></bk-table-column>
             <bk-table-column :show-overflow-tooltip="true" :label="$t('repoName')" width="120" prop="repoName"></bk-table-column>
             <bk-table-column :show-overflow-tooltip="true" :label="$t('path')" width="200" prop="fullPath"></bk-table-column>
@@ -32,6 +37,7 @@
 <script>
     import { mapActions } from 'vuex'
     import CreateOrUpdateIgnoreRuleDialog from './createOrUpdateIgnoreRuleDialog'
+    import { FILTER_RULE_IGNORE } from 'devops-repository/src/store/publicEnum'
 
     export default {
         name: 'ignoreRule',
@@ -42,6 +48,7 @@
         },
         data () {
             return {
+                FILTER_RULE_IGNORE: FILTER_RULE_IGNORE,
                 dialogVisible: false,
                 updatingRule: null,
                 isLoading: false,
