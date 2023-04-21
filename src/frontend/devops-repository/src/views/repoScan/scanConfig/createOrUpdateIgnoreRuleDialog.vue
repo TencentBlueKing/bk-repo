@@ -209,5 +209,7 @@
     }
 </script>
 <style lang="scss" scoped>
-
+    .bk-form-radio {
+        margin-right: 10px;
+    }
 </style>
