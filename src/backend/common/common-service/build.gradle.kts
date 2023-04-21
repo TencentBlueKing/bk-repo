@@ -48,8 +48,8 @@ dependencies {
     }
     api("org.springframework.cloud:spring-cloud-sleuth-otel-autoconfigure")
     implementation("io.opentelemetry:opentelemetry-sdk-extension-resources")
-    // 默认添加otel exporter
-    if (otelExporterEnabled == null || otelExporterEnabled.toBoolean()) {
+    // 默认不添加otel exporter
+    if (otelExporterEnabled.toBoolean()) {
         implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     }
 

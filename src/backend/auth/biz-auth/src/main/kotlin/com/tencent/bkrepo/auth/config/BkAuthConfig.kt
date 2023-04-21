@@ -76,17 +76,6 @@ class BkAuthConfig {
     @Value("\${auth.devops.appId:}")
     var devopsAppId: String = ""
 
-    /**
-     * 蓝盾BCS平台appId
-     */
-    @Value("\${auth.devops.bcsAppId:}")
-    var bcsAppId: String = ""
-
-    /**
-     * bkrepo平台appId
-     */
-    @Value("\${auth.devops.bkrepoAppId:}")
-    var bkrepoAppId: String = ""
 
     fun getBkciAuthServer(): String {
         return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {

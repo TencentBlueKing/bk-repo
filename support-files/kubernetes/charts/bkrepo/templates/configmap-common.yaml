@@ -17,7 +17,7 @@ data:
       path: /data/workspace/logs
     spring:
       sleuth:
-        enabled: false
+        enabled: true
       data:
         mongodb:
           uri: {{ include "bkrepo.mongodbUri" . }}
