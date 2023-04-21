@@ -68,11 +68,10 @@ open class NodeRestoreSupport(
 ) : NodeRestoreOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
-    override fun getDeletedNodeDetail(artifact: ArtifactInfo): NodeDetail? {
+    override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         with(artifact) {
             val query = nodeDeletedPointListQuery(projectId, repoName, getArtifactFullPath())
-            val deletedNode = nodeDao.find(query).firstOrNull()
-            return convertToDetail(deletedNode)
+            return nodeDao.find(query).map { convertToDetail(it)!! }
         }
     }
 

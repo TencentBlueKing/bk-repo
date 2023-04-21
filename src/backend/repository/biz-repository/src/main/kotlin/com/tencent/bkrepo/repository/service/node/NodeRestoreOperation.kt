@@ -46,7 +46,7 @@ interface NodeRestoreOperation {
     /**
      * 查询被删除的节点详情
      */
-    fun getDeletedNodeDetail(artifact: ArtifactInfo): NodeDetail?
+    fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail>
 
     /**
      * 恢复被删除的节点

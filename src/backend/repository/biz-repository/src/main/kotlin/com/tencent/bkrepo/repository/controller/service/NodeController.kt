@@ -155,7 +155,7 @@ class NodeController(
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
     }
 
-    override fun getDeletedNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+    override fun getDeletedNodeDetail(projectId: String, repoName: String, fullPath: String): Response<List<NodeDetail>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
         return ResponseBuilder.success(nodeService.getDeletedNodeDetail(artifactInfo))
     }

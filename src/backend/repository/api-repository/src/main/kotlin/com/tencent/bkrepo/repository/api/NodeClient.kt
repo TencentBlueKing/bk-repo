@@ -177,5 +177,5 @@ interface NodeClient {
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam fullPath: String
-    ): Response<NodeDetail?>
+    ): Response<List<NodeDetail>>
 }

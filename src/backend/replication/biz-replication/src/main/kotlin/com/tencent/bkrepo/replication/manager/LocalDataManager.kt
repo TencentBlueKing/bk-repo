@@ -166,7 +166,7 @@ class LocalDataManager(
     fun findDeletedNodeDetail(
         projectId: String, repoName: String, fullPath: String
     ): NodeDetail? {
-        return nodeClient.getDeletedNodeDetail(projectId, repoName, fullPath).data
+        return nodeClient.getDeletedNodeDetail(projectId, repoName, fullPath).data?.firstOrNull()
     }
 
     /**

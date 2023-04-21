@@ -149,7 +149,7 @@ class NodeServiceImpl(
         NodeRenameSupport(this).renameNode(renameRequest)
     }
 
-    override fun getDeletedNodeDetail(artifact: ArtifactInfo): NodeDetail? {
+    override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
     }
 
