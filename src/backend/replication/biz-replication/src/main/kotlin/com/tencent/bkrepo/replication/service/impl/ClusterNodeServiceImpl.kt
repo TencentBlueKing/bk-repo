@@ -51,6 +51,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
 import com.tencent.bkrepo.replication.util.HttpUtils
@@ -133,7 +134,7 @@ class ClusterNodeServiceImpl(
                 lastModifiedDate = LocalDateTime.now(),
                 detectType = detectType
             )
-            if (ping) {
+            if (ping && detectType == DetectType.PING) {
                 // 检测远程集群网络连接是否可用
                 retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
                     tryConnect(convert(clusterNode)!!)
@@ -164,10 +165,16 @@ class ClusterNodeServiceImpl(
                 password = crypto(request.password, false)
                 certificate = request.certificate
             }
-            // 检测远程集群网络连接是否可用
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                tryConnect(convert(tClusterNode)!!)
+            request.detectType?.let {
+                tClusterNode.detectType = it
             }
+            if (tClusterNode.detectType != DetectType.REPORT && ping) {
+                // 检测远程集群网络连接是否可用
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                    tryConnect(convert(tClusterNode)!!)
+                }
+            }
+
             return try {
                 clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
