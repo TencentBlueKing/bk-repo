@@ -84,7 +84,7 @@ object HttpUtils {
     ): String {
         val builder = StringBuilder(UrlFormatter.formatHost(url))
         if (path.isNotBlank()) {
-            builder.append(CharPool.SLASH).append(path)
+            builder.append(path)
         }
         if (params.isNotBlank()) {
             if (builder.contains(CharPool.QUESTION)) {

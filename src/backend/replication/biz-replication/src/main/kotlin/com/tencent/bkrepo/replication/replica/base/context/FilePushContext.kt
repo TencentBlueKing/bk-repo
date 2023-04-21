@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,42 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.replication.replica.base.context
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
+import com.tencent.bkrepo.common.api.pojo.Response
+import okhttp3.OkHttpClient
 
-@ConfigurationProperties("replication")
-data class ReplicationProperties(
-
-    /**
-     * 文件发送限速
-     */
-    var rateLimit: DataSize = DataSize.ofBytes(-1),
-
-    /**
-     * oci blob文件上传分块大小
-     */
-    var chunkedSize: Long = 1024 * 1024 * 5,
-    /**
-     * oci blob文件上传并发数
-     */
-    var threadNum: Int = 3,
-
-    /**
-     * manual分发并行数
-     */
-    var manualConcurrencyNum: Int = 3,
-
-    /**
-     * 签名过滤器body限制大小
-     * */
-    var bodyLimit: DataSize = DataSize.ofMegabytes(5),
-
-    /**
-     * 集群间制品同步方式：
-     * 追加上传：CHUNKED
-     * 普通上传（单个请求）：DEFAULT
-     * */
-    var pushType: String = "DEFAULT"
-)
+class FilePushContext(
+    val context: ReplicaContext,
+    val sha256: String? = null,
+    val size: Long? = null,
+    val digest: String? = null,
+    val name: String,
+    val token: String? = null,
+    val responseType: Class<*> = Response::class.java,
+    httpClient: OkHttpClient? = null
+) {
+    val httpClient: OkHttpClient = httpClient ?: context.httpClient
+}

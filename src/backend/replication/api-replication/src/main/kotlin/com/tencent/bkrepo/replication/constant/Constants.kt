@@ -55,6 +55,9 @@ const val BUILD_ID = "buildId"
 const val TASK_ID = "taskId"
 const val NAME = "name"
 
+const val PUSH_WITH_CHUNKED = "CHUNKED"
+const val PUSH_WITH_DEFAULT = "DEFAULT"
+
 /**
  * metrics
  */

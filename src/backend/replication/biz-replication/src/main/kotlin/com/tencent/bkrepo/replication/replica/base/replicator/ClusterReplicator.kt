@@ -39,7 +39,9 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
+import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.handler.FilePushHandler
 import com.tencent.bkrepo.replication.replica.base.impl.internal.PackageNodeMappings
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -64,6 +66,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Component
 class ClusterReplicator(
     private val localDataManager: LocalDataManager,
+    private val filePushHandler: FilePushHandler,
     private val replicationProperties: ReplicationProperties
 ) : Replicator {
 
@@ -209,11 +212,13 @@ class ClusterReplicator(
                         )
                         // 1. 同步文件数据
                         try {
-                            pushBlob(
-                                inputStream = rateLimitInputStream,
-                                size = it.size!!,
-                                sha256 = it.sha256.orEmpty(),
-                                storageKey = remoteRepo?.storageCredentials?.key
+                            filePushHandler.blobPush(
+                                filePushContext = FilePushContext(
+                                    context = context,
+                                    name = it.fullPath,
+                                    size = it.size,
+                                    sha256 = it.sha256
+                                )
                             )
                         } catch (throwable: Throwable) {
                             logger.warn(

@@ -41,15 +41,23 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.replication.api.BlobReplicaClient
+import com.tencent.bkrepo.replication.constant.BLOB_CHECK_URI
+import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
+import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
+import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL
+import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_SECOND_STEP_URL
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
+import com.tencent.bkrepo.replication.service.BlobChunkedService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
@@ -65,7 +73,8 @@ import java.util.concurrent.TimeUnit
 class BlobReplicaController(
     storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient
+    private val storageCredentialsClient: StorageCredentialsClient,
+    private val blobChunkedService: BlobChunkedService
 ) {
 
     private val defaultCredentials = storageProperties.defaultStorageCredentials()
@@ -74,7 +83,7 @@ class BlobReplicaController(
         .expireAfterWrite(CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
         .build(CacheLoader.from { key -> findStorageCredentials(key) })
 
-    @PostMapping(BlobReplicaClient.BLOB_PULL_URI)
+    @PostMapping(BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
             val credentials = credentialsCache.get(storageKey.orEmpty())
@@ -84,7 +93,7 @@ class BlobReplicaController(
         }
     }
 
-    @PostMapping(BlobReplicaClient.BLOB_PUSH_URI)
+    @PostMapping(BLOB_PUSH_URI)
     fun push(
         @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
@@ -104,13 +113,62 @@ class BlobReplicaController(
         return ResponseBuilder.success()
     }
 
-    @GetMapping(BlobReplicaClient.BLOB_CHECK_URI)
+    @GetMapping(BLOB_CHECK_URI)
     fun check(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null
     ): Response<Boolean> {
         val credentials = credentialsCache.get(storageKey.orEmpty())
         return ResponseBuilder.success(storageService.exist(sha256, credentials))
+    }
+
+
+    /**
+     * 分块上传
+     * A chunked upload is accomplished in three phases:
+     * 1:Obtain a session ID (upload URL) (POST)
+     * 2:Upload the chunks (PATCH)
+     * 3:Close the session (PUT)
+     */
+    @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL)
+    fun startBlobUpload(
+        @RequestParam sha256: String,
+        @RequestParam storageKey: String? = null
+    ) {
+        logger.info("The file with sha256 [$sha256] will be handled with chunked upload!")
+        val credentials = credentialsCache.get(storageKey.orEmpty())
+        return blobChunkedService.obtainSessionIdForUpload(credentials, sha256)
+    }
+
+    @RequestMapping(
+        method = [RequestMethod.PATCH],
+        value = [BOLBS_UPLOAD_SECOND_STEP_URL]
+    )
+    fun uploadChunkedBlob(
+        @RequestPart file: MultipartFile,
+        @RequestParam sha256: String,
+        @RequestParam storageKey: String? = null,
+        @PathVariable uuid: String,
+    ) {
+        logger.info("The file with sha256 [$sha256] will be uploaded with $uuid")
+        val credentials = credentialsCache.get(storageKey.orEmpty())
+        blobChunkedService.uploadChunkedFile(credentials, sha256, file, uuid)
+    }
+
+
+    @RequestMapping(
+        method = [RequestMethod.PUT],
+        value = [BOLBS_UPLOAD_SECOND_STEP_URL]
+    )
+    fun finishBlobUpload(
+        @RequestPart file: MultipartFile,
+        @RequestParam sha256: String,
+        @RequestParam storageKey: String? = null,
+        @PathVariable uuid: String,
+    ) {
+        logger.info("The file with sha256 [$sha256] will be finished with $uuid")
+        val credentials = credentialsCache.get(storageKey.orEmpty())
+        blobChunkedService.finishChunkedUpload(credentials, sha256, file, uuid)
     }
 
     private fun findStorageCredentials(storageKey: String?): StorageCredentials {

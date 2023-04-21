@@ -30,7 +30,9 @@ package com.tencent.bkrepo.replication.replica.base.replicator
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.handler.FilePushHandler
 import com.tencent.bkrepo.replication.replica.base.impl.internal.PackageNodeMappings
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -44,6 +46,7 @@ import org.springframework.stereotype.Component
 @Component
 class EdgeNodeReplicator(
     private val localDataManager: LocalDataManager,
+    private val filePushHandler: FilePushHandler,
     private val replicationProperties: ReplicationProperties
 ) : Replicator {
 
@@ -100,7 +103,14 @@ class EdgeNodeReplicator(
             if (blobReplicaClient?.check(sha256)?.data != true) {
                 val artifactInputStream = localDataManager.getBlobData(sha256, node.size, localRepo)
                 val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
-                pushBlob(rateLimitInputStream, node.size, node.sha256!!, localRepo.storageCredentials?.key)
+                filePushHandler.blobPush(
+                    filePushContext = FilePushContext(
+                        context = context,
+                        name = node.fullPath,
+                        size = node.size,
+                        sha256 = node.sha256
+                    )
+                )
                 return true
             }
             return false

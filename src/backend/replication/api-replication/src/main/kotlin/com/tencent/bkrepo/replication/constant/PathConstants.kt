@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,42 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.replication.constant
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
+// oci url
+const val OCI_BLOB_URL = "%s/blobs/%s"
+const val OCI_MANIFEST_URL = "%s/manifests/%s"
+const val OCI_BLOBS_UPLOAD_FIRST_STEP_URL = "%s/blobs/uploads/"
 
-@ConfigurationProperties("replication")
-data class ReplicationProperties(
 
-    /**
-     * 文件发送限速
-     */
-    var rateLimit: DataSize = DataSize.ofBytes(-1),
+// blobs upload
+const val BOLBS_UPLOAD_FIRST_STEP_URL = "/replica/blobs/uploads/"
+const val BOLBS_UPLOAD_SECOND_STEP_URL = "/replica/blobs/uploads/{uuid}"
 
-    /**
-     * oci blob文件上传分块大小
-     */
-    var chunkedSize: Long = 1024 * 1024 * 5,
-    /**
-     * oci blob文件上传并发数
-     */
-    var threadNum: Int = 3,
-
-    /**
-     * manual分发并行数
-     */
-    var manualConcurrencyNum: Int = 3,
-
-    /**
-     * 签名过滤器body限制大小
-     * */
-    var bodyLimit: DataSize = DataSize.ofMegabytes(5),
-
-    /**
-     * 集群间制品同步方式：
-     * 追加上传：CHUNKED
-     * 普通上传（单个请求）：DEFAULT
-     * */
-    var pushType: String = "DEFAULT"
-)
+const val BLOB_PULL_URI = "/replica/blob/pull"
+const val BLOB_PUSH_URI = "/replica/blob/push"
+const val BLOB_CHECK_URI = "/replica/blob/check"

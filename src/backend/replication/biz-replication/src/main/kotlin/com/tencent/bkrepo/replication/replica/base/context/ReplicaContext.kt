@@ -96,8 +96,7 @@ class ReplicaContext(
     // 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
     var targetVersions: List<String>?
 
-    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
-    private val httpClient: OkHttpClient
+    val httpClient: OkHttpClient
 
     init {
         cluster = ClusterInfo(
@@ -143,28 +142,6 @@ class ReplicaContext(
                 closeTimeout,
                 SignInterceptor(cluster),
             )
-        }
-    }
-
-    /**
-     * 推送blob文件数据到远程集群
-     */
-    fun pushBlob(inputStream: InputStream, size: Long, sha256: String, storageKey: String? = null) {
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart(FILE, sha256, StreamRequestBody(inputStream, size))
-            .addFormDataPart(SHA256, sha256).apply {
-                storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
-            }.build()
-        logger.info("The request will be sent for file sha256 [$sha256].")
-        val tag = RequestTag(task, sha256, size)
-        val httpRequest = Request.Builder()
-            .url(pushBlobUrl)
-            .post(requestBody)
-            .tag(RequestTag::class.java, tag)
-            .build()
-        httpClient.newCall(httpRequest).execute().use {
-            check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
         }
     }
 
