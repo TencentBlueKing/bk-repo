@@ -90,7 +90,7 @@ export default {
     // 编辑用户
     editUser (_, { body }) {
         return Vue.prototype.$ajax.put(
-            `${authPrefix}/user/${body.userId}`,
+            `${authPrefix}/user/update/info/${body.userId}`,
             body
         )
     },

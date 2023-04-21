@@ -154,7 +154,7 @@ class ClusterReplicator(
                 type = localRepoType
             ).forEach {
                 val node = try {
-                    localDataManager.findNodeDetail(
+                    localDataManager.findNodeDetailInVersion(
                         projectId = localProjectId,
                         repoName = localRepoName,
                         fullPath = it

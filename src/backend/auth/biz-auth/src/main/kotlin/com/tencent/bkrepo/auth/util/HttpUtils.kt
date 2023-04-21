@@ -59,7 +59,7 @@ object HttpUtils {
             if (retry > 0) {
                 logger.warn("http request error, cause: ${e.message}")
             } else {
-                logger.error("http request error", e)
+                logger.error("http request error ", e)
             }
         }
         if (retry > 0) {

@@ -671,5 +671,9 @@
     "autoEdit": "Auto edit",
     "intervalMsg":"can be performed within the range",
     "circleMsg1":"can be executed, and every",
-    "circleMsg2":"can be executed"
+    "circleMsg2":"can be executed",
+    "repoEnterTip":"Please enter the store name, press Enter to search",
+    "belongProject":"Belongs to project",
+    "searchRelatedResults":"Related results found",
+    "allRepoTotal":"All Artifacts total"
 }

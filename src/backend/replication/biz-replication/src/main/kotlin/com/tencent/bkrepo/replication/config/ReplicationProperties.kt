@@ -58,6 +58,16 @@ data class ReplicationProperties(
     var bodyLimit: DataSize = DataSize.ofMegabytes(5),
 
     /**
+     * 开启请求超时校验的域名以及对应平均速率（MB/s）
+     * 配置如下：
+     *   timoutCheckHosts
+     *     - host: xx
+     *       rate: x
+     *     - host: xx
+     *       rate: x
+     */
+    var timoutCheckHosts: List<Map<String, String>> = emptyList(),
+    /**
      * 一次性查询的page size
      */
     var pageSize: Int = 500
