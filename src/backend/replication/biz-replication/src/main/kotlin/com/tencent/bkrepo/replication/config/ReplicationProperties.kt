@@ -66,5 +66,9 @@ data class ReplicationProperties(
      *     - host: xx
      *       rate: x
      */
-    var timoutCheckHosts: List<Map<String, String>> = emptyList()
+    var timoutCheckHosts: List<Map<String, String>> = emptyList(),
+    /**
+     * 一次性查询的page size
+     */
+    var pageSize: Int = 500
 )

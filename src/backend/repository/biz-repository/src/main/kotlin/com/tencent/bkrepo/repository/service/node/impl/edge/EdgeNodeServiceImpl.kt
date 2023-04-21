@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -155,6 +156,10 @@ class EdgeNodeServiceImpl(
     override fun renameNode(renameRequest: NodeRenameRequest) {
         centerNodeClient.renameNode(renameRequest)
         NodeRenameSupport(this).renameNode(renameRequest)
+    }
+
+    override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
+        return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

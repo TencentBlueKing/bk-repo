@@ -112,7 +112,11 @@
 
                     <bk-table-column v-if="searchFileName" :label="$t('path')" prop="fullPath" show-overflow-tooltip></bk-table-column>
 
-                    <bk-table-column :label="$t('clusterNames')" prop="clusterNames" width="150"></bk-table-column>
+                    <bk-table-column :label="$t('clusterNames')" prop="clusterNames" width="150">
+                        <template #default="{ row }">
+                            {{ row.clusterNames.join() }}
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
@@ -436,6 +440,7 @@
 
                         return {
                             metadata: {},
+                            clusterNames: v.clusterNames || [],
                             ...v,
                             // 流水线文件夹名称替换
                             name: v.metadata?.displayName || v.name
