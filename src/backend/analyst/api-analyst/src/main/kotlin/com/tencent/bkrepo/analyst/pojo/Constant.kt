@@ -37,4 +37,6 @@ object Constant {
      * 分析结果过滤规则类型，匹配规则时保留
      */
     const val FILTER_RULE_TYPE_INCLUDE = 1
+
+    const val SYSTEM_PROJECT_ID = ""
 }

@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.tencent.bkrepo.analyst.model.TFilterRule
-import com.tencent.bkrepo.analyst.model.TFilterRule.Companion.SYSTEM_PROJECT_ID
+import com.tencent.bkrepo.analyst.pojo.Constant.SYSTEM_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -73,6 +73,9 @@ class FilterRuleDao : ScannerSimpleMongoDao<TFilterRule>() {
                 Criteria
                     .where(TFilterRule::projectId.name).isEqualTo(SYSTEM_PROJECT_ID)
                     .and(TFilterRule::projectIds.name).inValues(projectId),
+                Criteria
+                    .where(TFilterRule::projectId.name).isEqualTo(SYSTEM_PROJECT_ID)
+                    .and(TFilterRule::projectIds.name).size(0),
                 // 查询项目级规则
                 Criteria().and(TFilterRule::projectId.name).isEqualTo(projectId)
             ).andOperator(

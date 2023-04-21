@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
+import com.tencent.bkrepo.analyst.pojo.Constant.SYSTEM_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
 import com.tencent.bkrepo.analyst.service.FilterRuleService
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -45,6 +48,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("分析结果忽略规则")
@@ -59,13 +63,13 @@ class SystemFilterRuleController(private val filterRuleService: FilterRuleServic
     }
 
     @ApiOperation("更新规则")
-    @PutMapping
+    @PutMapping("/{ruleId}")
     fun updateSystemRule(@RequestBody request: UpdateFilterRuleRequest): Response<FilterRule> {
         return ResponseBuilder.success(filterRuleService.update(request))
     }
 
     @ApiOperation("删除规则")
-    @DeleteMapping("{ruleId}")
+    @DeleteMapping("/{ruleId}")
     fun deleteSystemRule(
         @PathVariable("ruleId") ruleId: String
     ): Response<Void> {
@@ -75,7 +79,16 @@ class SystemFilterRuleController(private val filterRuleService: FilterRuleServic
 
     @ApiOperation("分页获取规则")
     @GetMapping
-    fun listSystemRules(@RequestBody request: ListFilterRuleRequest): Response<Page<FilterRule>> {
+    fun listSystemRules(
+        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
+    ): Response<Page<FilterRule>> {
+        val request = ListFilterRuleRequest(
+            projectId = SYSTEM_PROJECT_ID,
+            planId = null,
+            pageNumber,
+            pageSize
+        )
         return ResponseBuilder.success(filterRuleService.list(request))
     }
 }
