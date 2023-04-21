@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import org.slf4j.LoggerFactory
 import sun.security.ssl.SSLSocketImpl
 import java.io.Closeable
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.SocketAddress
@@ -207,7 +208,9 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
                 delegate.close()
                 return
             }
-            val timeoutFuture = threadPool.schedule({ closeImmediately() }, closeTimeout, TimeUnit.SECONDS)
+            val timeoutFuture = threadPool.schedule(
+                Runnable{ closeImmediately() }.trace(), closeTimeout, TimeUnit.SECONDS
+            )
             val closeTime = measureNanoTime { delegate.closeQuietly() }
             if (closeTime < Duration.ofSeconds(closeTimeout).toNanos()) {
                 timeoutFuture.cancel(false)

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.center
 
+import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -40,9 +41,11 @@ import org.springframework.stereotype.Service
 class CommitEdgeCenterShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
-    mongoTemplate: MongoTemplate
+    mongoTemplate: MongoTemplate,
+    redirectService: EdgeNodeRedirectService
 ) : ShareServiceImpl(
     repositoryService,
     nodeService,
-    mongoTemplate
+    mongoTemplate,
+    redirectService
 )

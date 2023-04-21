@@ -2,6 +2,7 @@ package com.tencent.bkrepo.replication.replica.base
 
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.replication.replica.base.interceptor.RequestTimeOutInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 object OkHttpClientPool {
     private val clientCache = ConcurrentHashMap<ClusterInfo, OkHttpClient>()
     fun getHttpClient(
+        timoutCheckHosts: List<Map<String, String>> = emptyList(),
         clusterInfo: ClusterInfo,
         readTimeout: Duration,
         writeTimeout: Duration,
@@ -34,6 +36,9 @@ object OkHttpClientPool {
                 )
             }
             builder.addNetworkInterceptor(ProgressInterceptor())
+            if (timoutCheckHosts.isNotEmpty()) {
+                builder.addNetworkInterceptor(RequestTimeOutInterceptor(timoutCheckHosts))
+            }
             builder.build()
         }
     }

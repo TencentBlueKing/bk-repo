@@ -84,9 +84,11 @@ class EdgePullReplicaExecutor(
 ) {
 
     private val centerBlobReplicaClient = OkHttpClientPool.getHttpClient(
-        clusterProperties.center,
-        Duration.ofMillis(READ_TIMEOUT), Duration.ofMillis(WRITE_TIMEOUT), Duration.ZERO,
-        SignInterceptor(clusterProperties.center)
+        clusterInfo = clusterProperties.center,
+        readTimeout = Duration.ofMillis(READ_TIMEOUT),
+        writeTimeout = Duration.ofMillis(WRITE_TIMEOUT),
+        closeTimeout = Duration.ZERO,
+        interceptors = arrayOf(SignInterceptor(clusterProperties.center))
     )
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center,"replication", clusterProperties.self.name) }
