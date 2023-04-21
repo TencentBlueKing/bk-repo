@@ -47,7 +47,9 @@ class LicenseFilterCriteriaBuilder(rule: MergedFilterRule?, ignored: Boolean) : 
         }
 
         if (ignoreLicenses?.isNotEmpty() == true) {
-            andCriteria.add(Criteria(ResultItemDao.dataKey(LicenseResult::licenseName.name)).not().inValues(ignoreLicenses))
+            andCriteria.add(
+                Criteria(ResultItemDao.dataKey(LicenseResult::licenseName.name)).not().inValues(ignoreLicenses)
+            )
         }
 
         if (includeLicenses?.isNotEmpty() == true) {
@@ -70,7 +72,9 @@ class LicenseFilterCriteriaBuilder(rule: MergedFilterRule?, ignored: Boolean) : 
         }
 
         if (includeLicenses?.isNotEmpty() == true) {
-            orCriteria.add(Criteria(ResultItemDao.dataKey(LicenseResult::licenseName.name)).not().inValues(includeLicenses))
+            orCriteria.add(
+                Criteria(ResultItemDao.dataKey(LicenseResult::licenseName.name)).not().inValues(includeLicenses)
+            )
         }
 
         return if (orCriteria.isEmpty()) {
