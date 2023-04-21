@@ -103,6 +103,8 @@ class FilterRuleDao : ScannerSimpleMongoDao<TFilterRule>() {
                 .set(TFilterRule::packageKey.name, packageKey)
                 .set(TFilterRule::packageVersion.name, packageVersion)
                 .set(TFilterRule::vulIds.name, vulIds)
+                .set(TFilterRule::severity.name, severity)
+                .set(TFilterRule::type.name, type)
                 .set(TFilterRule::licenseNames.name, licenseNames)
             if (projectId == SYSTEM_PROJECT_ID) {
                 update.set(TFilterRule::projectIds.name, projectIds)

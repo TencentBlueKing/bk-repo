@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.pojo.request.filter
 
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_INCLUDE
+import com.tencent.bkrepo.analyst.pojo.Constant.SYSTEM_PROJECT_ID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import io.swagger.annotations.ApiModel
@@ -82,6 +83,10 @@ data class UpdateFilterRuleRequest(
         // 保留规则不允许设置最小漏洞等级
         if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ignore[$type], severity[$severity]")
+        }
+
+        if (projectId != SYSTEM_PROJECT_ID && projectIds != null) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectIds[$projectIds]")
         }
     }
 }
