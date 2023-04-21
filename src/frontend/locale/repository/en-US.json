@@ -675,5 +675,6 @@
     "repoEnterTip":"Please enter the store name, press Enter to search",
     "belongProject":"Belongs to project",
     "searchRelatedResults":"Related results found",
-    "allRepoTotal":"All Artifacts total"
+    "allRepoTotal":"All Artifacts total",
+    "clusterNames": "Location"
 }
