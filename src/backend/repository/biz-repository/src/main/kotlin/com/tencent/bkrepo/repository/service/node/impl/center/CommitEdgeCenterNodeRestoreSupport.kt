@@ -43,26 +43,29 @@ class CommitEdgeCenterNodeRestoreSupport(
 ) {
 
     override fun resolveConflict(context: RestoreContext, node: TNode) {
-        with(context) {
-            val fullPath = node.fullPath
-            val existNode = nodeDao.findNode(projectId, repoName, fullPath)
-            if (node.deleted == null || existNode != null) {
-                when (conflictStrategy) {
-                    ConflictStrategy.SKIP -> {
-                        skipCount += 1
-                        return
-                    }
-                    ConflictStrategy.OVERWRITE -> {
-                        existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
-                        val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
-                        nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(operator))
-                        conflictCount += 1
-                    }
-                    ConflictStrategy.FAILED -> throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+        val fullPath = node.fullPath
+        val existNode = nodeDao.findNode(context.projectId, context.repoName, fullPath)
+        if (node.deleted == null || existNode != null) {
+            when (context.conflictStrategy) {
+                ConflictStrategy.SKIP -> {
+                    context.skipCount += 1
+                    return
                 }
+                ConflictStrategy.OVERWRITE -> {
+                    existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
+                    val query = NodeQueryHelper.nodeQuery(context.projectId, context.repoName, fullPath)
+                    nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(context.operator))
+                    context.conflictCount += 1
+                }
+                ConflictStrategy.FAILED -> throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
             }
-            val query = NodeQueryHelper.nodeDeletedPointQuery(projectId, repoName, fullPath, deletedTime)
-            restoreCount += nodeDao.updateFirst(query, NodeQueryHelper.nodeRestoreUpdate()).modifiedCount
         }
+        val query = NodeQueryHelper.nodeDeletedPointQuery(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            fullPath = fullPath,
+            deleted = context.deletedTime
+        )
+        context.restoreCount += nodeDao.updateFirst(query, NodeQueryHelper.nodeRestoreUpdate()).modifiedCount
     }
 }

@@ -146,7 +146,9 @@ class DeletedNodeCleanupJob(
         try {
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(node.id))
             mongoTemplate.remove(nodeQuery, nodeCollectionName)
-            if (!node.folder && (node.clusterNames == null || node.clusterNames.contains(clusterProperties.self.name))) {
+            if (!node.folder
+                && (node.clusterNames == null || node.clusterNames.contains(clusterProperties.self.name))
+            ) {
                 fileReferenceChanged = decrementFileReference(node, repo)
             }
         } catch (ignored: Exception) {
