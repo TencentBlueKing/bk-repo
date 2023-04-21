@@ -33,14 +33,17 @@ package com.tencent.bkrepo.repository.service.file.impl
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
@@ -68,13 +71,14 @@ import java.util.UUID
 class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val redirectService: EdgeNodeRedirectService,
 ) : ShareService {
 
     override fun create(
         userId: String,
         artifactInfo: ArtifactInfo,
-        request: ShareRecordCreateRequest
+        request: ShareRecordCreateRequest,
     ): ShareRecordInfo {
         with(artifactInfo) {
             val node = nodeService.getNodeDetail(artifactInfo)
@@ -92,7 +96,7 @@ class ShareServiceImpl(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
             )
             mongoTemplate.save(shareRecord)
             val shareRecordInfo = convert(shareRecord)
@@ -107,7 +111,7 @@ class ShareServiceImpl(
                 where(TShareRecord::projectId).isEqualTo(artifactInfo.projectId)
                     .and(TShareRecord::repoName).isEqualTo(repoName)
                     .and(TShareRecord::fullPath).isEqualTo(getArtifactFullPath())
-                    .and(TShareRecord::token).isEqualTo(token)
+                    .and(TShareRecord::token).isEqualTo(token),
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
                 ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
@@ -129,6 +133,12 @@ class ShareServiceImpl(
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = userId)
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
+            if (redirectService.shouldRedirect(context.artifactInfo)) {
+                // 节点来自其他集群，重定向到其他节点。
+                redirectService.redirectToDefaultCluster(context)
+                return
+            }
             context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
@@ -139,7 +149,7 @@ class ShareServiceImpl(
         val query = Query.query(
             Criteria.where(TShareRecord::projectId.name).`is`(projectId)
                 .and(TShareRecord::repoName.name).`is`(repoName)
-                .and(TShareRecord::fullPath.name).`is`(fullPath)
+                .and(TShareRecord::fullPath.name).`is`(fullPath),
         )
         return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
     }
@@ -158,8 +168,11 @@ class ShareServiceImpl(
         }
 
         private fun computeExpireDate(expireSeconds: Long?): LocalDateTime? {
-            return if (expireSeconds == null || expireSeconds <= 0) null
-            else LocalDateTime.now().plusSeconds(expireSeconds)
+            return if (expireSeconds == null || expireSeconds <= 0) {
+                null
+            } else {
+                LocalDateTime.now().plusSeconds(expireSeconds)
+            }
         }
 
         private fun convert(tShareRecord: TShareRecord): ShareRecordInfo {
@@ -172,7 +185,7 @@ class ShareServiceImpl(
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
-                    createdBy = it.createdBy
+                    createdBy = it.createdBy,
                 )
             }
         }

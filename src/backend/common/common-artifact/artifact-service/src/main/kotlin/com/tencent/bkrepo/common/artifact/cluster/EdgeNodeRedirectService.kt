@@ -25,13 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.service
+package com.tencent.bkrepo.common.artifact.cluster
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -44,6 +46,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import org.springframework.stereotype.Service
 import java.time.Duration
 import javax.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 
 /**
@@ -53,7 +56,7 @@ import org.springframework.http.HttpMethod
 class EdgeNodeRedirectService(
     private val clusterProperties: ClusterProperties,
     private val clusterNodeClient: ClusterNodeClient,
-    private val temporaryAccessService: TemporaryAccessService,
+    private val temporaryTokenClient: ServiceTemporaryTokenResource,
 ) {
 
     /**
@@ -89,9 +92,13 @@ class EdgeNodeRedirectService(
         }
         val node = ArtifactContextHolder.getNodeDetail()
             ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val selfClusterName = clusterProperties.self.name
+        if (logger.isDebugEnabled) {
+            logger.debug("node cluster: ${node.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
+        }
         node.clusterNames ?: return false
         // 自身集群不需要重定向
-        if (node.clusterNames!!.contains(clusterProperties.self.name)) {
+        if (node.clusterNames!!.contains(selfClusterName)) {
             return false
         }
         val edgeClusterName = getEdgeClusterName(artifactInfo)
@@ -127,7 +134,7 @@ class EdgeNodeRedirectService(
                 expireSeconds = Duration.ofMinutes(5).seconds,
                 type = TokenType.DOWNLOAD,
             )
-            return temporaryAccessService.createToken(createTokenRequest).first().token
+            return temporaryTokenClient.createToken(createTokenRequest).data.orEmpty().first().token
         }
     }
 
@@ -148,13 +155,24 @@ class EdgeNodeRedirectService(
         if (request.requestURI.startsWith(TEMPORARY_REQUEST_PREFIX)) {
             return request.requestURI
         }
+        if (request.requestURI.startsWith(SHARE_REQUEST_PREFIX)) {
+            val newUri = request.requestURI.removePrefix(SHARE_REQUEST_PREFIX)
+            return "$TEMPORARY_REQUEST_PREFIX$newUri"
+        }
+        if (request.requestURI.startsWith(REPO_LIST_REQUEST_PREFIX)) {
+            val newUri = request.requestURI.removePrefix(REPO_LIST_REQUEST_PREFIX)
+            return "$TEMPORARY_REQUEST_PREFIX$newUri"
+        }
         return "$TEMPORARY_REQUEST_PREFIX${request.requestURI}"
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(EdgeNodeRedirectService::class.java)
         const val REPLICATION_SERVICE_NAME = "replication"
         const val GENERIC_SERVICE_NAME = "generic"
         const val TOKEN = "token"
-        const val TEMPORARY_REQUEST_PREFIX = "/temporary/download"
+        const val TEMPORARY_REQUEST_PREFIX = "/temporary/download" // 临时链接下载前缀
+        const val SHARE_REQUEST_PREFIX = "/api/share" // 共享链接下载前缀
+        const val REPO_LIST_REQUEST_PREFIX = "/api/list" // 仓库列表下载前缀
     }
 }
