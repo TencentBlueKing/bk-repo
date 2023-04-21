@@ -25,52 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.artifact
+package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import com.tencent.bkrepo.oci.util.OciLocationUtils
+import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
 
-/**
- * oci blob信息
- */
-class OciBlobArtifactInfo(
-    projectId: String,
-    repoName: String,
-    packageName: String,
-    version: String,
-    val digest: String? = null,
-    val uuid: String? = null,
-    val mount: String? = null,
-    val from: String? = null
-) : OciArtifactInfo(projectId, repoName, packageName, version) {
-    private val ociDigest =
-        try {
-            OciDigest(digest)
-        } catch (e: IllegalArgumentException) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, digest!!)
-        }
+interface ReplicaExtService {
 
-    fun getDigestAlg(): String {
-        return ociDigest.getDigestAlg()
-    }
+    fun findRepoDifference(
+        request: CheckRepoDifferenceRequest
+    ): Any
 
-    fun getDigestHex(): String {
-        return ociDigest.getDigestHex()
-    }
-
-    fun getDigest() = ociDigest
-
-    fun blobTempPath(): String {
-        return OciLocationUtils.buildDigestBlobsUploadPath(packageName, ociDigest)
-    }
-
-    override fun getArtifactFullPath(): String {
-        return if (digest.isNullOrBlank()) {
-            ""
-        } else {
-            OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest)
-        }
-    }
+    fun syncRepoDifference(request: CheckRepoDifferenceRequest)
 }
