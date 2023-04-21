@@ -531,6 +531,7 @@ class ReplicaExtServiceImpl(
         val readTimeout = Duration.ofMillis(READ_TIMEOUT)
         val writeTimeout = Duration.ofMillis(WRITE_TIMEOUT)
         return OkHttpClientPool.getHttpClient(
+            emptyList(),
             cluster,
             readTimeout,
             writeTimeout,
