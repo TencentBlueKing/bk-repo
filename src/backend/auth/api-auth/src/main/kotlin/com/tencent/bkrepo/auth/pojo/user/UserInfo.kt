@@ -23,5 +23,5 @@ data class UserInfo(
     @ApiModelProperty("是否为虚拟用户")
     val group: Boolean,
     @ApiModelProperty("关联用户")
-    val asstUsers: List<String> = emptyList(),
+    val asstUsers: List<String> = emptyList()
 )
