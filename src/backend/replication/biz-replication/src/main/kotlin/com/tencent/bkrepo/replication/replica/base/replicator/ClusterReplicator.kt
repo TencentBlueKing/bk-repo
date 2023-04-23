@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.base.replicator
 
 import com.google.common.base.Throwables
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -36,11 +37,15 @@ import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
+import com.tencent.bkrepo.replication.constant.PUSH_WITH_DEFAULT
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
+import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.handler.FilePushHandler
 import com.tencent.bkrepo.replication.replica.base.impl.internal.PackageNodeMappings
+import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -64,6 +69,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Component
 class ClusterReplicator(
     private val localDataManager: LocalDataManager,
+    private val filePushHandler: FilePushHandler,
     private val replicationProperties: ReplicationProperties
 ) : Replicator {
 
@@ -154,7 +160,7 @@ class ClusterReplicator(
                 type = localRepoType
             ).forEach {
                 val node = try {
-                    localDataManager.findNodeDetail(
+                    localDataManager.findNodeDetailInVersion(
                         projectId = localProjectId,
                         repoName = localRepoName,
                         fullPath = it
@@ -192,6 +198,7 @@ class ClusterReplicator(
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
+            var type: String = replicationProperties.pushType
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 return buildNodeCreateRequest(this, node)?.let {
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
@@ -200,26 +207,29 @@ class ClusterReplicator(
                             "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
                                 "will be pushed to the remote server ${cluster.name}, try the $retry time!"
                         )
-                        val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
-                        val rateLimitInputStream = artifactInputStream.rateLimit(
-                            replicationProperties.rateLimit.toBytes()
-                        )
-                        logger.info(
-                            "The file [${node.fullPath}] with sha256 [${node.sha256}] will be sent!"
-                        )
                         // 1. 同步文件数据
                         try {
-                            pushBlob(
-                                inputStream = rateLimitInputStream,
-                                size = it.size!!,
-                                sha256 = it.sha256.orEmpty(),
-                                storageKey = remoteRepo?.storageCredentials?.key
+                            filePushHandler.blobPush(
+                                filePushContext = FilePushContext(
+                                    context = context,
+                                    name = it.fullPath,
+                                    size = it.size,
+                                    sha256 = it.sha256
+                                ),
+                                pushType = type
                             )
                         } catch (throwable: Throwable) {
                             logger.warn(
                                 "File replica push error $throwable, trace is " +
                                     "${Throwables.getStackTraceAsString(throwable)}!"
                             )
+                            // 当不支持分块上传时，降级为普通上传
+                            if (
+                                throwable is ArtifactPushException &&
+                                throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value
+                            ) {
+                                type = PUSH_WITH_DEFAULT
+                            }
                             throw throwable
                         }
                     }

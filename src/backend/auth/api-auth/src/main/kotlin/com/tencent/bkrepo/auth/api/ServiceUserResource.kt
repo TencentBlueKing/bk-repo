@@ -63,6 +63,7 @@ interface ServiceUserResource {
 
     @ApiOperation("用户详情")
     @GetMapping("/detail/{uid}")
+    @Deprecated("仅用于兼容旧接口", ReplaceWith("userInfoById"))
     fun detail(
         @ApiParam(value = "用户id")
         @PathVariable uid: String

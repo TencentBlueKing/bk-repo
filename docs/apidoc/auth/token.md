@@ -1,6 +1,6 @@
 ## bkrepo token相关接口
 
-### 新增用户token
+### 新增用户token
 
 - API:POST  /auth/api/user/token/{uid}/{name}?expiredAt=2019-12-21T09:46:37.877Z&projectId=aaa
 - API 名称: add_user_token
@@ -59,7 +59,7 @@
 |name | string | token name|the name of token|
 |id|string|token id |the id of token|
 
-### 用户token列表
+### 用户token列表
 
 - API:POST  /auth/api/user/list/token/{uid}
 - API 名称: list_user_token
@@ -120,7 +120,7 @@
 |name | string | token name|the name of token|
 |id|string|token id |the id of token|
 
-### 删除用户token
+### 删除用户token
 
 - API:DELETE  /auth/api/user/token/{uid}/{name}
 - API 名称: delete_user_token
@@ -178,7 +178,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 校验用户token
+### 校验用户token
 
 - API:POST /auth/api/user/login?uid=owen&token=blueking
 - API 名称: check_user_token
@@ -220,7 +220,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 获取用户信息
+### 获取用户信息
 
 - API:GET /auth/api/user/info
 - API 名称: check_user_token

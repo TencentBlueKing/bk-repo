@@ -684,5 +684,9 @@
     "autoEdit": "自动编辑",
     "intervalMsg":"的区间内可以执行",
     "circleMsg1":"可以执行，此后每隔",
-    "circleMsg2":"可以执行"
+    "circleMsg2":"可以执行",
+    "repoEnterTip":"请输入仓库名称, 按Enter键搜索",
+    "belongProject":"所属项目",
+    "searchRelatedResults":"搜索到相关结果",
+    "allRepoTotal":"全部制品共"
 }

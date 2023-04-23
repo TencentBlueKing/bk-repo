@@ -10,14 +10,16 @@
             <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" :label="$t('safetyRules')">
                 <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualitySafetyRule') }}</div>
             </bk-form-item>
-            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" label="" v-for="[id] in Object.entries(leakLevelEnum)" :key="id"
-                :property="id.toLowerCase()" error-display-type="normal">
-                <div class="flex-align-center">
-                    <div :class="`status-sign ${id}`" :data-name="$t(`leakLevelEnum.${id}`) + $t('space') + $t('vulnerability') + `≦`"></div>
-                    <bk-input class="ml10 mr10" style="width: 80px;" v-model.trim="rule[id.toLowerCase()]"></bk-input>
-                    <span>{{ $t('per') }}</span>
-                </div>
-            </bk-form-item>
+            <template v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)">
+                <bk-form-item label="" v-for="[id] in Object.entries(leakLevelEnum)" :key="id"
+                    :property="id.toLowerCase()" error-display-type="normal">
+                    <div class="flex-align-center">
+                        <div :class="`status-sign ${id}`" :data-name="$t(`leakLevelEnum.${id}`) + $t('space') + $t('vulnerability') + `≦`"></div>
+                        <bk-input class="ml10 mr10" style="width: 80px;" v-model.trim="rule[id.toLowerCase()]"></bk-input>
+                        <span>{{ $t('per') }}</span>
+                    </div>
+                </bk-form-item>
+            </template>
         </template>
         <bk-form-item :label="$t('triggerEvent')">
             <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualityCheckBtnPre') }}</div>

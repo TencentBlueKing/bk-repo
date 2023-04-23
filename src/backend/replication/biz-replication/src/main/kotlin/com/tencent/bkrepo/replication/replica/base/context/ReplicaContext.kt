@@ -35,10 +35,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
-import com.tencent.bkrepo.replication.constant.FILE
-import com.tencent.bkrepo.replication.constant.SHA256
-import com.tencent.bkrepo.replication.constant.STORAGE_KEY
-import com.tencent.bkrepo.replication.pojo.blob.RequestTag
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -51,13 +48,9 @@ import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 import java.time.Duration
 
 class ReplicaContext(
@@ -66,6 +59,7 @@ class ReplicaContext(
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
     val remoteCluster: ClusterNodeInfo,
+    replicationProperties: ReplicationProperties
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -96,8 +90,7 @@ class ReplicaContext(
     // 只针对remote镜像仓库分发的时候，将源tag分发成多个不同的tag，仅支持源tag为一个指定的版本
     var targetVersions: List<String>?
 
-    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
-    private val httpClient: OkHttpClient
+    val httpClient: OkHttpClient
 
     init {
         cluster = ClusterInfo(
@@ -129,42 +122,22 @@ class ReplicaContext(
         val closeTimeout = Duration.ofMillis(CLOSE_TIMEOUT)
         httpClient = if (cluster.username != null) {
             OkHttpClientPool.getHttpClient(
+                replicationProperties.timoutCheckHosts,
                 cluster,
                 readTimeout,
                 writeTimeout,
                 closeTimeout,
-                BasicAuthInterceptor(cluster.username!!, cluster.password!!),
+                BasicAuthInterceptor(cluster.username!!, cluster.password!!)
             )
         } else {
             OkHttpClientPool.getHttpClient(
+                replicationProperties.timoutCheckHosts,
                 cluster,
                 readTimeout,
                 writeTimeout,
                 closeTimeout,
-                SignInterceptor(cluster),
+                SignInterceptor(cluster)
             )
-        }
-    }
-
-    /**
-     * 推送blob文件数据到远程集群
-     */
-    fun pushBlob(inputStream: InputStream, size: Long, sha256: String, storageKey: String? = null) {
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart(FILE, sha256, StreamRequestBody(inputStream, size))
-            .addFormDataPart(SHA256, sha256).apply {
-                storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
-            }.build()
-        logger.info("The request will be sent for file sha256 [$sha256].")
-        val tag = RequestTag(task, sha256, size)
-        val httpRequest = Request.Builder()
-            .url(pushBlobUrl)
-            .post(requestBody)
-            .tag(RequestTag::class.java, tag)
-            .build()
-        httpClient.newCall(httpRequest).execute().use {
-            check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
         }
     }
 
@@ -182,8 +155,8 @@ class ReplicaContext(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
-        private const val READ_TIMEOUT = 60 * 60 * 1000L
-        private const val WRITE_TIMEOUT = 30 * 1000L
-        private const val CLOSE_TIMEOUT = 10 * 1000L
+        const val READ_TIMEOUT = 60 * 60 * 1000L
+        const val WRITE_TIMEOUT = 5 * 1000L
+        const val CLOSE_TIMEOUT = 10 * 1000L
     }
 }
