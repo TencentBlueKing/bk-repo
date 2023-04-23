@@ -3,6 +3,7 @@ body {
     .bk-page.bk-page-small {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         margin-top: -1px;
         border-top: 1px solid var(--borderColor);
         .bk-page-total-count-left,
@@ -15,6 +16,9 @@ body {
             .bk-select {
                 margin: 0 10px;
             }
+        }
+        .bk-page-count {
+            margin-right: auto;
         }
         .bk-page-list {
             flex: 1;

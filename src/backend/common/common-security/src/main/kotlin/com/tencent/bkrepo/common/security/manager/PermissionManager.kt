@@ -241,7 +241,6 @@ open class PermissionManager(
         if (action != PermissionAction.READ) {
             return false
         }
-        val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
         // 加载仓库信息
@@ -508,7 +507,7 @@ open class PermissionManager(
      * 判断是否为管理员
      */
     private fun isAdminUser(userId: String): Boolean {
-        return userResource.detail(userId).data?.admin == true
+        return userResource.userInfoById(userId).data?.admin == true
     }
 
 

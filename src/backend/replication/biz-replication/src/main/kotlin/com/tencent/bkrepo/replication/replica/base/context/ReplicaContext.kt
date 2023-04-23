@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
@@ -66,6 +67,7 @@ class ReplicaContext(
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
     val remoteCluster: ClusterNodeInfo,
+    replicationProperties: ReplicationProperties
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -128,19 +130,21 @@ class ReplicaContext(
         val closeTimeout = Duration.ofMillis(CLOSE_TIMEOUT)
         httpClient = if (cluster.username != null) {
             OkHttpClientPool.getHttpClient(
+                replicationProperties.timoutCheckHosts,
                 cluster,
                 readTimeout,
                 writeTimeout,
                 closeTimeout,
-                BasicAuthInterceptor(cluster.username!!, cluster.password!!),
+                BasicAuthInterceptor(cluster.username!!, cluster.password!!)
             )
         } else {
             OkHttpClientPool.getHttpClient(
+                replicationProperties.timoutCheckHosts,
                 cluster,
                 readTimeout,
                 writeTimeout,
                 closeTimeout,
-                SignInterceptor(cluster),
+                SignInterceptor(cluster)
             )
         }
     }
@@ -159,8 +163,8 @@ class ReplicaContext(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
-        private const val READ_TIMEOUT = 60 * 60 * 1000L
-        private const val WRITE_TIMEOUT = 30 * 1000L
-        private const val CLOSE_TIMEOUT = 10 * 1000L
+        const val READ_TIMEOUT = 60 * 60 * 1000L
+        const val WRITE_TIMEOUT = 5 * 1000L
+        const val CLOSE_TIMEOUT = 10 * 1000L
     }
 }
