@@ -72,7 +72,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^([\w\d_-]){1,255}$/,
+                            regex: /^([\w_-]){1,255}$/,
                             message: this.$t('ruleFormatErr'),
                             trigger: 'blur'
                         }
@@ -157,6 +157,7 @@
                         this.ignoreRule.projectId = this.projectId
                         this.ignoreRule.planId = this.planId
                     }
+                    this.ignoreAllVul = this.ignoreRule.vulIds !== undefined && this.ignoreRule.vulIds !== null && this.ignoreRule.vulIds.length === 0
                     this.vulIds = this.ignoreRule.vulIds ? this.ignoreRule.vulIds.join('\n') : ''
                     this.title = (this.ignoreRule.id ? this.$t('update') : this.$t('create')) + this.$t('rule')
                 }
