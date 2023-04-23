@@ -71,6 +71,13 @@ class BlobChunkedServiceImpl(
             val (start, end) = getRangeInfo(range)
             // 判断要上传的长度是否超长
             if (end - start > length - 1) {
+                buildBlobUploadPatchResponse(
+                    uuid = uuid,
+                    locationStr = BOLBS_UPLOAD_FIRST_STEP_URL+uuid,
+                    response = HttpContextHolder.getResponse(),
+                    range = length.toLong(),
+                    status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+                )
                 return
             }
         }
@@ -80,7 +87,6 @@ class BlobChunkedServiceImpl(
             artifactFile = artifactFile,
             storageCredentials = credentials
         )
-
         buildBlobUploadPatchResponse(
             uuid = uuid,
             locationStr =  BOLBS_UPLOAD_FIRST_STEP_URL+uuid,
@@ -106,7 +112,7 @@ class BlobChunkedServiceImpl(
         uploadResponse(
             locationStr = BOLBS_UPLOAD_FIRST_STEP_URL+uuid,
             response = HttpContextHolder.getResponse(),
-            status = HttpStatus.OK,
+            status = HttpStatus.CREATED,
         )
     }
 
