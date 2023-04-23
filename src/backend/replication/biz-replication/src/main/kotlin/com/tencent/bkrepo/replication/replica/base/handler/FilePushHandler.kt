@@ -169,13 +169,13 @@ class FilePushHandler(
         with(filePushContext) {
             var (postUrl, params) = when (context.remoteCluster.type) {
                 ClusterNodeType.REMOTE -> {
+                    Pair(OCI_BLOBS_UPLOAD_FIRST_STEP_URL.format(name), null)
+                }
+                else -> {
                     val temp: String? = context.remoteRepo?.storageCredentials?.key?.let {
                         "$SHA256=$sha256&$STORAGE_KEY=$it"
                     }
-                    Pair(OCI_BLOBS_UPLOAD_FIRST_STEP_URL.format(name), temp)
-                }
-                else -> {
-                    Pair(BOLBS_UPLOAD_FIRST_STEP_URL, null)
+                    Pair(BOLBS_UPLOAD_FIRST_STEP_URL, temp)
                 }
             }
             postUrl = buildUrl(context.cluster.url, postUrl, context)
@@ -211,13 +211,13 @@ class FilePushHandler(
         var chunkedHandlerResult: DefaultHandlerResult? = null
         val (params, ignoredFailureCode) = when (filePushContext.context.remoteCluster.type) {
             ClusterNodeType.REMOTE -> {
+                Pair(null, listOf(HttpStatus.NOT_FOUND.value))
+            }
+            else -> {
                 val params = filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
                     "$SHA256=$sha256&$STORAGE_KEY=$it"
                 }
                 Pair(params, emptyList())
-            }
-            else -> {
-                Pair(null, listOf(HttpStatus.NOT_FOUND.value))
             }
         }
         while (startPosition < size) {
@@ -282,12 +282,12 @@ class FilePushHandler(
         )
         val params = when (filePushContext.context.remoteCluster.type) {
             ClusterNodeType.REMOTE -> {
+                "digest=${filePushContext.digest!!}"
+            }
+            else -> {
                 filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
                     "$SHA256=$sha256&$STORAGE_KEY=$it"
                 }
-            }
-            else -> {
-                "digest=${filePushContext.digest!!}"
             }
         }
         val putHeader = Headers.Builder()
@@ -324,12 +324,12 @@ class FilePushHandler(
             logger.info("Will upload blob $sha256 in a single patch request")
             val params = when (filePushContext.context.remoteCluster.type) {
                 ClusterNodeType.REMOTE -> {
-                     filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-                        "$SHA256=$sha256&$STORAGE_KEY=$it"
-                    }
+                    null
                 }
                 else -> {
-                    null
+                    filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
+                        "$SHA256=$sha256&$STORAGE_KEY=$it"
+                    }
                 }
             }
             val patchBody = StreamRequestBody(
