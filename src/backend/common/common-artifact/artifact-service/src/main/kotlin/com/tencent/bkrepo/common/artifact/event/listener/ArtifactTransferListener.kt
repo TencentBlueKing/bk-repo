@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -59,7 +60,8 @@ import java.util.concurrent.LinkedBlockingQueue
  */
 @Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ArtifactTransferListener(
-    private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
+    private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>,
+    private val artifactMetricsProperties: ArtifactMetricsProperties
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -83,7 +85,9 @@ class ArtifactTransferListener(
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp
             )
-            logger.info(toJson(record))
+            if (artifactMetricsProperties.collectByLog) {
+                logger.info(toJson(record))
+            }
             queue.offer(record)
             ArtifactMetrics.getUploadedDistributionSummary().record(throughput.bytes.toDouble())
         }
@@ -110,7 +114,9 @@ class ArtifactTransferListener(
             )
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
-            logger.info(toJson(record))
+            if (artifactMetricsProperties.collectByLog) {
+                logger.info(toJson(record))
+            }
             queue.offer(record)
         }
     }
