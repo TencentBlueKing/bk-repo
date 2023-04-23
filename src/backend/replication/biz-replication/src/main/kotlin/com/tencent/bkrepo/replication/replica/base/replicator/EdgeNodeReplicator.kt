@@ -109,7 +109,8 @@ class EdgeNodeReplicator(
                         name = node.fullPath,
                         size = node.size,
                         sha256 = node.sha256
-                    )
+                    ),
+                    pushType = replicationProperties.pushType
                 )
                 return true
             }

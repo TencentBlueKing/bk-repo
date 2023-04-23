@@ -72,7 +72,7 @@ class FilePushHandler(
 
     fun blobPush(
         filePushContext: FilePushContext,
-        pushType: String = replicationProperties.pushType
+        pushType: String
     ) : Boolean {
         return when (pushType) {
             PUSH_WITH_CHUNKED -> {
@@ -375,7 +375,7 @@ class FilePushHandler(
             )
             val storageKey = context.remoteRepo?.storageCredentials?.key
             val requestTag = buildRequestTag(context, sha256, size)
-            val pushUrl =  buildRequestUrl(context.cluster.url, BLOB_PUSH_URI)
+            val pushUrl =  buildUrl(context.cluster.url, BLOB_PUSH_URI, context)
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(FILE, sha256, StreamRequestBody(rateLimitInputStream, size))
@@ -384,7 +384,7 @@ class FilePushHandler(
                 }.build()
             logger.info("The request will be sent for file sha256 [$sha256].")
             val httpRequest = Request.Builder()
-                .url(pushUrl!!)
+                .url(pushUrl)
                 .post(requestBody)
                 .tag(RequestTag::class.java, requestTag)
                 .build()

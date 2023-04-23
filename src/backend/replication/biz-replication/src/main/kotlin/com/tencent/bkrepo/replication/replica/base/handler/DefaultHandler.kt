@@ -65,7 +65,8 @@ object DefaultHandler {
                 else -> {
                     val error = convertErrorMsg(it, responseType)
                     throw ArtifactPushException(
-                        "invalid response  ${it.code} for request ${it.request.url}, error is $error"
+                        "invalid response  ${it.code} for request ${it.request.url}, error is $error",
+                        it.code
                     )
                 }
             }
@@ -88,7 +89,8 @@ object DefaultHandler {
         val repMsg = convertErrorMsg(response, responseType)
         throw ArtifactPushException(
             "Response error for request ${response.request.url}: " +
-                "code is ${response.code} and response is $repMsg"
+                "code is ${response.code} and response is $repMsg",
+            response.code
         )
     }
 
