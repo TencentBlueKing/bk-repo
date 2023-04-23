@@ -34,7 +34,6 @@ package com.tencent.bkrepo.replication.util
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.RANGE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import javax.servlet.http.HttpServletResponse
 

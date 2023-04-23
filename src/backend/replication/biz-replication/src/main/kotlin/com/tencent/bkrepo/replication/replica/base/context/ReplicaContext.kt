@@ -36,10 +36,6 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.constant.FILE
-import com.tencent.bkrepo.replication.constant.SHA256
-import com.tencent.bkrepo.replication.constant.STORAGE_KEY
-import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -52,13 +48,9 @@ import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 import java.time.Duration
 
 class ReplicaContext(
