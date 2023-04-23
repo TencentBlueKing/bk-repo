@@ -56,8 +56,11 @@ class SecurityFilterCriteriaBuilder(rule: MergedFilterRule?, ignored: Boolean) :
         }
 
         if (!includeVulIds.isNullOrEmpty()) {
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(includeVulIds))
-            criteriaList.add(Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(includeVulIds))
+            val criteria = Criteria().orOperator(
+                Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(includeVulIds),
+                Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(includeVulIds)
+            )
+            criteriaList.add(criteria)
         }
 
         if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
