@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.replication.manager
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.StandaloneJob
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
@@ -35,6 +37,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpda
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -44,7 +47,8 @@ import java.time.LocalDateTime
  */
 @Component
 class ClusterStatusManager(
-    private val clusterNodeService: ClusterNodeService
+    private val clusterNodeService: ClusterNodeService,
+    private val clusterProperties: ClusterProperties
 ) {
     @Scheduled(initialDelay = 30 * 1000L, fixedDelay = 30 * 1000L) // 每隔30s检测一次
     @StandaloneJob
@@ -73,15 +77,18 @@ class ClusterStatusManager(
     }
 
     private fun report(it: ClusterNodeInfo) {
-        if (it.status == ClusterNodeStatus.HEALTHY
-            && it.lastReportTime?.isBefore(LocalDateTime.now().minusMinutes(1)) == true
-        ) {
+        if (clusterProperties.role != ClusterNodeType.CENTER) {
+            return
+        }
+        val oneMinuteBefore = LocalDateTime.now().minusMinutes(1)
+        val lastReportTime = it.lastReportTime ?: LocalDateTime.parse(it.createdDate)
+        if (it.status == ClusterNodeStatus.HEALTHY && lastReportTime.isBefore(oneMinuteBefore)) {
+            logger.warn("edge node [${it.name}] change to unhealthy, last report time ${it.lastReportTime}")
             return updateClusterNodeStatus(it.name, ClusterNodeStatus.UNHEALTHY)
         }
 
-        if (it.status == ClusterNodeStatus.UNHEALTHY
-            && it.lastReportTime?.isAfter(LocalDateTime.now().minusMinutes(1)) == true
-        ) {
+        if (it.status == ClusterNodeStatus.UNHEALTHY && lastReportTime.isAfter(oneMinuteBefore)) {
+            logger.info("edge node [${it.name}] change to healthy, last report time ${it.lastReportTime}")
             return updateClusterNodeStatus(it.name, ClusterNodeStatus.HEALTHY)
         }
     }
@@ -97,5 +104,9 @@ class ClusterStatusManager(
             operator = SYSTEM_USER
         )
         clusterNodeService.updateClusterNodeStatus(request)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ClusterStatusManager::class.java)
     }
 }

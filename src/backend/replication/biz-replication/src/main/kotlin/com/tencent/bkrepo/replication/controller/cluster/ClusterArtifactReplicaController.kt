@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController
 class ClusterArtifactReplicaController(
     private val clusterNodeService: ClusterNodeService
 ) : ClusterArtifactReplicaClient {
-    override fun heartBeat(name: String): Response<Void> {
+    override fun heartbeat(name: String): Response<Void> {
         clusterNodeService.updateReportTime(name)
         return ResponseBuilder.success()
     }

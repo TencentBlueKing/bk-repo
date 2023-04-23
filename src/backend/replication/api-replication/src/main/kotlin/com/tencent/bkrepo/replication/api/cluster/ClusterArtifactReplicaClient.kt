@@ -38,6 +38,6 @@ import org.springframework.web.bind.annotation.RequestParam
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterArtifactReplicaClient")
 interface ClusterArtifactReplicaClient {
 
-    @GetMapping
-    fun heartBeat(@RequestParam name: String): Response<Void>
+    @GetMapping("/heartbeat")
+    fun heartbeat(@RequestParam name: String): Response<Void>
 }

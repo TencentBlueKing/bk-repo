@@ -31,6 +31,10 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.replication.api.cluster.ClusterArtifactReplicaClient
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
+import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.context.annotation.Conditional
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -38,7 +42,8 @@ import org.springframework.stereotype.Component
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgeNodeReportJob(
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    private val clusterNodeService: ClusterNodeService
 ) {
 
     private val centerArtifactReplicaClient: ClusterArtifactReplicaClient
@@ -47,7 +52,22 @@ class EdgeNodeReportJob(
     @Scheduled(initialDelay = INIT_DELAY, fixedRate = FIXED_RATE)
     fun report() {
         val name = clusterProperties.self.name!!
-        centerArtifactReplicaClient.heartBeat(name)
+        try {
+            centerArtifactReplicaClient.heartbeat(name)
+            updateClusterNodeStatus(name, ClusterNodeStatus.HEALTHY)
+        } catch (e: Exception) {
+            updateClusterNodeStatus(name, ClusterNodeStatus.UNHEALTHY, e.message)
+        }
+    }
+
+    private fun updateClusterNodeStatus(name: String, status: ClusterNodeStatus, errorReason: String? = null) {
+        val request = ClusterNodeStatusUpdateRequest(
+            name = name,
+            status = status,
+            errorReason = errorReason,
+            operator = SYSTEM_USER
+        )
+        clusterNodeService.updateClusterNodeStatus(request)
     }
 
     companion object {
