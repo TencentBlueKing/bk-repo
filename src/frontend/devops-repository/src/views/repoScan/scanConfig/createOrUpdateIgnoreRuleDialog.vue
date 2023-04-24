@@ -151,8 +151,7 @@
                     } else {
                         this.ignoreRule = {
                             type: FILTER_RULE_IGNORE,
-                            name: '',
-                            vulIds: []
+                            name: ''
                         }
                         this.ignoreRule.projectId = this.projectId
                         this.ignoreRule.planId = this.planId
