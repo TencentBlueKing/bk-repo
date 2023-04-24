@@ -699,11 +699,17 @@
     "rulePackageVersionPlaceholder": "Package version, e.g., 1.7",
     "rulePackageVersionTip": "The rule will take effect for this version, if not set, it will take effect for all versions",
     "ruleVulPlaceholder": "Vulnerability ID, multiple vulnerability IDs were separated by newlines",
-    "ruleVulTip": "The vulnerability ID that needs to be filtered",
+    "ruleVulTip": "The vulnerability ID that needs to be filtered, multiple vulnerability IDs were separated by newlines",
     "ruleSeverityPlaceholder": "Please select the minimum level",
     "ruleSeverityTip": "Smaller than this level will be ignored",
     "ruleIgnoreIfMatch": "Ignore",
     "ruleIgnoreIfNotMatch": "Include",
     "ruleIgnoreRuleType": "Rule Type",
-    "ruleIgnoreRuleTypeTip": "Ignore: Vulnerability will be ignored if matching rule<br>Include: Vulnerability will be ignored if does not match rule"
+    "ruleIgnoreRuleTypeTip": "Ignore: Vulnerability will be ignored if matching rule<br>Include: Vulnerability will be ignored if does not match rule",
+    "ruleIgnoreMethod": "Filter Method",
+    "ruleIgnoreByVulId": "Filter By VulID",
+    "ruleIgnoreByVulSeverity": "Filter By Vul Severity",
+    "ruleIgnoreByVulComponent": "Filter By Vul Component Name",
+    "ruleIgnoreRiskyComponentPlaceholder": "Risky component name, multiple component names were separated by newlines",
+    "ruleIgnoreRiskyComponentTip": "The risky component should be filtered, multiple component names were separated by newlines"
 }
