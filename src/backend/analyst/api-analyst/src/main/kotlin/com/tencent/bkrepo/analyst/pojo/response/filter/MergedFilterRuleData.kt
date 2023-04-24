@@ -27,23 +27,27 @@
 
 package com.tencent.bkrepo.analyst.pojo.response.filter
 
+import org.springframework.util.ReflectionUtils
+
 data class MergedFilterRuleData(
+    var riskyPackageKeys: MutableSet<String>? = null,
     var vulIds: MutableSet<String>? = null,
     var licenses: MutableSet<String>? = null
 ) {
     fun add(rule: FilterRule) {
-        if (rule.vulIds != null) {
-            if (this.vulIds == null) {
-                this.vulIds = HashSet()
-            }
-            this.vulIds!!.addAll(rule.vulIds)
-        }
+        this.vulIds = add(this.vulIds, rule, FilterRule::vulIds.name)
+        this.licenses = add(this.licenses, rule, FilterRule::licenseNames.name)
+        this.riskyPackageKeys = add(this.riskyPackageKeys, rule, FilterRule::riskyPackageKeys.name)
+    }
 
-        if (rule.licenseNames != null) {
-            if (this.licenses == null) {
-                this.licenses = HashSet()
-            }
-            this.licenses!!.addAll(rule.licenseNames)
+    private fun add(target: MutableSet<String>?, rule: FilterRule, ruleName: String): MutableSet<String> {
+        val result = target ?: HashSet()
+        val field = ReflectionUtils.findField(FilterRule::class.java, ruleName)
+        field!!.isAccessible = true
+        val rules = field.get(rule)
+        if (rules is Set<*> && rules.isNotEmpty()) {
+            result.addAll(rules as Set<String>)
         }
+        return result
     }
 }

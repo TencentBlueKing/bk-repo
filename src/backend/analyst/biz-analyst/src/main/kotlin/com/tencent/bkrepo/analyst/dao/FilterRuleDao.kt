@@ -102,6 +102,7 @@ class FilterRuleDao : ScannerSimpleMongoDao<TFilterRule>() {
                 .set(TFilterRule::fullPath.name, fullPath)
                 .set(TFilterRule::packageKey.name, packageKey)
                 .set(TFilterRule::packageVersion.name, packageVersion)
+                .set(TFilterRule::riskyPackageKeys.name, riskyPackageKeys)
                 .set(TFilterRule::vulIds.name, vulIds)
                 .set(TFilterRule::severity.name, severity)
                 .set(TFilterRule::type.name, type)

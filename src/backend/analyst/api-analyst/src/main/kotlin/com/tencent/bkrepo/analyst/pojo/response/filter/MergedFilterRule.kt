@@ -35,10 +35,18 @@ data class MergedFilterRule(
     /**
      * 不在包含列表或在忽略列表中的漏洞将被忽略
      */
-    fun shouldIgnore(vulId: String, cveId: String? = null, severity: Int? = null): Boolean {
+    fun shouldIgnore(
+        vulId: String,
+        cveId: String? = null,
+        riskyPackageKey: String? = null,
+        severity: Int? = null
+    ): Boolean {
         return if (ignoreByIncludeRule(includeRule.vulIds, cveId) && ignoreByIncludeRule(includeRule.vulIds, vulId)) {
             true
         } else if (ignoreByIgnoreRule(ignoreRule.vulIds, cveId) || ignoreByIgnoreRule(ignoreRule.vulIds, vulId)) {
+            true
+        } else if (ignoreByIncludeRule(includeRule.riskyPackageKeys, riskyPackageKey) ||
+            ignoreByIgnoreRule(ignoreRule.riskyPackageKeys, riskyPackageKey)) {
             true
         } else {
             minSeverityLevel != null && severity != null && severity < minSeverityLevel!!

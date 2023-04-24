@@ -63,6 +63,9 @@ data class FilterRule(
     @ApiModelProperty("目标版本")
     val packageVersion: String? = null,
 
+    @ApiModelProperty("存在风险的包名")
+    val riskyPackageKeys: Set<String>? = null,
+
     @ApiModelProperty("需要忽略的漏洞")
     val vulIds: Set<String>? = null,
 

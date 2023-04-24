@@ -67,6 +67,9 @@ data class UpdateFilterRuleRequest(
     @ApiModelProperty("目标版本")
     val packageVersion: String? = null,
 
+    @ApiModelProperty("存在风险的包")
+    val riskyPackageKeys: Set<String>? = null,
+
     @ApiModelProperty("需要忽略的漏洞，空集合表示忽略所有")
     val vulIds: Set<String>? = null,
 
@@ -80,6 +83,18 @@ data class UpdateFilterRuleRequest(
     val type: Int = FILTER_RULE_TYPE_IGNORE
 ) {
     fun check() {
+        var count = 0
+        riskyPackageKeys?.let { count++ }
+        vulIds?.let { count++ }
+        severity?.let { count++ }
+        licenseNames?.let { count++ }
+        if (count > 1) {
+            throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "[riskyPackageKey, vulIds, severity, licenseNames] only one could be set"
+            )
+        }
+
         // 保留规则不允许设置最小漏洞等级
         if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ignore[$type], severity[$severity]")

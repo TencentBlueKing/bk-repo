@@ -63,6 +63,18 @@ class SecurityFilterCriteriaBuilder(rule: MergedFilterRule?, ignored: Boolean) :
             criteriaList.add(criteria)
         }
 
+        if (!rule.ignoreRule.riskyPackageKeys.isNullOrEmpty()) {
+            criteriaList.add(
+                Criteria(dataKey(TSecurityResultData::pkgName.name)).not().inValues(rule.ignoreRule.riskyPackageKeys!!)
+            )
+        }
+
+        if (!rule.includeRule.riskyPackageKeys.isNullOrEmpty()) {
+            criteriaList.add(
+                Criteria(dataKey(TSecurityResultData::pkgName.name)).inValues(rule.includeRule.riskyPackageKeys!!)
+            )
+        }
+
         if (minSeverityLevel != null && minSeverityLevel != Level.LOW.level) {
             criteriaList.add(Criteria(dataKey(TSecurityResultData::severityLevel.name)).gte(minSeverityLevel))
         }
@@ -90,6 +102,18 @@ class SecurityFilterCriteriaBuilder(rule: MergedFilterRule?, ignored: Boolean) :
                     Criteria(dataKey(TSecurityResultData::vulId.name)).not().inValues(includeVulIds),
                     Criteria(dataKey(TSecurityResultData::cveId.name)).not().inValues(includeVulIds)
                 )
+            )
+        }
+
+        if (rule.ignoreRule.riskyPackageKeys?.isNotEmpty() == true) {
+            orCriteria.add(
+                Criteria(dataKey(TSecurityResultData::pkgName.name)).inValues(rule.ignoreRule.riskyPackageKeys!!)
+            )
+        }
+
+        if (rule.includeRule.riskyPackageKeys?.isNotEmpty() == true) {
+            orCriteria.add(
+                Criteria(dataKey(TSecurityResultData::pkgName.name)).not().inValues(rule.includeRule.riskyPackageKeys!!)
             )
         }
 
