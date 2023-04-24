@@ -215,8 +215,7 @@ export default {
         name: '',
         description: '',
         projectId: '',
-        projectIds: [],
-        vulIds: []
+        projectIds: []
       }
     }
   }

@@ -131,3 +131,12 @@ export const FILTER_RULE_IGNORE = 0
 
 // 未匹配规则时忽略
 export const FILTER_RULE_INCLUDE = 1
+
+// 通过漏洞ID过滤
+export const FILTER_METHOD_VUL_ID = 0
+
+// 通过漏洞等级过滤
+export const FILTER_METHOD_SEVERITY = 1
+
+// 通过风险组件名过滤
+export const FILTER_METHOD_RISKY_COMPONENT = 2
