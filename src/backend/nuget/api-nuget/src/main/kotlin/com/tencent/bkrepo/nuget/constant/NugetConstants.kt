@@ -46,11 +46,13 @@ const val METADATA = "nuget_metadata"
 const val REGISTRATION = "registration"
 const val SEMVER2 = "semver2"
 const val INDEX = "index.json"
+const val PACKAGE_NAME = "packageName"
 
 const val REMOTE_URL = "remote_url"
 const val REGISTRATION_PATH = "registrationPath"
 const val SEMVER2_ENDPOINT = "isSemver2Endpoint"
 const val CACHE_CONTEXT = "cacheContext"
+const val QUERY_TYPE = "queryType"
 
 const val NUGET_V3_NOT_FOUND =
 """<?xml version="1.0" encoding="utf-8"?>

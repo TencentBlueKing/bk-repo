@@ -60,17 +60,17 @@ import kotlin.streams.toList
 @Component
 class NugetVirtualRepository(
     private val commonUtils: NugetRemoteAndVirtualCommon
-) : VirtualRepository(), NugetRepository {
+) : VirtualRepository() {
 
-    override fun feed(artifactInfo: NugetArtifactInfo): Feed {
+    private fun feed(artifactInfo: NugetArtifactInfo): Feed {
         return NugetUtils.renderServiceIndex(artifactInfo)
     }
 
-    override fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+    private fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
         return emptyList()
     }
 
-    override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+    private fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
@@ -89,7 +89,7 @@ class NugetVirtualRepository(
         )
     }
 
-    override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+    private fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
@@ -108,7 +108,7 @@ class NugetVirtualRepository(
         )
     }
 
-    override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+    private fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!

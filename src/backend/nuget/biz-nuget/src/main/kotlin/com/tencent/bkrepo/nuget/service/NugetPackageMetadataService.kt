@@ -34,11 +34,11 @@ interface NugetPackageMetadataService {
     /**
      * 代理访问Registration
      */
-    fun proxyRegistrationPage(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        proxyChannelName: String,
-        url: String,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any>
+//    fun proxyRegistrationPage(
+//        artifactInfo: NugetRegistrationArtifactInfo,
+//        proxyChannelName: String,
+//        url: String,
+//        registrationPath: String,
+//        isSemver2Endpoint: Boolean
+//    ): ResponseEntity<Any>
 }

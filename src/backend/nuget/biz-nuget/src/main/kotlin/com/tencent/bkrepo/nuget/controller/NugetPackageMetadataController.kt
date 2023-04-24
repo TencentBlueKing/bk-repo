@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.nuget.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_ROOT_URI_V3
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_INDEX
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_INDEX_FEATURE
@@ -35,6 +38,7 @@ class NugetPackageMetadataController(
      * RegistrationsBaseUrl/3.6.0+
      */
     @GetMapping(REGISTRATION_INDEX, REGISTRATION_INDEX_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     fun registrationIndex(
         artifactInfo: NugetRegistrationArtifactInfo,
         @PathVariable feature: String?
@@ -45,6 +49,7 @@ class NugetPackageMetadataController(
     }
 
     @GetMapping(REGISTRATION_PAGE, REGISTRATION_PAGE_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     fun registrationPage(
         artifactInfo: NugetRegistrationArtifactInfo,
         @PathVariable feature: String?
@@ -55,6 +60,7 @@ class NugetPackageMetadataController(
     }
 
     @GetMapping(REGISTRATION_LEAF, REGISTRATION_LEAF_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     fun registrationLeaf(
         artifactInfo: NugetRegistrationArtifactInfo,
         @PathVariable feature: String?

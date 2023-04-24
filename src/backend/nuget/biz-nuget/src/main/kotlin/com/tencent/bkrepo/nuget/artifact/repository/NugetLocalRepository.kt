@@ -52,6 +52,9 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.MANIFEST
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
+import com.tencent.bkrepo.nuget.constant.NugetQueryType
+import com.tencent.bkrepo.nuget.constant.PACKAGE_NAME
+import com.tencent.bkrepo.nuget.constant.QUERY_TYPE
 import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
@@ -78,19 +81,29 @@ import kotlin.streams.toList
 @Component
 class NugetLocalRepository(
     private val nugetPackageHandler: NugetPackageHandler
-) : LocalRepository(), NugetRepository {
+) : LocalRepository() {
 
-    override fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
-        return packageClient.listExistPackageVersion(
-            context.projectId, context.repoName, PackageKeys.ofNuget(packageId)
-        ).data
+    override fun query(context: ArtifactQueryContext): Any? {
+        return when(context.getAttribute<NugetQueryType>(QUERY_TYPE)!!) {
+            NugetQueryType.PACKAGE_VERSIONS -> enumerateVersions(context, context.getStringAttribute(PACKAGE_NAME)!!)
+            NugetQueryType.SERVICE_INDEX -> feed(context.artifactInfo as NugetArtifactInfo)
+            NugetQueryType.REGISTRATION_INDEX -> registrationIndex(context)
+            NugetQueryType.REGISTRATION_PAGE -> registrationPage(context)
+            NugetQueryType.REGISTRATION_LEAF -> registrationLeaf(context)
+        }
     }
 
-    override fun feed(artifactInfo: NugetArtifactInfo): Feed {
+    private fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+        return packageClient.listExistPackageVersion(
+            context.projectId, context.repoName, PackageKeys.ofNuget(packageId)
+        ).data?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun feed(artifactInfo: NugetArtifactInfo): Feed {
         return NugetUtils.renderServiceIndex(artifactInfo)
     }
 
-    override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+    private fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         with(context) {
             val packageName = (artifactInfo as NugetRegistrationArtifactInfo).packageName
             val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
@@ -110,7 +123,7 @@ class NugetLocalRepository(
         }
     }
 
-    override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+    private fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         with(context) {
             val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
             val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
@@ -137,7 +150,7 @@ class NugetLocalRepository(
         }
     }
 
-    override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+    private fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         with(context) {
             val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
             val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo

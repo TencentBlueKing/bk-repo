@@ -48,7 +48,10 @@ import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
 import com.tencent.bkrepo.nuget.constant.CACHE_CONTEXT
 import com.tencent.bkrepo.nuget.constant.MANIFEST
+import com.tencent.bkrepo.nuget.constant.NugetQueryType
 import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
+import com.tencent.bkrepo.nuget.constant.PACKAGE_NAME
+import com.tencent.bkrepo.nuget.constant.QUERY_TYPE
 import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
 import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
@@ -74,14 +77,25 @@ import java.net.URLEncoder
 @Component
 class NugetRemoteRepository(
     private val commonUtils: NugetRemoteAndVirtualCommon
-) : RemoteRepository(), NugetRepository {
+) : RemoteRepository() {
 
-    override fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+    override fun query(context: ArtifactQueryContext): Any? {
+        return when(context.getAttribute<NugetQueryType>(QUERY_TYPE)!!) {
+            NugetQueryType.PACKAGE_VERSIONS -> enumerateVersions(context, context.getStringAttribute(PACKAGE_NAME)!!)
+            NugetQueryType.SERVICE_INDEX -> feed(context.artifactInfo as NugetArtifactInfo)
+            NugetQueryType.REGISTRATION_INDEX -> registrationIndex(context)
+            NugetQueryType.REGISTRATION_PAGE -> registrationPage(context)
+            NugetQueryType.REGISTRATION_LEAF -> registrationLeaf(context)
+        }
+    }
+
+    private fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
         val packageBaseAddress = getResourceId(PACKAGE_BASE_ADDRESS, context)
         val requestUrl = NugetUtils.buildPackageVersionsUrl(packageBaseAddress, packageId)
         context.putAttribute(REMOTE_URL, requestUrl)
-        return query(context)?.let {
+        return super.query(context)?.let {
             JsonUtils.objectMapper.readValue(it as InputStream, VersionListResponse::class.java).versions
+                .takeIf { versionList -> versionList.isNotEmpty() }
         }
     }
 
@@ -101,7 +115,7 @@ class NugetRemoteRepository(
         return super.onDownload(context)
     }
 
-    override fun feed(artifactInfo: NugetArtifactInfo): Feed {
+    private fun feed(artifactInfo: NugetArtifactInfo): Feed {
         // 1、请求远程索引文件
         // 2、将resource里面的内容进行更改
         // 先使用type进行匹配筛选，然后在进行id的替换
@@ -128,7 +142,7 @@ class NugetRemoteRepository(
         return context.getStringAttribute(REMOTE_URL) ?: context.getRemoteConfiguration().url
     }
 
-    override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+    private fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         // 1、先根据请求URL匹配对应的远程URL地址的type，在根据type去找到对应的key
         // 2、根据匹配到的URL去添加请求packageId之后去请求远程索引文件
         // 3、缓存索引文件，然后将文件中的URL改成对应的仓库URL进行返回
@@ -144,7 +158,7 @@ class NugetRemoteRepository(
         )
     }
 
-    override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+    private fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
@@ -163,12 +177,12 @@ class NugetRemoteRepository(
     ): RegistrationPage? {
         context.putAttribute(REMOTE_URL, url)
         logger.info("Query Remote Registration Page from [$url]")
-        return query(context)?.let {
+        return super.query(context)?.let {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
         }
     }
 
-    override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+    private fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
@@ -210,7 +224,7 @@ class NugetRemoteRepository(
         } ?: run {
             val requestUrl = context.getRemoteConfiguration().url
             logger.info("Query Remote Service Index from [$requestUrl]")
-            query(context)?.let { JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java) }
+            super.query(context)?.let { JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java) }
                 ?: throw NugetFeedNotFoundException("query remote feed index.json for [$requestUrl] failed!")
         }
     }
@@ -229,7 +243,7 @@ class NugetRemoteRepository(
         ).toString()
         context.putAttribute(REMOTE_URL, remoteIndexUrl)
         logger.info("Query Remote Registration Index from [$remoteIndexUrl]")
-        return query(context)?.let {
+        return super.query(context)?.let {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationIndex::class.java)
         }
     }
@@ -248,7 +262,7 @@ class NugetRemoteRepository(
         )
         context.putAttribute(REMOTE_URL, remotePageUrl)
         logger.info("Query Remote Registration Page from [$remotePageUrl]")
-        return query(context)?.let {
+        return super.query(context)?.let {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
         }
     }
@@ -267,7 +281,7 @@ class NugetRemoteRepository(
         )
         context.putAttribute(REMOTE_URL, remoteLeafUrl)
         logger.info("Query Remote Registration Leaf from [$remoteLeafUrl]")
-        return query(context)?.let {
+        return super.query(context)?.let {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationLeaf::class.java)
         }
     }
