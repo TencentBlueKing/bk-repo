@@ -35,26 +35,29 @@ data class MergedFilterRule(
     /**
      * 不在包含列表或在忽略列表中的漏洞将被忽略
      */
-    fun shouldIgnore(vulId: String, severity: Int? = null): Boolean {
-        if (shouldIgnore(includeRule.vulIds, ignoreRule.vulIds, vulId)) {
-            return true
+    fun shouldIgnore(vulId: String, cveId: String? = null, severity: Int? = null): Boolean {
+        return if (ignoreByIncludeRule(includeRule.vulIds, cveId) && ignoreByIncludeRule(includeRule.vulIds, vulId)) {
+            true
+        } else if (ignoreByIgnoreRule(ignoreRule.vulIds, cveId) || ignoreByIgnoreRule(ignoreRule.vulIds, vulId)) {
+            true
+        } else {
+            minSeverityLevel != null && severity != null && severity < minSeverityLevel!!
         }
-
-        return minSeverityLevel != null && severity != null && severity < minSeverityLevel!!
     }
 
     /**
      * 不在包含列表或在忽略列表中的许可证将被忽略
      */
     fun shouldIgnore(licenseName: String): Boolean {
-        return shouldIgnore(includeRule.licenses, ignoreRule.licenses, licenseName)
+        return ignoreByIncludeRule(includeRule.licenses, licenseName) ||
+            ignoreByIgnoreRule(ignoreRule.licenses, licenseName)
     }
 
-    private fun shouldIgnore(include: Set<String>?, ignore: Set<String>?, result: String): Boolean {
-        if (!include.isNullOrEmpty() && result !in include) {
-            return true
-        }
-
+    private fun ignoreByIgnoreRule(ignore: Set<String>?, result: String?): Boolean {
         return ignore != null && result in ignore || ignore?.isEmpty() == true
+    }
+
+    private fun ignoreByIncludeRule(include: Set<String>?, result: String?): Boolean {
+        return !include.isNullOrEmpty() && result !in include
     }
 }
