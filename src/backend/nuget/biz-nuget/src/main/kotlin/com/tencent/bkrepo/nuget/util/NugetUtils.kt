@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -18,6 +19,7 @@ import java.io.IOException
 import java.net.URI
 import java.util.StringJoiner
 
+@Suppress("TooManyFunctions")
 object NugetUtils {
     private const val NUGET_FULL_PATH = "/%s/%s.%s.nupkg"
     private const val NUGET_MANIFEST_FULL_PATH = ".nuspec/%s/%s.%s.nuspec"
@@ -54,12 +56,12 @@ object NugetUtils {
 
     fun getServiceDocumentResource(): String {
         val inputStream = this.javaClass.classLoader.getResourceAsStream("service_document.xml")
-        return inputStream.use { IOUtils.toString(it, "UTF-8") }
+        return inputStream.use { IOUtils.toString(it, UTF_8) }
     }
 
     fun getFeedResource(): String {
         val inputStream = this.javaClass.classLoader.getResourceAsStream("v3/nugetRootFeedIndex.json")
-        return inputStream.use { IOUtils.toString(it, "UTF-8") }
+        return inputStream.use { IOUtils.toString(it, UTF_8) }
     }
 
     fun getV2Url(artifactInfo: ArtifactInfo): String {
@@ -102,7 +104,7 @@ object NugetUtils {
 
     fun buildRegistrationIndexUrl(v3RegistrationUrl: String, packageId: String): URI {
         val packageContentUrl = StringJoiner("/").add(UrlFormatter.format(v3RegistrationUrl))
-            .add(packageId.toLowerCase()).add("index.json")
+            .add(packageId.toLowerCase()).add(INDEX)
         return URI.create(packageContentUrl.toString())
     }
 

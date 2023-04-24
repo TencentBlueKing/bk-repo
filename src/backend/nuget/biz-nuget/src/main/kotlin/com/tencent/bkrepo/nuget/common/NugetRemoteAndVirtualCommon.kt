@@ -5,7 +5,19 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
+import com.tencent.bkrepo.nuget.constant.PACKAGE_DISPLAY_METADATA_URI_TEMPLATE
+import com.tencent.bkrepo.nuget.constant.PACKAGE_PUBLISH
+import com.tencent.bkrepo.nuget.constant.PACKAGE_VERSION_DISPLAY_METADATA_URI_TEMPLATE
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_GZ_SEMVER2_URL
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_GZ_URL
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL_BETA
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL_RC
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL_VERSIONED
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
+import com.tencent.bkrepo.nuget.constant.SEARCH_QUERY_SERVICE
+import com.tencent.bkrepo.nuget.constant.SEARCH_QUERY_SERVICE_BETA
+import com.tencent.bkrepo.nuget.constant.SEARCH_QUERY_SERVICE_RC
 import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
@@ -116,20 +128,20 @@ class NugetRemoteAndVirtualCommon {
 
     init {
         urlConvertersMap[PACKAGE_BASE_ADDRESS] = packageBaseAddress
-        urlConvertersMap["RegistrationsBaseUrl"] = registrationsBaseUrl
-        urlConvertersMap["SearchQueryService"] = searchQueryService
+        urlConvertersMap[REGISTRATIONS_BASE_URL] = registrationsBaseUrl
+        urlConvertersMap[SEARCH_QUERY_SERVICE] = searchQueryService
 //        urlConvertersMap["LegacyGallery"] = legacyGallery
 //        urlConvertersMap["LegacyGallery/2.0.0"] = legacyGallery
-        urlConvertersMap["PackagePublish/2.0.0"] = packagePublish
-        urlConvertersMap["SearchQueryService/3.0.0-rc"] = searchQueryService
-        urlConvertersMap["RegistrationsBaseUrl/3.0.0-rc"] = registrationsBaseUrl
-        urlConvertersMap["PackageDisplayMetadataUriTemplate/3.0.0-rc"] = packageDisplayMetadataUriTemplate
-        urlConvertersMap["packageVersionDisplayMetadataUriTemplate/3.0.0-rc"] = packageVersionDisplayMetadataUriTemplate
-        urlConvertersMap["SearchQueryService/3.0.0-beta"] = searchQueryService
-        urlConvertersMap["RegistrationsBaseUrl/3.0.0-beta"] = registrationsBaseUrl
-        urlConvertersMap["RegistrationsBaseUrl/3.4.0"] = registrationsBaseUrl
-        urlConvertersMap["RegistrationsBaseUrl/3.6.0"] = registrationsBaseSemver2Url
-        urlConvertersMap["RegistrationsBaseUrl/Versioned"] = registrationsBaseSemver2Url
+        urlConvertersMap[PACKAGE_PUBLISH] = packagePublish
+        urlConvertersMap[SEARCH_QUERY_SERVICE_RC] = searchQueryService
+        urlConvertersMap[REGISTRATIONS_BASE_URL_RC] = registrationsBaseUrl
+        urlConvertersMap[PACKAGE_DISPLAY_METADATA_URI_TEMPLATE] = packageDisplayMetadataUriTemplate
+        urlConvertersMap[PACKAGE_VERSION_DISPLAY_METADATA_URI_TEMPLATE] = packageVersionDisplayMetadataUriTemplate
+        urlConvertersMap[SEARCH_QUERY_SERVICE_BETA] = searchQueryService
+        urlConvertersMap[REGISTRATIONS_BASE_URL_BETA] = registrationsBaseUrl
+        urlConvertersMap[REGISTRATIONS_BASE_GZ_URL] = registrationsBaseUrl
+        urlConvertersMap[REGISTRATIONS_BASE_GZ_SEMVER2_URL] = registrationsBaseSemver2Url
+        urlConvertersMap[REGISTRATIONS_BASE_URL_VERSIONED] = registrationsBaseSemver2Url
     }
 
     companion object {

@@ -6,6 +6,10 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_EXT_DELETE_PACKAGE
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_EXT_DELETE_VERSION
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_EXT_DOMAIN
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_EXT_VERSION_DETAIL
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.domain.NugetDomainInfo
 import com.tencent.bkrepo.nuget.pojo.user.PackageVersionInfo
@@ -28,7 +32,7 @@ class NugetWebController(
 ) {
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包")
-    @DeleteMapping("/package/delete/{projectId}/{repoName}")
+    @DeleteMapping(NUGET_EXT_DELETE_PACKAGE)
     fun deletePackage(
         @RequestAttribute userId: String,
         artifactInfo: NugetDeleteArtifactInfo,
@@ -41,7 +45,7 @@ class NugetWebController(
 
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包版本")
-    @DeleteMapping("/version/delete/{projectId}/{repoName}")
+    @DeleteMapping(NUGET_EXT_DELETE_VERSION)
     fun deleteVersion(
         @RequestAttribute userId: String,
         artifactInfo: NugetDeleteArtifactInfo,
@@ -56,7 +60,7 @@ class NugetWebController(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @ApiOperation("查询包的版本详情")
-    @GetMapping("/version/detail/{projectId}/{repoName}")
+    @GetMapping(NUGET_EXT_VERSION_DETAIL)
     fun detailVersion(
         @RequestAttribute
         userId: String,
@@ -70,7 +74,7 @@ class NugetWebController(
     }
 
     @ApiOperation("获取nuget域名地址")
-    @GetMapping("/address")
+    @GetMapping(NUGET_EXT_DOMAIN)
     fun getRegistryDomain(): Response<NugetDomainInfo> {
         return ResponseBuilder.success(nugetWebService.getRegistryDomain())
     }

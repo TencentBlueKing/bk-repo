@@ -1,13 +1,21 @@
 package com.tencent.bkrepo.nuget.controller
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_ROOT_URI_V3
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_INDEX
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_INDEX_FEATURE
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_LEAF
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_LEAF_FEATURE
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_PAGE
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.REGISTRATION_PAGE_FEATURE
+import com.tencent.bkrepo.nuget.constant.REGISTRATION
+import com.tencent.bkrepo.nuget.constant.SEMVER2
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.service.NugetPackageMetadataService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -15,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Suppress("MVCPathVariableInspection")
 @RestController
-@RequestMapping("/{projectId}/{repoName}/v3")
+@RequestMapping(NUGET_ROOT_URI_V3)
 class NugetPackageMetadataController(
     private val nugetPackageMetadataService: NugetPackageMetadataService
 ) {
@@ -26,63 +34,47 @@ class NugetPackageMetadataController(
      *
      * RegistrationsBaseUrl/3.6.0+
      */
-    @GetMapping(
-        "/registration/{id}/index.json",
-        "/registration{feature}/{id}/index.json",
-        produces = [MediaTypes.APPLICATION_JSON]
-    )
+    @GetMapping(REGISTRATION_INDEX, REGISTRATION_INDEX_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
     fun registrationIndex(
         artifactInfo: NugetRegistrationArtifactInfo,
         @PathVariable feature: String?
     ): ResponseEntity<Any> {
-        val isSemver2Endpoint = feature?.contains("semver2") ?: false
-        val registrationPath = "registration" + (feature ?: "")
+        val isSemver2Endpoint = feature?.contains(SEMVER2) ?: false
+        val registrationPath = REGISTRATION + (feature ?: "")
         return nugetPackageMetadataService.registrationIndex(artifactInfo, registrationPath, isSemver2Endpoint)
     }
 
-    @GetMapping(
-        "/registration/{id}/page/{lowerVersion}/{upperVersion}.json",
-        "/registration{feature}/{id}/page/{lowerVersion}/{upperVersion}.json",
-        produces = [MediaTypes.APPLICATION_JSON]
-    )
+    @GetMapping(REGISTRATION_PAGE, REGISTRATION_PAGE_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
     fun registrationPage(
         artifactInfo: NugetRegistrationArtifactInfo,
         @PathVariable feature: String?
     ): ResponseEntity<Any> {
-        val isSemver2Endpoint = feature?.contains("semver2") ?: false
-        val registrationPath = "registration" + (feature ?: "")
+        val isSemver2Endpoint = feature?.contains(SEMVER2) ?: false
+        val registrationPath = REGISTRATION + (feature ?: "")
         return nugetPackageMetadataService.registrationPage(artifactInfo, registrationPath, isSemver2Endpoint)
     }
 
-    @GetMapping(
-        "/registration/{id}/{version}.json",
-        "/registration{feature}/{id}/{version}.json",
-        produces = [MediaTypes.APPLICATION_JSON]
-    )
+    @GetMapping(REGISTRATION_LEAF, REGISTRATION_LEAF_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
     fun registrationLeaf(
         artifactInfo: NugetRegistrationArtifactInfo,
         @PathVariable feature: String?
     ): ResponseEntity<Any> {
-        val isSemver2Endpoint = feature?.contains("semver2") ?: false
-        val registrationPath = "registration" + (feature ?: "")
+        val isSemver2Endpoint = feature?.contains(SEMVER2) ?: false
+        val registrationPath = REGISTRATION + (feature ?: "")
         return nugetPackageMetadataService.registrationLeaf(artifactInfo, registrationPath, isSemver2Endpoint)
     }
 
-    @GetMapping(
-        "/registration/proxy/page/{id}",
-        "/registration{feature}/proxy/page/{id}",
-        produces = [MediaTypes.APPLICATION_JSON]
-    )
-    fun proxyRegistrationPage(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        @PathVariable feature: String?,
-        @RequestParam proxyChannelName: String,
-        @RequestParam url: String
-    ): ResponseEntity<Any> {
-        val isSemver2Endpoint = feature?.contains("semver2") ?: false
-        val registrationPath = "registration" + (feature ?: "")
-        return nugetPackageMetadataService.proxyRegistrationPage(
-            artifactInfo, proxyChannelName, url, registrationPath, isSemver2Endpoint
-        )
-    }
+//    @GetMapping(REGISTRATION_PAGE_PROXY, REGISTRATION_PAGE_PROXY_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
+//    fun proxyRegistrationPage(
+//        artifactInfo: NugetRegistrationArtifactInfo,
+//        @PathVariable feature: String?,
+//        @RequestParam proxyChannelName: String,
+//        @RequestParam url: String
+//    ): ResponseEntity<Any> {
+//        val isSemver2Endpoint = feature?.contains(SEMVER2) ?: false
+//        val registrationPath = REGISTRATION + (feature ?: "")
+//        return nugetPackageMetadataService.proxyRegistrationPage(
+//            artifactInfo, proxyChannelName, url, registrationPath, isSemver2Endpoint
+//        )
+//    }
 }

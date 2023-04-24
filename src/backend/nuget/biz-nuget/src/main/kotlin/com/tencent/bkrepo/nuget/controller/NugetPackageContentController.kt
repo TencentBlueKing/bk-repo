@@ -4,6 +4,10 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.DOWNLOAD_MANIFEST
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.DOWNLOAD_V3
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.ENUMERATE_VERSIONS
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_PACKAGE_CONTENT_ROOT_URI
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.response.VersionListResponse
 import com.tencent.bkrepo.nuget.service.NugetPackageContentService
@@ -18,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Suppress("MVCPathVariableInspection")
 @RestController
-@RequestMapping("/{projectId}/{repoName}/v3/flatcontainer")
+@RequestMapping(NUGET_PACKAGE_CONTENT_ROOT_URI)
 class NugetPackageContentController(
     private val packageContentService: NugetPackageContentService
 ) {
@@ -29,7 +33,7 @@ class NugetPackageContentController(
      *
      * return binary stream
      */
-    @GetMapping("/{id}/{version}/*.nupkg")
+    @GetMapping(DOWNLOAD_V3)
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun downloadPackageContent(
         artifactInfo: NugetDownloadArtifactInfo
@@ -44,7 +48,7 @@ class NugetPackageContentController(
      *
      * return xml document
      */
-    @GetMapping("/{id}/{version}/{id}.nuspec")
+    @GetMapping(DOWNLOAD_MANIFEST)
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun downloadPackageManifest(
         artifactInfo: NugetDownloadArtifactInfo
@@ -58,7 +62,7 @@ class NugetPackageContentController(
      *
      * GET {@id}/{LOWER_ID}/index.json
      */
-    @GetMapping("/{packageId}/index.json")
+    @GetMapping(ENUMERATE_VERSIONS)
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun packageVersions(
         artifactInfo: NugetArtifactInfo,

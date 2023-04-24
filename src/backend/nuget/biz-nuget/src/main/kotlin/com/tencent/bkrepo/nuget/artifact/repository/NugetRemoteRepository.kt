@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
 import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -45,8 +46,10 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
+import com.tencent.bkrepo.nuget.constant.CACHE_CONTEXT
 import com.tencent.bkrepo.nuget.constant.MANIFEST
 import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
+import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
 import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
@@ -115,7 +118,7 @@ class NugetRemoteRepository(
 
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream? {
         val artifactFile = createTempFile(response.body!!)
-        context.getAndRemoveAttribute<ArtifactContext>("cacheContext")?.let {
+        context.getAndRemoveAttribute<ArtifactContext>(CACHE_CONTEXT)?.let {
             cacheArtifactFile(it, artifactFile)
         }
         return artifactFile.getInputStream()
@@ -130,7 +133,7 @@ class NugetRemoteRepository(
         // 2、根据匹配到的URL去添加请求packageId之后去请求远程索引文件
         // 3、缓存索引文件，然后将文件中的URL改成对应的仓库URL进行返回
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
-        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
         val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationIndex = downloadRemoteRegistrationIndex(
@@ -143,7 +146,7 @@ class NugetRemoteRepository(
 
     override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
-        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
         val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationPage = downloadRemoteRegistrationPage(
@@ -167,7 +170,7 @@ class NugetRemoteRepository(
 
     override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
-        val registrationPath = context.getStringAttribute("registrationPath")!!
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v2BaseUrl = NugetUtils.getV2Url(nugetArtifactInfo)
         val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationLeaf = downloadRemoteRegistrationLeaf(
@@ -200,9 +203,9 @@ class NugetRemoteRepository(
     // 向代理源请求服务索引文件，优先查询缓存
     private fun downloadServiceIndex(context: ArtifactQueryContext): Feed {
         val downloadContext = buildServiceIndexDownloadContext(context)
-        context.putAttribute("cacheContext", downloadContext)
+        context.putAttribute(CACHE_CONTEXT, downloadContext)
         return getCacheArtifactResource(downloadContext)?.let {
-            context.getAndRemoveAttribute<ArtifactContext>("cacheContext")
+            context.getAndRemoveAttribute<ArtifactContext>(CACHE_CONTEXT)
             it.getSingleStream().use { inputStream -> JsonUtils.objectMapper.readValue(inputStream, Feed::class.java) }
         } ?: run {
             val requestUrl = context.getRemoteConfiguration().url
@@ -307,7 +310,7 @@ class NugetRemoteRepository(
 
     private fun checkJsonFormat(response: Response): Boolean {
         val contentType = response.body!!.contentType()
-        if (!contentType.toString().contains("application/json")) {
+        if (!contentType.toString().contains(APPLICATION_JSON_WITHOUT_CHARSET)) {
             logger.warn(
                 "Query Failed: Response from [${response.request.url}] is not JSON format. " +
                     "Content-Type: $contentType"

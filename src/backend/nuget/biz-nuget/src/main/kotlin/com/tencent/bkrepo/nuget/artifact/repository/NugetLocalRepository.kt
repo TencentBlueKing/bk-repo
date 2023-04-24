@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.MANIFEST
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
+import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
@@ -65,6 +66,7 @@ import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspecMetadata
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetVersionUtils
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
@@ -72,6 +74,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import kotlin.streams.toList
 
+@Suppress("TooManyFunctions")
 @Component
 class NugetLocalRepository(
     private val nugetPackageHandler: NugetPackageHandler
@@ -90,7 +93,7 @@ class NugetLocalRepository(
     override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         with(context) {
             val packageName = (artifactInfo as NugetRegistrationArtifactInfo).packageName
-            val registrationPath = context.getStringAttribute("registrationPath")
+            val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
             val packageVersionList =
                 packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
             if (packageVersionList.isNullOrEmpty()) return null
@@ -110,7 +113,7 @@ class NugetLocalRepository(
     override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         with(context) {
             val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
-            val registrationPath = context.getStringAttribute("registrationPath")
+            val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
             val packageKey = PackageKeys.ofNuget(nugetArtifactInfo.packageName)
             val packageVersionList =
                 packageClient.listAllVersion(projectId, repoName, packageKey).data
@@ -136,7 +139,7 @@ class NugetLocalRepository(
 
     override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         with(context) {
-            val registrationPath = context.getStringAttribute("registrationPath")
+            val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
             val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
             val packageKey = PackageKeys.ofNuget(nugetArtifactInfo.packageName)
             // 确保version一定存在
@@ -194,6 +197,17 @@ class NugetLocalRepository(
             onDownloadManifest(context)
         } else {
             super.onDownload(context)
+        }
+    }
+
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): PackageDownloadRecord? {
+        with(context.artifactInfo as NugetDownloadArtifactInfo) {
+            return if (type != MANIFEST) {
+                PackageDownloadRecord(projectId, repoName, PackageKeys.ofNuget(packageName), version)
+            } else null
         }
     }
 

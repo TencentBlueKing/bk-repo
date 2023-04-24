@@ -37,6 +37,8 @@ import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
+import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
+import com.tencent.bkrepo.nuget.constant.SEMVER2_ENDPOINT
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
@@ -70,8 +72,8 @@ class NugetVirtualRepository(
 
     override fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
-        val registrationPath = context.getStringAttribute("registrationPath")!!
-        val isSemver2Endpoint = context.getBooleanAttribute("isSemver2Endpoint")!!
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
+        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
         val allRegistrationPageItems = try {
             collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
         } catch (ex: IllegalStateException) {
@@ -89,8 +91,8 @@ class NugetVirtualRepository(
 
     override fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
-        val registrationPath = context.getStringAttribute("registrationPath")!!
-        val isSemver2Endpoint = context.getBooleanAttribute("isSemver2Endpoint")!!
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
+        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
         val allRegistrationPageItems = try {
             collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
         } catch (ex: IllegalStateException) {
@@ -108,8 +110,8 @@ class NugetVirtualRepository(
 
     override fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
-        val registrationPath = context.getStringAttribute("registrationPath")!!
-        val isSemver2Endpoint = context.getBooleanAttribute("isSemver2Endpoint")!!
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
+        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
         val allRegistrationPageItems = try {
             collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
         } catch (ex: IllegalStateException) {

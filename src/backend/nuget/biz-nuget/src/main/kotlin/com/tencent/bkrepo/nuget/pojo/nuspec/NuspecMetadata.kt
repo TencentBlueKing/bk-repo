@@ -4,6 +4,9 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.nuget.constant.DEPENDENCY
+import com.tencent.bkrepo.nuget.constant.GROUP
+import com.tencent.bkrepo.nuget.constant.REFERENCE
 
 class NuspecMetadata {
     @JacksonXmlProperty(isAttribute = true)
@@ -86,12 +89,12 @@ data class Dependency(
     val exclude: String?
 )
 
-@JacksonXmlRootElement(localName = "group")
+@JacksonXmlRootElement(localName = GROUP)
 data class DependencyGroup(
     // The <group> element without a targetFramework attribute is used as the default or fallback list of dependencies.
     @JacksonXmlProperty(isAttribute = true)
     val targetFramework: String?,
-    @JacksonXmlProperty(localName = "dependency")
+    @JacksonXmlProperty(localName = DEPENDENCY)
     @JacksonXmlElementWrapper
     val dependencies: MutableList<Dependency>?
 )
@@ -110,12 +113,12 @@ data class Reference(
     val file: String
 )
 
-@JacksonXmlRootElement(localName = "group")
+@JacksonXmlRootElement(localName = GROUP)
 data class ReferenceGroup(
     // The <group> element without a targetFramework attribute is used as the default or fallback list of references.
     @JacksonXmlProperty(isAttribute = true)
     val targetFramework: String?,
-    @JacksonXmlProperty(localName = "reference")
+    @JacksonXmlProperty(localName = REFERENCE)
     @JacksonXmlElementWrapper
     val references: MutableList<Reference>?
 )
