@@ -58,10 +58,7 @@ data class ArtifactTransferRecord(
     @Column(name = "project")
     val project: String,
     @Column(name = "repoName")
-    val repoName: String,
-    @Column(name = "transferTag")
-    val transferTag: String = "ArtifactTransferRecord"
-
+    val repoName: String
 ) {
     companion object {
         const val RECEIVE = "RECEIVE"
