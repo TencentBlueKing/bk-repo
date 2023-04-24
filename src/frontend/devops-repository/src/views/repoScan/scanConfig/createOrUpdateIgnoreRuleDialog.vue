@@ -166,7 +166,7 @@
         methods: {
             ...mapActions(['updateIgnoreRule', 'createIgnoreRule', 'getRepoListWithoutPage']),
             checkVulIds () {
-                return this.ignoreAllVul || /^[\w\d\\n_-]+$/.test(this.vulIds)
+                return this.ignoreAllVul || /^[\w\n_-]+$/.test(this.vulIds)
             },
             cancel () {
                 this.$emit('update:visible', false)

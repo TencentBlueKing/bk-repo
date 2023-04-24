@@ -18,6 +18,7 @@
                 <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
             </bk-select>
             <bk-select
+                v-if="subtaskOverview.scannerType === 'standard'"
                 class="ml10 w250"
                 :clearable="false"
                 v-model="filter.ignored"
@@ -74,7 +75,7 @@
             </bk-table-column>
             <bk-table-column :label="$t('dependPackage')" prop="pkgName" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('installedVersion')" prop="installedVersion" show-overflow-tooltip></bk-table-column>
-            <bk-table-column :label="$t('operation')">
+            <bk-table-column :label="$t('operation')" v-if="subtaskOverview.scannerType === 'standard'">
                 <template slot-scope="props" v-if="!filter.ignored">
                     <bk-button theme="primary" text @click="ignoreVul(props.row.cveId || props.row.vulId)">{{ $t('ignore') }}</bk-button>
                 </template>
