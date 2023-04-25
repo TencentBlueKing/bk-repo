@@ -125,7 +125,14 @@ class ArtifactTransferListener(
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
             if (artifactMetricsProperties.collectByLog) {
-                logger.info(toJson(record))
+                logger.info(
+                    toJson(
+                        ArtifactTransferRecordLog(
+                            record = record,
+                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
+                        )
+                    )
+                )
             }
             queue.offer(record)
         }
