@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,21 +27,24 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Instant
 
-@ConfigurationProperties("management.metrics")
-data class ArtifactMetricsProperties(
-    /**
-     * 需要监控的仓库
-     * */
-    var includeRepositories: List<String> = emptyList(),
-
-    /**
-     * 最大meter数量
-     * */
-    var maxMeters: Int = -1,
-    /**
-     * 是否通过日志清洗获取传输指标数据
-     */
-    var collectByLog: Boolean = false
-)
+class ArtifactTransferRecordLog(
+    record: ArtifactTransferRecord,
+    commonTag: Map<String, String>
+) {
+    val transferTag: String = "ArtifactTransferRecord"
+    val time: Instant = record.time
+    val type: String = record.type
+    val storage: String = record.storage
+    val elapsed: Long = record.elapsed
+    val bytes: Long = record.bytes
+    val average: Long = record.average
+    val sha256: String = record.sha256
+    val clientIp: String = record.clientIp
+    val project: String = record.project
+    val repoName: String = record.repoName
+    val service: String? = commonTag["service"]
+    val instance: String? = commonTag["instance"]
+    val host: String? = commonTag["host"]
+}

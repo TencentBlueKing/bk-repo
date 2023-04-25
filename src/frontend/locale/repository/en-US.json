@@ -676,5 +676,7 @@
     "belongProject":"Belongs to project",
     "searchRelatedResults":"Related results found",
     "allRepoTotal":"All Artifacts total",
-    "clusterNames": "Location"
+    "clusterNames": "Location",
+    "webTitle": "Artifact | Tencent BlueKing",
+    "totalQuota": "totalQuota"
 }

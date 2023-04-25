@@ -180,6 +180,9 @@ common:
   config:
     ## bkrepo存储配置
     storage:
+      ## bkrepo receive默认配置
+      receive:
+        fileSizeThreshold: 5MB
       ## 指定存储类型，支持filesystem/cos/s3/hdfs/innercos
       type: filesystem
       ## filesystem配置，使用文件系统
