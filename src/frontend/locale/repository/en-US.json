@@ -663,7 +663,7 @@
     "commonList":"Dependency repository",
     "commonPackage":"Artifact detail",
     "scanConfig":"Program settings",
-    "operationConfirmation":"Operation Confirmation",
+    "operationConfirmation":"Confirm",
     "executeScanSuccessMsg":"Scan performed successfully",
     "scanRulePreMsg":"Skip rule if blank",
     "isDisplay": "Display",
