@@ -168,7 +168,7 @@ class ClusterNodeServiceImpl(
             request.detectType?.let {
                 tClusterNode.detectType = it
             }
-            if (tClusterNode.detectType != DetectType.REPORT && ping) {
+            if (tClusterNode.detectType != DetectType.REPORT) {
                 // 检测远程集群网络连接是否可用
                 retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
                     tryConnect(convert(tClusterNode)!!)

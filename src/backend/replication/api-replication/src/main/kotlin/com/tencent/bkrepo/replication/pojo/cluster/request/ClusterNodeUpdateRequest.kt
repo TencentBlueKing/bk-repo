@@ -48,7 +48,5 @@ data class ClusterNodeUpdateRequest(
     @ApiModelProperty("集群节点类型", required = true)
     var type: ClusterNodeType,
     @ApiModelProperty("连通性检测方式", required = true)
-    var detectType: DetectType? = null,
-    @ApiModelProperty("更新集群时是否检测连通性", required = false)
-    var ping: Boolean = true
+    var detectType: DetectType? = null
 )
