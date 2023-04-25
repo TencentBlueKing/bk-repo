@@ -35,9 +35,11 @@ data class MergedFilterRuleData(
     var licenses: MutableSet<String>? = null
 ) {
     fun add(rule: FilterRule) {
-        this.vulIds = add(this.vulIds, rule, FilterRule::vulIds.name)
-        this.licenses = add(this.licenses, rule, FilterRule::licenseNames.name)
-        this.riskyPackageKeys = add(this.riskyPackageKeys, rule, FilterRule::riskyPackageKeys.name)
+        rule.vulIds?.let { this.vulIds = add(this.vulIds, rule, FilterRule::vulIds.name) }
+        rule.licenseNames?.let { this.licenses = add(this.licenses, rule, FilterRule::licenseNames.name) }
+        rule.riskyPackageKeys?.let {
+            this.riskyPackageKeys = add(this.riskyPackageKeys, rule, FilterRule::riskyPackageKeys.name)
+        }
     }
 
     private fun add(target: MutableSet<String>?, rule: FilterRule, ruleName: String): MutableSet<String> {
