@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster.request
+package com.tencent.bkrepo.replication.controller.cluster
 
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-/**
- * 更新集群节点请求
- */
-@ApiModel("更新集群节点请求")
-data class ClusterNodeUpdateRequest(
-    @ApiModelProperty("添加的集群名称", required = true)
-    var name: String,
-    @ApiModelProperty("集群地址", required = false)
-    var url: String? = null,
-    @ApiModelProperty("集群的证书", required = false)
-    var certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = false)
-    var username: String? = null,
-    @ApiModelProperty("集群认证密码", required = false)
-    var password: String? = null,
-    @ApiModelProperty("集群节点类型", required = true)
-    var type: ClusterNodeType,
-    @ApiModelProperty("连通性检测方式", required = true)
-    var detectType: DetectType? = null
-)
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.api.cluster.ClusterArtifactReplicaClient
+import com.tencent.bkrepo.replication.service.ClusterNodeService
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class ClusterArtifactReplicaController(
+    private val clusterNodeService: ClusterNodeService
+) : ClusterArtifactReplicaClient {
+    override fun heartbeat(name: String): Response<Void> {
+        clusterNodeService.updateReportTime(name)
+        return ResponseBuilder.success()
+    }
+}

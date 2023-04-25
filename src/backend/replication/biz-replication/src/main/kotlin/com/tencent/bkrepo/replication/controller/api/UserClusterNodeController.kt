@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -114,6 +115,14 @@ class UserClusterNodeController(
     ): Response<Void> {
         clusterNodeService.create(userId, request)
         return ResponseBuilder.success()
+    }
+
+    @ApiOperation("更新集群节点")
+    @PostMapping("/update")
+    fun update(
+        @RequestBody request: ClusterNodeUpdateRequest
+    ): Response<ClusterNodeInfo> {
+        return ResponseBuilder.success(clusterNodeService.update(request))
     }
 
     @ApiOperation("根据id删除集群节点")

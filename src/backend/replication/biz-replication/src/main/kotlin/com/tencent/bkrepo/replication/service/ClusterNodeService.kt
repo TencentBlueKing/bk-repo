@@ -113,4 +113,6 @@ interface ClusterNodeService {
      * 根据[request]创建集群节点，创建成功后返回集群节点信息
      */
     fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest)
+
+    fun updateReportTime(name: String)
 }
