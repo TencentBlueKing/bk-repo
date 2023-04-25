@@ -69,18 +69,4 @@ class NugetPackageMetadataController(
         val registrationPath = REGISTRATION + (feature ?: "")
         return nugetPackageMetadataService.registrationLeaf(artifactInfo, registrationPath, isSemver2Endpoint)
     }
-
-//    @GetMapping(REGISTRATION_PAGE_PROXY, REGISTRATION_PAGE_PROXY_FEATURE, produces = [MediaTypes.APPLICATION_JSON])
-//    fun proxyRegistrationPage(
-//        artifactInfo: NugetRegistrationArtifactInfo,
-//        @PathVariable feature: String?,
-//        @RequestParam proxyChannelName: String,
-//        @RequestParam url: String
-//    ): ResponseEntity<Any> {
-//        val isSemver2Endpoint = feature?.contains(SEMVER2) ?: false
-//        val registrationPath = REGISTRATION + (feature ?: "")
-//        return nugetPackageMetadataService.proxyRegistrationPage(
-//            artifactInfo, proxyChannelName, url, registrationPath, isSemver2Endpoint
-//        )
-//    }
 }

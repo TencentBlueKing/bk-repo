@@ -50,20 +50,6 @@ class NugetPackageMetadataServiceImpl : NugetPackageMetadataService, ArtifactSer
         return ResponseEntity.ok(registrationPage)
     }
 
-//    override fun proxyRegistrationPage(
-//        artifactInfo: NugetRegistrationArtifactInfo,
-//        proxyChannelName: String,
-//        url: String,
-//        registrationPath: String,
-//        isSemver2Endpoint: Boolean
-//    ): ResponseEntity<Any> {
-//        val repository = ArtifactContextHolder.getRepository() as NugetCompositeRepository
-//        val registrationPage = repository.proxyRegistrationPage(
-//            artifactInfo, proxyChannelName, url, registrationPath, isSemver2Endpoint
-//        ) ?: return buildNotFoundResponse()
-//        return ResponseEntity.ok(registrationPage)
-//    }
-
     override fun registrationLeaf(
         artifactInfo: NugetRegistrationArtifactInfo,
         registrationPath: String,

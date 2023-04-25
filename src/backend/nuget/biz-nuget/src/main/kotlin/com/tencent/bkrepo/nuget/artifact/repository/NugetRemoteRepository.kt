@@ -171,17 +171,6 @@ class NugetRemoteRepository(
         )
     }
 
-    fun proxyRegistrationPage(
-        context: ArtifactQueryContext,
-        url: String
-    ): RegistrationPage? {
-        context.putAttribute(REMOTE_URL, url)
-        logger.info("Query Remote Registration Page from [$url]")
-        return super.query(context)?.let {
-            JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
-        }
-    }
-
     private fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!

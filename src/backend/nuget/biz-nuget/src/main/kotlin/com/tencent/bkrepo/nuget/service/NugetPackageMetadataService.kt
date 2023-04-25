@@ -30,15 +30,4 @@ interface NugetPackageMetadataService {
         registrationPath: String,
         isSemver2Endpoint: Boolean
     ): ResponseEntity<Any>
-
-    /**
-     * 代理访问Registration
-     */
-//    fun proxyRegistrationPage(
-//        artifactInfo: NugetRegistrationArtifactInfo,
-//        proxyChannelName: String,
-//        url: String,
-//        registrationPath: String,
-//        isSemver2Endpoint: Boolean
-//    ): ResponseEntity<Any>
 }
