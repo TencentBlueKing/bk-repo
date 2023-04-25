@@ -22,7 +22,6 @@ const createRouter = () => {
         mode: 'history',
         routes: routerArr
     })
-    
     return router
 }
 

@@ -28,6 +28,15 @@ export const dispatchers = [SCANNER_DISPATCHER_K8S, SCANNER_DISPATCHER_DOCKER]
 export const RULE_TYPE_IGNORE = 0
 export const RULE_TYPE_INCLUDE = 1
 
+// 通过漏洞ID过滤
+export const FILTER_METHOD_VUL_ID = 0
+
+// 通过漏洞等级过滤
+export const FILTER_METHOD_SEVERITY = 1
+
+// 通过风险组件名过滤
+export const FILTER_METHOD_RISKY_COMPONENT = 2
+
 export function createScanner(scanner) {
   return request({
     url: `${PREFIX_SCANNER}`,
