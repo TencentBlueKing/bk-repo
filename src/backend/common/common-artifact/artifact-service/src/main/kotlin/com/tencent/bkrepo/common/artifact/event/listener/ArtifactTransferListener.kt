@@ -91,10 +91,10 @@ class ArtifactTransferListener(
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
                     toJson(
-                    ArtifactTransferRecordLog(
-                    record = record,
-                    commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
-                    )
+                        ArtifactTransferRecordLog(
+                            record = record,
+                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
+                        )
                     )
                 )
             }
