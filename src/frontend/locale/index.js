@@ -2,7 +2,6 @@ import VueI18n from 'vue-i18n'
 import Vue from 'vue'
 import axios from 'axios'
 import cookies from 'js-cookie'
-
 const { lang, locale } = window.bkMagicVue
 const DEFAULT_LOCALE = 'zh-CN'
 const LS_KEY = 'blueking_language'
@@ -90,9 +89,7 @@ export default (r) => {
         setLsLocale(localeLang)
         locale.use(lang[localeLang.replace('-', '')])
         axios.defaults.headers.common['Accept-Language'] = localeLang
-        if (Vue.prototype.$ajax?.defaults) {
-            Vue.prototype.$ajax.defaults.headers.common['Accept-Language'] = localeLang
-        }
+        Vue.prototype.$ajax.defaults.headers.common['Accept-Language'] = localeLang
         document.querySelector('html').setAttribute('lang', localeLang)
 
         return localeLang

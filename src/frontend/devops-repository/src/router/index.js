@@ -1,9 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import routerArr from './router'
-import createLocale from '@locale'
-
-const { i18n } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 // 相同路由导致的错误
 const routerReplace = Router.prototype.replace
@@ -25,12 +22,6 @@ const createRouter = () => {
         mode: 'history',
         routes: routerArr
     })
-
-    router.beforeEach((to, from, next) => {
-        document.title = i18n.t('webTitle')
-        next()
-    })
-
     return router
 }
 
