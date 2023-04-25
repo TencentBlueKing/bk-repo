@@ -41,20 +41,28 @@
       <el-form-item label="包版本" :required="false" prop="packageVersion">
         <el-input v-model="ignoreRule.packageVersion" placeholder="请输入包版本，例如：1.7" />
       </el-form-item>
-      <el-form-item v-if="ignoreRule.type === RULE_TYPE_IGNORE && !ignoreAllVul" label="级别" :required="false" prop="severity">
-        <el-select v-model="ignoreRule.severity" placeholder="请选择最小漏洞等级">
-          <el-option v-for="s in severities" :key="s.level" :value="s.level" :label="s.name" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="漏洞ID" :required="false" prop="vulIds">
-        <el-checkbox v-if="ignoreRule.type === RULE_TYPE_IGNORE" v-model="ignoreAllVul">忽略全部漏洞</el-checkbox>
-        <el-input v-if="!ignoreAllVul" v-model="vulIds" placeholder="请输入漏洞ID，多个漏洞ID通过换行分隔" type="textarea" planceholder="请输入漏洞id，多个漏洞id用换行分隔" />
-      </el-form-item>
       <el-form-item label="规则类型" prop="type">
         <el-radio-group v-model="ignoreRule.type">
           <el-radio :label="RULE_TYPE_IGNORE">忽略</el-radio>
           <el-radio :label="RULE_TYPE_INCLUDE" @change="ignoreRule.severity = null;ignoreAllVul = false">保留</el-radio>
         </el-radio-group>
+      </el-form-item>
+      <el-form-item label="过滤方式">
+        <el-select v-model="selectedFilterMethod" placeholder="请选择过滤方式" @change="filterMethodChanged">
+          <el-option v-for="m in filterMethods" :key="m.type" :disabled="ignoreRule.type === RULE_TYPE_INCLUDE && m.type === FILTER_METHOD_SEVERITY" :value="m.type" :label="m.name" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_SEVERITY && ignoreRule.type === RULE_TYPE_IGNORE && !ignoreAllVul" label="级别" :required="false" prop="severity">
+        <el-select v-model="ignoreRule.severity" placeholder="请选择最小漏洞等级">
+          <el-option v-for="s in severities" :key="s.level" :value="s.level" :label="s.name" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_VUL_ID" label="漏洞ID" :required="false" prop="vulIds">
+        <el-checkbox v-if="ignoreRule.type === RULE_TYPE_IGNORE" v-model="ignoreAllVul">忽略全部漏洞</el-checkbox>
+        <el-input v-if="!ignoreAllVul" v-model="vulIds" placeholder="请输入漏洞ID，多个漏洞ID通过换行分隔" type="textarea" />
+      </el-form-item>
+      <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT" label="风险组件名" :required="false" prop="riskyPackageKeys">
+        <el-input v-model="riskyPackageKeys" placeholder="请输入风险组件名，多个组件通过换行分隔" type="textarea" />
       </el-form-item>
     </el-form>
     <div slot="footer">
@@ -66,7 +74,13 @@
 
 <script>
 import _ from 'lodash'
-import { createFilterRule, RULE_TYPE_IGNORE, RULE_TYPE_INCLUDE, updateFilterRule } from '@/api/scan'
+import {
+  createFilterRule,
+  FILTER_METHOD_RISKY_COMPONENT, FILTER_METHOD_SEVERITY, FILTER_METHOD_VUL_ID,
+  RULE_TYPE_IGNORE,
+  RULE_TYPE_INCLUDE,
+  updateFilterRule
+} from '@/api/scan'
 import { searchProjects } from '@/api/project'
 export default {
   name: 'CreateOrUpdateFilterRuleDialog',
@@ -91,6 +105,9 @@ export default {
     return {
       RULE_TYPE_IGNORE: RULE_TYPE_IGNORE,
       RULE_TYPE_INCLUDE: RULE_TYPE_INCLUDE,
+      FILTER_METHOD_VUL_ID: FILTER_METHOD_VUL_ID,
+      FILTER_METHOD_SEVERITY: FILTER_METHOD_SEVERITY,
+      FILTER_METHOD_RISKY_COMPONENT: FILTER_METHOD_RISKY_COMPONENT,
       rules: {
         name: [
           {
@@ -108,6 +125,7 @@ export default {
       showDialog: false,
       ignoreRule: this.newRule(),
       vulIds: '',
+      riskyPackageKeys: '',
       ignoreAllVul: false,
       includeAllProjects: false,
       projects: [],
@@ -128,7 +146,22 @@ export default {
           name: 'Low',
           level: 0
         }
-      ]
+      ],
+      filterMethods: [
+        {
+          type: FILTER_METHOD_VUL_ID,
+          name: '通过漏洞ID过滤'
+        },
+        {
+          type: FILTER_METHOD_SEVERITY,
+          name: '通过漏洞等级过滤'
+        },
+        {
+          type: FILTER_METHOD_RISKY_COMPONENT,
+          name: '通过风险组件名过滤'
+        }
+      ],
+      selectedFilterMethod: FILTER_METHOD_VUL_ID
     }
   },
   watch: {
@@ -147,6 +180,18 @@ export default {
     }
   },
   methods: {
+    filterMethodChanged(newVal) {
+      if (newVal !== FILTER_METHOD_VUL_ID) {
+        this.vulIds = ''
+        this.ignoreAllVul = false
+      }
+      if (newVal !== FILTER_METHOD_SEVERITY) {
+        this.ignoreRule.severity = undefined
+      }
+      if (newVal !== FILTER_METHOD_RISKY_COMPONENT) {
+        this.riskyPackageKeys = ''
+      }
+    },
     close() {
       this.showDialog = false
       this.$emit('update:visible', false)
@@ -168,6 +213,10 @@ export default {
         this.ignoreRule.vulIds = []
       } else {
         this.ignoreRule.vulIds = this.vulIds ? this.vulIds.trim().split('\n') : null
+      }
+
+      if (this.riskyPackageKeys) {
+        this.ignoreRule.riskyPackageKeys = this.riskyPackageKeys.trim().split('\n')
       }
 
       this.$refs['form'].validate((valid) => {
@@ -203,11 +252,18 @@ export default {
       } else {
         this.ignoreRule = _.cloneDeep(this.updatingRule)
       }
+
+      if (this.ignoreRule.severity) {
+        this.selectedFilterMethod = FILTER_METHOD_SEVERITY
+      } else if (this.ignoreRule.riskyPackageKeys) {
+        this.selectedFilterMethod = FILTER_METHOD_RISKY_COMPONENT
+      } else {
+        this.selectedFilterMethod = FILTER_METHOD_VUL_ID
+      }
+
+      this.riskyPackageKeys = this.ignoreRule.riskyPackageKeys ? this.ignoreRule.riskyPackageKeys.join('\n') : ''
       this.vulIds = this.ignoreRule.vulIds ? this.ignoreRule.vulIds.join('\n') : ''
       this.ignoreAllVul = this.ignoreRule.vulIds !== undefined && this.ignoreRule.vulIds !== null && this.ignoreRule.vulIds.length === 0
-      this.$nextTick(() => {
-        this.$refs['form'].clearValidate()
-      })
     },
     newRule() {
       return {
