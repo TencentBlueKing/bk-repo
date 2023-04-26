@@ -80,6 +80,10 @@ object JsonUtils {
  */
 fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()
 
+
+fun toJson(any: Any): String {
+    return any.toJsonString().replace(System.lineSeparator(), "")
+}
 /**
  * 将json字符串反序列化为对象
  */
