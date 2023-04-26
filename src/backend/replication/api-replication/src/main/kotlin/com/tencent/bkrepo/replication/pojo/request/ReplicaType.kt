@@ -36,5 +36,7 @@ enum class ReplicaType {
     // 实时同步，有新数据立即同步，可执行多次
     REAL_TIME,
     // 只执行一次，手动调用执行
-    RUN_ONCE
+    RUN_ONCE,
+    // 边缘节点主动拉取的同步任务
+    EDGE_PULL
 }

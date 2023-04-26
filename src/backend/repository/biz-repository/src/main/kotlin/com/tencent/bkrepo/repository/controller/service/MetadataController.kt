@@ -60,4 +60,9 @@ class MetadataController(
         metadataService.deleteMetadata(request)
         return ResponseBuilder.success()
     }
+
+    override fun addForbidMetadata(request: MetadataSaveRequest): Response<Void> {
+        metadataService.addForbidMetadata(request)
+        return ResponseBuilder.success()
+    }
 }

@@ -1,29 +1,36 @@
 package com.tencent.bkrepo.maven.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.maven.dao.MavenMetadataDao
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.MavenVersion
+import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
-class MavenMetadataService(
+@Conditional(DefaultCondition::class)
+open class MavenMetadataService(
     private val mavenMetadataDao: MavenMetadataDao
 ) {
+
+    protected val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss")
+
     fun update(node: NodeCreateRequest) {
         val (criteria, mavenVersion) = nodeCriteria(
             projectId = node.projectId,
@@ -50,7 +57,7 @@ class MavenMetadataService(
         }
     }
 
-    private fun nodeCriteria(
+    protected fun nodeCriteria(
         projectId: String,
         repoName: String,
         metadata: Map<String, Any>? = null,
@@ -192,8 +199,17 @@ class MavenMetadataService(
         return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
     }
 
+    fun update(request: MavenMetadataRequest) {
+        logger.info("update maven metadata: [$request]")
+        mavenMetadataDao.findAndModify(request, incBuildNo = false, upsert = true, returnNew = false)
+    }
+
+    fun delete(request: MavenMetadataRequest) {
+        logger.info("delete maven metadata: [$request]")
+        mavenMetadataDao.delete(request)
+    }
+
     companion object {
-        private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss")
         private val logger: Logger = LoggerFactory.getLogger(MavenMetadataService::class.java)
     }
 }

@@ -67,8 +67,18 @@ data class TPackage(
     var description: String? = null,
     var versionTag: Map<String, String>? = null,
     var extension: Map<String, Any>? = null,
-    var historyVersion: Set<String> = emptySet()
-) {
+    var historyVersion: Set<String> = emptySet(),
+    var clusterNames: Set<String>? = null
+): ClusterResource {
+
+    override fun readClusterNames(): Set<String>? {
+        return this.clusterNames
+    }
+
+    override fun writeClusterNames(clusterNames: Set<String>) {
+        this.clusterNames = clusterNames
+    }
+
     companion object {
         const val PACKAGE_NAME_IDX = "package_name_idx"
         const val PACKAGE_KEY_IDX = "package_key_idx"
