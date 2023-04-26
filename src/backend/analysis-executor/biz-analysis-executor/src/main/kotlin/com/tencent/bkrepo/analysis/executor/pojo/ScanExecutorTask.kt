@@ -47,6 +47,14 @@ data class ScanExecutorTask(
      */
     val scanner: Scanner,
     /**
+     * 包名
+     */
+    val packageKey: String? = null,
+    /**
+     * 包版本
+     */
+    val packageVersion: String? = null,
+    /**
      * 待扫描文件
      */
     val file: File,
