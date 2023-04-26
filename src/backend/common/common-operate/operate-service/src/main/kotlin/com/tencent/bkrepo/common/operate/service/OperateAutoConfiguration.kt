@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.operate.service.service.CommitEdgeOperateLogSer
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -50,14 +51,15 @@ import org.springframework.context.annotation.Import
 class OperateAutoConfiguration {
 
     @Bean
+    @ConditionalOnMissingBean
     fun operateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,
         permissionManager: PermissionManager,
         clusterProperties: ClusterProperties
     ): OperateLogService {
-        return if (clusterProperties.role == ClusterNodeType.EDGE
-            && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        return if (clusterProperties.role == ClusterNodeType.EDGE &&
+            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
         ) {
             CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
         } else {
