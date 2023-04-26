@@ -87,3 +87,22 @@ const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
 const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
+const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
+
+/**
+ * 认证相关
+ */
+const val BASIC_AUTH_PREFIX = "Basic "
+const val BASIC_AUTH_PROMPT = "Basic realm=\"Authentication Required\""
+const val PLATFORM_AUTH_PREFIX = "Platform "
+const val BEARER_AUTH_PREFIX = "Bearer "
+const val AUTH_HEADER_UID = "X-BKREPO-UID"
+const val OAUTH_AUTH_PREFIX = "Oauth "
+const val TEMPORARY_TOKEN_AUTH_PREFIX = "Temporary "
+
+/**
+ * micro service header user id key
+ */
+const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
+
+const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"

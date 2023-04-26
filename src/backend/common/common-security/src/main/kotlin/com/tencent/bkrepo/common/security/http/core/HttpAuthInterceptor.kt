@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.util.AntPathMatcher
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
+import org.springframework.web.servlet.AsyncHandlerInterceptor
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -47,7 +47,7 @@ import javax.servlet.http.HttpServletResponse
  */
 class HttpAuthInterceptor(
     private val httpAuthSecurity: HttpAuthSecurity
-) : HandlerInterceptorAdapter() {
+) : AsyncHandlerInterceptor {
 
     private val pathMatcher = AntPathMatcher()
 

@@ -27,13 +27,13 @@
 
 package com.tencent.bkrepo.replication.replica.base.impl.remote.type.oci
 
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.QUESTION
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.replication.constant.BEARER_REALM
 import com.tencent.bkrepo.replication.constant.SCOPE
 import com.tencent.bkrepo.replication.constant.SERVICE

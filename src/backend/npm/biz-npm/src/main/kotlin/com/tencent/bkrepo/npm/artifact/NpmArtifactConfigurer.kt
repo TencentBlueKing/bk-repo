@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
@@ -54,13 +53,11 @@ class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getLocalRepository() = SpringContextUtils.getBean<NpmLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<NpmRemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<NpmVirtualRepository>()
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            val authenticationManager = httpAuthSecurity.authenticationManager!!
-            val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
-            val npmLoginAuthHandler = NpmLoginAuthHandler(authenticationManager, jwtAuthProperties)
-            httpAuthSecurity.withPrefix("/npm").addHttpAuthHandler(npmLoginAuthHandler)
-        }
+    override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer { httpAuthSecurity ->
+        val authenticationManager = httpAuthSecurity.authenticationManager!!
+        val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
+        val npmLoginAuthHandler = NpmLoginAuthHandler(authenticationManager, jwtAuthProperties)
+        httpAuthSecurity.withPrefix("/npm").addHttpAuthHandler(npmLoginAuthHandler)
     }
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {

@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.composer.artifact.repository.ComposerLocalRepository
@@ -54,11 +53,8 @@ class ComposerArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getLocalRepository() = SpringContextUtils.getBean<ComposerLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<ComposerRemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<ComposerVirtualRepository>()
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/composer")
-        }
-    }
+    override fun getAuthSecurityCustomizer() =
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/composer") }
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {

@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.fs.server.config
 
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.fs.server.exception.RemoteErrorCodeException
 import org.slf4j.LoggerFactory

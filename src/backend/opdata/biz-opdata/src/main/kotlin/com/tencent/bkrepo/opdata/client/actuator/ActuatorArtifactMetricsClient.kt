@@ -31,12 +31,12 @@ import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.common.api.constant.HttpStatus.FORBIDDEN
 import com.tencent.bkrepo.common.api.constant.HttpStatus.NOT_FOUND
 import com.tencent.bkrepo.common.api.constant.HttpStatus.UNAUTHORIZED
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ASYNC_TASK_ACTIVE_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ASYNC_TASK_QUEUE_SIZE
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
 import com.tencent.bkrepo.opdata.config.OpProperties

@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -78,15 +79,16 @@ import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -97,10 +99,11 @@ import java.time.format.DateTimeFormatter
  * 仓库服务实现类
  */
 @Service
+@Conditional(DefaultCondition::class)
 @Suppress("TooManyFunctions")
 class RepositoryServiceImpl(
-    private val repositoryDao: RepositoryDao,
-    private val nodeService: NodeService,
+    val repositoryDao: RepositoryDao,
+    val nodeService: NodeService,
     private val projectService: ProjectService,
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
@@ -227,23 +230,7 @@ class RepositoryServiceImpl(
             // 初始化仓库配置
             val repoConfiguration = configuration ?: buildRepoConfiguration(this)
             // 创建仓库
-            val repository = TRepository(
-                name = name,
-                type = type,
-                category = category,
-                public = public,
-                description = description,
-                configuration = repoConfiguration.toJsonString(),
-                credentialsKey = credentialsKey,
-                projectId = projectId,
-                createdBy = operator,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now(),
-                quota = quota,
-                used = 0,
-                display = display
-            )
+            val repository = buildTRepository(this, repoConfiguration, credentialsKey)
             return try {
                 if (repoConfiguration is CompositeConfiguration) {
                     val old = queryCompositeConfiguration(projectId, name, type)
@@ -265,6 +252,32 @@ class RepositoryServiceImpl(
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
                 getRepoDetail(projectId, name, type.name)!!
             }
+        }
+    }
+
+    open fun buildTRepository(
+        request: RepoCreateRequest,
+        repoConfiguration: RepositoryConfiguration,
+        credentialsKey: String?
+    ) : TRepository {
+        with(request) {
+            return TRepository(
+                name = name,
+                type = type,
+                category = category,
+                public = public,
+                description = description,
+                configuration = repoConfiguration.toJsonString(),
+                credentialsKey = credentialsKey,
+                projectId = projectId,
+                createdBy = operator,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now(),
+                quota = quota,
+                used = 0,
+                display = display
+            )
         }
     }
 
@@ -360,7 +373,7 @@ class RepositoryServiceImpl(
     /**
      * 检查仓库是否存在，不存在则抛异常
      */
-    private fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+    open fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
@@ -469,7 +482,7 @@ class RepositoryServiceImpl(
     /**
      * 删除关联的代理仓库
      */
-    private fun deleteProxyRepo(repository: TRepository, proxy: ProxyChannelSetting) {
+    fun deleteProxyRepo(repository: TRepository, proxy: ProxyChannelSetting) {
         val proxyRepository = ProxyChannelDeleteRequest(
             repoType = repository.type,
             projectId = repository.projectId,
@@ -539,7 +552,7 @@ class RepositoryServiceImpl(
      * 3. 如果配有匹配到，则根据仓库类型进行匹配storageCredentialsKey
      * 3. 如果以上都没匹配，则使用全局默认storageCredentialsKey
      */
-    private fun determineStorageKey(request: RepoCreateRequest): String? {
+    open fun determineStorageKey(request: RepoCreateRequest): String? {
         with(repositoryProperties) {
             return if (!request.storageCredentialsKey.isNullOrBlank()) {
                 request.storageCredentialsKey
@@ -599,7 +612,7 @@ class RepositoryServiceImpl(
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESC_MAX_LENGTH = 200
 
-        private fun convertToDetail(
+        fun convertToDetail(
             tRepository: TRepository?,
             storageCredentials: StorageCredentials? = null
         ): RepositoryDetail? {

@@ -678,6 +678,7 @@
     "belongProject":"Belongs to project",
     "searchRelatedResults":"Related results found",
     "allRepoTotal":"All Artifacts total",
+    "clusterNames": "Location",
     "webTitle": "Artifact | Tencent BlueKing",
     "totalQuota": "totalQuota",
     "ignoreRuleVulIdsPlaceholder": "Please enter the vulnerability id, multiple vulnerability ids are separated by newlines",

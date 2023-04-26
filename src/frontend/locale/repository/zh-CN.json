@@ -691,6 +691,7 @@
     "belongProject":"所属项目",
     "searchRelatedResults":"搜索到相关结果",
     "allRepoTotal":"全部制品共",
+    "clusterNames": "地点",
     "webTitle": "制品库 | 腾讯蓝鲸智云",
     "ignoreRuleMinSeverity": "级别",
     "ignoredVul": "已忽略的漏洞",

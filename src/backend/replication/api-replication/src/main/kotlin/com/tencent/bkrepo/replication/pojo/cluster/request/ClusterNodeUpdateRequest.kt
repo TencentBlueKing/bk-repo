@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.pojo.cluster.request
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 /**
@@ -46,5 +46,7 @@ data class ClusterNodeUpdateRequest(
     @ApiModelProperty("集群认证密码", required = false)
     var password: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
-    var type: ClusterNodeType
+    var type: ClusterNodeType,
+    @ApiModelProperty("连通性检测方式", required = true)
+    var detectType: DetectType? = null
 )
