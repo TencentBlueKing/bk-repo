@@ -51,7 +51,7 @@ open class NodeRenameSupport(
     private val nodeBaseService: NodeBaseService
 ) : NodeRenameOperation {
 
-    private val nodeDao: NodeDao = nodeBaseService.nodeDao
+    protected val nodeDao: NodeDao = nodeBaseService.nodeDao
 
     override fun renameNode(renameRequest: NodeRenameRequest) {
         with(renameRequest) {
@@ -68,7 +68,7 @@ open class NodeRenameSupport(
     /**
      * 将节点重命名为指定名称
      */
-    private fun doRename(node: TNode, newFullPath: String, operator: String) {
+    protected fun doRename(node: TNode, newFullPath: String, operator: String) {
         val projectId = node.projectId
         val repoName = node.repoName
         val newPath = PathUtils.resolveParent(newFullPath)

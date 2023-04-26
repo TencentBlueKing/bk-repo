@@ -34,9 +34,7 @@ package com.tencent.bkrepo.common.security.http.core
 /**
  * HttpAuthSecurity 自定义配置器
  *
- * kotlin 1.4+ 可以使用SAM简化
- *
  */
-interface HttpAuthSecurityCustomizer {
-    fun customize(httpAuthSecurity: HttpAuthSecurity) { }
+fun interface HttpAuthSecurityCustomizer {
+    fun customize(httpAuthSecurity: HttpAuthSecurity)
 }

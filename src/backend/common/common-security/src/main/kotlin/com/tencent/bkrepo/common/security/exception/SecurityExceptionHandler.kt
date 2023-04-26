@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.common.security.exception
 
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.service.exception.AbstractExceptionHandler
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.core.Ordered

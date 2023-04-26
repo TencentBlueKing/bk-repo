@@ -38,19 +38,30 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
-open class OpenResourceImpl @Autowired constructor(private val permissionService: PermissionService) {
+open class OpenResourceImpl(private val permissionService: PermissionService) {
 
     /**
-     * only admin or user self have the permission
+     * the userContext should equal userId or be admin
      */
-    fun checkUserId(pathUid: String) {
-        val userId = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdmin() && userId.isNotEmpty() && userId != pathUid) {
-            logger.warn("user not match [${SecurityUtils.getPrincipal()}, $pathUid]")
+    fun preCheckContextUser(userId: String) {
+        val userContext = SecurityUtils.getUserId()
+        if (!SecurityUtils.isAdmin() && userContext.isNotEmpty() && userContext != userId) {
+            logger.warn("user not match [$userContext, $userId]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+        }
+    }
+
+    /**
+     * the userContext should be admin
+     */
+    fun preCheckUserAdmin() {
+        val userContext = SecurityUtils.getUserId()
+        if (!SecurityUtils.isAdmin()) {
+            logger.warn("user not match admin [$userContext]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
@@ -58,7 +69,7 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
     /**
      * only system scopeType account have the permission
      */
-    fun checkPlatformPermission() {
+    fun preCheckPlatformPermission() {
         val request = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
             appId = SecurityUtils.getPlatformId(),
@@ -74,7 +85,7 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
     /**
      * check is the user have project or repo create permission
      */
-    fun checkUserPermission(type: AuthPermissionType, projectId: String, repoName: String?) {
+    fun preCheckUserInProject(type: AuthPermissionType, projectId: String, repoName: String?) {
         val checkRequest = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
             resourceType = ResourceType.PROJECT.toString(),
@@ -95,7 +106,7 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
     /**
      * check is the user is project admin
      */
-    fun checkProjectAdmin(projectId: String): Boolean {
+    fun preCheckProjectAdmin(projectId: String): Boolean {
         val userId = SecurityUtils.getUserId()
         return permissionService.checkPermission(
             CheckPermissionRequest(
@@ -105,6 +116,37 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
                 action = PermissionAction.MANAGE.toString()
             )
         )
+    }
+
+    fun checkRequest(request: CheckPermissionRequest) {
+        with(request) {
+            when (resourceType) {
+                ResourceType.PROJECT.toString() -> {
+                    if (projectId.isNullOrBlank()) {
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
+                    }
+                }
+                ResourceType.REPO.toString() -> {
+                    if (projectId.isNullOrBlank()) {
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
+                    }
+                    if (repoName.isNullOrBlank()) {
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoName")
+                    }
+                }
+                ResourceType.NODE.toString() -> {
+                    if (projectId.isNullOrBlank()) {
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
+                    }
+                    if (repoName.isNullOrBlank()) {
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoName")
+                    }
+                    if (path.isNullOrBlank()) {
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "path")
+                    }
+                }
+            }
+        }
     }
 
     companion object {

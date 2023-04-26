@@ -41,27 +41,27 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
-import com.tencent.bkrepo.auth.resource.OpenPermissionImpl
+import com.tencent.bkrepo.auth.resource.OpenResourceImpl
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping(AUTH_API_PERMISSION_PREFIX)
 class PermissionController @Autowired constructor(
     private val permissionService: PermissionService
-) : OpenPermissionImpl() {
+) : OpenResourceImpl(permissionService) {
 
     @ApiOperation("创建权限")
     @PostMapping("/create")
@@ -135,6 +135,11 @@ class PermissionController @Autowired constructor(
     @ApiOperation("更新权限绑定用户")
     @PutMapping("/user")
     fun updatePermissionUser(@RequestBody request: UpdatePermissionUserRequest): Response<Boolean> {
+        if (request.projectId != null) {
+            preCheckProjectAdmin(request.projectId)
+        } else {
+            preCheckUserAdmin()
+        }
         return ResponseBuilder.success(permissionService.updatePermissionUser(request))
     }
 
@@ -162,6 +167,7 @@ class PermissionController @Autowired constructor(
     fun listProjectBuiltinPermission(
         @RequestParam projectId: String
     ): Response<List<Permission>> {
+        preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listProjectBuiltinPermission(projectId))
     }
 }

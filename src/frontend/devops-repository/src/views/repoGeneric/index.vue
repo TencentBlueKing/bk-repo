@@ -111,6 +111,12 @@
                     </bk-table-column>
 
                     <bk-table-column v-if="searchFileName" :label="$t('path')" prop="fullPath" show-overflow-tooltip></bk-table-column>
+
+                    <bk-table-column :label="$t('clusterNames')" prop="clusterNames" width="150">
+                        <template #default="{ row }">
+                            {{ row.clusterNames.join() }}
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
@@ -293,7 +299,7 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initPage()
-            if (!this.community) {
+            if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
         },
@@ -327,7 +333,8 @@
                 } else {
                     supportFileNameExt = this.scannerSupportFileNameExt.includes(node.name.substring(indexOfLastDot + 1))
                 }
-                return !node.folder && !this.community && supportFileNameExt
+                const show = !this.community || SHOW_ANALYST_MENU
+                return !node.folder && show && supportFileNameExt
             },
             tooltipContent ({ forbidType, forbidUser }) {
                 switch (forbidType) {
@@ -433,6 +440,7 @@
 
                         return {
                             metadata: {},
+                            clusterNames: v.clusterNames || [],
                             ...v,
                             // 流水线文件夹名称替换
                             name: v.metadata?.displayName || v.name

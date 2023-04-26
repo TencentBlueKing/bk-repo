@@ -169,7 +169,7 @@ open class NodeMoveCopySupport(
         }
     }
 
-    private fun buildDstNode(
+    open fun buildDstNode(
         context: MoveCopyContext,
         node: TNode,
         dstPath: String,
@@ -266,7 +266,7 @@ open class NodeMoveCopySupport(
         }
     }
 
-    private fun checkConflict(context: MoveCopyContext, node: TNode, existNode: TNode?) {
+    open fun checkConflict(context: MoveCopyContext, node: TNode, existNode: TNode?) {
         // 目录 -> 文件: 出错
         if (node.folder && existNode?.folder == false) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, existNode.fullPath)

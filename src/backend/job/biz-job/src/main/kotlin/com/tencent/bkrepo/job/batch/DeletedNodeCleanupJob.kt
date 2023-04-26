@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.DELETED_DATE
-import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
@@ -59,7 +61,8 @@ import java.time.LocalDateTime
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val fileReferenceClient: FileReferenceClient
+    private val fileReferenceClient: FileReferenceClient,
+    private val clusterProperties: ClusterProperties
 ) : MongoDbBatchJob<DeletedNodeCleanupJob.Repository, DeletedNodeCleanupJobContext>(properties) {
 
     data class Node(
@@ -68,7 +71,8 @@ class DeletedNodeCleanupJob(
         val repoName: String,
         val folder: Boolean,
         val sha256: String?,
-        val deleted: LocalDateTime?
+        val deleted: LocalDateTime?,
+        val clusterNames: List<String>?
     )
 
     data class Repository(
@@ -83,7 +87,7 @@ class DeletedNodeCleanupJob(
 
     override fun createJobContext(): DeletedNodeCleanupJobContext {
         return DeletedNodeCleanupJobContext(
-            expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays)
+            expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays),
         )
     }
 
@@ -101,7 +105,7 @@ class DeletedNodeCleanupJob(
             projectId = row[PROJECT].toString(),
             name = row[Repository::name.name].toString(),
             credentialsKey = row[CREDENTIALS]?.toString(),
-            deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString())
+            deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
         )
     }
 
@@ -112,7 +116,7 @@ class DeletedNodeCleanupJob(
     override fun run(row: Repository, collectionName: String, context: DeletedNodeCleanupJobContext) {
         val query = buildNodeQuery(row.projectId, row.name, context.expireDate)
         val nodeCollectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
+            MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         while (true) {
             val deletedNodeList =
                 mongoTemplate.find(query, Node::class.java, nodeCollectionName).takeIf { it.isNotEmpty() } ?: break
@@ -127,8 +131,8 @@ class DeletedNodeCleanupJob(
             }
         }
         // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
-        if (row.deleted != null
-            && mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L
+        if (row.deleted != null &&
+            mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L
         ) {
             val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(repoQuery, collectionName)
@@ -142,7 +146,9 @@ class DeletedNodeCleanupJob(
         try {
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(node.id))
             mongoTemplate.remove(nodeQuery, nodeCollectionName)
-            if (!node.folder) {
+            if (!node.folder
+                && (node.clusterNames == null || node.clusterNames.contains(clusterProperties.self.name))
+            ) {
                 fileReferenceChanged = decrementFileReference(node, repo)
             }
         } catch (ignored: Exception) {
@@ -161,7 +167,7 @@ class DeletedNodeCleanupJob(
     }
 
     private fun decrementFileReference(node: Node, repo: Repository): Boolean {
-        if (node.sha256.isNullOrBlank()) {
+        if (node.sha256.isNullOrBlank() || node.sha256 == FAKE_SHA256) {
             return false
         }
         return fileReferenceClient.decrement(node.sha256, repo.credentialsKey).data!!
@@ -173,7 +179,6 @@ class DeletedNodeCleanupJob(
         }
         return fileReferenceClient.increment(node.sha256, repo.credentialsKey).data!!
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(DeletedNodeCleanupJob::class.java)

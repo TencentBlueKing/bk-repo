@@ -227,7 +227,8 @@
                 }, {})
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             },
             operationBtns () {
                 const basic = this.detail.basic

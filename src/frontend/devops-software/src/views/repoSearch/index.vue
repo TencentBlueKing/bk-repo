@@ -15,9 +15,9 @@
             </div>
             <div v-if="pagination.count" class="mt20 flex-between-center" style="align-items:flex-end;">
                 <div class="result-count flex-align-center">
-                    <span v-if="isSearching">搜索到相关结果</span>
-                    <span v-else>全部制品共</span>
-                    <span>{{ pagination.count }}个</span>
+                    <span v-if="isSearching">{{$t('searchRelatedResults')}}</span>
+                    <span v-else>{{$t('allRepoTotal')}}</span>
+                    <span>{{ pagination.count + $t('per')}}</span>
                 </div>
                 <div class="sort-tool flex-align-center">
                     <bk-select
@@ -25,11 +25,11 @@
                         v-model="property"
                         :clearable="false"
                         @change="changeSortType">
-                        <bk-option id="name" name="名称排序"></bk-option>
-                        <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
-                        <bk-option id="downloads" name="下载量排序"></bk-option>
+                        <bk-option id="name" :name="$t('Order by last modified time')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('Order by Original Creation Time')"></bk-option>
+                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
                     </bk-select>
-                    <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
+                    <bk-popover :content="$t('toggle') + $t('space') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
                             <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
                         </div>
@@ -157,7 +157,7 @@
                     packageName: this.packageName || ''
                 }).then(list => {
                     this.repoList = [{
-                        name: '全部',
+                        name: this.$t('total'),
                         roadMap: '0',
                         children: list.map((node, i) => {
                             return {

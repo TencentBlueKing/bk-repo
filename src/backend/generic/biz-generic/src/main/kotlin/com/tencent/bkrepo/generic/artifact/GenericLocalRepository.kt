@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.generic.artifact
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -40,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -59,6 +62,16 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.replication.api.ClusterNodeClient
+import com.tencent.bkrepo.replication.api.ReplicaTaskClient
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -71,10 +84,22 @@ import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.util.Base64
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
 @Component
-class GenericLocalRepository : LocalRepository() {
+class GenericLocalRepository(
+    private val replicaTaskClient: ReplicaTaskClient,
+    private val clusterNodeClient: ClusterNodeClient
+) : LocalRepository() {
+
+    private val edgeClusterNodeCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(10, TimeUnit.MINUTES)
+        .maximumSize(1)
+        .build<String, List<ClusterNodeInfo>>(
+            CacheLoader.from { _ -> clusterNodeClient.listEdgeNodes().data.orEmpty() }
+        )
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -113,6 +138,33 @@ class GenericLocalRepository : LocalRepository() {
             context.response.addHeader(X_CHECKSUM_MD5, context.getArtifactMd5())
             context.response.addHeader(X_CHECKSUM_SHA256, context.getArtifactSha256())
             context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
+        }
+    }
+
+    override fun onUploadSuccess(context: ArtifactUploadContext) {
+        super.onUploadSuccess(context)
+        if (HttpContextHolder.getRequestOrNull()?.getParameter(PARAM_REPLICATE).toBoolean()) {
+            val remoteClusterIds = edgeClusterNodeCache.get("").map { it.id!! }.toSet()
+            if (remoteClusterIds.isEmpty()) {
+                return
+            }
+            replicaTaskClient.create(ReplicaTaskCreateRequest(
+                name = context.artifactInfo.getArtifactFullPath() +
+                    "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
+                localProjectId = context.projectId,
+                replicaObjectType = ReplicaObjectType.PATH,
+                replicaTaskObjects = listOf(ReplicaObjectInfo(
+                    localRepoName = context.repoName,
+                    remoteProjectId = context.projectId,
+                    remoteRepoName = context.repoName,
+                    repoType = RepositoryType.GENERIC,
+                    packageConstraints = null,
+                    pathConstraints = listOf(PathConstraint(context.artifactInfo.getArtifactFullPath()))
+                )),
+                replicaType = ReplicaType.EDGE_PULL,
+                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
+                remoteClusterIds = emptySet()
+            ))
         }
     }
 
@@ -409,5 +461,10 @@ class GenericLocalRepository : LocalRepository() {
         private val BATCH_DOWNLOAD_SIZE_THRESHOLD = DataSize.ofGigabytes(10).toBytes()
 
         private const val REPORT = "report"
+
+        /**
+         * 文件上传请求参数，是否需要同步至Commit Edge组网模式下的边缘节点
+         */
+        private const val PARAM_REPLICATE = "replicate"
     }
 }

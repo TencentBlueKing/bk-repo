@@ -69,7 +69,8 @@
                 return RELEASE_MODE === 'community'
             },
             showRepoScan () {
-                return this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+                const show = this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+                return show || SHOW_ANALYST_MENU
             }
         },
         methods: {

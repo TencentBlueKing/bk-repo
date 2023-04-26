@@ -17,7 +17,7 @@ data:
       path: /data/workspace/logs
     spring:
       sleuth:
-        enabled: false
+        enabled: true
       data:
         mongodb:
           uri: {{ include "bkrepo.mongodbUri" . }}
@@ -40,8 +40,24 @@ data:
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI
     plugin.path: /data/workspace/plugin/
+    management.metrics.collectByLog: true
     cluster:
       region: {{ .Values.common.region }}
+      architecture: {{ .Values.cluster.architecture }}
+      role: {{ .Values.cluster.role }}
+      center:
+        name: {{ .Values.cluster.center.name }}
+        url: {{ .Values.cluster.center.url }}
+        appId: {{ .Values.cluster.center.appId }}
+        accessKey: {{ .Values.cluster.center.accessKey }}
+        secretKey: {{ .Values.cluster.center.secretKey }}
       self:
-        url: {{ .Values.gateway.host }}
+        name: {{ .Values.cluster.self.name }}
+        {{- if or .Values.ingress.tls .Values.forceHttps }}
+        url: https://{{ .Values.gateway.host }}
+        {{- else }}
+        url: http://{{ .Values.gateway.host }}
+        {{- end }}
+        username: {{ .Values.common.username }}
+        password: {{ .Values.common.password }}
     {{- toYaml .Values.common.config | nindent 4 }}
