@@ -31,13 +31,15 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import org.springframework.stereotype.Component
-import java.lang.StringBuilder
 
 @Component
 class PypiVirtualRepository : VirtualRepository() {
@@ -46,21 +48,16 @@ class PypiVirtualRepository : VirtualRepository() {
      * 整合多个仓库的内容。
      */
     override fun query(context: ArtifactQueryContext): Any? {
-        val virtualConfiguration = context.getVirtualConfiguration()
-
-        val repoList = virtualConfiguration.repositoryList
-        val traversedList = getTraversedList(context)
-        val stringBuilder = StringBuilder()
-        for (repoIdentify in repoList) {
-            if (repoIdentify in traversedList) {
-                continue
-            }
-            traversedList.add(repoIdentify)
-            val subRepoInfo = repositoryClient.getRepoDetail(context.projectId, repoIdentify.name).data!!
-            val repository = ArtifactContextHolder.getRepository(subRepoInfo.category)
-            stringBuilder.append(repository.query(context))
+        val request = context.request
+        if (!request.servletPath.startsWith("/ext/version/detail") && !request.requestURI.endsWith(SLASH)) {
+            val response = HttpContextHolder.getResponse()
+            return response.sendRedirect(request.requestURL.toString().ensureSuffix(SLASH))
         }
-        return stringBuilder.toString()
+        return mapFirstRepo(context) {
+            require(it is ArtifactQueryContext)
+            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
+            repository.query(it)
+        }
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {

@@ -349,9 +349,7 @@ class PypiLocalRepository(
         val request = HttpContextHolder.getRequest()
         if (!request.requestURI.endsWith("/")) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect(getRedirectUrl(request))
-            response.writer.flush()
-            return null
+            return response.sendRedirect(request.requestURL.toString().ensureSuffix(StringPool.SLASH))
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.USER_AGENT
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -120,9 +121,13 @@ class PypiRemoteRepository : RemoteRepository() {
         val listUri = generateRemoteListUrl(context)
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
-        val build: Request = Request.Builder().get().url(listUri).build()
-        val htmlContent = okHttpClient.newCall(build).execute().body?.string()
-        return htmlContent
+        val build: Request = Request.Builder()
+            .get()
+            .url(listUri)
+            .removeHeader(USER_AGENT)
+            .addHeader(USER_AGENT, "${UUID.randomUUID()}")
+            .build()
+        return okHttpClient.newCall(build).execute().body?.string()
     }
 
     /**
