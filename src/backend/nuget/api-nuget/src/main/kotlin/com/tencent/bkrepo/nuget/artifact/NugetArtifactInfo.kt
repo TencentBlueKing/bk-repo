@@ -39,6 +39,39 @@ open class NugetArtifactInfo(
     artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
+        const val NUGET_ROOT_URI = "/{projectId}/{repoName}"
+        const val NUGET_ROOT_URI_V3 = "/{projectId}/{repoName}/v3"
+        const val NUGET_PACKAGE_CONTENT_ROOT_URI = "/{projectId}/{repoName}/v3/flatcontainer"
         const val NUGET_RESOURCE = "ext/{projectId}/{repoName}/**"
+
+        const val PUBLISH_V2 = "/v2/package"
+        const val DOWNLOAD_V2 = "/Download/{id}/{version}"
+        const val SEARCH_V2 = "/FindPackagesById()"
+        const val DELETE_V2 = "/v2/package/{id}/{version}"
+
+        const val DOWNLOAD_V3 = "/{id}/{version}/*.nupkg"
+        const val DOWNLOAD_MANIFEST = "/{id}/{version}/{id}.nuspec"
+        const val ENUMERATE_VERSIONS = "/{packageId}/index.json"
+
+        const val SEARCH = "/query"
+
+        const val SERVICE_INDEX = "/index.json"
+
+        const val REGISTRATION_INDEX = "/registration/{id}/index.json"
+        const val REGISTRATION_INDEX_FEATURE = "/registration{feature}/{id}/index.json"
+
+        const val REGISTRATION_PAGE = "/registration/{id}/page/{lowerVersion}/{upperVersion}.json"
+        const val REGISTRATION_PAGE_FEATURE = "/registration{feature}/{id}/page/{lowerVersion}/{upperVersion}.json"
+
+        const val REGISTRATION_LEAF = "/registration/{id}/{version}.json"
+        const val REGISTRATION_LEAF_FEATURE = "/registration{feature}/{id}/{version}.json"
+
+        const val REGISTRATION_PAGE_PROXY = "/registration/proxy/page/{id}"
+        const val REGISTRATION_PAGE_PROXY_FEATURE = "/registration{feature}/proxy/page/{id}"
+
+        const val NUGET_EXT_DELETE_PACKAGE = "/package/delete/{projectId}/{repoName}"
+        const val NUGET_EXT_DELETE_VERSION = "/version/delete/{projectId}/{repoName}"
+        const val NUGET_EXT_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
+        const val NUGET_EXT_DOMAIN = "/address"
     }
 }

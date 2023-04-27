@@ -81,7 +81,8 @@ class NugetClientServiceImpl : NugetClientService, ArtifactService() {
     }
 
     override fun findPackagesById(artifactInfo: NugetArtifactInfo, searchRequest: NuGetSearchRequest) {
-        // todo
+        // LegacyGallery查找包的接口，待完善
+        getServiceDocument(artifactInfo)
     }
 
     override fun delete(userId: String, artifactInfo: NugetDeleteArtifactInfo) {

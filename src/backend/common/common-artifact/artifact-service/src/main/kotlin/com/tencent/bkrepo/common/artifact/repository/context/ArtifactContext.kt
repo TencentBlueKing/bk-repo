@@ -97,6 +97,13 @@ open class ArtifactContext(
     }
 
     /**
+     * 根据属性名[key]获取自定义context属性并移除该属性
+     */
+    fun <T> getAndRemoveAttribute(key: String): T? {
+        return this.contextAttributes.remove(key) as T?
+    }
+
+    /**
      * 根据属性名[key]获取字符串类型属性
      */
     fun getStringAttribute(key: String): String? {

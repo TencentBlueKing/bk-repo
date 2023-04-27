@@ -4,7 +4,8 @@ export const repoEnum = MODE_CONFIG === 'ci'
         'generic',
         'helm',
         // 'rds',
-        'docker'
+        'docker',
+        'nuget'
     ]
     : [
         'generic',
@@ -15,9 +16,9 @@ export const repoEnum = MODE_CONFIG === 'ci'
         'helm',
         // 'rds',
         'composer',
-        'rpm'
+        'rpm',
         // 'git',
-        // 'nuget'
+        'nuget'
     ]
 
 // 文件类型

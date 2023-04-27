@@ -5,7 +5,7 @@ import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.domain.NugetDomainInfo
 import com.tencent.bkrepo.nuget.pojo.user.PackageVersionInfo
 
-interface NugetPackageService {
+interface NugetWebService {
     /**
      * 删除包
      */

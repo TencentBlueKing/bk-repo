@@ -17,6 +17,7 @@ import com.tencent.bkrepo.nuget.pojo.nuspec.DependencyGroup
 import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
 import com.tencent.bkrepo.nuget.pojo.nuspec.Reference
 import com.tencent.bkrepo.nuget.pojo.nuspec.ReferenceGroup
+import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -49,7 +50,7 @@ class NugetPackageHandler {
                 val metadata = mutableMapOf<String, Any>()
                 metadata[ID] = id
                 metadata[VERSION] = version
-                dependencies?.let { metadata[DEPENDENCY] = buildDependencies(it) }
+                dependencies?.let { metadata[DEPENDENCY] = NugetV3RegistrationUtils.metadataToDependencyGroups(it) }
                 references?.let { metadata[REFERENCE] = buildReferences(it) }
                 frameworkAssemblies?.let { metadata[FRAMEWORKS] = buildFrameworks(it) }
 
@@ -205,7 +206,7 @@ class NugetPackageHandler {
         } ?: values.add("::${dependency.targetFramework}")
     }
 
-    fun getDependencyValue(dependency: Dependency, targetFramework: String): String {
+    fun getDependencyValue(dependency: Dependency, targetFramework: String?): String {
         return StringJoiner(":").add(dependency.id).add(dependency.version).add(targetFramework).toString()
     }
 

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.nuget.artifact.auth
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
@@ -17,12 +18,16 @@ class NugetApiKeyAuthHandler(
     private val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val apiKey = HeaderUtils.getHeader("X-NuGet-ApiKey").orEmpty()
-        return if (StringUtils.isNotEmpty(apiKey)) {
-            val parts = apiKey.trim().split(StringPool.COLON)
-            require(parts.size >= 2)
-            UsernamePasswordCredentials(parts[0], parts[1])
-        } else AnonymousCredentials()
+        try {
+            val apiKey = HeaderUtils.getHeader("X-NuGet-ApiKey").orEmpty()
+            return if (StringUtils.isNotEmpty(apiKey)) {
+                val parts = apiKey.trim().split(StringPool.COLON)
+                require(parts.size >= 2)
+                UsernamePasswordCredentials(parts[0], parts[1])
+            } else AnonymousCredentials()
+        } catch (e: IllegalArgumentException) {
+            throw AuthenticationException()
+        }
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
