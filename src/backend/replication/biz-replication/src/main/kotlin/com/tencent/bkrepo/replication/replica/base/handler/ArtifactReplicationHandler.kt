@@ -28,23 +28,17 @@
 package com.tencent.bkrepo.replication.replica.base.handler
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL
-import com.tencent.bkrepo.replication.constant.FILE
-import com.tencent.bkrepo.replication.constant.OCI_BLOBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.replication.constant.PUSH_WITH_CHUNKED
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -54,39 +48,23 @@ import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.Request
 import okhttp3.RequestBody
 import okio.ByteString
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMethod
 import java.net.URL
 
-@Component
-class FilePushHandler(
+abstract class ArtifactReplicationHandler(
     val localDataManager: LocalDataManager,
     val replicationProperties: ReplicationProperties
 ) {
 
 
-    fun blobPush(
+    open fun blobPush(
         filePushContext: FilePushContext,
-        pushType: String
+        pushType: String = PUSH_WITH_CHUNKED
     ) : Boolean {
-        return when (pushType) {
-            PUSH_WITH_CHUNKED -> {
-                pushFileInChunks(
-                    filePushContext = filePushContext
-                )
-            }
-            else -> {
-                pushBlob(
-                    filePushContext = filePushContext
-                )
-                true
-            }
-        }
+        return pushFileInChunks(filePushContext)
     }
 
     /**
@@ -106,9 +84,7 @@ class FilePushHandler(
             if (!sessionIdHandlerResult.isSuccess) {
                 return false
             }
-            val (sha256, size) = getBlobSha256AndSize(
-                sha256, size, digest, context.localProjectId, context.localRepoName
-            )
+            val (sha256, size) = getBlobSha256AndSize(filePushContext)
             logger.info(
                 "Will try to push file with ${sessionIdHandlerResult.location} " +
                     "in chunked upload way to remote cluster $clusterUrl for blob $name|$sha256"
@@ -122,15 +98,7 @@ class FilePushHandler(
                     location = buildRequestUrl(clusterUrl, sessionIdHandlerResult.location)
                 )
             } catch (e: Exception) {
-                // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
-                // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
-                // 针对部分tencentyun.com分块上传报okhttp3.internal.http2.StreamResetException: stream was reset: NO_ERROR
-                // 抛出异常后，都进行降级，直接使用单个文件上传进行降级重试
-                if (context.remoteCluster.type == ClusterNodeType.REMOTE) {
-                    DefaultHandlerResult(isFailure = true)
-                } else {
-                    throw e
-                }
+                handleChunkUploadException(e)
             } ?: return false
             if (chunkedUploadResult.isFailure) {
                 sessionIdHandlerResult = processSessionIdHandler(filePushContext)
@@ -159,6 +127,10 @@ class FilePushHandler(
         }
     }
 
+    open fun handleChunkUploadException(e: Exception): DefaultHandlerResult {
+        throw e
+    }
+
     /**
      * 构件file上传处理器
      * 上传file文件step1: post获取sessionID
@@ -167,18 +139,7 @@ class FilePushHandler(
         filePushContext: FilePushContext
         ): DefaultHandlerResult {
         with(filePushContext) {
-            var (postUrl, params) = when (context.remoteCluster.type) {
-                ClusterNodeType.REMOTE -> {
-                    Pair(OCI_BLOBS_UPLOAD_FIRST_STEP_URL.format(name), null)
-                }
-                else -> {
-                    val temp: String? = context.remoteRepo?.storageCredentials?.key?.let {
-                        "$SHA256=$sha256&$STORAGE_KEY=$it"
-                    }
-                    Pair(BOLBS_UPLOAD_FIRST_STEP_URL, temp)
-                }
-            }
-            postUrl = buildUrl(context.cluster.url, postUrl, context)
+            val (postUrl, params) = buildSessionRequestInfo(filePushContext)
             val postBody: RequestBody = RequestBody.create(
                 "application/json".toMediaTypeOrNull(), StringPool.EMPTY
             )
@@ -197,6 +158,13 @@ class FilePushHandler(
         }
     }
 
+    open fun buildSessionRequestInfo(filePushContext: FilePushContext) : Pair<String, String?> {
+        with(filePushContext) {
+            val postUrl = buildUrl(context.cluster.url, BOLBS_UPLOAD_FIRST_STEP_URL, context)
+            return Pair(postUrl, buildParams(sha256!!, filePushContext))
+        }
+    }
+
     /**
      * 构件file上传处理器
      * 上传file文件step2: patch分块上传
@@ -209,17 +177,7 @@ class FilePushHandler(
     ): DefaultHandlerResult? {
         var startPosition: Long = 0
         var chunkedHandlerResult: DefaultHandlerResult? = null
-        val (params, ignoredFailureCode) = when (filePushContext.context.remoteCluster.type) {
-            ClusterNodeType.REMOTE -> {
-                Pair(null, listOf(HttpStatus.NOT_FOUND.value))
-            }
-            else -> {
-                val params = filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-                    "$SHA256=$sha256&$STORAGE_KEY=$it"
-                }
-                Pair(params, emptyList())
-            }
-        }
+        val (params, ignoredFailureCode) = buildChunkUploadRequestInfo(sha256, filePushContext)
         while (startPosition < size) {
             val offset = size - startPosition - replicationProperties.chunkedSize
             val byteCount: Long = if (offset < 0) {
@@ -249,7 +207,7 @@ class FilePushHandler(
                 authorizationCode = filePushContext.token,
                 requestMethod = RequestMethod.PATCH,
                 headers = patchHeader,
-                requestUrl = buildRequestUrl(filePushContext.context.cluster.url, location),
+                requestUrl = location,
                 requestTag = buildRequestTag(filePushContext.context, sha256 + range, byteCount),
                 params = params
             )
@@ -268,6 +226,14 @@ class FilePushHandler(
     }
 
 
+    open fun buildChunkUploadRequestInfo(
+        sha256: String,
+        filePushContext: FilePushContext
+    ) : Pair<String?, List<Int>>{
+        return Pair(buildParams(sha256, filePushContext), emptyList())
+    }
+
+
     /**
      * 构件file上传处理器
      * 上传file文件最后一步: put上传
@@ -280,16 +246,7 @@ class FilePushHandler(
         val putBody: RequestBody = RequestBody.create(
             null, ByteString.EMPTY
         )
-        val params = when (filePushContext.context.remoteCluster.type) {
-            ClusterNodeType.REMOTE -> {
-                "digest=${filePushContext.digest!!}"
-            }
-            else -> {
-                filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-                    "$SHA256=$sha256&$STORAGE_KEY=$it"
-                }
-            }
-        }
+        val params = buildSessionCloseRequestParam(sha256, filePushContext)
         val putHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
             .add(HttpHeaders.CONTENT_LENGTH, "0")
@@ -300,13 +257,20 @@ class FilePushHandler(
             authorizationCode = filePushContext.token,
             requestMethod = RequestMethod.PUT,
             headers = putHeader,
-            requestUrl = buildRequestUrl(filePushContext.context.cluster.url, location),
+            requestUrl = location,
         )
         return DefaultHandler.process(
             httpClient = filePushContext.httpClient,
             responseType = filePushContext.responseType,
             requestProperty = property
         )
+    }
+
+    open fun buildSessionCloseRequestParam(
+        sha256: String,
+        filePushContext: FilePushContext
+    ) : String {
+        return buildParams(sha256, filePushContext)
     }
 
     /**
@@ -322,16 +286,7 @@ class FilePushHandler(
     ): DefaultHandlerResult {
         with(filePushContext) {
             logger.info("Will upload blob $sha256 in a single patch request")
-            val params = when (filePushContext.context.remoteCluster.type) {
-                ClusterNodeType.REMOTE -> {
-                    null
-                }
-                else -> {
-                    filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-                        "$SHA256=$sha256&$STORAGE_KEY=$it"
-                    }
-                }
-            }
+            val params = buildBlobUploadWithSingleChunkRequestParam(sha256, filePushContext)
             val patchBody = StreamRequestBody(
                 localDataManager.loadInputStream(sha256, size, context.localProjectId, context.localRepoName),
                 size
@@ -348,7 +303,7 @@ class FilePushHandler(
                 authorizationCode = token,
                 requestMethod = RequestMethod.PATCH,
                 headers = patchHeader,
-                requestUrl = buildRequestUrl(context.cluster.url, location),
+                requestUrl = location,
                 params = params,
                 requestTag = buildRequestTag(context, sha256, size)
             )
@@ -360,54 +315,25 @@ class FilePushHandler(
         }
     }
 
-
-    /**
-     * 推送blob文件数据到远程集群
-     */
-    private fun pushBlob(
+    open fun buildBlobUploadWithSingleChunkRequestParam(
+        sha256: String,
         filePushContext: FilePushContext
-    ) {
-        with(filePushContext) {
-            logger.info("File $sha256 will be pushed using the default way.")
-            val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
-            val rateLimitInputStream = artifactInputStream.rateLimit(
-                replicationProperties.rateLimit.toBytes()
-            )
-            val storageKey = context.remoteRepo?.storageCredentials?.key
-            val requestTag = buildRequestTag(context, sha256, size)
-            val pushUrl =  buildUrl(context.cluster.url, BLOB_PUSH_URI, context)
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(FILE, sha256, StreamRequestBody(rateLimitInputStream, size))
-                .addFormDataPart(SHA256, sha256).apply {
-                    storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
-                }.build()
-            logger.info("The request will be sent for file sha256 [$sha256].")
-            val httpRequest = Request.Builder()
-                .url(pushUrl)
-                .post(requestBody)
-                .tag(RequestTag::class.java, requestTag)
-                .build()
-            httpClient.newCall(httpRequest).execute().use {
-                check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
-            }
-        }
+    ) : String? {
+        return buildParams(sha256, filePushContext)
     }
 
-    fun getBlobSha256AndSize(
-        sha256: String?,
-        size: Long?,
-        digest: String?,
-        projectId: String,
-        repoName: String
-    ): Pair<String, Long> {
-        sha256?.let {
-            return Pair(sha256, size!!)
+    private fun buildParams(
+        sha256: String,
+        filePushContext: FilePushContext
+    ): String {
+        val params = "$SHA256=$sha256"
+        filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
+            "$params&$STORAGE_KEY=$it"
         }
-        val realSha256 = digest!!.split(":").last()
-        val realSize = localDataManager.getNodeBySha256(projectId, repoName, realSha256)
-        return Pair(realSha256, realSize)
+        return params
     }
+
+    abstract fun getBlobSha256AndSize(filePushContext: FilePushContext): Pair<String, Long>
 
     /**
      * 获取上传blob的location
@@ -432,24 +358,18 @@ class FilePushHandler(
     /**
      * 拼接url
      */
-    fun buildUrl(
+    open fun buildUrl(
         url: String,
         path: String,
         context: ReplicaContext,
         params: String = StringPool.EMPTY
     ): String {
         val baseUrl = URL(url)
-
-        val suffixUrl = when(context.remoteCluster.type) {
-            ClusterNodeType.REMOTE ->  {
-                URL(baseUrl, "/v2" + baseUrl.path).toString()
-            }
-            else -> URL(baseUrl, baseUrl.path).toString()
-        }
+        val suffixUrl = URL(baseUrl, baseUrl.path).toString()
         return HttpUtils.buildUrl(suffixUrl, path, params)
     }
 
-    private fun buildRequestTag(
+    open fun buildRequestTag(
         context: ReplicaContext,
         key: String,
         size: Long
@@ -466,7 +386,6 @@ class FilePushHandler(
 
 
     companion object {
-        private val logger = LoggerFactory.getLogger(FilePushHandler::class.java)
-
+        private val logger = LoggerFactory.getLogger(ArtifactReplicationHandler::class.java)
     }
 }
