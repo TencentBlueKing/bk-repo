@@ -2,13 +2,13 @@ package com.tencent.bkrepo.replication.replica.base.interceptor
 
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.util.HttpSigner
-import com.tencent.bkrepo.common.security.util.HttpSigner.ACCESS_KEY
-import com.tencent.bkrepo.common.security.util.HttpSigner.APP_ID
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN
-import com.tencent.bkrepo.common.security.util.HttpSigner.SIGN_TIME
-import com.tencent.bkrepo.common.security.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.util.HttpSigner
+import com.tencent.bkrepo.common.service.util.HttpSigner.ACCESS_KEY
+import com.tencent.bkrepo.common.service.util.HttpSigner.APP_ID
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
+import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import okhttp3.Interceptor
 import okhttp3.MultipartBody
 import okhttp3.Response

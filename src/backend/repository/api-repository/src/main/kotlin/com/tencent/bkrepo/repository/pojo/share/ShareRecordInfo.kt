@@ -49,5 +49,7 @@ data class ShareRecordInfo(
     @ApiModelProperty("授权IP")
     val authorizedIpList: List<String>,
     @ApiModelProperty("过期时间")
-    val expireDate: String?
+    val expireDate: String?,
+    @ApiModelProperty("创建人")
+    val createdBy: String
 )

@@ -46,6 +46,11 @@ interface ShareService {
     fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo
 
     /**
+     * 检查token
+     */
+    fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo
+
+    /**
      * 下载分享文件
      */
     fun download(userId: String, token: String, artifactInfo: ArtifactInfo)

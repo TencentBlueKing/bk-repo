@@ -27,10 +27,11 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.DELETED_DATE
-import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
@@ -61,6 +62,7 @@ class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val fileReferenceClient: FileReferenceClient,
+    private val clusterProperties: ClusterProperties
 ) : MongoDbBatchJob<DeletedNodeCleanupJob.Repository, DeletedNodeCleanupJobContext>(properties) {
 
     data class Node(
@@ -70,6 +72,7 @@ class DeletedNodeCleanupJob(
         val folder: Boolean,
         val sha256: String?,
         val deleted: LocalDateTime?,
+        val clusterNames: List<String>?
     )
 
     data class Repository(
@@ -77,7 +80,7 @@ class DeletedNodeCleanupJob(
         val projectId: String,
         val name: String,
         val credentialsKey: String?,
-        val deleted: LocalDateTime?,
+        val deleted: LocalDateTime?
     )
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
@@ -143,7 +146,9 @@ class DeletedNodeCleanupJob(
         try {
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(node.id))
             mongoTemplate.remove(nodeQuery, nodeCollectionName)
-            if (!node.folder) {
+            if (!node.folder
+                && (node.clusterNames == null || node.clusterNames.contains(clusterProperties.self.name))
+            ) {
                 fileReferenceChanged = decrementFileReference(node, repo)
             }
         } catch (ignored: Exception) {

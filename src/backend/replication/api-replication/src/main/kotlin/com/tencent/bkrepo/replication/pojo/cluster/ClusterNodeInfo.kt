@@ -28,8 +28,11 @@
 package com.tencent.bkrepo.replication.pojo.cluster
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
 /**
  * 集群节点信息
@@ -70,5 +73,9 @@ data class ClusterNodeInfo(
     @ApiModelProperty("上次修改者")
     val lastModifiedBy: String,
     @ApiModelProperty("上次修改日期")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @ApiModelProperty("节点连通性检测方式")
+    val detectType: DetectType?,
+    @ApiModelProperty("最近上报心跳时间")
+    val lastReportTime: LocalDateTime?
 )

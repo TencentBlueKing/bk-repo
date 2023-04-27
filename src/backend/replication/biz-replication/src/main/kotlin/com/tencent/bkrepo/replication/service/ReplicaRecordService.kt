@@ -155,4 +155,9 @@ interface ReplicaRecordService {
      * @param key 任务key
      */
     fun findLatestRecord(key: String): ReplicaRecordInfo?
+
+    /**
+     * 边缘节点回写记录到中心节点
+     */
+    fun writeBack(replicaRecordInfo: ReplicaRecordInfo)
 }

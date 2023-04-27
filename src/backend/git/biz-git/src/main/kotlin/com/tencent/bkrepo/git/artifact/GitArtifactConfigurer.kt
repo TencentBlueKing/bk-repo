@@ -33,7 +33,6 @@ package com.tencent.bkrepo.git.artifact
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.git.artifact.repository.GitLocalRepository
@@ -52,9 +51,6 @@ class GitArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getRemoteRepository() = SpringContextUtils.getBean<GitRemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<GitVirtualRepository>()
 
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/git")
-        }
-    }
+    override fun getAuthSecurityCustomizer() =
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/git") }
 }

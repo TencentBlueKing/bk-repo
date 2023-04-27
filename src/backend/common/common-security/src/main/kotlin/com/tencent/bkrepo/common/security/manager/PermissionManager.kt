@@ -160,13 +160,14 @@ open class PermissionManager(
         repoName: String,
         vararg path: String,
         public: Boolean? = null,
-        anonymous: Boolean = false
+        anonymous: Boolean = false,
+        userId: String = SecurityUtils.getUserId()
     ) {
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
         }
-        if (allowReadSystemRepo(action, repoInfo)) {
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
             return
         }
         // 禁止批量下载流水线节点
@@ -180,7 +181,8 @@ open class PermissionManager(
             projectId = projectId,
             repoName = repoName,
             paths = path.toList(),
-            anonymous = anonymous
+            anonymous = anonymous,
+            userId = userId
         )
     }
 
@@ -303,7 +305,7 @@ open class PermissionManager(
             repoName = repoName,
             path = paths?.first()
         )
-        if (permissionResource.checkPermission(checkRequest).data != true) {
+        if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
             var reason: String? = null
             if (repoName.isNullOrEmpty()) {
@@ -318,6 +320,10 @@ open class PermissionManager(
         if (logger.isDebugEnabled) {
             logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")
         }
+    }
+
+    open fun checkPermissionFromAuthService(request: CheckPermissionRequest): Boolean? {
+        return permissionResource.checkPermission(request).data
     }
 
     /**
@@ -506,7 +512,7 @@ open class PermissionManager(
     /**
      * 判断是否为管理员
      */
-    private fun isAdminUser(userId: String): Boolean {
+    open fun isAdminUser(userId: String): Boolean {
         return userResource.userInfoById(userId).data?.admin == true
     }
 

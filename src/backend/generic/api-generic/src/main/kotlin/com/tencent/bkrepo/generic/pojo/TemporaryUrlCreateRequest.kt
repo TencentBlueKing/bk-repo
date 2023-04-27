@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.generic.pojo
 
-import com.tencent.bkrepo.repository.pojo.token.TokenType
+import com.tencent.bkrepo.auth.pojo.token.TokenType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.Duration

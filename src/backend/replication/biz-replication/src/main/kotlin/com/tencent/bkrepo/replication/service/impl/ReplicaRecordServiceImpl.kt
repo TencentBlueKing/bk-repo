@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
@@ -54,11 +55,13 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
+@Conditional(DefaultCondition::class)
 class ReplicaRecordServiceImpl(
     private val replicaRecordDao: ReplicaRecordDao,
     private val replicaRecordDetailDao: ReplicaRecordDetailDao,
@@ -247,6 +250,10 @@ class ReplicaRecordServiceImpl(
         val replicaRecordList = replicaRecordDao.listByTaskKey(key).map { convert(it) }
         if (replicaRecordList.isNotEmpty()) return replicaRecordList.first()!!
         return null
+    }
+
+    override fun writeBack(replicaRecordInfo: ReplicaRecordInfo) {
+        return
     }
 
     companion object {
