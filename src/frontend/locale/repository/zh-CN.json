@@ -690,5 +690,6 @@
     "searchRelatedResults":"搜索到相关结果",
     "allRepoTotal":"全部制品共",
     "clusterNames": "地点",
-    "webTitle": "制品库 | 腾讯蓝鲸智云"
+    "webTitle": "制品库 | 腾讯蓝鲸智云",
+    "noProjectData":"无项目数据"
 }

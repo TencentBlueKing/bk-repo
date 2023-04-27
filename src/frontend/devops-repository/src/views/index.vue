@@ -72,7 +72,7 @@
                     }
                 }
                 return {
-                    project: [],
+                    project: ['projectManage'],
                     global: []
                 }
             },

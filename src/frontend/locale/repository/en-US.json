@@ -678,5 +678,6 @@
     "allRepoTotal":"All Artifacts total",
     "clusterNames": "Location",
     "webTitle": "Artifact | Tencent BlueKing",
-    "totalQuota": "totalQuota"
+    "totalQuota": "totalQuota",
+    "noProjectData":"NO Project Data"
 }
