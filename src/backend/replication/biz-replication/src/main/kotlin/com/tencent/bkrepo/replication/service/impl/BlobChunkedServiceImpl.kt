@@ -29,7 +29,7 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -43,7 +43,6 @@ import com.tencent.bkrepo.replication.util.HttpUtils.getRangeInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.web.multipart.MultipartFile
 
 @Service
 class BlobChunkedServiceImpl(
@@ -67,7 +66,7 @@ class BlobChunkedServiceImpl(
     }
 
     override fun uploadChunkedFile(
-        credentials: StorageCredentials, sha256: String, file: MultipartFile, uuid: String
+        credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
     ) {
         val range = HttpContextHolder.getRequest().getHeader("Content-Range")
         val length = HttpContextHolder.getRequest().contentLength
@@ -86,7 +85,6 @@ class BlobChunkedServiceImpl(
                 return
             }
         }
-        val artifactFile = ArtifactFileFactory.build(file, credentials)
         val patchLen = storageService.append(
             appendId = uuid,
             artifactFile = artifactFile,
@@ -101,10 +99,8 @@ class BlobChunkedServiceImpl(
     }
 
     override fun finishChunkedUpload(
-        credentials: StorageCredentials, sha256: String, file: MultipartFile, uuid: String
+        credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
     ) {
-        val artifactFile = ArtifactFileFactory.build(file, credentials)
-
         storageService.append(
             appendId = uuid,
             artifactFile = artifactFile,

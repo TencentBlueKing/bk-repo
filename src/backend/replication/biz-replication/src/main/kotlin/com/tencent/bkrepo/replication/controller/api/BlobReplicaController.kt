@@ -33,6 +33,7 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -145,14 +146,14 @@ class BlobReplicaController(
         value = [BOLBS_UPLOAD_SECOND_STEP_URL]
     )
     fun uploadChunkedBlob(
-        @RequestPart file: MultipartFile,
+        artifactFile: ArtifactFile,
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
         @PathVariable uuid: String,
     ) {
         logger.info("The file with sha256 [$sha256] will be uploaded with $uuid")
         val credentials = credentialsCache.get(storageKey.orEmpty())
-        blobChunkedService.uploadChunkedFile(credentials, sha256, file, uuid)
+        blobChunkedService.uploadChunkedFile(credentials, sha256, artifactFile, uuid)
     }
 
 
@@ -161,14 +162,14 @@ class BlobReplicaController(
         value = [BOLBS_UPLOAD_SECOND_STEP_URL]
     )
     fun finishBlobUpload(
-        @RequestPart file: MultipartFile,
+        artifactFile: ArtifactFile,
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
         @PathVariable uuid: String,
     ) {
         logger.info("The file with sha256 [$sha256] will be finished with $uuid")
         val credentials = credentialsCache.get(storageKey.orEmpty())
-        blobChunkedService.finishChunkedUpload(credentials, sha256, file, uuid)
+        blobChunkedService.finishChunkedUpload(credentials, sha256, artifactFile, uuid)
     }
 
     private fun findStorageCredentials(storageKey: String?): StorageCredentials {
