@@ -9,4 +9,4 @@ import com.tencent.bkrepo.nuget.constant.NugetMessageCode
  */
 class NugetMetadataListNotFoundException(
     reason: String
-) : ErrorCodeException(NugetMessageCode.PACKAGE_METADATA_LIST_NOT_FOUND, reason, HttpStatus.NOT_FOUND)
+) : ErrorCodeException(NugetMessageCode.PACKAGE_METADATA_LIST_NOT_FOUND, reason, status = HttpStatus.NOT_FOUND)

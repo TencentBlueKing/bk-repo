@@ -60,6 +60,8 @@ data class UserRepoCreateRequest(
     val storageCredentialsKey: String? = null,
     @ApiModelProperty("仓库配额", required = false)
     val quota: Long? = null,
+    @ApiModelProperty("来自插件的请求", required = false)
+    val pluginRequest: Boolean = false,
     @ApiModelProperty("是否展示", required = true)
     val display: Boolean = true
 ) : RepoRequest

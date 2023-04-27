@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.nuget.artifact.auth.NugetApiKeyAuthHandler
@@ -58,12 +57,10 @@ class NugetArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getLocalRepository() = SpringContextUtils.getBean<NugetLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<NugetRemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<NugetVirtualRepository>()
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            val authenticationManager = httpAuthSecurity.authenticationManager!!
-            val nugetApiKeyAuthHandler = NugetApiKeyAuthHandler(authenticationManager)
-            httpAuthSecurity.withPrefix("/nuget").addHttpAuthHandler(nugetApiKeyAuthHandler)
-        }
+    override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer { httpAuthSecurity ->
+        val authenticationManager = httpAuthSecurity.authenticationManager!!
+        val nugetApiKeyAuthHandler = NugetApiKeyAuthHandler(authenticationManager)
+        httpAuthSecurity.withPrefix("/nuget").addHttpAuthHandler(nugetApiKeyAuthHandler)
     }
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {

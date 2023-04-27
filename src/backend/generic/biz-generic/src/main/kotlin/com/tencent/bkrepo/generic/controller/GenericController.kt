@@ -67,7 +67,7 @@ class GenericController(
     private val uploadService: UploadService,
     private val downloadService: DownloadService,
     private val permissionManager: PermissionManager,
-    private val compressedFileService: CompressedFileService
+    private val compressedFileService: CompressedFileService,
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -80,7 +80,7 @@ class GenericController(
     @DeleteMapping(GENERIC_MAPPING_URI)
     fun delete(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.delete(userId, artifactInfo)
         return ResponseBuilder.success()
@@ -96,7 +96,7 @@ class GenericController(
     @PostMapping(BLOCK_MAPPING_URI)
     fun startBlockUpload(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<UploadTransactionInfo> {
         return ResponseBuilder.success(uploadService.startBlockUpload(userId, artifactInfo))
     }
@@ -106,7 +106,7 @@ class GenericController(
     fun abortBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
         return ResponseBuilder.success()
@@ -117,7 +117,7 @@ class GenericController(
     fun completeBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.completeBlockUpload(userId, uploadId, artifactInfo)
         return ResponseBuilder.success()
@@ -128,7 +128,7 @@ class GenericController(
     fun listBlock(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
@@ -137,7 +137,7 @@ class GenericController(
     fun batchDownload(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestBody batchDownloadPaths: BatchDownloadPaths
+        @RequestBody batchDownloadPaths: BatchDownloadPaths,
     ) {
         val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
             .distinctBy { it.getArtifactFullPath() }
@@ -145,7 +145,7 @@ class GenericController(
             action = PermissionAction.READ,
             projectId = projectId,
             repoName = repoName,
-            path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray()
+            path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray(),
         )
         downloadService.batchDownload(artifacts)
     }
@@ -153,7 +153,7 @@ class GenericController(
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping("/compressed/list/$GENERIC_MAPPING_URI")
     fun listCompressedFile(
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<List<CompressedFileInfo>> {
         return ResponseBuilder.success(compressedFileService.listCompressedFile(artifactInfo))
     }
@@ -162,7 +162,7 @@ class GenericController(
     @GetMapping("/compressed/preview/$GENERIC_MAPPING_URI")
     fun previewCompressedFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-        @RequestParam filePath: String
+        @RequestParam filePath: String,
     ) {
         compressedFileService.previewCompressedFile(artifactInfo, filePath)
     }

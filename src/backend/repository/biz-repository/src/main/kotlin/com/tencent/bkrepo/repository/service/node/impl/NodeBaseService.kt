@@ -54,7 +54,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -63,14 +62,14 @@ import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.isEqualTo
 
 /**
  * 节点基础服务，实现了CRUD基本操作
@@ -84,7 +83,7 @@ abstract class NodeBaseService(
     open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
-) : NodeService, NodeBaseOperation {
+) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -154,12 +153,23 @@ abstract class NodeBaseService(
             // 判断父目录是否存在，不存在先创建
             val parents = mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
-            val node = TNode(
+            val node = buildTNode(this)
+            doCreate(node)
+            afterCreate(repo, node, createStart, parents, deletedTime)
+            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
+            return convertToDetail(node)!!
+        }
+    }
+
+    open fun buildTNode(request: NodeCreateRequest):TNode {
+        with(request) {
+            val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
+            return TNode(
                 projectId = projectId,
                 repoName = repoName,
-                path = PathUtils.resolveParent(fullPath),
-                name = PathUtils.resolveName(fullPath),
-                fullPath = fullPath,
+                path = PathUtils.resolveParent(normalizeFullPath),
+                name = PathUtils.resolveName(normalizeFullPath),
+                fullPath = normalizeFullPath,
                 folder = folder,
                 expireDate = if (folder) null else parseExpireDate(expires),
                 size = if (folder) 0 else size ?: 0,
@@ -172,11 +182,8 @@ abstract class NodeBaseService(
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
                 lastAccessDate = LocalDateTime.now()
             )
-            doCreate(node)
-            afterCreate(repo, node, createStart, parents, deletedTime)
-            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
-            return convertToDetail(node)!!
         }
+
     }
 
     private fun afterCreate(
@@ -277,7 +284,7 @@ abstract class NodeBaseService(
     /**
      * 校验仓库是否存在
      */
-    private fun checkRepo(projectId: String, repoName: String): TRepository {
+    open fun checkRepo(projectId: String, repoName: String): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }
@@ -314,7 +321,7 @@ abstract class NodeBaseService(
         }
     }
 
-    fun doCreate(node: TNode, repository: TRepository? = null): TNode {
+    open fun doCreate(node: TNode, repository: TRepository? = null): TNode {
         try {
             nodeDao.insert(node)
             if (!node.folder) {
@@ -365,7 +372,7 @@ abstract class NodeBaseService(
         return nodes
     }
 
-    private fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
+    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -397,7 +404,7 @@ abstract class NodeBaseService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(NodeBaseService::class.java)
         private const val TOPIC = "bkbase_bkrepo_artifact_node_created"
 
         private fun convert(tNode: TNode?): NodeInfo? {
@@ -422,7 +429,8 @@ abstract class NodeBaseService(
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
-                    lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
+                    clusterNames = it.clusterNames
                 )
             }
         }

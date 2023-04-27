@@ -31,6 +31,9 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
@@ -51,21 +54,20 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption.UPSERT
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @Service
 class TemporaryScanTokenServiceImpl(
     private val scanService: ScanService,
-    private val temporaryTokenClient: TemporaryTokenClient,
+    private val temporaryTokenClient: ServiceTemporaryTokenResource,
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
     private val storageService: StorageService,
@@ -115,9 +117,9 @@ class TemporaryScanTokenServiceImpl(
                 projectId = projectId,
                 repoName = repoName,
                 fullPathSet = fullPaths.keys,
-                expireSeconds = java.time.Duration.ofMinutes(30L).seconds,
+                expireSeconds = Duration.ofMinutes(30L).seconds,
                 permits = 1,
-                type = com.tencent.bkrepo.repository.pojo.token.TokenType.DOWNLOAD
+                type = TokenType.DOWNLOAD
             )
             val tokens = temporaryTokenClient.createToken(req)
             if (tokens.isNotOk()) {

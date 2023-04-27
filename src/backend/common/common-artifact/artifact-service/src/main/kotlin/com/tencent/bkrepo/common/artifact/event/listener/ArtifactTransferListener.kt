@@ -32,15 +32,19 @@
 package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
@@ -58,7 +62,9 @@ import java.util.concurrent.LinkedBlockingQueue
  */
 @Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ArtifactTransferListener(
-    private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
+    private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>,
+    private val artifactMetricsProperties: ArtifactMetricsProperties,
+    private val commonTagProvider: ObjectProvider<CommonTagProvider>
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -82,6 +88,16 @@ class ArtifactTransferListener(
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp
             )
+            if (artifactMetricsProperties.collectByLog) {
+                logger.info(
+                    toJson(
+                        ArtifactTransferRecordLog(
+                            record = record,
+                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
+                        )
+                    )
+                )
+            }
             queue.offer(record)
             ArtifactMetrics.getUploadedDistributionSummary().record(throughput.bytes.toDouble())
         }
@@ -108,6 +124,16 @@ class ArtifactTransferListener(
             )
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
+            if (artifactMetricsProperties.collectByLog) {
+                logger.info(
+                    toJson(
+                        ArtifactTransferRecordLog(
+                            record = record,
+                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
+                        )
+                    )
+                )
+            }
             queue.offer(record)
         }
     }

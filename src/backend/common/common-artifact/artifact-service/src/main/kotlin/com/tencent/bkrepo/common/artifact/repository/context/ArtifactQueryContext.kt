@@ -31,7 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.repository.context
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+
 /**
  * 构件查询context
  */
-open class ArtifactQueryContext : ArtifactContext()
+open class ArtifactQueryContext(
+    repo: RepositoryDetail? = null,
+    artifact: ArtifactInfo? = null,
+) : ArtifactContext(repo, artifact)

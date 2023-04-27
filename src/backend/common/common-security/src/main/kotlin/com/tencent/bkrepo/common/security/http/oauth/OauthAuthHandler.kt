@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.security.http.oauth
 
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.security.constant.OAUTH_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.OAUTH_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials

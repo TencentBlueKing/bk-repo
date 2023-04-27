@@ -689,6 +689,8 @@
     "belongProject":"所属项目",
     "searchRelatedResults":"搜索到相关结果",
     "allRepoTotal":"全部制品共",
+    "clusterNames": "地点",
+    "webTitle": "制品库 | 腾讯蓝鲸智云",
     "localStore":"本地仓库",
     "remoteStore":"远程仓库",
     "virtualStore":"虚拟仓库",

@@ -77,7 +77,7 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
     /**
      * 构造单个仓库查询条件
      */
-    private fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+    fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::name).isEqualTo(repoName)
             .and(TRepository::deleted).isEqualTo(null)

@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
@@ -62,13 +61,11 @@ class OciRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<OciRegistryVirtualRepository>()
 
-    override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+    override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer =
+        HttpAuthSecurityCustomizer { httpAuthSecurity ->
             val authenticationManager = httpAuthSecurity.authenticationManager!!
             val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
             val ociLoginAuthHandler = OciLoginAuthHandler(authenticationManager, jwtAuthProperties)
-            httpAuthSecurity.withPrefix("/oci")
-                .addHttpAuthHandler(ociLoginAuthHandler)
+            httpAuthSecurity.withPrefix("/oci").addHttpAuthHandler(ociLoginAuthHandler)
         }
-    }
 }

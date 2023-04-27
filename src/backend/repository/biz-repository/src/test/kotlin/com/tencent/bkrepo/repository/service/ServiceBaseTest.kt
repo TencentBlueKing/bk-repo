@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -77,6 +78,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
 @Import(
+    ClusterProperties::class,
     StorageProperties::class,
     RepositoryProperties::class,
     ProjectDao::class,
@@ -86,7 +88,7 @@ import org.springframework.test.context.TestPropertySource
     SpringContextUtils::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
 open class ServiceBaseTest {
 
     @MockBean

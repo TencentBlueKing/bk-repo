@@ -764,7 +764,7 @@ export default {
                             {
                                 subTitle: this.$t('nugetPushGuideSubTitle'),
                                 codeList: [
-                                    `nuget push -ApiKey api -Source "${this.repoName}" <LOCAL_PACKAGE_NAME>.nupkg`
+                                    `nuget push -Source "${this.repoName}" <LOCAL_PACKAGE_NAME>.nupkg`
                                 ]
                             }
                         ]
@@ -788,7 +788,7 @@ export default {
                             {
                                 subTitle: this.$t('nugetDeleteGuideSubTitle'),
                                 codeList: [
-                                    `nuget delete -ApiKey api -Source "${this.repoName}" ${this.packageName} ${this.versionLabel}`
+                                    `nuget delete -Source "${this.repoName}" ${this.packageName} ${this.versionLabel}`
                                 ]
                             }
                         ]

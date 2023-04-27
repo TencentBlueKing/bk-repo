@@ -71,7 +71,7 @@ data class NodeCreateRequest(
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER,
     override val createdBy: String? = null,
-    override val createdDate: LocalDateTime? = null,
+    override var createdDate: LocalDateTime? = null,
     override val lastModifiedBy: String? = null,
-    override val lastModifiedDate: LocalDateTime? = null
+    override var lastModifiedDate: LocalDateTime? = null
 ) : NodeRequest, ServiceRequest, AuditableRequest

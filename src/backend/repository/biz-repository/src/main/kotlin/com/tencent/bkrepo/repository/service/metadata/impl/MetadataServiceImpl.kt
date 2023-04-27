@@ -32,9 +32,11 @@
 package com.tencent.bkrepo.repository.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
@@ -42,11 +44,13 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.metadata.MetadataService
+import com.tencent.bkrepo.repository.util.ClusterUtils
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
@@ -58,8 +62,9 @@ import org.springframework.transaction.annotation.Transactional
  * 元数据服务实现类
  */
 @Service
+@Conditional(DefaultCondition::class)
 class MetadataServiceImpl(
-    private val nodeDao: NodeDao
+    private val nodeDao: NodeDao,
 ) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
@@ -76,7 +81,7 @@ class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-
+            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
             val oldMetadata = node.metadata ?: ArrayList()
             val newMetadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata)
             node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
@@ -110,7 +115,9 @@ class MetadataServiceImpl(
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
 
             // 检查是否有更新权限
-            nodeDao.findOne(query)?.metadata?.forEach {
+            val node = nodeDao.findOne(query) ?: throw NodeNotFoundException(fullPath)
+            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
+            node.metadata?.forEach {
                 if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
                     throw PermissionException("No permission to update system metadata[${it.key}]")
                 }
