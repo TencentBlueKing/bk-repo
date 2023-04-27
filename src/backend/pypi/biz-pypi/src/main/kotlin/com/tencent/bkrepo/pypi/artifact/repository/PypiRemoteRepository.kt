@@ -58,6 +58,8 @@ import com.tencent.bkrepo.pypi.constants.PACKAGE_KEY
 import com.tencent.bkrepo.pypi.constants.VERSION
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.ArtifactFileUtils
+import com.tencent.bkrepo.pypi.pojo.Basic
+import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
@@ -105,18 +107,13 @@ class PypiRemoteRepository : RemoteRepository() {
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "text/html"
-        if (context.artifactInfo.getArtifactFullPath() == "/") {
-            val cacheHtml = getCacheHtml(context) ?: "Can not cache remote html"
-            response.setContentLength(cacheHtml.length)
-            response.writer.print(cacheHtml)
+        return if (context.request.servletPath.startsWith("/ext/version/detail")) {
+            getVersionDetail(context)
+        } else if (context.artifactInfo.getArtifactFullPath() == "/") {
+            getCacheHtml(context)
         } else {
-            val responseStr = remoteRequest(context) ?: ""
-            response.setContentLength(responseStr.length)
-            response.writer.print(responseStr)
+            remoteRequest(context)
         }
-        return null
     }
 
     fun remoteRequest(context: ArtifactQueryContext): String? {
@@ -212,7 +209,7 @@ class PypiRemoteRepository : RemoteRepository() {
     fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
         storageManager.storeArtifactFile(node, artifactFile, storageCredentials)
         artifactFile.delete()
-        with(node) { PypiLocalRepository.logger.info("Success to store$projectId/$repoName/$fullPath") }
+        with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
         logger.info("Success to insert $node")
     }
 
@@ -358,6 +355,39 @@ class PypiRemoteRepository : RemoteRepository() {
             packageClient.deleteVersion(
                 projectId, repoName, packageKey, packageVersion.name, HttpContextHolder.getClientAddress()
             )
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private fun getVersionDetail(context: ArtifactQueryContext): Any? {
+        val packageKey = context.request.getParameter(PACKAGE_KEY)
+        val version = context.request.getParameter(VERSION)
+        logger.info("Get version detail, packageKey: $packageKey, version: $version")
+        val name = PackageKeys.resolvePypi(packageKey)
+        val trueVersion = packageClient.findVersionByName(
+            context.projectId,
+            context.repoName,
+            packageKey,
+            version
+        ).data
+        val artifactPath = trueVersion?.contentPath ?: return null
+        with(context.artifactInfo) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactPath).data ?: return null
+            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+            val count = packageVersion?.downloads ?: 0
+            val pypiArtifactBasic = Basic(
+                name,
+                version,
+                node.size, node.fullPath,
+                node.createdBy, node.createdDate,
+                node.lastModifiedBy, node.lastModifiedDate,
+                count,
+                node.sha256,
+                node.md5,
+                null,
+                null
+            )
+            return PypiArtifactVersionData(pypiArtifactBasic, packageVersion?.packageMetadata)
         }
     }
 
