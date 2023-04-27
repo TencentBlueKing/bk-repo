@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.pypi.util
 
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.DecompressUtils
 import com.tencent.bkrepo.pypi.exception.PypiUnSupportCompressException
 import com.tencent.bkrepo.pypi.util.JsonUtil.jsonValue
@@ -51,13 +52,14 @@ object DecompressUtil {
     private const val TGZ = "tgz"
 
     // 目标属性
-    private const val name = "name"
-    private const val version = "version"
-    private const val summary = "summary"
+    private const val NAME = "name"
+    private const val VERSION = "version"
+    private const val SUMMARY = "summary"
 
     // 目标文件
-    private const val metadata = "metadata.json"
-    private const val pkgInfo = "PKG-INFO"
+    private const val METADATA = "METADATA"
+    private const val METADATA_JSON = "metadata.json"
+    private const val PKG_INFO = "PKG-INFO"
 
     /**
      * @param format 文件格式
@@ -72,7 +74,7 @@ object DecompressUtil {
                 getWhlMetadata(this)
             }
             ZIP -> {
-                getZipMetadata(this)
+                getZipPkgInfo(this)
             }
             GZ, TGZ -> {
                 getTgzPkgInfo(this)
@@ -84,22 +86,26 @@ object DecompressUtil {
     }
 
     private fun getWhlMetadata(inputStream: InputStream): PypiInfo {
-        val metadata = DecompressUtils.getContent(ZipArchiveInputStream(inputStream), metadata)
-        return PypiInfo(metadata jsonValue name, metadata jsonValue version, metadata jsonValue summary)
+        return try {
+            DecompressUtils.getContent(ZipArchiveInputStream(inputStream), METADATA).propInfo()
+        } catch (ignore: NotFoundException) {
+            val metadata = DecompressUtils.getContent(ZipArchiveInputStream(inputStream), METADATA_JSON)
+            PypiInfo(metadata jsonValue NAME, metadata jsonValue VERSION, metadata jsonValue SUMMARY)
+        }
     }
 
-    private fun getZipMetadata(inputStream: InputStream): PypiInfo {
-        val propStr = DecompressUtils.getContent(ZipArchiveInputStream(inputStream), pkgInfo)
+    private fun getZipPkgInfo(inputStream: InputStream): PypiInfo {
+        val propStr = DecompressUtils.getContent(ZipArchiveInputStream(inputStream), PKG_INFO)
         return propStr.propInfo()
     }
 
     private fun getTgzPkgInfo(inputStream: InputStream): PypiInfo {
-        val propStr = DecompressUtils.getContent(TarArchiveInputStream(GZIPInputStream(inputStream, 512)), pkgInfo)
+        val propStr = DecompressUtils.getContent(TarArchiveInputStream(GZIPInputStream(inputStream)), PKG_INFO)
         return propStr.propInfo()
     }
 
     private fun getTarPkgInfo(inputStream: InputStream): PypiInfo {
-        val propStr = DecompressUtils.getContent(TarArchiveInputStream(inputStream), pkgInfo)
+        val propStr = DecompressUtils.getContent(TarArchiveInputStream(inputStream), PKG_INFO)
         return propStr.propInfo()
     }
 }

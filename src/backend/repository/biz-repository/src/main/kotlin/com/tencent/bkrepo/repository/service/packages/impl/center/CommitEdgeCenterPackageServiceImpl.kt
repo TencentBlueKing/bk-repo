@@ -44,6 +44,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.impl.PackageServiceImpl
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.util.ClusterUtils
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -60,12 +61,14 @@ class CommitEdgeCenterPackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
+    repositoryService: RepositoryService,
     private val clusterProperties: ClusterProperties
 ) : PackageServiceImpl(
     repositoryDao,
     packageDao,
     packageVersionDao,
     packageSearchInterpreter,
+    repositoryService
 ) {
     override fun buildPackage(request: PackageVersionCreateRequest): TPackage {
         return super.buildPackage(request).also { addSrcClusterToResource(it) }

@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.impl.PackageServiceImpl
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
@@ -50,12 +51,14 @@ class EdgePackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
+    repositoryService: RepositoryService,
     clusterProperties: ClusterProperties
 ) : PackageServiceImpl(
     repositoryDao,
     packageDao,
     packageVersionDao,
-    packageSearchInterpreter
+    packageSearchInterpreter,
+    repositoryService
 ) {
 
     private val centerPackageClient: ClusterPackageClient by lazy {
