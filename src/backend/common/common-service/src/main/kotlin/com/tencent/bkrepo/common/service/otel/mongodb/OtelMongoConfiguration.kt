@@ -41,20 +41,12 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnClass(OtelTracer::class, MongoClientImpl::class)
 class OtelMongoConfiguration {
 
-    @Bean
-    fun traceMongoClientSettingsBuilderCustomizer(
-        tracer: Tracer,
-        customizers: ObjectProvider<List<TraceMongoSpanCustomizer>>
-    ): TraceMongoClientSettingsBuilderCustomizer {
-        return TraceMongoClientSettingsBuilderCustomizer(tracer, customizers.ifAvailable.orEmpty())
-    }
-
-    @Bean
+//    @Bean
     fun dbMongoSpanCustomizer(): TraceMongoSpanCustomizer {
         return DBMongoSpanCustomizer()
     }
 
-    @Bean
+//    @Bean
     fun netMongoSpanCustomizer(): TraceMongoSpanCustomizer {
         return NetMongoSpanCustomizer()
     }

@@ -33,9 +33,11 @@ import com.tencent.bkrepo.replication.api.ReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/task")
 class ServiceReplicaTaskController(
     private val replicaTaskService: ReplicaTaskService
 ) : ReplicaTaskClient {

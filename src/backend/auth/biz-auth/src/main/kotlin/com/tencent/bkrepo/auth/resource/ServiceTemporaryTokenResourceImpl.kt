@@ -37,12 +37,14 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 临时token服务接口实现类
  */
 @RestController
+@RequestMapping("/service/temporary/token")
 class ServiceTemporaryTokenResourceImpl(
     private val temporaryTokenService: TemporaryTokenService
 ) : ServiceTemporaryTokenResource {
