@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.schedule
 
-import com.tencent.bkrepo.common.service.cluster.CenterJob
+import com.tencent.bkrepo.common.service.cluster.StandaloneJob
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
 import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
@@ -62,7 +62,7 @@ class TaskReloadManager(
      * 修改的任务: 每次修改任务会删除旧任务，因此id会变更，可以当做新任务加入
      * 删除的任务: 当job执行时，判断数据库中是否存在对应的task，如果不存在表示该任务过期了，跳过执行即可
      */
-    @CenterJob
+    @StandaloneJob
     @Scheduled(initialDelay = RELOAD_INITIAL_DELAY, fixedDelay = RELOAD_FIXED_DELAY)
     fun reloadTask() {
         val scheduledTasks = replicaTaskService.listUndoScheduledTasks()

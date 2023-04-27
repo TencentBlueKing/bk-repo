@@ -67,7 +67,8 @@ open class NodeRestoreSupport(
     nodeBaseService: NodeBaseService
 ) : NodeRestoreOperation {
 
-    private val nodeDao: NodeDao = nodeBaseService.nodeDao
+    val nodeDao: NodeDao = nodeBaseService.nodeDao
+
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         with(artifact) {
             val query = nodeDeletedPointListQuery(projectId, repoName, getArtifactFullPath())
@@ -138,7 +139,7 @@ open class NodeRestoreSupport(
     /**
      * 处理冲突并恢复节点，根据不同的冲突策略采取不同的方式
      */
-    private fun resolveConflict(context: RestoreContext, node: TNode) {
+    open fun resolveConflict(context: RestoreContext, node: TNode) {
         with(context) {
             val fullPath = node.fullPath
             if (node.deleted == null || nodeDao.exists(projectId, repoName, fullPath)) {

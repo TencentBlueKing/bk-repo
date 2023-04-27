@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.common.security.http.jwt
 
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials

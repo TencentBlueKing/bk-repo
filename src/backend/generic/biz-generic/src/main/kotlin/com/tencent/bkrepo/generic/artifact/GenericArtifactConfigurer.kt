@@ -33,7 +33,6 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.generic.config.GenericProperties
@@ -49,9 +48,6 @@ class GenericArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getRemoteRepository() = SpringContextUtils.getBean<GenericRemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<GenericVirtualRepository>()
 
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/generic")
-        }
-    }
+    override fun getAuthSecurityCustomizer() =
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/generic") }
 }

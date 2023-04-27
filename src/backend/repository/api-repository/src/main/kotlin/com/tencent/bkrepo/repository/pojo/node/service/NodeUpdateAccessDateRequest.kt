@@ -31,6 +31,9 @@ import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import java.time.LocalDateTime
 
+/**
+ * 更新节点访问时间请求
+ */
 data class NodeUpdateAccessDateRequest(
     override val projectId: String,
     override val repoName: String,

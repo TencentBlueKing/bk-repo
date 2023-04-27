@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "TemporaryTokenClient")
 @RequestMapping("/service/temporary/token")
+@Deprecated(message = "replace with ServiceTemporaryTokenResource")
 interface TemporaryTokenClient {
 
     @ApiOperation("创建临时token")

@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.rpm.job
 
-import com.tencent.bkrepo.common.service.cluster.CenterJob
+import com.tencent.bkrepo.common.service.cluster.StandaloneJob
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -16,7 +16,7 @@ class FileListsJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    @CenterJob
+    @StandaloneJob
     @Scheduled(fixedDelay = 60 * 1000)
     @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
     @Suppress("SwallowedException", "TooGenericExceptionCaught")

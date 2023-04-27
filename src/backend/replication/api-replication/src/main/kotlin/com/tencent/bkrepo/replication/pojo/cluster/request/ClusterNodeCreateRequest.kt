@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.pojo.cluster.request
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -53,5 +53,9 @@ class ClusterNodeCreateRequest(
     @ApiModelProperty("集群密钥", required = false)
     var secretKey: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
-    var type: ClusterNodeType
+    var type: ClusterNodeType,
+    @ApiModelProperty("创建节点时是否检测连通性", required = false)
+    var ping: Boolean = true,
+    @ApiModelProperty("连通性检测方式", required = true)
+    var detectType: DetectType = DetectType.PING
 )

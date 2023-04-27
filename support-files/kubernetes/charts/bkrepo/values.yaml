@@ -116,6 +116,23 @@ persistence:
   ## 在删除该声明后，这个卷也会被销毁(用于单节点环境，生产环境不推荐)。
   # ref: https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/
 
+## commit-edge组网模式相关配置
+cluster:
+  ## COMMIT_EDGE or STANDALONE
+  architecture:
+  ## center or edge
+  role:
+  center:
+    ## center节点相关配置
+    name: center
+    url: https://center.bkrepo.example.com
+    appId: bkrepo
+    accessKey:
+    secretKey:
+  ## self集群相关配置
+  self:
+    name: edge
+
 init:
   ## curl镜像地址
   curl:
@@ -163,6 +180,9 @@ common:
   config:
     ## bkrepo存储配置
     storage:
+      ## bkrepo receive默认配置
+      receive:
+        fileSizeThreshold: 5MB
       ## 指定存储类型，支持filesystem/cos/s3/hdfs/innercos
       type: filesystem
       ## filesystem配置，使用文件系统

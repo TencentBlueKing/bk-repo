@@ -39,5 +39,9 @@ data class ArtifactMetricsProperties(
     /**
      * 最大meter数量
      * */
-    var maxMeters: Int = -1
+    var maxMeters: Int = -1,
+    /**
+     * 是否通过日志清洗获取传输指标数据
+     */
+    var collectByLog: Boolean = false
 )

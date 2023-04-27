@@ -31,8 +31,9 @@
 
 package com.tencent.bkrepo.repository.job.base
 
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
@@ -47,6 +48,9 @@ abstract class CenterNodeJob : LockableJob() {
      * 判断是否支持
      */
     override fun shouldExecute(): Boolean {
-        return super.shouldExecute() && clusterProperties.role == RoleType.CENTER
+        val centerNode = clusterProperties.role == ClusterNodeType.CENTER
+        val commitEdgeEdgeNode = clusterProperties.role == ClusterNodeType.EDGE &&
+            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        return super.shouldExecute() && (centerNode || commitEdgeEdgeNode)
     }
 }
