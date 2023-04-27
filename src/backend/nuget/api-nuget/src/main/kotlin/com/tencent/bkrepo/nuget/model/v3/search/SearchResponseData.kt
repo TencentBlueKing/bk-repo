@@ -3,6 +3,7 @@ package com.tencent.bkrepo.nuget.model.v3.search
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.nuget.constant.ID
 import java.net.URI
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -11,7 +12,7 @@ data class SearchResponseData(
     @JsonProperty("@id")
     val id: URI,
     val version: String,
-    @JsonProperty("id")
+    @JsonProperty(ID)
     var packageId: String?,
     val description: String?,
     val versions: List<SearchResponseDataVersion>,

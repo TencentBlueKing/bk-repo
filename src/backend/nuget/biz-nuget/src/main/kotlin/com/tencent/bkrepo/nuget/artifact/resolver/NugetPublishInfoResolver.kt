@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
+import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.exception.NugetArtifactReceiveException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
@@ -32,7 +33,7 @@ class NugetPublishInfoResolver : ArtifactInfoResolver {
         if (request is MultipartHttpServletRequest) {
             request.fileMap.forEach { (key, value) -> artifactFileMap[key] = resolveMultipartFile(value) }
         } else throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "multipart file")
-        val artifactFile = artifactFileMap["package"] ?: run {
+        val artifactFile = artifactFileMap[PACKAGE] ?: run {
             throw NugetArtifactReceiveException("Unable to find 'package' field in request form data.")
         }
         val nupkgPackage = artifactFile.getInputStream().use { it.resolverNuspec() }
