@@ -58,6 +58,9 @@ const val NAME = "name"
 const val PUSH_WITH_CHUNKED = "CHUNKED"
 const val PUSH_WITH_DEFAULT = "DEFAULT"
 
+const val RETRY_COUNT = 2
+const val DELAY_IN_SECONDS: Long = 1
+
 /**
  * metrics
  */
