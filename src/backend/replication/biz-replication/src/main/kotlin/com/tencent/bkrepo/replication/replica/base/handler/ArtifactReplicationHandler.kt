@@ -201,6 +201,11 @@ abstract class ArtifactReplicationHandler(
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
                 .add(HttpHeaders.CONTENT_RANGE, contentRange)
                 .add(HttpHeaders.CONTENT_LENGTH, "$byteCount")
+                .add(
+                    REPOSITORY_INFO,
+                    "${filePushContext.context.localProjectId}|${filePushContext.context.localRepoName}"
+                )
+                .add(SHA256, sha256)
                 .build()
             val property = RequestProperty(
                 requestBody = patchBody,
@@ -339,7 +344,7 @@ abstract class ArtifactReplicationHandler(
      * 获取上传blob的location
      * 如返回location不带host，需要补充完整
      */
-    fun buildRequestUrl(
+    private fun buildRequestUrl(
         url: String,
         location: String?
     ): String? {

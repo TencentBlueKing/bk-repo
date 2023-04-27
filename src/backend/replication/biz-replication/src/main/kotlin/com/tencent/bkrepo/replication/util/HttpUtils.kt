@@ -82,7 +82,7 @@ object HttpUtils {
         path: String = StringPool.EMPTY,
         params: String = StringPool.EMPTY,
     ): String {
-        val builder = StringBuilder(UrlFormatter.formatHost(url))
+        val builder = StringBuilder(url)
         if (path.isNotBlank()) {
             builder.append(CharPool.SLASH).append(path.trimStart(CharPool.SLASH))
         }
@@ -153,5 +153,13 @@ object HttpUtils {
         } catch (e: Exception) {
             throw e
         }
+    }
+
+    /**
+     * 从Content-Range头中解析出起始位置
+     */
+    fun getRangeInfo(range: String): Pair<Long, Long> {
+        val values = range.split("-")
+        return Pair(values[0].toLong(), values[1].toLong())
     }
 }

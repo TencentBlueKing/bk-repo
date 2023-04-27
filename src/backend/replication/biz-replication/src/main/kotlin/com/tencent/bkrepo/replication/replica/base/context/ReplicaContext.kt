@@ -43,6 +43,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
+import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
@@ -127,6 +128,7 @@ class ReplicaContext(
                 readTimeout,
                 writeTimeout,
                 closeTimeout,
+                RetryInterceptor(),
                 BasicAuthInterceptor(cluster.username!!, cluster.password!!)
             )
         } else {
@@ -136,6 +138,7 @@ class ReplicaContext(
                 readTimeout,
                 writeTimeout,
                 closeTimeout,
+                RetryInterceptor(),
                 SignInterceptor(cluster)
             )
         }

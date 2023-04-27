@@ -39,7 +39,9 @@ import com.tencent.bkrepo.replication.service.BlobChunkedService
 import com.tencent.bkrepo.replication.util.BlobChunkedResponseUtils.buildBlobUploadPatchResponse
 import com.tencent.bkrepo.replication.util.BlobChunkedResponseUtils.buildBlobUploadUUIDResponse
 import com.tencent.bkrepo.replication.util.BlobChunkedResponseUtils.uploadResponse
+import com.tencent.bkrepo.replication.util.HttpUtils.getRangeInfo
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 
@@ -48,6 +50,9 @@ class BlobChunkedServiceImpl(
     private val storageService: StorageService,
 ): BlobChunkedService {
 
+
+    @Value("\${spring.application.name}")
+    private var serviceName: String = "replication"
     /**
      * 获取上传文件uuid
      */
@@ -56,7 +61,7 @@ class BlobChunkedServiceImpl(
         logger.info("Uuid $uuidCreated has been created for File $sha256.")
         buildBlobUploadUUIDResponse(
             uuidCreated,
-            BOLBS_UPLOAD_FIRST_STEP_URL+uuidCreated,
+            buildLocationUrl(uuidCreated),
             HttpContextHolder.getResponse()
         )
     }
@@ -73,7 +78,7 @@ class BlobChunkedServiceImpl(
             if (end - start > length - 1) {
                 buildBlobUploadPatchResponse(
                     uuid = uuid,
-                    locationStr = BOLBS_UPLOAD_FIRST_STEP_URL+uuid,
+                    locationStr = buildLocationUrl(uuid),
                     response = HttpContextHolder.getResponse(),
                     range = length.toLong(),
                     status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
@@ -89,7 +94,7 @@ class BlobChunkedServiceImpl(
         )
         buildBlobUploadPatchResponse(
             uuid = uuid,
-            locationStr =  BOLBS_UPLOAD_FIRST_STEP_URL+uuid,
+            locationStr = buildLocationUrl(uuid),
             response = HttpContextHolder.getResponse(),
             range = patchLen
         )
@@ -110,20 +115,15 @@ class BlobChunkedServiceImpl(
             throw BadRequestException(ReplicationMessageCode.REPLICA_ARTIFACT_BROKEN, sha256)
         }
         uploadResponse(
-            locationStr = BOLBS_UPLOAD_FIRST_STEP_URL+uuid,
+            locationStr = buildLocationUrl(uuid),
             response = HttpContextHolder.getResponse(),
             status = HttpStatus.CREATED,
         )
     }
 
-    /**
-     * 从Content-Range头中解析出起始位置
-     */
-    private fun getRangeInfo(range: String): Pair<Long, Long> {
-        val values = range.split("-")
-        return Pair(values[0].toLong(), values[1].toLong())
+    private fun buildLocationUrl(uuid: String) : String {
+        return serviceName+BOLBS_UPLOAD_FIRST_STEP_URL+uuid
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(BlobChunkedServiceImpl::class.java)
