@@ -343,6 +343,7 @@
     "qualityRules":"Quality rules",
     "pass": "Pass",
     "notPass": "Fail",
+    "notSet": "Not Set",
     "vulnerabilityStatistics": "vulnerability statistics",
     "duration": "Duration",
     "finishTime":"Finish time",

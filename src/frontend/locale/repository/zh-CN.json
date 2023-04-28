@@ -357,6 +357,7 @@
     "qualityRules":"质量规则",
     "pass": "通过",
     "notPass": "不通过",
+    "notSet": "未设置",
     "vulnerabilityStatistics": "漏洞数量统计",
     "duration": "持续时间",
     "finishTime": "完成时间",

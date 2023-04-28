@@ -76,7 +76,7 @@
                     packageKey: packageKey || undefined,
                     version: version || undefined,
                     fullPath: this.fullPath || undefined
-                }).then(({ scanPlans }) => {
+                }).then(scanPlans => {
                     this.scanList = scanPlans
                 }).finally(() => {
                     this.isLoading = false
