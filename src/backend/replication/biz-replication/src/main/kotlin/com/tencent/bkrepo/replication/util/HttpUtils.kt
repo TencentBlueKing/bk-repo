@@ -30,7 +30,6 @@ package com.tencent.bkrepo.replication.util
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
