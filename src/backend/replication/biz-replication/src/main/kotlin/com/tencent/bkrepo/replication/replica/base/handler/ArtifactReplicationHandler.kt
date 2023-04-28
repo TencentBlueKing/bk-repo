@@ -32,11 +32,9 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.replication.constant.PUSH_WITH_CHUNKED
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
-import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
@@ -159,10 +157,7 @@ abstract class ArtifactReplicationHandler(
     }
 
     open fun buildSessionRequestInfo(filePushContext: FilePushContext) : Pair<String, String?> {
-        with(filePushContext) {
-            val postUrl = buildUrl(context.cluster.url, BOLBS_UPLOAD_FIRST_STEP_URL, context)
-            return Pair(postUrl, buildParams(sha256!!, filePushContext))
-        }
+        return Pair(StringPool.EMPTY, null)
     }
 
     /**
@@ -235,7 +230,7 @@ abstract class ArtifactReplicationHandler(
         sha256: String,
         filePushContext: FilePushContext
     ) : Pair<String?, List<Int>>{
-        return Pair(buildParams(sha256, filePushContext), emptyList())
+        return Pair(null, emptyList())
     }
 
 
@@ -275,7 +270,7 @@ abstract class ArtifactReplicationHandler(
         sha256: String,
         filePushContext: FilePushContext
     ) : String {
-        return buildParams(sha256, filePushContext)
+        return StringPool.EMPTY
     }
 
     /**
@@ -324,19 +319,10 @@ abstract class ArtifactReplicationHandler(
         sha256: String,
         filePushContext: FilePushContext
     ) : String? {
-        return buildParams(sha256, filePushContext)
+        return null
     }
 
-    private fun buildParams(
-        sha256: String,
-        filePushContext: FilePushContext
-    ): String {
-        val params = "$SHA256=$sha256"
-        filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-            "$params&$STORAGE_KEY=$it"
-        }
-        return params
-    }
+
 
     abstract fun getBlobSha256AndSize(filePushContext: FilePushContext): Pair<String, Long>
 

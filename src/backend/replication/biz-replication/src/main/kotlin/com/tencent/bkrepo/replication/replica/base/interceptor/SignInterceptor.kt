@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.APP_ID
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
+import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Interceptor
 import okhttp3.MultipartBody
 import okhttp3.Response
@@ -30,7 +31,7 @@ class SignInterceptor(private val clusterInfo: ClusterInfo) : Interceptor {
             * 文件请求使用multipart/form-data，为避免读取文件，这里使用空串。表单参数应该包含文件的sha256。
             * 通过对表单参数的签名，来实现对文件请求的签名。
             * */
-            val bodyToHash = if (body != null && body !is MultipartBody) {
+            val bodyToHash = if (body != null && (body !is MultipartBody || body !is StreamRequestBody)) {
                 val buffer = Buffer()
                 body.writeTo(buffer)
                 buffer.readByteArray()

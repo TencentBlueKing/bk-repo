@@ -134,11 +134,15 @@ class BlobReplicaController(
     @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL)
     fun startBlobUpload(
         @RequestParam sha256: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
         @RequestParam storageKey: String? = null
     ) {
         logger.info("The file with sha256 [$sha256] will be handled with chunked upload!")
         val credentials = credentialsCache.get(storageKey.orEmpty())
-        return blobChunkedService.obtainSessionIdForUpload(credentials, sha256)
+        return blobChunkedService.obtainSessionIdForUpload(
+            projectId, repoName, credentials, sha256
+        )
     }
 
     @RequestMapping(
@@ -150,10 +154,14 @@ class BlobReplicaController(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
         @PathVariable uuid: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
     ) {
         logger.info("The file with sha256 [$sha256] will be uploaded with $uuid")
         val credentials = credentialsCache.get(storageKey.orEmpty())
-        blobChunkedService.uploadChunkedFile(credentials, sha256, artifactFile, uuid)
+        blobChunkedService.uploadChunkedFile(
+            projectId, repoName, credentials, sha256, artifactFile, uuid
+        )
     }
 
 
@@ -166,10 +174,14 @@ class BlobReplicaController(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
         @PathVariable uuid: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
     ) {
         logger.info("The file with sha256 [$sha256] will be finished with $uuid")
         val credentials = credentialsCache.get(storageKey.orEmpty())
-        blobChunkedService.finishChunkedUpload(credentials, sha256, artifactFile, uuid)
+        blobChunkedService.finishChunkedUpload(
+            projectId, repoName, credentials, sha256, artifactFile, uuid
+        )
     }
 
     private fun findStorageCredentials(storageKey: String?): StorageCredentials {

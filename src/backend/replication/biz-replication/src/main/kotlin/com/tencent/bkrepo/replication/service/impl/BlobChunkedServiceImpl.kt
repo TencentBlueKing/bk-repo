@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL
+import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.service.BlobChunkedService
 import com.tencent.bkrepo.replication.util.BlobChunkedResponseUtils.buildBlobUploadPatchResponse
@@ -55,17 +55,20 @@ class BlobChunkedServiceImpl(
     /**
      * 获取上传文件uuid
      */
-    override fun obtainSessionIdForUpload(credentials: StorageCredentials, sha256: String) {
+    override fun obtainSessionIdForUpload(
+        projectId: String, repoName: String, credentials: StorageCredentials, sha256: String
+    ) {
         val uuidCreated = storageService.createAppendId(credentials)
         logger.info("Uuid $uuidCreated has been created for File $sha256.")
         buildBlobUploadUUIDResponse(
             uuidCreated,
-            buildLocationUrl(uuidCreated),
+            buildLocationUrl(uuidCreated, projectId, repoName),
             HttpContextHolder.getResponse()
         )
     }
 
     override fun uploadChunkedFile(
+        projectId: String, repoName: String,
         credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
     ) {
         val range = HttpContextHolder.getRequest().getHeader("Content-Range")
@@ -77,7 +80,7 @@ class BlobChunkedServiceImpl(
             if (end - start > length - 1) {
                 buildBlobUploadPatchResponse(
                     uuid = uuid,
-                    locationStr = buildLocationUrl(uuid),
+                    locationStr = buildLocationUrl(uuid, projectId, repoName),
                     response = HttpContextHolder.getResponse(),
                     range = length.toLong(),
                     status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
@@ -92,13 +95,14 @@ class BlobChunkedServiceImpl(
         )
         buildBlobUploadPatchResponse(
             uuid = uuid,
-            locationStr = buildLocationUrl(uuid),
+            locationStr = buildLocationUrl(uuid, projectId, repoName),
             response = HttpContextHolder.getResponse(),
             range = patchLen
         )
     }
 
     override fun finishChunkedUpload(
+        projectId: String, repoName: String,
         credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
     ) {
         storageService.append(
@@ -111,14 +115,15 @@ class BlobChunkedServiceImpl(
             throw BadRequestException(ReplicationMessageCode.REPLICA_ARTIFACT_BROKEN, sha256)
         }
         uploadResponse(
-            locationStr = buildLocationUrl(uuid),
+            locationStr = buildLocationUrl(uuid, projectId, repoName),
             response = HttpContextHolder.getResponse(),
             status = HttpStatus.CREATED,
         )
     }
 
-    private fun buildLocationUrl(uuid: String) : String {
-        return serviceName+BOLBS_UPLOAD_FIRST_STEP_URL+uuid
+    private fun buildLocationUrl(uuid: String, projectId: String, repoName: String) : String {
+        val path = BOLBS_UPLOAD_FIRST_STEP_URL_STRING.format(projectId, repoName)
+        return serviceName+path+uuid
     }
 
     companion object {

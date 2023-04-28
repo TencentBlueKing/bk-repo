@@ -29,23 +29,30 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import org.springframework.web.multipart.MultipartFile
 
 interface BlobChunkedService {
 
     /**
      * 获取sessionId
      */
-    fun obtainSessionIdForUpload(credentials: StorageCredentials, sha256: String)
+    fun obtainSessionIdForUpload(
+        projectId: String, repoName: String, credentials: StorageCredentials, sha256: String
+    )
 
 
     /**
      * 上传分块文件
      */
-    fun uploadChunkedFile(credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String)
+    fun uploadChunkedFile(
+        projectId: String, repoName: String,
+        credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
+    )
 
     /**
      * 结束上传
      */
-    fun finishChunkedUpload(credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String)
+    fun finishChunkedUpload(
+        projectId: String, repoName: String,
+        credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
+    )
 }

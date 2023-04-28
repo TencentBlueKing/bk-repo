@@ -34,8 +34,10 @@ const val OCI_BLOBS_UPLOAD_FIRST_STEP_URL = "%s/blobs/uploads/"
 
 
 // blobs upload
-const val BOLBS_UPLOAD_FIRST_STEP_URL = "/replica/blobs/uploads/"
-const val BOLBS_UPLOAD_SECOND_STEP_URL = "/replica/blobs/uploads/{uuid}"
+const val BOLBS_UPLOAD_FIRST_STEP_URL = "/replica/{projectId}/{repoName}/blobs/uploads/"
+const val BOLBS_UPLOAD_SECOND_STEP_URL = "/replica/{projectId}/{repoName}/blobs/uploads/{uuid}"
+
+const val BOLBS_UPLOAD_FIRST_STEP_URL_STRING = "/replica/%s/%s/blobs/uploads/"
 
 const val BLOB_PULL_URI = "/replica/blob/pull"
 const val BLOB_PUSH_URI = "/replica/blob/push"
