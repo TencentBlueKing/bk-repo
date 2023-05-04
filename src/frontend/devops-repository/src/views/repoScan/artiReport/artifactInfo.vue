@@ -70,7 +70,8 @@
                 if (scanQuality) {
                     Object.keys(leakLevelEnum).forEach(level => {
                         const count = scanQuality[level.toLowerCase()]
-                        if (count) {
+                        // 后端返回的漏洞总数为数字类型，可能包含0，此时需要0也能进入下方判断，但空字符串和null不能进入判断
+                        if (!isNaN(parseInt(count))) {
                             rules.push(this.$t(`leakLevelEnum.${level}`) + this.$t('totalNumVulnerability') + ` ≦ ${count}`)
                         }
                     })
