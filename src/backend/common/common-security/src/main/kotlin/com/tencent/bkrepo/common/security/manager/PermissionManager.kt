@@ -34,9 +34,9 @@ package com.tencent.bkrepo.common.security.manager
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.tencent.bkrepo.auth.api.ServiceExternalPermissionResource
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
@@ -77,9 +77,9 @@ import java.util.concurrent.TimeUnit
  */
 open class PermissionManager(
     private val repositoryClient: RepositoryClient,
-    private val permissionResource: ServicePermissionResource,
-    private val externalPermissionResource: ServiceExternalPermissionResource,
-    private val userResource: ServiceUserResource,
+    private val permissionResource: ServicePermissionClient,
+    private val externalPermissionResource: ServiceExternalPermissionClient,
+    private val userResource: ServiceUserClient,
     private val nodeClient: NodeClient
 ) {
 
@@ -200,14 +200,14 @@ open class PermissionManager(
                 throw PermissionException()
             }
         } else if (principalType == PrincipalType.PLATFORM) {
-            if (userId.isNullOrEmpty()) {
+            if (userId.isEmpty()) {
                 logger.warn("platform auth with empty userId[$platformId,$userId]")
             }
             if (platformId == null && !isAdminUser(userId)) {
                 throw PermissionException()
             }
         } else if (principalType == PrincipalType.GENERAL) {
-            if (userId.isNullOrEmpty() || userId == ANONYMOUS_USER) {
+            if (userId.isEmpty() || userId == ANONYMOUS_USER) {
                 throw PermissionException()
             }
         }
@@ -307,12 +307,12 @@ open class PermissionManager(
         )
         if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
-            var reason: String? = null
+            val reason: String?
             if (repoName.isNullOrEmpty()) {
-                var param = arrayOf(userId, action, projectId )
+                val param = arrayOf(userId, action, projectId )
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.project.denied", param)
             } else {
-                var param = arrayOf(userId, action, projectId, repoName )
+                val param = arrayOf(userId, action, projectId, repoName )
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.repo.denied", param)
             }
             throw PermissionException(reason)

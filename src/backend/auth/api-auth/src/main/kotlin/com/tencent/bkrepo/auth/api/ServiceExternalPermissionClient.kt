@@ -25,41 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.service
+package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.webhook.config.WebHookProperties
-import com.tencent.bkrepo.webhook.dao.WebHookDao
-import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
-import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
-import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_EXT_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Import(
-    WebHookDao::class,
-    WebHookLogDao::class,
-    WebHookExecutor::class,
-    EventPayloadFactory::class,
-    WebHookProperties::class,
-    WebHookMetrics::class,
-    ServicePermissionClient::class,
-    ServiceUserClient::class
-)
-@ComponentScan("com.tencent.bkrepo.webhook.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-open class ServiceBaseTest {
+@Api(tags = ["SERVICE_EXTERNAL_PERMISSION"], description = "服务-外部权限接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceExternalPermissionResource")
+@RequestMapping(AUTH_SERVICE_EXT_PERMISSION_PREFIX)
+interface ServiceExternalPermissionClient {
 
-    @MockBean
-    lateinit var servicePermissionClient: ServicePermissionClient
+    @GetMapping
+    fun listExternalPermission(): Response<List<ExternalPermission>>
 
-    fun initMock() {
-        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
-    }
 }

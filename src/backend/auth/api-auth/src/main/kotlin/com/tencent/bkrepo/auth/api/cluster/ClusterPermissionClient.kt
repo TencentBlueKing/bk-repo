@@ -25,41 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.service
+package com.tencent.bkrepo.auth.api.cluster
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.webhook.config.WebHookProperties
-import com.tencent.bkrepo.webhook.dao.WebHookDao
-import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
-import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
-import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Import(
-    WebHookDao::class,
-    WebHookLogDao::class,
-    WebHookExecutor::class,
-    EventPayloadFactory::class,
-    WebHookProperties::class,
-    WebHookMetrics::class,
-    ServicePermissionClient::class,
-    ServiceUserClient::class
-)
-@ComponentScan("com.tencent.bkrepo.webhook.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-open class ServiceBaseTest {
+@Api("集群间权限服务接口")
+@Primary
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterPermissionResource")
+@RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
+interface ClusterPermissionClient {
 
-    @MockBean
-    lateinit var servicePermissionClient: ServicePermissionClient
-
-    fun initMock() {
-        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
-    }
+    @ApiOperation("校验权限")
+    @PostMapping("/check")
+    fun checkPermission(
+        @ApiParam(value = "校验权限信息")
+        @RequestBody request: CheckPermissionRequest
+    ): Response<Boolean>
 }

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.TOTAL_RECORDS_INFINITY
@@ -71,7 +71,7 @@ import java.util.regex.Pattern
 @Conditional(DefaultCondition::class)
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
-    private val servicePermissionResource: ServicePermissionResource
+    private val servicePermissionClient: ServicePermissionClient
 ) : ProjectService {
 
     override fun getProjectInfo(name: String): ProjectInfo? {
@@ -102,7 +102,7 @@ class ProjectServiceImpl(
     }
 
     override fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
-        var names = servicePermissionResource.listPermissionProject(userId).data.orEmpty()
+        var names = servicePermissionClient.listPermissionProject(userId).data.orEmpty()
         option?.names?.let { names = names.intersect(option.names!!).toList() }
         val query = Query.query(
             where(TProject::name).`in`(names)

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl.edge
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
@@ -45,11 +45,11 @@ import org.springframework.stereotype.Service
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgeProjectServiceImpl(
     projectDao: ProjectDao,
-    servicePermissionResource: ServicePermissionResource,
+    servicePermissionClient: ServicePermissionClient,
     clusterProperties: ClusterProperties
 ) : ProjectServiceImpl(
     projectDao,
-    servicePermissionResource
+    servicePermissionClient
 ) {
 
     private val centerProjectClient: ClusterProjectClient by lazy {

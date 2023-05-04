@@ -25,41 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.service
+package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.webhook.config.WebHookProperties
-import com.tencent.bkrepo.webhook.dao.WebHookDao
-import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
-import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
-import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
+import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
-@Import(
-    WebHookDao::class,
-    WebHookLogDao::class,
-    WebHookExecutor::class,
-    EventPayloadFactory::class,
-    WebHookProperties::class,
-    WebHookMetrics::class,
-    ServicePermissionClient::class,
-    ServiceUserClient::class
-)
-@ComponentScan("com.tencent.bkrepo.webhook.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-open class ServiceBaseTest {
+@Api(tags = ["SERVICE_OAUTHAUTHORIZATION"], description = "服务-Oauth授权接口")
+@Primary
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource")
+@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
+interface ServiceOauthAuthorizationClient {
 
-    @MockBean
-    lateinit var servicePermissionClient: ServicePermissionClient
+    @ApiOperation("获取oauth token信息")
+    @GetMapping("/token")
+    fun getToken(
+        @RequestParam accessToken: String
+    ): Response<OauthToken?>
 
-    fun initMock() {
-        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
-    }
+    @ApiOperation("验证oauth token")
+    @GetMapping("/token/validate")
+    fun validateToken(
+        @RequestParam accessToken: String
+    ): Response<String?>
 }

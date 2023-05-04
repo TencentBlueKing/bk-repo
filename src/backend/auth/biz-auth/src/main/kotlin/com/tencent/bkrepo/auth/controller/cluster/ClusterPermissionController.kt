@@ -25,41 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.service
+package com.tencent.bkrepo.auth.controller.cluster
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.webhook.config.WebHookProperties
-import com.tencent.bkrepo.webhook.dao.WebHookDao
-import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
-import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
-import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.auth.api.cluster.ClusterPermissionClient
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.service.PermissionService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-@Import(
-    WebHookDao::class,
-    WebHookLogDao::class,
-    WebHookExecutor::class,
-    EventPayloadFactory::class,
-    WebHookProperties::class,
-    WebHookMetrics::class,
-    ServicePermissionClient::class,
-    ServiceUserClient::class
-)
-@ComponentScan("com.tencent.bkrepo.webhook.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-open class ServiceBaseTest {
-
-    @MockBean
-    lateinit var servicePermissionClient: ServicePermissionClient
-
-    fun initMock() {
-        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
+@RestController
+class ClusterPermissionController(
+    private val permissionService: PermissionService
+) : ClusterPermissionClient, OpenResource(permissionService) {
+    override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
+        preCheckPlatformPermission()
+        return ResponseBuilder.success(permissionService.checkPermission(request))
     }
 }

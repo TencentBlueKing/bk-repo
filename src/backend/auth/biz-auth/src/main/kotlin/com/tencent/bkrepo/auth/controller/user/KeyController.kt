@@ -25,41 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.service
+package com.tencent.bkrepo.auth.controller.user
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.webhook.config.WebHookProperties
-import com.tencent.bkrepo.webhook.dao.WebHookDao
-import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
-import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
-import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
+import com.tencent.bkrepo.auth.pojo.Key
+import com.tencent.bkrepo.auth.service.KeyService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.DeleteMapping
 
-@Import(
-    WebHookDao::class,
-    WebHookLogDao::class,
-    WebHookExecutor::class,
-    EventPayloadFactory::class,
-    WebHookProperties::class,
-    WebHookMetrics::class,
-    ServicePermissionClient::class,
-    ServiceUserClient::class
-)
-@ComponentScan("com.tencent.bkrepo.webhook.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-open class ServiceBaseTest {
+@RestController
+@RequestMapping(AUTH_API_KEY_PREFIX)
+class KeyController(private val keyService: KeyService) {
 
-    @MockBean
-    lateinit var servicePermissionClient: ServicePermissionClient
+    @ApiOperation("新增密钥")
+    @PostMapping("/create")
+    fun createKey(name: String, key: String): Response<Void> {
+        keyService.createKey(name, key)
+        return ResponseBuilder.success()
+    }
 
-    fun initMock() {
-        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
+    @ApiOperation("查询公钥列表")
+    @GetMapping("/list")
+    fun listKey(): Response<List<Key>> {
+        return ResponseBuilder.success(keyService.listKey())
+    }
+
+    @ApiOperation("删除公钥")
+    @DeleteMapping("/delete/{id}")
+    fun deleteKey(id: String): Response<Void> {
+        keyService.deleteKey(id)
+        return ResponseBuilder.success()
     }
 }

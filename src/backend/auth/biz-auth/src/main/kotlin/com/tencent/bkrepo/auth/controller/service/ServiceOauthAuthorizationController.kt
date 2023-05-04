@@ -25,41 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.service
+package com.tencent.bkrepo.auth.controller.service
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.webhook.config.WebHookProperties
-import com.tencent.bkrepo.webhook.dao.WebHookDao
-import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
-import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
-import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.service.OauthAuthorizationService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
 
-@Import(
-    WebHookDao::class,
-    WebHookLogDao::class,
-    WebHookExecutor::class,
-    EventPayloadFactory::class,
-    WebHookProperties::class,
-    WebHookMetrics::class,
-    ServicePermissionClient::class,
-    ServiceUserClient::class
-)
-@ComponentScan("com.tencent.bkrepo.webhook.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-open class ServiceBaseTest {
+@RestController
+class ServiceOauthAuthorizationController @Autowired constructor(
+    private val oauthAuthorizationService: OauthAuthorizationService
+) : ServiceOauthAuthorizationClient {
 
-    @MockBean
-    lateinit var servicePermissionClient: ServicePermissionClient
 
-    fun initMock() {
-        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
+    override fun getToken(accessToken: String): Response<OauthToken?> {
+        return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
+    }
+
+    override fun validateToken(accessToken: String): Response<String?> {
+        return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
     }
 }

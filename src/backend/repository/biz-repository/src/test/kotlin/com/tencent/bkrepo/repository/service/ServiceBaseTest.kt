@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceRoleResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceRoleClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
@@ -69,7 +68,6 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
@@ -92,25 +90,19 @@ import org.springframework.test.context.TestPropertySource
 open class ServiceBaseTest {
 
     @MockBean
-    lateinit var storageService: StorageService
+    lateinit var roleResource: ServiceRoleClient
 
     @MockBean
-    lateinit var roleResource: ServiceRoleResource
+    lateinit var userResource: ServiceUserClient
 
     @MockBean
-    lateinit var userResource: ServiceUserResource
-
-    @MockBean
-    lateinit var servicePermissionResource: ServicePermissionResource
+    lateinit var servicePermissionClient: ServicePermissionClient
 
     @MockBean
     lateinit var permissionManager: PermissionManager
 
     @MockBean
     lateinit var messageSupplier: MessageSupplier
-
-    @Autowired
-    lateinit var springContextUtils: SpringContextUtils
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()
@@ -130,14 +122,14 @@ open class ServiceBaseTest {
             ResponseBuilder.success()
         )
 
-        whenever(servicePermissionResource.listPermissionProject(anyString())).thenReturn(
+        whenever(servicePermissionClient.listPermissionProject(anyString())).thenReturn(
             ResponseBuilder.success()
         )
 
-        whenever(servicePermissionResource.checkPermission(any())).thenReturn(
+        whenever(servicePermissionClient.checkPermission(any())).thenReturn(
             ResponseBuilder.success()
         )
-        whenever(servicePermissionResource.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
+        whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success()
         )
 
