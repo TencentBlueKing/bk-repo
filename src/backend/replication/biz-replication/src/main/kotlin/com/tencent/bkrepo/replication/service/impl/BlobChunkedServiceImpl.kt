@@ -59,7 +59,7 @@ class BlobChunkedServiceImpl(
         projectId: String, repoName: String, credentials: StorageCredentials, sha256: String
     ) {
         val uuidCreated = storageService.createAppendId(credentials)
-        logger.info("Uuid $uuidCreated has been created for File $sha256.")
+        logger.info("Uuid $uuidCreated has been created for file $sha256 in repo $projectId|$repoName.")
         buildBlobUploadUUIDResponse(
             uuidCreated,
             buildLocationUrl(uuidCreated, projectId, repoName),
@@ -93,6 +93,10 @@ class BlobChunkedServiceImpl(
             artifactFile = artifactFile,
             storageCredentials = credentials
         )
+        logger.info(
+            "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                "has been uploaded, uploaded size is $patchLen uuid: $uuid,"
+        )
         buildBlobUploadPatchResponse(
             uuid = uuid,
             locationStr = buildLocationUrl(uuid, projectId, repoName),
@@ -111,6 +115,9 @@ class BlobChunkedServiceImpl(
             storageCredentials = credentials
         )
         val fileInfo = storageService.finishAppend(uuid, credentials)
+        logger.info(
+            "The file with sha256 $sha256 in repo $projectId|$repoName has been uploaded with uuid: $uuid," +
+                        " received sha256 of file is ${fileInfo.sha256}")
         if (fileInfo.sha256 != sha256) {
             throw BadRequestException(ReplicationMessageCode.REPLICA_ARTIFACT_BROKEN, sha256)
         }

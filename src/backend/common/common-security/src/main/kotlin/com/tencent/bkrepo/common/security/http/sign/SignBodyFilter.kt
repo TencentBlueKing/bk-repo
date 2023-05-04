@@ -33,6 +33,7 @@ class SignBodyFilter(private val limit: Long) : Filter {
 
         if (request.contentLength > 0 &&
             !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE)
+            && !request.contentType.startsWith(MediaType.APPLICATION_OCTET_STREAM_VALUE)
         ) {
             // 限制缓存大小
             val multiReadRequest = MultipleReadHttpRequest(request as HttpServletRequest, limit)
