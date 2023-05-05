@@ -4,6 +4,9 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.nuget.constant.DEPENDENCY
+import com.tencent.bkrepo.nuget.constant.GROUP
+import com.tencent.bkrepo.nuget.constant.REFERENCE
 
 class NuspecMetadata {
     @JacksonXmlProperty(isAttribute = true)
@@ -45,7 +48,7 @@ class NuspecMetadata {
 
     // collection elements
     val packageTypes: MutableList<PackageType>? = null
-    val dependencies: List<Dependency>? = null
+    val dependencies: List<Any>? = null
     val frameworkAssemblies: MutableList<FrameworkAssembly>? = null
     val references: MutableList<Any>? = null
 
@@ -70,7 +73,7 @@ class Repository {
 
 data class PackageType(
     @JacksonXmlProperty(isAttribute = true)
-    val name: String?,
+    val name: String,
     @JacksonXmlProperty(isAttribute = true)
     val version: String?
 )
@@ -86,11 +89,13 @@ data class Dependency(
     val exclude: String?
 )
 
-@JacksonXmlRootElement(localName = "group")
+@JacksonXmlRootElement(localName = GROUP)
 data class DependencyGroup(
+    // The <group> element without a targetFramework attribute is used as the default or fallback list of dependencies.
     @JacksonXmlProperty(isAttribute = true)
-    val targetFramework: String,
-    @JacksonXmlElementWrapper(localName = "dependency")
+    val targetFramework: String?,
+    @JacksonXmlProperty(localName = DEPENDENCY)
+    @JacksonXmlElementWrapper
     val dependencies: MutableList<Dependency>?
 )
 
@@ -108,10 +113,12 @@ data class Reference(
     val file: String
 )
 
-@JacksonXmlRootElement(localName = "group")
+@JacksonXmlRootElement(localName = GROUP)
 data class ReferenceGroup(
+    // The <group> element without a targetFramework attribute is used as the default or fallback list of references.
     @JacksonXmlProperty(isAttribute = true)
-    val targetFramework: String,
-    @JacksonXmlElementWrapper(localName = "reference")
+    val targetFramework: String?,
+    @JacksonXmlProperty(localName = REFERENCE)
+    @JacksonXmlElementWrapper
     val references: MutableList<Reference>?
 )

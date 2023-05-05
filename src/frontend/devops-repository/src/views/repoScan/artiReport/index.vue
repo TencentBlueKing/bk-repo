@@ -110,7 +110,7 @@
                     name: this.subtaskOverview.packageKey ? 'commonPackage' : 'repoGeneric',
                     params: {
                         projectId: this.projectId,
-                        repoType: this.subtaskOverview.repoType
+                        repoType: this.subtaskOverview.repoType?.toLowerCase()
                     },
                     query: (
                         this.subtaskOverview.packageKey

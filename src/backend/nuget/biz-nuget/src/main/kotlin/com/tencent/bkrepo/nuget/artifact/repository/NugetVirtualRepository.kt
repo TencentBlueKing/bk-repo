@@ -31,25 +31,28 @@
 
 package com.tencent.bkrepo.nuget.artifact.repository
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
+import com.tencent.bkrepo.nuget.constant.REGISTRATION_PATH
+import com.tencent.bkrepo.nuget.constant.SEMVER2_ENDPOINT
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationPageItem
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
-import com.tencent.bkrepo.nuget.util.NugetV3RemoteRepositoryUtils
+import com.tencent.bkrepo.nuget.util.RemoteRegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetVersionUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
-import java.io.IOException
 import java.util.Objects
 import java.util.stream.Stream
 import kotlin.streams.toList
@@ -57,83 +60,71 @@ import kotlin.streams.toList
 @Component
 class NugetVirtualRepository(
     private val commonUtils: NugetRemoteAndVirtualCommon
-) : VirtualRepository(), NugetRepository {
+) : VirtualRepository() {
 
-    override fun feed(artifactInfo: NugetArtifactInfo): ResponseEntity<Any> {
-        return try {
-            var feedResource = NugetUtils.getFeedResource()
-            feedResource = feedResource.replace(
-                "@NugetV2Url", NugetUtils.getV2Url(artifactInfo)
-            ).replace(
-                "@NugetV3Url", NugetUtils.getV3Url(artifactInfo)
-            )
-            ResponseEntity.ok(feedResource)
-        } catch (exception: IOException) {
-            logger.error("unable to read resource: $exception")
-            throw exception
-        }
+    private fun feed(artifactInfo: NugetArtifactInfo): Feed {
+        return NugetUtils.renderServiceIndex(artifactInfo)
     }
 
-    override fun registrationIndex(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
+    private fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
+        return emptyList()
+    }
+
+    private fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
+        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
         val allRegistrationPageItems = try {
-            collectAllRegistrationPageItems(artifactInfo, registrationPath, isSemver2Endpoint)
+            collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
         } catch (ex: IllegalStateException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                .body(ex.message)
+            logger.warn(
+                "an issue occur when collecting registration indexes" +
+                        "from [${nugetArtifactInfo.getRepoIdentify()}]: ${ex.message}"
+            )
+            return null
         }
-        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(artifactInfo) + "/" + registrationPath
-        val registrationIndex = NugetV3RegistrationUtils.registrationPageItemToRegistrationIndex(
+        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(nugetArtifactInfo) + "/" + registrationPath
+        return NugetV3RegistrationUtils.registrationPageItemToRegistrationIndex(
             allRegistrationPageItems, virtualV3RegistrationUrl
         )
-        return ResponseEntity.ok(registrationIndex)
     }
 
-    override fun registrationPage(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
+    private fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
+        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
         val allRegistrationPageItems = try {
-            collectAllRegistrationPageItems(artifactInfo, registrationPath, isSemver2Endpoint)
+            collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
         } catch (ex: IllegalStateException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                .body(ex.message)
+            return null
         }
-        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(artifactInfo) + "/" + registrationPath
-        val registrationPage = NugetV3RegistrationUtils.registrationPageItemToRegistrationPage(
+        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(nugetArtifactInfo) + "/" + registrationPath
+        return NugetV3RegistrationUtils.registrationPageItemToRegistrationPage(
             allRegistrationPageItems,
-            artifactInfo.packageName,
-            artifactInfo.lowerVersion,
-            artifactInfo.upperVersion,
+            nugetArtifactInfo.packageName,
+            nugetArtifactInfo.lowerVersion,
+            nugetArtifactInfo.upperVersion,
             virtualV3RegistrationUrl
         )
-        return ResponseEntity.ok(registrationPage)
     }
 
-    override fun registrationLeaf(
-        artifactInfo: NugetRegistrationArtifactInfo,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): ResponseEntity<Any> {
+    private fun registrationLeaf(context: ArtifactQueryContext): RegistrationLeaf? {
+        val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
+        val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
+        val isSemver2Endpoint = context.getBooleanAttribute(SEMVER2_ENDPOINT)!!
         val allRegistrationPageItems = try {
-            collectAllRegistrationPageItems(artifactInfo, registrationPath, isSemver2Endpoint)
+            collectAllRegistrationPageItems(nugetArtifactInfo, registrationPath, isSemver2Endpoint)
         } catch (ex: IllegalStateException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
-                .body(ex.message)
+            return null
         }
-        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(artifactInfo) + "/" + registrationPath
+        val virtualV3RegistrationUrl: String = NugetUtils.getV3Url(nugetArtifactInfo) + "/" + registrationPath
         val isListed = allRegistrationPageItems.first().catalogEntry.listed.let { false }
-        val registrationLeaf = NugetV3RegistrationUtils.metadataToRegistrationLeaf(
-            artifactInfo.packageName,
-            artifactInfo.version,
+        return NugetV3RegistrationUtils.metadataToRegistrationLeaf(
+            nugetArtifactInfo.packageName,
+            nugetArtifactInfo.version,
             isListed,
             virtualV3RegistrationUrl
         )
-        return ResponseEntity.ok(registrationLeaf)
     }
 
     private fun collectAllRegistrationPageItems(
@@ -156,7 +147,7 @@ class NugetVirtualRepository(
         val allRemoteReposPageItems = repoCategoryMap[RepositoryCategory.REMOTE].orEmpty().stream().map {
             extractOrFetchRegistrationResultPageItems(artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl, it)
         }.filter { Objects.nonNull(it) }.flatMap { it }.map {
-            NugetV3RemoteRepositoryUtils.registrationResultPageItemRewriter(
+            RemoteRegistrationUtils.registrationResultPageItemRewriter(
                 it, packageName, v2BaseUrl, v3RegistrationUrl
             )
         }
