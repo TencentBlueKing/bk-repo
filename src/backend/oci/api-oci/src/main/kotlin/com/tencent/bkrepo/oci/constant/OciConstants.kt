@@ -42,9 +42,6 @@ const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 const val HOST = "Host"
-const val BEARER_REALM = "Bearer realm"
-const val SERVICE = "service"
-const val SCOPE = "scope"
 const val PATCH = "PATCH"
 const val POST = "POST"
 const val NODE_FULL_PATH = "fullPath"
@@ -97,6 +94,9 @@ const val MD5 = "md5"
 
 const val OCI_MANIFEST = "manifest.json"
 const val STAGE_TAG = "stageTag"
+
+const val REQUEST_TAG_LIST = "tagList"
+const val REQUEST_IMAGE = "image"
 
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"

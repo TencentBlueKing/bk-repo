@@ -37,7 +37,9 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders.WWW_AUTHENTICATE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -49,8 +51,10 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.util.http.AuthenticationUtil.addProtocol
+import com.tencent.bkrepo.common.artifact.util.http.AuthenticationUtil.buildAuthenticationUrl
+import com.tencent.bkrepo.common.artifact.util.http.AuthenticationUtil.parseWWWAuthenticateHeader
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.oci.constant.BEARER_REALM
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
@@ -58,8 +62,8 @@ import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OciMessageCode
-import com.tencent.bkrepo.oci.constant.SCOPE
-import com.tencent.bkrepo.oci.constant.SERVICE
+import com.tencent.bkrepo.oci.constant.PROXY_URL
+import com.tencent.bkrepo.oci.constant.REQUEST_TAG_LIST
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
@@ -68,13 +72,14 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.auth.BearerToken
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.remote.RemoteUrlProperty
 import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
+import com.tencent.bkrepo.oci.pojo.response.OciResponse
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -122,8 +127,10 @@ class OciRegistryRemoteRepository(
      */
     private fun doRequest(context: ArtifactContext): Any? {
         val remoteConfiguration = context.getRemoteConfiguration()
+        // TODO client待优化
         val httpClient = createHttpClient(remoteConfiguration, false)
-        val downloadUrl = createRemoteDownloadUrl(context)
+        val property = getRemoteUrlProperty(context)
+        val downloadUrl = createRemoteDownloadUrl(context, property)
         logger.info("Remote request $downloadUrl will be sent")
         val request = buildRequest(downloadUrl, remoteConfiguration)
         val response = httpClient.newCall(request).execute()
@@ -131,8 +138,9 @@ class OciRegistryRemoteRepository(
         try {
             if (response.isSuccessful) return onResponse(context, response)
             // 针对返回401进行token获取
-            val token = getAuthenticationCode(response, remoteConfiguration, httpClient)
+            val token = getAuthenticationCode(context, response, remoteConfiguration, httpClient, property.imageName)
             if (token.isNullOrBlank()) return null
+            // TODO token需要缓存
             val requestWithAuth = buildRequest(
                 url = downloadUrl,
                 configuration = remoteConfiguration,
@@ -183,7 +191,7 @@ class OciRegistryRemoteRepository(
         val username = configuration.credentials.username
         val password = configuration.credentials.password
         if (username != null && password != null) {
-            val credentials = Credentials.basic(username, password)
+            val credentials =  BasicAuthUtils.encode(username, password)
             this.header(HttpHeaders.AUTHORIZATION, credentials)
         }
         return this
@@ -193,61 +201,91 @@ class OciRegistryRemoteRepository(
      * 生成远程构件下载url
      */
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
+        val property = getRemoteUrlProperty(context)
+        return createRemoteDownloadUrl(context, property)
+    }
+
+    fun createRemoteDownloadUrl(context: ArtifactContext, property: RemoteUrlProperty): String {
+        return when (property.type) {
+            REQUEST_TAG_LIST -> createCatalogUrl(property)
+            else -> createUrl(property)
+        }
+    }
+
+    private fun getRemoteUrlProperty(context: ArtifactContext): RemoteUrlProperty {
         val configuration = context.getRemoteConfiguration()
+        val url = addProtocol(configuration.url).toString()
+        context.putAttribute(PROXY_URL, url)
         if (context.artifactInfo is OciBlobArtifactInfo) {
             val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
-            return createUrl(
-                url = configuration.url,
+            return RemoteUrlProperty(
+                url = url,
                 fullPath = OciLocationUtils.blobPathLocation(artifactInfo.getDigest(), artifactInfo),
-                params = StringPool.EMPTY
+                imageName = artifactInfo.packageName
             )
         }
         if (context.artifactInfo is OciManifestArtifactInfo) {
             val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
-            return createUrl(
-                url = configuration.url,
+            return RemoteUrlProperty(
+                url = url,
                 fullPath = OciLocationUtils.manifestPathLocation(artifactInfo.reference, artifactInfo),
-                params = StringPool.EMPTY
+                imageName = artifactInfo.packageName
             )
         }
         if (context.artifactInfo is OciTagArtifactInfo) {
             val artifactInfo = context.artifactInfo as OciTagArtifactInfo
             if (artifactInfo.packageName.isBlank()) {
                 val (_, params) = createParamsForTagList(context)
-                return createCatalogUrl(configuration.url, params)
+                return RemoteUrlProperty(
+                    url = url,
+                    params = params,
+                    type = REQUEST_TAG_LIST,
+                    imageName = StringPool.EMPTY
+                )
             } else {
                 val (fullPath, params) = createParamsForTagList(context)
-                return createUrl(configuration.url, fullPath, params)
+                return RemoteUrlProperty(
+                    url = url,
+                    fullPath = fullPath,
+                    params = params,
+                    imageName = artifactInfo.packageName
+                    )
             }
         }
-        return createUrl(configuration.url)
+        return RemoteUrlProperty(url = url, imageName = StringPool.EMPTY)
     }
 
     /**
      * 拼接url
      */
-    private fun createUrl(url: String, fullPath: String = StringPool.EMPTY, params: String = StringPool.EMPTY): String {
-        val baseUrl = URL(url)
-        val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
-        return UrlFormatter.format(v2Url.toString(), fullPath, params)
+    private fun createUrl(property: RemoteUrlProperty): String {
+        with(property) {
+            val baseUrl = URL(url)
+            val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
+            return UrlFormatter.format(v2Url.toString(), fullPath, params)
+        }
     }
 
     /**
      * 拼接catalog url
      */
-    private fun createCatalogUrl(url: String, params: String = StringPool.EMPTY): String {
-        val baseUrl = URL(url)
-        val builder = UriBuilder.fromPath(OCI_API_PREFIX)
-            .host(baseUrl.host).scheme(baseUrl.protocol)
-            .path(DOCKER_CATALOG_SUFFIX)
-            .queryParam(params)
-        return builder.build().toString()
+    private fun createCatalogUrl(property: RemoteUrlProperty): String {
+        with(property) {
+            val baseUrl = URL(url)
+            val builder = UriBuilder.fromPath(OCI_API_PREFIX)
+                .host(baseUrl.host).scheme(baseUrl.protocol)
+                .path(DOCKER_CATALOG_SUFFIX)
+                .queryParam(params)
+            return builder.build().toString()
+        }
     }
 
     private fun getAuthenticationCode(
+        context: ArtifactContext,
         response: Response,
         configuration: RemoteConfiguration,
-        httpClient: OkHttpClient
+        httpClient: OkHttpClient,
+        imageName: String
     ): String? {
         if (response.code != HttpStatus.UNAUTHORIZED.value) {
             return null
@@ -256,47 +294,41 @@ class OciRegistryRemoteRepository(
         if (wwwAuthenticate.isNullOrBlank() || !wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX)) {
             return null
         }
-        val url = parseWWWAuthenticateHeader(wwwAuthenticate)
-        logger.info("The url for authenticating is $url")
-        if (url.isNullOrEmpty()) return null
-        val request = buildRequest(
-            url = url,
-            configuration = configuration,
-            addBasicInterceptor = false
-        )
-        val tokenResponse = httpClient.newCall(request).execute()
-        try {
-            if (!tokenResponse.isSuccessful) return null
-            val body = tokenResponse.body!!
-            val artifactFile = createTempFile(body)
-            val size = artifactFile.getSize()
-            val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-            artifactFile.delete()
-            val bearerToken = JsonUtils.objectMapper.readValue(artifactStream, BearerToken::class.java)
-            return "Bearer ${bearerToken.token}"
-        } finally {
-            tokenResponse.body?.close()
+        val url = context.getStringAttribute(PROXY_URL)!!
+        val scope = getScope(url, imageName)
+        val authProperty = parseWWWAuthenticateHeader(wwwAuthenticate, scope)
+        if (authProperty == null)  {
+            logger.warn("Auth url can not be parsed from header!")
+            return null
         }
+        val urlStr = buildAuthenticationUrl(authProperty, configuration.credentials.username)
+        logger.info("The url for authenticating is $urlStr")
+        if (urlStr.isNullOrEmpty()) return null
+        val request = buildRequest(
+            url = urlStr,
+            configuration = configuration,
+            addBasicInterceptor = true
+        )
+        httpClient.newCall(request).execute().use {
+            if (!it.isSuccessful) {
+                val error = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), OciResponse::class.java)
+                logger.warn(
+                    "Could not get token from auth service," +
+                        " code is ${it.code} and response is ${error.toJsonString()}"
+                )
+                return null
+            }
+            val bearerToken = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), BearerToken::class.java)
+            return "Bearer ${bearerToken.token}"
+        }
+
     }
 
-    /**
-     * 解析返回头中的WWW_AUTHENTICATE字段， 只针对为Bearer realm
-     */
-    private fun parseWWWAuthenticateHeader(wwwAuthenticate: String): String? {
-        val map: MutableMap<String, String> = mutableMapOf()
-        return try {
-            val params = wwwAuthenticate.split(",")
-            params.forEach {
-                val param = it.split("=")
-                val name = param.first()
-                val value = param.last().removeSurrounding("\"")
-                map[name] = value
-            }
-            "${map[BEARER_REALM]}?$SERVICE=${map[SERVICE]}&$SCOPE=${map[SCOPE]}"
-        } catch (e: Exception) {
-            logger.warn("Parsing wwwAuthenticate header error: ${e.message}")
-            null
-        }
+    private fun getScope(remoteUrl: String, imageName: String): String {
+        val baseUrl = URL(remoteUrl)
+        val target = baseUrl.path.removePrefix(StringPool.SLASH)
+            .removeSuffix(StringPool.SLASH) + StringPool.SLASH + imageName
+        return "repository:$target:pull"
     }
 
     private fun createParamsForTagList(context: ArtifactContext): Pair<String, String> {
@@ -414,11 +446,12 @@ class OciRegistryRemoteRepository(
             val node = nodeClient.getNodeDetail(ociArtifactInfo.projectId, ociArtifactInfo.repoName, fullPath).data
             if (node != null) return node
         }
+        val url = context.getStringAttribute(PROXY_URL)
         var nodeDetail = ociOperationService.storeArtifact(
             ociArtifactInfo = ociArtifactInfo,
             artifactFile = artifactFile,
             storageCredentials = context.storageCredentials,
-            proxyUrl = configuration.url
+            proxyUrl = url
         )
         // 针对manifest文件需要更新metadata
         if (context.artifactInfo is OciManifestArtifactInfo) {
