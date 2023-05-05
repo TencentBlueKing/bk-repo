@@ -94,9 +94,11 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    const nowTime = new Date(
-        `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
-    ).getTime() + 3600 * 1000 * 24
+    import moment from 'moment'
+    const nowTime = moment()
+    const before7Time = moment().subtract(7, 'days')
+    const before15Time = moment().subtract(15, 'days')
+    const before30Time = moment().subtract(30, 'days')
     export default {
         name: 'audit',
         data () {
@@ -105,7 +107,7 @@
                 query: {
                     projectId: this.$route.params.projectId,
                     user: [],
-                    time: [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                    time: [moment([before7Time.year(), before7Time.month(), before7Time.date()]).toDate(), nowTime.toDate()]
                 },
                 auditList: [],
                 pagination: {
@@ -119,19 +121,19 @@
                     {
                         text: this.$t('last 7 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                            return [moment([before7Time.year(), before7Time.month(), before7Time.date()]).toDate(), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 15 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
+                            return [moment([before15Time.year(), before15Time.month(), before15Time.date()]).toDate(), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 30 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
+                            return [moment([before30Time.year(), before30Time.month(), before30Time.date()]).toDate(), nowTime.toDate()]
                         }
                     }
                 ]
