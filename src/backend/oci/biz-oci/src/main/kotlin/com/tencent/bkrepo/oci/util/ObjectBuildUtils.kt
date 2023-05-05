@@ -115,14 +115,16 @@ object ObjectBuildUtils {
         projectId: String,
         repoName: String,
         fullPath: String,
+        userId: String,
         metadata: Map<String, Any>? = null
-    ): MetadataSaveRequest {
+        ): MetadataSaveRequest {
         val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
         return MetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
-            nodeMetadata = metadataModels
+            nodeMetadata = metadataModels,
+            operator = userId
         )
     }
 
@@ -131,6 +133,7 @@ object ObjectBuildUtils {
         repoName: String,
         packageKey: String,
         version: String,
+        userId: String,
         metadata: Map<String, Any>? = null
     ): PackageMetadataSaveRequest {
         val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
@@ -139,7 +142,8 @@ object ObjectBuildUtils {
             repoName = repoName,
             packageKey = packageKey,
             version = version,
-            versionMetadata = metadataModels
+            versionMetadata = metadataModels,
+            operator = userId
         )
     }
 
