@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
@@ -68,6 +69,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
@@ -90,6 +92,9 @@ import org.springframework.test.context.TestPropertySource
 open class ServiceBaseTest {
 
     @MockBean
+    lateinit var storageService: StorageService
+
+    @MockBean
     lateinit var roleResource: ServiceRoleClient
 
     @MockBean
@@ -103,6 +108,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var messageSupplier: MessageSupplier
+
+    @Autowired
+    lateinit var springContextUtils: SpringContextUtils
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()
