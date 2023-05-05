@@ -118,6 +118,8 @@ const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"
 
 const val OCI_IMAGE_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"
 
+const val DOCKER_DISTRIBUTION_MANIFEST_V2 = "application/vnd.docker.distribution.manifest.v2+json"
+
 // Content Descriptor
 const val CONTENT_DESCRIPTOR_MEDIA_TYPE = "application/vnd.oci.descriptor.v1+json"
 

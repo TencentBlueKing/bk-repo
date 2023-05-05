@@ -55,6 +55,7 @@ import com.tencent.bkrepo.common.artifact.util.http.AuthenticationUtil.addProtoc
 import com.tencent.bkrepo.common.artifact.util.http.AuthenticationUtil.buildAuthenticationUrl
 import com.tencent.bkrepo.common.artifact.util.http.AuthenticationUtil.parseWWWAuthenticateHeader
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_V2
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
@@ -183,6 +184,9 @@ class OciRegistryRemoteRepository(
             requestBuilder.addInterceptor(configuration)
         } else {
             token?.let { requestBuilder.header(HttpHeaders.AUTHORIZATION, token) }
+        }
+        if (url.contains("/manifests/")) {
+            requestBuilder.header(HttpHeaders.ACCEPT, DOCKER_DISTRIBUTION_MANIFEST_V2)
         }
         return requestBuilder.build()
     }
