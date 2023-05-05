@@ -95,9 +95,11 @@
         }
     }
     .confirm-tip {
-        padding-left: 40px;
         font-size: 12px;
         color: var(--fontSubsidiaryColor);
+        margin-left: 35px;
+        display: inline-block;
+        margin-top: 12px;
     }
 }
 </style>
