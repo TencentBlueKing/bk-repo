@@ -23,21 +23,25 @@ import javax.servlet.http.HttpServletRequest
  * */
 class SignBodyFilter(private val limit: Long) : Filter {
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
+        if (request.contentLength > limit) {
+            return chain.doFilter(request, response)
+        }
+
+        // 限制缓存大小
+        val multiReadRequest = MultipleReadHttpRequest(request as HttpServletRequest, limit)
+        val body = ByteArrayOutputStream()
+        multiReadRequest.inputStream.copyTo(body)
         val sig = request.getParameter(HttpSigner.SIGN)
         val appId = request.getParameter(HttpSigner.APP_ID)
         val accessKey = request.getParameter(HttpSigner.ACCESS_KEY)
         if (sig == null || appId == null || accessKey == null) {
-            chain.doFilter(request, response)
+            chain.doFilter(multiReadRequest, response)
             return
         }
 
         if (request.contentLength > 0 &&
             !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE)
         ) {
-            // 限制缓存大小
-            val multiReadRequest = MultipleReadHttpRequest(request as HttpServletRequest, limit)
-            val body = ByteArrayOutputStream()
-            multiReadRequest.inputStream.copyTo(body)
             val bodyHash = Hashing.sha256().hashBytes(body.toByteArray())
             multiReadRequest.setAttribute(HttpSigner.SIGN_BODY, bodyHash)
             chain.doFilter(multiReadRequest, response)
