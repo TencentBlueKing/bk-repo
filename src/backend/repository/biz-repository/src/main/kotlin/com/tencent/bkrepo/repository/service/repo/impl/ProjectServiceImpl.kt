@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -108,6 +110,12 @@ class ProjectServiceImpl(
             where(TProject::name).`in`(names)
             .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
         )
+        if (option?.sortProperty?.isNotEmpty() == true) {
+            checkPropertyAndDirection(option)
+            option.direction?.zip(option.sortProperty!!)?.forEach {
+                query.with(Sort.by(Sort.Direction.valueOf(it.first), it.second))
+            }
+        }
         return if (option?.pageNumber == null && option?.pageSize == null) {
             projectDao.find(query).map { convert(it)!! }
         } else {
@@ -117,6 +125,17 @@ class ProjectServiceImpl(
             )
             projectDao.find(query.with(pageRequest)).map { convert(it)!! }
         }
+    }
+
+    private fun checkPropertyAndDirection(option: ProjectListOption) {
+        Preconditions.checkArgument(
+            option.sortProperty?.none { !TProject::class.java.declaredFields.map { f -> f.name }.contains(it) },
+            "sortProperty"
+        )
+        Preconditions.checkArgument(
+            option.direction?.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
+            "direction"
+        )
     }
 
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {
