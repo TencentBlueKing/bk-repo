@@ -39,5 +39,9 @@ data class ProjectListOption(
     @ApiModelProperty("项目名列表")
     val names: List<String>?,
     @ApiModelProperty("项目展示名列表")
-    val displayNames: List<String>?
+    val displayNames: List<String>?,
+    @ApiModelProperty("排序字段")
+    val sortProperty: List<String>?,
+    @ApiModelProperty("排序方向")
+    val direction: List<String>?
 )

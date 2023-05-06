@@ -37,7 +37,7 @@ body {
         .cell {
             padding: 0 10px;
         }
-        /* 替换图标 */ 
+        /* 替换图标 */
         .bk-table-column-expand .bk-table-expand-icon .bk-icon {
             font-size: 20px;
             color: var(--fontSubsidiaryColor);
@@ -81,7 +81,7 @@ body {
         .bk-table-footer,
         .bk-table-header,
         .bk-table-empty-block {
-            width: auto!important;
+            width: auto
         }
         .bk-table-empty-text {
             padding: 20px 0 100px;
@@ -157,7 +157,7 @@ body {
     .bk-form-textarea {
         height: 30px;
     }
-    
+
     .bk-select .bk-select-name {
         height: 28px;
         line-height: 28px;
@@ -299,7 +299,7 @@ body {
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    
+
     .bk-sideslider {
         .bk-sideslider-header {
             display: flex;
@@ -605,7 +605,7 @@ body {
             }
         }
     }
-    
+
     .bk-dialog-wrapper {
         .bk-dialog-body {
             font-size: 12px;

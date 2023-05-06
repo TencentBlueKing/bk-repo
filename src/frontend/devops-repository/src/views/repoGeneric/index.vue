@@ -120,7 +120,7 @@
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedBy')" width="90" show-overflow-tooltip>
+                    <bk-table-column :label="$t('lastModifiedBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
                         </template>
@@ -136,7 +136,7 @@
                             </span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('operation')" width="70">
+                    <bk-table-column :label="$t('operation')" width="100">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[

@@ -651,7 +651,8 @@
     "scanTypeEnum" : {
         "GENERIC": "Generic artifact analysis",
         "DOCKER": "Docker artifact analysis",
-        "MAVEN": "Maven artifact analysis"
+        "MAVEN": "Maven artifact analysis",
+        "NPM": "Npm artifact analysis"
     },
     "createPlan": "Create plan",
     "resetUserMsg": "Are you sure to reset the password for account {0} to default?",
@@ -663,7 +664,7 @@
     "commonList":"Dependency repository",
     "commonPackage":"Artifact detail",
     "scanConfig":"Program settings",
-    "operationConfirmation":"Operation Confirmation",
+    "operationConfirmation":"Confirm",
     "executeScanSuccessMsg":"Scan performed successfully",
     "scanRulePreMsg":"Skip rule if blank",
     "isDisplay": "Display",

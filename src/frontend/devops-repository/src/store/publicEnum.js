@@ -90,8 +90,8 @@ export const asyncPlanStatusEnum = {
 export const scanTypeEnum = {
     GENERIC: 'Generic制品分析',
     DOCKER: 'Docker制品分析',
-    MAVEN: 'Maven制品分析'
-    // NPM: 'Npm制品分析',
+    MAVEN: 'Maven制品分析',
+    NPM: 'Npm制品分析'
     // PYPI: 'Pypi制品分析'
 }
 
