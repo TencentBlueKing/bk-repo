@@ -18,7 +18,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlin.system.measureTimeMillis
+import kotlin.system.measureNanoTime
 
 @Service
 class PackageRepairServiceImpl(
@@ -85,7 +85,7 @@ class PackageRepairServiceImpl(
         var total = 0L
         var pageNumber = 1
 
-        measureTimeMillis {
+        measureNanoTime {
             while (true) {
                 val packageList = queryPackage(pageNumber++).records.takeIf { it.isNotEmpty() } ?: break
                 total += packageList.size
