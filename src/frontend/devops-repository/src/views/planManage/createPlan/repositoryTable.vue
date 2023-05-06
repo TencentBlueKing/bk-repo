@@ -70,7 +70,8 @@
                             repoType: v.type
                         }
                     })
-                    replicaTaskObjects.length ? resolve(replicaTaskObjects) : reject(new Error())
+                    // eslint-disable-next-line prefer-promise-reject-errors
+                    replicaTaskObjects.length ? resolve(replicaTaskObjects) : reject()
                 })
             }
         }

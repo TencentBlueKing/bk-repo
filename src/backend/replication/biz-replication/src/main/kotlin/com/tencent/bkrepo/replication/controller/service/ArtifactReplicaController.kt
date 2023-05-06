@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.controller.service
 
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.exception.PermissionException
@@ -74,7 +74,7 @@ class ArtifactReplicaController(
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
     private val metadataClient: MetadataClient,
-    private val userResource: ServiceUserResource,
+    private val userResource: ServiceUserClient,
     private val permissionManager: PermissionManager
 ) : ArtifactReplicaClient {
 

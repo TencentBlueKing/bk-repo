@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.auth.service.impl.edge
 
-import com.tencent.bkrepo.auth.api.ClusterTemporaryTokenResource
+import com.tencent.bkrepo.auth.api.cluster.ClusterTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.repository.TemporaryTokenRepository
@@ -47,7 +47,7 @@ class CommitEdgeTemporaryTokenServiceImpl(
     temporaryTokenRepository
 ) {
 
-    private val centerTemporaryTokenClient: ClusterTemporaryTokenResource by lazy {
+    private val centerTemporaryTokenClient: ClusterTemporaryTokenClient by lazy {
         FeignClientFactory.create(
             clusterProperties.center,
             "auth",

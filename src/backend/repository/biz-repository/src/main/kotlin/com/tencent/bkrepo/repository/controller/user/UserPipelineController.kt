@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bkrepo.auth.api.ServicePipelineResource
+import com.tencent.bkrepo.auth.api.ServicePipelineClient
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
@@ -50,7 +50,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/pipeline/")
 class UserPipelineController(
     private val nodeService: NodeService,
-    private val servicePipelineResource: ServicePipelineResource
+    private val servicePipelineClient: ServicePipelineClient
 ) {
 
     @GetMapping("/list/{projectId}")
@@ -59,7 +59,7 @@ class UserPipelineController(
         @PathVariable projectId: String
     ): Response<List<NodeInfo>> {
         // 1. auth查询有权限的pipeline
-        val pipelines = servicePipelineResource.listPermissionedPipelines(userId, projectId).data.orEmpty()
+        val pipelines = servicePipelineClient.listPermissionedPipelines(userId, projectId).data.orEmpty()
         // 2. 查询根节点下的目录
         val artifactInfo = DefaultArtifactInfo(projectId, PIPELINE, ROOT)
         val option = NodeListOption(includeMetadata = true, sort = true)

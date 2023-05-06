@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl.center
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -71,7 +71,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
-    servicePermissionResource: ServicePermissionResource,
+    servicePermissionClient: ServicePermissionClient,
     private val clusterProperties: ClusterProperties
 ) : RepositoryServiceImpl(
     repositoryDao,
@@ -81,7 +81,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     proxyChannelService,
     repositoryProperties,
     messageSupplier,
-    servicePermissionResource
+    servicePermissionClient
 ) {
 
     override fun determineStorageKey(request: RepoCreateRequest): String? {
