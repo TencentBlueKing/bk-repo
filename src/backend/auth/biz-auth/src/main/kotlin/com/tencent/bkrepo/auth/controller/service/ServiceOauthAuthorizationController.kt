@@ -25,28 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.payload.builder
+package com.tencent.bkrepo.auth.controller.service
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
+import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.service.OauthAuthorizationService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
 
-abstract class EventPayloadBuilder(
-    open val eventType: EventType
-) {
+@RestController
+class ServiceOauthAuthorizationController @Autowired constructor(
+    private val oauthAuthorizationService: OauthAuthorizationService
+) : ServiceOauthAuthorizationClient {
 
-    @Autowired
-    private lateinit var userResource: ServiceUserClient
 
-    abstract fun build(event: ArtifactEvent): CommonEventPayload
+    override fun getToken(accessToken: String): Response<OauthToken?> {
+        return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
+    }
 
-    fun getUser(userId: String): UserInfo {
-        return userResource.userInfoById(userId).data
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
+    override fun validateToken(accessToken: String): Response<String?> {
+        return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
     }
 }

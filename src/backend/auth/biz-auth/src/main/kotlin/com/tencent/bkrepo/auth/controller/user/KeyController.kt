@@ -25,28 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.payload.builder
+package com.tencent.bkrepo.auth.controller.user
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
+import com.tencent.bkrepo.auth.pojo.Key
+import com.tencent.bkrepo.auth.service.KeyService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.DeleteMapping
 
-abstract class EventPayloadBuilder(
-    open val eventType: EventType
-) {
+@RestController
+@RequestMapping(AUTH_API_KEY_PREFIX)
+class KeyController(private val keyService: KeyService) {
 
-    @Autowired
-    private lateinit var userResource: ServiceUserClient
+    @ApiOperation("新增密钥")
+    @PostMapping("/create")
+    fun createKey(name: String, key: String): Response<Void> {
+        keyService.createKey(name, key)
+        return ResponseBuilder.success()
+    }
 
-    abstract fun build(event: ArtifactEvent): CommonEventPayload
+    @ApiOperation("查询公钥列表")
+    @GetMapping("/list")
+    fun listKey(): Response<List<Key>> {
+        return ResponseBuilder.success(keyService.listKey())
+    }
 
-    fun getUser(userId: String): UserInfo {
-        return userResource.userInfoById(userId).data
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
+    @ApiOperation("删除公钥")
+    @DeleteMapping("/delete/{id}")
+    fun deleteKey(id: String): Response<Void> {
+        keyService.deleteKey(id)
+        return ResponseBuilder.success()
     }
 }

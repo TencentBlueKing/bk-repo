@@ -25,28 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.payload.builder
+package com.tencent.bkrepo.auth.api.cluster
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-abstract class EventPayloadBuilder(
-    open val eventType: EventType
-) {
+@Api("集群间权限服务接口")
+@Primary
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterPermissionResource")
+@RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
+interface ClusterPermissionClient {
 
-    @Autowired
-    private lateinit var userResource: ServiceUserClient
-
-    abstract fun build(event: ArtifactEvent): CommonEventPayload
-
-    fun getUser(userId: String): UserInfo {
-        return userResource.userInfoById(userId).data
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
-    }
+    @ApiOperation("校验权限")
+    @PostMapping("/check")
+    fun checkPermission(
+        @ApiParam(value = "校验权限信息")
+        @RequestBody request: CheckPermissionRequest
+    ): Response<Boolean>
 }

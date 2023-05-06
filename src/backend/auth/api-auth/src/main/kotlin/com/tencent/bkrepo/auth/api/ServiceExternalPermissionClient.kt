@@ -25,28 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.payload.builder
+package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_EXT_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
 
-abstract class EventPayloadBuilder(
-    open val eventType: EventType
-) {
+@Api(tags = ["SERVICE_EXTERNAL_PERMISSION"], description = "服务-外部权限接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceExternalPermissionResource")
+@RequestMapping(AUTH_SERVICE_EXT_PERMISSION_PREFIX)
+interface ServiceExternalPermissionClient {
 
-    @Autowired
-    private lateinit var userResource: ServiceUserClient
+    @GetMapping
+    fun listExternalPermission(): Response<List<ExternalPermission>>
 
-    abstract fun build(event: ArtifactEvent): CommonEventPayload
-
-    fun getUser(userId: String): UserInfo {
-        return userResource.userInfoById(userId).data
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
-    }
 }

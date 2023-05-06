@@ -25,28 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.payload.builder
+package com.tencent.bkrepo.auth.controller.service
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
+import com.tencent.bkrepo.auth.service.ExternalPermissionService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-abstract class EventPayloadBuilder(
-    open val eventType: EventType
-) {
+@RestController
+class ServiceExternalPermissionController(
+    private val externalPermissionService: ExternalPermissionService
+): ServiceExternalPermissionClient {
 
-    @Autowired
-    private lateinit var userResource: ServiceUserClient
-
-    abstract fun build(event: ArtifactEvent): CommonEventPayload
-
-    fun getUser(userId: String): UserInfo {
-        return userResource.userInfoById(userId).data
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
+    override fun listExternalPermission(): Response<List<ExternalPermission>> {
+        return ResponseBuilder.success(externalPermissionService.listExtPermission())
     }
 }

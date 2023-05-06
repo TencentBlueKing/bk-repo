@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -109,7 +109,7 @@ class RepositoryServiceImpl(
     private val proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
-    private val servicePermissionResource: ServicePermissionResource
+    private val servicePermissionClient: ServicePermissionClient
 ) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
@@ -155,7 +155,7 @@ class RepositoryServiceImpl(
         projectId: String,
         option: RepoListOption
     ): List<RepositoryInfo> {
-        var names = servicePermissionResource.listPermissionRepo(
+        var names = servicePermissionClient.listPermissionRepo(
             projectId = projectId,
             userId = userId,
             appId = SecurityUtils.getPlatformId()
@@ -255,7 +255,7 @@ class RepositoryServiceImpl(
         }
     }
 
-    open fun buildTRepository(
+    fun buildTRepository(
         request: RepoCreateRequest,
         repoConfiguration: RepositoryConfiguration,
         credentialsKey: String?
@@ -373,7 +373,7 @@ class RepositoryServiceImpl(
     /**
      * 检查仓库是否存在，不存在则抛异常
      */
-    open fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
@@ -552,7 +552,7 @@ class RepositoryServiceImpl(
      * 3. 如果配有匹配到，则根据仓库类型进行匹配storageCredentialsKey
      * 3. 如果以上都没匹配，则使用全局默认storageCredentialsKey
      */
-    open fun determineStorageKey(request: RepoCreateRequest): String? {
+    fun determineStorageKey(request: RepoCreateRequest): String? {
         with(repositoryProperties) {
             return if (!request.storageCredentialsKey.isNullOrBlank()) {
                 request.storageCredentialsKey

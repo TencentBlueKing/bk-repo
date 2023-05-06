@@ -31,7 +31,7 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
-import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
@@ -67,7 +67,7 @@ import java.util.concurrent.TimeUnit
 @Service
 class TemporaryScanTokenServiceImpl(
     private val scanService: ScanService,
-    private val temporaryTokenClient: ServiceTemporaryTokenResource,
+    private val temporaryTokenClient: ServiceTemporaryTokenClient,
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
     private val storageService: StorageService,

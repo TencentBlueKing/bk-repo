@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl.center
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
@@ -38,8 +38,8 @@ import org.springframework.stereotype.Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterProjectServiceImpl(
     projectDao: ProjectDao,
-    servicePermissionResource: ServicePermissionResource
+    servicePermissionClient: ServicePermissionClient
 ) : ProjectServiceImpl(
     projectDao,
-    servicePermissionResource
+    servicePermissionClient
 )
