@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders.WWW_AUTHENTICATE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -323,10 +324,10 @@ class OciRegistryRemoteRepository(
             if (!it.isSuccessful) {
                 val error = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), OciResponse::class.java)
                 logger.warn(
-                    "Could not get token from auth service," +
+                    "Could not get token from auth service ${it.request.url}," +
                         " code is ${it.code} and response is ${error.toJsonString()}"
                 )
-                return null
+                throw BadRequestException(OciMessageCode.OCI_REMOTE_CREDENTIALS_INVALID, error.toJsonString())
             }
             val bearerToken = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), BearerToken::class.java)
             return "Bearer ${bearerToken.token}"
