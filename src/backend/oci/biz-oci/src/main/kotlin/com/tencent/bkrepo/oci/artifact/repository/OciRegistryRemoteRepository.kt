@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.WWW_AUTHENTICATE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -89,6 +90,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.InputStream
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 import javax.ws.rs.core.UriBuilder
 
@@ -96,6 +98,9 @@ import javax.ws.rs.core.UriBuilder
 class OciRegistryRemoteRepository(
     private val ociOperationService: OciOperationService
 ) : RemoteRepository() {
+
+    private val clientCache = ConcurrentHashMap<RemoteConfiguration, OkHttpClient>()
+    private val tokenCache = ConcurrentHashMap<String, String>()
 
     override fun upload(context: ArtifactUploadContext) {
         with(context) {
@@ -128,20 +133,22 @@ class OciRegistryRemoteRepository(
      */
     private fun doRequest(context: ArtifactContext): Any? {
         val remoteConfiguration = context.getRemoteConfiguration()
-        // TODO client待优化
-        val httpClient = createHttpClient(remoteConfiguration, false)
+        val httpClient = clientCache.getOrPut(remoteConfiguration) {
+            createHttpClient(remoteConfiguration, false)
+        }
         val property = getRemoteUrlProperty(context)
         val downloadUrl = createRemoteDownloadUrl(context, property)
         logger.info("Remote request $downloadUrl will be sent")
-        val request = buildRequest(downloadUrl, remoteConfiguration)
+        val tokenKey = buildTokenCacheKey(remoteConfiguration.url, property.imageName)
+        val request = buildRequest(downloadUrl, remoteConfiguration, tokenCache[tokenKey])
         val response = httpClient.newCall(request).execute()
         var responseWithAuth: Response? = null
         try {
             if (response.isSuccessful) return onResponse(context, response)
             // 针对返回401进行token获取
-            val token = getAuthenticationCode(context, response, remoteConfiguration, httpClient, property.imageName)
+            val token = getAuthenticationCode(context, response, remoteConfiguration, property.imageName)
             if (token.isNullOrBlank()) return null
-            // TODO token需要缓存
+            tokenCache[tokenKey] = token
             val requestWithAuth = buildRequest(
                 url = downloadUrl,
                 configuration = remoteConfiguration,
@@ -180,7 +187,7 @@ class OciRegistryRemoteRepository(
         addBasicInterceptor: Boolean = true
     ): Request {
         val requestBuilder = Request.Builder().url(url)
-        if (addBasicInterceptor) {
+        if (addBasicInterceptor && token.isNullOrEmpty()) {
             requestBuilder.addInterceptor(configuration)
         } else {
             token?.let { requestBuilder.header(HttpHeaders.AUTHORIZATION, token) }
@@ -288,7 +295,6 @@ class OciRegistryRemoteRepository(
         context: ArtifactContext,
         response: Response,
         configuration: RemoteConfiguration,
-        httpClient: OkHttpClient,
         imageName: String
     ): String? {
         if (response.code != HttpStatus.UNAUTHORIZED.value) {
@@ -313,7 +319,7 @@ class OciRegistryRemoteRepository(
             configuration = configuration,
             addBasicInterceptor = true
         )
-        httpClient.newCall(request).execute().use {
+        clientCache[configuration]!!.newCall(request).execute().use {
             if (!it.isSuccessful) {
                 val error = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), OciResponse::class.java)
                 logger.warn(
@@ -541,6 +547,11 @@ class OciRegistryRemoteRepository(
             logger.warn("Error occurred while parsing linker, ${ignore.message}")
         }
         return n
+    }
+
+    private fun buildTokenCacheKey(remoteUrl: String, imageName: String): String {
+        val scope = getScope(remoteUrl, imageName)
+        return "$remoteUrl${CharPool.COLON}$scope"
     }
 
     companion object {
