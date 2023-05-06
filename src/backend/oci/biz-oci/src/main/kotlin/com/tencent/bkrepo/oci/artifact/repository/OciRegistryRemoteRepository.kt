@@ -139,7 +139,7 @@ class OciRegistryRemoteRepository(
         val property = getRemoteUrlProperty(context)
         val downloadUrl = createRemoteDownloadUrl(context, property)
         logger.info("Remote request $downloadUrl will be sent")
-        val tokenKey = buildTokenCacheKey(remoteConfiguration.url, property.imageName)
+        val tokenKey = buildTokenCacheKey(context.getStringAttribute(PROXY_URL)!!, property.imageName)
         val request = buildRequest(downloadUrl, remoteConfiguration, tokenCache[tokenKey])
         val response = httpClient.newCall(request).execute()
         var responseWithAuth: Response? = null
