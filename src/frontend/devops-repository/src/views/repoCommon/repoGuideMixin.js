@@ -780,7 +780,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                (this.storeType === 'virtual' || this.$route.path.startsWith('/software'))
                     ? undefined
                     : {
                         title: this.$t('delete'),
