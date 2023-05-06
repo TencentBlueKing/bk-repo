@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.service
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
+import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
+import com.tencent.bkrepo.common.api.pojo.Page
 
-@ApiModel("获取制品漏洞详情请求")
-data class ArtifactVulnerabilityRequest(
-    @ApiModelProperty("项目id")
-    var projectId: String? = null,
-    @ApiModelProperty("子任务id")
-    var subScanTaskId: String? = null,
-    @ApiModelProperty("vulId")
-    val vulId: String? = null,
-    @ApiModelProperty("漏洞等级")
-    var leakType: String? = null,
-    @ApiModelProperty("为true时将仅获取被忽略漏洞")
-    var ignored: Boolean = false,
-    @ApiModelProperty("报告类型")
-    val reportType: String = CveSecItem.TYPE,
-    @ApiModelProperty("页数")
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("每页数量")
-    val pageSize: Int = DEFAULT_PAGE_SIZE
-)
+interface FilterRuleService {
+    fun create(request: UpdateFilterRuleRequest): FilterRule
+    fun delete(ruleId: String): Boolean
+
+    fun delete(projectId: String, ruleId: String): Boolean
+
+    fun update(request: UpdateFilterRuleRequest): FilterRule
+    fun get(ruleId: String): FilterRule
+
+    fun list(request: ListFilterRuleRequest): Page<FilterRule>
+
+    /**
+     * 获取所有匹配的规则合并后返回
+     *
+     * @return 合并后的规则
+     */
+    fun match(request: MatchFilterRuleRequest): MergedFilterRule
+}

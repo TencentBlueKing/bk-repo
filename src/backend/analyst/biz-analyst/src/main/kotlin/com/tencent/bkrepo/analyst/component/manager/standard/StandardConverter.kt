@@ -35,9 +35,11 @@ import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesD
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.TOTAL
@@ -45,6 +47,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SensitiveResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -86,7 +89,8 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         val reports = result.records.mapTo(LinkedHashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
-                vulId = it.cveId ?: it.vulId,
+                vulId = it.vulId,
+                cveId = it.cveId,
                 severity = ScanPlanConverter.convertToLeakLevel(it.severity),
                 pkgName = it.pkgName ?: "",
                 installedVersion = it.pkgVersions,
@@ -105,6 +109,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         return StandardLoadResultArguments(
             licenseIds = request.licenseId?.let { listOf(it) } ?: emptyList(),
             reportType = ScanType.LICENSE.name,
+            ignored = request.ignored,
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
     }
@@ -114,27 +119,42 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
             vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
             reportType = ScanType.SECURITY.name,
-            pageLimit = PageLimit(request.pageNumber, request.pageSize)
+            pageLimit = PageLimit(request.pageNumber, request.pageSize),
+            ignored = request.ignored
         )
     }
 
     override fun convertOverview(scanExecutorResult: ScanExecutorResult): Map<String, Any?> {
-        scanExecutorResult as StandardScanExecutorResult
+        val result = (scanExecutorResult as StandardScanExecutorResult).output?.result
+        return convertOverview(result?.securityResults, result?.sensitiveResults, result?.licenseResults)
+    }
+
+    fun convertOverview(
+        securityResults: List<SecurityResult>?,
+        sensitiveResults: List<SensitiveResult>?,
+        licenseResults: List<LicenseResult>?,
+        filterRule: MergedFilterRule? = null
+    ): Map<String, Any?> {
         val overview = HashMap<String, Long>()
 
         // security统计
-        scanExecutorResult.output?.result?.securityResults?.forEach { securityResult ->
-            val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
-            overview[key] = overview.getOrDefault(key, 0L) + 1
+        securityResults?.forEach { securityResult ->
+            val severityLevel = Level.valueOf(securityResult.severity.toUpperCase()).level
+            val shouldIgnore = filterRule?.shouldIgnore(
+                securityResult.vulId, securityResult.cveId, securityResult.pkgName, severityLevel
+            )
+            if (shouldIgnore != true) {
+                val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
+                overview[key] = overview.getOrDefault(key, 0L) + 1
+            }
         }
 
         // sensitive统计
-        scanExecutorResult.output?.result?.sensitiveResults?.let {
+        sensitiveResults?.let {
             overview[OVERVIEW_KEY_SENSITIVE_TOTAL] = it.size.toLong()
         }
 
         // license统计
-        val licenseResults = scanExecutorResult.output?.result?.licenseResults
         if (licenseResults.isNullOrEmpty()) {
             return overview
         }
@@ -144,6 +164,12 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
 
         overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseResults.size.toLong()
         for (licenseResult in licenseResults) {
+            if (filterRule?.shouldIgnore(licenseResult.licenseName) == true) {
+                val total = overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] as Long
+                overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = total - 1
+                continue
+            }
+
             val detail = licensesInfo[licenseResult.licenseName.toLowerCase()]
             if (detail == null) {
                 incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)

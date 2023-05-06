@@ -16,6 +16,7 @@ export const ROUTER_NAME_NOTIFY_CREDENTIALS = 'NotifyCredentials'
 export const ROUTER_NAME_PLUGIN = 'Plugin'
 export const ROUTER_NAME_SCANNERS = 'Scanners'
 export const ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS = 'ProjectScanConfigurations'
+export const ROUTER_NAME_FILTER_RULE = 'FilterRule'
 export const ROUTER_NAME_JOB = 'Job'
 export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 
@@ -217,6 +218,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_SCANNERS,
         component: () => import('@/views/scan/Scanner'),
         meta: { title: '扫描器', icon: 'scanner' }
+      },
+      {
+        path: 'rules',
+        name: ROUTER_NAME_FILTER_RULE,
+        component: () => import('@/views/scan/FilterRule.vue'),
+        meta: { title: '过滤规则', icon: 'rule' }
       },
       {
         path: 'configurations',

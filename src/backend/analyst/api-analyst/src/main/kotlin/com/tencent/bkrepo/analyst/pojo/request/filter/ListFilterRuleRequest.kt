@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.pojo.request.filter
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("获取制品漏洞详情请求")
-data class ArtifactVulnerabilityRequest(
-    @ApiModelProperty("项目id")
-    var projectId: String? = null,
-    @ApiModelProperty("子任务id")
-    var subScanTaskId: String? = null,
-    @ApiModelProperty("vulId")
-    val vulId: String? = null,
-    @ApiModelProperty("漏洞等级")
-    var leakType: String? = null,
-    @ApiModelProperty("为true时将仅获取被忽略漏洞")
-    var ignored: Boolean = false,
-    @ApiModelProperty("报告类型")
-    val reportType: String = CveSecItem.TYPE,
-    @ApiModelProperty("页数")
+@ApiModel("分页获取忽略规则请求")
+data class ListFilterRuleRequest(
+    @ApiModelProperty("项目，空字符串表示列出系统级规则")
+    val projectId: String,
+    @ApiModelProperty("扫描方案id")
+    val planId: String? = null,
+    @ApiModelProperty("页码")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("每页数量")
-    val pageSize: Int = DEFAULT_PAGE_SIZE
+    @ApiModelProperty("页大小")
+    val pageSize: Int = DEFAULT_PAGE_SIZE,
 )
