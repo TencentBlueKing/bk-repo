@@ -94,9 +94,9 @@ interface ClusterNodeClient {
 
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")
-    fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+    fun deleteNodes(@RequestBody nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
     @PostMapping("/restore")
-    fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult>
+    fun restoreNode(@RequestBody nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult>
 }
