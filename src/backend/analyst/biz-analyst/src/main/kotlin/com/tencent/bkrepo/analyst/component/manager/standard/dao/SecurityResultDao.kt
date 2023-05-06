@@ -41,14 +41,31 @@ import org.springframework.stereotype.Repository
 @Repository
 class SecurityResultDao : ResultItemDao<TSecurityResult>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        require(arguments is StandardLoadResultArguments)
-        if (arguments.vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TSecurityResultData::severity.name)).inValues(arguments.vulnerabilityLevels)
+        with(arguments as StandardLoadResultArguments) {
+            val andCriteria = ArrayList<Criteria>()
+            if (vulnerabilityLevels.isNotEmpty()) {
+                andCriteria.add(Criteria(dataKey(TSecurityResultData::severity.name)).inValues(vulnerabilityLevels))
+            }
+
+            if (vulIds.isNotEmpty()) {
+                andCriteria.add(
+                    Criteria().orOperator(
+                        Criteria(dataKey(TSecurityResultData::vulId.name)).inValues(vulIds),
+                        Criteria(dataKey(TSecurityResultData::cveId.name)).inValues(vulIds)
+                    )
+                )
+            }
+
+            val filterCriteria = SecurityFilterCriteriaBuilder(rule, ignored).build()
+            if (filterCriteria.isNotEmpty()) {
+                andCriteria.addAll(filterCriteria)
+            }
+            if (andCriteria.isNotEmpty()) {
+                criteria.andOperator(andCriteria)
+            }
+
+            return criteria
         }
-        if (arguments.vulIds.isNotEmpty()) {
-            criteria.and(dataKey(TSecurityResultData::vulId.name)).inValues(arguments.vulIds)
-        }
-        return criteria
     }
 
     override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {

@@ -79,7 +79,7 @@ open class AbstractServiceImpl constructor(
         return true
     }
 
-    // check user is exist
+    // check user is existed
     private fun checkUserExistBatch(idList: List<String>) {
         idList.forEach {
             userRepository.findFirstByUserId(it) ?: run {
@@ -89,7 +89,7 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    // check role is exist
+    // check role is existed
     fun checkRoleExist(roleId: String) {
         val role = roleRepository.findTRoleById(ObjectId(roleId))
         role ?: run {

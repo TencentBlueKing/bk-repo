@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.webhook.payload.builder
 
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
@@ -41,7 +41,7 @@ abstract class EventPayloadBuilder(
 ) {
 
     @Autowired
-    private lateinit var userResource: ServiceUserResource
+    private lateinit var userResource: ServiceUserClient
 
     abstract fun build(event: ArtifactEvent): CommonEventPayload
 

@@ -60,6 +60,14 @@ data class SubScanTask(
      */
     val repoType: String,
     /**
+     * 包名
+     */
+    val packageKey: String? = null,
+    /**
+     * 包版本
+     */
+    val version: String? = null,
+    /**
      * 文件完整路径
      */
     val fullPath: String,

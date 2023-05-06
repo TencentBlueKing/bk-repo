@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.oci.artifact.OciRegistryArtifactConfigurer
 import com.tencent.bkrepo.oci.constant.FORCE
 import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
@@ -67,6 +68,7 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -296,6 +298,25 @@ class OciRegistryLocalRepository(
         val artifactInfo = context.artifactInfo as OciArtifactInfo
         val fullPath = ociOperationService.getNodeFullPath(artifactInfo)
         return downloadArtifact(context, fullPath)
+    }
+
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): PackageDownloadRecord? {
+        val artifactInfo = context.artifactInfo as OciArtifactInfo
+        if (context.artifactInfo !is OciManifestArtifactInfo) return null
+        if (context.request.method == HttpMethod.HEAD.name) {
+            return null
+        }
+        val node = ArtifactContextHolder.getNodeDetail()
+        val version = node!!.metadata[IMAGE_VERSION]?.toString() ?: return null
+        return PackageDownloadRecord(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            packageKey = PackageKeys.ofName(context.repo.type, artifactInfo.packageName),
+            packageVersion = version
+        )
     }
 
     /**

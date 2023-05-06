@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceRoleResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceRoleClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -95,13 +95,13 @@ open class ServiceBaseTest {
     lateinit var storageService: StorageService
 
     @MockBean
-    lateinit var roleResource: ServiceRoleResource
+    lateinit var roleResource: ServiceRoleClient
 
     @MockBean
-    lateinit var userResource: ServiceUserResource
+    lateinit var userResource: ServiceUserClient
 
     @MockBean
-    lateinit var servicePermissionResource: ServicePermissionResource
+    lateinit var servicePermissionClient: ServicePermissionClient
 
     @MockBean
     lateinit var permissionManager: PermissionManager
@@ -130,14 +130,14 @@ open class ServiceBaseTest {
             ResponseBuilder.success()
         )
 
-        whenever(servicePermissionResource.listPermissionProject(anyString())).thenReturn(
+        whenever(servicePermissionClient.listPermissionProject(anyString())).thenReturn(
             ResponseBuilder.success()
         )
 
-        whenever(servicePermissionResource.checkPermission(any())).thenReturn(
+        whenever(servicePermissionClient.checkPermission(any())).thenReturn(
             ResponseBuilder.success()
         )
-        whenever(servicePermissionResource.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
+        whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success()
         )
 

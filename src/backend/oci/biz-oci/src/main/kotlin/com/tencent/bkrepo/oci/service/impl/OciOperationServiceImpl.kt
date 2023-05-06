@@ -147,13 +147,15 @@ class OciOperationServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        metadata: MutableMap<String, Any>
+        metadata: MutableMap<String, Any>,
+        userId: String
     ) {
         val metadataSaveRequest = ObjectBuildUtils.buildMetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
-            metadata = metadata
+            metadata = metadata,
+            userId = userId
         )
         metadataClient.saveMetadata(metadataSaveRequest)
     }
@@ -511,7 +513,8 @@ class OciOperationServiceImpl(
                 projectId = request.projectId,
                 repoName = request.repoName,
                 fullPath = request.fullPath,
-                metadata = mutableMapOf(PROXY_URL to proxyUrl)
+                metadata = mutableMapOf(PROXY_URL to proxyUrl),
+                userId = SecurityUtils.getUserId()
             )
         }
         return nodeDetail
@@ -664,7 +667,8 @@ class OciOperationServiceImpl(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
-            metadata = metadata
+            metadata = metadata,
+            userId = SecurityUtils.getUserId()
         )
     }
 
@@ -887,7 +891,8 @@ class OciOperationServiceImpl(
             repoName = repoName,
             packageKey = packageKey,
             version = version,
-            metadata = metadata
+            metadata = metadata,
+            userId = SecurityUtils.getUserId()
         )
         packageMetadataClient.saveMetadata(metadataSaveRequest)
     }

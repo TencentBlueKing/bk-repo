@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.security.http.temporary
 
-import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
@@ -53,7 +53,7 @@ open class TemporaryTokenAuthHandler(
     private val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
 
-    private val temporaryTokenClient by lazy { SpringContextUtils.getBean<ServiceTemporaryTokenResource>() }
+    private val temporaryTokenClient by lazy { SpringContextUtils.getBean<ServiceTemporaryTokenClient>() }
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty().trim()

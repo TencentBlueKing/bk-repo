@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.repository.listener
 
-import com.tencent.bkrepo.auth.api.ServiceRoleResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServiceRoleClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
@@ -47,8 +47,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ResourcePermissionListener(
-    private val roleResource: ServiceRoleResource,
-    private val userResource: ServiceUserResource
+    private val roleResource: ServiceRoleClient,
+    private val userResource: ServiceUserClient
 ) {
 
     /**
