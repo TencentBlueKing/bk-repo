@@ -51,6 +51,8 @@ class StandardScanner(
     companion object {
         const val TYPE = "standard"
         const val ARG_KEY_PKG_TYPE = "packageType"
+        const val ARG_KEY_PKG_KEY = "packageKey"
+        const val ARG_KEY_PKG_VERSION = "packageVersion"
         const val ARG_KEY_MAX_TIME = "maxTime"
     }
 

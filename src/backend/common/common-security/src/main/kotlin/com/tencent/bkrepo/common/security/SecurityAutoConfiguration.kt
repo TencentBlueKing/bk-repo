@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.common.security
 
-import com.tencent.bkrepo.auth.api.ServiceExternalPermissionResource
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
@@ -69,9 +69,9 @@ class SecurityAutoConfiguration {
     @Bean
     fun permissionManager(
         repositoryClient: RepositoryClient,
-        permissionResource: ServicePermissionResource,
-        externalPermissionResource: ServiceExternalPermissionResource,
-        userResource: ServiceUserResource,
+        permissionResource: ServicePermissionClient,
+        externalPermissionResource: ServiceExternalPermissionClient,
+        userResource: ServiceUserClient,
         nodeClient: NodeClient,
         clusterProperties: ClusterProperties
     ): PermissionManager {

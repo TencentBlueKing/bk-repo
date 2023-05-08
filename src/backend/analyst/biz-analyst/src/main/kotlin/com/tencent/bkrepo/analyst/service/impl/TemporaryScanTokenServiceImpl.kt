@@ -31,7 +31,7 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
-import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
@@ -67,7 +67,7 @@ import java.util.concurrent.TimeUnit
 @Service
 class TemporaryScanTokenServiceImpl(
     private val scanService: ScanService,
-    private val temporaryTokenClient: ServiceTemporaryTokenResource,
+    private val temporaryTokenClient: ServiceTemporaryTokenClient,
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
     private val storageService: StorageService,
@@ -135,7 +135,8 @@ class TemporaryScanTokenServiceImpl(
                 value.copy(url = url)
             }
 
-            return ToolInput.create(taskId, scanner, repoType, subtask.packageSize, fileUrls)
+            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version)
+            return ToolInput.create(taskId, fileUrls, args)
         }
     }
 
@@ -143,7 +144,7 @@ class TemporaryScanTokenServiceImpl(
         return if (repoType == RepositoryType.DOCKER.name) {
             val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
             val manifestContent = storageService.load(sha256, Range.full(size), storageCredentials)?.readText()
-                ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [${projectId}:${repoName}:${fullPath}] not found")
+                ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [$projectId:$repoName:$fullPath] not found")
             val schemeVersion = OciUtils.schemeVersion(manifestContent)
             val fullPaths = LinkedHashMap<String, FileUrl>()
             // 将manifest下载链接加入fullPaths列表，需要保证map第一项是manifest文件

@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.webhook.service
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.dao.WebHookDao
@@ -50,8 +50,8 @@ import org.springframework.test.context.TestPropertySource
     EventPayloadFactory::class,
     WebHookProperties::class,
     WebHookMetrics::class,
-    ServicePermissionResource::class,
-    ServiceUserResource::class
+    ServicePermissionClient::class,
+    ServiceUserClient::class
 )
 @ComponentScan("com.tencent.bkrepo.webhook.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
@@ -60,13 +60,11 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var permissionManager: PermissionManager
 
-    @MockBean
-    lateinit var serviceUserResource: ServiceUserResource
 
     @MockBean
-    lateinit var servicePermissionResource: ServicePermissionResource
+    lateinit var servicePermissionClient: ServicePermissionClient
 
     fun initMock() {
-        whenever(servicePermissionResource.checkPermission(any())).thenReturn(null)
+        whenever(servicePermissionClient.checkPermission(any())).thenReturn(null)
     }
 }

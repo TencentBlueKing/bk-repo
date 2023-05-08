@@ -2,6 +2,7 @@ import request from '@/utils/request'
 
 const PREFIX_SCAN = '/analyst/api/scan'
 const PREFIX_SCANNER = '/analyst/api/scanners'
+const PREFIX_FILTER_RULE = '/analyst/api/filter/rules'
 const PREFIX_PROJECT_SCAN_CONFIGURATION = `${PREFIX_SCAN}/configurations`
 
 export const SCANNER_DISPATCHER_K8S = 'k8s'
@@ -23,6 +24,18 @@ export const scanTypes = [
 ]
 
 export const dispatchers = [SCANNER_DISPATCHER_K8S, SCANNER_DISPATCHER_DOCKER]
+
+export const RULE_TYPE_IGNORE = 0
+export const RULE_TYPE_INCLUDE = 1
+
+// 通过漏洞ID过滤
+export const FILTER_METHOD_VUL_ID = 0
+
+// 通过漏洞等级过滤
+export const FILTER_METHOD_SEVERITY = 1
+
+// 通过风险组件名过滤
+export const FILTER_METHOD_RISKY_COMPONENT = 2
 
 export function createScanner(scanner) {
   return request({
@@ -121,6 +134,40 @@ export function projectScanConfigurations(pageNumber, pageSize, projectId) {
       pageNumber,
       pageSize,
       projectId
+    }
+  })
+}
+
+export function createFilterRule(rule) {
+  return request({
+    url: `${PREFIX_FILTER_RULE}`,
+    method: 'post',
+    data: rule
+  })
+}
+
+export function deleteFilterRule(ruleId) {
+  return request({
+    url: `${PREFIX_FILTER_RULE}/${ruleId}`,
+    method: 'delete'
+  })
+}
+
+export function updateFilterRule(rule) {
+  return request({
+    url: `${PREFIX_FILTER_RULE}/${rule.id}`,
+    method: 'put',
+    data: rule
+  })
+}
+
+export function getFilterRules(pageNumber, pageSize) {
+  return request({
+    url: `${PREFIX_FILTER_RULE}`,
+    method: 'get',
+    params: {
+      pageNumber,
+      pageSize
     }
   })
 }
