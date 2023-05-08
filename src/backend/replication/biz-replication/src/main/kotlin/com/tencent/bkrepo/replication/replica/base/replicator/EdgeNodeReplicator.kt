@@ -128,7 +128,7 @@ class EdgeNodeReplicator(
                         // 当不支持分块上传时，降级为普通上传
                         if (
                             throwable is ArtifactPushException &&
-                            throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value
+                            (throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value || throwable.code == HttpStatus.UNAUTHORIZED.value )
                         ) {
                             type = PUSH_WITH_DEFAULT
                         }
