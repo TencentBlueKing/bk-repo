@@ -113,7 +113,7 @@
                     <bk-table-column :label="$t('scanCompletionTime')" width="150">
                         <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('operation')" width="70">
+                    <bk-table-column :label="$t('operation')" width="100">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[

@@ -27,21 +27,6 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
@@ -60,7 +45,9 @@ import com.tencent.bkrepo.analyst.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.analyst.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
+import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultDetail
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultOverview
@@ -68,11 +55,27 @@ import com.tencent.bkrepo.analyst.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.analyst.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
+import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
@@ -90,7 +93,8 @@ class ScanTaskServiceImpl(
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
     private val resultManagers: Map<String, ScanExecutorResultManager>,
-    private val scannerConverters: Map<String, ScannerConverter>
+    private val scannerConverters: Map<String, ScannerConverter>,
+    private val filterRuleService: FilterRuleService
 ) : ScanTaskService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -175,8 +179,13 @@ class ScanTaskServiceImpl(
             val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
 
             val scanner = scannerService.get(scanner)
+            val matchFilterRuleRequest = MatchFilterRuleRequest(
+                projectId = node.projectId,
+                repoName = node.repoName,
+                fullPath = node.fullPath
+            )
             val scanResultDetail = resultManagers[scanner.type]?.load(
-                repo.storageCredentialsKey, node.sha256!!, scanner, arguments
+                repo.storageCredentialsKey, node.sha256!!, scanner, addFilterRule(matchFilterRuleRequest, arguments)
             )
             val status = if (scanResultDetail == null) {
                 subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
@@ -262,6 +271,15 @@ class ScanTaskServiceImpl(
         val subtask = subScanTaskDao.findById(subtaskId)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
 
+        val matchFilterRuleRequest = MatchFilterRuleRequest(
+            projectId = subtask.projectId,
+            repoName = subtask.repoName,
+            planId = subtask.planId,
+            fullPath = subtask.fullPath,
+            packageKey = subtask.packageKey,
+            packageVersion = subtask.version
+        )
+
         try {
             permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         } catch (e: RepoNotFoundException) {
@@ -271,7 +289,7 @@ class ScanTaskServiceImpl(
 
         val scanner = scannerService.get(subtask.scanner)
         val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)] ?: return null
-        val arguments = convertToArgs(scannerConverter, request)
+        val arguments = addFilterRule(matchFilterRuleRequest, convertToArgs(scannerConverter, request))
         val scanResultManager = resultManagers[subtask.scannerType]
         return scanResultManager
             ?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
@@ -286,5 +304,16 @@ class ScanTaskServiceImpl(
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
         permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         return ScanLicenseConverter.convert(subtask)
+    }
+
+    private fun addFilterRule(
+        request: MatchFilterRuleRequest,
+        arguments: LoadResultArguments
+    ): LoadResultArguments {
+        if (arguments is StandardLoadResultArguments) {
+            val rule = filterRuleService.match(request)
+            return arguments.copy(rule = rule)
+        }
+        return arguments
     }
 }

@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.common.security.manager.edge
 
-import com.tencent.bkrepo.auth.api.ClusterPermissionResource
-import com.tencent.bkrepo.auth.api.ClusterUserResource
-import com.tencent.bkrepo.auth.api.ServiceExternalPermissionResource
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.cluster.ClusterPermissionClient
+import com.tencent.bkrepo.auth.api.cluster.ClusterUserClient
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
@@ -41,9 +41,9 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 
 class EdgePermissionManager(
     repositoryClient: RepositoryClient,
-    permissionResource: ServicePermissionResource,
-    externalPermissionResource: ServiceExternalPermissionResource,
-    userResource: ServiceUserResource,
+    permissionResource: ServicePermissionClient,
+    externalPermissionResource: ServiceExternalPermissionClient,
+    userResource: ServiceUserClient,
     nodeClient: NodeClient,
     clusterProperties: ClusterProperties
 ) : PermissionManager(
@@ -54,9 +54,9 @@ class EdgePermissionManager(
     nodeClient
 ) {
 
-    private val centerPermissionClient: ClusterPermissionResource
+    private val centerPermissionClient: ClusterPermissionClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "auth", clusterProperties.self.name) }
-    private val centerUserClient: ClusterUserResource
+    private val centerUserClient: ClusterUserClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "auth", clusterProperties.self.name) }
 
     override fun checkPermissionFromAuthService(request: CheckPermissionRequest): Boolean? {

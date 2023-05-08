@@ -42,6 +42,8 @@ data class ArtifactLicensesDetailRequest(
     val licenseId: String? = null,
     @ApiModelProperty("风险等级")
     val riskLevel: String? = null,
+    @ApiModelProperty("是否仅包含被忽略的许可证")
+    val ignored: Boolean = false,
     @ApiModelProperty("页数")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     @ApiModelProperty("每页数量")

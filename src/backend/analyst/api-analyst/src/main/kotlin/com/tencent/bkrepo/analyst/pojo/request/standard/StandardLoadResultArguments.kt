@@ -27,13 +27,14 @@
 
 package com.tencent.bkrepo.analyst.pojo.request.standard
 
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.query.model.PageLimit
 import io.swagger.annotations.ApiModelProperty
 
 @Suppress("LongParameterList")
-class StandardLoadResultArguments(
+data class StandardLoadResultArguments(
     @ApiModelProperty("需要的cve列表")
     val vulIds: List<String> = emptyList(),
     @ApiModelProperty("需要的漏洞严重性等级列表")
@@ -47,5 +48,9 @@ class StandardLoadResultArguments(
     @ApiModelProperty("扫描结果类型")
     val reportType: String,
     @ApiModelProperty("分页参数")
-    val pageLimit: PageLimit = PageLimit()
+    val pageLimit: PageLimit = PageLimit(),
+    @ApiModelProperty("漏洞过滤规则")
+    val rule: MergedFilterRule? = null,
+    @ApiModelProperty("是否仅包含被忽略的结果")
+    val ignored: Boolean = false
 ) : LoadResultArguments(StandardScanner.TYPE)

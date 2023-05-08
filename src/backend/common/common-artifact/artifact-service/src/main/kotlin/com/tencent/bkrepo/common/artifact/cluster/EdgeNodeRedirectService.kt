@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.cluster
 
-import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenResource
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -56,7 +56,7 @@ import org.springframework.http.HttpMethod
 class EdgeNodeRedirectService(
     private val clusterProperties: ClusterProperties,
     private val clusterNodeClient: ClusterNodeClient,
-    private val temporaryTokenClient: ServiceTemporaryTokenResource,
+    private val temporaryTokenClient: ServiceTemporaryTokenClient,
 ) {
 
     /**

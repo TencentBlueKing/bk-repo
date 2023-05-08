@@ -51,7 +51,7 @@
             <bk-table-column :label="$t('lastScanTime')">
                 <template #default="{ row }">{{formatDate(row.lastScanDate)}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
+            <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <operation-list
                         :list="[

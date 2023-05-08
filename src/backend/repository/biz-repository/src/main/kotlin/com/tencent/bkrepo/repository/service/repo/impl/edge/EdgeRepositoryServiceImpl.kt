@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl.edge
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
@@ -59,7 +59,7 @@ class EdgeRepositoryServiceImpl(
     proxyChannelService: ProxyChannelService,
     repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
-    servicePermissionResource: ServicePermissionResource,
+    servicePermissionClient: ServicePermissionClient,
     clusterProperties: ClusterProperties
 ) : RepositoryServiceImpl(
     repositoryDao,
@@ -69,7 +69,7 @@ class EdgeRepositoryServiceImpl(
     proxyChannelService,
     repositoryProperties,
     messageSupplier,
-    servicePermissionResource
+    servicePermissionClient
 ) {
 
     private val centerRepoClient: ClusterRepositoryClient by lazy {

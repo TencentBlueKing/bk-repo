@@ -184,6 +184,8 @@ object SubtaskConverter {
             projectId = projectId,
             repoName = repoName,
             repoType = repoType,
+            packageKey = packageKey,
+            version = version,
             fullPath = fullPath,
             sha256 = sha256,
             size = size,
