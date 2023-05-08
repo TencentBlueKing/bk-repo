@@ -73,4 +73,8 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         val query = PackageQueryHelper.versionLatestQuery(packageId)
         return this.findOne(query)
     }
+
+    fun countVersion(packageId: String): Long {
+        return this.count(PackageQueryHelper.versionQuery(packageId))
+    }
 }
