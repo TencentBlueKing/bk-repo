@@ -228,7 +228,8 @@ class ClusterReplicator(
                             // 兼容接口不存在时，会返回401
                             if (
                                 throwable is ArtifactPushException &&
-                                (throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value || throwable.code == HttpStatus.UNAUTHORIZED.value )
+                                (throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value ||
+                                    throwable.code == HttpStatus.UNAUTHORIZED.value )
                             ) {
                                 type = PUSH_WITH_DEFAULT
                             }
