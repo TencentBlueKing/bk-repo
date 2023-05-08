@@ -31,17 +31,15 @@
     import { mapActions } from 'vuex'
     import { SCAN_TYPE_LICENSE, SCAN_TYPE_SECURITY } from '../../../store/publicEnum'
     import moment from 'moment'
+    import { before, zeroTime } from '@repository/utils/date'
     const nowTime = moment()
-    const before7Time = moment().subtract(7, 'days')
-    const before15Time = moment().subtract(15, 'days')
-    const before30Time = moment().subtract(30, 'days')
     export default {
         props: {
             scanPlan: Object
         },
         data () {
             return {
-                filterTime: [moment([before30Time.year(), before30Time.month(), before30Time.date()]).toDate(), nowTime.toDate()],
+                filterTime: [zeroTime(before(30)), nowTime.toDate()],
                 overview: {
                     artifactCount: 0,
                     critical: 0,
@@ -57,19 +55,19 @@
                     {
                         text: this.$t('last 7 days'),
                         value () {
-                            return [moment([before7Time.year(), before7Time.month(), before7Time.date()]).toDate(), nowTime.toDate()]
+                            return [zeroTime(before(7)), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 15 days'),
                         value () {
-                            return [moment([before15Time.year(), before15Time.month(), before15Time.date()]).toDate(), nowTime.toDate()]
+                            return [zeroTime(before(15)), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 30 days'),
                         value () {
-                            return [moment([before30Time.year(), before30Time.month(), before30Time.date()]).toDate(), nowTime.toDate()]
+                            return [zeroTime(before(30)), nowTime.toDate()]
                         }
                     }
                 ]
