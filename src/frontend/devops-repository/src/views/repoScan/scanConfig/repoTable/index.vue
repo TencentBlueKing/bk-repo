@@ -60,7 +60,7 @@
             repoListLimit () {
                 const repoTypeLimit = [this.scanType.replace(/^([A-Z]+).*$/, '$1')]
                 return this.repoListAll
-                    .filter(r => repoTypeLimit.includes(r.type))
+                    .filter(r => repoTypeLimit.includes(r.type) && r.category !== 'VIRTUAL')
                     .sort((a, b) => {
                         return Boolean(a.type > b.type) || -1
                     })

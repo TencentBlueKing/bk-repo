@@ -81,7 +81,7 @@
             repoGroupList () {
                 const repoTypeLimit = [this.scanType.replace(/^([A-Z]+).*$/, '$1')]
                 return this.repoListAll
-                    .filter(r => repoTypeLimit.includes(r.type))
+                    .filter(r => repoTypeLimit.includes(r.type) && r.category !== 'VIRTUAL')
                     .reduce((target, repo) => {
                         if (!target[repo.type]) target[repo.type] = []
                         target[repo.type].push(repo)
