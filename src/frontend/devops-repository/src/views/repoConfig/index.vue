@@ -12,11 +12,17 @@
                     <bk-form-item :label="$t('repoAddress')">
                         <span>{{repoAddress}}</span>
                     </bk-form-item>
-                    <bk-form-item label="访问权限">
+                    <bk-form-item :label="$t('accessPermission')">
                         <card-radio-group
                             v-model="available"
                             :list="availableList">
                         </card-radio-group>
+                    </bk-form-item>
+                    <bk-form-item :label="$t('isDisplay')">
+                        <bk-radio-group v-model="repoBaseInfo.display">
+                            <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                            <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                        </bk-radio-group>
                     </bk-form-item>
                     <bk-form-item label="蓝鲸权限校验">
                         <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
@@ -88,7 +94,7 @@
                             maxlength="200"
                             :rows="6"
                             v-model.trim="repoBaseInfo.description"
-                            :placeholder="$t('repoDescriptionPlacehodler')">
+                            :placeholder="$t('repoDescriptionPlaceholder')">
                         </bk-input>
                     </bk-form-item>
                     <bk-form-item>
@@ -171,6 +177,7 @@
                     public: false,
                     system: false,
                     repoType: '',
+                    display: true,
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
@@ -247,9 +254,9 @@
             },
             availableList () {
                 return [
-                    { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
+                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
+                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
                 ]
             },
             rules () {
@@ -257,7 +264,7 @@
                     repodataDepth: [
                         {
                             regex: /^(0|[1-9][0-9]*)$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('repodataDepth'),
                             trigger: 'blur'
                         }
                     ],
@@ -268,7 +275,7 @@
                                     return /\.xml$/.test(v)
                                 })
                             },
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('groupXmlSet') + this.$t('space') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
                         }
                     ],
@@ -386,6 +393,7 @@
                 const body = {
                     public: this.repoBaseInfo.public,
                     description: this.repoBaseInfo.description,
+                    display: this.repoBaseInfo.display,
                     configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
@@ -413,7 +421,7 @@
                     this.getRepoInfoHandler()
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('save') + this.$t('success')
+                        message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
                 }).catch(err => {
                     if (err.status === 403) {
