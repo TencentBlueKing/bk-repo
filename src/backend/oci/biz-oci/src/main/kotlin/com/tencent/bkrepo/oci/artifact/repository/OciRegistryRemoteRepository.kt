@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.oci.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.WWW_AUTHENTICATE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -49,7 +50,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.oci.constant.BEARER_REALM
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
@@ -57,6 +57,7 @@ import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.SCOPE
 import com.tencent.bkrepo.oci.constant.SERVICE
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
@@ -94,7 +95,7 @@ class OciRegistryRemoteRepository(
         with(context) {
             val message = "Forbidden to upload chart into a remote repository [$projectId/$repoName]"
             logger.warn(message)
-            throw OciForbiddenRequestException(message)
+            throw OciForbiddenRequestException(OciMessageCode.OCI_FILE_UPLOAD_FORBIDDEN, "$projectId|$repoName")
         }
     }
 

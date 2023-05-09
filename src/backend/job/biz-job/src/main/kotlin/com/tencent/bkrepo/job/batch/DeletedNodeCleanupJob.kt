@@ -27,17 +27,22 @@
 
 package com.tencent.bkrepo.job.batch
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.tencent.bkrepo.job.ID
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.job.CREDENTIALS
+import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
-import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
+import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -56,15 +61,9 @@ import java.time.LocalDateTime
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val fileReferenceClient: FileReferenceClient
-) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
-
-    private val repoCache = CacheBuilder.newBuilder()
-        .maximumSize(SHARDING_COUNT.toLong())
-        .build(object : CacheLoader<Pair<String, String>, Repository?>() {
-            override fun load(key: Pair<String, String>): Repository? = queryRepository(key)
-        })
-
+    private val fileReferenceClient: FileReferenceClient,
+    private val clusterProperties: ClusterProperties
+) : MongoDbBatchJob<DeletedNodeCleanupJob.Repository, DeletedNodeCleanupJobContext>(properties) {
 
     data class Node(
         val id: String,
@@ -72,90 +71,119 @@ class DeletedNodeCleanupJob(
         val repoName: String,
         val folder: Boolean,
         val sha256: String?,
-        val deleted: LocalDateTime?
+        val deleted: LocalDateTime?,
+        val clusterNames: List<String>?
     )
 
     data class Repository(
+        val id: String,
         val projectId: String,
         val name: String,
-        val credentialsKey: String?
+        val credentialsKey: String?,
+        val deleted: LocalDateTime?
     )
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
+    override fun createJobContext(): DeletedNodeCleanupJobContext {
+        return DeletedNodeCleanupJobContext(
+            expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays),
+        )
+    }
+
     override fun collectionNames(): List<String> {
-        val collectionNames = mutableListOf<String>()
-        for (i in 0 until SHARDING_COUNT) {
-            collectionNames.add("$COLLECTION_NAME_PREFIX$i")
-        }
-        return collectionNames
+        return listOf(COLLECTION_REPOSITORY)
     }
 
     override fun buildQuery(): Query {
-        val expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays)
-        return Query.query(where(Node::deleted).lt(expireDate))
+        return Query()
     }
 
-    override fun mapToEntity(row: Map<String, Any?>): Node {
-        return Node(
-            id = row[Node::id.name].toString(),
-            projectId = row[Node::projectId.name].toString(),
-            repoName = row[Node::repoName.name].toString(),
-            folder = row[Node::folder.name].toString().toBoolean(),
-            sha256 = row[Node::sha256.name]?.toString(),
-            deleted = TimeUtils.parseMongoDateTimeStr(row[Node::deleted.name].toString())
+    override fun mapToEntity(row: Map<String, Any?>): Repository {
+        return Repository(
+            id = row[ID].toString(),
+            projectId = row[PROJECT].toString(),
+            name = row[Repository::name.name].toString(),
+            credentialsKey = row[CREDENTIALS]?.toString(),
+            deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
         )
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): Class<Repository> {
+        return Repository::class.java
     }
 
-    override fun run(row: Node, collectionName: String, context: JobContext) {
+    override fun run(row: Repository, collectionName: String, context: DeletedNodeCleanupJobContext) {
+        val query = buildNodeQuery(row.projectId, row.name, context.expireDate)
+        val nodeCollectionName = COLLECTION_NODE_PREFIX +
+            MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
+        while (true) {
+            val deletedNodeList =
+                mongoTemplate.find(query, Node::class.java, nodeCollectionName).takeIf { it.isNotEmpty() } ?: break
+            logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${row.projectId}/${row.name}")
+            deletedNodeList.forEach { node ->
+                cleanUpNode(row, node, nodeCollectionName)
+                if (node.folder) {
+                    context.folderCount.incrementAndGet()
+                } else {
+                    context.fileCount.incrementAndGet()
+                }
+            }
+        }
+        // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
+        if (row.deleted != null &&
+            mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L
+        ) {
+            val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
+            mongoTemplate.remove(repoQuery, collectionName)
+            context.repoDeleteCount.incrementAndGet()
+            logger.info("Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining")
+        }
+    }
+
+    private fun cleanUpNode(repo: Repository, node: Node, nodeCollectionName: String) {
         var fileReferenceChanged = false
         try {
-            val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
-            mongoTemplate.remove(nodeQuery, collectionName)
-            if (!row.folder) {
-                fileReferenceChanged = decrementFileReference(row)
+            val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(node.id))
+            mongoTemplate.remove(nodeQuery, nodeCollectionName)
+            if (!node.folder
+                && (node.clusterNames == null || node.clusterNames.contains(clusterProperties.self.name))
+            ) {
+                fileReferenceChanged = decrementFileReference(node, repo)
             }
         } catch (ignored: Exception) {
-            logger.error("Clean up deleted node[$row] failed in collection[$collectionName].", ignored)
+            logger.error("Clean up deleted node[$node] failed in collection[$nodeCollectionName].", ignored)
             if (fileReferenceChanged) {
-                incrementFileReference(row)
+                incrementFileReference(node, repo)
             }
         }
     }
 
-    private fun decrementFileReference(node: Node): Boolean {
+    private fun buildNodeQuery(projectId: String, repoName: String, deletedBefore: LocalDateTime? = null): Query {
+        val criteria = where(Node::projectId).isEqualTo(projectId)
+            .and(Node::repoName).isEqualTo(repoName)
+        deletedBefore?.let { criteria.and(Node::deleted).lt(it) }
+        return Query.query(criteria).with(PageRequest.of(0, PAGE_SIZE))
+    }
+
+    private fun decrementFileReference(node: Node, repo: Repository): Boolean {
+        if (node.sha256.isNullOrBlank() || node.sha256 == FAKE_SHA256) {
+            return false
+        }
+        return fileReferenceClient.decrement(node.sha256, repo.credentialsKey).data!!
+    }
+
+    private fun incrementFileReference(node: Node, repo: Repository): Boolean {
         if (node.sha256.isNullOrBlank()) {
             return false
         }
-        val credentialsKey = repoCache.get(Pair(node.projectId, node.repoName))?.credentialsKey
-        return fileReferenceClient.decrement(node.sha256, credentialsKey).data!!
+        return fileReferenceClient.increment(node.sha256, repo.credentialsKey).data!!
     }
-
-    private fun incrementFileReference(node: Node): Boolean {
-        if (node.sha256.isNullOrBlank()) {
-            return false
-        }
-        val credentialsKey = repoCache.get(Pair(node.projectId, node.repoName))?.credentialsKey
-        return fileReferenceClient.increment(node.sha256, credentialsKey).data!!
-    }
-
-    private fun queryRepository(cacheKey: Pair<String, String>): Repository? {
-        val (projectId, repoName) = cacheKey
-        val query = Query.query(
-            where(Repository::projectId).isEqualTo(projectId)
-                .and(Repository::name).isEqualTo(repoName)
-        )
-        return mongoTemplate.findOne(query, Repository::class.java, COLLECTION_REPOSITORY)
-    }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(DeletedNodeCleanupJob::class.java)
-        private const val COLLECTION_NAME_PREFIX = "node_"
+        private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_REPOSITORY = "repository"
+        private const val PAGE_SIZE = 1000
     }
 }

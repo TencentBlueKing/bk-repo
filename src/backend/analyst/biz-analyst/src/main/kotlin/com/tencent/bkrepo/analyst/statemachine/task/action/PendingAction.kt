@@ -54,6 +54,7 @@ import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.analyst.utils.RuleConverter
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -115,7 +116,8 @@ class PendingAction(
             val plan = planId?.let { scanPlanDao.get(it) }
             val projectId = projectId(rule, plan)
             val repoNames = RuleUtil.getRepoNames(rule)
-            val metadata = customMetadata(metadata, projectId, plan?.scanner ?: scanner!!)
+            val scanner = scannerService.get(scanner ?: plan!!.scanner)
+            val metadata = customMetadata(metadata, projectId, scanner)
 
             // 校验权限
             if (userId != null) {
@@ -127,7 +129,6 @@ class PendingAction(
             }
 
             val rule = RuleConverter.convert(rule, plan?.type, projectId)
-            val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
                 TScanTask(
@@ -160,15 +161,15 @@ class PendingAction(
         }
     }
 
-    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String, scanner: String): List<TaskMetadata> {
+    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String, scanner: Scanner): List<TaskMetadata> {
         val projectScanConfiguration = projectScanConfigurationDao.findByProjectId(projectId)
         val customMetadata = metadata.filter { it.key != TASK_METADATA_DISPATCHER }
 
         val dispatcher = projectScanConfiguration
             ?.dispatcherConfiguration
-            ?.firstOrNull { it.scanner == scanner }
+            ?.firstOrNull { it.scanner == scanner.name }
             ?.dispatcher ?: scannerProperties.defaultDispatcher
-        return if (dispatcher.isEmpty()) {
+        return if (dispatcher.isEmpty() || dispatcher !in scanner.supportDispatchers) {
             customMetadata
         } else {
             customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, dispatcher)

@@ -47,7 +47,7 @@ import kotlin.system.measureNanoTime
  * 存储服务抽象实现
  */
 @Suppress("TooGenericExceptionCaught")
-abstract class AbstractStorageService : FileBlockSupport() {
+abstract class AbstractStorageService : OverlaySupport() {
 
     override fun store(
         digest: String,

@@ -27,50 +27,30 @@
 
 package com.tencent.bkrepo.analyst.utils
 
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.model.TScanTask
-import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
-import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import java.time.format.DateTimeFormatter
 
 object Converter {
-    fun convert(
-        subScanTask: TSubScanTask,
-        scanner: Scanner
-    ): SubScanTask = with(subScanTask) {
-        SubScanTask(
-            taskId = id!!,
-            parentScanTaskId = parentScanTaskId,
-            scanner = scanner,
-            projectId = projectId,
-            repoName = repoName,
-            repoType = repoType,
-            fullPath = fullPath,
-            sha256 = sha256,
-            size = size,
-            packageSize = packageSize,
-            credentialsKey = credentialsKey,
-            extra = metadata.associate { Pair(it.key, it.value) }
-        )
-    }
-
     fun convert(
         scanTask: TScanTask,
         scanPlan: TScanPlan? = null,
         force: Boolean = false
     ): ScanTask = with(scanTask) {
         ScanTask(
-            name = scanTask.name,
+            name = scanTaskName(triggerType, scanTask.name),
             taskId = id!!,
             projectId = projectId,
             createdBy = createdBy,
@@ -141,7 +121,7 @@ object Converter {
         }
     }
 
-    fun convert(subScanTask: SubScanTaskDefinition): SubtaskResultOverview {
+    fun convert(subScanTask: SubScanTaskDefinition, scanTypes: List<String>): SubtaskResultOverview {
         return with(subScanTask) {
             val critical = getCveCount(Level.CRITICAL.levelName, subScanTask)
             val high = getCveCount(Level.HIGH.levelName, subScanTask)
@@ -153,6 +133,7 @@ object Converter {
                 subTaskId = subScanTask.id!!,
                 scanner = scanner,
                 scannerType = scannerType,
+                scanTypes = scanTypes,
                 name = artifactName,
                 packageKey = packageKey,
                 version = version,
@@ -197,5 +178,16 @@ object Converter {
             }
         }
         return null
+    }
+
+    private fun scanTaskName(triggerType: String, name: String?): String {
+        val defaultName = LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
+        return when (triggerType) {
+            ScanTriggerType.PIPELINE.name -> name ?: defaultName
+            ScanTriggerType.MANUAL_SINGLE.name -> {
+                LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
+            }
+            else -> defaultName
+        }
     }
 }

@@ -33,11 +33,13 @@ package com.tencent.bkrepo.rds.utils
 
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.rds.constants.RdsMessageCode
 import com.tencent.bkrepo.rds.constants.TGZ_SUFFIX
 import com.tencent.bkrepo.rds.exception.RdsFileNotFoundException
 import com.tencent.bkrepo.rds.pojo.metadata.RdsChartMetadata
 import com.tencent.bkrepo.rds.pojo.metadata.RdsIndexYamlMetadata
 import com.tencent.bkrepo.rds.utils.DecompressUtil.getArchivesContent
+import org.apache.logging.log4j.util.Strings
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.util.SortedSet
@@ -137,7 +139,8 @@ object ChartParserUtil {
             }
             chartList.forEach { convertUtcTime(it) }
         }
-        return chartList ?: throw RdsFileNotFoundException("chart not found")
+        return chartList ?:
+        throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, "$name|$version", Strings.EMPTY)
     }
 
     /**
@@ -161,12 +164,12 @@ object ChartParserUtil {
                     if (!compareTime(startTime, helmChartMetadataList.first().created)) {
                         convertUtcTime(helmChartMetadataList.first())
                     } else {
-                        throw RdsFileNotFoundException("chart version:[$chartVersion] can not be found")
+                        throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, chartVersion, Strings.EMPTY)
                     }
                 }
             }
         } else {
-            throw RdsFileNotFoundException("chart version:[$chartVersion] can not be found")
+            throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, chartVersion, Strings.EMPTY)
         }
     }
 
@@ -194,7 +197,7 @@ object ChartParserUtil {
             }
             else -> {
                 // ERROR_NOT_FOUND
-                throw RdsFileNotFoundException("chart not found")
+                throw RdsFileNotFoundException(RdsMessageCode.RDS_FILE_NOT_FOUND, urls, Strings.EMPTY)
             }
         }
     }

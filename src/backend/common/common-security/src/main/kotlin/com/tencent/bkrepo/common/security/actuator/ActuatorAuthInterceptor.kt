@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.common.security.actuator
 
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager

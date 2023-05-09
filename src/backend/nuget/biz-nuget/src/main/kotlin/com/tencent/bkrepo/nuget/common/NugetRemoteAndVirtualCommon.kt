@@ -4,8 +4,21 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
+import com.tencent.bkrepo.nuget.constant.PACKAGE_DISPLAY_METADATA_URI_TEMPLATE
+import com.tencent.bkrepo.nuget.constant.PACKAGE_PUBLISH
+import com.tencent.bkrepo.nuget.constant.PACKAGE_VERSION_DISPLAY_METADATA_URI_TEMPLATE
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_GZ_SEMVER2_URL
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_GZ_URL
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL_BETA
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL_RC
+import com.tencent.bkrepo.nuget.constant.REGISTRATIONS_BASE_URL_VERSIONED
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
-import com.tencent.bkrepo.nuget.exception.NugetFeedNofFoundException
+import com.tencent.bkrepo.nuget.constant.SEARCH_QUERY_SERVICE
+import com.tencent.bkrepo.nuget.constant.SEARCH_QUERY_SERVICE_BETA
+import com.tencent.bkrepo.nuget.constant.SEARCH_QUERY_SERVICE_RC
+import com.tencent.bkrepo.nuget.exception.NugetFeedNotFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
@@ -18,7 +31,7 @@ import java.io.InputStream
 @Component
 class NugetRemoteAndVirtualCommon {
 
-    final val originalToBkrepoConverters = mutableMapOf<String, UrlConvert>()
+    final val urlConvertersMap = mutableMapOf<String, UrlConvert>()
 
     fun downloadRemoteFeed(): Feed {
         val context = ArtifactQueryContext()
@@ -27,7 +40,7 @@ class NugetRemoteAndVirtualCommon {
         context.putAttribute(REMOTE_URL, requestUrl)
         val repository = ArtifactContextHolder.getRepository()
         return repository.query(context)?.let { JsonUtils.objectMapper.readValue(it as InputStream, Feed::class.java) }
-            ?: throw NugetFeedNofFoundException(
+            ?: throw NugetFeedNotFoundException(
                 "query remote feed index.json for [${context.getRemoteConfiguration().url}] failed!"
             )
     }
@@ -40,7 +53,7 @@ class NugetRemoteAndVirtualCommon {
     ): RegistrationIndex? {
         val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
         val originalRegistrationBaseUrl =
-            convertToOriginalUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
+            convertToRemoteUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
         val originalRegistrationIndexUrl = NugetUtils.buildRegistrationIndexUrl(
             originalRegistrationBaseUrl, artifactInfo.packageName
         ).toString()
@@ -60,7 +73,7 @@ class NugetRemoteAndVirtualCommon {
     ): RegistrationPage {
         val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
         val originalRegistrationBaseUrl =
-            convertToOriginalUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
+            convertToRemoteUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
         val originalRegistrationPageUrl = NugetUtils.buildRegistrationPageUrl(
             originalRegistrationBaseUrl, artifactInfo.packageName, artifactInfo.lowerVersion, artifactInfo.upperVersion
         )
@@ -71,7 +84,7 @@ class NugetRemoteAndVirtualCommon {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationPage::class.java)
         }
         // 这里不应该抛这个异常
-            ?: throw NugetFeedNofFoundException(
+            ?: throw NugetFeedNotFoundException(
                 "query remote registrationIndex for [$originalRegistrationPageUrl] failed!"
             )
     }
@@ -84,7 +97,7 @@ class NugetRemoteAndVirtualCommon {
     ): RegistrationLeaf {
         val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
         val originalRegistrationBaseUrl =
-            convertToOriginalUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
+            convertToRemoteUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
         val originalRegistrationLeafUrl = NugetUtils.buildRegistrationLeafUrl(
             originalRegistrationBaseUrl, artifactInfo.packageName, artifactInfo.version
         )
@@ -95,48 +108,49 @@ class NugetRemoteAndVirtualCommon {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationLeaf::class.java)
         }
         // 这里不应该抛这个异常
-            ?: throw NugetFeedNofFoundException(
+            ?: throw NugetFeedNotFoundException(
                 "query remote registrationIndex for [$originalRegistrationLeafUrl] failed!"
             )
     }
 
-    private fun convertToOriginalUrl(
-        registrationBaseUrl: String,
+    private fun convertToRemoteUrl(
+        resourceId: String,
         v2BaseUrl: String,
         v3BaseUrl: String
     ): String {
         val feed = downloadRemoteFeed()
-        val type = originalToBkrepoConverters.entries.stream().filter { e ->
-            registrationBaseUrl == e.value.convert(v2BaseUrl, v3BaseUrl).trimEnd('/')
-        }.findFirst().orElseThrow {
-            throw IllegalStateException("failed to extract type by url $registrationBaseUrl")
-        }.key
-        return feed.resources.stream().filter { e ->
-            e.type == type
-        }.findFirst().orElseThrow {
-            throw IllegalStateException("Failed to extract url for type: $type")
-        }.id
+        val matchTypes = urlConvertersMap.filterValues {
+            it.convert(v2BaseUrl, v3BaseUrl).trimEnd('/') == resourceId
+        }.keys.takeIf { it.isNotEmpty() } ?: throw IllegalStateException("Failed to resolve type by url [$resourceId]")
+        return feed.resources.firstOrNull { matchTypes.contains(it.type) }?.id
+            ?: throw IllegalStateException("Failed to match url for types: [$matchTypes]")
     }
 
     init {
-        originalToBkrepoConverters["RegistrationsBaseUrl"] = registrationsBaseUrl
-        originalToBkrepoConverters["SearchQueryService"] = searchQueryService
-        originalToBkrepoConverters["LegacyGallery"] = legacyGallery
-        originalToBkrepoConverters["LegacyGallery/2.0.0"] = legacyGallery
-        originalToBkrepoConverters["PackagePublish/2.0.0"] = packagePublish
-        originalToBkrepoConverters["SearchQueryService/3.0.0-rc"] = searchQueryService
-        originalToBkrepoConverters["RegistrationsBaseUrl/3.0.0-rc"] = registrationsBaseUrl
-        originalToBkrepoConverters["PackageDisplayMetadataUriTemplate/3.0.0-rc"] = packageDisplayMetadataUriTemplate
-        originalToBkrepoConverters["packageVersionDisplayMetadataUriTemplate/3.0.0-rc"] =
-            packageVersionDisplayMetadataUriTemplate
-        originalToBkrepoConverters["SearchQueryService/3.0.0-beta"] = searchQueryService
-        originalToBkrepoConverters["RegistrationsBaseUrl/3.0.0-beta"] = registrationsBaseUrl
-        originalToBkrepoConverters["RegistrationsBaseUrl/3.4.0"] = registrationsBaseUrl
-        originalToBkrepoConverters["RegistrationsBaseUrl/3.6.0"] = registrationsBaseSemver2Url
-        originalToBkrepoConverters["RegistrationsBaseUrl/Versioned"] = registrationsBaseSemver2Url
+        urlConvertersMap[PACKAGE_BASE_ADDRESS] = packageBaseAddress
+        urlConvertersMap[REGISTRATIONS_BASE_URL] = registrationsBaseUrl
+        urlConvertersMap[SEARCH_QUERY_SERVICE] = searchQueryService
+//        urlConvertersMap["LegacyGallery"] = legacyGallery
+//        urlConvertersMap["LegacyGallery/2.0.0"] = legacyGallery
+        urlConvertersMap[PACKAGE_PUBLISH] = packagePublish
+        urlConvertersMap[SEARCH_QUERY_SERVICE_RC] = searchQueryService
+        urlConvertersMap[REGISTRATIONS_BASE_URL_RC] = registrationsBaseUrl
+        urlConvertersMap[PACKAGE_DISPLAY_METADATA_URI_TEMPLATE] = packageDisplayMetadataUriTemplate
+        urlConvertersMap[PACKAGE_VERSION_DISPLAY_METADATA_URI_TEMPLATE] = packageVersionDisplayMetadataUriTemplate
+        urlConvertersMap[SEARCH_QUERY_SERVICE_BETA] = searchQueryService
+        urlConvertersMap[REGISTRATIONS_BASE_URL_BETA] = registrationsBaseUrl
+        urlConvertersMap[REGISTRATIONS_BASE_GZ_URL] = registrationsBaseUrl
+        urlConvertersMap[REGISTRATIONS_BASE_GZ_SEMVER2_URL] = registrationsBaseSemver2Url
+        urlConvertersMap[REGISTRATIONS_BASE_URL_VERSIONED] = registrationsBaseSemver2Url
     }
 
     companion object {
+        private val packageBaseAddress = object : UrlConvert {
+            override fun convert(v2BaseUrl: String, v3BaseUrl: String): String {
+                return packageBaseAddress(v3BaseUrl)
+            }
+        }
+
         private val registrationsBaseUrl = object : UrlConvert {
             override fun convert(v2BaseUrl: String, v3BaseUrl: String): String {
                 return registrationsBaseUrlId(v3BaseUrl)
@@ -177,6 +191,10 @@ class NugetRemoteAndVirtualCommon {
             override fun convert(v2BaseUrl: String, v3BaseUrl: String): String {
                 return packageVersionDisplayMetadataUriTemplate(v3BaseUrl)
             }
+        }
+
+        private fun packageBaseAddress(v3BaseUrl: String): String {
+            return UrlFormatter.format(v3BaseUrl, "/flatcontainer")
         }
 
         private fun registrationsBaseUrlId(v3BaseUrl: String): String {

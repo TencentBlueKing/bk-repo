@@ -42,7 +42,8 @@ const storeObject = {
         },
         domain: {
             docker: '',
-            npm: ''
+            npm: '',
+            helm: ''
         },
         clusterList: []
     },

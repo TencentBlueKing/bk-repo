@@ -41,14 +41,15 @@ import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -60,24 +61,30 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
-import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
+import com.tencent.bkrepo.repository.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
-import org.springframework.dao.DuplicateKeyException
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
+@Conditional(DefaultCondition::class)
 class PackageServiceImpl(
-    private val packageDao: PackageDao,
-    private val packageVersionDao: PackageVersionDao,
+    repositoryDao: RepositoryDao,
+    packageDao: PackageDao,
+    protected val packageVersionDao: PackageVersionDao,
     private val packageSearchInterpreter: PackageSearchInterpreter
-) : PackageService {
+) : PackageBaseService(repositoryDao, packageDao) {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
@@ -191,17 +198,26 @@ class PackageServiceImpl(
             Preconditions.checkNotBlank(packageName, this::packageName.name)
             Preconditions.checkNotBlank(versionName, this::versionName.name)
             // 先查询包是否存在，不存在先创建包
-            val tPackage = findOrCreatePackage(request)
+            val tPackage = findOrCreatePackage(buildPackage(request))
             // 检查版本是否存在
             val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
-            // 检查本次上传是创建还是覆盖。
-            var isOverride = false
-            val newVersion = if (oldVersion != null) {
-                if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, packageName, versionName)
+            val query = Query(
+                where(TPackage::projectId).isEqualTo(projectId).apply {
+                    and(TPackage::repoName).isEqualTo(repoName)
+                    and(TPackage::key).isEqualTo(packageKey)
                 }
+            )
+            val update = Update().set(TPackage::lastModifiedBy.name, request.createdBy)
+                .set(TPackage::lastModifiedDate.name, LocalDateTime.now())
+                .set(TPackage::description.name, packageDescription?.let { packageDescription })
+                .set(TPackage::latest.name, versionName)
+                .set(TPackage::extension.name, extension?.let { extension })
+                .set(TPackage::versionTag.name, mergeVersionTag(tPackage.versionTag, versionTag))
+                .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
+            // 检查本次上传是创建还是覆盖。
+            if (oldVersion != null) {
+                checkPackageVersionOverwrite(overwrite, packageName, oldVersion)
                 // overwrite
-                isOverride = true
                 oldVersion.apply {
                     lastModifiedBy = request.createdBy
                     lastModifiedDate = LocalDateTime.now()
@@ -213,54 +229,21 @@ class PackageServiceImpl(
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                     extension = request.extension.orEmpty()
                 }
+                packageVersionDao.save(oldVersion)
+                packageDao.upsert(query, update)
+                logger.info("Update package version[$oldVersion] success")
+                publishEvent(buildUpdatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
             } else {
                 // create new
-                tPackage.versions += 1
-                TPackageVersion(
-                    createdBy = createdBy,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = createdBy,
-                    lastModifiedDate = LocalDateTime.now(),
-                    packageId = tPackage.id!!,
-                    name = versionName.trim(),
-                    size = size,
-                    ordinal = calculateOrdinal(versionName),
-                    downloads = 0,
-                    manifestPath = manifestPath,
-                    artifactPath = artifactPath,
-                    stageTag = stageTag.orEmpty(),
-                    metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
-                    tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
-                    extension = request.extension.orEmpty()
-                )
-            }
-            try {
+                val newVersion = buildPackageVersion(request, tPackage.id!!)
                 packageVersionDao.save(newVersion)
-                // 更新包
-                tPackage.lastModifiedBy = newVersion.lastModifiedBy
-                tPackage.lastModifiedDate = newVersion.lastModifiedDate
-                tPackage.description = packageDescription?.let { packageDescription }
-                tPackage.latest = versionName
-                tPackage.extension = extension?.let { extension }
-                tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
-                tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
-                packageDao.save(tPackage)
-
-                if (!isOverride) {
-                    publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
-                } else {
-                    publishEvent(
-                        (
-                            PackageEventFactory.buildUpdatedEvent(
-                                request, realIpAddress ?: HttpContextHolder.getClientAddress()
-                            )
-                            )
-                    )
-                }
+                // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
+                update.inc(TPackage::versions.name)
+                packageDao.upsert(query, update)
                 logger.info("Create package version[$newVersion] success")
-            } catch (e: DuplicateKeyException) {
-                logger.warn("Create package version[$newVersion] error: [${e.message}]")
+                publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
             }
+            populateCluster(tPackage)
         }
     }
 
@@ -292,6 +275,7 @@ class PackageServiceImpl(
     ) {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
         val tPackageVersion = packageVersionDao.findByName(tPackage.id.orEmpty(), versionName) ?: return
+        checkCluster(tPackageVersion)
         packageVersionDao.deleteByName(tPackageVersion.packageId, tPackageVersion.name)
         tPackage.versions -= 1
         if (tPackage.versions <= 0L) {
@@ -324,6 +308,7 @@ class PackageServiceImpl(
         val repoName = request.repoName
         val packageKey = request.packageKey
         val tPackage = checkPackage(projectId, repoName, packageKey).apply {
+            checkCluster(this)
             name = request.name ?: name
             description = request.description ?: description
             versionTag = request.versionTag ?: versionTag
@@ -348,6 +333,7 @@ class PackageServiceImpl(
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val packageId = tPackage.id.orEmpty()
         val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
+            checkCluster(this)
             size = request.size ?: size
             manifestPath = request.manifestPath ?: manifestPath
             artifactPath = request.artifactPath ?: artifactPath
@@ -437,7 +423,7 @@ class PackageServiceImpl(
     override fun populatePackage(request: PackagePopulateRequest) {
         with(request) {
             // 先查询包是否存在，不存在先创建包
-            val tPackage = findOrCreatePackage(request)
+            val tPackage = findOrCreatePackage(buildPackage(request))
             val packageId = tPackage.id.orEmpty()
             var latestVersion = packageVersionDao.findLatest(packageId)
             // 检查版本是否存在
@@ -446,22 +432,7 @@ class PackageServiceImpl(
                     logger.info("Package version[${tPackage.name}-${it.name}] existed, skip populating.")
                     return@forEach
                 }
-                val newVersion = TPackageVersion(
-                    createdBy = it.createdBy,
-                    createdDate = it.createdDate,
-                    lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate,
-                    packageId = packageId,
-                    name = it.name.trim(),
-                    size = it.size,
-                    ordinal = calculateOrdinal(it.name),
-                    downloads = it.downloads,
-                    manifestPath = it.manifestPath,
-                    artifactPath = it.artifactPath,
-                    stageTag = it.stageTag.orEmpty(),
-                    metadata = MetadataUtils.compatibleConvertAndCheck(it.metadata, it.packageMetadata),
-                    extension = it.extension.orEmpty()
-                )
+                val newVersion = buildPackageVersion(it, packageId)
                 packageVersionDao.save(newVersion)
                 tPackage.versions += 1
                 tPackage.downloads += it.downloads
@@ -476,6 +447,7 @@ class PackageServiceImpl(
             // 更新包
             tPackage.latest = latestVersion?.name ?: tPackage.latest
             packageDao.save(tPackage)
+            populateCluster(tPackage)
             logger.info("Update package version[$tPackage] success")
         }
     }
@@ -483,74 +455,6 @@ class PackageServiceImpl(
     override fun getPackageCount(projectId: String, repoName: String): Long {
         val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
         return packageDao.count(query)
-    }
-
-    /**
-     * 查找包，不存在则创建
-     *
-     */
-    private fun findOrCreatePackage(request: PackagePopulateRequest): TPackage {
-        with(request) {
-            return packageDao.findByKey(projectId, repoName, key) ?: run {
-                val tPackage = TPackage(
-                    createdBy = createdBy,
-                    createdDate = createdDate,
-                    lastModifiedBy = lastModifiedBy,
-                    lastModifiedDate = lastModifiedDate,
-                    projectId = projectId,
-                    repoName = repoName,
-                    name = name.trim(),
-                    description = description,
-                    key = key.trim(),
-                    type = type,
-                    downloads = 0,
-                    versions = 0,
-                    versionTag = versionTag.orEmpty(),
-                    extension = extension.orEmpty()
-                )
-                try {
-                    packageDao.save(tPackage)
-                    logger.info("Create package[$tPackage] success")
-                    return tPackage
-                } catch (exception: DuplicateKeyException) {
-                    logger.warn("Create package[$tPackage] error: [${exception.message}]")
-                    packageDao.findByKey(projectId, repoName, key)!!
-                }
-            }
-        }
-    }
-
-    /**
-     * 查找包，不存在则创建
-     */
-    private fun findOrCreatePackage(request: PackageVersionCreateRequest): TPackage {
-        with(request) {
-            return packageDao.findByKey(projectId, repoName, packageKey) ?: run {
-                val tPackage = TPackage(
-                    createdBy = createdBy,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = createdBy,
-                    lastModifiedDate = LocalDateTime.now(),
-                    projectId = projectId,
-                    repoName = repoName,
-                    name = packageName.trim(),
-                    key = packageKey.trim(),
-                    type = packageType,
-                    downloads = 0,
-                    versions = 0,
-                    versionTag = versionTag.orEmpty(),
-                    extension = packageExtension.orEmpty(),
-                    description = packageDescription,
-                    historyVersion = mutableSetOf(versionName)
-                )
-                try {
-                    packageDao.save(tPackage)
-                } catch (exception: DuplicateKeyException) {
-                    logger.warn("Create package[$tPackage] error: [${exception.message}]")
-                    packageDao.findByKey(projectId, repoName, packageKey)!!
-                }
-            }
-        }
     }
 
     /**
@@ -569,33 +473,9 @@ class PackageServiceImpl(
             ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, versionName)
     }
 
-    /**
-     * 计算语义化版本顺序
-     */
-    private fun calculateOrdinal(versionName: String): Long {
-        return try {
-            SemVersion.parse(versionName).ordinal()
-        } catch (exception: IllegalArgumentException) {
-            LOWEST_ORDINAL
-        }
-    }
-
-    /**
-     * 合并version tag
-     */
-    private fun mergeVersionTag(
-        original: Map<String, String>?,
-        extra: Map<String, String>?
-    ): Map<String, String> {
-        return original?.toMutableMap()?.apply {
-            extra?.forEach { (tag, version) -> this[tag] = version }
-        }.orEmpty()
-    }
-
     companion object {
 
         private val logger = LoggerFactory.getLogger(PackageServiceImpl::class.java)
-        private const val LOWEST_ORDINAL = 0L
 
         private fun convert(tPackage: TPackage?): PackageSummary? {
             return tPackage?.let {

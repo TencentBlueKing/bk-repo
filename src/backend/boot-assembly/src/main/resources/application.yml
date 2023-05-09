@@ -6,12 +6,19 @@ spring:
     name: bkrepo
   cloud:
     function:
-      definition: scanEventConsumer
+      definition: artifactEventWebhook;scanEventConsumer
     stream:
       default-binder: memoryMessageChannelBinder
       bindings:
         scanEventConsumer-in-0:
           group: scanner
+          destination: artifactEvent
+          binder: memoryMessageChannelBinder
+        artifactEvent-out-0:
+          destination: artifactEvent
+          binder: memoryMessageChannelBinder
+        artifactEventWebhook-in-0:
+          group: webhook
           destination: artifactEvent
           binder: memoryMessageChannelBinder
   data:
@@ -44,6 +51,7 @@ auth:
     enablePrefix: true
 
 scanner:
+  defaultDispatcher: docker
   dispatcher:
     docker:
       enabled: ${BK_REPO_ANALYST_DISPATCHER_DOCKER_ENABLED:false}
@@ -58,3 +66,6 @@ management:
       influx:
         enabled: false
 
+feign:
+  client:
+    decode-slash: false

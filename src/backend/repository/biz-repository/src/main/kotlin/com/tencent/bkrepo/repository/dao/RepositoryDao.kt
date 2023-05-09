@@ -70,15 +70,17 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
      */
     fun existsByCredentialsKey(credentialsKey: String): Boolean {
         val query = Query(TRepository::credentialsKey.isEqualTo(credentialsKey))
+            .addCriteria(TRepository::deleted.isEqualTo(null))
         return this.exists(query)
     }
 
     /**
      * 构造单个仓库查询条件
      */
-    private fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+    fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).isEqualTo(null)
         if (repoType != null && repoType.toUpperCase() != RepositoryType.NONE.name) {
             criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
         }

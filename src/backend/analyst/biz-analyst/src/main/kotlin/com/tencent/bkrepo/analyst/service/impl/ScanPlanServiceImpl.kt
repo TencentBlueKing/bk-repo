@@ -129,8 +129,9 @@ class ScanPlanServiceImpl(
             val scannerNames = scanPlans.map { it.scanner }
             val scanners = scannerService.find(scannerNames).associateBy { it.name }
             scanPlans = scanPlans.filter {
-                val scanner = scanners[it.scanner]!!
-                scanner.supportFileNameExt.isEmpty() || fileNameExt in scanner.supportFileNameExt
+                val scanner = scanners[it.scanner]
+                // 扫描器为null表示扫描器已被删除，扫描器被删除后不再列出其对应的扫描方案
+                scanner != null && (scanner.supportFileNameExt.isEmpty() || fileNameExt in scanner.supportFileNameExt)
             }
         }
         return scanPlans.map { ScanPlanConverter.convert(it) }

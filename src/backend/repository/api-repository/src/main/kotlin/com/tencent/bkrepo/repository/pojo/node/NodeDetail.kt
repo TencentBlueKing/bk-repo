@@ -78,7 +78,9 @@ data class NodeDetail(
     @ApiModelProperty("所属项目id")
     val projectId: String = nodeInfo.projectId,
     @ApiModelProperty("所属仓库名称")
-    val repoName: String = nodeInfo.repoName
+    val repoName: String = nodeInfo.repoName,
+    @ApiModelProperty("集群信息")
+    val clusterNames: Set<String>? = nodeInfo.clusterNames
 ) {
     /**
      * 获取node所属package的name

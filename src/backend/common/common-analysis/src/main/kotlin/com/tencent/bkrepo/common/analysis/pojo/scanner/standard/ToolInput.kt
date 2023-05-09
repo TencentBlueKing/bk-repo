@@ -67,36 +67,38 @@ data class ToolInput(
     companion object {
         fun create(
             taskId: String,
-            scanner: StandardScanner,
-            packageType: String,
-            packageSize: Long,
-            fileUrls: List<FileUrl>
+            fileUrls: List<FileUrl>,
+            args: List<Argument>
         ): ToolInput {
-            val args = generateArgs(scanner, packageType, packageSize)
             return ToolInput(taskId = taskId, toolConfig = ToolConfig(args), fileUrls = fileUrls)
         }
 
         fun create(
             taskId: String,
-            scanner: StandardScanner,
-            packageType: String,
-            packageSize: Long,
             filePath: String,
-            sha256: String
+            sha256: String,
+            args: List<Argument>
         ): ToolInput {
-            val args = generateArgs(scanner, packageType, packageSize)
             return ToolInput(taskId = taskId, toolConfig = ToolConfig(args), filePath = filePath, sha256 = sha256)
         }
 
-        private fun generateArgs(
+        fun generateArgs(
             scanner: StandardScanner,
             packageType: String,
-            packageSize: Long
+            packageSize: Long,
+            packageKey: String? = null,
+            packageVersion: String? = null
         ): List<Argument> {
             val args = scanner.args.toMutableList()
             args.add(Argument(STRING.name, StandardScanner.ARG_KEY_PKG_TYPE, packageType))
             val maxTime = scanner.maxScanDuration(packageSize).toString()
             args.add(Argument(StandardScanner.ArgumentType.NUMBER.name, StandardScanner.ARG_KEY_MAX_TIME, maxTime))
+            packageKey?.let {
+                args.add(Argument(StandardScanner.ArgumentType.STRING.name, StandardScanner.ARG_KEY_PKG_KEY, it))
+            }
+            packageVersion?.let {
+                args.add(Argument(StandardScanner.ArgumentType.STRING.name, StandardScanner.ARG_KEY_PKG_VERSION, it))
+            }
             return args
         }
     }

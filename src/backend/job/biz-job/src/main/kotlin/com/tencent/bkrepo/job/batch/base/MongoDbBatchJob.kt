@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.ID
-import com.tencent.bkrepo.job.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask

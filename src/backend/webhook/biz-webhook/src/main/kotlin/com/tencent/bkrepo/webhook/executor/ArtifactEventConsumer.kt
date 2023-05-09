@@ -49,7 +49,7 @@ import java.util.regex.Pattern
 /**
  * 事件消息消费者
  */
-@Component("artifactEvent")
+@Component("artifactEventWebhook")
 class ArtifactEventConsumer(
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor,

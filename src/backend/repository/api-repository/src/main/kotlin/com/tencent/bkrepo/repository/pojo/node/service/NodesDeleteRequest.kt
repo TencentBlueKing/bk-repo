@@ -16,5 +16,7 @@ class NodesDeleteRequest(
 	@ApiModelProperty("节点完整路径列表", required = true)
 	val fullPaths: List<String>,
 	@ApiModelProperty("操作用户", required = true)
-	override val operator: String
+	override val operator: String,
+	@ApiModelProperty("是否为文件夹", required = false)
+	val isFolder: Boolean ? = false
 ) : ServiceRequest

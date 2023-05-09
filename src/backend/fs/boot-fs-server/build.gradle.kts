@@ -16,8 +16,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.google.guava:guava")
     implementation("org.springframework.cloud:spring-cloud-starter-sleuth")
+    api(project(":common:common-stream"))
+    api(project(":fs:api-fs-server"))
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }
 
 configurations.all {

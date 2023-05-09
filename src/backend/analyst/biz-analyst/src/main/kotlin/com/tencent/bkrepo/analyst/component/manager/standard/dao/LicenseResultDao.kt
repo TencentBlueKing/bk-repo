@@ -39,10 +39,22 @@ import org.springframework.stereotype.Repository
 @Repository
 class LicenseResultDao : ResultItemDao<TLicenseResult>() {
     override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        require(arguments is StandardLoadResultArguments)
-        if (arguments.licenseIds.isNotEmpty()) {
-            criteria.and(dataKey(LicenseResult::licenseName.name)).inValues(arguments.licenseIds)
+        with(arguments as StandardLoadResultArguments) {
+            val andCriteria = ArrayList<Criteria>()
+
+            if (licenseIds.isNotEmpty()) {
+                andCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).inValues(licenseIds))
+            }
+
+            val filterCriteria = LicenseFilterCriteriaBuilder(rule, ignored).build()
+            if (filterCriteria.isNotEmpty()) {
+                andCriteria.addAll(filterCriteria)
+            }
+            if (andCriteria.isNotEmpty()) {
+                criteria.andOperator(andCriteria)
+            }
+
+            return criteria
         }
-        return criteria
     }
 }

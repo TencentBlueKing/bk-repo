@@ -59,11 +59,13 @@ data class TRepository(
     var description: String? = null,
     var configuration: String,
     var credentialsKey: String? = null,
-    var oldCredentialsKey:String?=null,
+    var oldCredentialsKey: String? = null,
     var display: Boolean = true,
 
     var projectId: String,
 
     var quota: Long? = null,
-    var used: Long? = null
+    var used: Long? = null,
+    var clusterNames: Set<String>? = null,
+    var deleted: LocalDateTime? = null
 )

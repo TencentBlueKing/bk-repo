@@ -1,3 +1,4 @@
 spring.application.name: fs-server
-server.port: 25816
+server.port: 25909
 service.prefix: bkrepo-
+server.netty.max-chunk-size: 64KB

@@ -32,12 +32,14 @@
 package com.tencent.bkrepo.rds.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.rds.pojo.RdsErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -57,15 +59,13 @@ class RdsExceptionHandler {
     @ExceptionHandler(RdsRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerRepoNotFoundException(exception: RdsRepoNotFoundException) {
-        val responseObject = RdsErrorResponse(exception.message)
-        rdsResponse(responseObject, exception)
+        rdsResponse(exception)
     }
 
     @ExceptionHandler(RdsBadRequestException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerBadRequestException(exception: RdsBadRequestException) {
-        val responseObject = RdsErrorResponse(exception.message)
-        rdsResponse(responseObject, exception)
+        rdsResponse(exception)
     }
 
     @ExceptionHandler(AuthenticationException::class)
@@ -79,44 +79,45 @@ class RdsExceptionHandler {
     @ExceptionHandler(RdsIndexFreshFailException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handlerRdsIndexFreshFailException(exception: RdsIndexFreshFailException) {
-        val responseObject = RdsErrorResponse(exception.message)
-        rdsResponse(responseObject, exception)
+        rdsResponse(exception)
     }
 
     @ExceptionHandler(RdsFileAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     fun handlerRdsFileAlreadyExistsException(exception: RdsFileAlreadyExistsException) {
-        val responseObject = RdsErrorResponse(exception.message)
-        rdsResponse(responseObject, exception)
+        rdsResponse(exception)
     }
 
     @ExceptionHandler(RdsErrorInvalidProvenanceFileException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleRdsErrorInvalidProvenanceFileException(exception: RdsErrorInvalidProvenanceFileException) {
-        val responseObject = RdsErrorResponse(exception.message)
-        rdsResponse(responseObject, exception)
+        rdsResponse(exception)
     }
 
     @ExceptionHandler(RdsFileNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerRdsFileNotFoundException(exception: RdsFileNotFoundException) {
-        val responseObject = RdsErrorResponse(exception.message)
-        rdsResponse(responseObject, exception)
+        rdsResponse(exception)
     }
 
+    private fun rdsResponse(exception: ErrorCodeException) {
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val responseObject = RdsErrorResponse(errorMessage)
+        rdsResponse(responseObject, exception)
+    }
     private fun rdsResponse(responseObject: RdsErrorResponse, exception: Exception) {
-        logRdsException(exception)
+        logRdsException(exception, responseObject)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=utf-8"
         response.writer.println(responseString)
     }
 
-    private fun logRdsException(exception: Exception) {
+    private fun logRdsException(exception: Exception, responseObject: RdsErrorResponse) {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
-            "User[$userId] access rds resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}"
+            "User[$userId] access rds resource[$uri] failed[${exception.javaClass.simpleName}]: ${responseObject.error}"
         )
     }
 

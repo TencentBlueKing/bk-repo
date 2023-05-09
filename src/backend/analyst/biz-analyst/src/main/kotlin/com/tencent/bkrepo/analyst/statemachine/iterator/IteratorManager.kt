@@ -103,7 +103,14 @@ class IteratorManager(
         }
 
         val fileNameExtensionRules = supportFileNameExt
-            .map { Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX) }
+            .map {
+                if (it == "") {
+                    // 空字符串表示支持无后缀文件，此处筛选出路径不包含.的文件
+                    Rule.QueryRule(NodeDetail::fullPath.name, "^((?!\\.).)*$", OperationType.REGEX)
+                } else {
+                    Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX)
+                }
+            }
             .toMutableList<Rule>()
         val fileNameExtRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)
 

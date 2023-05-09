@@ -3,12 +3,12 @@
         :value="show"
         width="800"
         height-num="561"
-        title="添加制品"
+        :title="$t('addArtifact')"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">
         <div class="search-package" v-bkloading="{ isLoading }">
             <bk-transfer
-                :title="['制品列表', '已选制品']"
+                :title="[$t('artifactList'), $t('selectedArtifact')]"
                 :source-list="packageList"
                 :target-list="targetList"
                 display-key="key"

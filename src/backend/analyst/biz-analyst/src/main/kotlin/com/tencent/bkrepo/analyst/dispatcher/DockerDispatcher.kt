@@ -38,14 +38,19 @@ import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.createContainer
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.removeContainer
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.data.redis.core.RedisTemplate
 import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 
 class DockerDispatcher(
     private val scannerProperties: ScannerProperties,
     private val dockerDispatcherProperties: DockerDispatcherProperties,
-    private val subScanTaskDao: SubScanTaskDao
+    private val subScanTaskDao: SubScanTaskDao,
+    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
 ) : SubtaskDispatcher {
 
     private val dockerClient by lazy {
@@ -67,6 +72,7 @@ class DockerDispatcher(
             .build()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun dispatch(subtask: SubScanTask): Boolean {
         logger.info("dispatch subtask[${subtask.taskId}] with $NAME")
         val scanner = subtask.scanner
@@ -77,10 +83,21 @@ class DockerDispatcher(
                 image = scanner.image, hostConfig = hostConfig(), cmd = command
             )
             dockerClient.startContainerCmd(containerId).exec()
+            redisTemplate.ifAvailable
+                ?.opsForValue()
+                ?.set(containerIdKey(subtask.taskId), containerId, 1, TimeUnit.DAYS)
         } catch (e: Exception) {
             logger.error("dispatch subtask[${subtask.taskId}] failed", e)
             return false
         }
+        return true
+    }
+
+    override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
+        redisTemplate.ifAvailable
+            ?.opsForValue()
+            ?.get(containerIdKey(subtask.taskId))
+            ?.let { dockerClient.removeContainer(it) }
         return true
     }
 
@@ -92,6 +109,8 @@ class DockerDispatcher(
     override fun name(): String {
         return NAME
     }
+
+    private fun containerIdKey(subtaskId: String) = "scanner:dispatcher:sid:$subtaskId:cid"
 
     private fun hostConfig(): HostConfig? {
         val url = scannerProperties.baseUrl.toHttpUrl()

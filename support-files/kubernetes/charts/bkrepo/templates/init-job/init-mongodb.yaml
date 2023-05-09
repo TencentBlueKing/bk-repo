@@ -53,5 +53,9 @@ spec:
               value: {{ .Values.auth.bcs.accessKey }}
             - name: BK_REPO_BCS_SECRETKEY
               value: {{ .Values.auth.bcs.secretKey }}
+            - name: BK_REPO_ACCESSKEY
+              value: {{ .Values.gateway.accessKey }}
+            - name: BK_REPO_SECRETKEY
+              value: {{ .Values.gateway.secretKey }}
       restartPolicy: OnFailure
   {{- end }}

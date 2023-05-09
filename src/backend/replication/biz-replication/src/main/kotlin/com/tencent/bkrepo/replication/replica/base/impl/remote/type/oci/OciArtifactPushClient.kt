@@ -31,11 +31,12 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
@@ -117,7 +118,7 @@ class OciArtifactPushClient(
         manifestInfo.descriptors?.forEach {
             semaphore.acquire()
             futureList.add(
-                submit {
+                submit( Callable {
                     try {
                         retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retries ->
                             logger.info(
@@ -137,7 +138,8 @@ class OciArtifactPushClient(
                     } finally {
                         semaphore.release()
                     }
-                }
+                }.trace()
+                )
             )
         }
         try {

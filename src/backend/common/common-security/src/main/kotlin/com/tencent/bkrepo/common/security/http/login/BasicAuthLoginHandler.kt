@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.common.security.http.login
 
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils

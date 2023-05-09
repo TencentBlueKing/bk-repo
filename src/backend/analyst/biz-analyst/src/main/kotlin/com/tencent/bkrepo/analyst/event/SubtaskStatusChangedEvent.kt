@@ -32,5 +32,9 @@ import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 
 data class SubtaskStatusChangedEvent(
     val oldStatus: SubScanTaskStatus? = null,
-    val subtask: TPlanArtifactLatestSubScanTask
+    val subtask: TPlanArtifactLatestSubScanTask,
+    /**
+     * 子任务使用的分发器，仅在[subtask]为结束状态时且使用了分发器才有值
+     */
+    val dispatcher: String? = null
 )

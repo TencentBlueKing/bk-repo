@@ -136,6 +136,14 @@ class SubScanTaskDao(
         return updateResult
     }
 
+    fun incExecutedTimes(subTaskId: String): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(subTaskId)
+        val update = Update()
+            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .inc(TSubScanTask::executedTimes.name, 1)
+        return updateFirst(Query(criteria), update)
+    }
+
     fun countStatus(status: SubScanTaskStatus): Long {
         return count(Query(TSubScanTask::status.isEqualTo(status.name)))
     }

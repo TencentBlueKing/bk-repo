@@ -45,6 +45,7 @@ import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
@@ -104,7 +105,9 @@ class ChartRepositoryServiceImpl(
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
             logger.warn("Error occurred while downloading index.yaml, error: ${e.message}")
-            throw HelmFileNotFoundException(e.message.toString())
+            throw HelmFileNotFoundException(
+                HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "${context.projectId}|${context.repoName}"
+            )
         }
     }
 
@@ -211,7 +214,9 @@ class ChartRepositoryServiceImpl(
             throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while installing chart, error: ${e.message}")
-            throw HelmFileNotFoundException(e.message.toString())
+            throw HelmFileNotFoundException(
+                HelmMessageCode.HELM_FILE_NOT_FOUND, artifactInfo.getArtifactFullPath(), artifactInfo.getRepoIdentify()
+            )
         }
     }
 
@@ -224,7 +229,9 @@ class ChartRepositoryServiceImpl(
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
             logger.warn("Error occurred while installing prov, error: ${e.message}")
-            throw HelmFileNotFoundException(e.message.toString())
+            throw HelmFileNotFoundException(
+                HelmMessageCode.HELM_FILE_NOT_FOUND, artifactInfo.getArtifactFullPath(), artifactInfo.getRepoIdentify()
+            )
         }
     }
 
@@ -264,7 +271,10 @@ class ChartRepositoryServiceImpl(
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
         val context = ArtifactQueryContext()
         when (context.repositoryDetail.category) {
-            RepositoryCategory.REMOTE -> throw HelmBadRequestException("illegal request")
+            RepositoryCategory.REMOTE -> throw HelmBadRequestException(
+                HelmMessageCode.HELM_ILLEGAL_REQUEST,
+                emptyList<String>()
+            )
             else -> batchInstallLocalTgz(artifactInfo, startTime)
         }
     }
@@ -273,7 +283,7 @@ class ChartRepositoryServiceImpl(
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
         if (nodeList.isEmpty()) {
             throw HelmFileNotFoundException(
-                "no chart found in repository [${artifactInfo.getRepoIdentify()}]"
+                HelmMessageCode.HELM_FILE_NOT_FOUND, "chart", artifactInfo.getRepoIdentify()
             )
         }
         val context = ArtifactQueryContext()

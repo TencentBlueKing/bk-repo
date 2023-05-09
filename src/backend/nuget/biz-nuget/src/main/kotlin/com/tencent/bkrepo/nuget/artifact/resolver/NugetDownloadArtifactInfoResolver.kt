@@ -4,6 +4,9 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.nuget.constant.ID
+import com.tencent.bkrepo.nuget.constant.MANIFEST
+import com.tencent.bkrepo.nuget.constant.NUSPEC
+import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import org.springframework.stereotype.Component
@@ -22,6 +25,7 @@ class NugetDownloadArtifactInfoResolver : ArtifactInfoResolver {
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         val id = attributes[ID].toString().trim()
         val version = attributes[VERSION].toString().trim()
-        return NugetDownloadArtifactInfo(projectId, repoName, id, version)
+        val type = if (request.requestURL.endsWith(NUSPEC)) MANIFEST else PACKAGE
+        return NugetDownloadArtifactInfo(projectId, repoName, id, version, type)
     }
 }

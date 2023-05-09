@@ -61,6 +61,9 @@
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
         // 是否显示项目设置菜单
         var SHOW_PROJECT_CONFIG_MENU = MODE_CONFIG !== 'ci'
+        // 是否显示制品分析菜单
+        var SHOW_ANALYST_MENU = '__BK_REPO_SHOW_ANALYST_MENU__' || 'false'
+        SHOW_ANALYST_MENU = SHOW_ANALYST_MENU === 'true'
         // 区分社区版与内部版  community -> 社区   tencent -> 内部
         var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
     </script>

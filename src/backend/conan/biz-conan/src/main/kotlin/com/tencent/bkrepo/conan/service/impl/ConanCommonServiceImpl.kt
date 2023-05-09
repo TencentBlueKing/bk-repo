@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.conan.service.ConanCommonService
 import io.jsonwebtoken.ExpiredJwtException

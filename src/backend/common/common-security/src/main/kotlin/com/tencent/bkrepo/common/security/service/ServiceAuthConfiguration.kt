@@ -31,11 +31,12 @@
 
 package com.tencent.bkrepo.common.security.service
 
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
-import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import feign.RequestInterceptor
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -56,7 +57,7 @@ class ServiceAuthConfiguration {
             requestTemplate.header(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
             HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let {
                 requestTemplate.header(MS_AUTH_HEADER_UID, it.toString())
-            }
+            } ?: requestTemplate.header(MS_AUTH_HEADER_UID, SYSTEM_USER)
         }
     }
 

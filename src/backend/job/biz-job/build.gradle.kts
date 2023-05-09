@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":common:common-stream"))
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
+    implementation(project(":oci:api-oci"))
     implementation(project(":replication:api-replication"))
     implementation(project(":common:common-operate:operate-service"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")

@@ -166,7 +166,8 @@ export default {
     getDomain ({ state, commit }, repoType) {
         const urlMap = {
             docker: 'docker/ext/addr',
-            npm: 'npm/ext/address'
+            npm: 'npm/ext/address',
+            helm: 'helm/ext/address'
         }
         if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(

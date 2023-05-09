@@ -1,19 +1,19 @@
 <template>
     <bk-form class="clean-config-container" :label-width="120" :model="config" :rules="rules" ref="cleanForm">
-        <bk-form-item label="自动清理">
+        <bk-form-item :label="$t('autoCleanup')">
             <bk-switcher v-model="config.autoClean" size="small" theme="primary" @change="clearError"></bk-switcher>
         </bk-form-item>
-        <bk-form-item v-if="repoType !== 'generic'" label="最少保留版本" required property="reserveVersions" error-display-type="normal">
+        <bk-form-item v-if="repoType !== 'generic'" :label="$t('minimumVersion')" required property="reserveVersions" error-display-type="normal">
             <bk-input class="w250" v-model="config.reserveVersions" :disabled="!config.autoClean"></bk-input>
-            <div class="form-tip">制品版本数量超过保留版本数，且在保留时间内没有使用过的制品版本将会被清理</div>
+            <div class="form-tip">{{'cleanTip'}}</div>
         </bk-form-item>
-        <bk-form-item label="最少保留时间(天)" required property="reserveDays" error-display-type="normal">
+        <bk-form-item :label="$t('minRetentionTime')" required property="reserveDays" error-display-type="normal">
             <bk-input class="w250" v-model="config.reserveDays" :disabled="!config.autoClean"></bk-input>
         </bk-form-item>
-        <bk-form-item label="保留规则">
-            <bk-button :disabled="!config.autoClean" icon="plus" @click="addRule()">添加规则</bk-button>
+        <bk-form-item :label="$t('retentionRules')">
+            <bk-button :disabled="!config.autoClean" icon="plus" @click="addRule()">{{$t('addRules')}}</bk-button>
             <div class="form-tip">
-                {{ repoType === 'generic' ? '在目录（包含子目录）下符合规则的文件将不会被自动清理' : '符合规则的制品将不会被自动清理' }}
+                {{ repoType === 'generic' ? $t('genericTip') : $t('notGenericTip') }}
             </div>
             <div class="rule-list">
                 <component
@@ -59,14 +59,14 @@
                     reserveVersions: [
                         {
                             regex: /^[0-9]+$/,
-                            message: '请填写非负整数',
+                            message: this.$t('nonNegativeIntegerTip'),
                             trigger: 'blur'
                         }
                     ],
                     reserveDays: [
                         {
                             regex: /^[0-9]+$/,
-                            message: '请填写非负整数',
+                            message: this.$t('nonNegativeIntegerTip'),
                             trigger: 'blur'
                         }
                     ]

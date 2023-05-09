@@ -62,7 +62,7 @@ class UserProjectController(
     private val projectService: ProjectService
 ) {
     @ApiOperation("创建项目")
-    @Principal(PrincipalType.PLATFORM)
+    @Principal(PrincipalType.GENERAL)
     @PostMapping("/create")
     fun createProject(
         @RequestAttribute userId: String,
@@ -125,12 +125,8 @@ class UserProjectController(
     @GetMapping("/list")
     fun listProject(
         @RequestAttribute userId: String,
-        @RequestParam pageNumber: Int?,
-        @RequestParam pageSize: Int?,
-        @RequestParam names: List<String>?,
-        @RequestParam displayNames: List<String>?
+        option: ProjectListOption
     ): Response<List<ProjectInfo>> {
-        val option = ProjectListOption(pageNumber, pageSize, names, displayNames)
         return ResponseBuilder.success(projectService.listPermissionProject(userId, option))
     }
 

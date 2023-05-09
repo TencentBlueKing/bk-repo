@@ -32,12 +32,12 @@
 package com.tencent.bkrepo.common.security.http.platform
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.PLATFORM_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
-import com.tencent.bkrepo.common.security.constant.PLATFORM_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials

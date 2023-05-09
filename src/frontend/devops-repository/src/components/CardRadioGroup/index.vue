@@ -56,7 +56,7 @@
     .card-radio {
         position: relative;
         padding: 10px;
-        width: 165px;
+        min-width: 165px;
         height: 70px;
         text-align: left;
         border: 1px solid transparent;

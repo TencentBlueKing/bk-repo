@@ -9,20 +9,12 @@
     {
       "@id": "@NugetV3Url/query",
       "@type": "SearchQueryService",
-      "comment": "Query endpoint of NuGet Search service (primary)"
+      "comment": "Query endpoint of NuGet Search service"
     },
     {
       "@id": "@NugetV3Url/registration/",
       "@type": "RegistrationsBaseUrl",
       "comment": "Base URL of Azure storage where NuGet package registration info is stored"
-    },
-    {
-      "@id": "@NugetV2Url",
-      "@type": "LegacyGallery"
-    },
-    {
-      "@id": "@NugetV2Url",
-      "@type": "LegacyGallery/2.0.0"
     },
     {
       "@id": "@NugetV2Url/v2/package",
@@ -31,7 +23,7 @@
     {
       "@id": "@NugetV3Url/query",
       "@type": "SearchQueryService/3.0.0-rc",
-      "comment": "Query endpoint of NuGet Search service (primary) used by RC clients"
+      "comment": "Query endpoint of NuGet Search service used by RC clients"
     },
     {
       "@id": "@NugetV3Url/registration/",
@@ -51,7 +43,7 @@
     {
       "@id": "@NugetV3Url/query",
       "@type": "SearchQueryService/3.0.0-beta",
-      "comment": "Query endpoint of NuGet Search service (primary) used by beta clients"
+      "comment": "Query endpoint of NuGet Search service used by beta clients"
     },
     {
       "@id": "@NugetV3Url/registration/",

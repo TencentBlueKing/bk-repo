@@ -104,7 +104,7 @@
                     this.uploadDialog.show = false
                     this.$bkMessage({
                         theme: 'success',
-                        message: `${this.$t('upload')} ${file.name} ${this.$t('success')}`
+                        message: this.$t('upload') + this.$t('space') + `${file.name}` + this.$t('space') + this.$t('success')
                     })
                 }).catch(e => {
                     this.uploadDialog.uploadStatus = 'primary'

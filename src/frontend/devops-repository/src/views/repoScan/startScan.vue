@@ -1,13 +1,13 @@
 <template>
     <div class="start-scan-container">
         <bk-form style="max-width: 1080px;" :label-width="120" :model="config" :rules="rules" ref="scanForm">
-            <bk-form-item label="方案名称">
+            <bk-form-item :label="$t('schemeName')">
                 <span>{{ config.name }}</span>
             </bk-form-item>
-            <bk-form-item label="方案类型">
-                <span>{{ scanTypeEnum[config.type] }}</span>
+            <bk-form-item :label="$t('schemeType')">
+                <span>{{ $t(`scanTypeEnum.${config.type}`)}}</span>
             </bk-form-item>
-            <bk-form-item label="仓库范围" :required="true" property="repo" error-display-type="normal">
+            <bk-form-item :label="$t('repoScope')" :required="true" property="repo" error-display-type="normal">
                 <repo-table
                     ref="repoConfig"
                     :init-data="config.repoNameList"
@@ -15,7 +15,7 @@
                     @clearError="clearError">
                 </repo-table>
             </bk-form-item>
-            <bk-form-item label="制品范围" :required="true" property="arti" error-display-type="normal">
+            <bk-form-item :label="$t('artifactScope')" :required="true" property="arti" error-display-type="normal">
                 <arti-table
                     ref="artiConfig"
                     :init-data="config.artifactRules"
@@ -24,7 +24,7 @@
                 </arti-table>
             </bk-form-item>
             <bk-form-item>
-                <bk-button style="width: 70px;" theme="primary" @click="save()">立即扫描</bk-button>
+                <bk-button style="width: 140px;" theme="primary" @click="save()">{{ $t('scanImmediately') }}</bk-button>
             </bk-form-item>
         </bk-form>
     </div>
@@ -52,7 +52,7 @@
                             validator: () => {
                                 return this.$refs.repoConfig.getConfig()
                             },
-                            message: '请选择指定仓库',
+                            message: this.$t('autoScanRepoRule'),
                             trigger: 'blur'
                         }
                     ],
@@ -61,7 +61,7 @@
                             validator: () => {
                                 return this.$refs.artiConfig.getConfig()
                             },
-                            message: '请填写制品规则',
+                            message: this.$t('autoScanArtifactRule'),
                             trigger: 'blur'
                         }
                     ]
@@ -128,7 +128,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: '执行扫描成功'
+                        message: this.$t('executeScanSuccessMsg')
                     })
                     this.$router.push({
                         name: 'scanReport',
