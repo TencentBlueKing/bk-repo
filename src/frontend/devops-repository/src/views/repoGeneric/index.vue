@@ -852,8 +852,7 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     paths: paths,
-                    isFolder: true
-                    paths
+                    isFolder: true,
                 }).catch(e => {
                     if (e.status === 403) {
                         this.getPermissionUrl({
