@@ -32,11 +32,10 @@ import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
-import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
-import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.ExecuteSubtaskContext
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.TransitResult
@@ -69,14 +68,16 @@ class ExecuteSubtaskAction(
             subtask.id!!, SubScanTaskStatus.EXECUTING, oldStatus, subtask.lastModifiedDate, timeoutDateTime
         )
         if (updateResult.modifiedCount == 1L) {
-            archiveSubScanTaskDao.save(TArchiveSubScanTask.from(subtask, SubScanTaskStatus.EXECUTING.name))
+            archiveSubScanTaskDao.save(
+                SubtaskConverter.convertToArchiveSubtask(subtask, SubScanTaskStatus.EXECUTING.name)
+            )
             scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.EXECUTING)
             // 更新任务实际开始扫描的时间
             scanTaskDao.updateStartedDateTimeIfNotExists(subtask.parentScanTaskId, LocalDateTime.now())
             publisher.publishEvent(
                 SubtaskStatusChangedEvent(
                     SubScanTaskStatus.valueOf(subtask.status),
-                    TPlanArtifactLatestSubScanTask.convert(subtask, SubScanTaskStatus.EXECUTING.name)
+                    SubtaskConverter.convertToPlanSubtask(subtask, SubScanTaskStatus.EXECUTING.name)
                 )
             )
             return TransitResult(target)

@@ -18,16 +18,16 @@
             <span class="package-card-description text-overflow" :title="cardData.description">{{ cardData.description }}</span>
             <div class="package-card-data">
                 <template v-if="cardData.type">
-                    <div class="card-metadata" :title="`最新版本：${cardData.latest}`"></div>
-                    <div class="card-metadata" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
-                    <div class="card-metadata" :title="`版本数：${cardData.versions}`"></div>
-                    <div class="card-metadata" :title="`下载统计：${cardData.downloads}`"></div>
+                    <div class="card-metadata" :title="$t('latestVersion') + ':' + `${cardData.latest}`"></div>
+                    <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="$t('versions') + ':' + `${cardData.versions}`"></div>
+                    <div class="card-metadata" :title="$t('downloadStats') + ':' + `${cardData.downloads}`"></div>
                 </template>
                 <template v-else>
-                    <div class="card-metadata" :title="`所属仓库：${cardData.repoName}`"></div>
-                    <div class="card-metadata" :title="`文件大小：${convertFileSize(cardData.size)}`"></div>
-                    <div class="card-metadata" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
-                    <div class="card-metadata" :title="`最初创建：${formatDate(cardData.createdDate)}`"></div>
+                    <div class="card-metadata" :title="$t('repo') + ':' + `${cardData.repoName}`"></div>
+                    <div class="card-metadata" :title="$t('fileSize') + ':' + `${convertFileSize(cardData.size)}`"></div>
+                    <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="$t('created') + ':' + `${formatDate(cardData.createdDate)}`"></div>
                 </template>
             </div>
         </div>
@@ -36,9 +36,9 @@
             <operation-list
                 v-if="!cardData.type"
                 :list="[
-                    { label: '详情', clickEvent: () => detail() },
-                    !(cardData.metadata || {}).forbidStatus && { label: '下载', clickEvent: () => download() },
-                    !community && !(cardData.metadata || {}).forbidStatus && { label: '共享', clickEvent: () => share() }
+                    { label: $t('detail'), clickEvent: () => detail() },
+                    !(cardData.metadata || {}).forbidStatus && { label: $t('download'), clickEvent: () => download() },
+                    !community && !(cardData.metadata || {}).forbidStatus && { label: $t('share'), clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
@@ -69,7 +69,8 @@
                 return RELEASE_MODE === 'community'
             },
             showRepoScan () {
-                return this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+                const show = this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
+                return show || SHOW_ANALYST_MENU
             }
         },
         methods: {

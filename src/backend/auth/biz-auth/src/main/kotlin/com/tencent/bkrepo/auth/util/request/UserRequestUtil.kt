@@ -28,11 +28,16 @@
 package com.tencent.bkrepo.auth.util.request
 
 import com.tencent.bkrepo.auth.model.TUser
+import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.auth.util.DataDigestUtils
+import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.common.api.constant.StringPool
 import java.time.LocalDateTime
 
 object UserRequestUtil {
@@ -46,6 +51,14 @@ object UserRequestUtil {
             request.asstUsers,
             request.group
         )
+    }
+
+    fun convTokenResult(tokens: List<Token>): List<TokenResult> {
+        return tokens.map { TokenResult(it.name, it.createdAt, it.expiredAt) }
+    }
+
+    fun convTokenInfo(tokens: List<Token>): List<Token> {
+        return tokens.map { Token(it.name, StringPool.EMPTY, it.createdAt, it.expiredAt) }
     }
 
     fun convToCreateProjectUserRequest(request: CreateUserToProjectRequest): CreateUserRequest {
@@ -81,10 +94,10 @@ object UserRequestUtil {
         return User(
             userId = user.userId,
             name = user.name,
-            pwd = user.pwd,
+            pwd = StringPool.EMPTY,
             admin = user.admin,
             locked = user.locked,
-            tokens = user.tokens,
+            tokens = convTokenInfo(user.tokens),
             roles = user.roles
         )
     }
@@ -101,5 +114,14 @@ object UserRequestUtil {
             group = user.group,
             asstUsers = user.asstUsers
         )
+    }
+
+    fun matchToken(pwd: String, hashPwd: String, token: String): Boolean {
+        if (token == pwd || token == hashPwd) return true
+        return false
+    }
+
+    fun generateToken(): String {
+        return DataDigestUtils.md5FromStr(IDUtil.genRandomId())
     }
 }

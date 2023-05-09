@@ -36,11 +36,12 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 
 @Component
+@Order(1)
 class OpDataConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NONE
@@ -48,9 +49,6 @@ class OpDataConfigurer : ArtifactConfigurerSupport() {
     override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
     override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
-    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/opdata")
-        }
-    }
+    override fun getAuthSecurityCustomizer() =
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/opdata") }
 }

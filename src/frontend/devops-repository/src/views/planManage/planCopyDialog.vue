@@ -3,10 +3,10 @@
         :value="show"
         width="600"
         height-num="350"
-        title="复制计划"
+        :title="$t('copyPlan')"
         @cancel="$emit('cancel')">
         <bk-form :label-width="100" :model="formData" :rules="rules" ref="planCopyForm">
-            <bk-form-item label="计划名称" :required="true" property="name" error-display-type="normal">
+            <bk-form-item :label="$t('planName')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="formData.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('description')" property="description">
@@ -46,7 +46,7 @@
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + '计划名称',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('planName'),
                             trigger: 'blur'
                         }
                     ]
@@ -75,7 +75,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: '复制计划' + this.$t('success')
+                        message: this.$t('copyPlan') + this.$t('space') + this.$t('success')
                     })
                     this.$emit('refresh')
                     this.$emit('cancel')

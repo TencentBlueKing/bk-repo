@@ -6,8 +6,8 @@
         </div>
         <div v-if="showMain" class="cron-main">
             <bk-radio-group style="display:flex;" v-model="mode">
-                <bk-radio value="manual">手动输入</bk-radio>
-                <bk-radio value="ui">自动编辑</bk-radio>
+                <bk-radio value="manual">{{ $t('manualInput')}}</bk-radio>
+                <bk-radio value="ui">{{ $t('autoEdit') }}</bk-radio>
             </bk-radio-group>
             <div v-if="mode === 'manual'" class="mt10">
                 <bk-input v-model="manualVal" @blur="manualChange"></bk-input>
@@ -27,7 +27,7 @@
                             :value="type">
                             <span class="mr20">{{ $t(`cron.${type}`, [$t(`cron.${tab === 'week' ? 'day' : tab}`)]) }}</span>
                             <template v-if="type === 'interval' && cron[tab].type === 'interval'">
-                                <span>从</span>
+                                <span>{{ $t('cron.from') }}</span>
                                 <bk-select style="width: 90px;margin: 0 5px;"
                                     v-model="cron[tab][type][0]"
                                     @change="uiChange"
@@ -42,7 +42,7 @@
                                         :name="option.name">
                                     </bk-option>
                                 </bk-select>
-                                <span>到</span>
+                                <span>{{ $t('cron.to') }}</span>
                                 <bk-select style="width: 90px;margin: 0 5px;"
                                     v-model="cron[tab][type][1]"
                                     @change="uiChange"
@@ -57,7 +57,7 @@
                                         :name="option.name">
                                     </bk-option>
                                 </bk-select>
-                                <span>的区间内可以执行</span>
+                                <span>{{ $t('intervalMsg') }}</span>
                             </template>
                             <template v-else-if="type === 'circle' && cron[tab].type === 'circle' && tab !== 'year'">
                                 <bk-select style="width: 90px;margin: 0 5px;"
@@ -74,7 +74,7 @@
                                         :name="option.name">
                                     </bk-option>
                                 </bk-select>
-                                <span>可以执行，此后每隔</span>
+                                <span>{{ $t('circleMsg1') }}</span>
                                 <bk-select style="width: 90px;margin: 0 5px;"
                                     v-model="cron[tab][type][1]"
                                     @change="uiChange"
@@ -89,7 +89,7 @@
                                         :name="option.name">
                                     </bk-option>
                                 </bk-select>
-                                <span>可以执行</span>
+                                <span>{{ $t('circleMsg2') }}</span>
                             </template>
                             <template v-else-if="type === 'enumeration' && cron[tab].type === 'enumeration' && tab !== 'year'">
                                 <bk-tag-input

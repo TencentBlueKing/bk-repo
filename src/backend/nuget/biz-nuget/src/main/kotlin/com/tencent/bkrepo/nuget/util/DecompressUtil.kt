@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.tencent.bkrepo.common.api.util.readXmlString
+import com.tencent.bkrepo.nuget.constant.NUSPEC
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecPackage
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
@@ -41,8 +42,6 @@ import org.apache.commons.compress.archivers.ArchiveEntry
 object DecompressUtil {
 
     private const val BUFFER_SIZE = 2048
-
-    private const val NUSPEC = ".nuspec"
 
     fun InputStream.resolverNuspec(): NuspecPackage {
         val nuspecContent = getNuspec(ZipArchiveInputStream(this))

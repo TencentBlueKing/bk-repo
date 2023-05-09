@@ -31,15 +31,25 @@
 
 package com.tencent.bkrepo.common.security
 
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
 import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
@@ -48,11 +58,42 @@ import org.springframework.context.annotation.Import
 @Import(
     SecurityExceptionHandler::class,
     AuthenticationManager::class,
-    PermissionManager::class,
     PermissionConfiguration::class,
     HttpAuthConfiguration::class,
     ServiceAuthConfiguration::class,
     ActuatorAuthConfiguration::class,
     CryptoConfiguration::class
 )
-class SecurityAutoConfiguration
+class SecurityAutoConfiguration {
+
+    @Bean
+    fun permissionManager(
+        repositoryClient: RepositoryClient,
+        permissionResource: ServicePermissionClient,
+        externalPermissionResource: ServiceExternalPermissionClient,
+        userResource: ServiceUserClient,
+        nodeClient: NodeClient,
+        clusterProperties: ClusterProperties
+    ): PermissionManager {
+        return if (clusterProperties.role == ClusterNodeType.EDGE
+            && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        ) {
+            EdgePermissionManager(
+                repositoryClient = repositoryClient,
+                permissionResource = permissionResource,
+                externalPermissionResource = externalPermissionResource,
+                userResource = userResource,
+                nodeClient = nodeClient,
+                clusterProperties = clusterProperties
+            )
+        } else {
+            PermissionManager(
+                repositoryClient = repositoryClient,
+                permissionResource = permissionResource,
+                externalPermissionResource = externalPermissionResource,
+                userResource = userResource,
+                nodeClient = nodeClient
+            )
+        }
+    }
+}

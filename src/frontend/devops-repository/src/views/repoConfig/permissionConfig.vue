@@ -125,33 +125,33 @@
                 actionList: [
                     {
                         id: 'READ',
-                        name: '查看',
+                        name: this.$t('view'),
                         tips: [
-                            '仓库内所有制品的查看和下载权限'
+                            this.$t('readActionTip')
                         ]
                     },
                     {
                         id: 'WRITE',
-                        name: '上传',
+                        name: this.$t('upload'),
                         tips: [
-                            'Generic仓库：新建文件夹、上传文件、复制、移动',
-                            '依赖源仓库：上传制品版本'
+                            this.$t('writeActionTip1'),
+                            this.$t('writeActionTip2')
                         ]
                     },
                     {
                         id: 'UPDATE',
-                        name: '修改',
+                        name: this.$t('modify'),
                         tips: [
-                            'Generic仓库：重命名、添加元数据、删除元数据',
-                            '依赖源仓库：制品版本晋级、添加元数据、删除元数据',
-                            '全仓库：禁止使用，解除禁止'
+                            this.$t('updateActionTip1'),
+                            this.$t('updateActionTip2'),
+                            this.$t('updateActionTip3')
                         ]
                     },
                     {
                         id: 'DELETE',
-                        name: '删除',
+                        name: this.$t('delete'),
                         tips: [
-                            '仓库内所有制品的页面删除权限'
+                            this.$t('deleteActionTip')
                         ]
                     }
                 ]
@@ -214,9 +214,9 @@
                 const actionsName = ['READ', ...this[name].actions.data].map(id => this.actionList.find(action => action.id === id)?.name)
                 switch (name) {
                     case 'admin':
-                        return '仓库管理，制品管理所有权限'
+                        return this.$t('adminPermission')
                     case 'user':
-                        return `制品管理权限：${actionsName.join('，')}`
+                        return this.$t('normalPermission') + `：${actionsName.join('，')}`
                 }
             },
             filterSelectOptions (target, part) {

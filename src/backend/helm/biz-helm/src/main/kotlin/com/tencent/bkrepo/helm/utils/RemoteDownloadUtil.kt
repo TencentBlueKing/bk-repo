@@ -34,17 +34,18 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCreden
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
-import java.io.InputStream
-import java.net.InetSocketAddress
-import java.net.Proxy
-import java.util.concurrent.TimeUnit
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.Request
+import java.io.InputStream
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.util.concurrent.TimeUnit
 
 /**
  * 用于从remote仓库下载index.yaml文件
@@ -71,7 +72,7 @@ object RemoteDownloadUtil {
             val artifactFile = ArtifactFileFactory.build(response.body!!.byteStream())
             val size = artifactFile.getSize()
             artifactFile.getInputStream().artifactStream(Range.full(size))
-        } else throw HelmBadRequestException("The response of request $downloadUrl is ${response.code}")
+        } else throw HelmBadRequestException(HelmMessageCode.HELM_REMOTE_DOWNLOAD_FAILED, downloadUrl, response.code)
     }
 
     /**

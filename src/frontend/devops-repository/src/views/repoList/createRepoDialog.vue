@@ -3,7 +3,7 @@
         v-model="show"
         width="800"
         height-num="603"
-        title="创建仓库"
+        :title="title"
         @cancel="cancel">
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
@@ -18,15 +18,21 @@
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
                 <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
-                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
+                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
                 </bk-input>
-                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">docker仓库名称不支持大写英文字母</div>
+                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
-            <bk-form-item label="访问权限">
+            <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
                     v-model="available"
                     :list="availableList">
                 </card-radio-group>
+            </bk-form-item>
+            <bk-form-item :label="$t('isDisplay')">
+                <bk-radio-group v-model="repoBaseInfo.display">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
             </bk-form-item>
             <bk-form-item label="蓝鲸权限校验">
                 <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
@@ -98,7 +104,7 @@
                     maxlength="200"
                     :rows="6"
                     v-model.trim="repoBaseInfo.description"
-                    :placeholder="$t('repoDescriptionPlacehodler')">
+                    :placeholder="$t('repoDescriptionPlaceholder')">
                 </bk-input>
             </bk-form-item>
         </bk-form>
@@ -126,6 +132,7 @@
             interceptors: [],
             groupXmlSet: [],
             description: '',
+            display: true,
             mobile: {
                 enable: false,
                 filename: '',
@@ -161,6 +168,7 @@
                 repoBaseInfo: getRepoBaseInfo(),
                 showIamDenyDialog: false,
                 showData: {}
+                title: this.$t('createRepository')
             }
         },
         computed: {
@@ -229,12 +237,12 @@
                         },
                         {
                             regex: this.repoBaseInfo.type === 'docker' ? /^[a-z][a-z0-9\-_]{1,31}$/ : /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler'),
+                            message: this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder'),
                             trigger: 'blur'
                         },
                         {
                             validator: this.asynCheckRepoName,
-                            message: this.$t('repoName') + '已存在',
+                            message: this.$t('repoName') + ' ' + this.$t('exist'),
                             trigger: 'blur'
                         }
                     ],
@@ -276,9 +284,9 @@
             },
             availableList () {
                 return [
-                    { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
+                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
+                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
                 ]
             }
         },
@@ -332,6 +340,7 @@
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
                         public: this.repoBaseInfo.public,
+                        display: this.repoBaseInfo.display,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         configuration: {
@@ -355,7 +364,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('create') + this.$t('repository') + this.$t('success')
+                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('success')
                     })
                     this.cancel()
                     this.$emit('refresh')

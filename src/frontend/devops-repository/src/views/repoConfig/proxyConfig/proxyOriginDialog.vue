@@ -21,7 +21,7 @@
                 <bk-input v-model.trim="editProxyData.url"></bk-input>
             </bk-form-item>
         </bk-form>
-        <label class="ml20 mr20 mt20 mb10 form-label">凭证信息</label>
+        <label class="ml20 mr20 mt20 mb10 form-label">{{$t('credentialInformation')}}</label>
         <bk-form class="ml20 mr20" :label-width="85">
             <bk-form-item :label="$t('account')" property="username">
                 <bk-input v-model.trim="editProxyData.username"></bk-input>
@@ -53,14 +53,14 @@
                     name: [
                         {
                             required: true,
-                            message: '请输入代理源名称',
+                            message: this.$t('proxyNameRule'),
                             trigger: 'blur'
                         }
                     ],
                     url: [
                         {
                             required: true,
-                            message: '请输入代理源url地址',
+                            message: this.$t('proxyUrlRule'),
                             trigger: 'blur'
                         }
                     ]

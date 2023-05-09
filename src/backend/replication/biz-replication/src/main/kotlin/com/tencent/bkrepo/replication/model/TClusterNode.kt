@@ -27,8 +27,9 @@
 
 package com.tencent.bkrepo.replication.model
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
@@ -86,6 +87,14 @@ data class TClusterNode(
      * 密钥
      * */
     var secretKey: String? = null,
+    /**
+     * EDGE连通性检测方式
+     */
+    var detectType: DetectType? = null,
+    /**
+     * 最近上报心跳时间
+     */
+    var lastReportTime: LocalDateTime? = null,
 
     /**
      * 审计信息

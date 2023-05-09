@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -121,6 +122,9 @@ interface ArtifactReplicaClient {
     fun replicaRepoDeleteRequest(
         @RequestBody request: RepoDeleteRequest
     ): Response<Void>
+
+    @PostMapping("/permission/check")
+    fun checkRepoPermission(@RequestBody request: CheckPermissionRequest): Response<Boolean>
 
     @PostMapping("/project/create")
     fun replicaProjectCreateRequest(

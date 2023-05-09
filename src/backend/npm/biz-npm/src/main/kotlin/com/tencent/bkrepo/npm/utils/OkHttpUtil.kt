@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.npm.utils
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response

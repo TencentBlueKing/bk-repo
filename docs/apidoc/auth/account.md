@@ -208,7 +208,6 @@ scope description
 | data    | object         | result data                             | the data for response     |
 | traceId | string         | 请求跟踪id                              | the trace id              |
 
-### 
 
 ### 更新访问账号
 
@@ -435,7 +434,6 @@ scope description
 | data    | object array   | result data                             | the data for response     |
 | traceId | string         | 请求跟踪id                              | the trace id              |
 
-### 
 
 ### 获取账号下的ak/sk对
 
@@ -483,23 +481,24 @@ scope description
 
 ### 创建账号下的ak/sk对
 
-- API: POST /auth/api/account/credential/{appId}/{type}
+- API: POST /auth/api/account/credential/{appId}
 - API 名称: create_account_credential
 - 功能说明：
-	- 中文：查询账号的认证方式
-	- English：create account credential
+    - 中文：查询账号的认证方式
+    - English：create account credential
 
 - input body:
-
+- request params
+    - type
 ``` json
 
 ```
 - input 字段说明
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|appId|string|是|无|应用ID|the application id|
-|Type|enum|是|无|认证授权方式[PLATFORM,AUTHORIZATION_CODE]|the authorization grant type|
+|字段|类型| 是否必须 |默认值|说明|Description|
+|---|---|-----|---|---|---|
+|appId|string| 是   |无|应用ID|the application id|
+|Type|enum| 否   |PLATFORM|认证授权方式[PLATFORM,AUTHORIZATION_CODE]|the authorization grant type|
 
 - output:
 

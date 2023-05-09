@@ -50,7 +50,8 @@ interface OciOperationService {
         projectId: String,
         repoName: String,
         fullPath: String,
-        metadata: MutableMap<String, Any>
+        metadata: MutableMap<String, Any>,
+        userId: String
     )
 
     /**
@@ -112,6 +113,14 @@ interface OciOperationService {
     )
 
     /**
+     * 在先上传manifest.json，后上传blob的情况下，等所有blob上传成功后更新对应的package
+     */
+    fun createPackageForThirdPartyImage(
+        ociArtifactInfo: OciManifestArtifactInfo,
+        manifestPath: String,
+    ): Boolean
+
+    /**
      * 当使用追加上传时，文件已存储，只需存储节点信息
      */
     fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail
@@ -141,7 +150,7 @@ interface OciOperationService {
         projectId: String,
         repoName: String,
         digestStr: String
-    ): String?
+    ): Pair<String?, String?>
 
     /**
      * 针对老的docker仓库的数据做兼容性处理

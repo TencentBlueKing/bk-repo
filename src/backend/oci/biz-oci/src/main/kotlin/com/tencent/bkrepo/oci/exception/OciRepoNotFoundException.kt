@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.oci.exception
 
-class OciRepoNotFoundException(
-    message: String,
-    code: Any? = null,
-    detail: String? = null
-) : OciException(message, code, detail)
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class OciRepoNotFoundException(messageCode: MessageCode, vararg params: String)
+    : ErrorCodeException(messageCode, *params)

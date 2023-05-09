@@ -36,19 +36,30 @@ const val LOWER_VERSION = "lowerVersion"
 const val UPPER_VERSION = "upperVersion"
 const val PACKAGE = "package"
 const val DEPENDENCY = "dependency"
+const val TARGET_FRAMEWORKS = "targetFramework"
 const val REFERENCE = "reference"
 const val FRAMEWORKS = "frameworks"
-
+const val GROUP = "group"
+const val MANIFEST = "manifest"
+const val NUSPEC = ".nuspec"
 const val METADATA = "nuget_metadata"
+const val REGISTRATION = "registration"
+const val SEMVER2 = "semver2"
+const val INDEX = "index.json"
+const val PACKAGE_NAME = "packageName"
 
 const val REMOTE_URL = "remote_url"
+const val REGISTRATION_PATH = "registrationPath"
+const val SEMVER2_ENDPOINT = "isSemver2Endpoint"
+const val CACHE_CONTEXT = "cacheContext"
+const val QUERY_TYPE = "queryType"
 
 const val NUGET_V3_NOT_FOUND =
-    """
-    <Error>
-        <Code>BlobNotFound</Code>
-        <Message>
-            The specified blob does not exist.
-        </Message>
-    </Error>
+"""<?xml version="1.0" encoding="utf-8"?>
+<Error>
+    <Code>BlobNotFound</Code>
+    <Message>
+        The specified blob does not exist.
+    </Message>
+</Error>
 """

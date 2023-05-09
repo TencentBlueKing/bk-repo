@@ -35,16 +35,20 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -127,6 +131,14 @@ interface NodeClient {
     @DeleteMapping("/delete")
     fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Response<Void>
 
+    @ApiOperation("删除节点")
+    @DeleteMapping("/batch/delete")
+    fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+
+    @ApiOperation("恢复节点")
+    @PostMapping("/restore")
+    fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult>
+
     @ApiOperation("查询节点大小信息")
     @GetMapping("/size/{projectId}/{repoName}")
     fun computeSize(
@@ -170,4 +182,12 @@ interface NodeClient {
         @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
         @RequestParam includeMetadata: Boolean = false
     ): Response<List<NodeInfo>>
+
+    @ApiOperation("查询已删除节点")
+    @GetMapping("/deleted/detail/{projectId}/{repoName}")
+    fun getDeletedNodeDetail(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Response<List<NodeDetail>>
 }

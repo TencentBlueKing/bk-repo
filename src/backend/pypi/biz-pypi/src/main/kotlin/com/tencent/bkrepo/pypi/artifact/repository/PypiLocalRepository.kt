@@ -31,10 +31,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
-import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -67,6 +66,7 @@ import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
+import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
@@ -288,7 +288,7 @@ class PypiLocalRepository(
      * 2，pypi simple html页面
      */
     override fun query(context: ArtifactQueryContext): Any? {
-        val servletPath = context.request.servletPath
+        val servletPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
         return if (servletPath.startsWith("/ext/version/detail")) {
             // 请求版本详情
             getVersionDetail(context)
@@ -355,7 +355,7 @@ class PypiLocalRepository(
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
             if (!node.folder) {
                 return null
             }
@@ -364,7 +364,7 @@ class PypiLocalRepository(
                 val nodeList = nodeClient.listNode(
                     projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
                 ).data
-                    ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
                 // 过滤掉'根节点',
                 return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
             }
@@ -375,7 +375,7 @@ class PypiLocalRepository(
                     deep = true, includeMetadata = true
                 ).data
                 if (packageNode.isNullOrEmpty()) {
-                    throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    throw PypiSimpleNotFoundException(getArtifactFullPath())
                 }
                 return buildPypiPageContent(
                     buildPackageFileNodeListContent(packageNode)

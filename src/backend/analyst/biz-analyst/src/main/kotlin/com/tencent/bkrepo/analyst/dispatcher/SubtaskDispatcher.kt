@@ -43,6 +43,16 @@ interface SubtaskDispatcher {
     fun dispatch(subtask: SubScanTask): Boolean
 
     /**
+     * 清理任务，会停止任务，并移除任务执行过程中占用的执行器相关资源
+     *
+     * @param subtask 需要清理的任务
+     * @param subtaskStatus 任务状态
+     *
+     * @return 是否清理成功
+     */
+    fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean
+
+    /**
      * 允许调度多少个任务
      */
     fun availableCount(): Int

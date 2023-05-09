@@ -78,9 +78,7 @@ object DockerUtils {
     fun DockerClient.createContainer(
         image: String,
         hostConfig: HostConfig? = null,
-        cmd: List<String>? = null,
-        tty: Boolean = true,
-        stdIn: Boolean = true
+        cmd: List<String>? = null
     ): String {
         // 拉取镜像
         pullImage(image)
@@ -88,7 +86,7 @@ object DockerUtils {
         val createCmd = createContainerCmd(image)
         hostConfig?.let { createCmd.withHostConfig(it) }
         cmd?.let { createCmd.withCmd(it) }
-        return createCmd.withTty(tty).withStdinOpen(stdIn).exec().id
+        return createCmd.exec().id
     }
 
     fun DockerClient.startContainer(containerId: String, timeout: Long): Boolean {

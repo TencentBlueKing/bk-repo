@@ -30,10 +30,10 @@ package com.tencent.bkrepo.analyst.statemachine.subtask.action
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
-import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.PullSubtaskContext
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.statemachine.Event
@@ -54,7 +54,7 @@ class PullSubtaskAction(
         val oldStatus = SubScanTaskStatus.valueOf(subtask.status)
         val updateResult = subScanTaskDao.updateStatus(subtask.id!!, PULLED, oldStatus, subtask.lastModifiedDate)
         return if (updateResult.modifiedCount != 0L) {
-            archiveSubScanTaskDao.save(TArchiveSubScanTask.from(subtask, PULLED.name))
+            archiveSubScanTaskDao.save(SubtaskConverter.convertToArchiveSubtask(subtask, PULLED.name))
             scannerMetrics.subtaskStatusChange(oldStatus, PULLED)
             TransitResult(PULLED.name, true)
         } else {

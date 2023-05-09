@@ -5,13 +5,13 @@
                 class="w250"
                 v-model.trim="filter.licenseId"
                 clearable
-                placeholder="请输入许可证名称, 按Enter键搜索"
+                :placeholder="$t('licencePlaceHolder')"
                 right-icon="bk-icon icon-search"
                 @enter="handlerPaginationChange()"
                 @clear="handlerPaginationChange()">
             </bk-input>
             <div class="flex-1 flex-end-center">
-                <bk-button theme="default" @click="$emit('rescan')">重新扫描</bk-button>
+                <bk-button theme="default" @click="$emit('rescan')">{{$t('rescan')}}</bk-button>
             </div>
         </div>
         <bk-table
@@ -26,35 +26,35 @@
                 <empty-data
                     :is-loading="isLoading"
                     :search="Boolean(filter.licenseId)"
-                    title="未扫描到证书信息">
+                    :title="$t('noCrtTitle')">
                 </empty-data>
             </template>
             <bk-table-column type="expand" width="30">
                 <template #default="{ row }">
-                    <div class="leak-title">证书信息</div>
+                    <div class="leak-title">{{$t('licenceInfo')}}</div>
                     <div class="leak-tip">
                         <a :href="row.description" target="_blank">{{ row.description || '/' }}</a>
                     </div>
                 </template>
             </bk-table-column>
-            <bk-table-column label="名称">
+            <bk-table-column :label="$t('name')">
                 <template #default="{ row }">
                     <span v-bk-tooltips="{ content: row.fullName, placements: ['top'] }">{{ row.licenseId }}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="依赖路径" prop="dependentPath"></bk-table-column>
-            <bk-table-column label="OSI认证" width="120">
-                <template #default="{ row }">{{ row.description ? `${row.isOsiApproved ? '已' : '未'}认证` : '/' }}</template>
+            <bk-table-column :label="$t('dependPath')" prop="dependentPath"></bk-table-column>
+            <bk-table-column :label="`OSI` + $t('authenticated')" width="120">
+                <template #default="{ row }">{{ row.description ? `${row.isOsiApproved ? $t('authenticated') : $t('notAuthenticated')}` : '/' }}</template>
             </bk-table-column>
-            <bk-table-column label="FSF开源" width="120">
-                <template #default="{ row }">{{ row.description ? `${row.isFsfLibre ? '已' : '未'}开源` : '/' }}</template>
+            <bk-table-column :label="`FSF` + $t('openSource')" width="120">
+                <template #default="{ row }">{{ row.description ? `${row.isFsfLibre ? $t('openSource') : $t('notOpenSource')}` : '/' }}</template>
             </bk-table-column>
-            <bk-table-column label="推荐使用" width="120">
-                <template #default="{ row }">{{ row.description ? `${row.recommended ? '' : '不'}推荐` : '/' }}</template>
+            <bk-table-column :label="$t('recommendUse')" width="120">
+                <template #default="{ row }">{{ row.description ? `${row.recommended ? $t('recommended') : $t('notRecommended')}` : '/' }}</template>
             </bk-table-column>
-            <bk-table-column label="合规性" width="120">
+            <bk-table-column :label="$t('compliance')" width="120">
                 <template #default="{ row }">
-                    <span v-if="row.description" class="repo-tag" :class="row.compliance ? 'SUCCESS' : 'FAILED'">{{ `${row.compliance ? '' : '不'}合规` }}</span>
+                    <span v-if="row.description" class="repo-tag" :class="row.compliance ? 'SUCCESS' : 'FAILED'">{{ `${row.compliance ? $t('compliance') : $t('notCompliance')}` }}</span>
                     <span v-else>/</span>
                 </template>
             </bk-table-column>
@@ -126,7 +126,7 @@
                 }).then(({ records, totalRecords }) => {
                     this.licenseList = records.map(v => ({
                         ...v,
-                        licenseKey: `${v.licenseId}${v.dependentPath}`
+                        licenseKey: `${v.licenseId}-${v.dependentPath}-${v.pkgName}`
                     }))
                     this.pagination.count = totalRecords
                 }).finally(() => {

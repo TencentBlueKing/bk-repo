@@ -27,22 +27,32 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
+import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
+import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.DISPATCH_FAILED
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.DispatchFailedContext
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
 
 open class SubtaskPoller(
     private val dispatcher: SubtaskDispatcher,
     private val scanService: ScanService,
+    private val scannerService: ScannerService,
     private val temporaryScanTokenService: TemporaryScanTokenService,
-    private val subtaskStateMachine: StateMachine
+    private val subtaskStateMachine: StateMachine,
+    private val executorClient: ObjectProvider<ExecutorClient>
 ) {
     @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
     open fun dispatch() {
@@ -56,6 +66,25 @@ open class SubtaskPoller(
                 logger.warn("dispatch subtask failed, subtask[${subtask.taskId}]")
                 subtaskStateMachine.sendEvent(PULLED.name, Event(DISPATCH_FAILED.name, DispatchFailedContext(subtask)))
             }
+        }
+    }
+
+    /**
+     * 任务执行结束后进行资源清理
+     */
+    @Async
+    @EventListener(SubtaskStatusChangedEvent::class)
+    open fun clean(event: SubtaskStatusChangedEvent) {
+        if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher == dispatcher.name()) {
+            val scanner = scannerService.get(event.subtask.scanner)
+            val result = dispatcher.clean(SubtaskConverter.convert(event.subtask, scanner), event.subtask.status)
+            val subtaskId = event.subtask.latestSubScanTaskId
+            logger.info("clean result[$result], subtask[$subtaskId], dispatcher[${dispatcher.name()}]")
+        }
+        if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher.isNullOrEmpty()) {
+            val subtaskId = event.subtask.latestSubScanTaskId!!
+            val result = executorClient.ifAvailable?.stop(subtaskId)
+            logger.info("stop subtask[$subtaskId] executor result[$result]")
         }
     }
 

@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.common.security.manager
 
-import com.tencent.bkrepo.auth.api.ServiceAccountResource
-import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServiceAccountClient
+import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import org.springframework.stereotype.Component
 
@@ -41,9 +41,9 @@ import org.springframework.stereotype.Component
  */
 @Component
 class AuthenticationManager(
-    private val serviceUserResource: ServiceUserResource,
-    private val serviceAccountResource: ServiceAccountResource,
-    private val serviceOauthAuthorizationResource: ServiceOauthAuthorizationResource
+    private val serviceUserClient: ServiceUserClient,
+    private val serviceAccountClient: ServiceAccountClient,
+    private val serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
 ) {
 
     /**
@@ -51,7 +51,7 @@ class AuthenticationManager(
      * @throws AuthenticationException 校验失败
      */
     fun checkUserAccount(uid: String, token: String): String {
-        val response = serviceUserResource.checkToken(uid, token)
+        val response = serviceUserClient.checkToken(uid, token)
         return if (response.data == true) uid else throw AuthenticationException("Authorization value check failed")
     }
 
@@ -60,7 +60,7 @@ class AuthenticationManager(
      * @throws AuthenticationException 校验失败
      */
     fun checkPlatformAccount(accessKey: String, secretKey: String): String {
-        val response = serviceAccountResource.checkCredential(accessKey, secretKey)
+        val response = serviceAccountClient.checkAccountCredential(accessKey, secretKey)
         return response.data ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 
@@ -68,7 +68,7 @@ class AuthenticationManager(
      * 校验Oauth Token
      */
     fun checkOauthToken(accessToken: String): String {
-        val response = serviceOauthAuthorizationResource.validateToken(accessToken)
+        val response = serviceOauthAuthorizationClient.validateToken(accessToken)
         return response.data ?: throw AuthenticationException("Access token check failed.")
     }
 
@@ -77,26 +77,26 @@ class AuthenticationManager(
      */
     fun createUserAccount(userId: String) {
         val request = CreateUserRequest(userId = userId, name = userId)
-        serviceUserResource.createUser(request)
+        serviceUserClient.createUser(request)
     }
 
     /**
      * 根据用户id[userId]查询用户信息
      * 当用户不存在时返回`null`
      */
-    fun findUserAccount(userId: String): User? {
-        return serviceUserResource.detail(userId).data
+    fun findUserAccount(userId: String): UserInfo? {
+        return serviceUserClient.userInfoById(userId).data
     }
 
     fun findOauthToken(accessToken: String): OauthToken? {
-        return serviceOauthAuthorizationResource.getToken(accessToken).data
+        return serviceOauthAuthorizationClient.getToken(accessToken).data
     }
 
     /**
      * 根据appId和ak查找sk
      * */
     fun findSecretKey(appId: String, accessKey: String): String? {
-        return serviceAccountResource.findSecretKey(appId, accessKey).data
+        return serviceAccountClient.findSecretKey(appId, accessKey).data
     }
 
 }

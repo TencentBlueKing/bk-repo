@@ -98,7 +98,10 @@ class UserRepositoryController(
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void> {
         val createRequest = with(userRepoCreateRequest) {
-            permissionManager.checkProjectPermission(PermissionAction.WRITE, projectId)
+            permissionManager.checkProjectPermission(
+                action = if (pluginRequest) PermissionAction.WRITE else PermissionAction.MANAGE,
+                projectId = projectId
+            )
             RepoCreateRequest(
                 projectId = projectId,
                 name = name,
@@ -109,7 +112,9 @@ class UserRepositoryController(
                 configuration = configuration,
                 storageCredentialsKey = storageCredentialsKey,
                 operator = userId,
-                quota = quota
+                quota = quota,
+                pluginRequest = pluginRequest,
+                display = display
             )
         }
         repositoryService.createRepo(createRequest)
@@ -210,7 +215,8 @@ class UserRepositoryController(
             public = request.public,
             description = request.description,
             configuration = request.configuration,
-            operator = userId
+            operator = userId,
+            display = request.display
         )
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()

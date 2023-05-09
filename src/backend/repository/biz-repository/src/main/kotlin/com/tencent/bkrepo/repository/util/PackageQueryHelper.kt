@@ -70,6 +70,12 @@ object PackageQueryHelper {
         return Query(criteria)
     }
 
+    fun clusterNameQuery(packageId: String, clusterName: String): Query {
+        val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
+            .and(TPackageVersion::clusterNames.name).inValues(clusterName)
+        return Query(criteria)
+    }
+
     fun versionListQuery(
         packageId: String,
         name: String? = null,
@@ -104,7 +110,7 @@ object PackageQueryHelper {
         return where(TPackage::projectId).isEqualTo(projectId)
             .and(TPackage::repoName).isEqualTo(repoName)
             .apply {
-                packageName?.let { and(TPackage::name).regex("^$packageName") }
+                packageName?.let { and(TPackage::name).regex("^$packageName", "i") }
             }
     }
 

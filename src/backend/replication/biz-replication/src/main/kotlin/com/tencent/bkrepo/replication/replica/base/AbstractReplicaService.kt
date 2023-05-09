@@ -27,10 +27,11 @@
 
 package com.tencent.bkrepo.replication.replica.base
 
+import com.google.common.base.Throwables
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -77,6 +78,10 @@ abstract class AbstractReplicaService(
                     fullPath = PathUtils.ROOT
                 ).nodeInfo
                 replicaByPath(context, root)
+                logger.info(
+                    "replicaByRepo for generic finished" +
+                        " ${replicaContext.localProjectId}|${replicaContext.localRepoName}"
+                )
                 return
             }
             // 同步包
@@ -97,9 +102,10 @@ abstract class AbstractReplicaService(
                     option = option
                 )
             }
+            logger.info("replicaByRepo finished ${replicaContext.localProjectId}|${replicaContext.localRepoName}")
         } catch (throwable: Throwable) {
             setErrorStatus(context, throwable)
-            logger.error("replicaByRepo failed,error is ${throwable.message}")
+            logger.error("replicaByRepo failed,error is ${Throwables.getStackTraceAsString(throwable)}")
         } finally {
             completeRecordDetail(context)
         }
@@ -254,7 +260,10 @@ abstract class AbstractReplicaService(
             } catch (throwable: Throwable) {
                 status = ExecutionStatus.FAILED
                 errorReason = throwable.message.orEmpty()
-                logger.error("replica file failed, error is $errorReason")
+                logger.error(
+                    "replica file failed, " +
+                                 "error is ${Throwables.getStackTraceAsString(throwable)}"
+                )
                 progress.failed += 1
                 setErrorStatus(this, throwable)
                 if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
@@ -377,5 +386,7 @@ abstract class AbstractReplicaService(
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractReplicaService::class.java)
         private const val PAGE_SIZE = 1000
+        const val RETRY_COUNT = 2
+        const val DELAY_IN_SECONDS: Long = 2
     }
 }

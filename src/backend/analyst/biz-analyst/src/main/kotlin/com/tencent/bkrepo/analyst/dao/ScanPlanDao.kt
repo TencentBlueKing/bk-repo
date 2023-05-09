@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.analyst.model.TScanPlan
+import com.tencent.bkrepo.analyst.pojo.ScanPlan
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -35,8 +37,6 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.analyst.model.TScanPlan
-import com.tencent.bkrepo.analyst.pojo.ScanPlan
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.query.Criteria
@@ -133,6 +133,15 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return Pages.ofResponse(pageRequest, count(query), find(query))
     }
 
+    fun page(pageLimit: PageLimit? = null): List<TScanPlan> {
+        val query = Query()
+        if (pageLimit != null) {
+            val pageRequest = Pages.ofRequest(pageLimit.getNormalizedPageNumber(), pageLimit.getNormalizedPageSize())
+            query.with(pageRequest).with(Sort.by(ID).ascending())
+        }
+        return find(query)
+    }
+
     fun update(scanPlan: ScanPlan): UpdateResult {
         with(scanPlan) {
             val criteria = projectCriteria(projectId!!).and(ID).`is`(id)
@@ -182,9 +191,25 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
             .execute()
     }
 
-    fun updateScanResultOverview(latestScanTaskId: String, overview: Map<String, Any?>) {
-        val criteria = TScanPlan::latestScanTaskId.isEqualTo(latestScanTaskId)
+    fun updateScanResultOverview(planId: String, overview: Map<String, Any?>) {
+        val criteria = Criteria.where(ID).isEqualTo(planId)
         val update = buildOverviewUpdate(overview) ?: return
+        updateFirst(Query(criteria), update)
+    }
+
+    fun setScanResultOverview(planId: String, overview: Map<String, Any?>) {
+        var hasUpdate = false
+        val update = Update()
+        overview.forEach {
+            if (it.value is Number) {
+                update.set("${TScanPlan::scanResultOverview.name}.${it.key}", it.value)
+                hasUpdate = true
+            }
+        }
+        if (!hasUpdate) {
+            return
+        }
+        val criteria = Criteria.where(ID).isEqualTo(planId)
         updateFirst(Query(criteria), update)
     }
 

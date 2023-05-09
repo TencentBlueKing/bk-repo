@@ -37,6 +37,8 @@ object Converter {
             return ScanExecutorTask(
                 taskId = taskId,
                 parentTaskId = parentScanTaskId,
+                packageKey = packageKey,
+                packageVersion = version,
                 file = file,
                 scanner = scanner,
                 projectId = projectId,

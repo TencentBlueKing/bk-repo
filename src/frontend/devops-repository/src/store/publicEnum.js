@@ -3,8 +3,9 @@ export const repoEnum = MODE_CONFIG === 'ci'
     ? [
         'generic',
         'helm',
-        'rds',
-        'docker'
+        // 'rds',
+        'docker',
+        'nuget'
     ]
     : [
         'generic',
@@ -13,11 +14,11 @@ export const repoEnum = MODE_CONFIG === 'ci'
         'pypi',
         'npm',
         'helm',
-        'rds',
+        // 'rds',
         'composer',
-        'rpm'
+        'rpm',
         // 'git',
-        // 'nuget'
+        'nuget'
     ]
 
 // 文件类型
@@ -82,8 +83,8 @@ export const asyncPlanStatusEnum = {
 export const scanTypeEnum = {
     GENERIC: 'Generic制品分析',
     DOCKER: 'Docker制品分析',
-    MAVEN: 'Maven制品分析'
-    // NPM: 'Npm制品分析',
+    MAVEN: 'Maven制品分析',
+    NPM: 'Npm制品分析'
     // PYPI: 'Pypi制品分析'
 }
 
@@ -125,3 +126,18 @@ export const leakLevelEnum = {
     MEDIUM: '中级',
     LOW: '低级'
 }
+
+// 匹配规则时忽略
+export const FILTER_RULE_IGNORE = 0
+
+// 未匹配规则时忽略
+export const FILTER_RULE_INCLUDE = 1
+
+// 通过漏洞ID过滤
+export const FILTER_METHOD_VUL_ID = 0
+
+// 通过漏洞等级过滤
+export const FILTER_METHOD_SEVERITY = 1
+
+// 通过风险组件名过滤
+export const FILTER_METHOD_RISKY_COMPONENT = 2

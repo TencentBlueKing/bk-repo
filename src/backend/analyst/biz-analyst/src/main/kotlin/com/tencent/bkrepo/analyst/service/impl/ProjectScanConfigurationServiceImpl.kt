@@ -32,9 +32,11 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFA
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
 import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
+import com.tencent.bkrepo.analyst.pojo.DispatcherConfiguration
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.request.ProjectScanConfigurationPageRequest
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
+import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
@@ -47,9 +49,11 @@ import java.time.LocalDateTime
 
 @Service
 class ProjectScanConfigurationServiceImpl(
-    private val projectScanConfigurationDao: ProjectScanConfigurationDao
+    private val projectScanConfigurationDao: ProjectScanConfigurationDao,
+    private val scannerService: ScannerService
 ) : ProjectScanConfigurationService {
     override fun create(request: ProjectScanConfiguration): ProjectScanConfiguration {
+        check(request)
         with(request) {
             if (projectScanConfigurationDao.existsByProjectId(projectId)) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, projectId)
@@ -85,6 +89,7 @@ class ProjectScanConfigurationServiceImpl(
     }
 
     override fun update(request: ProjectScanConfiguration): ProjectScanConfiguration {
+        check(request)
         with(request) {
             val oldConfiguration = projectScanConfigurationDao.findByProjectId(projectId)
                 ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
@@ -119,5 +124,24 @@ class ProjectScanConfigurationServiceImpl(
         return projectScanConfigurationDao.findByProjectId(projectId)
             ?.let { Converter.convert(it) }
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
+    }
+
+    private fun check(projectScanConfiguration: ProjectScanConfiguration) {
+        with(projectScanConfiguration) {
+            if (dispatcherConfiguration?.isNotEmpty() == true)  {
+                checkDispatcherConfiguration(dispatcherConfiguration!!)
+            }
+        }
+    }
+
+    private fun checkDispatcherConfiguration(dispatcherConfigurations: List<DispatcherConfiguration>) {
+        val scanners = scannerService.find(dispatcherConfigurations.map { it.scanner })
+        dispatcherConfigurations.forEach { dispatcherConfiguration ->
+            val scanner = scanners.firstOrNull { it.name == dispatcherConfiguration.scanner }
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, dispatcherConfiguration.scanner)
+            if (dispatcherConfiguration.dispatcher !in scanner.supportDispatchers) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, dispatcherConfiguration.dispatcher)
+            }
+        }
     }
 }

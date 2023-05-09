@@ -52,7 +52,8 @@ interface ExecutorClient {
      * @param token 用于更新
      * @return 是否成功执行
      */
-    fun execute(@RequestParam subtaskId: String, token: String): Boolean
+    @PostMapping("/dispatch")
+    fun dispatch(@RequestParam subtaskId: String, @RequestParam token: String): Boolean
 
     /**
      * 停止扫描任务

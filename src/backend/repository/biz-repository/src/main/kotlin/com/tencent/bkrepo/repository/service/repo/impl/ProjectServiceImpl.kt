@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.TOTAL_RECORDS_INFINITY
@@ -35,8 +35,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.model.TProject
@@ -49,7 +51,9 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -66,9 +70,10 @@ import java.util.regex.Pattern
  * 仓库服务实现类
  */
 @Service
+@Conditional(DefaultCondition::class)
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
-    private val servicePermissionResource: ServicePermissionResource
+    private val servicePermissionClient: ServicePermissionClient
 ) : ProjectService {
 
     override fun getProjectInfo(name: String): ProjectInfo? {
@@ -99,12 +104,18 @@ class ProjectServiceImpl(
     }
 
     override fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
-        var names = servicePermissionResource.listPermissionProject(userId).data.orEmpty()
+        var names = servicePermissionClient.listPermissionProject(userId).data.orEmpty()
         option?.names?.let { names = names.intersect(option.names!!).toList() }
         val query = Query.query(
             where(TProject::name).`in`(names)
             .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
         )
+        if (option?.sortProperty?.isNotEmpty() == true) {
+            checkPropertyAndDirection(option)
+            option.direction?.zip(option.sortProperty!!)?.forEach {
+                query.with(Sort.by(Sort.Direction.valueOf(it.first), it.second))
+            }
+        }
         return if (option?.pageNumber == null && option?.pageSize == null) {
             projectDao.find(query).map { convert(it)!! }
         } else {
@@ -114,6 +125,17 @@ class ProjectServiceImpl(
             )
             projectDao.find(query.with(pageRequest)).map { convert(it)!! }
         }
+    }
+
+    private fun checkPropertyAndDirection(option: ProjectListOption) {
+        Preconditions.checkArgument(
+            option.sortProperty?.none { !TProject::class.java.declaredFields.map { f -> f.name }.contains(it) },
+            "sortProperty"
+        )
+        Preconditions.checkArgument(
+            option.direction?.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
+            "direction"
+        )
     }
 
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {

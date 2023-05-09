@@ -28,14 +28,48 @@
 package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
+/**
+ * 块服务
+ * */
 interface BlockNodeService {
-    suspend fun listBlocks(range: Range, projectId: String, repoName: String, fullPath: String): List<TBlockNode>
-    suspend fun getLatestBlock(projectId: String, repoName: String, fullPath: String): TBlockNode?
-    suspend fun createBlock(blockNode: TBlockNode, repositoryDetail: RepositoryDetail): TBlockNode
-    suspend fun deleteBlock(blockNode: TBlockNode, repositoryDetail: RepositoryDetail)
+    /**
+     * 查询出范围内的分块
+     * */
+    suspend fun listBlocks(
+        range: Range,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): List<TBlockNode>
 
-    suspend fun getBlock(projectId: String, repoName: String, fullPath: String, offset: Long): TBlockNode?
+    /**
+     * 创建分块
+     * */
+    suspend fun createBlock(
+        blockNode: TBlockNode,
+        storageCredentials: StorageCredentials?
+    ): TBlockNode
+
+    /**
+     * 删除旧分块，即删除非指定的nodeCurrentSha256的分块。
+     * 如果未指定nodeCurrentSha256，则删除节点所有分块
+     * @param projectId 项目id
+     * @param repoName 仓库名
+     * @param fullPath 文件路径
+     * */
+    suspend fun deleteBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    )
+
+    suspend fun moveBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        dstFullPath: String
+    )
 }

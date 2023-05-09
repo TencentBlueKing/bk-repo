@@ -276,7 +276,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: '删除元数据' + this.$t('success')
+                        message: this.$t('delete') + this.$t('metadata') + this.$t('success')
                     })
                     this.getDetail()
                 })
@@ -308,7 +308,7 @@
             display: flex;
             overflow: hidden;
             label {
-                flex-basis: 80px;
+                flex-basis: auto;
                 text-align: right;
             }
         }

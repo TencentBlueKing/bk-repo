@@ -59,8 +59,8 @@ open class NodeDeleteSupport(
     private val nodeBaseService: NodeBaseService
 ) : NodeDeleteOperation {
 
-    private val nodeDao: NodeDao = nodeBaseService.nodeDao
-    private val quotaService: QuotaService = nodeBaseService.quotaService
+    val nodeDao: NodeDao = nodeBaseService.nodeDao
+    val quotaService: QuotaService = nodeBaseService.quotaService
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
@@ -103,7 +103,7 @@ open class NodeDeleteSupport(
             val criteria = where(TNode::projectId).isEqualTo(projectId)
                 .and(TNode::repoName).isEqualTo(repoName)
                 .and(TNode::deleted).isEqualTo(null)
-                .and(TNode::folder).isEqualTo(false)
+                .and(TNode::folder).isEqualTo(isFolder)
                 .orOperator(*orOperation.toTypedArray())
             return nodeDao.count(Query(criteria))
         }

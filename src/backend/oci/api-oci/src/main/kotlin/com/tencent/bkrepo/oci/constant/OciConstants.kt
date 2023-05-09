@@ -93,6 +93,7 @@ const val OCI_CREATE_DATE = "createdDate"
 const val LAST_MODIFIED_BY = "lastModifiedBy"
 const val LAST_MODIFIED_DATE = "lastModifiedDate"
 const val DOWNLOADS = "downloads"
+const val MD5 = "md5"
 
 const val OCI_MANIFEST = "manifest.json"
 const val STAGE_TAG = "stageTag"

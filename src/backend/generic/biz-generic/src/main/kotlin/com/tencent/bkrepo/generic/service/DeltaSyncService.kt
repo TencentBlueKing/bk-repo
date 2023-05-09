@@ -24,7 +24,6 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
@@ -32,6 +31,7 @@ import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo

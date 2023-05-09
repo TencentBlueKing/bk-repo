@@ -27,9 +27,10 @@
 
 package com.tencent.bkrepo.replication.replica.event
 
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.base.AbstractReplicaService
@@ -49,7 +50,9 @@ class EventBasedReplicaService(
     override fun replica(context: ReplicaContext) {
         with(context) {
             // 同步仓库
-            replicator.replicaRepo(this)
+            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                replicator.replicaRepo(this)
+            }
             when (event.type) {
                 EventType.NODE_CREATED -> {
                     // 只有非third party集群支持该消息
@@ -65,9 +68,6 @@ class EventBasedReplicaService(
                     replicaByPackageConstraint(this, packageConstraint)
                 }
                 EventType.VERSION_UPDATED -> {
-                    // 只有third party集群支持该消息
-                    if (context.remoteCluster.type != ClusterNodeType.REMOTE)
-                        throw UnsupportedOperationException()
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()
                     val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))

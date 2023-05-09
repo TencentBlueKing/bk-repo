@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.oci.artifact.OciRegistryArtifactConfigurer
 import com.tencent.bkrepo.oci.constant.FORCE
 import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
@@ -66,6 +68,7 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -297,6 +300,25 @@ class OciRegistryLocalRepository(
         return downloadArtifact(context, fullPath)
     }
 
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): PackageDownloadRecord? {
+        val artifactInfo = context.artifactInfo as OciArtifactInfo
+        if (context.artifactInfo !is OciManifestArtifactInfo) return null
+        if (context.request.method == HttpMethod.HEAD.name) {
+            return null
+        }
+        val node = ArtifactContextHolder.getNodeDetail()
+        val version = node!!.metadata[IMAGE_VERSION]?.toString() ?: return null
+        return PackageDownloadRecord(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            packageKey = PackageKeys.ofName(context.repo.type, artifactInfo.packageName),
+            packageVersion = version
+        )
+    }
+
     /**
      * 针对oci协议 需要将对应的media type返回
      */
@@ -362,11 +384,11 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo) {
             val fullPath = ociOperationService.getNodeFullPath(this as OciArtifactInfo)
                 ?: throw OciFileNotFoundException(
-                    "node [${getArtifactFullPath()}] in repo ${this.getRepoIdentify()} does not found."
+                    OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data
                 ?: throw OciFileNotFoundException(
-                    "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
+                    OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
             val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)

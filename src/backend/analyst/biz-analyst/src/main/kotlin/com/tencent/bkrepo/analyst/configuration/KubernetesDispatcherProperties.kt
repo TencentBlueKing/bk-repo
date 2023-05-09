@@ -54,6 +54,11 @@ data class KubernetesDispatcherProperties(
     var jobTtlSecondsAfterFinished: Int = 60 * 60,
 
     /**
+     * 是否在执行成功后删除job，如果K8S集群的ttlSecondsAfterFinished参数可用，可将该参数设置为false
+     */
+    var cleanJobAfterSuccess: Boolean = true,
+
+    /**
      * 容器limit mem
      */
     var limitMem: DataSize = DataSize.ofGigabytes(32),
@@ -62,6 +67,16 @@ data class KubernetesDispatcherProperties(
      * 容器 request mem
      */
     var requestMem: DataSize = DataSize.ofGigabytes(16),
+
+    /**
+     * 会在文件三倍大小与该值之间取大者作为容器request ephemeralStorage
+     */
+    var requestStorage: DataSize = DataSize.ofGigabytes(16),
+
+    /**
+     * 容器limit ephemeralStorage
+     */
+    var limitStorage: DataSize = DataSize.ofGigabytes(128),
 
     /**
      * 容器request cpu

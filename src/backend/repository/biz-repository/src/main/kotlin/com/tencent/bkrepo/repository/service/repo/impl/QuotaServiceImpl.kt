@@ -33,11 +33,13 @@ package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.artifact.event.repo.RepoVolumeSyncEvent
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.service.repo.QuotaService
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -50,7 +52,8 @@ import org.springframework.stereotype.Service
  */
 @Service
 class QuotaServiceImpl(
-    private val repositoryDao: RepositoryDao
+    private val repositoryDao: RepositoryDao,
+    private val applicationEventPublisher: ApplicationEventPublisher
 ) : QuotaService {
 
     override fun getRepoQuotaInfo(projectId: String, repoName: String): RepoQuotaInfo {
@@ -64,7 +67,10 @@ class QuotaServiceImpl(
         val tRepository = checkRepository(projectId, repoName)
         with(tRepository) {
             quota?.let {
-                if (used!! + change < 0 || used!! + change > it) {
+                if (used!! + change < 0) {
+                    applicationEventPublisher.publishEvent(RepoVolumeSyncEvent(projectId, repoName))
+                }
+                if (used!! + change > it) {
                     throw ErrorCodeException(
                         ArtifactMessageCode.REPOSITORY_OVER_QUOTA,
                         name,
@@ -99,6 +105,7 @@ class QuotaServiceImpl(
     private fun buildQuery(projectId: String, repoName: String): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).isEqualTo(null)
         return Query(criteria)
     }
 
