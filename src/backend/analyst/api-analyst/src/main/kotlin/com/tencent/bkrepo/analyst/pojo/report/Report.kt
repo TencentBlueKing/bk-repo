@@ -23,6 +23,14 @@ data class Report(
      */
     val artifactName: String,
     /**
+     * GENERIC类型制品的文件扩展名
+     */
+    val fileNameExt: String?,
+    /**
+     * 制品版本
+     */
+    val artifactVersion: String?,
+    /**
      * 制品大小
      */
     val artifactSize: Long,

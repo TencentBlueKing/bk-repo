@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
@@ -53,11 +54,19 @@ class ReportExporter(
                 Vulnerability(securityResult.vulId, securityResult.cveId, securityResult.cvss)
             )
         }
+        val fileNameExt = if (subtask.repoType == RepositoryType.GENERIC.name) {
+            subtask.artifactName.substringAfterLast('.', "")
+        } else {
+            null
+        }
+
         return Report(
             taskId = subtask.id!!,
             projectId = subtask.projectId,
             artifactType = subtask.repoType,
             artifactName = subtask.artifactName,
+            fileNameExt = fileNameExt,
+            artifactVersion = subtask.version,
             artifactSize = subtask.packageSize,
             sha256 = subtask.sha256,
             scanner = subtask.scanner,
