@@ -31,19 +31,15 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
+import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnProperty(
-    prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_DEVOPS
-)
+@Conditional(BkDevopsAuthCondition::class)
 class BkAuthProjectService @Autowired constructor(
     private val bkciAuthService: BkciAuthService
 ) {

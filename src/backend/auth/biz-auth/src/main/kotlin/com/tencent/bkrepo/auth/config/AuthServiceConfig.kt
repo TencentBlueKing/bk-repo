@@ -31,11 +31,9 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_LOCAL
+import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
+import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
+import com.tencent.bkrepo.auth.condition.LocalAuthCondition
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -59,8 +57,8 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import org.springframework.core.Ordered
@@ -88,12 +86,7 @@ class AuthServiceConfig {
     ) = AccountServiceImpl(accountRepository, oauthTokenRepository, userService, mongoTemplate)
 
     @Bean
-    @ConditionalOnProperty(
-        prefix = AUTH_CONFIG_PREFIX,
-        name = [AUTH_CONFIG_TYPE_NAME],
-        havingValue = AUTH_CONFIG_TYPE_VALUE_LOCAL,
-        matchIfMissing = true
-    )
+    @Conditional(LocalAuthCondition::class)
     fun permissionService(
         userRepository: UserRepository,
         roleRepository: RoleRepository,
@@ -113,9 +106,7 @@ class AuthServiceConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(
-        prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_BKIAMV3
-    )
+    @Conditional(BkV3RbacAuthCondition::class)
     fun bkiamV3PermissionService(
         bkiamV3Service: BkIamV3Service,
         userRepository: UserRepository,
@@ -137,9 +128,7 @@ class AuthServiceConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(
-        prefix = AUTH_CONFIG_PREFIX, name = [AUTH_CONFIG_TYPE_NAME], havingValue = AUTH_CONFIG_TYPE_VALUE_DEVOPS
-    )
+    @Conditional(BkDevopsAuthCondition::class)
     fun bkAuthPermissionService(
         userRepository: UserRepository,
         roleRepository: RoleRepository,
