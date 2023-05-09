@@ -27,6 +27,10 @@ data class Report(
      */
     val artifactSize: Long,
     /**
+     * 制品sha256
+     */
+    val sha256: String,
+    /**
      * 使用的扫描器
      */
     val scanner: String,

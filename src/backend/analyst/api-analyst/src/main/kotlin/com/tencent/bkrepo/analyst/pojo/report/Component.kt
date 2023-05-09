@@ -11,7 +11,7 @@ data class Component(
     /**
      * 存在漏洞的组件版本列表
      */
-    val versions: MutableList<String> = ArrayList(),
+    val versions: MutableSet<String> = HashSet(),
     /**
      * 漏洞列表
      */

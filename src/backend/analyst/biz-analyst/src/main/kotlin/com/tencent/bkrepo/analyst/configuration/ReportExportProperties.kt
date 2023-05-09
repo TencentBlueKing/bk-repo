@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.analyst.configuration
 
 import com.tencent.bkrepo.common.stream.constant.BinderType
+import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
  * 报告结果导出配置
  */
+@ConfigurationProperties("scanner.report-export")
 data class ReportExportProperties(
     /**
      * 是否导出结果报告

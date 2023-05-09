@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.analyst.component
 
-import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.configuration.ReportExportProperties
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.report.Component
 import com.tencent.bkrepo.analyst.pojo.report.Report
@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import java.time.LocalDateTime
 
@@ -19,19 +20,21 @@ import java.time.LocalDateTime
  */
 @org.springframework.stereotype.Component
 class ReportExporter(
-    private val scannerProperties: ScannerProperties,
+    private val reportProperties: ReportExportProperties,
     private val messageSupplier: MessageSupplier
 ) {
     @Async
     fun export(subtask: TSubScanTask, result: ScanExecutorResult) {
-        val reportProperties = scannerProperties.reportExportProperties
-        if (reportProperties?.enabled != true ||
+        if (!reportProperties.enabled ||
             result !is StandardScanExecutorResult ||
             result.scanStatus != SubScanTaskStatus.SUCCESS.name) {
             return
         }
 
         result.output?.result?.securityResults?.let {
+            logger.info(
+                "export subtask[${subtask.id}] report to [${reportProperties.binderType}:${reportProperties.topic}]"
+            )
             messageSupplier.delegateToSupplier(
                 data = buildReport(subtask, it),
                 topic = reportProperties.topic!!,
@@ -56,10 +59,15 @@ class ReportExporter(
             artifactType = subtask.repoType,
             artifactName = subtask.artifactName,
             artifactSize = subtask.packageSize,
+            sha256 = subtask.sha256,
             scanner = subtask.scanner,
             startDateTime = subtask.startDateTime!!,
             finishedDateTime = LocalDateTime.now(),
             components = components.values.toList()
         )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ReportExporter::class.java)
     }
 }
