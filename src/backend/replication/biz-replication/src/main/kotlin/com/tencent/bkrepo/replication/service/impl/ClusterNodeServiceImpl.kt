@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.innercos.retry
@@ -164,6 +165,11 @@ class ClusterNodeServiceImpl(
                 username = request.username
                 password = crypto(request.password, false)
                 certificate = request.certificate
+                appId = request.appId
+                accessKey = request.accessKey
+                secretKey = request.secretKey
+                lastModifiedBy = SecurityUtils.getUserId()
+                lastModifiedDate = LocalDateTime.now()
             }
             request.detectType?.let {
                 tClusterNode.detectType = it
