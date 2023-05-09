@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.analyst.pojo.report
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import java.time.LocalDateTime
 
 /**
  * 报告导出
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Report(
     /**
      * 任务id
