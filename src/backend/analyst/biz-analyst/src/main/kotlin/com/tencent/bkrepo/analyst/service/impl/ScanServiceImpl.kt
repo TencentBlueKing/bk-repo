@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
+import com.tencent.bkrepo.analyst.component.AnalystLoadBalancer
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
@@ -57,20 +58,23 @@ import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.ResetTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
-import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.TimeUnit
 
 @Service
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -84,6 +88,7 @@ class ScanServiceImpl @Autowired constructor(
     private val taskStateMachine: StateMachine,
     @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
+    private val redisTemplate: RedisTemplate<String, String>
 ) : ScanService {
 
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
@@ -177,7 +182,12 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun pull(dispatcher: String?): SubScanTask? {
         return pullSubScanTask(dispatcher)?.let {
-            return Converter.convert(it, scannerService.get(it.scanner))
+            HttpContextHolder.getRequestOrNull()?.remoteHost?.let { remoteHost ->
+                val ops = redisTemplate.opsForValue()
+                val key = AnalystLoadBalancer.instanceKey(it.id!!)
+                ops.set(key, remoteHost, 1L, TimeUnit.DAYS)
+            }
+            return SubtaskConverter.convert(it, scannerService.get(it.scanner))
         }
     }
 
@@ -194,7 +204,7 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun get(subtaskId: String): SubScanTask {
         return subScanTaskDao.findById(subtaskId)?.let {
-            Converter.convert(it, scannerService.get(it.scanner))
+            SubtaskConverter.convert(it, scannerService.get(it.scanner))
         } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
     }
 
@@ -226,9 +236,14 @@ class ScanServiceImpl @Autowired constructor(
                 ?: return null
 
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
-            if (task.status == SubScanTaskStatus.EXECUTING.name && task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
+            if (task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
                 logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] exceed max execute times")
-                finishSubtask(task, SubScanTaskStatus.TIMEOUT.name)
+                val targetState = if (task.status == SubScanTaskStatus.EXECUTING.name) {
+                    SubScanTaskStatus.TIMEOUT.name
+                } else {
+                    SubScanTaskStatus.FAILED.name
+                }
+                finishSubtask(task, targetState)
                 continue
             }
 

@@ -33,11 +33,12 @@ package com.tencent.bkrepo.nuget.pojo.nuspec
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import com.tencent.bkrepo.nuget.constant.PACKAGE
 
 /**
  * nuspec package xml file
  */
-@JacksonXmlRootElement(localName = "package")
+@JacksonXmlRootElement(localName = PACKAGE)
 data class NuspecPackage(
     @JacksonXmlProperty(isAttribute = true)
     val xmlns: String?,

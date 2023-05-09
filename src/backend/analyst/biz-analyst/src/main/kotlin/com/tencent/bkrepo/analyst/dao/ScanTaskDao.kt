@@ -28,13 +28,13 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.analyst.model.TScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
+import com.tencent.bkrepo.analyst.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.ofTimestamp
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.analyst.model.TScanTask
-import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
-import com.tencent.bkrepo.analyst.pojo.request.ScanTaskQuery
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
@@ -47,7 +47,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<TScanTask>() {
+class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
     fun updateStatus(
         taskId: String,
         status: ScanTaskStatus,
@@ -172,7 +172,6 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
                 update.inc("${TScanTask::scanResultOverview.name}.$key", value)
             }
         }
-        scanPlanDao.updateScanResultOverview(taskId, scanResultOverview)
 
         return updateFirst(query, update)
     }

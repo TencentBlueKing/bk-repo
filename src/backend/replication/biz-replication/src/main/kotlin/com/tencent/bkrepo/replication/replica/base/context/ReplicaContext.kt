@@ -27,20 +27,21 @@
 
 package com.tencent.bkrepo.replication.replica.base.context
 
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -65,7 +66,8 @@ class ReplicaContext(
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
-    val remoteCluster: ClusterNodeInfo
+    val remoteCluster: ClusterNodeInfo,
+    replicationProperties: ReplicationProperties
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -108,7 +110,7 @@ class ReplicaContext(
             certificate = remoteCluster.certificate,
             appId = remoteCluster.appId,
             accessKey = remoteCluster.accessKey,
-            secretKey = remoteCluster.secretKey
+            secretKey = remoteCluster.secretKey,
         )
 
         // 远端集群仓库特殊处理, 远端集群走对应制品类型协议传输
@@ -125,16 +127,24 @@ class ReplicaContext(
 
         targetVersions = initImageTargetTag()
         val readTimeout = Duration.ofMillis(READ_TIMEOUT)
+        val writeTimeout = Duration.ofMillis(WRITE_TIMEOUT)
+        val closeTimeout = Duration.ofMillis(CLOSE_TIMEOUT)
         httpClient = if (cluster.username != null) {
             OkHttpClientPool.getHttpClient(
+                replicationProperties.timoutCheckHosts,
                 cluster,
                 readTimeout,
+                writeTimeout,
+                closeTimeout,
                 BasicAuthInterceptor(cluster.username!!, cluster.password!!)
             )
         } else {
             OkHttpClientPool.getHttpClient(
+                replicationProperties.timoutCheckHosts,
                 cluster,
                 readTimeout,
+                writeTimeout,
+                closeTimeout,
                 SignInterceptor(cluster)
             )
         }
@@ -176,6 +186,8 @@ class ReplicaContext(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
-        private const val READ_TIMEOUT = 60 * 60 * 1000L
+        const val READ_TIMEOUT = 60 * 60 * 1000L
+        const val WRITE_TIMEOUT = 5 * 1000L
+        const val CLOSE_TIMEOUT = 10 * 1000L
     }
 }

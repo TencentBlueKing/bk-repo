@@ -174,8 +174,8 @@ const routes = [
                 component: createPlan,
                 meta: {
                     breadcrumb: [
-                        { name: 'planManage', label: '{planName}', template: '制品分发' },
-                        { name: 'createPlan', label: '编辑计划' }
+                        { name: 'planManage', label: '{planName}', template: 'planManage' },
+                        { name: 'editPlan', label: '编辑计划' }
                     ]
                 }
             },
@@ -185,8 +185,8 @@ const routes = [
                 component: createPlan,
                 meta: {
                     breadcrumb: [
-                        { name: 'planManage', label: '{planName}', template: '制品分发' },
-                        { name: 'createPlan', label: '计划详情' }
+                        { name: 'planManage', label: '{planName}', template: 'planManage' },
+                        { name: 'planDetail', label: '计划详情' }
                     ]
                 }
             },
@@ -196,7 +196,7 @@ const routes = [
                 component: logDetail,
                 meta: {
                     breadcrumb: [
-                        { name: 'planManage', label: '{planName}', template: '制品分发' },
+                        { name: 'planManage', label: '{planName}', template: 'planManage' },
                         { name: 'logDetail', label: '日志详情' }
                     ]
                 }
@@ -218,7 +218,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'repoScan', label: '制品分析' },
-                        { name: 'scanReport', label: '{scanName}', template: '扫描详情' }
+                        { name: 'scanReport', label: '{scanName}', template: 'scanReport' }
                     ]
                 }
             },
@@ -231,20 +231,20 @@ const routes = [
                     if (to.query.scanName) {
                         to.meta.breadcrumb = [
                             { name: 'repoScan', label: '制品分析' },
-                            { name: 'scanReport', label: '{scanName}', template: '扫描详情' },
-                            { name: 'artiReport', label: '{artiName}', template: '制品扫描结果' }
+                            { name: 'scanReport', label: '{scanName}', template: 'scanReport' },
+                            { name: 'artiReport', label: '{artiName}', template: 'artiReport' }
                         ]
                     } else if (repoType === 'generic') {
                         to.meta.breadcrumb = [
                             { name: 'repoList', label: '仓库列表' },
-                            { name: 'repoGeneric', label: '{repoName}', template: '二进制仓库' },
+                            { name: 'repoGeneric', label: '{repoName}', template: 'repoGeneric' },
                             { name: 'artiReport', label: '制品扫描结果' }
                         ]
                     } else if (repoType) {
                         to.meta.breadcrumb = [
                             { name: 'repoList', label: '仓库列表' },
-                            { name: 'commonList', label: '{repoName}', template: '依赖仓库' },
-                            { name: 'commonPackage', label: '{packageKey}', template: '制品详情' },
+                            { name: 'commonList', label: '{repoName}', template: 'commonList' },
+                            { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' },
                             { name: 'artiReport', label: '制品扫描结果' }
                         ]
                     }
@@ -258,7 +258,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'repoScan', label: '制品分析' },
-                        { name: 'scanConfig', label: '{scanName}', template: '方案设置' }
+                        { name: 'scanConfig', label: '{scanName}', template: 'scanConfig' }
                     ]
                 }
             },
@@ -269,7 +269,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'repoScan', label: '制品分析' },
-                        { name: 'scanReport', label: '{scanName}', template: '扫描详情' },
+                        { name: 'scanReport', label: '{scanName}', template: 'scanReport' },
                         { name: 'startScan', label: '立即扫描' }
                     ]
                 }
@@ -291,7 +291,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'repoList', label: '仓库列表' },
-                        { name: 'repoGeneric', label: '{repoName}', template: '二进制仓库' }
+                        { name: 'repoGeneric', label: '{repoName}', template: 'repoGeneric' }
                     ]
                 }
             },
@@ -302,7 +302,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'repoList', label: '仓库列表' },
-                        { name: 'commonList', label: '{repoName}', template: '依赖仓库' }
+                        { name: 'commonList', label: '{repoName}', template: 'commonList' }
                     ]
                 }
             },
@@ -313,8 +313,8 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'repoList', label: '仓库列表' },
-                        { name: 'commonList', label: '{repoName}', template: '依赖仓库' },
-                        { name: 'commonPackage', label: '{packageKey}', template: '制品详情' }
+                        { name: 'commonList', label: '{repoName}', template: 'commonList' },
+                        { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' }
                     ]
                 }
             }

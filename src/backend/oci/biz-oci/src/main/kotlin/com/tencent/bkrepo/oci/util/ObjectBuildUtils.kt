@@ -58,14 +58,34 @@ object ObjectBuildUtils {
         fullPath: String,
         metadata: List<MetadataModel>? = null
     ): NodeCreateRequest {
+        return buildNodeCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            fullPath = fullPath,
+            metadata = metadata
+        )
+    }
+
+    fun buildNodeCreateRequest(
+        projectId: String,
+        repoName: String,
+        size: Long,
+        fullPath: String,
+        sha256: String,
+        md5: String,
+        metadata: List<MetadataModel>? = null
+    ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
             folder = false,
             fullPath = fullPath,
-            size = artifactFile.getSize(),
-            sha256 = artifactFile.getFileSha256(),
-            md5 = artifactFile.getFileMd5(),
+            size = size,
+            sha256 = sha256,
+            md5 = md5,
             operator = SecurityUtils.getUserId(),
             overwrite = true,
             nodeMetadata = metadata
@@ -95,14 +115,16 @@ object ObjectBuildUtils {
         projectId: String,
         repoName: String,
         fullPath: String,
+        userId: String,
         metadata: Map<String, Any>? = null
-    ): MetadataSaveRequest {
+        ): MetadataSaveRequest {
         val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
         return MetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
-            nodeMetadata = metadataModels
+            nodeMetadata = metadataModels,
+            operator = userId
         )
     }
 
@@ -111,6 +133,7 @@ object ObjectBuildUtils {
         repoName: String,
         packageKey: String,
         version: String,
+        userId: String,
         metadata: Map<String, Any>? = null
     ): PackageMetadataSaveRequest {
         val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
@@ -119,7 +142,8 @@ object ObjectBuildUtils {
             repoName = repoName,
             packageKey = packageKey,
             version = version,
-            versionMetadata = metadataModels
+            versionMetadata = metadataModels,
+            operator = userId
         )
     }
 
@@ -129,7 +153,8 @@ object ObjectBuildUtils {
         version: String,
         size: Long,
         manifestPath: String,
-        repoType: String
+        repoType: String,
+        userId: String
     ): PackageVersionCreateRequest {
         with(ociArtifactInfo) {
             // 兼容多仓库类型支持
@@ -146,7 +171,7 @@ object ObjectBuildUtils {
                 artifactPath = manifestPath,
                 manifestPath = manifestPath,
                 overwrite = true,
-                createdBy = SecurityUtils.getUserId()
+                createdBy = userId
             )
         }
     }

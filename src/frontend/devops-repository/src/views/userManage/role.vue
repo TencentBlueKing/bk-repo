@@ -28,7 +28,7 @@
             <bk-table-column label="关联用户数" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.users.length }}</template>
             </bk-table-column>
-            <bk-table-column label="描述" show-overflow-tooltip>
+            <bk-table-column :label="$t('description')" show-overflow-tooltip>
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">

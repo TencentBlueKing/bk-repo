@@ -109,7 +109,9 @@ class UserRepositoryController(
                 configuration = configuration,
                 storageCredentialsKey = storageCredentialsKey,
                 operator = userId,
-                quota = quota
+                quota = quota,
+                pluginRequest = pluginRequest,
+                display = display
             )
         }
         repositoryService.createRepo(createRequest)
@@ -210,7 +212,8 @@ class UserRepositoryController(
             public = request.public,
             description = request.description,
             configuration = request.configuration,
-            operator = userId
+            operator = userId,
+            display = request.display
         )
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()

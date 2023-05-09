@@ -30,14 +30,15 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
@@ -47,10 +48,10 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
 import com.tencent.bkrepo.replication.util.HttpUtils
@@ -131,10 +132,13 @@ class ClusterNodeServiceImpl(
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now(),
+                detectType = detectType
             )
-            // 检测远程集群网络连接是否可用
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                tryConnect(convert(clusterNode)!!)
+            if (ping && detectType == DetectType.PING) {
+                // 检测远程集群网络连接是否可用
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                    tryConnect(convert(clusterNode)!!)
+                }
             }
             return try {
                 clusterNodeDao.insert(clusterNode)
@@ -161,10 +165,16 @@ class ClusterNodeServiceImpl(
                 password = crypto(request.password, false)
                 certificate = request.certificate
             }
-            // 检测远程集群网络连接是否可用
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                tryConnect(convert(tClusterNode)!!)
+            request.detectType?.let {
+                tClusterNode.detectType = it
             }
+            if (tClusterNode.detectType != DetectType.REPORT) {
+                // 检测远程集群网络连接是否可用
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
+                    tryConnect(convert(tClusterNode)!!)
+                }
+            }
+
             return try {
                 clusterNodeDao.save(tClusterNode)
                     .also { logger.info("Update cluster node [$name] with url [$url] success.") }
@@ -213,6 +223,14 @@ class ClusterNodeServiceImpl(
             clusterNodeDao.save(clusterNode)
             logger.info("update cluster [$name] status from [${tClusterNode.status}] to [$status] success.")
         }
+    }
+
+    override fun updateReportTime(name: String) {
+        val tClusterNode = clusterNodeDao.findByName(name)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+        tClusterNode.lastReportTime = LocalDateTime.now()
+        clusterNodeDao.save(tClusterNode)
+        logger.info("update cluster [$name] report time success")
     }
 
     /**
@@ -294,7 +312,9 @@ class ClusterNodeServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    detectType = it.detectType,
+                    lastReportTime = it.lastReportTime
                 )
             }
         }

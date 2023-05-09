@@ -3,7 +3,7 @@
         v-model="show"
         width="380"
         height-num="221"
-        title="操作确认"
+        :title="$t('operationConfirmation')"
         @cancel="cancel">
         <div class="confirm-body">
             <div class="confirm-main">
@@ -95,9 +95,11 @@
         }
     }
     .confirm-tip {
-        padding-left: 40px;
         font-size: 12px;
         color: var(--fontSubsidiaryColor);
+        margin-left: 35px;
+        display: inline-block;
+        margin-top: 12px;
     }
 }
 </style>

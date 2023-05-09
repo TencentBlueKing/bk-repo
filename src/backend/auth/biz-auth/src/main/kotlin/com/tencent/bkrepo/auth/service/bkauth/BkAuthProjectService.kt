@@ -61,10 +61,11 @@ class BkAuthProjectService @Autowired constructor(
         ) || bkciAuthService.isProjectMember(user, projectCode)
     }
 
-    fun isProjectManager(
-        user: String,
-        projectCode: String
-    ): Boolean {
+    fun isProjectManager(user: String, projectCode: String): Boolean {
         return bkciAuthService.isProjectManager(user, projectCode)
+    }
+
+    fun listProjectByUser(user: String): List<String> {
+        return bkciAuthService.getProjectListByUser(user)
     }
 }

@@ -90,3 +90,6 @@ const val MANUAL_TASK_ACTIVE_COUNT_DESC = "手动执行具体package或者path�
 
 const val MANUAL_TASK_QUEUE_SIZE = "manual.task.queue.size"
 const val MANUAL_TASK_QUEUE_SIZE_DESC = "手动执行具体package或者path分发线程池等待队列大小"
+
+const val EDGE_PULL_ACTIVE_COUNT = "edge.pull.task.active.count"
+const val EDGE_PULL_ACTIVE_COUNT_DESC = "边缘节点主动拉取任务实时执行数量"

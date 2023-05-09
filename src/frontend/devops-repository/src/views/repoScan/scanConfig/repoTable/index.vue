@@ -1,10 +1,11 @@
 <template>
     <div class="repository-table-container">
         <bk-radio-group v-model="showAddBtn">
-            <bk-radio :disabled="disabled" :value="false">所有仓库</bk-radio>
+            <bk-radio :disabled="disabled" :value="false">{{ $t('allRepo') }}</bk-radio>
             <bk-radio :disabled="disabled" class="mt10" :value="true">
-                <span>指定仓库</span>
-                <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="showAddDialog = true">添加仓库</bk-button>
+                <span>{{ $t('specifiedRepo') }}</span>
+                <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="showAddDialog = true">
+                    {{ $t('addRepo') }}</bk-button>
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn && defaultRepos.length" class="mt10 repo-list">

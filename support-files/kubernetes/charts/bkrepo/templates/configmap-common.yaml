@@ -17,25 +17,47 @@ data:
       path: /data/workspace/logs
     spring:
       sleuth:
-        enabled: false
+        enabled: true
       data:
         mongodb:
           uri: {{ include "bkrepo.mongodbUri" . }}
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
-    oci.domain: {{ .Values.gateway.dockerHost }}
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
+    oci.https: true
     {{- else }}
     oci.authUrl: http://{{ include "bkrepo.oci.authUrl" . }}
+    oci.https: false
+    {{- end }}
+    {{- if and .Values.gateway.service.nodeIP (and .Values.gateway.service.dockerNodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer"))) }}
+    oci.domain: {{ .Values.gateway.service.nodeIP }}:{{ .Values.gateway.service.dockerNodePort }}
+    {{- else }}
+    oci.domain: {{ .Values.gateway.dockerHost }}
     {{- end }}
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI
     plugin.path: /data/workspace/plugin/
+    management.metrics.collectByLog: true
     cluster:
       region: {{ .Values.common.region }}
+      architecture: {{ .Values.cluster.architecture }}
+      role: {{ .Values.cluster.role }}
+      center:
+        name: {{ .Values.cluster.center.name }}
+        url: {{ .Values.cluster.center.url }}
+        appId: {{ .Values.cluster.center.appId }}
+        accessKey: {{ .Values.cluster.center.accessKey }}
+        secretKey: {{ .Values.cluster.center.secretKey }}
       self:
-        url: {{ .Values.gateway.host }}
+        name: {{ .Values.cluster.self.name }}
+        {{- if or .Values.ingress.tls .Values.forceHttps }}
+        url: https://{{ .Values.gateway.host }}
+        {{- else }}
+        url: http://{{ .Values.gateway.host }}
+        {{- end }}
+        username: {{ .Values.common.username }}
+        password: {{ .Values.common.password }}
     {{- toYaml .Values.common.config | nindent 4 }}

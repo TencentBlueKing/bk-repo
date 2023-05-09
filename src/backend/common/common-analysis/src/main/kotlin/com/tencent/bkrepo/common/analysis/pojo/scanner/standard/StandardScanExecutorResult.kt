@@ -50,11 +50,6 @@ data class StandardScanExecutorResult(
                 securityResult.copy(severity = normalizedLevel(securityResult.severity))
             }
             // 添加组件版本与路径映射关系
-            securityResult.pkgVersions.forEach { version ->
-                result.versionsPaths.add(
-                    updateVersionPaths(securityResult.pkgName, version, securityResult.path, versionPathsMap)
-                )
-            }
             securityResult.versionsPaths.forEach {
                 result.versionsPaths.add(updateVersionPaths(securityResult.pkgName, it, versionPathsMap))
             }
@@ -67,9 +62,6 @@ data class StandardScanExecutorResult(
             val pkgName = licenseResult.pkgName
             val result = licenseResults.getOrPut("${pkgName}-${licenseResult.licenseName}") { licenseResult }
             // 添加组件版本与路径映射关系
-            licenseResult.pkgVersions.forEach { version ->
-                result.versionsPaths.add(updateVersionPaths(pkgName, version, licenseResult.path, versionPathsMap))
-            }
             licenseResult.versionsPaths.forEach {
                 result.versionsPaths.add(updateVersionPaths(pkgName, it, versionPathsMap))
             }
@@ -83,17 +75,6 @@ data class StandardScanExecutorResult(
                 licenseResults = licenseResults.values.toList()
             )
         }
-    }
-
-    private fun updateVersionPaths(
-        pkgName: String?,
-        version: String,
-        path: String?,
-        versionPathsMap: MutableMap<String, VersionPaths>
-    ): VersionPaths {
-        val versionPaths = versionPathsMap.getOrPut("${pkgName}-${version}") { VersionPaths(version) }
-        versionPaths.paths.add(path ?: "")
-        return versionPaths
     }
 
     private fun updateVersionPaths(

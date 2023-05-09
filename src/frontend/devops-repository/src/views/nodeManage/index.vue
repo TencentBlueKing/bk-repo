@@ -7,18 +7,18 @@
                     class="w250"
                     v-model.trim="search.name"
                     clearable
-                    placeholder="节点名称"
+                    :placeholder="$t('nodeName')"
                     right-icon="bk-icon icon-search">
                 </bk-input>
                 <bk-select
                     class="ml10 w250"
                     v-model="search.type"
-                    placeholder="节点类型">
+                    :placeholder="$t('nodeType')">
                     <bk-option
                         v-for="(label, type) in nodeTypeEnum"
                         :key="type"
                         :id="type"
-                        :name="label">
+                        :name="$t(`nodeTypeEnum.${type}`)">
                     </bk-option>
                 </bk-select>
             </div>
@@ -33,14 +33,14 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(search.name || search.type)"></empty-data>
             </template>
-            <bk-table-column label="状态" width="100">
+            <bk-table-column :label="$t('status')" width="100">
                 <template #default="{ row }">
-                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? '正常' : '异常'"></div>
+                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? $t('normal') : $t('normal')"></div>
                 </template>
             </bk-table-column>
-            <bk-table-column label="节点名称" prop="name" width="250" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="节点类型" width="120">
-                <template #default="{ row }">{{ nodeTypeEnum[row.type] }}</template>
+            <bk-table-column :label="$t('nodeName')" prop="name" width="250" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('nodeType')" width="120">
+                <template #default="{ row }">{{ $t(`nodeTypeEnum.${row.type}`) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('address')">
                 <template #default="{ row }">
@@ -51,13 +51,13 @@
             <bk-table-column :label="$t('createdDate')" width="200">
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
+            <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <operation-list
                         v-if="row.type !== 'CENTER'"
                         :list="[
                             // { label: '编辑', clickEvent: () => showEditNode(row) },
-                            { label: '删除', clickEvent: () => deleteClusterHandler(row) }
+                            { label: $t('delete'), clickEvent: () => deleteClusterHandler(row) }
                         ]">
                     </operation-list>
                 </template>
@@ -77,15 +77,15 @@
         </bk-pagination>
         <canway-dialog
             v-model="editNodeDialog.show"
-            :title="editNodeDialog.add ? '创建节点' : '编辑节点'"
+            :title="editNodeDialog.add ? $t('createNode') : $t('editNode')"
             width="600"
             height-num="402"
             @cancel="editNodeDialog.show = false">
             <bk-form class="mr50" :label-width="110" :model="editNodeDialog" :rules="rules" ref="editNodeDialog">
                 <bk-form-item :label="$t('type')" property="type">
                     <bk-radio-group v-model="editNodeDialog.type">
-                        <bk-radio class="mr20" value="STANDALONE">独立节点</bk-radio>
-                        <bk-radio class="mr20" value="EDGE">边缘节点</bk-radio>
+                        <bk-radio class="mr20" value="STANDALONE">{{ $t('STANDALONE') }}</bk-radio>
+                        <bk-radio class="mr20" value="EDGE">{{ $t('EDGE') }}</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
@@ -94,12 +94,12 @@
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
                     <bk-input v-model.trim="editNodeDialog.url" :disabled="!editNodeDialog.add"></bk-input>
                 </bk-form-item>
-                <bk-form-item label="证书" property="certificate" error-display-type="normal">
+                <bk-form-item :label="$t('Certificate')" property="certificate" error-display-type="normal">
                     <bk-input type="textarea" v-model.trim="editNodeDialog.certificate"></bk-input>
                 </bk-form-item>
-                <bk-form-item label="认证方式">
+                <bk-form-item :label="$t('verificationMethod')">
                     <bk-radio-group v-model="createType" :change="changeValidateType()">
-                        <bk-radio class="mr20" value="user">用户名/密码</bk-radio>
+                        <bk-radio class="mr20" value="user">{{ $t('username') + '/' + $t('password') }}</bk-radio>
                         <bk-radio class="mr20" value="appId">AppID/AK/SK</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
@@ -162,59 +162,59 @@
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + '节点名称',
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('nodeName'),
                             trigger: 'blur'
                         },
                         {
                             validator: this.asynCheckNodeName,
-                            message: '节点名称已存在',
+                            message: this.$t('nodeName') + this.$t('space') + this.$t('exist'),
                             trigger: 'blur'
                         }
                     ],
                     url: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('address'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('address'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^https?:\/\//,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('address'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('address'),
                             trigger: 'blur'
                         }
                     ],
                     username: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('account'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('account'),
                             trigger: 'blur'
                         }
                     ],
                     password: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('password'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('password'),
                             trigger: 'blur'
                         }
                     ],
                     appId: [
                         {
                             required: true,
-                            message: '请输入appId',
+                            message: this.$t('pleaseInput') + this.$t('space') + 'appId',
                             trigger: 'blur'
                         }
                     ],
                     accessKey: [
                         {
                             required: true,
-                            message: '请输入accessKey',
+                            message: this.$t('pleaseInput') + this.$t('space') + 'accessKey',
                             trigger: 'blur'
                         }
                     ],
                     secretKey: [
                         {
                             required: true,
-                            message: '请输入secretKey',
+                            message: this.$t('pleaseInput') + this.$t('space') + 'secretKey',
                             trigger: 'blur'
                         }
                     ]
@@ -317,7 +317,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (this.editNodeDialog.add ? '新建节点' : '编辑节点') + this.$t('success')
+                        message: (this.editNodeDialog.add ? this.$t('createNode') : this.$t('editNode')) + this.$t('space') + this.$t('success')
                     })
                     this.editNodeDialog.show = false
                     this.createType = 'user'
@@ -329,7 +329,7 @@
             deleteClusterHandler (row) {
                 this.$confirm({
                     theme: 'danger',
-                    message: `确认删除节点 ${row.name} ？`,
+                    message: this.$t('deleteNodeMsg', { 0: row.name }),
                     confirmFn: () => {
                         return this.deleteCluster({
                             id: row.id
@@ -337,7 +337,7 @@
                             this.getClusterListHandler()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         })
                     }

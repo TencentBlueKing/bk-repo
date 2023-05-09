@@ -45,7 +45,8 @@ class NodePageRequest(request: ServerRequest) : NodeRequest(request) {
         listOption = NodeListOption(
             includeFolder = includeFolder,
             pageSize = pageSize,
-            pageNumber = pageNum
+            pageNumber = pageNum,
+            includeMetadata = true
         )
     }
 }

@@ -30,16 +30,17 @@ package com.tencent.bkrepo.analyst.statemachine.subtask.action
 import com.tencent.bkrepo.analyst.component.CacheableRepositoryClient
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
+import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
-import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.TransitResult
@@ -56,6 +57,7 @@ class ReuseResultAction(
     private val scannerMetrics: ScannerMetrics,
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
+    private val scanPlanDao: ScanPlanDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val publisher: ApplicationEventPublisher
 ) : SubtaskAction {
@@ -78,6 +80,11 @@ class ReuseResultAction(
             reuseResult = true,
             passCount = passCount
         )
+        // 更新扫描方案预览数据
+        val planId = context.scanTask.scanPlan?.id
+        if (planId != null && context.existsOverview?.isNotEmpty() == true) {
+            scanPlanDao.updateScanResultOverview(planId, context.existsOverview)
+        }
         scannerMetrics.incReuseResultSubtaskCount()
         return TransitResult(target)
     }
@@ -141,7 +148,7 @@ class ReuseResultAction(
         }
         val tasks = archiveSubScanTaskDao.insert(finishedSubtasks)
         val planArtifactLatestSubtasks = tasks.map {
-            TPlanArtifactLatestSubScanTask.convert(it, it.status)
+            SubtaskConverter.convertToPlanSubtask(it, it.status)
         }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubtasks)
         planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }

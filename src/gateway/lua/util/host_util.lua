@@ -35,7 +35,8 @@ function _M:get_addr(service_name)
     
     -- boot assembly部署
     if config.service_name ~= nil and config.service_name ~= ""  then
-        return config.bkrepo.domain
+        local domains = stringUtil:split(config.bkrepo.domain, ";")
+        return domains[math.random(1, #domains)]
     end
 
     local ns_config = config.ns

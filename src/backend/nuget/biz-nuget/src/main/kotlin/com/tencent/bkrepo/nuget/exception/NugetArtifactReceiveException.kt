@@ -9,4 +9,4 @@ import com.tencent.bkrepo.nuget.constant.NugetMessageCode
  */
 class NugetArtifactReceiveException(
     reason: String
-) : ErrorCodeException(NugetMessageCode.PACKAGE_CONTENT_INVALID, reason, HttpStatus.BAD_REQUEST)
+) : ErrorCodeException(NugetMessageCode.PACKAGE_CONTENT_INVALID, reason, status = HttpStatus.BAD_REQUEST)

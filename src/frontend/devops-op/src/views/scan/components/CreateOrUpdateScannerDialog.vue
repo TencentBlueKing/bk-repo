@@ -31,7 +31,7 @@
           <template slot="append">ms</template>
         </el-input>
       </el-form-item>
-      <el-form-item label="支持的文件类型" prop="supportFileNameExt" required>
+      <el-form-item label="支持的文件类型" prop="supportFileNameExt">
         <el-tooltip effect="dark" content="仅扫描GENERIC包时生效" placement="top-start">
           <svg-icon icon-class="question" />
         </el-tooltip>
@@ -66,6 +66,11 @@
       <el-form-item label="支持的扫描类型" prop="supportScanTypes" required>
         <el-select v-model="scanner.supportScanTypes" multiple placeholder="请选择" style="width: 100%">
           <el-option v-for="item in scanTypes" :key="item" :label="item" :value="item" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="支持的分发器" prop="supportDispatchers">
+        <el-select v-model="scanner.supportDispatchers" multiple placeholder="请选择" style="width: 100%">
+          <el-option v-for="item in dispatchers" :key="item" :label="item" :value="item" />
         </el-select>
       </el-form-item>
       <!-- standard -->
@@ -116,7 +121,7 @@
 import { IMAGE_REGEX, URL_REGEX } from '@/utils/validate'
 import _ from 'lodash'
 import {
-  createScanner, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
+  createScanner, dispatchers, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
   SCANNER_TYPE_TRIVY, scanTypes,
   updateScanner
 } from '@/api/scan'
@@ -147,6 +152,7 @@ export default {
       SCANNER_TYPE_SCANCODE: SCANNER_TYPE_SCANCODE,
       scanTypes: scanTypes,
       repoTypes: repoTypes,
+      dispatchers: dispatchers,
       rules: {
         'knowledgeBase.endpoint': [
           { validator: this.validateUrl, trigger: 'change' }
@@ -242,7 +248,8 @@ export default {
     },
     handleInputConfirm() {
       const ext = this.extInputValue
-      if (ext && this.scanner.supportFileNameExt.indexOf(ext) === -1) {
+      // 输入为空字符串时表示支持无后缀文件名
+      if (this.scanner.supportFileNameExt.indexOf(ext) === -1) {
         this.scanner.supportFileNameExt.push(ext)
       }
       this.extInputVisible = false

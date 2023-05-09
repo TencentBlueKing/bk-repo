@@ -23,7 +23,7 @@
                 </div>
             </div>
         </draggable>
-        <empty-data v-else ex-style="margin-top:130px;" title="暂无代理源配置" sub-title="请尝试添加公有代理源或配置私有代理源"></empty-data>
+        <empty-data v-else ex-style="margin-top:130px;" :title="$t('noProxySourceConfigTitle')" :sub-title="$t('noProxySourceConfigSubTitle')"></empty-data>
         <proxy-origin-dialog :show="showProxyDialog" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
     </div>
 </template>

@@ -14,11 +14,11 @@
         </header>
         <div class="common-version-main flex-align-center">
             <aside class="common-version" v-bkloading="{ isLoading }">
-                <header class="pl30 version-header flex-align-center">制品版本</header>
+                <header class="pl30 version-header flex-align-center">{{ $t('artifactVersion')}}</header>
                 <div class="version-search">
                     <bk-input
                         v-model.trim="versionInput"
-                        placeholder="请输入版本, 按Enter键搜索"
+                        :placeholder="$t('versionPlaceHolder')"
                         clearable
                         @enter="handlerPaginationChange()"
                         @clear="handlerPaginationChange()"
@@ -31,7 +31,7 @@
                         :is-loading="isLoading"
                         :has-next="versionList.length < pagination.count"
                         @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
-                        <div class="mb10 list-count">共计{{ pagination.count }}个版本</div>
+                        <div class="mb10 list-count">{{ $t('totalVersionCount', [pagination.count])}}</div>
                         <div
                             class="mb10 version-item flex-center"
                             :class="{ 'selected': $version.name === version }"
@@ -44,14 +44,14 @@
                                 :list="[
                                     ...(!$version.metadata.forbidStatus ? [
                                         permission.edit && {
-                                            label: '晋级', clickEvent: () => changeStageTagHandler($version),
+                                            label: $t('upgrade'), clickEvent: () => changeStageTagHandler($version),
                                             disabled: ($version.stageTag || '').includes('@release')
                                         },
-                                        repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
-                                        showRepoScan && { label: '扫描制品', clickEvent: () => scanPackageHandler($version) }
+                                        repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
+                                        showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? '解除禁止' : '禁止使用' },
-                                    permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
+                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
                     </infinite-scroll>
@@ -142,13 +142,14 @@
                 return this.versionList.find(version => version.name === this.version)
             },
             showRepoScan () {
-                return RELEASE_MODE !== 'community' && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+                const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             }
         },
         created () {
             this.getPackageInfoHandler()
             this.handlerPaginationChange()
-            if (RELEASE_MODE !== 'community') {
+            if (RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU) {
                 this.refreshSupportPackageTypeList()
             }
         },
@@ -247,7 +248,7 @@
                 this.$refs.commonFormDialog.setData({
                     show: true,
                     loading: false,
-                    title: '扫描制品',
+                    title: this.$t('scanArtifact'),
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,
@@ -266,7 +267,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (row.metadata.forbidStatus ? '解除禁止' : '禁止使用') + this.$t('success')
+                        message: (row.metadata.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.refresh(row.name)
                 })

@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.maven.artifact
 
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
-import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -57,7 +57,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
                 val message = "Cannot build MavenArtifactInfo from '$artifactUri'. " +
                     "The groupId, artifactId and version are unreadable."
                 logger.warn(message)
-                throw MavenBadRequestException(message)
+                throw ParameterInvalidException(artifactUri)
             }
             var pos = paths.size - groupMark
             mavenArtifactInfo.jarName = paths.last()
@@ -71,7 +71,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
 
             require(mavenArtifactInfo.isValid()) {
-                throw MavenBadRequestException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
+                throw ParameterInvalidException(mavenArtifactInfo.getArtifactFullPath())
             }
         }
         return mavenArtifactInfo

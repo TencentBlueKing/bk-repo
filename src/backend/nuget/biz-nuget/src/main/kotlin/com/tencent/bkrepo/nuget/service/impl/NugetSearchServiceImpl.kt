@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.nuget.service.impl
 
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.response.search.NugetSearchResponse
@@ -21,17 +22,29 @@ class NugetSearchServiceImpl(
 ) : NugetSearchService {
     override fun search(artifactInfo: NugetArtifactInfo, searchRequest: NugetSearchRequest): NugetSearchResponse {
         logger.info("handling search request in repo [${artifactInfo.getRepoIdentify()}], parameter: $searchRequest")
-        with(artifactInfo) {
+        with(searchRequest) {
+            // limits the skip parameter to 3,000 and the take parameter to 1,000
+            Preconditions.checkArgument(skip in 0..3000, "skip")
+            Preconditions.checkArgument(take in 0..1000, "take")
+
             val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + "/registration-semver2"
-            val packageListOption = PackageListOption(packageName = searchRequest.q)
-            val packageList = packageClient.listPackagePage(projectId, repoName, packageListOption).data!!.records
-            val pagedResultList =
-                packageList.stream().skip(searchRequest.skip.toLong()).limit(searchRequest.take.toLong()).toList()
-            if (pagedResultList.isEmpty()) return NugetSearchResponse()
-            val searchResponseDataList = pagedResultList.map {
-                buildSearchResponseData(it, searchRequest, v3RegistrationUrl)
+            val searchResponseDataList = mutableListOf<SearchResponseData>()
+            val packageListOption = PackageListOption(pageSize = 1000, packageName = q)
+
+            while (true) {
+                val page = packageClient.listPackagePage(
+                    artifactInfo.projectId, artifactInfo.repoName, packageListOption
+                ).data?.records.takeUnless { it.isNullOrEmpty() } ?: break
+                packageListOption.pageNumber++
+                val pageResult = page.map {
+                    buildSearchResponseData(it, this, v3RegistrationUrl)
+                }.filter {
+                    packageType.isNullOrBlank() ||
+                            it.packageTypes.map { type -> type.name.toLowerCase() }.contains(packageType.toLowerCase())
+                }
+                searchResponseDataList.addAll(pageResult)
             }
-            return NugetSearchResponse(packageList.size, searchResponseDataList)
+            return NugetSearchResponse(searchResponseDataList.size, searchResponseDataList.drop(skip).take(take))
         }
     }
 
@@ -41,7 +54,7 @@ class NugetSearchServiceImpl(
         v3RegistrationUrl: String
     ): SearchResponseData {
         with(packageSummary) {
-            val packageVersionList = packageClient.listVersionPage(projectId, repoName, key).data!!.records
+            val packageVersionList = packageClient.listAllVersion(projectId, repoName, key).data!!
             // preRelease需要处理
             val sortedPackageVersionList =
                 packageVersionList.stream()

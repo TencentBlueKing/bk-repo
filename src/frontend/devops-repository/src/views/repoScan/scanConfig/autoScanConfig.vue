@@ -1,10 +1,10 @@
 <template>
     <bk-form style="max-width: 1080px;" :label-width="120" :model="config" :rules="rules" ref="scanForm">
-        <bk-form-item label="自动扫描">
+        <bk-form-item :label="$t('autoScan')">
             <bk-switcher v-model="config.scanOnNewArtifact" size="small" theme="primary"></bk-switcher>
-            <div style="color:var(--fontSubsidiaryColor);">符合方案类型要求并且满足以下规则的制品，在新入库时会使用本方案进行扫描</div>
+            <div style="color:var(--fontSubsidiaryColor);">{{ $t('autoScanTip') }}</div>
         </bk-form-item>
-        <bk-form-item label="仓库范围" :required="true" property="repo" error-display-type="normal">
+        <bk-form-item :label="$t('repoScope')" :required="true" property="repo" error-display-type="normal">
             <repo-table
                 ref="repoConfig"
                 :init-data="config.repoNameList"
@@ -13,7 +13,7 @@
                 @clearError="clearError">
             </repo-table>
         </bk-form-item>
-        <bk-form-item label="制品范围" :required="true" property="arti" error-display-type="normal">
+        <bk-form-item :label="$t('artifactScope')" :required="true" property="arti" error-display-type="normal">
             <arti-table
                 ref="artiConfig"
                 :init-data="config.artifactRules"
@@ -57,7 +57,7 @@
                             validator: () => {
                                 return this.$refs.repoConfig.getConfig()
                             },
-                            message: '请选择指定仓库',
+                            message: this.$t('autoScanRepoRule'),
                             trigger: 'blur'
                         }
                     ],
@@ -66,7 +66,7 @@
                             validator: () => {
                                 return this.$refs.artiConfig.getConfig()
                             },
-                            message: '请填写制品规则',
+                            message: this.$t('autoScanArtifactRule'),
                             trigger: 'blur'
                         }
                     ]

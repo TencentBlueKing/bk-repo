@@ -41,6 +41,8 @@ data class SubtaskResultOverview(
     val scanner: String,
     @ApiModelProperty("扫描器类型")
     val scannerType: String,
+    @ApiModelProperty("扫描类型")
+    val scanTypes: List<String> = emptyList(),
 
     @ApiModelProperty("制品名")
     val name: String,

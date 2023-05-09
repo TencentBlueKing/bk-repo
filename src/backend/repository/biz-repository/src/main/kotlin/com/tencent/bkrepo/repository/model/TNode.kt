@@ -34,6 +34,8 @@ package com.tencent.bkrepo.repository.model
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.repository.model.TNode.Companion.CLUSTER_NAMES_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.CLUSTER_NAMES_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.FOLDER_IDX
@@ -60,7 +62,8 @@ import java.time.LocalDateTime
     CompoundIndex(name = METADATA_IDX, def = METADATA_IDX_DEF, background = true),
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
     CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
-    CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true)
+    CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true),
+    CompoundIndex(name = CLUSTER_NAMES_IDX, def = CLUSTER_NAMES_IDX_DEF, background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -82,11 +85,13 @@ data class TNode(
     var copyFromCredentialsKey: String? = null,
     var copyIntoCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
+    var clusterNames: Set<String>? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String
 ) {
+
     companion object {
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         const val PATH_IDX = "projectId_repoName_path_idx"
@@ -100,5 +105,7 @@ data class TNode(
         const val COPY_FROM_IDX_DEF = "{'copyFromCredentialsKey':1}"
         const val FOLDER_IDX = "folder_idx"
         const val FOLDER_IDX_DEF = "{'folder': 1}"
+        const val CLUSTER_NAMES_IDX = "cluster_names_idx"
+        const val CLUSTER_NAMES_IDX_DEF = "{'clusterNames': 1}"
     }
 }

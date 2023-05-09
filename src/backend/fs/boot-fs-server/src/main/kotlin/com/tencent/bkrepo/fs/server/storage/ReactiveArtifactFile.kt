@@ -33,11 +33,11 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
-import java.io.File
-import java.io.InputStream
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBuffer
+import java.io.File
+import java.io.InputStream
 
 class ReactiveArtifactFile(
     storageCredentials: StorageCredentials,
@@ -132,11 +132,11 @@ class ReactiveArtifactFile(
         receiver.receive(buffer)
     }
 
-    fun finish() {
+    suspend fun finish() {
         if (!initialized) {
-            val throughput = receiver.finish()
-            monitor.remove(receiver)
             initialized = true
+            monitor.remove(receiver)
+            val throughput = receiver.finish()
             logger.info("Receive file $throughput")
         }
     }

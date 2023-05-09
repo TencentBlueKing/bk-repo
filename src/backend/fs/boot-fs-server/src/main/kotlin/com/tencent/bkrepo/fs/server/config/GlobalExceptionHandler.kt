@@ -27,13 +27,14 @@
 
 package com.tencent.bkrepo.fs.server.config
 
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.fs.server.exception.RemoteErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler
 import org.springframework.http.HttpHeaders
@@ -42,22 +43,44 @@ import reactor.core.publisher.Mono
 
 class GlobalExceptionHandler : ErrorWebExceptionHandler {
     override fun handle(exchange: ServerWebExchange, ex: Throwable): Mono<Void> {
-        val body = if (ex is ErrorCodeException) {
-            exchange.response.rawStatusCode = ex.status.value
-            val errorMsg = ex.messageCode.getKey()
-            Response(ex.messageCode.getCode(), errorMsg, null, null)
-        } else {
-            exchange.response.rawStatusCode = HttpStatus.INTERNAL_SERVER_ERROR.value
-            val errorMsg = CommonMessageCode.SYSTEM_ERROR.getKey()
-            logger.error(errorMsg, ex)
-            Response(CommonMessageCode.SYSTEM_ERROR.getCode(), errorMsg, null, null)
-        }
-        if (ex is AuthenticationException) {
-            exchange.response.headers[HttpHeaders.WWW_AUTHENTICATE] = BASIC_AUTH_PROMPT
+        val body = when (ex) {
+            is ErrorCodeException -> handlerErrorCodeException(exchange, ex)
+            is RemoteErrorCodeException -> handlerRemoteErrorCodeException(exchange, ex)
+            else -> handlerError(exchange, ex)
         }
         val bodyBytes = JsonUtils.objectMapper.writeValueAsBytes(body)
         val res = exchange.response.bufferFactory().wrap(bodyBytes)
         return exchange.response.writeWith(Mono.just(res))
+    }
+
+    private fun handlerErrorCodeException(exchange: ServerWebExchange, exception: ErrorCodeException): Response<Void> {
+        val errorMsg = "[${exception.messageCode.getCode()}]${exception.messageCode.getKey()}"
+        if (exception.status.isServerError()) {
+            logger.error(errorMsg)
+        } else {
+            logger.warn(errorMsg)
+        }
+        if (exception is AuthenticationException) {
+            exchange.response.headers[HttpHeaders.WWW_AUTHENTICATE] = BASIC_AUTH_PROMPT
+        }
+        exchange.response.rawStatusCode = exception.status.value
+        return Response(exception.messageCode.getCode(), errorMsg, null, null)
+    }
+
+    private fun handlerRemoteErrorCodeException(
+        exchange: ServerWebExchange,
+        exception: RemoteErrorCodeException
+    ): Response<Void> {
+        logger.warn("[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
+        exchange.response.rawStatusCode = HttpStatus.BAD_REQUEST.value
+        return Response(exception.errorCode, exception.errorMessage, null, null)
+    }
+
+    private fun handlerError(exchange: ServerWebExchange, ex: Throwable): Response<Void> {
+        val errorMsg = CommonMessageCode.SYSTEM_ERROR.getKey()
+        exchange.response.rawStatusCode = HttpStatus.INTERNAL_SERVER_ERROR.value
+        logger.error(errorMsg, ex)
+        return Response(CommonMessageCode.SYSTEM_ERROR.getCode(), errorMsg, null, null)
     }
 
     companion object {

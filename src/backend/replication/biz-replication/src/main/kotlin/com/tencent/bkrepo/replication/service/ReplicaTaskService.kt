@@ -29,8 +29,10 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
@@ -95,8 +97,24 @@ interface ReplicaTaskService {
     ): List<ReplicaTaskDetail>
 
     /**
+     * 根据[ReplicaType]分页查询任务
+     */
+    fun listTaskByType(
+        type: ReplicaType,
+        lastId: String,
+        size: Int,
+        status: ReplicaStatus? = null
+    ): List<ReplicaTaskInfo>
+
+    /**
+     * 查询同步任务对象
+     */
+    fun listTaskObject(
+        key: String
+    ): List<ReplicaObjectInfo>
+
+    /**
      * 创建同步任务
-     * 目前只允许创建ReplicaType.SCHEDULED类型的任务
      *
      * @param request 创建请求
      */

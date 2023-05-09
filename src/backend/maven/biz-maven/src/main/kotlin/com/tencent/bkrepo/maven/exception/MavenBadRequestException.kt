@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.maven.exception
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
 class MavenBadRequestException(
-    error: String? = "Missing groupId or artifactId or version or classifier"
-) : RuntimeException(error)
+    messageCode: MessageCode, vararg params: String
+) : ErrorCodeException(messageCode = messageCode, params = params)

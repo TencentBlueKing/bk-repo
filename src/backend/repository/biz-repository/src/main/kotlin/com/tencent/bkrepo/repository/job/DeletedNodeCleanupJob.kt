@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -54,7 +55,8 @@ import java.time.LocalDateTime
 class DeletedNodeCleanupJob(
     private val nodeDao: NodeDao,
     private val repositoryDao: RepositoryDao,
-    private val fileReferenceService: FileReferenceService
+    private val fileReferenceService: FileReferenceService,
+    private val clusterProperties: ClusterProperties
 ) : CenterNodeJob() {
 
     override fun start() {
@@ -95,6 +97,15 @@ class DeletedNodeCleanupJob(
             context.total += deletedNodeList.size
             deletedNodeList = nodeDao.find(query)
         }
+        // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
+        if (repo.deleted != null &&
+            nodeDao.count(Query(
+                where(TNode::projectId).isEqualTo(repo.projectId).and(TNode::repoName).isEqualTo(repo.name))
+            ) == 0L
+        ) {
+            repositoryDao.deleteById(repo.id)
+            logger.info("Clean up deleted repository[${repo.projectId}/${repo.name}] for no nodes remaining")
+        }
     }
 
     private fun cleanUpNode(repo: TRepository, node: TNode) {
@@ -107,7 +118,9 @@ class DeletedNodeCleanupJob(
                     .and(TNode::deleted).isEqualTo(node.deleted)
             )
             nodeDao.remove(nodeQuery)
-            if (!node.folder) {
+            if (!node.folder &&
+                (node.clusterNames == null || node.clusterNames!!.contains(clusterProperties.self.name))
+            ) {
                 fileReferenceChanged = fileReferenceService.decrement(node, repo)
             }
         } catch (ignored: Exception) {

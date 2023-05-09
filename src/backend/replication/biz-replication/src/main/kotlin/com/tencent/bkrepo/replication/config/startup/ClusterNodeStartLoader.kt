@@ -27,10 +27,18 @@
 
 package com.tencent.bkrepo.replication.config.startup
 
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.RoleType
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.util.UrlUtils
+import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.PING
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.REPORT
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
@@ -51,44 +59,77 @@ class ClusterNodeStartLoader(
 ) : ApplicationRunner {
     override fun run(args: ApplicationArguments?) {
         val userId = SYSTEM_USER
-        val request = initClusterNodeCreateRequest()
+        val request = initClusterNodeCreateRequest() ?: return
         try {
+            createEdgeClusterNodeOnCenter(request)
             clusterNodeService.create(userId, request)
         } catch (ex: Exception) {
             logger.warn("init cluster node failed, reason: ${ex.message}")
         }
     }
 
-    private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest {
+    private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest? {
         return with(clusterProperties) {
             when (role) {
-                RoleType.CENTER -> ClusterNodeCreateRequest(
-                    name = center.name.orEmpty(),
-                    url = center.url,
-                    certificate = center.certificate.orEmpty(),
-                    username = center.username.orEmpty(),
-                    password = center.password.orEmpty(),
-                    appId = self.appId,
-                    accessKey = self.accessKey,
-                    secretKey = self.secretKey,
-                    type = ClusterNodeType.CENTER
+                ClusterNodeType.CENTER -> ClusterNodeCreateRequest(
+                    name = self.name ?: center.name.orEmpty(),
+                    url = if (self.url.isNotBlank()) normalizeUrl(self.url) else normalizeUrl(center.url),
+                    certificate = self.certificate ?: center.certificate.orEmpty(),
+                    username = self.username ?: center.username.orEmpty(),
+                    password = self.password ?: center.password.orEmpty(),
+                    appId = self.appId ?: center.appId,
+                    accessKey = self.accessKey ?: center.accessKey,
+                    secretKey = self.secretKey ?: center.secretKey,
+                    type = ClusterNodeType.CENTER,
+                    ping = false,
+                    detectType = PING
                 )
-                RoleType.EDGE -> ClusterNodeCreateRequest(
+                ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
-                    url = self.url,
+                    url = normalizeUrl(self.url),
                     certificate = self.certificate.orEmpty(),
                     username = self.username.orEmpty(),
                     password = self.password.orEmpty(),
                     appId = self.appId,
                     accessKey = self.accessKey,
                     secretKey = self.secretKey,
-                    type = ClusterNodeType.EDGE
+                    type = ClusterNodeType.EDGE,
+                    ping = false,
+                    detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING
                 )
+                else -> null
+            }
+        }
+    }
+
+    private fun normalizeUrl(url: String): String {
+        if (url.isBlank()) {
+            return url
+        }
+        return UrlUtils.extractDomain(url).ensureSuffix("/$REPLICATION_SERVICE_NAME")
+    }
+
+    private fun createEdgeClusterNodeOnCenter(request: ClusterNodeCreateRequest) {
+        if (request.type != ClusterNodeType.EDGE) {
+            return
+        }
+
+        try {
+            val centerClusterNodeClient: ClusterClusterNodeClient = FeignClientFactory.create(
+                remoteClusterInfo = clusterProperties.center,
+                serviceName = REPLICATION_SERVICE_NAME,
+                srcClusterName = clusterProperties.self.name
+            )
+            centerClusterNodeClient.create(SYSTEM_USER, request)
+        } catch (e: RemoteErrorCodeException) {
+            if (e.errorCode != ReplicationMessageCode.CLUSTER_NODE_EXISTS.getCode()) {
+                throw e
             }
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterNodeStartLoader::class.java)
+        private const val REPLICATION_SERVICE_NAME = "replication"
     }
 }

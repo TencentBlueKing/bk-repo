@@ -31,15 +31,16 @@
 
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.api.ServiceRoleResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceRoleClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -77,6 +78,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
 @Import(
+    ClusterProperties::class,
     StorageProperties::class,
     RepositoryProperties::class,
     ProjectDao::class,
@@ -86,20 +88,20 @@ import org.springframework.test.context.TestPropertySource
     SpringContextUtils::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
 open class ServiceBaseTest {
 
     @MockBean
     lateinit var storageService: StorageService
 
     @MockBean
-    lateinit var roleResource: ServiceRoleResource
+    lateinit var roleResource: ServiceRoleClient
 
     @MockBean
-    lateinit var userResource: ServiceUserResource
+    lateinit var userResource: ServiceUserClient
 
     @MockBean
-    lateinit var servicePermissionResource: ServicePermissionResource
+    lateinit var servicePermissionClient: ServicePermissionClient
 
     @MockBean
     lateinit var permissionManager: PermissionManager
@@ -128,14 +130,14 @@ open class ServiceBaseTest {
             ResponseBuilder.success()
         )
 
-        whenever(servicePermissionResource.listPermissionProject(anyString())).thenReturn(
+        whenever(servicePermissionClient.listPermissionProject(anyString())).thenReturn(
             ResponseBuilder.success()
         )
 
-        whenever(servicePermissionResource.checkPermission(any())).thenReturn(
+        whenever(servicePermissionClient.checkPermission(any())).thenReturn(
             ResponseBuilder.success()
         )
-        whenever(servicePermissionResource.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
+        whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success()
         )
 

@@ -29,16 +29,18 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.remote.RemoteInfo
@@ -60,6 +62,7 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.replica.base.executor.RunOnceThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
+import com.tencent.bkrepo.replication.service.ClusterNodePermissionService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
@@ -75,6 +78,7 @@ import java.util.regex.Pattern
 
 @Service
 class RemoteNodeServiceImpl(
+    private val clusterNodePermissionService: ClusterNodePermissionService,
     private val clusterNodeService: ClusterNodeService,
     private val localDataManager: LocalDataManager,
     private val replicaTaskService: ReplicaTaskService,
@@ -220,7 +224,7 @@ class RemoteNodeServiceImpl(
         if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
-        executors.execute { manualReplicaJobExecutor.execute(taskDetail) }
+        executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
     }
 
     override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {
@@ -288,8 +292,14 @@ class RemoteNodeServiceImpl(
         clusterInfo: ClusterNodeInfo
     ): ReplicaTaskInfo {
         with(request) {
+            // TODO 临时处理，在创建一次性任务时进行鉴权，后续需要修改为在执行一次性任务时进行鉴权
+            clusterNodePermissionService.checkRepoPermission(
+                clusterInfo, remoteUserUsername, remoteUserPassword, remoteProjectId, remoteRepoName
+            )
+
             val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty()) {
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty()
+                && replicaType == ReplicaType.RUN_ONCE) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
             }
             val replicaTaskObjects = listOf(
@@ -385,7 +395,8 @@ class RemoteNodeServiceImpl(
                 certificate = certificate,
                 username = username,
                 password = password,
-                type = ClusterNodeType.REMOTE
+                type = ClusterNodeType.REMOTE,
+                detectType = DetectType.PING
             )
         }
     }
@@ -441,6 +452,8 @@ class RemoteNodeServiceImpl(
                 certificate = certificate,
                 username = username,
                 password = password,
+                remoteUserUsername = remoteUserUsername,
+                remoteUserPassword = remoteUserPassword,
                 remoteProjectId = remoteProjectId,
                 remoteRepoName = remoteRepoName,
                 packageConstraints = packageConstraints,
@@ -461,6 +474,8 @@ class RemoteNodeServiceImpl(
                 certificate = certificate,
                 username = username,
                 password = password,
+                remoteUserUsername = remoteUserUsername,
+                remoteUserPassword = remoteUserPassword,
                 packageConstraints = packageConstraints,
                 pathConstraints = pathConstraints,
                 replicaType = replicaType,
@@ -484,6 +499,8 @@ class RemoteNodeServiceImpl(
                 registry = registry,
                 username = username,
                 password = password,
+                remoteUserUsername = remoteUserUsername,
+                remoteUserPassword = remoteUserPassword,
                 remoteProjectId = remoteProjectId,
                 remoteRepoName = remoteRepoName,
                 packageConstraints = packageConstraints,

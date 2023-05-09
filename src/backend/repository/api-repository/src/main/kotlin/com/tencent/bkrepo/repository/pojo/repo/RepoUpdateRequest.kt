@@ -52,7 +52,8 @@ data class RepoUpdateRequest(
     val configuration: RepositoryConfiguration? = null,
     @ApiModelProperty("仓库配额", required = false)
     val quota: Long? = null,
-
     @ApiModelProperty("操作用户", required = true)
-    val operator: String
+    val operator: String,
+    @ApiModelProperty("是否展示", required = true)
+    val display: Boolean = true
 ) : RepoRequest

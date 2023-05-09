@@ -33,10 +33,8 @@ import org.springframework.web.reactive.function.server.queryParamOrNull
 
 class FlushRequest(request: ServerRequest) : NodeRequest(request) {
     val length: Long
-    val md5: String?
     init {
         length = request.queryParamOrNull("length")?.toLong()
             ?: throw ParameterInvalidException("required length parameter.")
-        md5 = request.queryParamOrNull("md5")
     }
 }

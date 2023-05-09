@@ -50,6 +50,10 @@ data class RemoteConfigUpdateRequest(
     var username: String? = null,
     @ApiModelProperty("集群认证密码", required = false)
     var password: String? = null,
+    @ApiModelProperty("用于执行分发任务时在远程集群进行认证的用户名", required = false)
+    var remoteUserUsername: String? = null,
+    @ApiModelProperty("用于执行分发任务时在远程集群进行认证的密码", required = false)
+    var remoteUserPassword: String? = null,
     // 异构集群分发时以下remoteProjectId/remoteRepoName不需要
     @ApiModelProperty("远程项目")
     val remoteProjectId: String? = null,

@@ -31,4 +31,9 @@
 
 package com.tencent.bkrepo.helm.exception
 
-class HelmForbiddenRequestException(message: String) : HelmException(message)
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+class HelmForbiddenRequestException(messageCode: MessageCode, vararg params: Any)
+    : ErrorCodeException(messageCode, params, HttpStatus.FORBIDDEN)

@@ -19,6 +19,8 @@ Vue.component('EmptyData', EmptyData)
 Vue.prototype.$setLocale = setLocale
 Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
 
+document.title = i18n.t('webTitle')
+
 Vue.mixin({
     methods: {
         // 特殊仓库名称替换
@@ -26,9 +28,9 @@ Vue.mixin({
             if (MODE_CONFIG === 'ci') {
                 switch (name) {
                     case 'custom':
-                        return '自定义仓库'
+                        return this.$t('custom')
                     case 'pipeline':
-                        return '流水线仓库'
+                        return this.$t('pipeline')
                     default:
                         return name
                 }

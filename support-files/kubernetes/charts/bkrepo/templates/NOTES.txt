@@ -57,5 +57,7 @@ Your release is named {{ .Release.Name }}.
     初始用户名/密码: {{ $username }}/{{ $password }}
     初始项目: blueking
 
-3. 更多说明请参考页面操作指引以及API文档
+3. 平台访问bkrepo使用{{ include "bkrepo.authorization" . }}
+
+4. 更多说明请参考页面操作指引以及API文档
 

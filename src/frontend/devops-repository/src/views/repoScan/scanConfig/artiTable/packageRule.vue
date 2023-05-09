@@ -1,6 +1,6 @@
 <template>
-    <div class="rule-item flex-align-center">
-        <span>制品名称满足规则</span>
+    <div class="rule-item flex-align-center" :data-suffix="$t('shortOr')">
+        <span>{{ $t('genericRule') }}</span>
         <select-input
             class="ml5"
             :select="name.operation"
@@ -9,7 +9,7 @@
             :disabled="disabled"
             @change="r => change('name', r)">
         </select-input>
-        <span>，并且制品版本满足规则</span>
+        <span>{{ $t('genericRuleSpan') }}</span>
         <select-input
             class="ml5"
             :select="version.operation"
@@ -46,9 +46,9 @@
         data () {
             return {
                 typeList: [
-                    { id: 'EQ', name: '等于' },
-                    { id: 'MATCH', name: '包含' },
-                    { id: 'REGEX', name: '正则匹配' }
+                    { id: 'EQ', name: this.$t('equal') },
+                    { id: 'MATCH', name: this.$t('contain') },
+                    { id: 'REGEX', name: this.$t('regular') }
                 ]
             }
         },
@@ -70,7 +70,7 @@
 <style lang="scss" scoped>
 .rule-item {
     &:not(:nth-child(1)):before {
-        content: '或';
+        content: attr(data-suffix);
         position: absolute;
         margin-left: -22px;
         color: var(--fontSubsidiaryColor);

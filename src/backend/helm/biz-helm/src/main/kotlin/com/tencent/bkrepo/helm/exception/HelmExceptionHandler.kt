@@ -32,12 +32,14 @@
 package com.tencent.bkrepo.helm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -52,27 +54,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice("com.tencent.bkrepo.helm")
-class HelmExceptionHandler {
+class  HelmExceptionHandler {
 
     @ExceptionHandler(HelmRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerRepoNotFoundException(exception: HelmRepoNotFoundException) {
-        val responseObject = HelmErrorResponse(exception.message)
-        helmResponse(responseObject, exception)
+        helmResponse(exception)
     }
 
     @ExceptionHandler(HelmBadRequestException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerBadRequestException(exception: HelmBadRequestException) {
-        val responseObject = HelmErrorResponse(exception.message)
-        helmResponse(responseObject, exception)
+        helmResponse(exception)
     }
 
     @ExceptionHandler(HelmForbiddenRequestException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handlerBadRequestException(exception: HelmForbiddenRequestException) {
-        val responseObject = HelmErrorResponse(exception.message)
-        helmResponse(responseObject, exception)
+        helmResponse(exception)
     }
 
     @ExceptionHandler(AuthenticationException::class)
@@ -86,44 +85,47 @@ class HelmExceptionHandler {
     @ExceptionHandler(HelmIndexFreshFailException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handlerHelmIndexFreshFailException(exception: HelmIndexFreshFailException) {
-        val responseObject = HelmErrorResponse(exception.message)
-        helmResponse(responseObject, exception)
+        helmResponse(exception)
     }
 
     @ExceptionHandler(HelmFileAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     fun handlerHelmFileAlreadyExistsException(exception: HelmFileAlreadyExistsException) {
-        val responseObject = HelmErrorResponse(exception.message)
-        helmResponse(responseObject, exception)
+        helmResponse(exception)
     }
 
     @ExceptionHandler(HelmErrorInvalidProvenanceFileException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handlerHelmErrorInvalidProvenanceFileException(exception: HelmErrorInvalidProvenanceFileException) {
-        val responseObject = HelmErrorResponse(exception.message)
-        helmResponse(responseObject, exception)
+        helmResponse(exception)
     }
 
     @ExceptionHandler(HelmFileNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerHelmFileNotFoundException(exception: HelmFileNotFoundException) {
-        val responseObject = HelmErrorResponse(exception.message)
+        helmResponse(exception)
+    }
+
+    private fun helmResponse(exception: ErrorCodeException) {
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val responseObject = HelmErrorResponse(errorMessage)
         helmResponse(responseObject, exception)
     }
 
     private fun helmResponse(responseObject: HelmErrorResponse, exception: Exception) {
-        logHelmException(exception)
+        logHelmException(exception, responseObject)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=utf-8"
         response.writer.println(responseString)
     }
 
-    private fun logHelmException(exception: Exception) {
+    private fun logHelmException(exception: Exception, responseObject: HelmErrorResponse) {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
-            "User[$userId] access helm resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}"
+            "User[$userId] access helm resource[$uri] failed" +
+                "[${exception.javaClass.simpleName}]: ${responseObject.error}"
         )
     }
 

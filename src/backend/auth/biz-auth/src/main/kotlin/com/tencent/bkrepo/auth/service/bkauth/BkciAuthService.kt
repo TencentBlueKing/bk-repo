@@ -216,10 +216,27 @@ class BkciAuthService @Autowired constructor(
         }
     }
 
+    fun getProjectListByUser(user: String): List<String> {
+        return try {
+            val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/users/$user"
+            val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
+                .header(DEVOPS_GATEWAY_TAG, DEVOPS_PROD_V3).header(DEVOPS_UID, user).get().build()
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
+            val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
+            logger.debug("getProjectListByUser, requestUrl: [$url], result : [${apiResponse.content}]")
+            return responseObject.data
+        } catch (exception: Exception) {
+            logger.error("getProjectListByUser error: ", exception)
+            emptyList()
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(BkciAuthService::class.java)
         const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
         const val DEVOPS_UID = "X-DEVOPS-UID"
         const val DEVOPS_PROJECT_ID = "X-DEVOPS-PROJECT-ID"
+        const val DEVOPS_GATEWAY_TAG = "x-gateway-tag"
+        const val DEVOPS_PROD_V3 = "prod-v3"
     }
 }
