@@ -6,7 +6,7 @@
                 <bk-input
                     v-model.trim="query.name"
                     class="w250"
-                    :placeholder="repoEnterTip"
+                    :placeholder="$t('repoEnterTip')"
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"

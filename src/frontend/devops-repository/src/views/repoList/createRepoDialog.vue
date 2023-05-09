@@ -167,7 +167,7 @@
                 loading: false,
                 repoBaseInfo: getRepoBaseInfo(),
                 showIamDenyDialog: false,
-                showData: {}
+                showData: {},
                 title: this.$t('createRepository')
             }
         },
