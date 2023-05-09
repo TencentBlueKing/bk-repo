@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -246,8 +245,7 @@ class ClusterNodeServiceImpl(
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
-                val authToken = BasicAuthUtils.encode(username.orEmpty(), password.orEmpty())
-                replicationService.ping(authToken)
+                replicationService.ping()
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.warn("ping cluster [$name] failed, reason: $message")
