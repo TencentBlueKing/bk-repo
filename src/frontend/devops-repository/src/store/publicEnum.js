@@ -21,7 +21,8 @@ export const repoEnum = MODE_CONFIG === 'ci'
         'nuget'
     ]
 
-export const repoRemoteSupportEnum = [
+// 远程及虚拟仓库支持创建的仓库
+export const repoSupportEnum = [
     'maven',
     'npm',
     'pypi',

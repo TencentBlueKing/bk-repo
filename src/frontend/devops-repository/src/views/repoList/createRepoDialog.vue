@@ -177,7 +177,7 @@
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import StoreSort from '@repository/components/StoreSort'
     import CheckTargetStore from '@repository/components/CheckTargetStore'
-    import { repoEnum, repoRemoteSupportEnum } from '@repository/store/publicEnum'
+    import { repoEnum, repoSupportEnum } from '@repository/store/publicEnum'
     import { mapActions } from 'vuex'
     import { isEmpty } from 'lodash'
     const getRepoBaseInfo = () => {
@@ -424,16 +424,8 @@
         watch: {
             storeType: {
                 handler (val) {
-                    if (val === 'remote') {
-                        // 远程仓库目前因为需要代理设置，目前只支持maven、npm、pypi、nuget四种仓库
-                        this.filterRepoEnum = repoEnum.filter(item => repoRemoteSupportEnum.includes(item))
-                    } else if (val === 'virtual') {
-                        // 虚拟仓库不支持选择generic仓库
-                        this.filterRepoEnum = repoEnum.filter(item => item !== 'generic')
-                    } else {
-                        // 本地仓库
-                        this.filterRepoEnum = repoEnum
-                    }
+                    //  远程及虚拟仓库，目前只支持maven、npm、pypi、nuget四种仓库
+                    this.filterRepoEnum = val === 'local' ? repoEnum : repoEnum.filter(item => repoSupportEnum.includes(item))
                     // 因为远程仓库和虚拟仓库没有generic类型且远程仓库支持的制品类型有限，所以需要将其重新赋默认值
                     this.repoBaseInfo.type = this.filterRepoEnum[0] || ''
                 }
