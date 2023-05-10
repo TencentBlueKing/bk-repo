@@ -183,6 +183,7 @@
         <generic-upload-dialog ref="genericUploadDialog" @update="getArtifactories"></generic-upload-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -198,6 +199,7 @@
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
     import previewBasicFileDialog from './previewBasicFileDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
@@ -218,7 +220,8 @@
             genericShareDialog,
             genericTreeDialog,
             previewBasicFileDialog,
-            compressedFileTable
+            compressedFileTable,
+            iamDenyDialog
         },
         data () {
             return {
@@ -247,11 +250,13 @@
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
-                metadataLabelList: []
+                metadataLabelList: [],
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt']),
+            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -323,7 +328,8 @@
                 'previewCompressedFileList',
                 'forbidMetadata',
                 'refreshSupportFileNameExtList',
-                'getMultiFolderNumOfFolder'
+                'getMultiFolderNumOfFolder',
+                'getPermissionUrl'
             ]),
             showRepoScan (node) {
                 const indexOfLastDot = node.name.lastIndexOf('.')
@@ -516,6 +522,28 @@
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
                     isPipeline: this.repoName === 'pipeline'
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.$set(item, 'loading', false)
                 })
@@ -637,6 +665,44 @@
                                     message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
                                 })
                             }
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: this.$t('delete') + this.$t('success')
+                            })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'NODE',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName,
+                                        path: fullPath
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            path: fullPath,
+                                            url: res
+                                        }
+                                    } else {
+                                        this.$bkMessage({
+                                            theme: 'error',
+                                            message: e.message
+                                        })
+                                    }
+                                })
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
                         })
                     }
                 })
@@ -673,11 +739,41 @@
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
-                    this.$bkMessage({
-                        theme: 'error',
-                        message
-                    })
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    path: fullPath,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            } else {
+                                const message = this.$t('fileDownloadError', [this.$route.params.projectId])
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message
+                                })
+                            }
+                        })
+                    } else {
+                        const message = this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
                 })
             },
             handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
@@ -694,6 +790,40 @@
                         message: (forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.getArtifactories()
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                path: fullPath,
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    path: fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
             },
             calculateFolderSize (row) {
@@ -722,7 +852,39 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     paths: paths,
-                    isFolder: true
+                    isFolder: true,
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'DELETE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'DELETE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
                 this.$confirm({
                     theme: 'danger',
@@ -761,6 +923,40 @@
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
                 this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
@@ -783,6 +979,40 @@
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
 
                 this.compressedData = res.reduce((acc, item) => {

@@ -98,10 +98,7 @@ class UserRepositoryController(
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void> {
         val createRequest = with(userRepoCreateRequest) {
-            permissionManager.checkProjectPermission(
-                action = if (pluginRequest) PermissionAction.WRITE else PermissionAction.MANAGE,
-                projectId = projectId
-            )
+            permissionManager.checkProjectPermission(PermissionAction.WRITE, projectId)
             RepoCreateRequest(
                 projectId = projectId,
                 name = name,

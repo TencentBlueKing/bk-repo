@@ -1,0 +1,70 @@
+{
+    "system_id": "bk-repo",
+    "operations": [
+        {
+            "operation": "upsert_action_groups",
+            "data": [
+                {
+                    "name": "项目管理",
+                    "name_en": "project manage",
+                    "actions": [
+                        {
+                            "id": "project_manage"
+                        },
+                        {
+                            "id": "project_view"
+                        },
+                        {
+                            "id": "project_edit"
+                        }
+                    ]
+                },
+                {
+                    "name": "仓库管理",
+                    "name_en": "repo manage",
+                    "actions": [
+                        {
+                            "id": "repo_create"
+                        },
+                        {
+                            "id": "repo_manage"
+                        },
+                        {
+                            "id": "repo_view"
+                        },
+                        {
+                            "id": "repo_edit"
+                        },
+                        {
+                            "id": "repo_delete"
+                        }
+                    ]
+                },
+                {
+                    "name": "节点管理",
+                    "name_en": "node manage",
+                    "actions": [
+                        {
+                            "id": "node_create"
+                        },
+                        {
+                            "id": "node_write"
+                        },
+                        {
+                            "id": "node_view"
+                        },
+                        {
+                            "id": "node_download"
+                        },
+                        {
+                            "id": "node_edit"
+                        },
+                        {
+                            "id": "node_delete"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

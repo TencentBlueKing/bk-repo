@@ -34,6 +34,12 @@
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
+            <bk-form-item label="蓝鲸权限校验">
+                <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
             <template v-if="repoBaseInfo.type === 'generic'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -106,12 +112,14 @@
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { repoEnum } from '@repository/store/publicEnum'
-    import { mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
 
     const getRepoBaseInfo = () => {
         return {
@@ -140,23 +148,31 @@
                 officeNetwork: false,
                 ipSegment: '',
                 whitelistUser: ''
+            },
+            configuration: {
+                settings: {
+                    bkiamv3Check: false
+                }
             }
         }
     }
 
     export default {
         name: 'createRepo',
-        components: { CardRadioGroup },
+        components: { CardRadioGroup, iamDenyDialog },
         data () {
             return {
                 repoEnum,
                 show: false,
                 loading: false,
                 repoBaseInfo: getRepoBaseInfo(),
+                showIamDenyDialog: false,
+                showData: {},
                 title: this.$t('createRepository')
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -275,7 +291,7 @@
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
@@ -330,6 +346,7 @@
                         configuration: {
                             type: 'composite',
                             settings: {
+                                bkiamv3Check: this.repoBaseInfo.configuration.settings.bkiamv3Check,
                                 system: this.repoBaseInfo.system,
                                 interceptors: interceptors.length ? interceptors : undefined,
                                 ...(
@@ -351,6 +368,32 @@
                     })
                     this.cancel()
                     this.$emit('refresh')
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: '',
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message || '访问被拒绝：Forbidden'
+                                })
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.loading = false
                 })

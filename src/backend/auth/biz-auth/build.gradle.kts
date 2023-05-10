@@ -35,8 +35,10 @@ dependencies {
     api(project(":common:common-job"))
     api(project(":common:common-security"))
     api(project(":repository:api-repository"))
+    api(project(":common:common-redis"))
+    api(project(":common:common-lock"))
     implementation("com.google.guava:guava")
     implementation(project(":common:common-operate:operate-service"))
-    api(project(":common:common-redis"))
+    implementation("com.tencent.bk.sdk:iam-java-sdk:${Versions.IamJavaSdk}")
     implementation("org.apache.httpcomponents:httpclient")
 }

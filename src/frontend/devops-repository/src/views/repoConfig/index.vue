@@ -24,6 +24,12 @@
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
+                    <bk-form-item label="蓝鲸权限校验">
+                        <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
+                            <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                            <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                        </bk-radio-group>
+                    </bk-form-item>
                     <template v-if="repoType === 'generic'">
                         <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -106,11 +112,13 @@
                 <permission-config></permission-config>
             </bk-tab-panel> -->
         </bk-tab>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     // import cleanConfig from '@repository/views/repoConfig/cleanConfig'
     // import permissionConfig from './permissionConfig'
     import { mapState, mapActions } from 'vuex'
@@ -118,7 +126,8 @@
         name: 'repoConfig',
         components: {
             CardRadioGroup,
-            proxyConfig
+            proxyConfig,
+            iamDenyDialog
             // cleanConfig
         },
         data () {
@@ -188,15 +197,22 @@
                         officeNetwork: false,
                         ipSegment: '',
                         whitelistUser: ''
+                    },
+                    configuration: {
+                        settings: {
+                            bkiamv3Check: false
+                        }
                     }
                 },
                 filenameRule,
                 metadataRule,
-                ipSegmentRule
+                ipSegmentRule,
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['domain']),
+            ...mapState(['domain', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -284,7 +300,7 @@
             this.getRepoInfoHandler()
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl']),
             toRepoList () {
                 this.$router.push({
                     name: 'repoList'
@@ -325,6 +341,28 @@
                             }
                         })
                     }
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -359,6 +397,7 @@
                     configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
+                            bkiamv3Check: this.repoBaseInfo.configuration.settings.bkiamv3Check,
                             system: this.repoBaseInfo.system,
                             interceptors: interceptors.length ? interceptors : undefined,
                             ...(
@@ -384,6 +423,38 @@
                         theme: 'success',
                         message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'MANAGE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'MANAGE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
+                        })
+                    }
                 }).finally(() => {
                     this.repoBaseInfo.loading = false
                 })

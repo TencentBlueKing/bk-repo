@@ -39,7 +39,8 @@ import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
-import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -59,13 +60,15 @@ class BkAuthPermissionServiceImpl constructor(
     private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
     repositoryClient: RepositoryClient,
-    projectClient: ProjectClient
-) : PermissionServiceImpl(
+    projectClient: ProjectClient,
+    bkIamV3Service: BkIamV3Service
+) : BkIamV3PermissionServiceImpl(
     userRepository,
     roleRepository,
     accountRepository,
     permissionRepository,
     mongoTemplate,
+    bkIamV3Service,
     repositoryClient,
     projectClient
 ) {
@@ -86,6 +89,7 @@ class BkAuthPermissionServiceImpl constructor(
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
                 return checkProjectPermission(uid, projectId!!, action)
+                    || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
@@ -156,8 +160,12 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
         logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
         return when (action) {
-            PermissionAction.MANAGE.toString() -> bkAuthProjectService.isProjectManager(uid, projectId)
-            else -> bkAuthProjectService.isProjectMember(uid, projectId, action)
+            PermissionAction.MANAGE.toString() -> {
+                bkAuthProjectService.isProjectManager(uid, projectId)
+            }
+            else -> {
+                bkAuthProjectService.isProjectMember(uid, projectId, action)
+            }
         }
     }
 
@@ -174,7 +182,6 @@ class BkAuthPermissionServiceImpl constructor(
                 if (checkDevopsPermission(request)) {
                     return getAllRepoByProjectId(projectId)
                 }
-                return emptyList()
             }
         }
         return super.listPermissionRepo(projectId, userId, appId)
@@ -184,6 +191,12 @@ class BkAuthPermissionServiceImpl constructor(
 
         // 校验平台账号操作范围
         if (!super.checkPlatformPermission(request)) return false
+
+        // bkiamv3权限校验
+        if (super.matchBkiamv3Cond(request)) {
+            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
+            if (super.checkBkIamV3Permission(request)) return true
+        }
 
         // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)

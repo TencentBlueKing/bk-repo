@@ -32,21 +32,40 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServicePipelineClient
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
+import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ServicePipelineController @Autowired constructor(
-    private val bkAuthPipelineService: BkAuthPipelineService
-) : ServicePipelineClient {
+class ServicePipelineController : ServicePipelineClient {
+    private var bkAuthPipelineService: BkAuthPipelineService? = null
+
+    @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME:}")
+    private var authType: String = ""
+
     override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return ResponseBuilder.success(bkAuthPipelineService.listPermissionPipelines(uid, projectId))
+        initService()
+        return bkAuthPipelineService?.let {
+            ResponseBuilder.success(bkAuthPipelineService!!.listPermissionPipelines(uid, projectId))
+        } ?: ResponseBuilder.success(emptyList())
     }
 
     override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, null)))
+        initService()
+        return bkAuthPipelineService?.let {
+            ResponseBuilder.success((bkAuthPipelineService!!.hasPermission(uid, projectId, pipelineId, null)))
+        } ?: ResponseBuilder.success(false)
+    }
+
+    private fun initService() {
+        if (authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS && bkAuthPipelineService == null) {
+            bkAuthPipelineService = SpringContextUtils.getBean(BkAuthPipelineService::class.java)
+        }
     }
 }

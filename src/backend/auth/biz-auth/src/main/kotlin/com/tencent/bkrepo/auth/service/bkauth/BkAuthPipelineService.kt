@@ -31,15 +31,18 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
+import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 /**
  * ci 流水线权限查询
  */
 @Service
+@Conditional(BkDevopsAuthCondition::class)
 class BkAuthPipelineService(
     private val bkciAuthService: BkciAuthService
 ) {

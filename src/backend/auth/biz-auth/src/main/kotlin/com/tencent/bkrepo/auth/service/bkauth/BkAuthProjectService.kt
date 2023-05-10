@@ -31,14 +31,23 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
+import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-class BkAuthProjectService @Autowired constructor(private val bkciAuthService: BkciAuthService) {
-    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
+@Conditional(BkDevopsAuthCondition::class)
+class BkAuthProjectService @Autowired constructor(
+    private val bkciAuthService: BkciAuthService
+) {
+    fun isProjectMember(
+        user: String,
+        projectCode: String,
+        permissionAction: String
+    ): Boolean {
         return bkciAuthService.isProjectSuperAdmin(
             user = user,
             projectCode = projectCode,
