@@ -48,6 +48,7 @@ import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.utils.RuleConverter
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -214,7 +215,7 @@ class ScanEventConsumer(
                     RuleConverter.convert(projectId, repoName, packageKey, packageVersion)
                 }
                 val request = ScanRequest(scanner = scanner, rule = rule)
-                scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM)
+                scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM, SYSTEM_USER)
             }
         }
     }
