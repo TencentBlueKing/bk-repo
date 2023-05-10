@@ -104,10 +104,11 @@ class BkAuthPermissionServiceImpl constructor(
                 }
             }
 
-            if (!pass && appId == bkAuthConfig.devopsAppId) {
+            if (!pass) {
                 logger.warn("devops forbidden [$request]")
+            } else {
+                logger.debug("devops pass [$request]")
             }
-            logger.debug("devops check [$request]")
             return pass
         }
     }
@@ -162,8 +163,8 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        // 用户为系统管理员
-        if (isUserLocalAdmin(userId)) {
+        // 用户为系统管理员，或者当前项目管理员
+        if (isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
         appId?.let {
@@ -193,7 +194,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun listPermissionProject(userId: String): List<String> {
-        val localProjectList  = super.listPermissionProject(userId)
+        val localProjectList = super.listPermissionProject(userId)
         val devopsProjectList = bkAuthProjectService.listProjectByUser(userId)
         if (devopsProjectList.size == 1 && devopsProjectList[0] == "*") {
             return localProjectList
@@ -201,6 +202,7 @@ class BkAuthPermissionServiceImpl constructor(
         val allProjectList = localProjectList + devopsProjectList
         return allProjectList.distinct()
     }
+
     private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
         return CheckPermissionRequest(
             uid = userId,
