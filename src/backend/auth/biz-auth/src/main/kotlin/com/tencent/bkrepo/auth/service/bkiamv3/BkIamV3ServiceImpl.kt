@@ -287,6 +287,9 @@ class BkIamV3ServiceImpl(
                 pathInfoDTO.id = projectId
                 pathInfoDTO.type = ResourceType.PROJECT.id()
                 val idList = authHelper.getInstanceList(userId, action, resourceType, pathInfoDTO)
+                if (idList.contains(StringPool.POUND)) {
+                    return idList
+                }
                 convertRepoResourceIdToRepoName(idList).map {
                     it[RepositoryInfo::name.name].toString()
                 }
