@@ -54,6 +54,6 @@ dependencies {
     }
 
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
-
+    api("org.springframework.cloud:spring-cloud-starter-config")
     compileOnly(project(":common:common-mongo"))
 }
