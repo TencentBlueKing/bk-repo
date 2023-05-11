@@ -79,7 +79,7 @@ class DevopsPermissionServiceImpl constructor(
         if (checkDevopsProjectPermission(userId, projectId, PermissionAction.READ.toString())) {
             return getAllRepoByProjectId(projectId)
         }
-        return emptyList()
+        return super.listPermissionRepo(projectId, userId, appId)
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
