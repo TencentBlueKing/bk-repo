@@ -114,4 +114,10 @@ interface BkIamV3Service {
      * 资源id转换
      */
     fun getResourceId(resourceType: String, projectId: String?, repoName: String?, path: String?): String?
+
+
+    /**
+     * 查询列表中的项目是否已生成rbac默认用户组
+     */
+    fun getExistRbacDefaultGroupProjectIds(ids: List<String>) : Map<String, Boolean>
 }
