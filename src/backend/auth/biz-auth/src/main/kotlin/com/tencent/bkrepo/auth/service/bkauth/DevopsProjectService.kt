@@ -29,69 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.config
+package com.tencent.bkrepo.auth.service.bkauth
 
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 
-@Component
-class BkAuthConfig {
-
-    /**
-     * ci auth 服务器地址
-     */
-    @Value("\${auth.devops.ciAuthServer:}")
-    private var ciAuthServer: String = ""
-
-    /**
-     * ci auth token
-     */
-    @Value("\${auth.devops.ciAuthToken:}")
-    private var ciAuthToken: String = ""
-
-    /**
-     * 是否允许超级管理员账号
-     */
-    @Value("\${auth.devops.enableSuperAdmin: false}")
-    var enableSuperAdmin: Boolean = false
-
-    /**
-     * 蓝盾平台appId集合
-     */
-    @Value("\${auth.devops.appIdSet:}")
-    var devopsAppIdSet: String = ""
-
-    /**
-     * 允许通过默认密码访问用户set
-     */
-    @Value("\${auth.devops.userIdSet:}")
-    var userIdSet: String = ""
-
-    /**
-     * 允许默认密码校验
-     */
-    @Value("\${auth.allowDefaultPwd: true}")
-    var allowDefaultPwd: Boolean = true
-
-
-
-    fun getBkciAuthServer(): String {
-        return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {
-            ciAuthServer.removeSuffix("/")
-        } else {
-            "http://$ciAuthServer"
-        }
+@Service
+class DevopsProjectService @Autowired constructor(private val ciAuthService: CIAuthService) {
+    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
+        return ciAuthService.isProjectSuperAdmin(
+            user = user,
+            projectCode = projectCode,
+            action = BkAuthPermission.DOWNLOAD,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
+            permissionAction = permissionAction
+        ) || ciAuthService.isProjectMember(user, projectCode)
     }
 
-    fun setBkciAuthServer(authServer: String) {
-        ciAuthServer = authServer
+    fun isProjectManager(user: String, projectCode: String): Boolean {
+        return ciAuthService.isProjectManager(user, projectCode)
     }
 
-    fun setBkciAuthToken(authToken: String) {
-        ciAuthToken = authToken
-    }
-
-    fun getBkciAuthToken(): String {
-        return ciAuthToken
+    fun listProjectByUser(user: String): List<String> {
+        return ciAuthService.getProjectListByUser(user)
     }
 }

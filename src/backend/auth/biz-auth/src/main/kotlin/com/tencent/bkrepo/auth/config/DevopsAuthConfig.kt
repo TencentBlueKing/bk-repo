@@ -29,24 +29,69 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.service
+package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.api.ServicePipelineClient
-import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
-@RestController
-class ServicePipelineController @Autowired constructor(
-    private val bkAuthPipelineService: DevopsPipelineService
-) : ServicePipelineClient {
-    override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return ResponseBuilder.success(bkAuthPipelineService.listPermissionPipelines(uid, projectId))
+@Component
+class DevopsAuthConfig {
+
+    /**
+     * ci auth 服务器地址
+     */
+    @Value("\${auth.devops.ciAuthServer:}")
+    private var ciAuthServer: String = ""
+
+    /**
+     * ci auth token
+     */
+    @Value("\${auth.devops.ciAuthToken:}")
+    private var ciAuthToken: String = ""
+
+    /**
+     * 是否允许超级管理员账号
+     */
+    @Value("\${auth.devops.enableSuperAdmin: false}")
+    var enableSuperAdmin: Boolean = false
+
+    /**
+     * 蓝盾平台appId集合
+     */
+    @Value("\${auth.devops.appIdSet:}")
+    var devopsAppIdSet: String = ""
+
+    /**
+     * 允许通过默认密码访问用户set
+     */
+    @Value("\${auth.devops.userIdSet:}")
+    var userIdSet: String = ""
+
+    /**
+     * 允许默认密码校验
+     */
+    @Value("\${auth.allowDefaultPwd: true}")
+    var allowDefaultPwd: Boolean = true
+
+
+
+    fun getBkciAuthServer(): String {
+        return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {
+            ciAuthServer.removeSuffix("/")
+        } else {
+            "http://$ciAuthServer"
+        }
     }
 
-    override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, null)))
+    fun setBkciAuthServer(authServer: String) {
+        ciAuthServer = authServer
+    }
+
+    fun setBkciAuthToken(authToken: String) {
+        ciAuthToken = authToken
+    }
+
+    fun getBkciAuthToken(): String {
+        return ciAuthToken
     }
 }

@@ -33,26 +33,51 @@ package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
-import org.springframework.beans.factory.annotation.Autowired
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+/**
+ * ci 流水线权限查询
+ */
 @Service
-class BkAuthProjectService @Autowired constructor(private val bkciAuthService: BkciAuthService) {
-    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
-        return bkciAuthService.isProjectSuperAdmin(
-            user = user,
-            projectCode = projectCode,
+class DevopsPipelineService(
+    private val ciAuthService: CIAuthService
+) {
+    fun listPermissionPipelines(uid: String, projectId: String): List<String> {
+        return ciAuthService.getUserResourceByPermission(
+            user = uid,
+            projectCode = projectId,
+            action = BkAuthPermission.DOWNLOAD,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT
+        )
+    }
+
+    fun hasPermission(
+        uid: String,
+        projectId: String,
+        pipelineId: String,
+        permissionAction: String?
+    ): Boolean {
+        logger.debug(
+            "hasPermission: uid: $uid, projectId: $projectId, " +
+                "pipelineId: $pipelineId, permissionAction: $permissionAction"
+        )
+        return ciAuthService.isProjectSuperAdmin(
+            user = uid,
+            projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             permissionAction = permissionAction
-        ) || bkciAuthService.isProjectMember(user, projectCode)
+        ) || ciAuthService.validateUserResourcePermission(
+            user = uid,
+            projectCode = projectId,
+            action = BkAuthPermission.DOWNLOAD,
+            resourceCode = pipelineId,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT
+        )
     }
 
-    fun isProjectManager(user: String, projectCode: String): Boolean {
-        return bkciAuthService.isProjectManager(user, projectCode)
-    }
-
-    fun listProjectByUser(user: String): List<String> {
-        return bkciAuthService.getProjectListByUser(user)
+    companion object {
+        private val logger = LoggerFactory.getLogger(DevopsPipelineService::class.java)
     }
 }

@@ -165,7 +165,7 @@ open class PermissionServiceImpl constructor(
                 val removeUserList = users.filter { !userId.contains(it) }
 
                 addUserToRoleBatchCommon(addUserList, roleId!!)
-                removeUserFromRoleBatchCommon(removeUserList, roleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, roleId)
                 return true
             } else {
                 checkPermissionExist(permissionId)
