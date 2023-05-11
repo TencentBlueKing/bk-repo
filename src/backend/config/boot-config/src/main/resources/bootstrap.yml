@@ -1,53 +1,15 @@
-#server:
-#  port: 8888
-#spring:
-#  application:
-#    name: config
-#  cloud:
-#    config:
-#      server:
-#        git:
-##          uri: file:///data1/work/config/bkrepo-config
-##          uri: file:///${user.home}/config
-#          uri: https://github.com/spring-cloud-samples/config-repo
-##          search-paths:
-##            - config-server
-##            - "config-server/{application}"
-##        bootstrap: true
-##        native:
-##          searchLocations: file:///${user.home}/config/config-server
-#  profiles:
-#    consul:
-#      discovery:
-#        tags: dev
-#    active: dev
-
-#spring:
-#  application:
-#    name: config
-#  cloud:
-#    config:
-#      server:
-#        git:
-#          uri: https://github.com/spring-cloud-samples/config-repo
-##          basedir: target/config
-#          default-label: main
-#  profiles:
-#    active: native
-#
-#server:
-#  port: 8888
-
 server:
-  port: 8080
+  port: 25910
 spring:
+  profiles:
+    active: dev
   application:
     name: config
   cloud:
     config:
       server:
         git:
-          uri: file:///data1/work/config/devops-config
+          uri: file:///${user.home}/config/bkrepo-config
           search-paths:
             - config-server
             - "config-server/{application}"
@@ -55,4 +17,34 @@ spring:
     consul:
       discovery:
         tags: dev
+
+
+---
+spring:
+  profiles:
+    active: test
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:///data1/work/config/bkrepo-config
+          default-label: test
+    consul:
+      discovery:
+        tags: test
+
+
+---
+spring:
+  profiles:
+    active: prod
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:///data1/work/config/bkrepo-config
+          default-label: master
+    consul:
+      discovery:
+        tags: prod
 
