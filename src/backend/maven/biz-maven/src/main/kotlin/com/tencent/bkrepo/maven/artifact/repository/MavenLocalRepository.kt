@@ -64,6 +64,7 @@ import com.tencent.bkrepo.maven.constants.METADATA_KEY_PACKAGING
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_VERSION
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_TIMESTAMP
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
@@ -89,6 +90,7 @@ import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
 import com.tencent.bkrepo.maven.util.MavenStringUtils.fileMimeType
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.maven.util.MavenStringUtils.httpStatusCode
+import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotMetadataUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotNonUniqueUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
@@ -534,7 +536,8 @@ class MavenLocalRepository(
                 } else {
                     "${artifactPath.substringBeforeLast('/')}/$MAVEN_METADATA_FILE_NAME"
                 }
-                updateMetadata(path, artifactFile)
+                val snapshotTimestamp = metadata.versioning?.snapshot?.timestamp?.replace(".", "")
+                updateMetadata(path, artifactFile, snapshotTimestamp)
                 verifyPath(context, path)
             } finally {
                 artifactFile.delete()
@@ -697,9 +700,19 @@ class MavenLocalRepository(
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = getNodeInfoForDownload(context)
-            node?.metadata?.get(HashType.SHA1.ext)?.let {
-                response.addHeader(X_CHECKSUM_SHA1, it.toString())
+            val node = getNodeInfoForDownload(context) ?: return null
+            node.nodeMetadata.find { it.key == HashType.SHA1.ext }?.let {
+                response.addHeader(X_CHECKSUM_SHA1, it.value.toString())
+            }
+            if (node.fullPath.isSnapshotMetadataUri()) {
+                val timestamp = node.nodeMetadata.find { it.key == SNAPSHOT_TIMESTAMP }?.value
+                    ?: try {
+                        MetadataXpp3Reader().read(storageManager.loadArtifactInputStream(node, storageCredentials))
+                            ?.versioning?.snapshot?.timestamp?.replace(".", "")
+                    } catch (e: Exception) {
+                        null
+                    }
+                timestamp?.let { context.putAttribute(SNAPSHOT_TIMESTAMP, timestamp) }
             }
             // 制品下载拦截
             node?.let {
@@ -907,9 +920,15 @@ class MavenLocalRepository(
         }
     }
 
-    fun updateMetadata(fullPath: String, metadataArtifact: ArtifactFile) {
+    fun updateMetadata(fullPath: String, metadataArtifact: ArtifactFile, snapshotTimestamp: String? = null) {
         val uploadContext = ArtifactUploadContext(metadataArtifact)
-        val metadataNode = buildNodeCreateRequest(uploadContext).copy(fullPath = fullPath)
+        val metadataNode = buildNodeCreateRequest(uploadContext).run {
+            val metadata = nodeMetadata?.toMutableList() ?: mutableListOf()
+            if (fullPath.isSnapshotMetadataUri() && snapshotTimestamp != null) {
+                metadata.add(MetadataModel(key = SNAPSHOT_TIMESTAMP, value = snapshotTimestamp))
+            }
+            copy(fullPath = fullPath, nodeMetadata = metadata)
+        }
         storageManager.storeArtifactFile(metadataNode, metadataArtifact, uploadContext.storageCredentials)
         metadataArtifact.delete()
         logger.info("Success to save $fullPath, size: ${metadataArtifact.getSize()}")

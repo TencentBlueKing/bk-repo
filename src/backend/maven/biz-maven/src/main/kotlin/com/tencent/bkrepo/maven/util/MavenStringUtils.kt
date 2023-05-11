@@ -104,6 +104,10 @@ object MavenStringUtils {
         return false
     }
 
+    fun String.isSnapshotMetadataUri(): Boolean {
+        return this.endsWith(MAVEN_METADATA_FILE_NAME) && this.isSnapshotUri()
+    }
+
     /**
      * 将maven 包名转为[MavenVersion]
      * 完整请求路径 e.g. /com/mycompany/app/my-app/1.0-SNAPSHOT/my-app-1.0-20211129.073728-8.jar

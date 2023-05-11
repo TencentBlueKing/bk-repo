@@ -53,6 +53,7 @@ import com.tencent.bkrepo.maven.constants.METADATA_KEY_GROUP_ID
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_PACKAGING
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_VERSION
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_TIMESTAMP
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
@@ -64,6 +65,7 @@ import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
+import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotMetadataUri
 import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -76,6 +78,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import okhttp3.Request
 import okhttp3.Response
 import org.apache.commons.lang3.StringUtils
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -156,10 +159,10 @@ class MavenRemoteRepository : RemoteRepository() {
 
     @Suppress("NestedBlockDepth")
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
-        val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(context.artifactInfo.getArtifactFullPath())
+        val fullPath = context.artifactInfo.getArtifactFullPath()
+        val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(fullPath)
         logger.info(
-            "Resolving response for downloading file [${context.artifactInfo.getArtifactFullPath()}] " +
-                    "to repo ${context.artifactInfo.getRepoIdentify()}"
+            "Resolving response for downloading file [$fullPath] to repo ${context.artifactInfo.getRepoIdentify()}"
         )
         val artifactFile = createTempFile(response.body!!)
         if (matcher.matches()) {
@@ -179,16 +182,14 @@ class MavenRemoteRepository : RemoteRepository() {
             context.putAttribute("isArtifact", isArtifact)
             context.putAttribute(METADATA_KEY_PACKAGING, packaging)
         }
+        var node: NodeDetail? = null
+        if (!fullPath.isSnapshotMetadataUri() || isNewerSnapshotTimestamp(context, artifactFile)) {
+            node = cacheArtifactFile(context, artifactFile)
+        }
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-        val node = cacheArtifactFile(context, artifactFile)
-        return ArtifactResource(
-            artifactStream,
-            context.artifactInfo.getResponseName(),
-            node,
-            ArtifactChannel.PROXY,
-            context.useDisposition
-        )
+        val artifactName = context.artifactInfo.getResponseName()
+        return ArtifactResource(artifactStream, artifactName, node, ArtifactChannel.PROXY, context.useDisposition)
     }
 
     override fun onDownloadSuccess(
@@ -410,6 +411,13 @@ class MavenRemoteRepository : RemoteRepository() {
         ).map {
             MetadataModel(key = it.key, value = it.value)
         }.toMutableList()
+    }
+
+    private fun isNewerSnapshotTimestamp(context: ArtifactDownloadContext, artifactFile: ArtifactFile): Boolean {
+        val localTimeStamp = context.getAttribute<String>(SNAPSHOT_TIMESTAMP) ?: return true
+        val remoteTimestamp = MetadataXpp3Reader().read(artifactFile.getInputStream())
+            ?.versioning?.snapshot?.timestamp?.replace(".", "")
+        return remoteTimestamp != null && localTimeStamp < remoteTimestamp
     }
 
     companion object {
