@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -49,9 +48,7 @@ class ScanController @Autowired constructor(
 ) : ScanClient {
 
     override fun scan(scanRequest: ScanRequest): Response<ScanTask> {
-        return ResponseBuilder.success(
-            scanService.scan(scanRequest, ScanTriggerType.ON_NEW_ARTIFACT, SecurityUtils.getUserId())
-        )
+        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.ON_NEW_ARTIFACT))
     }
 
     override fun report(reportResultRequest: ReportResultRequest): Response<Void> {

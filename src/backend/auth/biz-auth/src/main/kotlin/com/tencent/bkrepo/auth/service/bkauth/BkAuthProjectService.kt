@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
-import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
+import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,23 +39,29 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(DevopsAuthCondition::class)
-class DevopsProjectService @Autowired constructor(private val ciAuthService: CIAuthService) {
-    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
-        return ciAuthService.isProjectSuperAdmin(
+@Conditional(BkDevopsAuthCondition::class)
+class BkAuthProjectService @Autowired constructor(
+    private val bkciAuthService: BkciAuthService
+) {
+    fun isProjectMember(
+        user: String,
+        projectCode: String,
+        permissionAction: String
+    ): Boolean {
+        return bkciAuthService.isProjectSuperAdmin(
             user = user,
             projectCode = projectCode,
             action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             permissionAction = permissionAction
-        ) || ciAuthService.isProjectMember(user, projectCode)
+        ) || bkciAuthService.isProjectMember(user, projectCode)
     }
 
     fun isProjectManager(user: String, projectCode: String): Boolean {
-        return ciAuthService.isProjectManager(user, projectCode)
+        return bkciAuthService.isProjectManager(user, projectCode)
     }
 
     fun listProjectByUser(user: String): List<String> {
-        return ciAuthService.getProjectListByUser(user)
+        return bkciAuthService.getProjectListByUser(user)
     }
 }

@@ -35,7 +35,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
-class DevopsAuthConfig {
+class BkAuthConfig {
 
     /**
      * ci auth 服务器地址
@@ -49,9 +49,6 @@ class DevopsAuthConfig {
     @Value("\${auth.devops.ciAuthToken:}")
     private var ciAuthToken: String = ""
 
-    /**
-     * 是否允许超级管理员账号
-     */
     @Value("\${auth.devops.enableSuperAdmin: false}")
     var enableSuperAdmin: Boolean = false
 
@@ -62,7 +59,7 @@ class DevopsAuthConfig {
     var devopsAppIdSet: String = ""
 
     /**
-     * 允许通过默认密码访问用户set
+     * 用户set
      */
     @Value("\${auth.devops.userIdSet:}")
     var userIdSet: String = ""
@@ -73,6 +70,11 @@ class DevopsAuthConfig {
     @Value("\${auth.allowDefaultPwd: true}")
     var allowDefaultPwd: Boolean = true
 
+    /**
+     * 蓝盾CI平台appId
+     */
+    @Value("\${auth.devops.appId:}")
+    var devopsAppId: String = ""
 
 
     fun getBkciAuthServer(): String {

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
-import com.tencent.bkrepo.auth.config.DevopsAuthConfig
+import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -50,15 +50,15 @@ import org.springframework.data.mongodb.core.MongoTemplate
 /**
  * 对接devops权限
  */
-class DevopsPermissionServiceImpl constructor(
+class BkAuthPermissionServiceImpl constructor(
     userRepository: UserRepository,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
-    private val devopsAuthConfig: DevopsAuthConfig,
-    private val devopsPipelineService: DevopsPipelineService,
-    private val devopsProjectService: DevopsProjectService,
+    private val bkAuthConfig: BkAuthConfig,
+    private val bkAuthPipelineService: BkAuthPipelineService,
+    private val bkAuthProjectService: BkAuthProjectService,
     repositoryClient: RepositoryClient,
     projectClient: ProjectClient,
     bkIamV3Service: BkIamV3Service
@@ -72,43 +72,6 @@ class DevopsPermissionServiceImpl constructor(
     repositoryClient,
     projectClient
 ) {
-    override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        // 用户为系统管理员，或者当前项目管理员
-        if (super.isUserLocalAdmin(userId) || super.isUserLocalProjectAdmin(userId, projectId)) {
-            return getAllRepoByProjectId(projectId)
-        }
-
-        // devops 体系
-        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.READ.toString())) {
-            return getAllRepoByProjectId(projectId)
-        }
-        return super.listPermissionRepo(projectId, userId, appId)
-    }
-
-    override fun checkPermission(request: CheckPermissionRequest): Boolean {
-
-        // 校验平台账号操作范围
-        if (!super.checkPlatformPermission(request)) return false
-
-        // bkiamv3权限校验
-        if (super.matchBkiamv3Cond(request)) {
-            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
-            if (super.checkBkIamV3Permission(request)) return true
-        }
-
-        return checkDevopsPermission(request)
-    }
-
-    override fun listPermissionProject(userId: String): List<String> {
-        val localProjectList = super.listPermissionProject(userId)
-        val devopsProjectList = devopsProjectService.listProjectByUser(userId)
-        if (devopsProjectList.size == 1 && devopsProjectList[0] == "*") {
-            return localProjectList
-        }
-        val allProjectList = localProjectList + devopsProjectList
-        return allProjectList.distinct()
-    }
-
     private fun parsePipelineId(path: String): String? {
         val roads = PathUtils.normalizeFullPath(path).split("/")
         return if (roads.size < 2 || roads[1].isBlank()) {
@@ -125,58 +88,54 @@ class DevopsPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
-                if (super.isUserLocalAdmin(uid) || super.isUserLocalProjectAdmin(uid, projectId!!)) {
-                    return true
-                }
-                return checkDevopsProjectPermission(uid, projectId!!, action)
+                return checkProjectPermission(uid, projectId!!, action)
                     || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
             val pass = when (repoName) {
                 CUSTOM, LOG -> {
-                    checkDevopsProjectPermission(uid, projectId!!, action)
+                    checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    checkDevopsPipelineOrProjectPermission(request)
+                    checkPipelineOrProjectPermission(request)
                 }
                 REPORT -> {
-                    checkDevopsReportPermission(action)
+                    checkReportPermission(action)
                 }
                 else -> {
-                    super.checkPermission(request) || checkDevopsProjectPermission(uid, projectId!!, action)
+                    super.checkPermission(request) || checkProjectPermission(uid, projectId!!, action)
                 }
             }
 
-            if (!pass && matchDevopsCond(request.appId)) {
+            if (!pass && appId == bkAuthConfig.devopsAppId) {
                 logger.warn("devops forbidden [$request]")
-            } else {
-                logger.debug("devops pass [$request]")
             }
+            logger.debug("devops check [$request]")
             return pass
         }
     }
 
-    private fun checkDevopsPipelineOrProjectPermission(request: CheckPermissionRequest): Boolean {
+    private fun checkPipelineOrProjectPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
             var projectPass = false
-            val pipelinePass = checkDevopsPipelinePermission(uid, projectId!!, path, resourceType, action)
+            val pipelinePass = checkPipelinePermission(uid, projectId!!, path, resourceType, action)
             if (!pipelinePass) {
                 logger.warn("devops pipeline permission check fail [$request]")
-                projectPass = checkDevopsProjectPermission(uid, projectId!!, action)
+                projectPass = checkProjectPermission(uid, projectId!!, action)
                 if (projectPass) logger.warn("devops pipeline permission widen to project permission [$request]")
             }
             return pipelinePass || projectPass
         }
     }
 
-    private fun checkDevopsReportPermission(action: String): Boolean {
+    private fun checkReportPermission(action: String): Boolean {
         return action == PermissionAction.READ.toString() ||
                 action == PermissionAction.WRITE.toString() ||
                 action == PermissionAction.VIEW.toString()
     }
 
-    private fun checkDevopsPipelinePermission(
+    private fun checkPipelinePermission(
         uid: String,
         projectId: String,
         path: String?,
@@ -184,7 +143,7 @@ class DevopsPermissionServiceImpl constructor(
         action: String
     ): Boolean {
         return when (resourceType) {
-            ResourceType.REPO.toString() -> checkDevopsProjectPermission(uid, projectId, action)
+            ResourceType.REPO.toString() -> checkProjectPermission(uid, projectId, action)
             ResourceType.NODE.toString() -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
                 pipelinePermission(uid, projectId, pipelineId, action)
@@ -193,27 +152,85 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkDevopsProjectPermission(userId: String, projectId: String, action: String): Boolean {
-        logger.debug("checkDevopsProjectPermission: [$userId,$projectId,$action]")
+    private fun pipelinePermission(uid: String, projectId: String, pipelineId: String, action: String): Boolean {
+        logger.debug("pipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, action: $action")
+        return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, action)
+    }
+
+    private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
+        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
         return when (action) {
-            PermissionAction.MANAGE.toString() -> devopsProjectService.isProjectManager(userId, projectId)
-            else -> devopsProjectService.isProjectMember(userId, projectId, action)
+            PermissionAction.MANAGE.toString() -> {
+                bkAuthProjectService.isProjectManager(uid, projectId)
+            }
+            else -> {
+                bkAuthProjectService.isProjectMember(uid, projectId, action)
+            }
         }
     }
 
-    private fun pipelinePermission(userId: String, projectId: String, pipelineId: String, action: String): Boolean {
-        logger.debug("pipelinePermission, [$userId,$projectId,$pipelineId,$action]")
-        return devopsPipelineService.hasPermission(userId, projectId, pipelineId, action)
+    override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
+        // 用户为系统管理员
+        if (isUserLocalAdmin(userId)) {
+            return getAllRepoByProjectId(projectId)
+        }
+        appId?.let {
+            val request = buildProjectCheckRequest(projectId, userId, appId)
+
+            // devops 体系
+            if (matchDevopsCond(appId)) {
+                if (checkDevopsPermission(request)) {
+                    return getAllRepoByProjectId(projectId)
+                }
+            }
+        }
+        return super.listPermissionRepo(projectId, userId, appId)
     }
 
+    override fun checkPermission(request: CheckPermissionRequest): Boolean {
+
+        // 校验平台账号操作范围
+        if (!super.checkPlatformPermission(request)) return false
+
+        // bkiamv3权限校验
+        if (super.matchBkiamv3Cond(request)) {
+            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
+            if (super.checkBkIamV3Permission(request)) return true
+        }
+
+        // devops账号
+        if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)
+
+        // 其他账号
+        return super.checkPermission(request) || checkDevopsPermission(request)
+    }
+
+    override fun listPermissionProject(userId: String): List<String> {
+        val localProjectList  = super.listPermissionProject(userId)
+        val devopsProjectList = bkAuthProjectService.listProjectByUser(userId)
+        if (devopsProjectList.size == 1 && devopsProjectList[0] == "*") {
+            return localProjectList
+        }
+        val allProjectList = localProjectList + devopsProjectList
+        return allProjectList.distinct()
+    }
+    private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
+        return CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.READ.toString(),
+            projectId = projectId,
+            appId = appId
+        )
+    }
 
     private fun matchDevopsCond(appId: String?): Boolean {
-        val devopsAppIdList = devopsAuthConfig.devopsAppIdSet.split(",")
+        val devopsAppIdList = bkAuthConfig.devopsAppIdSet.split(",")
         return devopsAppIdList.contains(appId)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(BkAuthPermissionServiceImpl::class.java)
         private const val CUSTOM = "custom"
         private const val PIPELINE = "pipeline"
         private const val REPORT = "report"

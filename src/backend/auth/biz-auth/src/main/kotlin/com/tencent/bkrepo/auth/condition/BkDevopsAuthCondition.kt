@@ -37,7 +37,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata
 /**
  * 使用bkdevops权限（local+bkv3rbac+bkdevops）
  */
-class DevopsAuthCondition: Condition {
+class BkDevopsAuthCondition: Condition {
     override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
         val authType =
             context.environment.getProperty("$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME", String()::class.java)

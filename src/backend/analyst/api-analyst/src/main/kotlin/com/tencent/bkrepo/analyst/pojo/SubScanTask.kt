@@ -88,10 +88,6 @@ data class SubScanTask(
      */
     val credentialsKey: String?,
     /**
-     * 创建任务的用户
-     */
-    val createdBy: String,
-    /**
      * 文件下载链接，容器化扫描时使用
      */
     val url: String? = null,
@@ -102,7 +98,7 @@ data class SubScanTask(
     /**
      * 扫描执行器需要的额外信息，用于扩展
      */
-    val extra: Map<String, Any>? = null,
+    val extra: Map<String, Any>? = null
 ) {
     fun fileName() = extra?.get(TASK_METADATA_FILE_NAME)?.toString() ?: fullPath.substringAfterLast(File.separatorChar)
 }

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
-import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
+import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import org.slf4j.LoggerFactory
@@ -42,12 +42,12 @@ import org.springframework.stereotype.Service
  * ci 流水线权限查询
  */
 @Service
-@Conditional(DevopsAuthCondition::class)
-class DevopsPipelineService(
-    private val ciAuthService: CIAuthService
+@Conditional(BkDevopsAuthCondition::class)
+class BkAuthPipelineService(
+    private val bkciAuthService: BkciAuthService
 ) {
     fun listPermissionPipelines(uid: String, projectId: String): List<String> {
-        return ciAuthService.getUserResourceByPermission(
+        return bkciAuthService.getUserResourceByPermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
@@ -65,13 +65,13 @@ class DevopsPipelineService(
             "hasPermission: uid: $uid, projectId: $projectId, " +
                 "pipelineId: $pipelineId, permissionAction: $permissionAction"
         )
-        return ciAuthService.isProjectSuperAdmin(
+        return bkciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             permissionAction = permissionAction
-        ) || ciAuthService.validateUserResourcePermission(
+        ) || bkciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
@@ -81,6 +81,6 @@ class DevopsPipelineService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DevopsPipelineService::class.java)
+        private val logger = LoggerFactory.getLogger(BkAuthPipelineService::class.java)
     }
 }
