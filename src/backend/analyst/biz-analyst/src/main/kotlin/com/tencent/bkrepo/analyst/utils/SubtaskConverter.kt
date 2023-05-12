@@ -191,7 +191,6 @@ object SubtaskConverter {
             size = size,
             packageSize = packageSize,
             credentialsKey = credentialsKey,
-            createdBy = createdBy,
             extra = extra
         )
     }

@@ -105,17 +105,6 @@ open class AbstractServiceImpl constructor(
         return user.admin
     }
 
-    fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
-        val roleIdArray = mutableListOf<String>()
-        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
-            roleIdArray.add(it.id!!)
-        }
-        userRepository.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: run {
-            return false
-        }
-        return true
-    }
-
     fun updatePermissionById(id: String, key: String, value: Any): Boolean {
         val update = Update()
         update.set(key, value)

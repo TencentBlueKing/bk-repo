@@ -8,24 +8,8 @@
                 :placeholder="$t('projectNameOrIdPlaceHolder')"
                 clearable
                 right-icon="bk-icon icon-search"
-                style="margin-left: auto;margin-right: 10px"
                 @change="handlerPaginationChange()">
             </bk-input>
-            <div class="sort-tool flex-align-center">
-                <bk-select
-                    style="width:170px;"
-                    v-model="property"
-                    :clearable="true"
-                    @change="queryProjects">
-                    <bk-option id="name" :name="$t('Order by Project Name')"></bk-option>
-                    <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
-                </bk-select>
-                <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
-                    <div class="ml10 sort-order flex-center" @click="changeDirection">
-                        <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
-                    </div>
-                </bk-popover>
-            </div>
         </div>
         <bk-table
             class="mt10"
@@ -67,7 +51,7 @@
             show-total-count
             :current.sync="pagination.current"
             :limit="pagination.limit"
-            :count="pagination.total"
+            :count="projectList.length"
             :limit-list="pagination.limitList"
             @change="current => handlerPaginationChange({ current })"
             @limit-change="limit => handlerPaginationChange({ limit })">
@@ -77,7 +61,7 @@
 </template>
 <script>
     import projectInfoDialog from './projectInfoDialog'
-    import { mapState, mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
     import { formatDate } from '@repository/utils'
     export default {
         name: 'projectManage',
@@ -90,24 +74,18 @@
                 pagination: {
                     current: 1,
                     limit: 20,
-                    limitList: [10, 20, 40],
-                    total: 0
+                    limitList: [10, 20, 40]
                 },
-                focusContent: this.$t('toggle'),
-                direction: this.$route.query.direction || 'DESC',
-                filterProjectList: [],
-                property: '',
                 iamStatus: false
             }
         },
         computed: {
-            ...mapState(['projectList', 'userList'])
-        },
-        created () {
-            this.filterProjectList = this.projectList.filter(project => {
-                return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-            }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
-            this.pagination.total = this.projectList.length
+            ...mapState(['projectList', 'userList']),
+            filterProjectList () {
+                return this.projectList.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+            }
         },
         created () {
             this.getIamPermissionStatus().then(res => {
@@ -115,12 +93,11 @@
             })
         },
         methods: {
-            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus', 'queryProjectList']),
+            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus']),
             formatDate,
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
-                this.queryProjects()
             },
             showProjectDialog (project = {}) {
                 const { id = '', name = '', description = '' } = project
@@ -141,44 +118,21 @@
                     }
                 })
             },
-            changeDirection () {
-                this.direction = this.direction === 'ASC' ? 'DESC' : 'ASC'
-                this.queryProjects()
-            },
-            queryProjects () {
-                this.queryProjectList({
-                    sortProperty: this.property,
-                    direction: this.direction
-                }).then(
-                    res => {
-                        res.forEach(project => {
-                            project.id = project.name
-                            project.name = project.displayName
-                        })
-                        this.pagination.total = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).length
-                        this.filterProjectList = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
-                    }
-                )
-            },
             createPermission (projectId) {
-                            this.refreshIamPermission({ projectId: projectId }).then(res => {
-                                if (res === true) {
-                                    this.$bkMessage({
-                                        theme: 'success',
-                                        message: '权限生成成功'
-                                    })
-                                } else {
-                                    this.$bkMessage({
-                                        theme: 'error',
-                                        message: '权限生成失败'
-                                    })
-                                }
-                            })
-                        }
+                this.refreshIamPermission({ projectId: projectId }).then(res => {
+                    if (res === true) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: '权限生成成功'
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: '权限生成失败'
+                        })
+                    }
+                })
+            }
         }
     }
 </script>
