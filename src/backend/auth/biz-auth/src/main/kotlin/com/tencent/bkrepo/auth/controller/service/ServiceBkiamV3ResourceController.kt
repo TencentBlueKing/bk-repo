@@ -79,6 +79,13 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
         } ?: return ResponseBuilder.success(true)
     }
 
+    override fun getExistRbacDefaultGroupProjectIds(projectIds: List<String>): Response<Map<String, Boolean>> {
+        initService()
+        bkIamV3Service?.let {
+            return ResponseBuilder.success(bkIamV3Service!!.getExistRbacDefaultGroupProjectIds(projectIds))
+        } ?: return ResponseBuilder.success(emptyMap())
+    }
+
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */

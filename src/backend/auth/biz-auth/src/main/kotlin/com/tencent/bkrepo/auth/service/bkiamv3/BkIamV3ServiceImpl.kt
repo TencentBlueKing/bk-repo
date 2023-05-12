@@ -504,6 +504,18 @@ class BkIamV3ServiceImpl(
         }
     }
 
+    override fun getExistRbacDefaultGroupProjectIds(ids: List<String>): Map<String, Boolean> {
+        if (ids.isEmpty()) return emptyMap()
+        val existProjectIds = authManagerRepository.findAllByTypeAndParentResIdAndResourceIdIn(
+            ResourceType.PROJECT, null, ids
+        )
+        val result: MutableMap<String, Boolean> = mutableMapOf()
+        existProjectIds.forEach {
+            result[it!!.resourceId] = true
+        }
+        return result
+    }
+
     private fun saveTBkIamAuthManager(
         projectId: String,
         repoName: String?,
