@@ -59,7 +59,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
@@ -107,7 +106,7 @@ class PendingAction(
         }
     }
 
-    private fun createTask(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
+    private fun createTask(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String): ScanTask {
         with(scanRequest) {
             if (planId == null && (scanner == null || rule == null)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
@@ -120,21 +119,19 @@ class PendingAction(
             val metadata = customMetadata(metadata, projectId, scanner)
 
             // 校验权限
-            if (userId != null) {
-                if (repoNames.isEmpty()) {
-                    permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, userId)
-                } else {
-                    permissionCheckHandler.checkReposPermission(projectId, repoNames, PermissionAction.READ, userId)
-                }
+            if (repoNames.isEmpty()) {
+                permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, userId)
+            } else {
+                permissionCheckHandler.checkReposPermission(projectId, repoNames, PermissionAction.READ, userId)
             }
 
             val rule = RuleConverter.convert(rule, plan?.type, projectId)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
                 TScanTask(
-                    createdBy = userId ?: SecurityUtils.getUserId(),
+                    createdBy = userId,
                     createdDate = now,
-                    lastModifiedBy = userId ?: SecurityUtils.getUserId(),
+                    lastModifiedBy = userId,
                     lastModifiedDate = now,
                     name = scanTaskName(triggerType, metadata),
                     rule = rule.toJsonString(),

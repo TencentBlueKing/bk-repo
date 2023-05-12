@@ -91,7 +91,7 @@ class ScanServiceImpl @Autowired constructor(
     private val redisTemplate: RedisTemplate<String, String>
 ) : ScanService {
 
-    override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
+    override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String): ScanTask {
         val context = CreateTaskContext(scanRequest = scanRequest, triggerType = triggerType, userId = userId)
         val event = Event(ScanTaskEvent.CREATE.name, context)
         val transitResult = taskStateMachine.sendEvent(ScanTaskStatus.PENDING.name, event)

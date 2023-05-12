@@ -43,11 +43,11 @@ import org.springframework.stereotype.Service
  */
 @Service
 @Conditional(BkDevopsAuthCondition::class)
-class BkAuthPipelineService(
-    private val bkciAuthService: BkciAuthService
+class DevopsPipelineService(
+    private val ciAuthService: CIAuthService
 ) {
     fun listPermissionPipelines(uid: String, projectId: String): List<String> {
-        return bkciAuthService.getUserResourceByPermission(
+        return ciAuthService.getUserResourceByPermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
@@ -65,13 +65,13 @@ class BkAuthPipelineService(
             "hasPermission: uid: $uid, projectId: $projectId, " +
                 "pipelineId: $pipelineId, permissionAction: $permissionAction"
         )
-        return bkciAuthService.isProjectSuperAdmin(
+        return ciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             permissionAction = permissionAction
-        ) || bkciAuthService.validateUserResourcePermission(
+        ) || ciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
@@ -81,6 +81,6 @@ class BkAuthPipelineService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BkAuthPipelineService::class.java)
+        private val logger = LoggerFactory.getLogger(DevopsPipelineService::class.java)
     }
 }
