@@ -33,7 +33,7 @@ import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 data class CreateTaskContext(
     val scanRequest: ScanRequest,
     val triggerType: ScanTriggerType,
-    val userId: String?,
+    val userId: String,
     val weworkBotUrl: String? = null,
     val chatIds: String? = null
 ) : TaskContext()
