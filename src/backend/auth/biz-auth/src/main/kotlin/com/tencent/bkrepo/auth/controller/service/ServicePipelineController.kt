@@ -65,7 +65,7 @@ class ServicePipelineController : ServicePipelineClient {
 
     private fun initService() {
         if (authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS && bkAuthPipelineService == null) {
-            bkAuthPipelineService = SpringContextUtils.getBean(BkAuthPipelineService::class.java)
+            bkAuthPipelineService = SpringContextUtils.getBean(DevopsPipelineService::class.java)
         }
     }
 }

@@ -33,7 +33,7 @@ package com.tencent.bkrepo.auth.service.bkauth
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.cache.CacheBuilder
-import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
+import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.pojo.BkciAuthCheckResponse
 import com.tencent.bkrepo.auth.pojo.BkciAuthListResponse
@@ -51,7 +51,7 @@ import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
 @Service
-@Conditional(BkDevopsAuthCondition::class)
+@Conditional(DevopsAuthCondition::class)
 class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsAuthConfig) {
 
     private val okHttpClient = okhttp3.OkHttpClient.Builder().connectTimeout(3L, TimeUnit.SECONDS)

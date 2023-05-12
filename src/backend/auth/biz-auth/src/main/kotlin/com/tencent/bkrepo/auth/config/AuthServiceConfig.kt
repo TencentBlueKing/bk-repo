@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
+import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
 import com.tencent.bkrepo.auth.condition.LocalAuthCondition
 import com.tencent.bkrepo.auth.repository.AccountRepository
@@ -128,7 +128,7 @@ class AuthServiceConfig {
     }
 
     @Bean
-    @Conditional(BkDevopsAuthCondition::class)
+    @Conditional(DevopsAuthCondition::class)
     fun bkAuthPermissionService(
         userRepository: UserRepository,
         roleRepository: RoleRepository,
