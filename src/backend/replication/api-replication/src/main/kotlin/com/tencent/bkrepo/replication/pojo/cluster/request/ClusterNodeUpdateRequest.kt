@@ -48,5 +48,11 @@ data class ClusterNodeUpdateRequest(
     @ApiModelProperty("集群节点类型", required = true)
     var type: ClusterNodeType,
     @ApiModelProperty("连通性检测方式", required = true)
-    var detectType: DetectType? = null
+    var detectType: DetectType? = null,
+    @ApiModelProperty("集群appId", required = false)
+    var appId: String? = null,
+    @ApiModelProperty("集群访问凭证", required = false)
+    var accessKey: String? = null,
+    @ApiModelProperty("集群密钥", required = false)
+    var secretKey: String? = null
 )

@@ -28,6 +28,13 @@ export default {
             body
         )
     },
+    // 更新集群节点
+    updateCluster (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/cluster/update`,
+            body
+        )
+    },
     // 删除集群节点
     deleteCluster (_, { id }) {
         return Vue.prototype.$ajax.delete(
