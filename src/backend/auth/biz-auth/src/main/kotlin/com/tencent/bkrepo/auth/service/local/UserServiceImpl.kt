@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
@@ -84,7 +84,7 @@ class UserServiceImpl constructor(
     lateinit var projectClient: ProjectClient
 
     @Autowired
-    lateinit var bkAuthConfig: BkAuthConfig
+    lateinit var bkAuthConfig: DevopsAuthConfig
 
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
