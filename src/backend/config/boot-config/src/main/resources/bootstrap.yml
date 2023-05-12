@@ -1,18 +1,39 @@
 server:
   port: 25910
+service:
+  prefix: bkrepo-
 spring:
-  profiles:
-    active: dev
   application:
     name: config
   cloud:
     config:
       server:
         git:
-          uri: file:///${user.home}/config/bkrepo-config
+          # uri: file:////${user.home}/bkrepo-config  # windows路径
+          uri: file:///${user.home}/bkrepo-config
           search-paths:
             - config-server
             - "config-server/{application}"
+          default-label: master
+        encrypt:
+          enabled: false
+    consul:
+      discovery:
+        service-name: ${service.prefix}${spring.application.name}
+        instance-id: ${service.prefix}${spring.application.name}-${server.port}-${spring.cloud.client.ip-address}
+      config:
+        name: ${service.prefix}${spring.application.name}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:///data1/work/config/bkrepo-config
           default-label: develop
     consul:
       discovery:
@@ -21,8 +42,9 @@ spring:
 
 ---
 spring:
-  profiles:
-    active: test
+  config:
+    activate:
+      on-profile: test
   cloud:
     config:
       server:
@@ -36,8 +58,9 @@ spring:
 
 ---
 spring:
-  profiles:
-    active: prod
+  config:
+    activate:
+      on-profile: prod
   cloud:
     config:
       server:

@@ -29,6 +29,8 @@
  * SOFTWARE.
  */
 
+import com.tencent.devops.utils.findPropertyOrNull
+
 val otelExporterEnabled: String? by project
 dependencies {
     api(project(":common:common-api"))
@@ -54,6 +56,11 @@ dependencies {
     }
 
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
-    api("org.springframework.cloud:spring-cloud-starter-config")
     compileOnly(project(":common:common-mongo"))
+
+    val assemblyMode = project.findPropertyOrNull("devops.assemblyMode")
+    if (assemblyMode == null || assemblyMode.toUpperCase() == "CONSUL") {
+        api("org.springframework.cloud:spring-cloud-starter-config")
+    }
+    api("org.springframework.retry:spring-retry")
 }

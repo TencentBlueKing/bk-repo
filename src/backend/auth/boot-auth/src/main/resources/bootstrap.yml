@@ -10,11 +10,3 @@ auth:
   devops:
     authEnabled: false
     allowAnonymous: false
-
-
-spring:
-  cloud:
-    config:
-      uri: http://localhost:25906
-  config:
-    import:

@@ -25,22 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.config
+package com.tencent.bkrepo.config.filter
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient
-import org.springframework.cloud.config.server.EnableConfigServer
+import org.springframework.context.annotation.Profile
+import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Component
+import javax.servlet.Filter
+import javax.servlet.FilterChain
+import javax.servlet.ServletRequest
+import javax.servlet.ServletResponse
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
+@Component
+@Profile("prod")
+class CipherFilter: Filter {
 
-/**
- * config server
- */
-@EnableDiscoveryClient
-@SpringBootApplication
-@EnableConfigServer
-class ConfigApplication
+    /**
+     * 正式环境禁止访问 encrypt/decrypt接口
+     */
+    override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
+        if (request is HttpServletRequest && request.requestURI.contains("crypt")) {
+            require(response is HttpServletResponse)
+            response.status = HttpStatus.FORBIDDEN.value()
+            return
+        }
 
-fun main(args: Array<String>) {
-    runApplication<ConfigApplication>(*args)
+        return chain.doFilter(request, response)
+    }
 }
