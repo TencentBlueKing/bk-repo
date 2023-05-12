@@ -102,10 +102,10 @@ open class PermissionServiceImpl constructor(
         logger.debug("list  builtin permission  projectId: [$projectId], repoName: [$repoName]")
         val repoAdmin = getOnePermission(projectId, repoName, AUTH_BUILTIN_ADMIN, setOf(MANAGE))
         val repoUser = getOnePermission(
-            projectId,
-            repoName,
-            AUTH_BUILTIN_USER,
-            setOf(WRITE, READ, DELETE, UPDATE)
+            projectId = projectId,
+            repoName = repoName,
+            permName = AUTH_BUILTIN_USER,
+            actions = setOf(WRITE, READ, DELETE, UPDATE)
         )
         val repoViewer = getOnePermission(projectId, repoName, AUTH_BUILTIN_VIEWER, setOf(READ))
         return listOf(repoAdmin, repoUser, repoViewer).map { PermRequestUtil.convToPermission(it) }
@@ -165,7 +165,7 @@ open class PermissionServiceImpl constructor(
                 val removeUserList = users.filter { !userId.contains(it) }
 
                 addUserToRoleBatchCommon(addUserList, roleId!!)
-                removeUserFromRoleBatchCommon(removeUserList, roleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, roleId)
                 return true
             } else {
                 checkPermissionExist(permissionId)
@@ -347,12 +347,8 @@ open class PermissionServiceImpl constructor(
         val roles = user.roles
 
         // 用户为项目管理员
-        if (roles.isNotEmpty() && roleRepository.findByProjectIdAndTypeAndAdminAndIdIn(
-                projectId = projectId, type = RoleType.PROJECT, admin = true, ids = roles
-            ).isNotEmpty()
-        ) {
-            return getAllRepoByProjectId(projectId)
-        }
+        if (isUserLocalProjectAdmin(userId, projectId)) return getAllRepoByProjectId(projectId)
+
 
         val repoList = mutableListOf<String>()
 

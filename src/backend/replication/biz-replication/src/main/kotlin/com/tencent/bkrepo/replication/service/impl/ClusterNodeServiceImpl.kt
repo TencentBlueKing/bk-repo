@@ -246,8 +246,13 @@ class ClusterNodeServiceImpl(
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
-                val authToken = BasicAuthUtils.encode(username.orEmpty(), password.orEmpty())
-                replicationService.ping(authToken)
+                // 由于调整了AuthHandler顺序，BasicAuth在前，SignAuth在后，所以没有用户名密码时，不能传Basic认证请求头
+                val token = if (username.isNullOrBlank() || password.isNullOrBlank()) {
+                    UNKNOWN
+                } else {
+                    BasicAuthUtils.encode(username!!, password!!)
+                }
+                replicationService.ping(token)
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.warn("ping cluster [$name] failed, reason: $message")

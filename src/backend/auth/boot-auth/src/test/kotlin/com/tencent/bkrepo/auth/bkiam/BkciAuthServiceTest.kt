@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.auth.bkiam
 
-import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.service.bkauth.BkciAuthService
+import com.tencent.bkrepo.auth.service.bkauth.CIAuthService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -45,7 +45,7 @@ import org.springframework.boot.test.context.SpringBootTest
 @DisplayName("bkciAuth相关")
 class BkciAuthServiceTest {
 
-    val bkAuthConfig = BkAuthConfig()
+    val bkAuthConfig = DevopsAuthConfig()
 
     @BeforeEach
     fun setUp() {
@@ -55,7 +55,7 @@ class BkciAuthServiceTest {
 
     @DisplayName("用户项目权限测试")
     fun checkUserProjectMemberTest() {
-        val bkciAuthService = BkciAuthService(bkAuthConfig)
+        val bkciAuthService = CIAuthService(bkAuthConfig)
         val result1 = bkciAuthService.isProjectMember("aaa", "bkrepo")
         Assertions.assertEquals(result1, true)
         val result2 = bkciAuthService.isProjectMember("aa", "bkrepo2")
@@ -64,7 +64,7 @@ class BkciAuthServiceTest {
 
     @DisplayName("超级管理员权限测试")
     fun checkUserProjectSuperAdminTest() {
-        val bkciAuthService = BkciAuthService(bkAuthConfig)
+        val bkciAuthService = CIAuthService(bkAuthConfig)
         val result1 = bkciAuthService.isProjectSuperAdmin(
             "aa",
             "bkrepo",
@@ -77,7 +77,7 @@ class BkciAuthServiceTest {
 
     @DisplayName("用户资源权限测试")
     fun validateUserResourcePermissionTest() {
-        val bkciAuthService = BkciAuthService(bkAuthConfig)
+        val bkciAuthService = CIAuthService(bkAuthConfig)
         val result1 = bkciAuthService.validateUserResourcePermission(
             user = "ab",
             projectCode = "bkrepo",
@@ -98,7 +98,7 @@ class BkciAuthServiceTest {
 
     @DisplayName("用户资源列表测试")
     fun getUserResourceByPermissionTest() {
-        val bkciAuthService = BkciAuthService(bkAuthConfig)
+        val bkciAuthService = CIAuthService(bkAuthConfig)
         val result1 = bkciAuthService.getUserResourceByPermission(
             user = "bkrepo",
             projectCode = "bkrepo",

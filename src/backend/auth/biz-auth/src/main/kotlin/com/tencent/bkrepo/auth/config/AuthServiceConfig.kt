@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.condition.BkDevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
+import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.LocalAuthCondition
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.OauthTokenRepository
@@ -43,9 +43,9 @@ import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
+import com.tencent.bkrepo.auth.service.bkauth.DevopsPermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
+import com.tencent.bkrepo.auth.service.bkauth.DevopsProjectService
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
@@ -128,19 +128,19 @@ class AuthServiceConfig {
     }
 
     @Bean
-    @Conditional(BkDevopsAuthCondition::class)
+    @Conditional(DevopsAuthCondition::class)
     fun bkAuthPermissionService(
         userRepository: UserRepository,
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        bkAuthConfig: BkAuthConfig,
-        bkAuthPipelineService: BkAuthPipelineService,
-        bkAuthProjectService: BkAuthProjectService,
-        bkiamV3Service: BkIamV3Service,
+        bkAuthConfig: DevopsAuthConfig,
+        bkAuthPipelineService: DevopsPipelineService,
+        bkAuthProjectService: DevopsProjectService,
+        bkiamV3Service: BkIamV3Service
     ): PermissionService {
-        return BkAuthPermissionServiceImpl(
+        return DevopsPermissionServiceImpl(
             userRepository,
             roleRepository,
             accountRepository,
