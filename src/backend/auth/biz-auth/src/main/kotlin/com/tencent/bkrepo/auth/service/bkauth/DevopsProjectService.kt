@@ -40,28 +40,22 @@ import org.springframework.stereotype.Service
 
 @Service
 @Conditional(BkDevopsAuthCondition::class)
-class BkAuthProjectService @Autowired constructor(
-    private val bkciAuthService: BkciAuthService
-) {
-    fun isProjectMember(
-        user: String,
-        projectCode: String,
-        permissionAction: String
-    ): Boolean {
-        return bkciAuthService.isProjectSuperAdmin(
+class DevopsProjectService @Autowired constructor(private val ciAuthService: CIAuthService) {
+    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
+        return ciAuthService.isProjectSuperAdmin(
             user = user,
             projectCode = projectCode,
             action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             permissionAction = permissionAction
-        ) || bkciAuthService.isProjectMember(user, projectCode)
+        ) || ciAuthService.isProjectMember(user, projectCode)
     }
 
     fun isProjectManager(user: String, projectCode: String): Boolean {
-        return bkciAuthService.isProjectManager(user, projectCode)
+        return ciAuthService.isProjectManager(user, projectCode)
     }
 
     fun listProjectByUser(user: String): List<String> {
-        return bkciAuthService.getProjectListByUser(user)
+        return ciAuthService.getProjectListByUser(user)
     }
 }

@@ -35,7 +35,7 @@ import com.tencent.bkrepo.auth.api.ServicePipelineClient
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
+import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServicePipelineController : ServicePipelineClient {
-    private var bkAuthPipelineService: BkAuthPipelineService? = null
+    private var bkAuthPipelineService: DevopsPipelineService? = null
 
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME:}")
     private var authType: String = ""

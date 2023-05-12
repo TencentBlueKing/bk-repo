@@ -43,12 +43,24 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 
 interface PermissionService {
 
+    /**
+     * 校验平台账号权限
+     */
     fun checkPlatformPermission(request: CheckPermissionRequest): Boolean
 
+    /**
+     * 校验普通账号权限
+     */
     fun checkPermission(request: CheckPermissionRequest): Boolean
 
+    /**
+     * 获取有权限的仓库列表
+     */
     fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String>
 
+    /**
+     * 获取有权限的项目列表
+     */
     fun listPermissionProject(userId: String): List<String>
 
     fun createPermission(request: CreatePermissionRequest): Boolean
