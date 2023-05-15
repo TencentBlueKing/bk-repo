@@ -62,17 +62,7 @@ class UserBkiamv3AuthController {
     ): Response<String?> {
         val result = bkIamV3Service?.let {
             try {
-                val resourceId = bkIamV3Service!!.getResourceId(
-                    request.resourceType, request.projectId, request.repoName, request.path
-                )
-                bkIamV3Service!!.getPermissionUrl(
-                    userId = request.uid,
-                    projectId = request.projectId!!,
-                    repoName = request.repoName,
-                    resourceType = request.resourceType.toLowerCase(),
-                    action = convertActionType(request.resourceType, request.action),
-                    resourceId = resourceId!!
-                ) ?: StringPool.EMPTY
+                bkIamV3Service!!.getPermissionUrl(request) ?: StringPool.EMPTY
             } catch (e: Exception) {
                 throw  ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
             }
