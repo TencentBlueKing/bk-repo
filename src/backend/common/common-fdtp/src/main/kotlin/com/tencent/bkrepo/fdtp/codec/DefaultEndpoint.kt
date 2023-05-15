@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.codec
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+/**
+ * 默认的端点实现
+ * */
+class DefaultEndpoint(server: Boolean) : Endpoint {
+    private var nextReservationStreamId: Int
+
+    init {
+        nextReservationStreamId = if (server) 0 else 1
+    }
+
+    override fun incrementAndGetNextStreamId(): Int {
+        return if (nextReservationStreamId >= 0) {
+            nextReservationStreamId += 2
+            nextReservationStreamId
+        } else {
+            nextReservationStreamId
+        }
+    }
 }

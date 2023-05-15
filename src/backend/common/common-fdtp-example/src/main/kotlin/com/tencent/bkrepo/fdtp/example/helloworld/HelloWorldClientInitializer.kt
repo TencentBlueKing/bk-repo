@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.example.helloworld
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import com.tencent.bkrepo.fdtp.codec.FdtpClientCodec
+import io.netty.channel.ChannelInitializer
+import io.netty.channel.udt.UdtChannel
+import io.netty.handler.ssl.SslContext
+import io.netty.handler.ssl.SslContextBuilder
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import io.netty.handler.stream.ChunkedWriteHandler
+import java.security.cert.CertificateException
+import javax.net.ssl.SSLException
+
+class HelloWorldClientInitializer(val ssl: Boolean) : ChannelInitializer<UdtChannel>() {
+    override fun initChannel(ch: UdtChannel) {
+        val pipeline = ch.pipeline()
+        if (ssl) {
+            val sslCtx = buildSslContext()
+            pipeline.addLast(sslCtx.newHandler(ch.alloc()))
+        }
+        pipeline.addLast(FdtpClientCodec())
+            .addLast(ChunkedWriteHandler())
+    }
+
+    @Throws(CertificateException::class, SSLException::class)
+    fun buildSslContext(): SslContext {
+        return SslContextBuilder
+            .forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
+            .build()
+    }
 }

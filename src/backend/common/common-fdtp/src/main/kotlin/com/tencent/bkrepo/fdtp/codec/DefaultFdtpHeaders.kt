@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.codec
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import io.netty.handler.codec.CharSequenceValueConverter
+import io.netty.handler.codec.DefaultHeaders
+import io.netty.handler.codec.DefaultHeadersImpl
+import io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER
+
+/**
+ * 默认的fdtp头实现
+ * */
+class DefaultFdtpHeaders : FdtpHeaders {
+
+    private val headers = DefaultHeadersImpl(
+        CASE_INSENSITIVE_HASHER,
+        CharSequenceValueConverter(),
+        NOT_NULL,
+    )
+
+    override fun get(key: String): String? {
+        return headers.get(key)?.toString()
+    }
+
+    override fun add(key: String, value: String) {
+        headers.add(key, value)
+    }
+
+    override fun iteratorCharSequence(): Iterator<Map.Entry<CharSequence, CharSequence>> {
+        return headers.iterator()
+    }
+
+    override fun toString(): String {
+        return headers.toString()
+    }
+
+    companion object {
+        private val NOT_NULL = DefaultHeaders.NameValidator<CharSequence> {
+            check(it != null) { "key can't be null" }
+        }
+    }
 }

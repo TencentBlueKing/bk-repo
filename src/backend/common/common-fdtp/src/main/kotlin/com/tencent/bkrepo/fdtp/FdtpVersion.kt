@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import java.lang.IllegalArgumentException
+
+/**
+ * fdtp版本
+ * */
+class FdtpVersion(val protocolName: String, val majorVersion: Int, val minorVersion: Int) {
+
+    fun text(): String {
+        return "$protocolName/$majorVersion.$minorVersion"
+    }
+
+    companion object {
+        val FDTP_1_0 = FdtpVersion("FDTP", 1, 0)
+        private const val FDT_1_0_STRING = "FDTP/1.0"
+        fun valueOf(text: String): FdtpVersion {
+            if (FDT_1_0_STRING == text) {
+                return FDTP_1_0
+            }
+            throw IllegalArgumentException("invalid version")
+        }
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.codec
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import io.netty.util.AttributeKey
+
+/**
+ * channel attribute中的key，用于channel中的共享变量实现
+ * */
+object AttributeMapKey {
+    /**
+     * 客户端点
+     * */
+    val CLIENT_ENDPOINT_KEY: AttributeKey<Endpoint> = AttributeKey.valueOf("client_endpoint_key")
+
+    /**
+     * 服务端点
+     * */
+    val SERVER_ENDPOINT_KEY: AttributeKey<Endpoint> = AttributeKey.valueOf("server_endpoint_key")
+
+    /**
+     * 用于连接认证
+     * */
+    val AUTHENTICATED_KEY: AttributeKey<Boolean> = AttributeKey.valueOf("authenticated")
 }

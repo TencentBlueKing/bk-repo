@@ -76,6 +76,9 @@ spec:
             - name: http
               containerPort: 25903
               protocol: TCP
+            - name: fdtp
+              containerPort: 25903
+              protocol: UDP
           livenessProbe:
             httpGet:
               path: /actuator/health/livenessState
