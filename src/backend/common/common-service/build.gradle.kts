@@ -63,4 +63,5 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-starter-config")
     }
     api("org.springframework.retry:spring-retry")
+    api("com.github.ulisesbocchio:jasypt-spring-boot-starter:${Versions.Jasypt}")
 }
