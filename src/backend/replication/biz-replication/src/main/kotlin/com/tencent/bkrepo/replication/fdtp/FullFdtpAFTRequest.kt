@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.replication.fdtp
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
-}
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.fdtp.codec.FdtpFrameStream
+import com.tencent.bkrepo.fdtp.codec.FdtpHeaders
+import io.netty.channel.Channel
+
+/**
+ * fdtp-aft请求
+ * */
+data class FullFdtpAFTRequest(
+    /**
+     * 请求所在的流
+     * */
+    val stream: FdtpFrameStream,
+    /**
+     * 请求headers
+     * */
+    val headers: FdtpHeaders,
+    /**
+     * 上传的文件
+     * */
+    val artifactFile: ArtifactFile,
+    /**
+     * 请求的channel
+     * */
+    val channel: Channel,
+    /**
+     * 请求开始时间
+     * */
+    val startTime: Long,
+)

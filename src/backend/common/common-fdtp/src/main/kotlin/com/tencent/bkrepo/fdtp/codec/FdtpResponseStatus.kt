@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.fdtp.codec
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+/**
+ * fdtp response status
+ * */
+class FdtpResponseStatus(val code: Int, val reasonPhrase: String) {
+
+    override fun equals(other: Any?): Boolean {
+        other ?: return false
+        if (other !is FdtpResponseStatus) {
+            return false
+        }
+        return code == other.code
+    }
+
+    override fun hashCode(): Int {
+        return code
+    }
+
+    companion object {
+        val OK = FdtpResponseStatus(0, "OK")
+        val ERROR = FdtpResponseStatus(-1, "ERROR")
+        val UNKNOWN = FdtpResponseStatus(999, "UNKNOWN")
+        fun valueOf(code: Int): FdtpResponseStatus {
+            return when (code) {
+                0 -> OK
+                -1 -> ERROR
+                999 -> UNKNOWN
+                else -> FdtpResponseStatus(code, "UNKNOWN")
+            }
+        }
+    }
 }
