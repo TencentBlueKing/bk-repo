@@ -28,7 +28,10 @@ class NodeStatCompositeMongoDbBatchJob(
     override fun entityClass(): Class<Node> = Node::class.java
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
-        return listOf(FolderOfRepoStatChildJob(properties, mongoTemplate))
+        return listOf(
+            FolderOfRepoStatChildJob(properties, mongoTemplate),
+            ProjectRepoStatChildJob(properties, mongoTemplate)
+        )
     }
 
     class Node(map: Map<String, Any?>) {
