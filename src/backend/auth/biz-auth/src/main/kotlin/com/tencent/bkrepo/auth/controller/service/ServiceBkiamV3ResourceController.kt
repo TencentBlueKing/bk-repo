@@ -68,7 +68,6 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
     }
 
     override fun getExistRbacDefaultGroupProjectIds(projectIds: List<String>): Response<Map<String, Boolean>> {
-        initService()
         bkIamV3Service?.let {
             return ResponseBuilder.success(bkIamV3Service!!.getExistRbacDefaultGroupProjectIds(projectIds))
         } ?: return ResponseBuilder.success(emptyMap())
