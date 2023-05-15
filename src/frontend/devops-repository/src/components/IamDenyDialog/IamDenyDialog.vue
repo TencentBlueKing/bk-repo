@@ -1,7 +1,7 @@
 <template>
     <bk-dialog v-model="showIamDenyDialog" :visible.sync="showIamDenyDialog" :before-close="close" style="text-align: center">
         <img src="/ui/no-permission.svg" />
-        <p>该操作需要以下权限</p>
+        <p>{{ $t('iamTip') }}</p>
         <bk-table
             class="mt10"
             height="calc(100% - 100px)"
@@ -9,26 +9,26 @@
             :outer-border="false"
             :row-border="false"
             size="small">
-            <bk-table-column label="需申请的权限" width="276px">
+            <bk-table-column :label="$t('requiredPermission')" width="276px">
                 <template #default="{ row }"><p>{{ replaceAction(row.action) }}</p></template>
             </bk-table-column>
-            <bk-table-column label="关联的资源实例" width="276px">
+            <bk-table-column :label="$t('associatedResource')" width="276px">
                 <template #default="{ row }">
                     <p v-if="row.path && row.path !== ''">
-                        节点路径：{{ row.path }}
+                        {{ $t('nodePath') + ':' + row.path }}
                     </p>
                     <p v-else-if="row.repoName === ''">
-                        项目名：{{ row.projectId }}
+                        {{ $t('projectName') + ':' + row.projectId }}
                     </p>
                     <p v-else>
-                        仓库名：{{ row.repoName }}
+                        {{ $t('repoName') + ':' + row.repoName }}
                     </p>
                 </template>
             </bk-table-column>
         </bk-table>
         <div slot="footer">
-            <bk-button @click="open">去申请</bk-button>
-            <bk-button type="primary" @click="close">取 消</bk-button>
+            <bk-button @click="open">{ $t('apply') }</bk-button>
+            <bk-button type="primary" @click="close">{ $t('cancel') }</bk-button>
         </div>
     </bk-dialog>
 </template>
@@ -66,20 +66,20 @@
                 this.$emit('update:visible', false)
             },
             open () {
-                window.location.href = this.showData.url
+                window.open(this.showData.url, '_blank')
             },
             replaceAction (action) {
                 switch (action) {
                     case 'READ':
-                        return '查看'
+                        return this.$t('actionEnum.READ')
                     case 'WRITE':
-                        return '写入'
+                        return this.$t('actionEnum.WRITE')
                     case 'MANAGE':
-                        return '管理'
+                        return this.$t('actionEnum.MANAGE')
                     case 'DELETE':
-                        return '删除'
+                        return this.$t('actionEnum.DELETE')
                     case 'UPDATE':
-                        return '更新'
+                        return this.$t('actionEnum.UPDATE')
                     default:
                         return action
                 }
