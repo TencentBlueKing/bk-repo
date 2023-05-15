@@ -3,14 +3,12 @@ package com.tencent.bkrepo.job.batch.node
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.batch.context.ProjectRepoChildContext
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.LongAdder
 
 class ProjectRepoStatChildJob(
     properties: CompositeJobProperties,
@@ -23,82 +21,67 @@ class ProjectRepoStatChildJob(
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is ProjectRepoChildContext)
-        context.metrics
-            .getOrPut(row.projectId) { ProjectMetrics(row.projectId) }
-            .apply {
-                capSize.add(row.size)
-                nodeNum.increment()
-                val credentialsKey = RepositoryCommonUtils
-                    .getRepositoryDetail(row.projectId, row.repoName)
-                    .storageCredentials
-                    ?.key ?: "default"
-                val repo = repoMetrics.getOrPut(row.repoName) { RepoMetrics(row.repoName, credentialsKey) }
-                repo.size.add(row.size)
-                repo.num.increment()
-            }
+        val metric = context.metrics.getOrPut(row.projectId) { ProjectRepoChildContext.ProjectMetrics(row.projectId) }
+        metric.capSize.add(row.size)
+        metric.nodeNum.increment()
+        metric.addRepoMetrics(row)
     }
 
     override fun onParentJobFinished(context: ChildJobContext) {
         require(context is ProjectRepoChildContext)
-        val projectMetricsList = convert(context.metrics.values)
+        val projectMetrics = ArrayList<TProjectMetrics>(context.metrics.size)
+        val folderMetrics = ArrayList<TFolderMetrics>()
+        val extensionMetrics = ArrayList<TFileExtensionMetrics>()
+        val sizeDistributionMetrics = ArrayList<TSizeDistributionMetrics>()
 
-        // 数据写入mongodb统计表
-        mongoTemplate.remove(Query(), COLLECTION_NAME)
+        for (projectMetric in context.metrics.values) {
+            if (projectMetric.nodeNum.toLong() == 0L || projectMetric.capSize.toLong() == 0L) {
+                // 只统计有效项目数据
+                continue
+            }
+
+            projectMetrics.add(projectMetric.toDO())
+            val projectId = projectMetric.projectId
+            projectMetric.repoMetrics.values.forEach { repoMetric ->
+                val repoName = repoMetric.repoName
+                repoMetric.folderMetrics.values.forEach {
+                    folderMetrics.add(it.toDO(projectId, repoName, repoMetric.credentialsKey))
+                }
+                repoMetric.extensionMetrics.values.forEach {
+                    extensionMetrics.add(it.toDO(projectId, repoName))
+                }
+                val sizeDistribution = repoMetric.sizeDistributionMetrics.mapValues { it.value.toLong() }
+                sizeDistributionMetrics.add(TSizeDistributionMetrics(projectId, repoName, sizeDistribution))
+            }
+        }
+        // insert project repo metrics
+        mongoTemplate.remove(Query(), COLLECTION_NAME_PROJECT_METRICS)
         logger.info("start to insert  mongodb metrics ")
-        mongoTemplate.insert(projectMetricsList, COLLECTION_NAME)
+        mongoTemplate.insert(projectMetrics, COLLECTION_NAME_PROJECT_METRICS)
         logger.info("stat project metrics done")
+
+        // insert folder metrics
+        mongoTemplate.remove(Query(), COLLECTION_NAME_FOLDER_METRICS)
+        logger.info("start to insert folder's metrics ")
+        mongoTemplate.insert(folderMetrics, COLLECTION_NAME_FOLDER_METRICS)
+        logger.info("stat folder metrics done")
+
+        // insert ext metrics
+        mongoTemplate.remove(Query(), COLLECTION_NAME_EXTENSION_METRICS)
+        logger.info("start to insert extension's metrics ")
+        mongoTemplate.insert(extensionMetrics, COLLECTION_NAME_EXTENSION_METRICS)
+        logger.info("stat ext metrics done")
+
+        // insert size distribution metrics
+        mongoTemplate.remove(Query(), COLLECTION_NAME_SIZE_DISTRIBUTION_METRICS)
+        logger.info("start to insert size distribution metrics ")
+        mongoTemplate.insert(sizeDistributionMetrics, COLLECTION_NAME_SIZE_DISTRIBUTION_METRICS)
+        logger.info("stat size distribution metrics done")
     }
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
         return ProjectRepoChildContext(parentJobContext)
     }
-
-    private fun convert(projectMetricsList: Collection<ProjectMetrics>): List<TProjectMetrics> {
-        val tProjectMetricsList = ArrayList<TProjectMetrics>(projectMetricsList.size)
-        for (projectMetrics in projectMetricsList) {
-            val projectNodeNum = projectMetrics.nodeNum.toLong()
-            val projectCapSize = projectMetrics.capSize.toLong()
-            if (projectNodeNum == 0L || projectCapSize == 0L) {
-                // 只统计有效项目数据
-                continue
-            }
-            val repoMetrics = ArrayList<TRepoMetrics>(projectMetrics.repoMetrics.size)
-            projectMetrics.repoMetrics.values.forEach { repo ->
-                val num = repo.num.toLong()
-                val size = repo.size.toLong()
-                // 有效仓库的统计数据
-                if (num != 0L && size != 0L) {
-                    logger.info("project : [${projectMetrics.projectId}],repo: [${repo.repoName}],size:[$repo]")
-                    repoMetrics.add(TRepoMetrics(repo.repoName, repo.credentialsKey, size / TO_GIGABYTE, num))
-                }
-            }
-            tProjectMetricsList.add(
-                TProjectMetrics(
-                    projectMetrics.projectId, projectNodeNum, projectCapSize / TO_GIGABYTE, repoMetrics
-                )
-            )
-        }
-        return tProjectMetricsList
-    }
-
-    class ProjectRepoChildContext(
-        parentContent: JobContext,
-        var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
-    ) : ChildJobContext(parentContent)
-
-    data class ProjectMetrics(
-        val projectId: String,
-        var nodeNum: LongAdder = LongAdder(),
-        var capSize: LongAdder = LongAdder(),
-        val repoMetrics: ConcurrentHashMap<String, RepoMetrics> = ConcurrentHashMap()
-    )
-
-    data class RepoMetrics(
-        val repoName: String,
-        val credentialsKey: String = "default",
-        var size: LongAdder = LongAdder(),
-        var num: LongAdder = LongAdder()
-    )
 
     data class TProjectMetrics(
         var projectId: String,
@@ -115,10 +98,35 @@ class ProjectRepoStatChildJob(
         val num: Long
     )
 
+    data class TFolderMetrics(
+        val projectId: String,
+        val repoName: String,
+        var credentialsKey: String? = "default",
+        val folderPath: String,
+        val nodeNum: Long,
+        val capSize: Long,
+        val createdDate: LocalDateTime? = LocalDateTime.now()
+    )
+
+    data class TFileExtensionMetrics(
+        val projectId: String,
+        val repoName: String,
+        val extension: String,
+        val num: Long,
+        val size: Long
+    )
+
+    data class TSizeDistributionMetrics(
+        val projectId: String,
+        val repoName: String,
+        val sizeDistribution: Map<String, Long>
+    )
 
     companion object {
-        private const val TO_GIGABYTE = 1024 * 1024 * 1024
-        private const val COLLECTION_NAME = "project_metrics"
+        private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
+        private const val COLLECTION_NAME_FOLDER_METRICS = "folder_metrics"
+        private const val COLLECTION_NAME_EXTENSION_METRICS = "file_extension_metrics"
+        private const val COLLECTION_NAME_SIZE_DISTRIBUTION_METRICS = "size_distribution_metrics"
         private val logger = LoggerFactory.getLogger(ProjectRepoStatChildJob::class.java)
     }
 }
