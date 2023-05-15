@@ -94,9 +94,9 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    const nowTime = new Date(
-        `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
-    ).getTime() + 3600 * 1000 * 24
+    import moment from 'moment'
+    import { before, zeroTime } from '@repository/utils/date'
+    const nowTime = moment()
     export default {
         name: 'audit',
         data () {
@@ -105,7 +105,7 @@
                 query: {
                     projectId: this.$route.params.projectId,
                     user: [],
-                    time: [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                    time: [zeroTime(before(7)), nowTime.toDate()]
                 },
                 auditList: [],
                 pagination: {
@@ -119,19 +119,19 @@
                     {
                         text: this.$t('last 7 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                            return [zeroTime(before(7)), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 15 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
+                            return [zeroTime(before(15)), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 30 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
+                            return [zeroTime(before(30)), nowTime.toDate()]
                         }
                     }
                 ]
