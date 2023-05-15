@@ -32,6 +32,10 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
+import com.tencent.bkrepo.auth.constant.CUSTOM
+import com.tencent.bkrepo.auth.constant.LOG
+import com.tencent.bkrepo.auth.constant.PIPELINE
+import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -214,9 +218,5 @@ class DevopsPermissionServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
-        private const val CUSTOM = "custom"
-        private const val PIPELINE = "pipeline"
-        private const val REPORT = "report"
-        private const val LOG = "log"
     }
 }
