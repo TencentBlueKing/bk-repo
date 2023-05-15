@@ -32,7 +32,7 @@ class SignInterceptor(private val clusterInfo: ClusterInfo) : Interceptor {
             * 通过对表单参数的签名，来实现对文件请求的签名。
             * */
             val bodyToHash = if (body != null && body !is MultipartBody &&
-                    request.body?.contentType()?.type != MediaType.APPLICATION_OCTET_STREAM_VALUE) {
+                    request.body?.contentType().toString() != MediaType.APPLICATION_OCTET_STREAM_VALUE) {
                 val buffer = Buffer()
                 body.writeTo(buffer)
                 buffer.readByteArray()
