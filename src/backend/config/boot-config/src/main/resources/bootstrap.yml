@@ -21,6 +21,7 @@ spring:
       discovery:
         service-name: ${service.prefix}${spring.application.name}
         instance-id: ${service.prefix}${spring.application.name}-${server.port}-${spring.cloud.client.ip-address}
+        prefer-ip-address: true
       config:
         name: ${service.prefix}${spring.application.name}
 
