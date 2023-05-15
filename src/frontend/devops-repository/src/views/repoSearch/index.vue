@@ -211,8 +211,11 @@
                 this.handlerPaginationChange()
             },
             changeRepoType (repoType) {
-                this.repoType = repoType
-                this.packageName = ''
+                // 制品搜索页，当切换制品类型时将搜索的包名参数重置为空，否则不重置，解决复制url导致搜索参数丢失的问题
+                if (this.repoType !== repoType) {
+                    this.packageName = ''
+                    this.repoType = repoType
+                }
                 this.changePackageName()
             },
             changePackageName () {
