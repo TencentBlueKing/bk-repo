@@ -24,7 +24,9 @@
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
-                    <bk-form-item label="蓝鲸权限校验">
+                    <bk-form-item
+                        :label="$t('bkPermissionCheck')"
+                        v-if="repoBaseInfo.name !== 'custom' && repoBaseInfo.name !== 'pipeline' && repoBaseInfo.name !== 'report' && repoBaseInfo.name !== 'log'">
                         <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                             <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -397,7 +399,6 @@
                     configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
-                            bkiamv3Check: this.repoBaseInfo.configuration.settings.bkiamv3Check,
                             system: this.repoBaseInfo.system,
                             interceptors: interceptors.length ? interceptors : undefined,
                             ...(
@@ -411,6 +412,9 @@
                             )
                         }
                     }
+                }
+                if (this.repoBaseInfo.name !== 'custom' && this.repoBaseInfo.name !== 'pipeline' && this.repoBaseInfo.name !== 'report' && this.repoBaseInfo.name !== 'log') {
+                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
                 }
                 this.repoBaseInfo.loading = true
                 this.updateRepoInfo({

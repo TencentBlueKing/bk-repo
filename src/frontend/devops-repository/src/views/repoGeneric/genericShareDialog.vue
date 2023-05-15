@@ -61,7 +61,7 @@
                 <bk-select
                     v-model="genericShare.time"
                     :clearable="false"
-                    placeholder="请选择过期时间">
+                    :placeholder="$t('sharePlaceHolder3')">
                     <bk-option :id="1" name="1"></bk-option>
                     <bk-option :id="7" name="7"></bk-option>
                     <bk-option :id="30" name="30"></bk-option>
@@ -77,7 +77,7 @@
     </canway-dialog>
 </template>
 <script>
-    // import QRCode from '@repository/components/QRCode'
+// import QRCode from '@repository/components/QRCode'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapActions, mapState } from 'vuex'
     import { copyToClipboard } from '@repository/utils'
@@ -182,14 +182,14 @@
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: e.message || '访问被拒绝：Forbidden'
+                                    message: e.message
                                 })
                             }
                         })
                     } else {
                         this.$bkMessage({
                             theme: 'error',
-                            message: e.message || '访问被拒绝：Forbidden'
+                            message: e.message
                         })
                     }
                 }).finally(() => {

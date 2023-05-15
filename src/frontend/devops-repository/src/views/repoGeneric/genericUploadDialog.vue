@@ -130,14 +130,14 @@
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: e.message || '访问被拒绝：Forbidden'
+                                    message: e.message
                                 })
                             }
                         })
                     } else {
                         e && this.$bkMessage({
                             theme: 'error',
-                            message: e.message || '访问被拒绝：Forbidden'
+                            message: e.message
                         })
                     }
                 }).finally(() => {
@@ -179,7 +179,7 @@
                                 } else {
                                     this.$bkMessage({
                                         theme: 'error',
-                                        message: e.message || '访问被拒绝'
+                                        message: e.message
                                     })
                                     this.uploadDialog.loading = false
                                 }

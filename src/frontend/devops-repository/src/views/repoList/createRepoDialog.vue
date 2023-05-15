@@ -34,7 +34,9 @@
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item label="蓝鲸权限校验">
+            <bk-form-item
+                :label="$t('bkPermissionCheck')"
+                v-if="repoBaseInfo.name !== 'custom' && repoBaseInfo.name !== 'pipeline' && repoBaseInfo.name !== 'report' && repoBaseInfo.name !== 'log'">
                 <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -333,34 +335,37 @@
                         }
                     })
                 }
-                this.loading = true
-                this.createRepo({
-                    body: {
-                        projectId: this.projectId,
-                        type: this.repoBaseInfo.type.toUpperCase(),
-                        name: this.repoBaseInfo.name,
-                        public: this.repoBaseInfo.public,
-                        display: this.repoBaseInfo.display,
-                        description: this.repoBaseInfo.description,
-                        category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
-                        configuration: {
-                            type: 'composite',
-                            settings: {
-                                bkiamv3Check: this.repoBaseInfo.configuration.settings.bkiamv3Check,
-                                system: this.repoBaseInfo.system,
-                                interceptors: interceptors.length ? interceptors : undefined,
-                                ...(
-                                    this.repoBaseInfo.type === 'rpm'
-                                        ? {
-                                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                                            repodataDepth: this.repoBaseInfo.repodataDepth,
-                                            groupXmlSet: this.repoBaseInfo.groupXmlSet
-                                        }
-                                        : {}
-                                )
-                            }
+                const body = {
+                    projectId: this.projectId,
+                    type: this.repoBaseInfo.type.toUpperCase(),
+                    name: this.repoBaseInfo.name,
+                    public: this.repoBaseInfo.public,
+                    display: this.repoBaseInfo.display,
+                    description: this.repoBaseInfo.description,
+                    category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
+                    configuration: {
+                        type: 'composite',
+                        settings: {
+                            system: this.repoBaseInfo.system,
+                            interceptors: interceptors.length ? interceptors : undefined,
+                            ...(
+                                this.repoBaseInfo.type === 'rpm'
+                                    ? {
+                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                        repodataDepth: this.repoBaseInfo.repodataDepth,
+                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                    }
+                                    : {}
+                            )
                         }
                     }
+                }
+                if (this.repoBaseInfo.name !== 'custom' && this.repoBaseInfo.name !== 'pipeline' && this.repoBaseInfo.name !== 'report' && this.repoBaseInfo.name !== 'log') {
+                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
+                }
+                this.loading = true
+                this.createRepo({
+                    body: body
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
@@ -389,7 +394,7 @@
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: err.message || '访问被拒绝：Forbidden'
+                                    message: err.message
                                 })
                             }
                         })
