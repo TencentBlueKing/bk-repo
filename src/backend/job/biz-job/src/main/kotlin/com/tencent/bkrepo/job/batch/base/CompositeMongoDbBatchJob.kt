@@ -1,37 +1,48 @@
 package com.tencent.bkrepo.job.batch.base
 
-import com.tencent.bkrepo.job.batch.action.JobAction
-import com.tencent.bkrepo.job.batch.context.JobActionContext
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import org.slf4j.LoggerFactory
 
 abstract class CompositeMongoDbBatchJob<T>(
     properties: MongodbJobProperties
-) : MongoDbBatchJob<T, JobContext>(properties) {
-    override fun run(row: T, collectionName: String, context: JobContext) {
-        val actions = actions()
-        checkDuplicateAction(actions)
-        val contextMap = HashMap<String, JobActionContext>()
+) : MongoDbBatchJob<T, CompositeJobContext<T>>(properties) {
 
-        // TODO 处理异常情况
-        // start
-        actions.forEach { contextMap[it.name()] = it.start() }
+    override fun doStart0(jobContext: CompositeJobContext<T>) {
+        // start child job
+        jobContext.childJobs.forEach {
+            it.onParentJobStart(jobContext.childContext(it.getJobName()))
+            logger.info("child job[${it.getJobName()}] started")
+        }
 
-        // stat
-        actions.forEach { it.run(contextMap[it.name()]!!, row) }
+        super.doStart0(jobContext)
 
-        // finished
-        actions.forEach { it.finished(contextMap[it.name()]!!) }
+        // finish child job
+        jobContext.childJobs.forEach {
+            logException { it.onParentJobFinished(jobContext.childContext(it.getJobName())) }
+            logger.info("child job[${it.getJobName()}] finished")
+        }
     }
 
-    override fun createJobContext(): JobContext = JobContext()
-
-    abstract fun actions(): List<JobAction<T>>
-
-    private fun checkDuplicateAction(actions: List<JobAction<T>>) {
-        val names = HashSet<String>()
-        actions.forEach {
-            check(!names.contains(it.name())) { "duplicate action name[${it.name()}]" }
-            names.add(it.name())
+    override fun run(row: T, collectionName: String, context: CompositeJobContext<T>) {
+        context.childJobs.forEach {
+            logException { it.run(row, collectionName, context.childContext(it.getJobName())) }
         }
+    }
+
+    override fun createJobContext(): CompositeJobContext<T> = CompositeJobContext(createChildJobs())
+
+    protected abstract fun createChildJobs(): List<ChildMongoDbBatchJob<T>>
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun logException(func: () -> Unit) {
+        try {
+            func()
+        } catch (e: Exception) {
+            logger.error(e.message, e)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CompositeMongoDbBatchJob::class.java)
     }
 }

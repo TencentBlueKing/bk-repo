@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.batch.action.JobAction
+import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.config.properties.StatAllNodeJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -25,7 +25,7 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun entityClass(): Class<Node> = Node::class.java
 
-    override fun actions(): List<JobAction<Node>> {
+    override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return emptyList()
     }
 
