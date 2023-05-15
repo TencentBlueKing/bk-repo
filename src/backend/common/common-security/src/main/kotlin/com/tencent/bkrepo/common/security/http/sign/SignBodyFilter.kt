@@ -26,11 +26,10 @@ class SignBodyFilter(private val limit: Long) : Filter {
     private val emptyStringHash = Hashing.sha256().hashBytes(StringPool.EMPTY.toByteArray())
 
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
-
-        if (request.contentLength > 0 && request.contentLength <= limit &&
-            !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE) &&
+        val lengthCondition = request.contentLength in 1..limit
+        val typeCondition = !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE) &&
             !request.contentType.startsWith(MediaType.APPLICATION_OCTET_STREAM_VALUE)
-        ) {
+        if (lengthCondition && typeCondition) {
             // 限制缓存大小
             val multiReadRequest = MultipleReadHttpRequest(request as HttpServletRequest, limit)
             val body = ByteArrayOutputStream()
