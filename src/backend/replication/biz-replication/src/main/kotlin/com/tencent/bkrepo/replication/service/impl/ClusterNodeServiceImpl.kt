@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.innercos.retry
@@ -164,6 +165,11 @@ class ClusterNodeServiceImpl(
                 username = request.username
                 password = crypto(request.password, false)
                 certificate = request.certificate
+                appId = request.appId
+                accessKey = request.accessKey
+                secretKey = request.secretKey
+                lastModifiedBy = SecurityUtils.getUserId()
+                lastModifiedDate = LocalDateTime.now()
             }
             request.detectType?.let {
                 tClusterNode.detectType = it
@@ -240,8 +246,13 @@ class ClusterNodeServiceImpl(
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
-                val authToken = BasicAuthUtils.encode(username.orEmpty(), password.orEmpty())
-                replicationService.ping(authToken)
+                // 由于调整了AuthHandler顺序，BasicAuth在前，SignAuth在后，所以没有用户名密码时，不能传Basic认证请求头
+                val token = if (username.isNullOrBlank() || password.isNullOrBlank()) {
+                    UNKNOWN
+                } else {
+                    BasicAuthUtils.encode(username!!, password!!)
+                }
+                replicationService.ping(token)
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.warn("ping cluster [$name] failed, reason: $message")

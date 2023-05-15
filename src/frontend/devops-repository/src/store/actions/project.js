@@ -35,5 +35,13 @@ export default {
                 }
             }
         )
+    },
+    // 查询项目列表
+    queryProjectList (_, { sortProperty, direction }) {
+        let url = `${prefix}/project/list`
+        if (sortProperty !== '') {
+            url = url + '?sortProperty=' + sortProperty + '&direction=' + direction
+        }
+        return Vue.prototype.$ajax.get(url)
     }
 }

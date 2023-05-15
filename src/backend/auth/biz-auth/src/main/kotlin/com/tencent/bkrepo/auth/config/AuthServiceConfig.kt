@@ -40,9 +40,9 @@ import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
+import com.tencent.bkrepo.auth.service.bkauth.DevopsPermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
+import com.tencent.bkrepo.auth.service.bkauth.DevopsProjectService
 import com.tencent.bkrepo.auth.service.bkiam.BkiamPermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiam.BkiamService
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
@@ -133,11 +133,11 @@ class AuthServiceConfig {
         accountRepository: AccountRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        bkAuthConfig: BkAuthConfig,
-        bkAuthPipelineService: BkAuthPipelineService,
-        bkAuthProjectService: BkAuthProjectService
+        bkAuthConfig: DevopsAuthConfig,
+        bkAuthPipelineService: DevopsPipelineService,
+        bkAuthProjectService: DevopsProjectService
     ): PermissionService {
-        return BkAuthPermissionServiceImpl(
+        return DevopsPermissionServiceImpl(
             userRepository,
             roleRepository,
             accountRepository,
