@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.job.batch.base
 
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
 
 @Suppress("TooManyFunctions")
 abstract class ChildMongoDbBatchJob<T>(
-    properties: MongodbJobProperties
+    properties: CompositeJobProperties
 ) : MongoDbBatchJob<T, JobContext>(properties) {
 
     /**

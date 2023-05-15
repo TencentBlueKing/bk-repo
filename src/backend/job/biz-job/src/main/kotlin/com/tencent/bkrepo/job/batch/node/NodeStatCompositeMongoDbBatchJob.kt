@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @Component
 @EnableConfigurationProperties(StatAllNodeJobProperties::class)
 class NodeStatCompositeMongoDbBatchJob(
-    private val properties: StatAllNodeJobProperties
+    properties: StatAllNodeJobProperties
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {

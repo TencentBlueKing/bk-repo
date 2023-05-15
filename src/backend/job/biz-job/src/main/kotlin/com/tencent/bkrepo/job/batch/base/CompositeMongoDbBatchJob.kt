@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.job.batch.base
 
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import org.slf4j.LoggerFactory
 
 abstract class CompositeMongoDbBatchJob<T>(
-    properties: MongodbJobProperties
+    private val properties: CompositeJobProperties
 ) : MongoDbBatchJob<T, CompositeJobContext<T>>(properties) {
 
     override fun doStart0(jobContext: CompositeJobContext<T>) {
@@ -29,7 +29,17 @@ abstract class CompositeMongoDbBatchJob<T>(
         }
     }
 
-    override fun createJobContext(): CompositeJobContext<T> = CompositeJobContext(createChildJobs())
+    override fun createJobContext(): CompositeJobContext<T> {
+        val enabledJobs = properties.enabledChildJobs
+        val disabledJobs = properties.disabledChildJobs
+        val enabledChildJobs = createChildJobs().filter {
+            val childJobName = it.getJobName()
+            enabledJobs.isEmpty() && disabledJobs.isEmpty() ||
+                enabledJobs.isNotEmpty() && childJobName in enabledJobs ||
+                enabledJobs.isEmpty() && disabledJobs.isNotEmpty() && childJobName !in disabledJobs
+        }
+        return CompositeJobContext(enabledChildJobs)
+    }
 
     protected abstract fun createChildJobs(): List<ChildMongoDbBatchJob<T>>
 
