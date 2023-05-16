@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.job.batch.base
 
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
-import org.slf4j.LoggerFactory
 
 /**
  * 由多个[ChildMongoDbBatchJob]组成的任务，主要目的是将类似遍历所有Node表这种耗时任务合并成一个，只需要遍历一次就可以完成所有数据的处理
@@ -56,6 +56,6 @@ abstract class CompositeMongoDbBatchJob<T>(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(CompositeMongoDbBatchJob::class.java)
+        private val logger = LoggerHolder.jobLogger
     }
 }

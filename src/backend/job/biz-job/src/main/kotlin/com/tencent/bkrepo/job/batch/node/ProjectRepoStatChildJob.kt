@@ -59,7 +59,7 @@ class ProjectRepoStatChildJob(
         }
         // insert project repo metrics
         mongoTemplate.remove(Query(), COLLECTION_NAME_PROJECT_METRICS)
-        logger.info("start to insert  mongodb metrics ")
+        logger.info("start to insert project's metrics ")
         mongoTemplate.insert(projectMetrics, COLLECTION_NAME_PROJECT_METRICS)
         logger.info("stat project metrics done")
 

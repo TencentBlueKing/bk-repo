@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
+import java.util.Date
 
 @Component
 @EnableConfigurationProperties(StatAllNodeJobProperties::class)
@@ -33,15 +33,17 @@ class NodeStatCompositeMongoDbBatchJob(
         )
     }
 
-    class Node(map: Map<String, Any?>) {
-        val id: String by map
-        val folder: Boolean by map
-        val path: String by map
-        val fullPath: String by map
-        val name: String by map
-        val size: Long by map
-        val deleted: LocalDateTime? by map
-        val projectId: String by map
-        val repoName: String by map
+    data class Node(private val map: Map<String, Any?>) {
+        private val defaultMap = map.withDefault { null }
+
+        val id: String by defaultMap
+        val folder: Boolean by defaultMap
+        val path: String by defaultMap
+        val fullPath: String by defaultMap
+        val name: String by defaultMap
+        val size: Long by defaultMap
+        val deleted: Date? by defaultMap
+        val projectId: String by defaultMap
+        val repoName: String by defaultMap
     }
 }

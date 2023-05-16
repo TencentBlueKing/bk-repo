@@ -49,13 +49,13 @@ class ProjectRepoChildContext(
         }
 
         fun toDO(): ProjectRepoStatChildJob.TProjectMetrics {
+            logger.info("project: [${projectId}], size: [${capSize.toLong()}]")
             val repoMetrics = ArrayList<ProjectRepoStatChildJob.TRepoMetrics>(repoMetrics.size)
             this.repoMetrics.values.forEach { repo ->
                 val num = repo.num.toLong()
                 val size = repo.size.toLong()
                 // 有效仓库的统计数据
                 if (num != 0L && size != 0L) {
-                    logger.info("project : [${projectId}],repo: [${repo.repoName}],size:[$repo]")
                     repoMetrics.add(repo.toDO())
                 }
             }
