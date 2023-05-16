@@ -42,8 +42,8 @@ import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_BLOB_URL
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_URL
-import com.tencent.bkrepo.replication.constant.PUSH_WITH_CHUNKED
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
+import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
@@ -149,7 +149,7 @@ class OciArtifactPushClient(
                                         responseType = OciResponse::class.java,
                                         name = name
                                     ),
-                                    pushType = PUSH_WITH_CHUNKED
+                                    pushType = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
                                 )
                             }
                         }

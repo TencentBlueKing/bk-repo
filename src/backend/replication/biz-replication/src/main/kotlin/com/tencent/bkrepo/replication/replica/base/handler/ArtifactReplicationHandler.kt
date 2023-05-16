@@ -32,9 +32,9 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.constant.PUSH_WITH_CHUNKED
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
@@ -60,7 +60,7 @@ abstract class ArtifactReplicationHandler(
 
     open fun blobPush(
         filePushContext: FilePushContext,
-        pushType: String = PUSH_WITH_CHUNKED
+        pushType: String = WayOfPushArtifact.PUSH_WITH_CHUNKED.value
     ) : Boolean {
         return pushFileInChunks(filePushContext)
     }

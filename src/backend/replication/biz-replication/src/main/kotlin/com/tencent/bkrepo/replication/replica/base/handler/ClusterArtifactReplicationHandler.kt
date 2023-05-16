@@ -28,13 +28,17 @@
 package com.tencent.bkrepo.replication.replica.base.handler
 
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
+import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
 import com.tencent.bkrepo.replication.constant.FILE
-import com.tencent.bkrepo.replication.constant.PUSH_WITH_CHUNKED
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
+import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
+import com.tencent.bkrepo.replication.fdtp.FdtpAFTClientFactory
+import com.tencent.bkrepo.replication.fdtp.FdtpServerProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
@@ -43,11 +47,14 @@ import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.InetSocketAddress
+import java.util.concurrent.TimeUnit
 
 @Component
 class ClusterArtifactReplicationHandler(
     localDataManager: LocalDataManager,
-    replicationProperties: ReplicationProperties
+    replicationProperties: ReplicationProperties,
+    val fdtpServerProperties: FdtpServerProperties
 ) : ArtifactReplicationHandler(localDataManager, replicationProperties) {
 
 
@@ -56,8 +63,12 @@ class ClusterArtifactReplicationHandler(
         pushType: String
     ) : Boolean {
         return when (pushType) {
-            PUSH_WITH_CHUNKED -> {
+            WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
                 super.blobPush(filePushContext, pushType)
+            }
+            WayOfPushArtifact.PUSH_WITH_FDTP.value -> {
+                // TODO 当不支持时如何降级
+                pushWithFdtp(filePushContext)
             }
             else -> {
                 pushBlob(filePushContext)
@@ -131,6 +142,38 @@ class ClusterArtifactReplicationHandler(
                 .build()
             httpClient.newCall(httpRequest).execute().use {
                 check(it.isSuccessful) { "Failed to replica file: ${it.body?.string()}" }
+            }
+        }
+    }
+
+    /**
+     * 使用fdtp推送blob文件数据到远程集群
+     */
+    private fun pushWithFdtp(filePushContext: FilePushContext): Boolean {
+        with(filePushContext) {
+            logger.info("File $sha256 will be pushed using the fdtp way.")
+            val host = context.cluster.url.removePrefix("/replication")
+            val serverAddress = InetSocketAddress(host, fdtpServerProperties.port)
+            // TODO 证书可以使用cluster提供的
+            val client = FdtpAFTClientFactory.createAFTClient(serverAddress, fdtpServerProperties.certificates)
+            val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
+            val rateLimitInputStream = artifactInputStream.rateLimit(
+                replicationProperties.rateLimit.toBytes()
+            )
+            val storageKey = context.remoteRepo?.storageCredentials?.key
+            val headers = DefaultFdtpHeaders()
+            headers.add(SHA256, sha256)
+            storageKey?.let { headers.add(STORAGE_KEY, storageKey) }
+            val responsePromise = client.sendStream(rateLimitInputStream, headers)
+            // TODO timeout时间如何设置
+            val response = responsePromise.get(3, TimeUnit.SECONDS)
+            if (response.status == FdtpResponseStatus.OK){
+                return true
+            } else {
+                logger.warn("Error occurred while pushing file $sha256 " +
+                                "with the fdtp way, erros is ${response.status.reasonPhrase}")
+                // TODO 异常如何处理
+                throw RuntimeException("")
             }
         }
     }

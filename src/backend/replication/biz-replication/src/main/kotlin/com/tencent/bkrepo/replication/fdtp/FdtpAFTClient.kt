@@ -58,7 +58,7 @@ class FdtpAFTClient(
 
     fun sendFile(
         file: File,
-        headers: FdtpHeaders,
+        headers: FdtpHeaders
     ): Promise<FullFdtpAFTResponse> {
         val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
         val streamId = fdtStream.id

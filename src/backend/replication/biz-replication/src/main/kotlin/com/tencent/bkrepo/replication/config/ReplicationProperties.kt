@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.config
 
-import com.tencent.bkrepo.replication.constant.PUSH_WITH_DEFAULT
+import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
 
@@ -77,5 +77,5 @@ data class ReplicationProperties(
      * 追加上传：CHUNKED
      * 普通上传（单个请求）：DEFAULT
      * */
-    var pushType: String = PUSH_WITH_DEFAULT
+    var pushType: String = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
 )

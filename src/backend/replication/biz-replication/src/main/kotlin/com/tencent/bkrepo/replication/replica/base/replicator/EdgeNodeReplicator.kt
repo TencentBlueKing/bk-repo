@@ -32,8 +32,8 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
-import com.tencent.bkrepo.replication.constant.PUSH_WITH_DEFAULT
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
+import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
@@ -131,7 +131,7 @@ class EdgeNodeReplicator(
                             (throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value ||
                                 throwable.code == HttpStatus.UNAUTHORIZED.value )
                         ) {
-                            type = PUSH_WITH_DEFAULT
+                            type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
                         }
                         throw throwable
                     }
