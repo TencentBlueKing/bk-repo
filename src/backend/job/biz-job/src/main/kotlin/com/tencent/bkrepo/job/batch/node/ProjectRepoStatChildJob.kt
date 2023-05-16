@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.job.batch.node
 
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoChildContext
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
-import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
@@ -130,6 +130,6 @@ class ProjectRepoStatChildJob(
         private const val COLLECTION_NAME_FOLDER_METRICS = "folder_metrics"
         private const val COLLECTION_NAME_EXTENSION_METRICS = "file_extension_metrics"
         private const val COLLECTION_NAME_SIZE_DISTRIBUTION_METRICS = "size_distribution_metrics"
-        private val logger = LoggerFactory.getLogger(ProjectRepoStatChildJob::class.java)
+        private val logger = LoggerHolder.jobLogger
     }
 }

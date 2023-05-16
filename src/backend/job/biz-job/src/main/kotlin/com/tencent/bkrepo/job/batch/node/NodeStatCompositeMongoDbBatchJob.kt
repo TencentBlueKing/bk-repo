@@ -29,7 +29,6 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
-            FolderOfRepoStatChildJob(properties, mongoTemplate),
             ProjectRepoStatChildJob(properties, mongoTemplate)
         )
     }

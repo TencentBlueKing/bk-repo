@@ -4,6 +4,9 @@ import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
 
+/**
+ * [CompositeMongoDbBatchJob]的子任务
+ */
 @Suppress("TooManyFunctions")
 abstract class ChildMongoDbBatchJob<T>(
     properties: CompositeJobProperties
@@ -13,6 +16,11 @@ abstract class ChildMongoDbBatchJob<T>(
      * 父任务启动回调
      */
     open fun onParentJobStart(context: ChildJobContext) {}
+
+    /**
+     * 执行子任务具体业务
+     */
+    override fun run(row: T, collectionName: String, context: JobContext) = Unit
 
     /**
      * 父任务结束回调

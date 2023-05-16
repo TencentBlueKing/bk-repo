@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.job.batch.context
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.node.NodeStatCompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.node.ProjectRepoStatChildJob
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import org.apache.commons.io.FileUtils
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.LongAdder
 
@@ -17,7 +17,7 @@ class ProjectRepoChildContext(
 ) : ChildJobContext(parentContent) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ProjectRepoChildContext::class.java)
+        private val logger = LoggerHolder.jobLogger
         private const val EXTENSION_NONE = "none"
         private const val TO_GIGABYTE = 1024 * 1024 * 1024
         private const val MAX_EXTENSION_LENGTH = 20
