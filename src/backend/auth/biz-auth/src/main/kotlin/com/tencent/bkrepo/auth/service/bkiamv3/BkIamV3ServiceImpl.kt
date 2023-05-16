@@ -489,7 +489,12 @@ class BkIamV3ServiceImpl(
         // 如果项目没有创建managerId,则补充创建
         var projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.PROJECT, projectId, null
-        )?.managerId ?: createProjectGradeManager(projectInfo.createdBy, projectId)
+        )?.managerId
+            ?: kotlin.run {
+                val realUserId = userService.getUserInfoById(projectInfo.createdBy)?.asstUsers?.firstOrNull()
+                    ?: projectInfo.createdBy
+                createProjectGradeManager(realUserId, projectId)
+            }
         if (projectManagerId == null) {
             projectManagerId = createProjectGradeManager(userId, projectId)
         }
