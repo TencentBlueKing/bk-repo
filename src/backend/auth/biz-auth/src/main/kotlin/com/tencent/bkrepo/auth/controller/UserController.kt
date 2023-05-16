@@ -353,7 +353,7 @@ class UserController @Autowired constructor(
     @ApiOperation("判断用户是否为项目管理员")
     @GetMapping("/admin/{projectId}")
     fun isProjectAdmin(@PathVariable projectId: String): Response<Boolean> {
-        return ResponseBuilder.success(preCheckProjectAdmin(projectId))
+        return ResponseBuilder.success(isContextUserProjectAdmin(projectId))
     }
 
     @ApiOperation("检验实体用户是否存在此userid")
