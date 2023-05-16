@@ -315,6 +315,17 @@ gateway:
   podAnnotations: {}
   priorityClassName: ""
 
+## replication fdtp服务配置
+replicationUDP:
+  enabled: true
+  ## bkrepo replication-udp service配置
+  service:
+    type: LoadBalancer
+    ## 服务类型为`ClusterIP`时端口设置
+    port: 25903
+    ## 服务类型为`NodePort`/`LoadBalancer`时端口设置
+    nodePort: 30027
+
 ## 仓库服务配置
 repository:
   config:

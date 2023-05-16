@@ -54,4 +54,10 @@ object ReactiveRequestContextHolder {
             Mono.just(it.get(REQUEST_CONTEXT_KEY))
         }.awaitSingle().exchange
     }
+
+    fun getWebExchangeMono(): Mono<ServerWebExchange> {
+        return Mono.deferContextual {
+            Mono.just(it.get(REQUEST_CONTEXT_KEY).exchange)
+        }
+    }
 }

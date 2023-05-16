@@ -56,8 +56,11 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Async
 import org.springframework.util.AntPathMatcher
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.TimeZone
 
 /**
  * OperateLogService 实现类
@@ -240,13 +243,17 @@ open class OperateLogServiceImpl(
         repoName?.let { criteria.and(TOperateLog::repoName.name).`is`(repoName) }
 
         operator?.let { criteria.and(TOperateLog::userId.name).`is`(operator) }
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        sdf.timeZone = TimeZone.getTimeZone("GMT")
         val localStart = if (startTime != null && startTime.isNotBlank()) {
-            LocalDateTime.parse(startTime, formatter)
+            val start = sdf.parse(startTime)
+            start.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
             LocalDateTime.now()
         }
         val localEnd = if (endTime != null && endTime.isNotBlank()) {
-            LocalDateTime.parse(endTime, formatter)
+            val end = sdf.parse(endTime)
+            end.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
             LocalDateTime.now().minusMonths(3L)
         }

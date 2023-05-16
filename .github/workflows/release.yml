@@ -6,7 +6,20 @@ on:
       - "v*"
 
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Initialize mandatory git config
+        run: |
+          git config user.name "bkci-bot"
+          git config user.email "64278246+bkci-bot@users.noreply.github.com"
+      - name: Create release branch
+        run: |
+          git checkout -b release-${GITHUB_REF_NAME#v}
+          git push origin release-${GITHUB_REF_NAME#v}
   frontend:
+    needs: prepare-release
     name: Build frontend
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +47,7 @@ jobs:
           path: src/frontend/frontend
 
   backend:
-    needs: [frontend]
+    needs: [prepare-release,frontend]
     name: Build backend and release
     runs-on: ubuntu-latest
     steps:
@@ -59,15 +72,15 @@ jobs:
       - name: Create artifact - Step2:make package
         id: create-artifact
         run: |
-          version="$(basename ${GITHUB_REF##*/v})"
-          echo "::set-output name=version::$version"
+          version="${GITHUB_REF_NAME#v}"
           ci_pkg_dir=/dev/shm/bkrepo ./scripts/packager-repo.sh "$version" bkrepo-slim.tar.gz
       - uses: actions/upload-artifact@v1
         with:
           name: bkrepo
-          path: bkrepo-slim.tar.gz          
+          path: bkrepo-slim.tar.gz
 
-  cloudNative:
+  cloud-native:
+    needs: prepare-release
     name: Build image and helm chart
     runs-on: ubuntu-latest
     steps:
@@ -85,7 +98,7 @@ jobs:
       - name: Create Docker Image -- CLOUD NATIVE
         working-directory: scripts
         run: |
-          version="$(basename ${GITHUB_REF##*/v})"
+          version="${GITHUB_REF_NAME#v}"
           ./build-images.sh  -v $version --username ${{ secrets.DOCKER_USER }} \
           --password ${{ secrets.DOCKER_PASS }} -n ${{ secrets.DOCKER_NAMESPACE }} \
           -r ${{ secrets.DOCKER_HOST }} -p
@@ -96,7 +109,7 @@ jobs:
       - name: Package Helm Chart -- CLOUD NATIVE
         working-directory: support-files/kubernetes/charts
         run: |
-          version="$(basename ${GITHUB_REF##*/v})"
+          version="${GITHUB_REF_NAME#v}"
           ./build.sh --version $version --app-version $version
           mv bkrepo-$version.tgz bkrepo-charts.tgz
       - uses: actions/upload-artifact@v1
@@ -104,8 +117,8 @@ jobs:
           name: bkrepo-chart
           path: support-files/kubernetes/charts/bkrepo-charts.tgz
 
-  quickStart:
-    needs: [backend]
+  quick-start:
+    needs: [prepare-release,backend]
     name: Build all in one image
     runs-on: ubuntu-latest
     steps:
@@ -121,17 +134,17 @@ jobs:
       - name: Create Docker Image
         working-directory: scripts
         run: |
-          version="$(basename ${GITHUB_REF##*/v})"
+          version="${GITHUB_REF_NAME#v}"
           ./build-images.sh --all-in-one -v $version --username ${{ secrets.DOCKER_USER }} \
           --password ${{ secrets.DOCKER_PASS }} -n ${{ secrets.DOCKER_NAMESPACE }} \
           -r ${{ secrets.DOCKER_HOST }} --slim-package-path ../bkrepo-slim.tar.gz -p
-          
+  
 
-  releaseAll:
+  release-all:
     name: Release All
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: [backend, cloudNative]
+    needs: [prepare-release, backend, cloud-native]
     steps:
       - name: Create Release
         id: create_release
