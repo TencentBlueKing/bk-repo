@@ -29,7 +29,6 @@ package com.tencent.bkrepo.auth.controller
 
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
-import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
