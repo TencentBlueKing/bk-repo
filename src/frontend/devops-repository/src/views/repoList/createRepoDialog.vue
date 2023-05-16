@@ -36,7 +36,7 @@
             </bk-form-item>
             <bk-form-item
                 :label="$t('bkPermissionCheck')"
-                v-if="repoBaseInfo.name !== 'custom' && repoBaseInfo.name !== 'pipeline' && repoBaseInfo.name !== 'report' && repoBaseInfo.name !== 'log'">
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
                 <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -120,7 +120,7 @@
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
-    import { repoEnum } from '@repository/store/publicEnum'
+    import { repoEnum, specialRepoEnum } from '@repository/store/publicEnum'
     import { mapActions, mapState } from 'vuex'
 
     const getRepoBaseInfo = () => {
@@ -165,6 +165,7 @@
         data () {
             return {
                 repoEnum,
+                specialRepoEnum,
                 show: false,
                 loading: false,
                 repoBaseInfo: getRepoBaseInfo(),
@@ -360,7 +361,7 @@
                         }
                     }
                 }
-                if (this.repoBaseInfo.name !== 'custom' && this.repoBaseInfo.name !== 'pipeline' && this.repoBaseInfo.name !== 'report' && this.repoBaseInfo.name !== 'log') {
+                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
                     body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
                 }
                 this.loading = true

@@ -26,7 +26,7 @@
                     </bk-form-item>
                     <bk-form-item
                         :label="$t('bkPermissionCheck')"
-                        v-if="repoBaseInfo.name !== 'custom' && repoBaseInfo.name !== 'pipeline' && repoBaseInfo.name !== 'report' && repoBaseInfo.name !== 'log'">
+                        v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
                         <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                             <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -124,6 +124,7 @@
     // import cleanConfig from '@repository/views/repoConfig/cleanConfig'
     // import permissionConfig from './permissionConfig'
     import { mapState, mapActions } from 'vuex'
+    import { specialRepoEnum } from '@repository/store/publicEnum'
     export default {
         name: 'repoConfig',
         components: {
@@ -171,6 +172,7 @@
                 }
             ]
             return {
+                specialRepoEnum,
                 tabName: 'baseInfo',
                 isLoading: false,
                 repoBaseInfo: {
@@ -413,7 +415,7 @@
                         }
                     }
                 }
-                if (this.repoBaseInfo.name !== 'custom' && this.repoBaseInfo.name !== 'pipeline' && this.repoBaseInfo.name !== 'report' && this.repoBaseInfo.name !== 'log') {
+                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
                     body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
                 }
                 this.repoBaseInfo.loading = true
