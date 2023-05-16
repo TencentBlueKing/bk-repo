@@ -13,7 +13,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Async
 import java.time.LocalDateTime
 
 /**
@@ -24,7 +23,6 @@ class ReportExporter(
     private val reportProperties: ReportExportProperties,
     private val messageSupplier: MessageSupplier
 ) {
-    @Async
     fun export(subtask: TSubScanTask, result: ScanExecutorResult) {
         if (!reportProperties.enabled ||
             result !is StandardScanExecutorResult ||
