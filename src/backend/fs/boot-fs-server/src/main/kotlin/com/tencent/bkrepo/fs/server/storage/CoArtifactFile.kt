@@ -39,7 +39,10 @@ import org.springframework.core.io.buffer.DataBuffer
 import java.io.File
 import java.io.InputStream
 
-class ReactiveArtifactFile(
+/**
+ * 制品文件
+ * */
+class CoArtifactFile(
     storageCredentials: StorageCredentials,
     storageProperties: StorageProperties,
     val monitor: StorageHealthMonitor
@@ -50,7 +53,7 @@ class ReactiveArtifactFile(
      */
     private var initialized: Boolean = false
 
-    private val receiver: AsynchronousReceiver
+    private val receiver: CoArtifactDataReceiver
 
     /**
      * 文件sha1值
@@ -61,7 +64,7 @@ class ReactiveArtifactFile(
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        receiver = AsynchronousReceiver(
+        receiver = CoArtifactDataReceiver(
             storageProperties.receive,
             path
         )
@@ -146,6 +149,6 @@ class ReactiveArtifactFile(
         monitor.remove(receiver)
     }
     companion object {
-        private val logger = LoggerFactory.getLogger(ReactiveArtifactFile::class.java)
+        private val logger = LoggerFactory.getLogger(CoArtifactFile::class.java)
     }
 }
