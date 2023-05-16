@@ -31,7 +31,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     @Permission(ResourceType.NODE, PermissionAction.READ)
     fun downloadSignFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-        @RequestParam md5: String? = null
+        @RequestParam md5: String? = null,
     ) {
         deltaSyncService.downloadSignFile(md5)
     }
@@ -41,7 +41,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     fun uploadSignFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
         @RequestParam md5: String,
-        signFile: ArtifactFile
+        signFile: ArtifactFile,
     ) {
         deltaSyncService.uploadSignFile(signFile, artifactInfo, md5)
     }
@@ -51,7 +51,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     fun patch(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
         @RequestHeader(HEADER_OLD_FILE_PATH) oldFilePath: String,
-        deltaFile: ArtifactFile
+        deltaFile: ArtifactFile,
     ): SseEmitter {
         return deltaSyncService.patch(oldFilePath, deltaFile)
     }
@@ -59,7 +59,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     @GetMapping("delta/permit")
     fun permit(
         @RequestParam taskId: String?,
-        @RequestParam fileType: String?
+        @RequestParam fileType: String?,
     ): Response<Boolean> {
         val clientIp = HttpContextHolder.getClientAddress()
         return ResponseBuilder.success(deltaSyncService.isInWhiteList(clientIp, taskId, fileType))
@@ -68,7 +68,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     @PutMapping("delta/speed")
     fun recordSpeed(
         @RequestParam speed: Int,
-        @RequestParam action: GenericAction
+        @RequestParam action: GenericAction,
     ) {
         val clientIp = HttpContextHolder.getClientAddress()
         deltaSyncService.recordSpeed(clientIp, action, speed)
@@ -83,7 +83,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
 
     @PostMapping("delta/metrics")
     fun recordMetrics(
-        @RequestBody metrics: BkSyncMetrics
+        @RequestBody metrics: BkSyncMetrics,
     ): Response<Void> {
         val clientIp = HttpContextHolder.getClientAddress()
         deltaSyncService.recordMetrics(clientIp, metrics)
