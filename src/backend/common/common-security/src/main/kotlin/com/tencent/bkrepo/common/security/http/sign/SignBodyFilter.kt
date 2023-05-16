@@ -34,8 +34,13 @@ class SignBodyFilter(private val limit: Long) : Filter {
             val multiReadRequest = MultipleReadHttpRequest(request as HttpServletRequest, limit)
             val body = ByteArrayOutputStream()
             multiReadRequest.inputStream.copyTo(body)
-            val bodyHash = Hashing.sha256().hashBytes(body.toByteArray())
-            multiReadRequest.setAttribute(HttpSigner.SIGN_BODY, bodyHash)
+            val sig = request.getParameter(HttpSigner.SIGN)
+            val appId = request.getParameter(HttpSigner.APP_ID)
+            val accessKey = request.getParameter(HttpSigner.ACCESS_KEY)
+            if (sig != null && appId != null && accessKey != null) {
+                val bodyHash = Hashing.sha256().hashBytes(body.toByteArray())
+                multiReadRequest.setAttribute(HttpSigner.SIGN_BODY, bodyHash)
+            }
             chain.doFilter(multiReadRequest, response)
         } else {
             val bodyHash = emptyStringHash
