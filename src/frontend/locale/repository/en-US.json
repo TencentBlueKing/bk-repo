@@ -729,6 +729,8 @@
         "DELETE": "DELETE",
         "UPDATE": "UPDATE"
     },
+    "joinProject":"Join Project",
+    "manageProject":"Manage Project",
     "bkPermissionCheck":"BK Permission Check",
     "bkPermissionGeneration":"BK Permission Generation",
     "permissionsGeneratedSuccessTip":"Permissions generated successfully",
