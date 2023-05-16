@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -76,4 +77,13 @@ interface ServiceBkiamV3ResourceClient {
         @ApiParam(value = "仓库名称")
         @PathVariable repoName: String
     ): Response<Boolean>
+
+
+    @ApiOperation("检查项目默认的rbac项目组是否已经存在")
+    @PostMapping("/rbac/group/check")
+    fun getExistRbacDefaultGroupProjectIds(
+        @ApiParam(value = "项目ID列表")
+        @RequestBody projectIdList: List<String> = emptyList()
+    ): Response<Map<String, Boolean>>
+
 }

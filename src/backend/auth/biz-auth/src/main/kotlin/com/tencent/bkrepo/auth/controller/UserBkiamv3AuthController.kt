@@ -27,10 +27,6 @@
 
 package com.tencent.bkrepo.auth.controller
 
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
@@ -41,9 +37,8 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import io.swagger.annotations.ApiOperation
-import org.springframework.beans.factory.annotation.Value
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -56,30 +51,18 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/user/auth")
 class UserBkiamv3AuthController {
-    private var bkIamV3Service: BkIamV3Service? = null
 
-    @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME:}")
-    private var authType: String = ""
+    @Autowired
+    private var bkIamV3Service: BkIamV3Service? = null
 
     @ApiOperation("生成无权限申请url")
     @PostMapping("/bkiamv3/permission/url")
     fun queryProject(
         @RequestBody request: CheckPermissionRequest
     ): Response<String?> {
-        initService()
         val result = bkIamV3Service?.let {
             try {
-                val resourceId = bkIamV3Service!!.getResourceId(
-                    request.resourceType, request.projectId, request.repoName, request.path
-                )
-                bkIamV3Service!!.getPermissionUrl(
-                    userId = request.uid,
-                    projectId = request.projectId!!,
-                    repoName = request.repoName,
-                    resourceType = request.resourceType.toLowerCase(),
-                    action = convertActionType(request.resourceType, request.action),
-                    resourceId = resourceId!!
-                ) ?: StringPool.EMPTY
+                bkIamV3Service!!.getPermissionUrl(request) ?: StringPool.EMPTY
             } catch (e: Exception) {
                 throw  ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
             }
@@ -90,7 +73,6 @@ class UserBkiamv3AuthController {
     @ApiOperation("判断蓝鲸权限是否开启")
     @GetMapping("/bkiamv3/status")
     fun bkiamv3Status(): Response<Boolean> {
-        initService()
         val result = bkIamV3Service?.let {
             bkIamV3Service!!.checkIamConfiguration()
         } ?: false
@@ -104,7 +86,6 @@ class UserBkiamv3AuthController {
         @PathVariable projectId: String,
         @RequestParam userId: String? = null
     ): Response<Boolean> {
-        initService()
         val result = bkIamV3Service?.let {
             bkIamV3Service!!.refreshProjectManager(userId, projectId)
         } ?: false
@@ -118,19 +99,9 @@ class UserBkiamv3AuthController {
         @RequestParam projectId: String,
         @RequestParam repoName: String? = null,
     ): Response<Boolean> {
-        initService()
         val result = bkIamV3Service?.let {
             bkIamV3Service!!.deleteGradeManager(projectId, repoName)
         } ?: false
         return ResponseBuilder.success(result)
-    }
-
-    private fun initService() {
-        if (
-            (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
-            && bkIamV3Service == null
-        ) {
-            bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
-        }
     }
 }
