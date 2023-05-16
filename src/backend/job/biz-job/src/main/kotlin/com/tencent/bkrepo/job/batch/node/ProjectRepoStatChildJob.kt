@@ -21,6 +21,9 @@ class ProjectRepoStatChildJob(
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is ProjectRepoChildContext)
+        if (row.deleted != null) {
+            return
+        }
         val metric = context.metrics.getOrPut(row.projectId) { ProjectRepoChildContext.ProjectMetrics(row.projectId) }
         metric.capSize.add(row.size)
         metric.nodeNum.increment()

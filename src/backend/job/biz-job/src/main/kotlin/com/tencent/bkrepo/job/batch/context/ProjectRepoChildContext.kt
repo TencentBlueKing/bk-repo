@@ -131,6 +131,7 @@ class ProjectRepoChildContext(
 
         private fun extension(name: String): String {
             val trimName = name.trim()
+            // 后缀为全数字时不记录
             if (trimName.all { it.isDigit() }) {
                 return EXTENSION_NONE
             }
@@ -139,7 +140,7 @@ class ProjectRepoChildContext(
             return if (ext.length > MAX_EXTENSION_LENGTH) {
                 EXTENSION_NONE
             } else {
-                ext.intern()
+                ext
             }
         }
     }
