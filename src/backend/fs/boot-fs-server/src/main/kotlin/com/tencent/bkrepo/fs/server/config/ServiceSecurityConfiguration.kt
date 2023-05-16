@@ -27,14 +27,15 @@
 
 package com.tencent.bkrepo.fs.server.config
 
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import reactivefeign.client.ReactiveHttpRequestInterceptor
-import reactor.core.publisher.Mono
 
 /**
  * 服务间的安全配置
@@ -48,7 +49,10 @@ class ServiceSecurityConfiguration {
         return ReactiveHttpRequestInterceptor {
             // 添加微服务间的认证头
             it.headers()[MS_AUTH_HEADER_SECURITY_TOKEN] = listOf(serviceAuthManager.getSecurityToken())
-            Mono.just(it)
+            ReactiveSecurityUtils.getUserMono().map { user ->
+                it.headers()[MS_AUTH_HEADER_UID] = listOf(user)
+                it
+            }
         }
     }
 }
