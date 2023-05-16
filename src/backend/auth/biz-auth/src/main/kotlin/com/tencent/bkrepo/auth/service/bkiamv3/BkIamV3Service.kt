@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.auth.service.bkiamv3
 
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+
 /**
  * bk iamv3接口调用
  */
@@ -45,14 +47,7 @@ interface BkIamV3Service {
     /**
      * 生成无权限跳转url
      */
-    fun getPermissionUrl(
-        userId: String,
-        projectId: String,
-        repoName: String?,
-        resourceType: String,
-        action: String,
-        resourceId: String,
-    ): String?
+    fun getPermissionUrl(request: CheckPermissionRequest): String?
 
     /**
      * 鉴权
@@ -114,4 +109,10 @@ interface BkIamV3Service {
      * 资源id转换
      */
     fun getResourceId(resourceType: String, projectId: String?, repoName: String?, path: String?): String?
+
+
+    /**
+     * 查询列表中的项目是否已生成rbac默认用户组
+     */
+    fun getExistRbacDefaultGroupProjectIds(ids: List<String>) : Map<String, Boolean>
 }

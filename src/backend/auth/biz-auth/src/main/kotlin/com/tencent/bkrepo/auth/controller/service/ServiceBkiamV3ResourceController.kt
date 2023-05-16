@@ -28,32 +28,22 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
-import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_DEVOPS
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
-
+    @Autowired
     private var bkIamV3Service: BkIamV3Service? = null
 
     @Autowired
     lateinit var lockOperation: LockOperation
 
-    @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME:}")
-    private var authType: String = ""
-
     override fun createProjectManage(userId: String, projectId: String): Response<String?> {
-        initService()
         bkIamV3Service?.let {
             val gradeId = lockAction(projectId) {
                 bkIamV3Service!!.createGradeManager(userId, projectId)
@@ -63,7 +53,6 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
     }
 
     override fun createRepoManage(userId: String, projectId: String, repoName: String): Response<String?> {
-        initService()
         bkIamV3Service?.let {
             val repoGradeId = lockAction(projectId) {
             bkIamV3Service!!.createGradeManager(userId, projectId, repoName)
@@ -73,10 +62,15 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
     }
 
     override fun deleteRepoManageGroup(userId: String, projectId: String, repoName: String): Response<Boolean> {
-        initService()
         bkIamV3Service?.let {
             return ResponseBuilder.success(bkIamV3Service!!.deleteGradeManager(projectId, repoName))
         } ?: return ResponseBuilder.success(true)
+    }
+
+    override fun getExistRbacDefaultGroupProjectIds(projectIds: List<String>): Response<Map<String, Boolean>> {
+        bkIamV3Service?.let {
+            return ResponseBuilder.success(bkIamV3Service!!.getExistRbacDefaultGroupProjectIds(projectIds))
+        } ?: return ResponseBuilder.success(emptyMap())
     }
 
     /**
@@ -96,14 +90,6 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
         }
     }
 
-    private fun initService() {
-        if (
-            (authType == AUTH_CONFIG_TYPE_VALUE_BKIAMV3 || authType == AUTH_CONFIG_TYPE_VALUE_DEVOPS)
-            && bkIamV3Service == null
-        ) {
-            bkIamV3Service = SpringContextUtils.getBean(BkIamV3Service::class.java)
-        }
-    }
     companion object {
         const val AUTH_LOCK_KEY_PREFIX = "auth:lock:gradeCreate:"
     }

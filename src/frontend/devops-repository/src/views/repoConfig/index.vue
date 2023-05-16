@@ -24,7 +24,9 @@
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
-                    <bk-form-item label="蓝鲸权限校验">
+                    <bk-form-item
+                        :label="$t('bkPermissionCheck')"
+                        v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
                         <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                             <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -122,6 +124,7 @@
     // import cleanConfig from '@repository/views/repoConfig/cleanConfig'
     // import permissionConfig from './permissionConfig'
     import { mapState, mapActions } from 'vuex'
+    import { specialRepoEnum } from '@repository/store/publicEnum'
     export default {
         name: 'repoConfig',
         components: {
@@ -169,6 +172,7 @@
                 }
             ]
             return {
+                specialRepoEnum,
                 tabName: 'baseInfo',
                 isLoading: false,
                 repoBaseInfo: {
@@ -397,7 +401,6 @@
                     configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
-                            bkiamv3Check: this.repoBaseInfo.configuration.settings.bkiamv3Check,
                             system: this.repoBaseInfo.system,
                             interceptors: interceptors.length ? interceptors : undefined,
                             ...(
@@ -411,6 +414,9 @@
                             )
                         }
                     }
+                }
+                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
+                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
                 }
                 this.repoBaseInfo.loading = true
                 this.updateRepoInfo({

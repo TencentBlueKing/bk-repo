@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
@@ -46,10 +47,12 @@ import org.springframework.stereotype.Service
 class EdgeProjectServiceImpl(
     projectDao: ProjectDao,
     servicePermissionClient: ServicePermissionClient,
+    serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
     clusterProperties: ClusterProperties
 ) : ProjectServiceImpl(
     projectDao,
-    servicePermissionClient
+    servicePermissionClient,
+    serviceBkiamV3ResourceClient
 ) {
 
     private val centerProjectClient: ClusterProjectClient by lazy {

@@ -16,6 +16,7 @@
                 <span class="ml5">Artifact Hub</span>
             </a> -->
             <bk-select
+                ref="porjectSelect"
                 class="ml20 bkre-project-select"
                 :value="projectId"
                 searchable
@@ -30,6 +31,22 @@
                     :id="option.id"
                     :name="option.name">
                 </bk-option>
+                <div slot="extension" style="cursor: pointer;" class="flex-align-center">
+                    <div @click="createProject" class="hover-extent">
+                        <i class="bk-icon icon-plus-circle"></i>
+                        {{$t('createProject')}}
+                        <bk-divider direction="vertical"></bk-divider>
+                    </div>
+                    <div @click="joinProject">
+                        <img width="16" height="16" style="float: left;margin-top: 7px;margin-right: 3px" src="/ui/project-add.svg" />
+                        {{$t('joinProject')}}
+                        <bk-divider direction="vertical"></bk-divider>
+                    </div>
+                    <div @click="manageProject">
+                        <i class="bk-icon icon-apps mr5"></i>
+                        {{$t('manageProject')}}
+                    </div>
+                </div>
             </bk-select>
         </div>
         <div style="text-align: end" @click="changeLanguage" class="language-select">
@@ -37,31 +54,38 @@
             <span>{{ language === 'zh-cn' ? 'English' : '中文' }}</span>
         </div>
         <User />
+        <project-info-dialog ref="projectInfoDialog"></project-info-dialog>
     </div>
 </template>
 <script>
     import User from '@repository/components/User'
+    import projectInfoDialog from '@repository/views/projectManage/projectInfoDialog'
     import { mapState, mapActions } from 'vuex'
     import cookies from 'js-cookie'
     export default {
         name: 'bkrepoHeader',
-        components: { User },
+        components: { User, projectInfoDialog },
         data () {
             return {
                 language: ''
             }
         },
         computed: {
-            ...mapState(['projectList']),
+            ...mapState(['projectList', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             }
         },
         created () {
             this.language = cookies.get('blueking_language') || 'zh-cn'
+            this.$nextTick(() => {
+                if (this.language !== 'zh-cn') {
+                    this.$refs.porjectSelect.$el.style.width = '400px'
+                }
+            })
         },
         methods: {
-            ...mapActions(['checkPM']),
+            ...mapActions(['checkPM', 'getPermissionUrl']),
             changeProject (projectId) {
                 localStorage.setItem('projectId', projectId)
                 if (this.projectId === projectId) return
@@ -85,6 +109,35 @@
                     cookies.set('blueking_language', 'zh-cn', { domain: BK_CI_DOMAIN, path: '/' })
                     location.reload()
                 }
+            },
+            joinProject () {
+                this.getPermissionUrl({
+                    body: {
+                        action: 'READ',
+                        resourceType: 'PROJECT',
+                        uid: this.userInfo.name
+                    }
+                }).then(res => {
+                    if (res !== '') {
+                        window.open(res, '_blank')
+                    }
+                })
+            },
+            createProject (project = {}) {
+                const { id = '', name = '', description = '' } = project
+                this.$refs.projectInfoDialog.setData({
+                    show: true,
+                    loading: false,
+                    add: !id,
+                    id,
+                    name,
+                    description
+                })
+            },
+            manageProject () {
+                this.$router.replace({
+                    name: 'projectManage'
+                })
             }
         }
     }

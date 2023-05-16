@@ -57,6 +57,7 @@ import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.repository.BkIamAuthManagerRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
@@ -98,6 +99,9 @@ class BkIamV3ServiceImpl(
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}")
     private var ciAuthServer: String = ""
 
+    @Value("\${auth.iam.applyJoinUserGroupUrl:}")
+    private val applyJoinUserGroupUrl = ""
+
     private val iamAuthCache = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
@@ -130,71 +134,87 @@ class BkIamV3ServiceImpl(
     }
 
     override fun getPermissionUrl(
-        userId: String,
-        projectId: String,
-        repoName: String?,
-        resourceType: String,
-        action: String,
-        resourceId: String,
+        request: CheckPermissionRequest
     ): String? {
         logger.debug(
-            "v3 getPermissionUrl, userId: $userId, projectId: $projectId, repoName: $repoName" +
-                " resourceType: $resourceType, action: $action, resourceId: $resourceId"
+            "v3 getPermissionUrl, userId: ${request.uid}, projectId: ${request.projectId}, " +
+                "repoName: ${request.repoName} resourceType: ${request.resourceType}, " +
+                "action: ${request.action}, path: ${request.path}"
         )
         if (!checkIamConfiguration()) return null
-        if (repoName != null && !checkBkiamv3Config(projectId, repoName))  return null
-        authManagerRepository.findByTypeAndResourceIdAndParentResId(
-            ResourceType.PROJECT, projectId, null
-        )?.managerId ?: return null
+        return if (request.projectId.isNullOrEmpty() && request.repoName.isNullOrEmpty()) {
+            getDefaultPermissionApplyUrl()
+        } else {
+            generatePermissionUrl(request)
+        }
+    }
 
-        val instanceList = mutableListOf<RelationResourceInstance>()
-        val projectInstance = RelationResourceInstance(
-            iamConfiguration.systemId,
-            ResourceType.PROJECT.id(),
-            projectId,
-            null
-        )
-        instanceList.add(projectInstance)
-        if (repoName != null) {
-            val repoInstance = RelationResourceInstance(
+    private fun getDefaultPermissionApplyUrl(): String? {
+        if (applyJoinUserGroupUrl.isEmpty()) return null
+        return applyJoinUserGroupUrl
+    }
+
+    private fun generatePermissionUrl(request: CheckPermissionRequest): String? {
+        with(request) {
+            val resourceId = getResourceId(
+                resourceType, projectId, repoName, path
+            )
+            val action = BkIamV3Utils.convertActionType(request.resourceType, request.action)
+            val resourceType = request.resourceType.toLowerCase()
+            if (repoName != null && !checkBkiamv3Config(projectId, repoName))  return null
+            authManagerRepository.findByTypeAndResourceIdAndParentResId(
+                ResourceType.PROJECT, projectId!!, null
+            )?.managerId ?: return null
+
+            val instanceList = mutableListOf<RelationResourceInstance>()
+            val projectInstance = RelationResourceInstance(
                 iamConfiguration.systemId,
-                ResourceType.REPO.id(),
-                convertRepoResourceId(projectId, repoName),
+                ResourceType.PROJECT.id(),
+                projectId,
                 null
             )
-            instanceList.add(repoInstance)
-            if (resourceType == ResourceType.NODE.id()) {
-                val nodeInstance = RelationResourceInstance(
+            instanceList.add(projectInstance)
+            if (repoName != null) {
+                val repoInstance = RelationResourceInstance(
                     iamConfiguration.systemId,
-                    ResourceType.NODE.id(),
-                    resourceId,
+                    ResourceType.REPO.id(),
+                    convertRepoResourceId(projectId!!, repoName!!),
                     null
                 )
-                instanceList.add(nodeInstance)
+                instanceList.add(repoInstance)
+                if (resourceType == ResourceType.NODE.id()) {
+                    val nodeInstance = RelationResourceInstance(
+                        iamConfiguration.systemId,
+                        ResourceType.NODE.id(),
+                        resourceId,
+                        null
+                    )
+                    instanceList.add(nodeInstance)
+                }
             }
-        }
-        val instances: List<List<RelationResourceInstance>> = listOf(instanceList)
-        val relatedResourceTypes = RelatedResourceTypes(
-            iamConfiguration.systemId,
-            resourceType,
-            instances,
-            emptyList()
-        )
-        val actions = listOf(UrlAction(action, listOf(relatedResourceTypes)))
+            val instances: List<List<RelationResourceInstance>> = listOf(instanceList)
+            val relatedResourceTypes = RelatedResourceTypes(
+                iamConfiguration.systemId,
+                resourceType,
+                instances,
+                emptyList()
+            )
+            val actions = listOf(UrlAction(action, listOf(relatedResourceTypes)))
 
-        val pUrlRequest = PermissionUrlDTO(
-            iamConfiguration.systemId,
-            actions
-        )
-        logger.info("v3 get permissionUrl pUrlRequest: $pUrlRequest")
-        val pUrl = try {
-            managerServiceV1.getPermissionUrl(pUrlRequest)
-        } catch (e: Exception) {
-            logger.error( "v3 getPermissionUrl with userId: $userId, action: $action," +
-                              " pUrlRequest: $pUrlRequest\" error: ${e.message}")
-            StringPool.EMPTY
+            val pUrlRequest = PermissionUrlDTO(
+                iamConfiguration.systemId,
+                actions
+            )
+            logger.info("v3 get permissionUrl pUrlRequest: $pUrlRequest")
+            val pUrl = try {
+                managerServiceV1.getPermissionUrl(pUrlRequest)
+            } catch (e: Exception) {
+                logger.error( "v3 getPermissionUrl with userId: $uid, action: $action," +
+                                  " pUrlRequest: $pUrlRequest\" error: ${e.message}")
+                StringPool.EMPTY
+            }
+            return pUrl
         }
-        return pUrl
     }
 
     override fun validateResourcePermission(
@@ -505,6 +525,18 @@ class BkIamV3ServiceImpl(
                 convertNodeResourceId(projectId!!, repoName!!, path!!)
             else -> throw IllegalArgumentException("invalid resource type")
         }
+    }
+
+    override fun getExistRbacDefaultGroupProjectIds(ids: List<String>): Map<String, Boolean> {
+        if (ids.isEmpty()) return emptyMap()
+        val existProjectIds = authManagerRepository.findAllByTypeAndParentResIdAndResourceIdIn(
+            ResourceType.PROJECT, null, ids
+        )
+        val result: MutableMap<String, Boolean> = mutableMapOf()
+        existProjectIds.forEach {
+            result[it!!.resourceId] = true
+        }
+        return result
     }
 
     private fun saveTBkIamAuthManager(
