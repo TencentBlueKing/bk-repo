@@ -44,6 +44,7 @@ import com.tencent.bk.sdk.iam.dto.manager.dto.CreateManagerDTO
 import com.tencent.bk.sdk.iam.dto.manager.dto.CreateSubsetManagerDTO
 import com.tencent.bk.sdk.iam.dto.manager.dto.ManagerMemberGroupDTO
 import com.tencent.bk.sdk.iam.dto.manager.dto.ManagerRoleGroupDTO
+import com.tencent.bk.sdk.iam.exception.IamException
 import com.tencent.bk.sdk.iam.helper.AuthHelper
 import com.tencent.bk.sdk.iam.service.ManagerService
 import com.tencent.bk.sdk.iam.service.v2.V2ManagerService
@@ -416,18 +417,28 @@ class BkIamV3ServiceImpl(
             resActionMap = DefaultGroupTypeAndActions.PROJECT_MANAGER.actions,
             iamConfiguration = iamConfiguration
         )
-        val createManagerDTO = CreateManagerDTO.builder().system(iamConfiguration.systemId)
-            .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}")
-            .description(IamGroupUtils.buildManagerDescription(projectInfo.displayName, userId))
-            .members(arrayListOf(userId))
-            .authorization_scopes(authorizationScopes)
-            .subject_scopes(iamSubjectScopes).build()
-        managerId = try {
-            managerService.createManagerV2(createManagerDTO)
-        } catch (e: Exception) {
-            logger.error("v3 create grade manager for project ${projectInfo.name} error: ${e.message}")
-            return null
+        var name = "$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}"
+        for (retry in 0..CONFLICT_RETRY) {
+            val createManagerDTO = CreateManagerDTO.builder().system(iamConfiguration.systemId)
+                .name(name)
+                .description(IamGroupUtils.buildManagerDescription(projectInfo.displayName, userId))
+                .members(arrayListOf(userId))
+                .authorization_scopes(authorizationScopes)
+                .subject_scopes(iamSubjectScopes).build()
+            try {
+                managerId = managerService.createManagerV2(createManagerDTO)
+                break
+            } catch (e: Exception) {
+                if (retry != CONFLICT_RETRY && e is IamException && e.errorCode == IAM_NAME_CONFLICT_ERROR) {
+                    logger.warn("v3 create grade manager for project ${projectInfo.name} conflict: ${e.errorMsg}")
+                    name += retry
+                } else {
+                    logger.error("v3 create grade manager for project ${projectInfo.name} error: ${e.message}")
+                    return null
+                }
+            }
         }
+
         logger.debug("v3 The id of project [${projectInfo.name}]'s grade manager is $managerId")
         saveTBkIamAuthManager(projectId, null, managerId!!, userId)
         batchCreateDefaultGroups(
@@ -686,6 +697,8 @@ class BkIamV3ServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(BkIamV3ServiceImpl::class.java)
         private const val DEFAULT_EXPIRED_AT = 365L // 用户组默认一年有效期
+        private const val IAM_NAME_CONFLICT_ERROR = 1902409L
+        private const val CONFLICT_RETRY = 3
         private const val SYSTEM_DEFAULT_NAME = "制品库"
         private const val PROJECT_DEFAULT_NAME = "项目"
         private const val REPO_DEFAULT_NAME = "仓库"
