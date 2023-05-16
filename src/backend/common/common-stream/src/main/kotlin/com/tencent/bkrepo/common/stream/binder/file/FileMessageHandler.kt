@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.stream.binder.file
 
 import com.tencent.bkrepo.common.stream.binder.file.config.FileBinderProperties
+import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.integration.handler.AbstractMessageHandler
@@ -40,10 +41,14 @@ import java.nio.file.StandardOpenOption.CREATE
 
 class FileMessageHandler(
     fileBinderProperties: FileBinderProperties,
-    destination: ProducerDestination
+    destination: ProducerDestination,
 ) : AbstractMessageHandler() {
 
     private val file = StreamFileUtils.getDestinationFile(fileBinderProperties.path, destination.name)
+
+    init {
+        File(fileBinderProperties.path).mkdirs()
+    }
 
     override fun handleMessageInternal(message: Message<*>) {
         if (message.payload !is ByteArray) {
