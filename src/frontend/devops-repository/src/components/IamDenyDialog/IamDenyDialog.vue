@@ -27,8 +27,8 @@
             </bk-table-column>
         </bk-table>
         <div slot="footer">
-            <bk-button @click="open">{ $t('apply') }</bk-button>
-            <bk-button type="primary" @click="close">{ $t('cancel') }</bk-button>
+            <bk-button @click="open">{{ $t('apply') }}</bk-button>
+            <bk-button type="primary" @click="close">{{ $t('cancel') }}</bk-button>
         </div>
     </bk-dialog>
 </template>
