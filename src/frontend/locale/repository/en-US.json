@@ -728,5 +728,9 @@
         "MANAGE": "MANAGE",
         "DELETE": "DELETE",
         "UPDATE": "UPDATE"
-    }
+    },
+    "bkPermissionCheck":"BK Permission Check",
+    "bkPermissionGeneration":"BK Permission Generation",
+    "permissionsGeneratedSuccessTip":"Permissions generated successfully",
+    "permissionsGeneratedFailTip":"Permission generation failed"
 }

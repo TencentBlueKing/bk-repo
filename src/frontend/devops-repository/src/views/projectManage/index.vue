@@ -54,9 +54,9 @@
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
             </bk-table-column>
-            <bk-table-column label="蓝鲸权限生成" show-overflow-tooltip v-if="iamStatus">
+            <bk-table-column :label="$t('bkPermissionGeneration')" show-overflow-tooltip v-if="iamStatus">
                 <template #default="{ row }">
-                    <bk-button theme="primary" @click="createPermission(row.name)">生成</bk-button>
+                    <bk-button theme="primary" @click="createPermission(row.name)" v-if="row.rbacFlag === false">{{ $t('generate') }}</bk-button>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -108,8 +108,6 @@
                 return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
             }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
             this.pagination.total = this.projectList.length
-        },
-        created () {
             this.getIamPermissionStatus().then(res => {
                 this.iamStatus = res
             })
@@ -164,21 +162,21 @@
                     }
                 )
             },
-             createPermission (projectId) {
-                 this.refreshIamPermission({ projectId: projectId }).then(res => {
-                     if (res === true) {
-                         this.$bkMessage({
-                             theme: 'success',
-                             message: '权限生成成功'
-                         })
-                     } else {
-                         this.$bkMessage({
-                             theme: 'error',
-                             message: '权限生成失败'
-                         })
-                     }
-                 })
-             }
+            createPermission (projectId) {
+                this.refreshIamPermission({ projectId: projectId }).then(res => {
+                    if (res === true) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: this.$t('permissionsGeneratedSuccessTip')
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: this.$t('permissionsGeneratedFailTip')
+                        })
+                    }
+                })
+            }
         }
     }
 </script>

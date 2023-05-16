@@ -143,14 +143,14 @@
                             } else {
                                 this.$bkMessage({
                                     theme: 'error',
-                                    message: err.message || err
+                                    message: err.message
                                 })
                             }
                         })
                     } else {
                         this.$bkMessage({
                             theme: 'error',
-                            message: err.message || err
+                            message: err.message
                         })
                     }
                 }).finally(() => {
