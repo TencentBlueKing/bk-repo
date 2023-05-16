@@ -27,8 +27,8 @@ class SignBodyFilter(private val limit: Long) : Filter {
 
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
         val lengthCondition = request.contentLength in 1..limit
-        val typeCondition = !request.contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE) &&
-            !request.contentType.startsWith(MediaType.APPLICATION_OCTET_STREAM_VALUE)
+        val typeCondition = request.contentType?.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE) == false &&
+            request.contentType?.startsWith(MediaType.APPLICATION_OCTET_STREAM_VALUE) == false
         if (lengthCondition && typeCondition) {
             // 限制缓存大小
             val multiReadRequest = MultipleReadHttpRequest(request as HttpServletRequest, limit)
