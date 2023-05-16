@@ -113,7 +113,6 @@
             joinProject () {
                 this.getPermissionUrl({
                     body: {
-                        projectId: this.projectId,
                         action: 'READ',
                         resourceType: 'PROJECT',
                         uid: this.userInfo.name
