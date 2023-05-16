@@ -58,6 +58,7 @@ import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
 import com.tencent.bkrepo.auth.repository.BkIamAuthManagerRepository
+import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildResource
@@ -90,6 +91,7 @@ class BkIamV3ServiceImpl(
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val authManagerRepository: BkIamAuthManagerRepository,
+    private val userService: UserService,
     val mongoTemplate: MongoTemplate
     ) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
 
@@ -320,12 +322,13 @@ class BkIamV3ServiceImpl(
         repoName: String?
     ): String? {
         if (!checkIamConfiguration()) return null
+        val realUserId = userService.getUserInfoById(userId)?.asstUsers?.firstOrNull() ?: userId
         return if (repoName == null) {
-            createProjectGradeManager(userId, projectId)
+            createProjectGradeManager(realUserId, projectId)
         } else {
             // 只针对开启权限开关的仓库才创建对应用户组
             if (!checkBkiamv3Config(projectId, repoName)) return null
-            createRepoGradeManager(userId, projectId, repoName)
+            createRepoGradeManager(realUserId, projectId, repoName)
         }
     }
 
