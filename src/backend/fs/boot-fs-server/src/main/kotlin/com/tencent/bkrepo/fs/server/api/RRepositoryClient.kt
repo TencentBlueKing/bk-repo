@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -71,7 +72,7 @@ interface RRepositoryClient {
     ): Mono<Response<Page<NodeInfo>>>
 
     @DeleteMapping("/node/delete")
-    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Mono<Response<Void>>
+    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Mono<Response<NodeDeleteResult>>
 
     @PostMapping("/node/rename")
     fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Mono<Response<Void>>

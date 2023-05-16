@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -43,11 +44,13 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
-import java.time.LocalDateTime
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
+@Conditional(DefaultCondition::class)
 class FsServiceImpl(
     private val nodeDao: NodeDao
 ) : FsService {
@@ -58,7 +61,21 @@ class FsServiceImpl(
             Preconditions.checkArgument(folder || sha256 == FAKE_SHA256, this::sha256.name)
             Preconditions.checkArgument(folder || md5 == FAKE_MD5, this::md5.name)
             // 创建节点
-            val node = TNode(
+            val node = buildTNode(this)
+            try {
+                nodeDao.insert(node)
+            } catch (exception: DuplicateKeyException) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+            }
+            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
+            return NodeBaseService.convertToDetail(node)!!
+        }
+    }
+
+    open fun buildTNode(request: NodeCreateRequest): TNode {
+        with(request) {
+            val fullPath = PathUtils.normalizeFullPath(fullPath)
+            return TNode(
                 projectId = projectId,
                 repoName = repoName,
                 path = PathUtils.resolveParent(fullPath),
@@ -76,13 +93,6 @@ class FsServiceImpl(
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
                 lastAccessDate = LocalDateTime.now()
             )
-            try {
-                nodeDao.insert(node)
-            } catch (exception: DuplicateKeyException) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-            }
-            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
-            return NodeBaseService.convertToDetail(node)!!
         }
     }
 
