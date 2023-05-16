@@ -718,5 +718,9 @@
     "ruleIgnoreRiskyComponentPlaceholder": "Risky component name, multiple component names were separated by newlines",
     "ruleIgnoreRiskyComponentTip": "The risky component should be filtered, multiple component names were separated by newlines",
     "joinProject":"Join Project",
-    "manageProject":"Manage Project"
+    "manageProject":"Manage Project",
+    "bkPermissionCheck":"BK Permission Check",
+    "bkPermissionGeneration":"BK Permission Generation",
+    "permissionsGeneratedSuccessTip":"Permissions generated successfully",
+    "permissionsGeneratedFailTip":"Permission generation failed"
 }
