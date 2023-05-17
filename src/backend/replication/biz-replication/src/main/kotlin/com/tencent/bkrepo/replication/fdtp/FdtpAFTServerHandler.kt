@@ -122,6 +122,9 @@ class FdtpAFTServerHandler(private val requestHandler: FdtpAFTRequestHandler) :
 
     private fun onDataRead(ctx: ChannelHandlerContext, data: FdtpDataFrame) {
         val streamId = data.stream()!!.id()
+        if (logger.isDebugEnabled) {
+            logger.debug("${ctx.channel()} $streamId ${data.content().readableBytes()} ${data.isEndStream()}")
+        }
         val requestContext = requestMap[streamId]
         checkNotNull(requestContext) { "Unexpected message received:$data" }
         with(requestContext) {
