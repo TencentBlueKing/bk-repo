@@ -106,16 +106,29 @@ open class OpenResource(private val permissionService: PermissionService) {
     /**
      * check is the user is project admin
      */
-    fun preCheckProjectAdmin(projectId: String): Boolean {
+    fun preCheckProjectAdmin(projectId: String) {
         val userId = SecurityUtils.getUserId()
-        return permissionService.checkPermission(
-            CheckPermissionRequest(
-                uid = userId,
-                resourceType = ResourceType.PROJECT.toString(),
-                projectId = projectId,
-                action = PermissionAction.MANAGE.toString()
-            )
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            projectId = projectId,
+            action = PermissionAction.MANAGE.toString()
         )
+        if (!permissionService.checkPermission(checkRequest)) {
+            logger.warn("user is not project admin [$checkRequest]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+        }
+    }
+
+    fun isContextUserProjectAdmin(projectId: String): Boolean {
+        val userId = SecurityUtils.getUserId()
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            projectId = projectId,
+            action = PermissionAction.MANAGE.toString()
+        )
+        return permissionService.checkPermission(checkRequest)
     }
 
     fun checkRequest(request: CheckPermissionRequest) {

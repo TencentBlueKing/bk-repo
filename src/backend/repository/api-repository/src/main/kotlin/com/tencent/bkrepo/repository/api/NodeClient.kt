@@ -129,7 +129,7 @@ interface NodeClient {
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")
-    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Response<Void>
+    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")

@@ -55,7 +55,11 @@ data class ScannerProperties(
     /**
      * 默认分发器
      */
-    var defaultDispatcher: String = ""
+    var defaultDispatcher: String = "",
+    /**
+     * 结果报告数据导出配置
+     */
+    var reportExport: ReportExportProperties? = null
 ) {
     companion object {
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
