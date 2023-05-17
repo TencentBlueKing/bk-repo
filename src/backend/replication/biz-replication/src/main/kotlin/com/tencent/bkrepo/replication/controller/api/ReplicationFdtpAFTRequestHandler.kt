@@ -65,9 +65,9 @@ class ReplicationFdtpAFTRequestHandler(
         val sha256 = request.headers.get(SHA256)!!
         logger.info("The file with sha256 [$sha256] will be handled by Fdtp!")
         val credentials = credentialsCache.get(storageKey.orEmpty())
-        if (storageService.exist(sha256, credentials)) {
-            return FdtpResponseStatus.OK
-        }
+//        if (storageService.exist(sha256, credentials)) {
+//            return FdtpResponseStatus.OK
+//        }
         if (request.artifactFile.getFileSha256() != sha256) {
             // TODO 错误返回需要确定
             return FdtpResponseStatus(ArtifactMessageCode.DIGEST_CHECK_FAILED.getCode(), "sha256")

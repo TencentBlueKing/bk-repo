@@ -202,8 +202,8 @@ class ClusterReplicator(
             var type: String = replicationProperties.pushType
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 return buildNodeCreateRequest(this, node)?.let {
-                    if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
-                    ) {
+//                    if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
+//                    ) {
                         logger.info(
                             "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
                                 "will be pushed to the remote server ${cluster.name}, try the $retry time!"
@@ -235,7 +235,7 @@ class ClusterReplicator(
                             }
                             throw throwable
                         }
-                    }
+//                    }
                     logger.info(
                         "The node [${node.fullPath}] will be pushed to the remote server!"
                     )
