@@ -48,6 +48,7 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
+import java.net.URL
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -152,7 +153,7 @@ class ClusterArtifactReplicationHandler(
     private fun pushWithFdtp(filePushContext: FilePushContext): Boolean {
         with(filePushContext) {
             logger.info("File $sha256 will be pushed using the fdtp way.")
-            val host = context.cluster.url.removePrefix("/replication")
+            val host = URL(context.cluster.url).host
             val serverAddress = InetSocketAddress(host, fdtpServerProperties.port)
             // TODO 证书可以使用cluster提供的
             val client = FdtpAFTClientFactory.createAFTClient(serverAddress, fdtpServerProperties.certificates)
@@ -165,8 +166,9 @@ class ClusterArtifactReplicationHandler(
             headers.add(SHA256, sha256)
             storageKey?.let { headers.add(STORAGE_KEY, storageKey) }
             val responsePromise = client.sendStream(rateLimitInputStream, headers)
+            //
             // TODO timeout时间如何设置
-            val response = responsePromise.get(3, TimeUnit.SECONDS)
+            val response = responsePromise.get(60, TimeUnit.SECONDS)
             if (response.status == FdtpResponseStatus.OK){
                 return true
             } else {
