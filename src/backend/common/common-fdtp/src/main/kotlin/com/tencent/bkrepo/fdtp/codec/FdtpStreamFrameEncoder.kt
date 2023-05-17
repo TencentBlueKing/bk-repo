@@ -34,6 +34,7 @@ import com.tencent.bkrepo.fdtp.codec.FdtpFrameType.HEADER
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToByteEncoder
+import org.slf4j.LoggerFactory
 
 /**
  * fdtp编码器
@@ -59,6 +60,7 @@ open class FdtpStreamFrameEncoder : MessageToByteEncoder<FdtpStreamFrame>() {
                 out.writeBytes(frameHeader)
                 out.writeBytes(payload)
             } else if (msg is FdtpDataFrame) {
+                logger.info("${ctx.channel()} $streamId ${msg.content().readableBytes()} ${msg.isEndStream()}")
                 val payload = msg.content()
                 val flags = FdtpFlags()
                 flags.endOfStream(msg.isEndStream())
@@ -83,5 +85,8 @@ open class FdtpStreamFrameEncoder : MessageToByteEncoder<FdtpStreamFrame>() {
         out.writeByte(type.toInt())
         out.writeByte(flags.value().toInt())
         out.writeInt(streamId)
+    }
+    companion object {
+        private val logger = LoggerFactory.getLogger(FdtpStreamFrameEncoder::class.java)
     }
 }

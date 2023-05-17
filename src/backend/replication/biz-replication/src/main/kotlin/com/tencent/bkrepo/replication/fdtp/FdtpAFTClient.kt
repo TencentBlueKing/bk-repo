@@ -38,6 +38,7 @@ import io.netty.handler.stream.ChunkedFile
 import io.netty.handler.stream.ChunkedStream
 import io.netty.util.concurrent.DefaultPromise
 import io.netty.util.concurrent.Promise
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
 import java.net.InetSocketAddress
@@ -71,6 +72,9 @@ class FdtpAFTClient(
         val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
+        if (logger.isDebugEnabled) {
+            logger.debug("properties.chunkSize ${properties.chunkSize}")
+        }
         val chunkStream = FdtpChunkStream(ChunkedStream(inputStream, properties.chunkSize), stream)
         return send0(fdtStream, streamId, headers, stream, chunkStream)
     }
@@ -92,5 +96,9 @@ class FdtpAFTClient(
         channel.writeAndFlush(headerFrame)
         channel.writeAndFlush(chunkStream)
         return promise
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FdtpAFTClient::class.java)
     }
 }
