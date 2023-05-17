@@ -168,7 +168,7 @@ class ClusterArtifactReplicationHandler(
             val responsePromise = client.sendStream(rateLimitInputStream, headers)
             //
             // TODO timeout时间如何设置
-            val response = responsePromise.get(60, TimeUnit.SECONDS)
+            val response = responsePromise.get(15, TimeUnit.MINUTES)
             if (response.status == FdtpResponseStatus.OK){
                 return true
             } else {
