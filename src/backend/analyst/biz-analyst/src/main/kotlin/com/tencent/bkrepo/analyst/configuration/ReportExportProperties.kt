@@ -23,7 +23,7 @@ data class ReportExportProperties(
     /**
      * 黑名单中的项目不导出结果报告，仅在白名单为空时生效
      */
-    var projectsBlackList: Set<String> = emptySet(),
+    var projectBlackList: Set<String> = emptySet(),
     /**
      * 非空时仅白名单中的项目会导出报告
      */
