@@ -114,14 +114,11 @@ class DevopsPermissionServiceImpl constructor(
         with(request) {
             logger.debug("check devops permission request [$request]")
 
-            if (super.isUserLocalAdmin(uid)) {
+            if (super.isUserLocalAdmin(uid) || super.isUserLocalProjectAdmin(uid, projectId!!)) {
                 return true
             }
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
-                if (super.isUserLocalProjectAdmin(uid, projectId!!)) {
-                    return true
-                }
                 return checkDevopsProjectPermission(uid, projectId!!, action)
             }
 
