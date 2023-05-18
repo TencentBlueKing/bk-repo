@@ -869,6 +869,7 @@
         .repo-generic-table {
             flex: 1;
             height: 100%;
+            width:0;
             background-color: white;
             .multi-operation {
                 height: 50px;
