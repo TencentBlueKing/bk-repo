@@ -21,7 +21,15 @@ data class ReportExportProperties(
      */
     var binderType: String? = BinderType.KAFKA.name,
     /**
-     * 黑名单中的项目不导出结果报告
+     * 黑名单中的项目不导出结果报告，仅在白名单为空时生效
      */
-    var projectsBlackList: List<String> = emptyList()
+    var projectsBlackList: Set<String> = emptySet(),
+    /**
+     * 非空时仅白名单中的项目会导出报告
+     */
+    var projectWhiteList: Set<String> = emptySet(),
+    /**
+     * 非空时仅白名单中的扫描器会导出报告
+     */
+    var scannerWhiteList: Set<String> = emptySet()
 )
