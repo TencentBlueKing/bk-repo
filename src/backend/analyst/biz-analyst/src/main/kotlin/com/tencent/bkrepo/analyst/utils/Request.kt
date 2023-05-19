@@ -27,18 +27,16 @@
 
 package com.tencent.bkrepo.analyst.utils
 
+import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.analyst.pojo.Node
-import java.lang.ClassCastException
 
 object Request {
     private val nodeSelected = listOf(
@@ -65,12 +63,13 @@ object Request {
      * 请求node数据并解析成[Node]
      */
     fun requestNodes(nodeClient: NodeClient, rule: Rule, page: Int, pageSize: Int): List<Node> {
-        val queryModel = QueryModel(
-            PageLimit(page, pageSize),
-            Sort(listOf(AbstractMongoDao.ID), Sort.Direction.ASC),
-            nodeSelected,
-            rule
+        // 通常根据projectId,repoName等字段搜索Node，此时如果结果数量较多时用_id排序会有性能问题导致查询超时
+        // 使用projectId、repoName、fullPath字段有建立唯一索引，因此使用这些字段进行排序
+        val sort = Sort(
+            listOf(NodeDetail::projectId.name, NodeDetail::repoName.name, NodeDetail::fullPath.name),
+            Sort.Direction.ASC
         )
+        val queryModel = QueryModel(PageLimit(page, pageSize), sort, nodeSelected, rule)
         return request { nodeClient.search(queryModel) }!!.records.map {
             val projectId = it[NodeDetail::projectId.name]!! as String
             val repoName = it[NodeDetail::repoName.name]!! as String
