@@ -728,6 +728,18 @@
     "ruleIgnoreByVulComponent": "通过风险组件名过滤",
     "ruleIgnoreRiskyComponentPlaceholder": "风险组件名，多个风险组件通过换行分隔",
     "ruleIgnoreRiskyComponentTip": "将被过滤的风险组件名，多个风险组件通过换行分隔",
+    "apply": "去申请",
+    "iamTip": "该操作需要以下权限",
+    "requiredPermission":"需申请的权限",
+    "associatedResource":"关联的资源实例",
+    "nodePath":"节点路径",
+    "actionEnum": {
+        "READ": "查看",
+        "WRITE": "写入",
+        "MANAGE": "管理",
+        "DELETE": "删除",
+        "UPDATE": "更新"
+    },
     "joinProject":"加入项目",
     "manageProject":"管理项目",
     "bkPermissionCheck":"蓝鲸权限校验",

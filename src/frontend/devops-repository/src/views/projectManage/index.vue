@@ -104,16 +104,19 @@
             ...mapState(['projectList', 'userList'])
         },
         created () {
-            this.filterProjectList = this.projectList.filter(project => {
-                return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-            }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
-            this.pagination.total = this.projectList.length
+            if (this.projectList.length === 0) {
+                this.getProjectList().then(() => {
+                    this.setPageData(this.projectList)
+                })
+            } else {
+                this.setPageData(this.projectList)
+            }
             this.getIamPermissionStatus().then(res => {
                 this.iamStatus = res
             })
         },
         methods: {
-            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus', 'queryProjectList']),
+            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus', 'queryProjectList', 'getProjectList']),
             formatDate,
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -153,12 +156,7 @@
                             project.id = project.name
                             project.name = project.displayName
                         })
-                        this.pagination.total = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).length
-                        this.filterProjectList = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+                        this.setPageData(res)
                     }
                 )
             },
@@ -176,6 +174,14 @@
                         })
                     }
                 })
+            },
+            setPageData (res) {
+                this.pagination.total = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).length
+                this.filterProjectList = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
             }
         }
     }
