@@ -49,7 +49,7 @@ class ReportExporter(
         }
 
         val projectWhiteList = reportProperties.projectWhiteList
-        val projectsBlackList = reportProperties.projectsBlackList
+        val projectsBlackList = reportProperties.projectBlackList
         val notInWhiteList = projectWhiteList.isNotEmpty() && subtask.projectId !in projectWhiteList
         val inBlackList = projectWhiteList.isEmpty()
             && projectsBlackList.isNotEmpty()
