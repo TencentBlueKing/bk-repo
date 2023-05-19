@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.fs.server
 
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import java.io.InputStream
 import java.util.Optional
 import kotlinx.coroutines.flow.collect
@@ -36,7 +36,7 @@ import kotlinx.coroutines.reactive.asFlow
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
 
-suspend fun InputStream.copyTo(artifactFile: ReactiveArtifactFile, finish: Boolean = true) {
+suspend fun InputStream.copyTo(artifactFile: CoArtifactFile, finish: Boolean = true) {
     DataBufferUtils.readInputStream(
         { this },
         DefaultDataBufferFactory.sharedInstance,

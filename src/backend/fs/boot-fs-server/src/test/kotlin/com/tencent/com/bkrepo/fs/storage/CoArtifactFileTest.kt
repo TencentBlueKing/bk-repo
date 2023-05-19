@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.util.unit.DataSize
 
-class ReactiveArtifactFileTest {
+class CoArtifactFileTest {
 
     private val tempDir = System.getProperty("java.io.tmpdir")
 
@@ -58,7 +58,7 @@ class ReactiveArtifactFileTest {
 
     private fun buildArtifactFile(
         threshold: Long
-    ): ReactiveArtifactFile {
+    ): CoArtifactFile {
         val storageProperties = StorageProperties(
             filesystem = storageCredentials,
             receive = ReceiveProperties(
@@ -67,7 +67,7 @@ class ReactiveArtifactFileTest {
             monitor = MonitorProperties()
         )
         val monitor = StorageHealthMonitor(storageProperties, tempDir)
-        return ReactiveArtifactFile(storageCredentials, storageProperties, monitor)
+        return CoArtifactFile(storageCredentials, storageProperties, monitor)
     }
 
     @Test
@@ -98,14 +98,14 @@ class ReactiveArtifactFileTest {
         }
     }
 
-    private fun ReactiveArtifactFile.assertFileContentEquals(expected: ByteArray) {
+    private fun CoArtifactFile.assertFileContentEquals(expected: ByteArray) {
         Assertions.assertArrayEquals(expected, this.readAll())
         Assertions.assertEquals(expected.sha1(), this.getFileSha1())
         Assertions.assertEquals(expected.md5(), this.getFileMd5())
         Assertions.assertEquals(expected.sha256(), this.getFileSha256())
     }
 
-    private fun ReactiveArtifactFile.readAll(): ByteArray {
+    private fun CoArtifactFile.readAll(): ByteArray {
         val outputStream = ByteArrayOutputStream()
         this.getInputStream().use { it.copyTo(outputStream) }
         return outputStream.toByteArray()
