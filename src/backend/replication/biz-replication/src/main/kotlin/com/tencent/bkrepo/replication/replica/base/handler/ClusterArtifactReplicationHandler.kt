@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.base.handler
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
@@ -42,6 +43,7 @@ import com.tencent.bkrepo.replication.fdtp.FdtpServerProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
+import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.MultipartBody
 import okhttp3.Request
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
 import java.net.URL
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -165,17 +168,25 @@ class ClusterArtifactReplicationHandler(
             val headers = DefaultFdtpHeaders()
             headers.add(SHA256, sha256)
             storageKey?.let { headers.add(STORAGE_KEY, storageKey) }
-            val responsePromise = client.sendStream(rateLimitInputStream, headers)
+            try {
+                val responsePromise = client.sendStream(rateLimitInputStream, headers)
 
-            // TODO timeout时间如何设置
-            val response = responsePromise.get(60, TimeUnit.SECONDS)
-            if (response.status == FdtpResponseStatus.OK){
-                return true
-            } else {
-                logger.warn("Error occurred while pushing file $sha256 " +
-                                "with the fdtp way, erros is ${response.status.reasonPhrase}")
-                // TODO 异常如何处理
-                throw RuntimeException("")
+                // TODO timeout时间如何设置
+                val response = responsePromise.get(60, TimeUnit.SECONDS)
+                if (response.status == FdtpResponseStatus.OK){
+                    return true
+                } else {
+                    val logMessage = "Error occurred while pushing file $sha256 " +
+                        "with the fdtp way, error is ${response.status.reasonPhrase}"
+                    logger.warn(logMessage)
+                    throw ArtifactPushException(logMessage)
+                }
+            } catch (e: ExecutionException) {
+                // 当不支持fdtp方式进行传输时抛出异常，进行降级处理
+                logger.warn(
+                    "Error occurred while pushing file $sha256 with the fdtp way, error is ${e.message}"
+                )
+                throw ArtifactPushException(e.message.orEmpty(), HttpStatus.METHOD_NOT_ALLOWED.value)
             }
         }
     }
