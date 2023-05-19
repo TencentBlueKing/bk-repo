@@ -34,7 +34,7 @@
                 <empty-data :is-loading="isLoading" :title="$t('noSensitiveTitle')">
                 </empty-data>
             </template>
-            <bk-table-column type="expand" width="30">
+            <bk-table-column type="expand" width="40">
                 <template #default="{ row }">
                     <template v-if="row.path">
                         <div class="leak-title">{{ $t('hasSensitivePath') }}</div>

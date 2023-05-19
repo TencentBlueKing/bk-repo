@@ -1,3 +1,4 @@
+import createLocale from '@locale'
 /**
  *  转换文件大小
  */
@@ -73,11 +74,18 @@ export function formatDate (ms) {
         prezero(time.getSeconds())}`
 }
 
+const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
+
+export default {
+    i18n: i18n,
+    setLocale: setLocale
+}
+
 const durationMap = {
-    s: { label: '秒', deno: 60, next: 'm' },
-    m: { label: '分', deno: 60, next: 'h' },
-    h: { label: '时', deno: 24, next: 'd' },
-    d: { label: '天', deno: 365 }
+    s: { label: i18n.t('cron.second'), deno: 60, next: 'm' },
+    m: { label: i18n.t('cron.minute'), deno: 60, next: 'h' },
+    h: { label: i18n.t('cron.hour'), deno: 24, next: 'd' },
+    d: { label: i18n.t('cron.day'), deno: 365 }
 }
 export function formatDuration (duration, unit = 's', target = []) {
     if (!duration) return duration || '/'
@@ -86,7 +94,7 @@ export function formatDuration (duration, unit = 's', target = []) {
     const current = duration % deno ? `${duration % deno}${label}` : ''
     duration = Math.floor(duration / deno)
     if (!duration) {
-        return [current, ...target].slice(0, 2).join('') || '小于1秒'
+        return [current, ...target].slice(0, 2).join('') || i18n.t('lessOneSecondTip')
     }
     return formatDuration(duration, next, [current, ...target])
 }
