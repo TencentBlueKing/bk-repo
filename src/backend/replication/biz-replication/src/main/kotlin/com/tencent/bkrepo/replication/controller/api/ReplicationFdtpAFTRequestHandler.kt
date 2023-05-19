@@ -27,62 +27,42 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.fdtp.FdtpAFTRequestHandler
 import com.tencent.bkrepo.replication.fdtp.FullFdtpAFTRequest
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import java.util.concurrent.TimeUnit
 
 class ReplicationFdtpAFTRequestHandler(
-    private val storageProperties: StorageProperties
+    private val baseCacheHandler: BaseCacheHandler
 ): FdtpAFTRequestHandler {
 
     @Autowired
     lateinit var storageService: StorageService
-    @Autowired
-    lateinit var storageCredentialsClient: StorageCredentialsClient
-
-    // TODO 重复代码处理
-    private val defaultCredentials = storageProperties.defaultStorageCredentials()
-    private val credentialsCache: LoadingCache<String, StorageCredentials> = CacheBuilder.newBuilder()
-        .maximumSize(10L)
-        .expireAfterWrite(5L, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key -> findStorageCredentials(key) })
 
     override fun handler(request: FullFdtpAFTRequest): FdtpResponseStatus {
         val storageKey = request.headers.get(STORAGE_KEY)
         val sha256 = request.headers.get(SHA256)!!
         logger.info("The file with sha256 [$sha256] will be handled by Fdtp!")
-        val credentials = credentialsCache.get(storageKey.orEmpty())
+        val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         if (storageService.exist(sha256, credentials)) {
             return FdtpResponseStatus.OK
         }
         if (request.artifactFile.getFileSha256() != sha256) {
-            // TODO 错误返回需要确定
-            return FdtpResponseStatus(ArtifactMessageCode.DIGEST_CHECK_FAILED.getCode(), "sha256")
+            return FdtpResponseStatus(
+                ArtifactMessageCode.DIGEST_CHECK_FAILED.getCode(),
+                ArtifactMessageCode.DIGEST_CHECK_FAILED.name
+            )
         }
         logger.info("The file with sha256 [$sha256] will be stored!")
         storageService.store(sha256, request.artifactFile, credentials)
         return FdtpResponseStatus.OK
     }
 
-    private fun findStorageCredentials(storageKey: String?): StorageCredentials {
-        if (storageKey.isNullOrBlank()) {
-            return defaultCredentials
-        }
-        return storageCredentialsClient.findByKey(storageKey).data ?: defaultCredentials
-    }
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicationFdtpAFTRequestHandler::class.java)
     }

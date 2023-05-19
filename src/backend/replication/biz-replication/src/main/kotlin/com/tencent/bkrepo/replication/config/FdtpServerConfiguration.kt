@@ -29,7 +29,7 @@ package com.tencent.bkrepo.replication.config
 
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.replication.controller.api.BaseCacheHandler
 import com.tencent.bkrepo.replication.controller.api.ReplicationFdtpAFTRequestHandler
 import com.tencent.bkrepo.replication.fdtp.DefaultFdtpAFTRequestHandler
 import com.tencent.bkrepo.replication.fdtp.FdtpAFTRequestHandler
@@ -53,8 +53,8 @@ class FdtpServerConfiguration {
     @Bean
     @Primary
     fun replicationFdtpAFTRequestHandler(
-        storageProperties: StorageProperties
-    ) = ReplicationFdtpAFTRequestHandler(storageProperties)
+        baseCacheHandler: BaseCacheHandler
+    ) = ReplicationFdtpAFTRequestHandler(baseCacheHandler)
 
 
     @Bean

@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -39,9 +36,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.replication.constant.BLOB_CHECK_URI
 import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
 import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
@@ -49,7 +44,6 @@ import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_SECOND_STEP_URL
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.service.BlobChunkedService
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
@@ -63,7 +57,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
-import java.util.concurrent.TimeUnit
 
 /**
  * blob数据同步接口
@@ -72,22 +65,15 @@ import java.util.concurrent.TimeUnit
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 class BlobReplicaController(
-    storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val blobChunkedService: BlobChunkedService
+    private val blobChunkedService: BlobChunkedService,
+    private val baseCacheHandler: BaseCacheHandler
 ) {
-
-    private val defaultCredentials = storageProperties.defaultStorageCredentials()
-    private val credentialsCache: LoadingCache<String, StorageCredentials> = CacheBuilder.newBuilder()
-        .maximumSize(MAX_CACHE_COUNT)
-        .expireAfterWrite(CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key -> findStorageCredentials(key) })
 
     @PostMapping(BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
-            val credentials = credentialsCache.get(storageKey.orEmpty())
+            val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
             val inputStream = storageService.load(sha256, range, credentials)
                 ?: throw NotFoundException(ArtifactMessageCode.ARTIFACT_DATA_NOT_FOUND)
             return ResponseEntity.ok(InputStreamResource(inputStream))
@@ -101,7 +87,7 @@ class BlobReplicaController(
         @RequestParam storageKey: String? = null
     ): Response<Void> {
         logger.info("The file with sha256 [$sha256] will be handled!")
-        val credentials = credentialsCache.get(storageKey.orEmpty())
+        val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         if (storageService.exist(sha256, credentials)) {
             return ResponseBuilder.success()
         }
@@ -119,7 +105,7 @@ class BlobReplicaController(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null
     ): Response<Boolean> {
-        val credentials = credentialsCache.get(storageKey.orEmpty())
+        val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         return ResponseBuilder.success(storageService.exist(sha256, credentials))
     }
 
@@ -139,7 +125,7 @@ class BlobReplicaController(
         @RequestParam storageKey: String? = null
     ) {
         logger.info("The file with sha256 [$sha256] will be handled with chunked upload!")
-        val credentials = credentialsCache.get(storageKey.orEmpty())
+        val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         return blobChunkedService.obtainSessionIdForUpload(
             projectId, repoName, credentials, sha256
         )
@@ -158,7 +144,7 @@ class BlobReplicaController(
         @PathVariable repoName: String,
     ) {
         logger.info("The file with sha256 [$sha256] will be uploaded with $uuid")
-        val credentials = credentialsCache.get(storageKey.orEmpty())
+        val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.uploadChunkedFile(
             projectId, repoName, credentials, sha256, artifactFile, uuid
         )
@@ -178,17 +164,10 @@ class BlobReplicaController(
         @PathVariable repoName: String,
     ) {
         logger.info("The file with sha256 [$sha256] will be finished with $uuid")
-        val credentials = credentialsCache.get(storageKey.orEmpty())
+        val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.finishChunkedUpload(
             projectId, repoName, credentials, sha256, artifactFile, uuid
         )
-    }
-
-    private fun findStorageCredentials(storageKey: String?): StorageCredentials {
-        if (storageKey.isNullOrBlank()) {
-            return defaultCredentials
-        }
-        return storageCredentialsClient.findByKey(storageKey).data ?: defaultCredentials
     }
 
     companion object {
