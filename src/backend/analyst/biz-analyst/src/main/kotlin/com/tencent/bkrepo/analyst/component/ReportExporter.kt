@@ -24,11 +24,10 @@ class ReportExporter(
     private val messageSupplier: MessageSupplier
 ) {
     fun export(subtask: TSubScanTask, result: ScanExecutorResult) {
-        if (!reportProperties.enabled ||
-            result !is StandardScanExecutorResult ||
-            result.scanStatus != SubScanTaskStatus.SUCCESS.name) {
+        if (!shouldExport(subtask, result)) {
             return
         }
+        check(result is StandardScanExecutorResult)
 
         result.output?.result?.securityResults?.let {
             logger.info(
@@ -40,6 +39,24 @@ class ReportExporter(
                 binderType = BinderType.valueOf(reportProperties.binderType!!)
             )
         }
+    }
+
+    private fun shouldExport(subtask: TSubScanTask, result: ScanExecutorResult): Boolean {
+        if (!reportProperties.enabled ||
+            result !is StandardScanExecutorResult ||
+            result.scanStatus != SubScanTaskStatus.SUCCESS.name) {
+            return false
+        }
+
+        val projectWhiteList = reportProperties.projectWhiteList
+        val projectsBlackList = reportProperties.projectBlackList
+        val notInWhiteList = projectWhiteList.isNotEmpty() && subtask.projectId !in projectWhiteList
+        val inBlackList = projectWhiteList.isEmpty()
+            && projectsBlackList.isNotEmpty()
+            && subtask.projectId in projectsBlackList
+        val notInScannerWhiteList = reportProperties.scannerWhiteList.isNotEmpty()
+            && subtask.scanner !in reportProperties.scannerWhiteList
+        return !(notInWhiteList || inBlackList || notInScannerWhiteList)
     }
 
     private fun buildReport(subtask: TSubScanTask, securityResults: List<SecurityResult>): Report {
