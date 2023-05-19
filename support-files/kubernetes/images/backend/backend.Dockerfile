@@ -7,6 +7,9 @@ ENV BK_REPO_HOME=/data/workspace \
     BK_REPO_SERVICE_PREFIX=bkrepo- \
     BK_REPO_PROFILE=dev
 
+RUN mkdir -p /data/tools && \
+    curl -o /data/tools/arthas.jar https://arthas.aliyun.com/arthas-boot.jar
+
 COPY ./ /data/workspace/
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo 'Asia/Shanghai' > /etc/timezone && \

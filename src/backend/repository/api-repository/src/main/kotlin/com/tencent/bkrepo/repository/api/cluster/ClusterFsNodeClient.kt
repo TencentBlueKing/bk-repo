@@ -25,25 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.repository.api.cluster
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-object ReactiveSecurityUtils {
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterFsNodeClient", primary = false)
+@RequestMapping("/cluster/node/fs")
+interface ClusterFsNodeClient {
 
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-    }
+    @PutMapping("/length")
+    fun setLength(
+        @RequestBody nodeSetLengthRequest: NodeSetLengthRequest
+    ): Response<Void>
 
-    fun getUserMono(): Mono<String> {
-        return ReactiveRequestContextHolder
-            .getWebExchangeMono().map {
-                it.attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-            }
-    }
+    @PostMapping("/create")
+    fun createNode(@RequestBody createRequest: NodeCreateRequest): Response<NodeDetail>
 }

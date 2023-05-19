@@ -25,25 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.repository.service.fs.impl.center
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.service.fs.impl.FsServiceImpl
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Service
 
-object ReactiveSecurityUtils {
-
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-    }
-
-    fun getUserMono(): Mono<String> {
-        return ReactiveRequestContextHolder
-            .getWebExchangeMono().map {
-                it.attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-            }
+@Service
+@Conditional(CommitEdgeCenterCondition::class)
+class CommitEdgeCenterFsServiceImpl(
+    nodeDao: NodeDao,
+    private val clusterProperties: ClusterProperties
+) : FsServiceImpl(
+    nodeDao
+) {
+    override fun buildTNode(request: NodeCreateRequest): TNode {
+        val tNode = super.buildTNode(request)
+        tNode.clusterNames = setOf(SecurityUtils.getClusterName() ?: clusterProperties.self.name!!)
+        return tNode
     }
 }

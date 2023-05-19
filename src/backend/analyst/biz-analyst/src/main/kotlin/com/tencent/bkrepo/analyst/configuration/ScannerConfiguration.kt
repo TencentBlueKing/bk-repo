@@ -55,6 +55,7 @@ import org.springframework.data.redis.core.RedisTemplate
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(
     ScannerProperties::class,
+    ReportExportProperties::class,
     KubernetesDispatcherProperties::class,
     DockerDispatcherProperties::class
 )

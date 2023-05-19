@@ -123,9 +123,8 @@ class NodeController(
         return ResponseBuilder.success()
     }
 
-    override fun deleteNode(nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
-        nodeService.deleteNode(nodeDeleteRequest)
-        return ResponseBuilder.success()
+    override fun deleteNode(nodeDeleteRequest: NodeDeleteRequest): Response<NodeDeleteResult> {
+        return ResponseBuilder.success(nodeService.deleteNode(nodeDeleteRequest))
     }
 
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult> {

@@ -317,6 +317,7 @@ gateway:
 
 ## replication fdtp服务配置
 replicationUDP:
+  enabled: true
   ## bkrepo replication-udp service配置
   service:
     type: LoadBalancer

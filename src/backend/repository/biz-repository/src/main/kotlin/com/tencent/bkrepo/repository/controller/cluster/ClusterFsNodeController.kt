@@ -25,25 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.repository.controller.cluster
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.cluster.ClusterFsNodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import com.tencent.bkrepo.repository.service.fs.FsService
+import org.springframework.web.bind.annotation.RestController
 
-object ReactiveSecurityUtils {
-
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
+@RestController
+class ClusterFsNodeController(
+    private val fsService: FsService
+) : ClusterFsNodeClient {
+    override fun setLength(nodeSetLengthRequest: NodeSetLengthRequest): Response<Void> {
+        fsService.setLength(nodeSetLengthRequest)
+        return ResponseBuilder.success()
     }
 
-    fun getUserMono(): Mono<String> {
-        return ReactiveRequestContextHolder
-            .getWebExchangeMono().map {
-                it.attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-            }
+    override fun createNode(createRequest: NodeCreateRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(fsService.createNode(createRequest))
     }
 }
