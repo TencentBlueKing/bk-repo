@@ -490,7 +490,7 @@ class BkIamV3ServiceImpl(
         var projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.PROJECT, projectId, null
         )?.managerId
-            ?: kotlin.run {
+            ?: run {
                 val realUserId = userService.getUserInfoById(projectInfo.createdBy)?.asstUsers?.firstOrNull()
                     ?: projectInfo.createdBy
                 createProjectGradeManager(realUserId, projectId)
