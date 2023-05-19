@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
@@ -42,6 +43,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import com.tencent.bkrepo.repository.service.fs.FsService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.repository.util.NodeEventFactory
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -52,7 +54,7 @@ import java.time.LocalDateTime
 @Service
 @Conditional(DefaultCondition::class)
 class FsServiceImpl(
-    private val nodeDao: NodeDao
+    private val nodeDao: NodeDao,
 ) : FsService {
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
@@ -67,6 +69,7 @@ class FsServiceImpl(
             } catch (exception: DuplicateKeyException) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
             }
+            SpringContextUtils.publishEvent(NodeEventFactory.buildCreatedEvent(node))
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return NodeBaseService.convertToDetail(node)!!
         }
@@ -91,7 +94,7 @@ class FsServiceImpl(
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
-                lastAccessDate = LocalDateTime.now()
+                lastAccessDate = LocalDateTime.now(),
             )
         }
     }
