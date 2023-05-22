@@ -72,4 +72,11 @@ data class TProjectScanConfiguration(
      * 用于分发子任务的分发器
      */
     val dispatcherConfiguration: List<DispatcherConfiguration> = emptyList()
-)
+) {
+    companion object {
+        /**
+         * projectId为空时表示全局配置
+         */
+        const val GLOBAL_PROJECT_ID = ""
+    }
+}
