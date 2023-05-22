@@ -53,5 +53,7 @@ data class VersionListOption(
     @ApiModelProperty("排序字段")
     val sortProperty: String? = null,
     @ApiModelProperty("排序方向")
-    val direction: Direction? = Direction.DESC
+    val direction: Direction? = Direction.DESC,
+    @ApiModelProperty("查询虚拟仓库时的制品来源仓库")
+    val srcRepo: String? = null
 )

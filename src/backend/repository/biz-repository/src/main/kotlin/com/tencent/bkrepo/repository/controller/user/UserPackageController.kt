@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -62,7 +63,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api")
 class UserPackageController(
     private val packageService: PackageService,
-    private val packageStatisticsService: PackageStatisticsService
+    private val packageStatisticsService: PackageStatisticsService,
+    private val permissionManager: PermissionManager
 ) {
 
     @ApiOperation("分页查询包")
@@ -86,6 +88,9 @@ class UserPackageController(
         @RequestParam packageKey: String,
         option: VersionListOption
     ): Response<Page<PackageVersion>> {
+        option.srcRepo.takeUnless { it.isNullOrBlank() }?.run {
+            permissionManager.checkRepoPermission(PermissionAction.READ, projectId, this)
+        }
         val pageResult = packageService.listVersionPage(projectId, repoName, packageKey, option)
         return ResponseBuilder.success(pageResult)
     }

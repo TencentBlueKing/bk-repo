@@ -39,6 +39,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -61,6 +63,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
@@ -83,7 +86,8 @@ class PackageServiceImpl(
     repositoryDao: RepositoryDao,
     packageDao: PackageDao,
     protected val packageVersionDao: PackageVersionDao,
-    private val packageSearchInterpreter: PackageSearchInterpreter
+    private val packageSearchInterpreter: PackageSearchInterpreter,
+    private val repositoryService: RepositoryService
 ) : PackageBaseService(repositoryDao, packageDao) {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
@@ -156,7 +160,15 @@ class PackageServiceImpl(
         Preconditions.checkArgument(pageSize >= 0, "pageSize")
         val stageTag = option.stageTag?.split(StringPool.COMMA)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
+        var realRepoName = repoName
+        option.srcRepo?.run {
+            val repoInfo = repositoryService.getRepoInfo(projectId, repoName)
+            if (repoInfo?.category == RepositoryCategory.VIRTUAL
+                && (repoInfo.configuration as VirtualConfiguration).repositoryList.map { it.name }.contains(this)) {
+                    realRepoName = this
+            }
+        }
+        val tPackage = packageDao.findByKey(projectId, realRepoName, packageKey)
         return if (tPackage == null) {
             Pages.ofResponse(pageRequest, 0, emptyList())
         } else {

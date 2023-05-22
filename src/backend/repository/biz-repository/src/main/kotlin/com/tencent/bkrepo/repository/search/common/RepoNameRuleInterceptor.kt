@@ -33,6 +33,8 @@ package com.tencent.bkrepo.repository.search.common
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
@@ -89,6 +91,13 @@ class RepoNameRuleInterceptor(
         projectId: String,
         value: String
     ): Rule.QueryRule {
+        val repoInfo = repositoryService.getRepoInfo(projectId, value)
+        if (repoInfo?.category == RepositoryCategory.VIRTUAL) {
+            val memberList = (repoInfo.configuration as VirtualConfiguration).repositoryList.map { it.name }
+            if (memberList.isNotEmpty()) {
+                return Rule.QueryRule(NodeInfo::repoName.name, memberList, OperationType.IN)
+            }
+        }
         if (!hasRepoPermission(projectId, value)) {
             throw PermissionException()
         }
