@@ -21,7 +21,7 @@
             编辑
           </el-button>
           <el-button
-            v-if="!scope.row.default"
+            v-if="scope.row.projectId"
             size="mini"
             type="danger"
             @click="handleDelete(scope.$index, scope.row)"
