@@ -111,6 +111,7 @@ class UserProjectController(
             @PathVariable name: String,
             @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
+        permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }
 
