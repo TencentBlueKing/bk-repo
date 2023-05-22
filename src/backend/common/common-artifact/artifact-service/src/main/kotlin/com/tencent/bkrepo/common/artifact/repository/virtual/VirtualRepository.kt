@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.artifact.repository.virtual
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.TRAVERSED_LIST
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualRepositoryMember
@@ -43,9 +44,12 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.monitor.Throughput
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -58,24 +62,57 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     lateinit var permissionManager: PermissionManager
 
     override fun query(context: ArtifactQueryContext): Any? {
-        return mapFirstRepo(context) { sub, repository ->
-            require(sub is ArtifactQueryContext)
-            repository.query(sub)
+        val originRepoDetail = context.repositoryDetail
+        val localResult = mapEachSubRepo(context, RepositoryCategory.LOCAL) {
+            require(it is ArtifactQueryContext)
+            val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
+            repository.query(it)
         }
+        val remoteList = mutableListOf<Any>()
+        mapFirstRepo(context, RepositoryCategory.REMOTE) {
+            require(it is ArtifactQueryContext)
+            val repository = ArtifactContextHolder.getRepository(RepositoryCategory.REMOTE)
+            repository.query(it)
+        }?.let { remoteList.add(it) }
+        modifyContext(context, originRepoDetail)
+        return Pair(localResult, remoteList)
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
-        return mapFirstRepo(context) { sub, repository ->
-            require(sub is ArtifactSearchContext)
-            repository.search(sub)
+        return mapFirstRepo(context) {
+            require(it is ArtifactSearchContext)
+            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
+            repository.search(it)
         }.orEmpty()
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return mapFirstRepo(context) { sub, repository ->
-            require(sub is ArtifactDownloadContext)
-            require(repository is AbstractArtifactRepository)
-            repository.onDownload(sub)
+        return mapFirstRepo(context) {
+            require(it is ArtifactDownloadContext)
+            val category = it.repositoryDetail.category
+            val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
+            repository.onDownload(it)
+        }
+    }
+
+    override fun onDownloadSuccess(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource,
+        throughput: Throughput
+    ) {
+        val category = context.repositoryDetail.category
+        val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
+        repository.onDownloadSuccess(context, artifactResource, throughput)
+    }
+
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): PackageDownloadRecord? {
+        with(context) {
+            val category = context.repositoryDetail.category
+            val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
+            return repository.buildDownloadRecord(this, artifactResource)
         }
     }
 
@@ -87,7 +124,6 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         } ?: throw MethodNotAllowedException()
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected fun getTraversedList(context: ArtifactContext): MutableList<VirtualRepositoryMember> {
         return context.getAttribute(TRAVERSED_LIST) as? MutableList<VirtualRepositoryMember> ?: let {
             val selfRepoInfo = context.repositoryDetail
@@ -104,11 +140,9 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     protected fun <R> mapFirstRepo(
         context: ArtifactContext,
         category: RepositoryCategory? = null,
-        action: (ArtifactContext, ArtifactRepository) -> R?
+        action: (ArtifactContext) -> R?
     ): R? {
-        val virtualConfiguration = context.getVirtualConfiguration()
-        val repoList = virtualConfiguration.repositoryList
-            .filter { repo -> category?.run { repo.category == this } ?: true }
+        val repoList = queryMemberList(context, category)
         val traversedList = getTraversedList(context)
         for (member in repoList) {
             if (member in traversedList) {
@@ -118,9 +152,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             try {
                 permissionManager.checkRepoPermission(PermissionAction.READ, context.projectId, member.name)
                 val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail)
-                action(subContext, repository)?.let { return it }
+                modifyContext(context, subRepoDetail)
+                action(context)?.let { return it }
             } catch (ignored: Exception) {
                 logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
@@ -134,12 +167,10 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
      */
     protected fun <R> mapEachSubRepo(
         context: ArtifactContext,
-        category: RepositoryCategory?,
-        action: (ArtifactContext, ArtifactRepository) -> R?
+        category: RepositoryCategory? = null,
+        action: (ArtifactContext) -> R?
     ): MutableList<R> {
-        val virtualConfiguration = context.getVirtualConfiguration()
-        val repoList = virtualConfiguration.repositoryList
-            .filter { repo -> category?.run { repo.category == this } ?: true }
+        val repoList = queryMemberList(context, category)
         val traversedList = getTraversedList(context)
         val mapResult = mutableListOf<R>()
         for (member in repoList) {
@@ -150,14 +181,31 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             try {
                 permissionManager.checkRepoPermission(PermissionAction.READ, context.projectId, member.name)
                 val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail)
-                action(subContext, repository)?.let { mapResult.add(it) }
+                modifyContext(context, subRepoDetail)
+                action(context)?.let { mapResult.add(it) }
             } catch (ignored: Exception) {
                 logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
         }
         return mapResult
+    }
+
+    private fun queryMemberList(
+        context: ArtifactContext,
+        category: RepositoryCategory?
+    ): List<VirtualRepositoryMember> {
+        if (context.repositoryDetail.category != RepositoryCategory.VIRTUAL) {
+            modifyContext(context, HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail)
+        }
+        val virtualConfiguration = context.getVirtualConfiguration()
+        return virtualConfiguration.repositoryList.filter { repo -> category?.run { repo.category == this } ?: true }
+    }
+
+    private fun modifyContext(context: ArtifactContext, repoDetail: RepositoryDetail) {
+        context.repositoryDetail = repoDetail
+        context.storageCredentials = repoDetail.storageCredentials
+        context.artifactInfo.repoName = repoDetail.name
+        context.repoName = repoDetail.name
     }
 
     companion object {

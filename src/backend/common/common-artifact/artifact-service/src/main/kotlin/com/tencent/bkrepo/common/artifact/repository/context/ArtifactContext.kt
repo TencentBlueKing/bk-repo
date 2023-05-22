@@ -60,9 +60,9 @@ open class ArtifactContext(
     val userId: String = userId
     val artifactInfo: ArtifactInfo = artifact ?: request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
     var repositoryDetail: RepositoryDetail = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
-    val storageCredentials: StorageCredentials? = repositoryDetail.storageCredentials
+    var storageCredentials: StorageCredentials? = repositoryDetail.storageCredentials
     val projectId: String = repositoryDetail.projectId
-    val repoName: String = repositoryDetail.name
+    var repoName: String = repositoryDetail.name
 
     private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
 

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -80,21 +79,14 @@ class NpmVirtualRepository : VirtualRepository() {
         return list.subList(0, searchRequest.size)
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun query(context: ArtifactQueryContext): InputStream? {
-        val localResult = mapEachSubRepo(context, RepositoryCategory.LOCAL) { subContext, repository ->
-            require(subContext is ArtifactQueryContext)
-            repository.query(subContext) as? InputStream
-        }.map {
-            inputStream -> inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
-        }
-
-        val remoteResult = mapFirstRepo(context, RepositoryCategory.REMOTE) { subContext, repository ->
-            require(subContext is ArtifactQueryContext)
-            repository.query(subContext) as? InputStream
-        }?.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
-
-        val metadataList = remoteResult?.run { localResult + this } ?: localResult
-        if (metadataList.isEmpty()) return null
+        val result = super.query(context) as Pair<List<InputStream>, List<InputStream>>
+        val metadataList = (result.first + result.second).map {
+            it.use { inputStream ->
+                JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
+            }
+        }.takeIf { it.isNotEmpty() } ?: return null
         // 聚合多个仓库的包级别元数据
         val packageMetadata = metadataList.reduce { acc, element -> aggregateMetadata(acc, element) }
         val metadataString = JsonUtils.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(packageMetadata)
