@@ -27,13 +27,12 @@
 
 package com.tencent.bkrepo.analyst.event
 
-import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
-import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration.Companion.GLOBAL_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.AutoScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
@@ -68,7 +67,7 @@ class ScanEventConsumer(
     private val scanService: ScanService,
     private val scannerService: ScannerService,
     private val scanPlanDao: ScanPlanDao,
-    private val projectScanConfigurationDao: ProjectScanConfigurationDao,
+    private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val executor: ThreadPoolTaskExecutor
 ) : Consumer<ArtifactEvent> {
 
@@ -199,10 +198,11 @@ class ScanEventConsumer(
      */
     private fun scanIfHasProjectConfiguration(event: ArtifactEvent) {
         with(event) {
-            val projectScanConfiguration = projectScanConfigurationDao.findByProjectId(event.projectId)
-                ?: projectScanConfigurationDao.findByProjectId(GLOBAL_PROJECT_ID)
+            val autoScanConfiguration = projectScanConfigurationService
+                .findProjectOrGlobalScanConfiguration(event.projectId)
+                ?.autoScanConfiguration
                 ?: return
-            for (entry in projectScanConfiguration.autoScanConfiguration.entries) {
+            for (entry in autoScanConfiguration.entries) {
                 val scanner = entry.key
                 val configuration = entry.value
 
