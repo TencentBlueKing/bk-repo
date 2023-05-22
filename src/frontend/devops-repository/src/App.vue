@@ -3,6 +3,7 @@
         <Header v-if="!ciMode" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
+        <GlobalUploadViewport />
         <Login v-if="!ciMode" />
     </div>
 </template>
