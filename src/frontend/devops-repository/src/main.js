@@ -3,21 +3,21 @@ import App from '@/App'
 import createRouter from '@/router'
 import store from '@/store'
 import '@repository/utils/request'
+import i18nLocal from '@repository/utils/index'
 
 import Icon from '@repository/components/Icon'
 import CanwayDialog from '@repository/components/CanwayDialog'
 import EmptyData from '@repository/components/EmptyData'
-import createLocale from '@locale'
 import { throttleMessage } from '@repository/utils'
-
-const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 Vue.component('Icon', Icon)
 Vue.component('CanwayDialog', CanwayDialog)
 Vue.component('EmptyData', EmptyData)
 
-Vue.prototype.$setLocale = setLocale
+Vue.prototype.$setLocale = i18nLocal.setLocale
 Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
+
+const i18n = i18nLocal.i18n
 
 document.title = i18n.t('webTitle')
 

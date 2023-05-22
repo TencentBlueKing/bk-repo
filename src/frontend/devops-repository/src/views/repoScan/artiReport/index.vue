@@ -31,7 +31,7 @@
         data () {
             return {
                 allPanels: {
-                    [SCAN_TYPE_SECURITY]: { name: SCAN_TYPE_SECURITY, label: this.$t('securityHole'), count: 10, component: 'leak-component' },
+                    [SCAN_TYPE_SECURITY]: { name: SCAN_TYPE_SECURITY, label: this.$t('securityVulnerability'), count: 10, component: 'leak-component' },
                     [SCAN_TYPE_LICENSE]: { name: SCAN_TYPE_LICENSE, label: this.$t('license'), count: 10, component: 'license-component' },
                     [SCAN_TYPE_SENSITIVE]: { name: SCAN_TYPE_SENSITIVE, label: this.$t('sensitiveInfo'), count: 10, component: 'sensitive-component' }
                 },
