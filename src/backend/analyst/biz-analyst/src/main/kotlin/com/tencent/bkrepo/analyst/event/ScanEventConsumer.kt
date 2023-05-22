@@ -228,7 +228,7 @@ class ScanEventConsumer(
      */
     private fun couldApplied(configuration: AutoScanConfiguration, scannerName: String, event: ArtifactEvent): Boolean {
         return (configuration.autoScanRepoNames.isEmpty() || event.repoName in configuration.autoScanRepoNames)
-            && match(event, configuration.autoScanMatchRule)
+            && match(event, configuration.autoScanMatchRule?.readJsonString<Rule>())
             && supportedEvent(scannerService.get(scannerName), event)
     }
 
