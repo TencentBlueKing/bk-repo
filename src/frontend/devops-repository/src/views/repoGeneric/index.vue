@@ -105,7 +105,7 @@
                         </template>
                     </bk-table-column>
 
-                    <bk-table-column :label="$t('metadata')">
+                    <bk-table-column :label="$t('metadata')" v-if="metadataVisible">
                         <template #default="{ row }">
                             <metadata-tag :metadata="row.nodeMetadata" :metadata-label-list="metadataLabelList" />
                         </template>
@@ -245,7 +245,8 @@
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
-                metadataLabelList: []
+                metadataLabelList: [],
+                metadataVisible: false
             }
         },
         computed: {
@@ -444,6 +445,9 @@
                             metadataLabelList.forEach(ele => {
                                 if (ele.labelKey === item.key) {
                                     item.display = ele.display
+                                    if (ele.display === true) {
+                                        this.metadataVisible = true
+                                    }
                                 }
                             })
                         })
