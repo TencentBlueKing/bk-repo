@@ -41,9 +41,10 @@ import kotlin.concurrent.thread
 internal class FileLockExecutorTest {
 
     private val inputFileName = "test.file"
-    private val outputFileName = "output.file"
+    private val outputFileName = "output-lock.file"
     private val inputFile = File(javaClass.getResource("/$inputFileName").file)
-    private val fileSystemClient = FileSystemClient(javaClass.getResource("/").path)
+    private val root = javaClass.getResource("/").path.replace(Regex("^/(.:/)"), "$1")
+    private val fileSystemClient = FileSystemClient(root)
 
     @BeforeEach
     fun beforeEach() {
