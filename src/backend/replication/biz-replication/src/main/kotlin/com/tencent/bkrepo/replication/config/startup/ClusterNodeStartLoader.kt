@@ -82,7 +82,8 @@ class ClusterNodeStartLoader(
                     secretKey = self.secretKey ?: center.secretKey,
                     type = ClusterNodeType.CENTER,
                     ping = false,
-                    detectType = PING
+                    detectType = PING,
+                    udpPort = self.udpPort ?: center.udpPort
                 )
                 ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
                     name = self.name.orEmpty(),
@@ -95,7 +96,8 @@ class ClusterNodeStartLoader(
                     secretKey = self.secretKey,
                     type = ClusterNodeType.EDGE,
                     ping = false,
-                    detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING
+                    detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING,
+                    udpPort = self.udpPort
                 )
                 else -> null
             }

@@ -103,6 +103,7 @@ class ReplicaContext(
             appId = remoteCluster.appId,
             accessKey = remoteCluster.accessKey,
             secretKey = remoteCluster.secretKey,
+            udpPort = remoteCluster.udpPort
         )
 
         // 远端集群仓库特殊处理, 远端集群走对应制品类型协议传输

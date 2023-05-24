@@ -182,8 +182,8 @@ class ClusterArtifactReplicationHandler(
         with(filePushContext) {
             logger.info("File $sha256 will be pushed using the fdtp way.")
             val host = URL(context.cluster.url).host
-            val serverAddress = InetSocketAddress(host, fdtpServerProperties.port)
-            // TODO port与certificates来源修改
+            val udpPort = context.cluster.udpPort ?: 9000
+            val serverAddress = InetSocketAddress(host, udpPort)
             val client = FdtpAFTClientFactory.createAFTClient(serverAddress, context.cluster.certificate)
             val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
             // TODO 增加文件传输进度
