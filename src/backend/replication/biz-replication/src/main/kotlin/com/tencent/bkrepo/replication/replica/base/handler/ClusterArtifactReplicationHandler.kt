@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.base.handler
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
@@ -66,9 +67,12 @@ class ClusterArtifactReplicationHandler(
         filePushContext: FilePushContext,
         pushType: String
     ) : Boolean {
-        return when (pushType) {
+        val newType = filterRepoWithPushType(
+            pushType, filePushContext.context.localProjectId, filePushContext.context.localRepoName
+        )
+        return when (newType) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
-                super.blobPush(filePushContext, pushType)
+                super.blobPush(filePushContext, newType)
             }
             WayOfPushArtifact.PUSH_WITH_FDTP.value -> {
                 pushWithFdtp(filePushContext)
@@ -76,6 +80,28 @@ class ClusterArtifactReplicationHandler(
             else -> {
                 pushBlob(filePushContext)
                 true
+            }
+        }
+    }
+
+    private fun filterRepoWithPushType(pushType: String, projectId: String, repoName: String): String {
+        return when (pushType) {
+            WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
+                if (filterProjectRepo(projectId, repoName, replicationProperties.chunkedRepos)) {
+                    return pushType
+                } else {
+                    return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                }
+            }
+            WayOfPushArtifact.PUSH_WITH_FDTP.value -> {
+                if (filterProjectRepo(projectId, repoName, replicationProperties.fdtpRepos)) {
+                    return pushType
+                } else {
+                    return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                }
+            }
+            else -> {
+                return pushType
             }
         }
     }
@@ -157,7 +183,8 @@ class ClusterArtifactReplicationHandler(
             logger.info("File $sha256 will be pushed using the fdtp way.")
             val host = URL(context.cluster.url).host
             val serverAddress = InetSocketAddress(host, fdtpServerProperties.port)
-            val client = FdtpAFTClientFactory.createAFTClient(serverAddress, fdtpServerProperties.certificates)
+            // TODO port与certificates来源修改
+            val client = FdtpAFTClientFactory.createAFTClient(serverAddress, context.cluster.certificate)
             val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
             // TODO 增加文件传输进度
             val rateLimitInputStream = artifactInputStream.rateLimit(
@@ -199,6 +226,30 @@ class ClusterArtifactReplicationHandler(
             "$params&$STORAGE_KEY=$it"
         }
         return params
+    }
+
+    /**
+     * 只针对配置的仓库进行删除
+     */
+    private fun filterProjectRepo(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
+        if (contains(StringPool.POUND, StringPool.POUND, includeRepositories)) {
+            return true
+        }
+        if (contains(projectId, repoName, includeRepositories)) {
+            return true
+        }
+        if (contains(projectId, StringPool.POUND, includeRepositories)) {
+            return true
+        }
+        if (contains(StringPool.POUND, repoName, includeRepositories)) {
+            return true
+        }
+        return false
+    }
+
+    private fun contains(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
+        val key = "$projectId/$repoName"
+        return includeRepositories.contains(key)
     }
 
     companion object {

@@ -77,5 +77,13 @@ data class ReplicationProperties(
      * 追加上传：CHUNKED
      * 普通上传（单个请求）：DEFAULT
      * */
-    var pushType: String = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-)
+    var pushType: String = WayOfPushArtifact.PUSH_WITH_DEFAULT.value,
+    /**
+     * 追加上传灰度项目
+     * */
+    var chunkedRepos: List<String> = emptyList(),
+    /**
+     * 使用fdtp上传灰度项目
+     * */
+    var fdtpRepos: List<String> = emptyList()
+    )
