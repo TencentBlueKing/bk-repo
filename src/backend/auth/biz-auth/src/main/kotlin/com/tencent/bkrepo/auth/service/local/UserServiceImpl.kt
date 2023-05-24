@@ -102,8 +102,12 @@ class UserServiceImpl constructor(
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
-        if (!request.asstUsers.all { validateEntityUser(it) }) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_ENTITY_USER_NOT_EXIST)
+        // check asstUsers
+        request.asstUsers.forEach {
+            if (!validateEntityUser(it)) {
+                val createRequest = CreateUserRequest(userId = it, name = it)
+                createUser(createRequest)
+            }
         }
         val hashPwd = if (request.pwd == null) {
             DataDigestUtils.md5FromStr(IDUtil.genRandomId())
