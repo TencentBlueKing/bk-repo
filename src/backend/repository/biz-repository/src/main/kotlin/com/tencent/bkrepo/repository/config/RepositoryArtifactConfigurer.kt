@@ -47,5 +47,7 @@ class RepositoryArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer { httpAuthSecurity ->
         httpAuthSecurity.withPrefix("/repository")
+            .includePattern("/api/**")
+            .includePattern("/cluster/**")
     }
 }
