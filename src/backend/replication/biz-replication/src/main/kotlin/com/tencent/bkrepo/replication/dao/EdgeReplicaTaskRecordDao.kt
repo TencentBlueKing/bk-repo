@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.dao
 
-/**
- * 同步进度
- */
-data class ReplicaProgress(
-    /**
-     * 成功数量
-     */
-    var success: Long = 0,
-    /**
-     * 跳过数量
-     */
-    var skip: Long = 0,
-    /**
-     * 失败数量
-     */
-    var failed: Long = 0,
-    /**
-     * 边缘节点协同分发数量
-     */
-    var edge: Long = 0,
-    /**
-     * 数据大小, 单位bytes
-     */
-    var totalSize: Long = 0
-)
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.replication.model.TEdgeReplicaTaskRecord
+import org.springframework.stereotype.Repository
+
+@Repository
+class EdgeReplicaTaskRecordDao : SimpleMongoDao<TEdgeReplicaTaskRecord>()

@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.repository.service.packages.impl.center
 
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageDependentsDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.service.packages.impl.PackageDependentsServiceImpl
-import com.tencent.bkrepo.repository.util.ClusterUtils
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 

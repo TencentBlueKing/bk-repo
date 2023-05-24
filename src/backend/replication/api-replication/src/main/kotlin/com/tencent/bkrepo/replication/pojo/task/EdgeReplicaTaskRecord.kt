@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.pojo.task
 
-/**
- * 同步进度
- */
-data class ReplicaProgress(
-    /**
-     * 成功数量
-     */
-    var success: Long = 0,
-    /**
-     * 跳过数量
-     */
-    var skip: Long = 0,
-    /**
-     * 失败数量
-     */
-    var failed: Long = 0,
-    /**
-     * 边缘节点协同分发数量
-     */
-    var edge: Long = 0,
-    /**
-     * 数据大小, 单位bytes
-     */
-    var totalSize: Long = 0
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+
+data class EdgeReplicaTaskRecord(
+    var id: String? = null,
+    var taskDetail: ReplicaTaskDetail,
+    val taskObject: ReplicaObjectInfo,
+    val taskRecord: ReplicaRecordInfo,
+    val localRepo: RepositoryDetail,
+    val remoteCluster: ClusterNodeInfo,
+    var execClusterName: String,
+    var projectId: String,
+    var repoName: String,
+    var fullPath: String? = null,
+    var sha256: String? = null,
+    var packageName: String? = null,
+    var packageVersion: String? = null,
+    var status: ExecutionStatus,
+    var errorReason: String? = null
 )
