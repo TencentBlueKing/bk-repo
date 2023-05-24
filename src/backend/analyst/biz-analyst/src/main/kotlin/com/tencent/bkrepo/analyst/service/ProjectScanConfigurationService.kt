@@ -75,7 +75,7 @@ interface ProjectScanConfigurationService {
     fun get(projectId: String): ProjectScanConfiguration
 
     /**
-     * 获取项目或全局扫描胚子和
+     * 获取项目或全局扫描配置
      *
      * @param projectId 项目id
      *
