@@ -36,9 +36,8 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.util.concurrent.DefaultPromise
-import java.lang.IllegalStateException
-import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 class FdtpAFTClientHandler : SimpleChannelInboundHandler<FdtpStreamFrame>() {
     val streamIdPromiseMap = ConcurrentHashMap<Int, DefaultPromise<FullFdtpAFTResponse>>()
@@ -58,6 +57,7 @@ class FdtpAFTClientHandler : SimpleChannelInboundHandler<FdtpStreamFrame>() {
             val stream = msg.stream()
             val streamId = stream!!.id()
             val promise = streamIdPromiseMap[streamId]
+            streamIdPromiseMap.remove(streamId)
             checkNotNull(promise) { "Unexpected message received: $msg" }
             val headers = msg.headers()
             val code = headers.get(FdtpHeaderNames.STATUS)?.toInt()
