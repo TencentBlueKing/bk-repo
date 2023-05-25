@@ -40,9 +40,8 @@ import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.slf4j.LoggerFactory
-import org.springframework.boot.ApplicationArguments
-import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Conditional
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
@@ -51,18 +50,27 @@ class EdgeReplicaTaskJob(
     private val clusterProperties: ClusterProperties,
     private val replicationProperties: ReplicationProperties,
     private val nodeClient: NodeClient
-) : ApplicationRunner {
+) {
 
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "replication", clusterProperties.self.name) }
 
-    override fun run(args: ApplicationArguments?) {
+    @Suppress("LoopWithTooManyJumpStatements")
+    @Scheduled(fixedDelay = 1000L)
+    fun run() {
         while (true) {
-            val deferredResult = centerReplicaTaskClient.getEdgeReplicaTask(clusterProperties.self.name!!)
+            logger.info("start to get edge replica task")
+            val deferredResult = try {
+                centerReplicaTaskClient.getEdgeReplicaTask(clusterProperties.self.name!!)
+            } catch (ignore: Exception) {
+                logger.warn("get edge replica task error: ", ignore)
+                continue
+            }
             if (!deferredResult.hasResult()) {
                 continue
             }
             val taskRecord = deferredResult.result.toString().readJsonString<Response<EdgeReplicaTaskRecord>>().data!!
+            logger.info("get edge replica task: $taskRecord")
             if (!taskRecord.fullPath.isNullOrEmpty()) {
                 replicaFile(taskRecord)
             }

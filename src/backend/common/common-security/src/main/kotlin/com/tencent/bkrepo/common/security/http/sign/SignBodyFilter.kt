@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest
  * */
 class SignBodyFilter(private val limit: Long) : Filter {
 
-    private val emptyStringHash = Hashing.sha256().hashBytes(StringPool.EMPTY.toByteArray())
+    private val emptyStringHash = Hashing.sha256().hashBytes(StringPool.EMPTY.toByteArray()).toString()
 
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
         val lengthCondition = request.contentLength in 1..limit

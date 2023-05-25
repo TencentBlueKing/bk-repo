@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.service.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.urlDecode
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import feign.RequestTemplate
 import okhttp3.MultipartBody
@@ -104,7 +105,10 @@ object HttpSigner {
 
     fun getSignatureStr(request: HttpServletRequest, uri: String, bodyHash: String): String {
         val method = request.method
-        val needSignParameters = request.parameterMap.filter { it.key != SIGN }.toMap()
+        val needSignParameters = request.parameterMap.filter { it.key != SIGN }
+            .mapValues {
+                it.value.map { v -> v.urlDecode() }.toTypedArray()
+            }
         val sortedParameters = sortParameters(needSignParameters)
         return "$uri$method$sortedParameters$bodyHash".toLowerCase()
     }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.security.http.sign
 
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.urlDecode
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
@@ -83,7 +84,7 @@ class SignAuthHandler(
             val signatureStr = HttpSigner.getSignatureStr(request, uri, bodyHash)
             throw AuthenticationException("Invalid signature, server signature string: $signatureStr")
         }
-        val signTime = request.getParameter(SIGN_TIME)
+        val signTime = request.getParameter(SIGN_TIME).urlDecode()
         val expiredTime = signTime.split(TIME_SPLIT).last().toLong()
         if (expiredTime < System.currentTimeMillis() / MILLIS_PER_SECOND) {
             // 请求超时

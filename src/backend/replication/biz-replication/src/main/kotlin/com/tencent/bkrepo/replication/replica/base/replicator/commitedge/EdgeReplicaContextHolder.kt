@@ -30,12 +30,14 @@ package com.tencent.bkrepo.replication.replica.base.replicator.commitedge
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
+import org.slf4j.LoggerFactory
 import org.springframework.web.context.request.async.DeferredResult
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 object EdgeReplicaContextHolder {
 
+    private val logger = LoggerFactory.getLogger(EdgeReplicaContextHolder::class.java)
     private val deferredResultMap = ConcurrentHashMap<String, DeferredResult<Response<EdgeReplicaTaskRecord>>>()
 
     fun addDeferredResult(clusterName: String, deferredResult: DeferredResult<Response<EdgeReplicaTaskRecord>>) {
@@ -60,8 +62,11 @@ object EdgeReplicaContextHolder {
 //                throw ErrorCodeException()
             }
             val deferredResult = deferredResultMap[key]!!
-            if (deferredResult.isSetOrExpired)
-            deferredResult.setResult(ResponseBuilder.success(this))
+            if (!deferredResult.isSetOrExpired) {
+                logger.info("send edge task: $edgeReplicaTaskRecord")
+                deferredResult.setResult(ResponseBuilder.success(this))
+                deferredResultMap.remove(key)
+            }
         }
     }
 }
