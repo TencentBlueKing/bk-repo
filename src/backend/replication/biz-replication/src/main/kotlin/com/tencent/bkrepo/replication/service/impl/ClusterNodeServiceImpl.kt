@@ -290,7 +290,7 @@ class ClusterNodeServiceImpl(
                 client.sendStream(inputStream, headers)
             } catch (exception: Exception) {
                 val message = exception.message ?: UNKNOWN
-                logger.warn("ping cluster [$name] failed, reason: $message")
+                logger.warn("connect cluster [$name] with udp failed, reason: $message")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
             }
         }
