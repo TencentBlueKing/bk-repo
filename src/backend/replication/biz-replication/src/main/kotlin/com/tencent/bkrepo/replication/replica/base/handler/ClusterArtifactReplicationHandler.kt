@@ -53,8 +53,6 @@ import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.net.InetSocketAddress
-import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
@@ -185,10 +183,7 @@ class ClusterArtifactReplicationHandler(
     private fun pushWithFdtp(filePushContext: FilePushContext): Boolean {
         with(filePushContext) {
             logger.info("File $sha256 will be pushed using the fdtp way.")
-            val host = URL(context.cluster.url).host
-            val udpPort = context.cluster.udpPort ?: fdtpServerProperties.port
-            val serverAddress = InetSocketAddress(host, udpPort)
-            val client = FdtpAFTClientFactory.createAFTClient(serverAddress, context.cluster.certificate)
+            val client = FdtpAFTClientFactory.createAFTClient(context.cluster, fdtpServerProperties.port)
             val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
             val rateLimitInputStream = artifactInputStream.rateLimit(
                 replicationProperties.rateLimit.toBytes()

@@ -64,11 +64,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
-import java.net.InetSocketAddress
-import java.net.URL
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.ExecutionException
 import java.util.regex.Pattern
 import kotlin.random.Random
 
@@ -281,19 +278,17 @@ class ClusterNodeServiceImpl(
             }
         }
     }
-    private fun connectWithUdp(remoteClusterInfo: ClusterInfo) {
-        with(remoteClusterInfo) {
+    private fun connectWithUdp(clusterInfo: ClusterInfo) {
+        with(clusterInfo) {
             try {
-                val host = URL(url).host
-                val serverAddress = InetSocketAddress(host, udpPort!!)
-                val client = FdtpAFTClientFactory.createAFTClient(serverAddress, certificate)
+                val client = FdtpAFTClientFactory.createAFTClient(clusterInfo)
                 val data = Random.nextBytes(1)
                 val inputStream = ByteArrayInputStream(data)
                 val headers = DefaultFdtpHeaders()
                 val sha256 = data.inputStream().sha256()
                 headers.add(SHA256, sha256)
                 client.sendStream(inputStream, headers)
-            } catch (exception: ExecutionException) {
+            } catch (exception: Exception) {
                 val message = exception.message ?: UNKNOWN
                 logger.warn("ping cluster [$name] failed, reason: $message")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
