@@ -45,7 +45,10 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.impl.remote.exception.ArtifactPushException
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.util.StreamRequestBody
+import io.netty.channel.ChannelProgressiveFuture
+import io.netty.channel.ChannelProgressiveFutureListener
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -59,7 +62,8 @@ import java.util.concurrent.TimeUnit
 class ClusterArtifactReplicationHandler(
     localDataManager: LocalDataManager,
     replicationProperties: ReplicationProperties,
-    val fdtpServerProperties: FdtpServerProperties
+    val fdtpServerProperties: FdtpServerProperties,
+    val listener: ProgressListener
 ) : ArtifactReplicationHandler(localDataManager, replicationProperties) {
 
 
@@ -182,11 +186,10 @@ class ClusterArtifactReplicationHandler(
         with(filePushContext) {
             logger.info("File $sha256 will be pushed using the fdtp way.")
             val host = URL(context.cluster.url).host
-            val udpPort = context.cluster.udpPort ?: 9000
+            val udpPort = context.cluster.udpPort ?: fdtpServerProperties.port
             val serverAddress = InetSocketAddress(host, udpPort)
             val client = FdtpAFTClientFactory.createAFTClient(serverAddress, context.cluster.certificate)
             val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
-            // TODO 增加文件传输进度
             val rateLimitInputStream = artifactInputStream.rateLimit(
                 replicationProperties.rateLimit.toBytes()
             )
@@ -195,10 +198,35 @@ class ClusterArtifactReplicationHandler(
             headers.add(SHA256, sha256)
             storageKey?.let { headers.add(STORAGE_KEY, storageKey) }
             try {
-                val responsePromise = client.sendStream(rateLimitInputStream, headers)
+                val progressListener = object : ChannelProgressiveFutureListener {
+                    private val tag = RequestTag(context.task, sha256, size)
+                    private val progressListener: ProgressListener = listener
+                    private var previous: Long = 0
 
-                // TODO timeout时间如何设置
-                val response = responsePromise.get(15, TimeUnit.MINUTES)
+                    @Throws(Exception::class)
+                    override fun operationProgressed(future: ChannelProgressiveFuture?, progress: Long, total: Long) {
+                        if (progress == previous) return
+                        try {
+                            progressListener.onProgress(tag.task, tag.key, progress - previous)
+                        } catch (ignore: Exception) {
+                        }
+                        previous = progress
+                    }
+
+                    @Throws(Exception::class)
+                    override fun operationComplete(future: ChannelProgressiveFuture) {
+                        if (future.isSuccess) {
+                            progressListener.onSuccess(tag.task)
+                        } else {
+                            progressListener.onFailed(tag.task, tag.key)
+                        }
+                    }
+                }
+                listener.onStart(context.task, sha256,0)
+
+                val responsePromise = client.sendStream(rateLimitInputStream, headers, progressListener)
+
+                val response = responsePromise.get(READ_TIME_OUT, TimeUnit.SECONDS)
                 if (response.status == FdtpResponseStatus.OK){
                     return true
                 } else {
@@ -254,5 +282,7 @@ class ClusterArtifactReplicationHandler(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterArtifactReplicationHandler::class.java)
+        // 读取结果返回超时时间 15分钟
+        private const val READ_TIME_OUT = 60L * 15
     }
 }
