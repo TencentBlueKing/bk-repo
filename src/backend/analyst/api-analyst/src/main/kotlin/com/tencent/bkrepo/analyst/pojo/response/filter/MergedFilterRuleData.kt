@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.analyst.pojo.response.filter
 
+import com.tencent.bkrepo.analyst.utils.CompositeVersionRange
 import org.springframework.util.ReflectionUtils
 
 data class MergedFilterRuleData(
+    var riskyPackageVersions: MutableMap<String, CompositeVersionRange>? = null,
     var riskyPackageKeys: MutableSet<String>? = null,
     var vulIds: MutableSet<String>? = null,
     var licenses: MutableSet<String>? = null
@@ -39,6 +41,12 @@ data class MergedFilterRuleData(
         rule.licenseNames?.let { this.licenses = add(this.licenses, rule, FilterRule::licenseNames.name) }
         rule.riskyPackageKeys?.let {
             this.riskyPackageKeys = add(this.riskyPackageKeys, rule, FilterRule::riskyPackageKeys.name)
+        }
+        rule.riskyPackageVersions?.let {
+            this.riskyPackageVersions = this.riskyPackageVersions ?: HashMap()
+            it.forEach { (pkg, versions) ->
+                this.riskyPackageVersions!![pkg] = CompositeVersionRange.build(versions)
+            }
         }
     }
 

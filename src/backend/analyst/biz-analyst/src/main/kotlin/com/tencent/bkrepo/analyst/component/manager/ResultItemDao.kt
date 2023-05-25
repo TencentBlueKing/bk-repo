@@ -59,6 +59,17 @@ abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
         return Page(pageLimit.pageNumber, pageLimit.pageSize, total, data)
     }
 
+    fun list(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        arguments: LoadResultArguments
+    ): List<T> {
+        val criteria = customizePageBy(buildCriteria(credentialsKey, sha256, scanner), arguments)
+        val query = customizeQuery(Query(criteria), arguments)
+        return find(query)
+    }
+
     protected open fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
         return query
     }

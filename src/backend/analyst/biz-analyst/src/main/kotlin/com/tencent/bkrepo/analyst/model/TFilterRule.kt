@@ -97,6 +97,13 @@ data class TFilterRule(
     val riskyPackageKeys: Set<String>? = null,
 
     /**
+     * 存在风险的包和版本，key为存在风险的包名，value为存在风险的包版本范围
+     *
+     * 例如，key: spring-messaging, value: <4.3.16,>=4.4,<5.0.5
+     */
+    val riskyPackageVersions: Map<String, String>? = null,
+
+    /**
      * 需要忽略的漏洞
      */
     val vulIds: Set<String>? = null,

@@ -128,10 +128,31 @@ class StandardResultManager(
         pageLimit: PageLimit,
         arguments: StandardLoadResultArguments
     ): Page<SecurityResult> {
-        val page = securityResultDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
-        val cveMap = page.records.map { it.data.vulId }.let { knowledgeBase.findByPocId(it) }.associateBy { it.pocId }
-        val records = page.records.map { Converter.convert(it, cveMap[it.data.vulId]) }
-        return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
+        var total = 0L
+        var filteredData = if (!arguments.rule?.ignoreRule?.riskyPackageVersions.isNullOrEmpty()
+            || !arguments.rule?.includeRule?.riskyPackageVersions.isNullOrEmpty()) {
+            val data = securityResultDao.list(credentialsKey, sha256, scanner.name, arguments)
+            data.filter {
+                arguments.rule!!.shouldIgnore(
+                    it.data.vulId, it.data.cveId, it.data.pkgName, it.data.pkgVersions, it.data.severityLevel
+                )
+            }
+        } else {
+            val page = securityResultDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
+            total = page.totalRecords
+            page.records
+        }
+
+        if (total == 0L) {
+            total = filteredData.size.toLong()
+            val start = (pageLimit.pageNumber - 1) * pageLimit.pageSize
+            filteredData = filteredData.subList(start, start + pageLimit.pageSize)
+        }
+
+        val cveMap = filteredData.map { it.data.vulId }.let { knowledgeBase.findByPocId(it) }.associateBy { it.pocId }
+        val records = filteredData.map { Converter.convert(it, cveMap[it.data.vulId]) }
+
+        return Page(pageLimit.pageNumber, pageLimit.pageSize, total, records)
     }
 
     private fun replaceSecurityResult(

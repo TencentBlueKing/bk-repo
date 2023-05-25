@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.analyst.pojo.response.filter
 
+import com.tencent.bkrepo.analyst.utils.VersionNumber
+import org.slf4j.LoggerFactory
+
 data class MergedFilterRule(
     val ignoreRule: MergedFilterRuleData = MergedFilterRuleData(),
     val includeRule: MergedFilterRuleData = MergedFilterRuleData(),
@@ -39,6 +42,7 @@ data class MergedFilterRule(
         vulId: String,
         cveId: String? = null,
         riskyPackageKey: String? = null,
+        riskyPackageVersions: Set<String>? = null,
         severity: Int? = null
     ): Boolean {
         return if (ignoreByIncludeRule(includeRule.vulIds, cveId) && ignoreByIncludeRule(includeRule.vulIds, vulId)) {
@@ -48,9 +52,54 @@ data class MergedFilterRule(
         } else if (ignoreByIncludeRule(includeRule.riskyPackageKeys, riskyPackageKey) ||
             ignoreByIgnoreRule(ignoreRule.riskyPackageKeys, riskyPackageKey)) {
             true
+        } else if (ignoreByVersionRange(riskyPackageKey, riskyPackageVersions)) {
+            true
         } else {
             minSeverityLevel != null && severity != null && severity < minSeverityLevel!!
         }
+    }
+
+    @Suppress("SwallowedException")
+    private fun ignoreByVersionRange(
+        riskyPackageKey: String?,
+        riskyPackageVersions: Set<String>?
+    ): Boolean {
+        val includeVersionRange = includeRule.riskyPackageVersions?.get(riskyPackageKey)
+        var ignoreByIncludeRule = false
+
+        // riskyPackageVersions为空时不忽略风险组件，避免漏报
+        if (includeVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
+            ignoreByIncludeRule = riskyPackageVersions.none {
+                try {
+                    includeVersionRange.contains(VersionNumber(it))
+                } catch (e: VersionNumber.UnsupportedVersionException) {
+                    // 不支持的版本格式不忽略，避免漏报
+                    logger.warn("unsupported pkg[$riskyPackageKey] version[$it]")
+                    true
+                }
+            }
+        }
+
+        if (ignoreByIncludeRule) {
+            return true
+        }
+
+        val ignoreVersionRange = ignoreRule.riskyPackageVersions?.get(riskyPackageKey)
+        var ignoreByIgnoreRule = false
+
+        if (ignoreVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
+            ignoreByIgnoreRule = riskyPackageVersions.any {
+                try {
+                    ignoreVersionRange.contains(VersionNumber(it))
+                } catch (e: VersionNumber.UnsupportedVersionException) {
+                    // 不支持的版本格式不忽略，避免漏报
+                    logger.warn("unsupported pkg[$riskyPackageKey] version[$it]")
+                    false
+                }
+            }
+        }
+
+        return ignoreByIgnoreRule
     }
 
     /**
@@ -67,5 +116,9 @@ data class MergedFilterRule(
 
     private fun ignoreByIncludeRule(include: Set<String>?, result: String?): Boolean {
         return !include.isNullOrEmpty() && result !in include
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MergedFilterRule::class.java)
     }
 }
