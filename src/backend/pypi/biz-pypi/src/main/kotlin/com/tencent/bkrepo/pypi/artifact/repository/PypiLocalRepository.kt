@@ -413,13 +413,14 @@ class PypiLocalRepository(
             }
         }
         for (node in sortedNodeList) {
-            val md5 = node.md5
+            val sha256 = node.sha256
             builder.append("<a")
             val requiresPython = node.metadata?.get("requires_python")?.toString()
             if (!requiresPython.isNullOrBlank()) {
                 builder.append(" data-requires-python=\"$requiresPython\"")
             }
-            builder.append(" href=\"../../packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
+            builder.append(" href=\"../../packages${node.fullPath}#sha256=$sha256\"" +
+                " rel=\"internal\" >${node.name}</a><br/>")
         }
         return builder.toString()
     }
