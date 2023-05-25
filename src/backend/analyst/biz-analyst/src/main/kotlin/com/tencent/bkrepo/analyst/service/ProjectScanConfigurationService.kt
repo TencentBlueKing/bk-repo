@@ -73,4 +73,13 @@ interface ProjectScanConfigurationService {
      * @return 项目扫描配置
      */
     fun get(projectId: String): ProjectScanConfiguration
+
+    /**
+     * 获取项目或全局扫描配置
+     *
+     * @param projectId 项目id
+     *
+     * @return 项目扫描配置
+     */
+    fun findProjectOrGlobalScanConfiguration(projectId: String): ProjectScanConfiguration?
 }
