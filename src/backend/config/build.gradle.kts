@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,33 +28,3 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-package com.tencent.bkrepo.common.service.bootstrap
-
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.PropertySource
-import org.springframework.retry.interceptor.RetryInterceptorBuilder
-import org.springframework.retry.interceptor.RetryOperationsInterceptor
-
-@PropertySource("classpath:common-bootstrap.properties")
-class CommonBootstrapConfiguration {
-
-    /**
-     * 二进制环境未部署config服务时，需要兼容读取consul配置, 所以不能配置spring.cloud.config.failFast=true
-     * common-storage模块引入了spring-retry依赖，会导致服务启动不了，报错缺少configServerRetryInterceptor Bean
-     */
-    @Bean
-    fun configServerRetryInterceptor(): RetryOperationsInterceptor {
-        return RetryInterceptorBuilder.stateless()
-            .backOffOptions(INIT_INTERVAL, MULTIPLIER, MAX_INTERVAL)
-            .maxAttempts(MAX_RETRY_TIME)
-            .build()
-    }
-
-    companion object {
-        private const val INIT_INTERVAL = 1000L
-        private const val MAX_INTERVAL = 2000L
-        private const val MULTIPLIER = 1.2
-        private const val MAX_RETRY_TIME = 3
-    }
-}
