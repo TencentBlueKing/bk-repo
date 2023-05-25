@@ -739,5 +739,6 @@
     "ruleIgnoreByVulSeverity": "通过漏洞等级过滤",
     "ruleIgnoreByVulComponent": "通过风险组件名过滤",
     "ruleIgnoreRiskyComponentPlaceholder": "风险组件名，多个风险组件通过换行分隔",
-    "ruleIgnoreRiskyComponentTip": "将被过滤的风险组件名，多个风险组件通过换行分隔"
+    "ruleIgnoreRiskyComponentTip": "将被过滤的风险组件名，多个风险组件通过换行分隔",
+    "repositories": "制品仓库"
 }
