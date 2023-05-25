@@ -65,6 +65,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
 import java.net.InetSocketAddress
+import java.net.URL
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ExecutionException
@@ -283,7 +284,8 @@ class ClusterNodeServiceImpl(
     private fun connectWithUdp(remoteClusterInfo: ClusterInfo) {
         with(remoteClusterInfo) {
             try {
-                val serverAddress = InetSocketAddress(url, udpPort!!)
+                val host = URL(url).host
+                val serverAddress = InetSocketAddress(host, udpPort!!)
                 val client = FdtpAFTClientFactory.createAFTClient(serverAddress, certificate)
                 val data = Random.nextBytes(1)
                 val inputStream = ByteArrayInputStream(data)
