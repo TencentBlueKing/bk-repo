@@ -91,6 +91,7 @@ data class UpdateFilterRuleRequest(
     @Suppress("TooGenericExceptionCaught")
     fun check() {
         checkFilterCondition()
+        checkProjectId()
         val errMsg = StringBuilder()
         // 保留规则不允许设置最小漏洞等级
         if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
@@ -127,6 +128,12 @@ data class UpdateFilterRuleRequest(
                 CommonMessageCode.PARAMETER_INVALID,
                 "[riskyPackageKey, riskyPackageVersions, vulIds, severity, licenseNames] only one could be set"
             )
+        }
+    }
+
+    private fun checkProjectId() {
+        if (projectId == SYSTEM_PROJECT_ID && projectIds == null) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectIds[$projectIds] could not be null")
         }
     }
 }
