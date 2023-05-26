@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.fs.server
 
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -44,8 +44,8 @@ suspend fun WebFilterChain.filterAndAwait(exchange: ServerWebExchange) {
     this.filter(exchange).awaitSingleOrNull()
 }
 
-suspend fun ServerRequest.bodyToArtifactFile(): ReactiveArtifactFile {
-    val reactiveArtifactFile = ReactiveArtifactFileFactory.buildArtifactFile()
+suspend fun ServerRequest.bodyToArtifactFile(): CoArtifactFile {
+    val reactiveArtifactFile = CoArtifactFileFactory.buildArtifactFile()
     this.bodyToFlow<DataBuffer>().onCompletion {
         reactiveArtifactFile.finish()
     }.collect {

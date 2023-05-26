@@ -51,27 +51,69 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
-class AsynchronousReceiver(
+/**
+ * 制品文件接收器
+ * */
+class CoArtifactDataReceiver(
     receiveProperties: ReceiveProperties,
     private var path: Path,
-    private val fileName: String = generateRandomName()
+    private val fileName: String = generateRandomName(),
 ) : StorageHealthMonitor.Observer {
 
+    /**
+     * 文件内存接收阈值
+     * */
     private val fileSizeThreshold = receiveProperties.fileSizeThreshold.toBytes().toInt()
-    private var cache: ByteArray? = ByteArray(fileSizeThreshold)
+
+    /**
+     * 缓存数据大小，默认等于fileSizeThreshold
+     * */
+    private val cacheDataSize = if (fileSizeThreshold == -1) 0 else fileSizeThreshold
+
+    /**
+     * 缓存数据
+     * */
+    private var cacheData: ByteArray? = ByteArray(cacheDataSize)
+
+    /**
+     * 文件接收位置
+     * */
     private var pos: Long = 0
+
+    /**
+     * 文件是否在内存当中
+     * */
     var inMemory = true
+
+    /**
+     * 文件路径，降级时会自动修改
+     * */
     val filePath: Path get() = path.resolve(fileName)
 
+    /**
+     * 文件异步接收通道
+     * */
     private val channel: AsynchronousFileChannel by lazy {
         AsynchronousFileChannel.open(
             filePath,
             StandardOpenOption.WRITE,
-            StandardOpenOption.CREATE_NEW
+            StandardOpenOption.CREATE_NEW,
         )
     }
+
+    /**
+     * 是否降级
+     * */
     var fallback: Boolean = false
+
+    /**
+     * 是否完成接收
+     * */
     var finished: Boolean = false
+
+    /**
+     * 降级路径
+     * */
     var fallBackPath: Path? = null
 
     /**
@@ -118,7 +160,7 @@ class AsynchronousReceiver(
             flushToFile()
             DataBufferUtils.write(Mono.just(buffer), channel, pos).awaitSingle()
         } else if (inMemory) {
-            buffer.read(cache!!, pos.toInt(), len)
+            buffer.read(cacheData!!, pos.toInt(), len)
         } else {
             DataBufferUtils.write(Mono.just(buffer), channel, pos).awaitSingle()
         }
@@ -129,12 +171,12 @@ class AsynchronousReceiver(
 
     suspend fun flushToFile() {
         if (inMemory) {
-            val cacheData = cache!!.copyOfRange(0, pos.toInt())
+            val cacheData = cacheData!!.copyOfRange(0, pos.toInt())
             val buf = DefaultDataBufferFactory.sharedInstance.wrap(cacheData)
             DataBufferUtils.write(Mono.just(buf), channel).awaitSingle()
             inMemory = false
             // help gc
-            cache = null
+            this.cacheData = null
         }
     }
 
@@ -200,7 +242,7 @@ class AsynchronousReceiver(
         getFile()?.let {
             return it.inputStream()
         }
-        return ByteArrayInputStream(cache, 0, pos.toInt())
+        return ByteArrayInputStream(cacheData, 0, pos.toInt())
     }
 
     private inner class DigestSubscriber : BaseSubscriber<ByteArray>() {
@@ -219,14 +261,14 @@ class AsynchronousReceiver(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AsynchronousReceiver::class.java)
+        private val logger = LoggerFactory.getLogger(CoArtifactDataReceiver::class.java)
         private const val ARTIFACT_ASYNC_PREFIX = "artifact_async_"
         private const val ARTIFACT_ASYNC_SUFFIX = ".temp"
 
         private fun generateRandomName(): String {
             return StringPool.randomStringByLongValue(
                 prefix = ARTIFACT_ASYNC_PREFIX,
-                suffix = ARTIFACT_ASYNC_SUFFIX
+                suffix = ARTIFACT_ASYNC_SUFFIX,
             )
         }
     }

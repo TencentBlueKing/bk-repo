@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,13 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.job.pojo
+package com.tencent.bkrepo.config
 
-import java.util.concurrent.atomic.LongAdder
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient
+import org.springframework.cloud.config.server.EnableConfigServer
 
-data class RepoMetrics(
-    val repoName: String,
-    val credentialsKey: String = "default",
-    var size: LongAdder = LongAdder(),
-    var num: LongAdder = LongAdder()
-)
+
+/**
+ * config server
+ */
+@EnableDiscoveryClient
+@SpringBootApplication
+@EnableConfigServer
+class ConfigApplication
+
+fun main(args: Array<String>) {
+    runApplication<ConfigApplication>(*args)
+}

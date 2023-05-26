@@ -37,7 +37,7 @@ import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFile
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -60,7 +60,7 @@ class FileOperationService(
         )
     }
 
-    suspend fun write(artifactFile: ReactiveArtifactFile, request: BlockRequest, user: String): TBlockNode {
+    suspend fun write(artifactFile: CoArtifactFile, request: BlockRequest, user: String): TBlockNode {
         with(request) {
             val blockNode = TBlockNode(
                 createdBy = user,

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,14 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.storage
+package com.tencent.bkrepo.generic.config
 
-data class PathStatMetric(
-    var path: String,
-    var totalFileCount: Long = 0,
-    var totalSize: Long = 0,
-    var totalFolderCount: Long = 0,
-    var totalSpace: Long = 0,
-    var usableSpace: Long = 0,
-    var folders: MutableMap<String, Long> = mutableMapOf()
-)
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import java.io.IOException
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+@RestControllerAdvice
+class IOExceptionHandler {
+
+    /**
+     * 处理IOException
+     * */
+    @ExceptionHandler(IOException::class)
+    fun handler(ex: IOException) {
+        // ignore client error
+        if (!IOExceptionUtils.isClientBroken(ex)) {
+            val code = CommonMessageCode.SYSTEM_ERROR.getCode()
+            LoggerHolder.logException(ex, "[$code]${ex.message}", true)
+        }
+    }
+}

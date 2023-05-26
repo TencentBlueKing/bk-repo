@@ -30,7 +30,7 @@ package com.tencent.com.bkrepo.fs.storage
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.util.toPath
-import com.tencent.bkrepo.fs.server.storage.AsynchronousReceiver
+import com.tencent.bkrepo.fs.server.storage.CoArtifactDataReceiver
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.util.unit.DataSize
 
-class AsynchronousReceiverTest {
+class CoArtifactDataReceiverTest {
     private val primaryPath = "temp".toPath()
     private val fallbackPath = "fallback".toPath()
     private val filename = "testfile"
@@ -115,19 +115,19 @@ class AsynchronousReceiverTest {
         }
     }
 
-    private fun AsynchronousReceiver.assertContentEquals(expected: ByteArray) {
+    private fun CoArtifactDataReceiver.assertContentEquals(expected: ByteArray) {
         val fromInputStream = readFromInputStream(this)
         Assertions.assertArrayEquals(expected, fromInputStream)
         val fromFile = readFromFile(this)
         Assertions.assertArrayEquals(expected, fromFile)
     }
 
-    private fun readFromFile(receiver: AsynchronousReceiver): ByteArray {
+    private fun readFromFile(receiver: CoArtifactDataReceiver): ByteArray {
         val outputStream = ByteArrayOutputStream()
         receiver.getFile()!!.inputStream().use { it.copyTo(outputStream) }
         return outputStream.toByteArray()
     }
-    private fun readFromInputStream(receiver: AsynchronousReceiver): ByteArray {
+    private fun readFromInputStream(receiver: CoArtifactDataReceiver): ByteArray {
         val outputStream = ByteArrayOutputStream()
         receiver.getInputStream().use { it.copyTo(outputStream) }
         return outputStream.toByteArray()
@@ -135,11 +135,11 @@ class AsynchronousReceiverTest {
 
     private fun createReceiver(
         fileSizeThreshold: Long = DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes()
-    ): AsynchronousReceiver {
+    ): CoArtifactDataReceiver {
         val receive = ReceiveProperties(
             fileSizeThreshold = DataSize.ofBytes(fileSizeThreshold),
             rateLimit = DataSize.ofBytes(-1)
         )
-        return AsynchronousReceiver(receive, primaryPath, filename)
+        return CoArtifactDataReceiver(receive, primaryPath, filename)
     }
 }

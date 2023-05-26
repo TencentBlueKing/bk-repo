@@ -43,13 +43,15 @@ import java.time.Duration
 
 @Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ServiceAuthManager(
-    properties: ServiceAuthProperties
+    properties: ServiceAuthProperties,
 ) {
-    private var token: String? = null
+
     private val signingKey = JwtUtils.createSigningKey(properties.secretKey)
 
+    private var token: String = generateSecurityToken()
+
     fun getSecurityToken(): String {
-        return token ?: generateSecurityToken()
+        return token
     }
 
     fun verifySecurityToken(token: String) {
@@ -67,7 +69,7 @@ class ServiceAuthManager(
     @Scheduled(fixedDelay = REFRESH_DELAY)
     fun refreshSecurityToken() {
         logger.info("Refreshing security token")
-        generateSecurityToken()
+        token = generateSecurityToken()
     }
 
     private fun generateSecurityToken(): String {
