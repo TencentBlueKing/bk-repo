@@ -90,16 +90,8 @@ data class UpdateFilterRuleRequest(
 ) {
     @Suppress("TooGenericExceptionCaught")
     fun check() {
-        var count = 0
+        checkFilterCondition()
         val errMsg = StringBuilder()
-        riskyPackageKeys?.let { count++ }
-        vulIds?.let { count++ }
-        severity?.let { count++ }
-        licenseNames?.let { count++ }
-        if (count > 1) {
-            errMsg.append("[riskyPackageKey, vulIds, severity, licenseNames] only one could be set\n")
-        }
-
         // 保留规则不允许设置最小漏洞等级
         if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
             errMsg.append("ignore[$type], severity[$severity]\n")
@@ -120,6 +112,21 @@ data class UpdateFilterRuleRequest(
 
         if (errMsg.isNotEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, errMsg.toString())
+        }
+    }
+
+    private fun checkFilterCondition() {
+        var count = 0
+        riskyPackageKeys?.let { count++ }
+        vulIds?.let { count++ }
+        severity?.let { count++ }
+        licenseNames?.let { count++ }
+        riskyPackageVersions?.let { count++ }
+        if (count > 1) {
+            throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "[riskyPackageKey, riskyPackageVersions, vulIds, severity, licenseNames] only one could be set"
+            )
         }
     }
 }
