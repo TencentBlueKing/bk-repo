@@ -58,10 +58,10 @@ object EdgeReplicaContextHolder {
                 key = deferredResultMap.keys().toList()
                     .firstOrNull { it.startsWith(edgeReplicaTaskRecord.execClusterName) }
             }
-            if (key == null) {
-//                throw ErrorCodeException()
+            val deferredResult = deferredResultMap[key]
+            if (deferredResult == null || deferredResult.isSetOrExpired) {
+                throw RuntimeException()
             }
-            val deferredResult = deferredResultMap[key]!!
             if (!deferredResult.isSetOrExpired) {
                 logger.info("send edge task: $edgeReplicaTaskRecord")
                 deferredResult.setResult(ResponseBuilder.success(this))
