@@ -128,31 +128,18 @@ class StandardResultManager(
         pageLimit: PageLimit,
         arguments: StandardLoadResultArguments
     ): Page<SecurityResult> {
-        var total = 0L
-        var filteredData = if (!arguments.rule?.ignoreRule?.riskyPackageVersions.isNullOrEmpty()
-            || !arguments.rule?.includeRule?.riskyPackageVersions.isNullOrEmpty()) {
-            val data = securityResultDao.list(credentialsKey, sha256, scanner.name, arguments)
-            data.filter {
-                arguments.rule!!.shouldIgnore(
-                    it.data.vulId, it.data.cveId, it.data.pkgName, it.data.pkgVersions, it.data.severityLevel
-                )
-            }
+        // 由于组件版本范围查询较为复杂，无法在数据库查询语句中实现，因此将初步筛选后数据全部查出，在服务中过滤符合范围条件的组件漏洞
+        val queryAll = !arguments.rule?.ignoreRule?.riskyPackageVersions.isNullOrEmpty()
+            || !arguments.rule?.includeRule?.riskyPackageVersions.isNullOrEmpty()
+
+        val page = if (queryAll) {
+            securityResultDao.list(credentialsKey, sha256, scanner.name, pageLimit, arguments)
         } else {
-            val page = securityResultDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
-            total = page.totalRecords
-            page.records
+            securityResultDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
         }
-
-        if (total == 0L) {
-            total = filteredData.size.toLong()
-            val start = (pageLimit.pageNumber - 1) * pageLimit.pageSize
-            filteredData = filteredData.subList(start, start + pageLimit.pageSize)
-        }
-
-        val cveMap = filteredData.map { it.data.vulId }.let { knowledgeBase.findByPocId(it) }.associateBy { it.pocId }
-        val records = filteredData.map { Converter.convert(it, cveMap[it.data.vulId]) }
-
-        return Page(pageLimit.pageNumber, pageLimit.pageSize, total, records)
+        val cveMap = page.records.map { it.data.vulId }.let { knowledgeBase.findByPocId(it) }.associateBy { it.pocId }
+        val records = page.records.map { Converter.convert(it, cveMap[it.data.vulId]) }
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
     }
 
     private fun replaceSecurityResult(
