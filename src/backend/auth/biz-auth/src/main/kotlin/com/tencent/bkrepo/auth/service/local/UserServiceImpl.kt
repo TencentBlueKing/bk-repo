@@ -104,7 +104,7 @@ class UserServiceImpl constructor(
         }
         // check asstUsers
         request.asstUsers.forEach {
-            if (!validateEntityUser(it)) {
+            userRepository.findFirstByUserId(request.userId) ?: run {
                 val createRequest = CreateUserRequest(userId = it, name = it)
                 createUser(createRequest)
             }
