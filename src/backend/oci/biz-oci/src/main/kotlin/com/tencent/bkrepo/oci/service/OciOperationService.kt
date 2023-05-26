@@ -144,13 +144,13 @@ interface OciOperationService {
     fun getNodeFullPath(artifactInfo: OciArtifactInfo): String?
 
     /**
-     * 根据sha256值获取对应的node fullpath
+     * 根据sha256值获取对应的node fullpath,md5,size
      */
     fun getNodeByDigest(
         projectId: String,
         repoName: String,
         digestStr: String
-    ): Pair<String?, String?>
+    ): Triple<String?, String?, Int?>
 
     /**
      * 针对老的docker仓库的数据做兼容性处理
