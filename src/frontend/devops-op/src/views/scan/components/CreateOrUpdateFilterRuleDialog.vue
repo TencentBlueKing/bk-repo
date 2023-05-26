@@ -253,6 +253,8 @@ export default {
         this.ignoreRule = _.cloneDeep(this.updatingRule)
       }
 
+      this.includeAllProjects = this.ignoreRule.projectIds && this.ignoreRule.projectIds.length === 0
+
       if (this.ignoreRule.severity) {
         this.selectedFilterMethod = FILTER_METHOD_SEVERITY
       } else if (this.ignoreRule.riskyPackageKeys) {
