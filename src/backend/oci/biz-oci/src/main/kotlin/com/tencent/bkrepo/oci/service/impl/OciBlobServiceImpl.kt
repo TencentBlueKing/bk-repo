@@ -120,9 +120,10 @@ class OciBlobServiceImpl(
                         repoName = mountRepoName
                     )
                 } catch (e: ErrorCodeException) {
+                    val uuidCreated = startAppend(this)
                     OciResponseUtils.buildBlobMountResponse(
                         domain = domain,
-                        locationStr = "",
+                        locationStr = OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
                         status = e.status,
                         response = HttpContextHolder.getResponse()
                     )
@@ -134,9 +135,10 @@ class OciBlobServiceImpl(
             )
             if (existFullPath == null) {
                 logger.warn("Could not find $ociDigest in repo $mountProjectId|$mountRepoName to mount")
+                val uuidCreated = startAppend(this)
                 OciResponseUtils.buildBlobMountResponse(
                     domain = domain,
-                    locationStr = "",
+                    locationStr = OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
                     status = HttpStatus.ACCEPTED,
                     response = HttpContextHolder.getResponse()
                 )
