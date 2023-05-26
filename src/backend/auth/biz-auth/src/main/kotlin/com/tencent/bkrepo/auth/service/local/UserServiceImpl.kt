@@ -104,13 +104,14 @@ class UserServiceImpl constructor(
         }
         // check asstUsers
         request.asstUsers.forEach {
-            if (!validateEntityUser(it)) {
+            val asstUser = userRepository.findFirstByUserId(it)
+            if (asstUser != null && asstUser.group) {
                 throw ErrorCodeException(AuthMessageCode.AUTH_ENTITY_USER_NOT_EXIST)
+            } else if (asstUser != null && !asstUser.group) {
+                return@forEach
             }
-            userRepository.findFirstByUserId(it) ?: run {
-                val createRequest = CreateUserRequest(userId = it, name = it)
-                createUser(createRequest)
-            }
+            val createRequest = CreateUserRequest(userId = it, name = it)
+            createUser(createRequest)
         }
         val hashPwd = if (request.pwd == null) {
             DataDigestUtils.md5FromStr(IDUtil.genRandomId())
