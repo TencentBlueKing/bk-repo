@@ -35,12 +35,14 @@ abstract class FilterCriteriaBuilder(
     private val ignored: Boolean
 ) {
     fun build(): List<Criteria> {
-        return if (rule != null && ignored) {
+        if (rule == null || rule.containsRiskyPackageVersionsRule()) {
+            return emptyList()
+        }
+
+        return if (ignored) {
             ignoreCriteria(rule)?.let { listOf(it) } ?: emptyList()
-        } else if (rule != null) {
-            activeCriteria(rule)
         } else {
-            emptyList()
+            activeCriteria(rule)
         }
     }
 

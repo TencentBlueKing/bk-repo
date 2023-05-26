@@ -102,6 +102,10 @@ data class MergedFilterRule(
         return ignoreByIgnoreRule
     }
 
+    fun containsRiskyPackageVersionsRule(): Boolean {
+        return !ignoreRule.riskyPackageVersions.isNullOrEmpty() || !includeRule.riskyPackageVersions.isNullOrEmpty()
+    }
+
     /**
      * 不在包含列表或在忽略列表中的许可证将被忽略
      */

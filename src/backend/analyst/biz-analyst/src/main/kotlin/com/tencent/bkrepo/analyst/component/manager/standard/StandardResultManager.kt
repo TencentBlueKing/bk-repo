@@ -128,11 +128,8 @@ class StandardResultManager(
         pageLimit: PageLimit,
         arguments: StandardLoadResultArguments
     ): Page<SecurityResult> {
-        // 由于组件版本范围查询较为复杂，无法在数据库查询语句中实现，因此将初步筛选后数据全部查出，在服务中过滤符合范围条件的组件漏洞
-        val queryAll = !arguments.rule?.ignoreRule?.riskyPackageVersions.isNullOrEmpty()
-            || !arguments.rule?.includeRule?.riskyPackageVersions.isNullOrEmpty()
-
-        val page = if (queryAll) {
+        val page = if (arguments.rule?.containsRiskyPackageVersionsRule() == true) {
+            // 由于组件版本范围查询较为复杂，无法在数据库查询语句中实现，因此将初步筛选后数据全部查出，在服务中过滤符合范围条件的组件漏洞
             securityResultDao.list(credentialsKey, sha256, scanner.name, pageLimit, arguments)
         } else {
             securityResultDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
