@@ -50,6 +50,10 @@ data class MergedFilterRuleData(
         }
     }
 
+    fun isEmpty(): Boolean {
+        return riskyPackageVersions == null && riskyPackageKeys == null && vulIds == null && licenses == null
+    }
+
     private fun add(target: MutableSet<String>?, rule: FilterRule, ruleName: String): MutableSet<String> {
         val result = target ?: HashSet()
         val field = ReflectionUtils.findField(FilterRule::class.java, ruleName)

@@ -45,35 +45,28 @@ data class MergedFilterRule(
         riskyPackageVersions: Set<String>? = null,
         severity: Int? = null
     ): Boolean {
-        return if (ignoreByIncludeRule(includeRule.vulIds, cveId) && ignoreByIncludeRule(includeRule.vulIds, vulId)) {
-            true
-        } else if (ignoreByIgnoreRule(ignoreRule.vulIds, cveId) || ignoreByIgnoreRule(ignoreRule.vulIds, vulId)) {
-            true
-        } else if (ignoreByIncludeRule(includeRule.riskyPackageKeys, riskyPackageKey) ||
-            ignoreByIgnoreRule(ignoreRule.riskyPackageKeys, riskyPackageKey)) {
-            true
-        } else if (ignoreByVersionRange(riskyPackageKey, riskyPackageVersions)) {
-            true
-        } else {
-            minSeverityLevel != null && severity != null && severity < minSeverityLevel!!
-        }
+        return !includeRule.isEmpty() && !included(vulId, cveId, riskyPackageKey, riskyPackageVersions) ||
+            ignored(vulId, cveId, riskyPackageKey, riskyPackageVersions, severity)
     }
 
     @Suppress("SwallowedException")
-    private fun ignoreByVersionRange(
-        riskyPackageKey: String?,
-        riskyPackageVersions: Set<String>?
+    private fun included(
+        vulId: String,
+        cveId: String? = null,
+        riskyPackageKey: String? = null,
+        riskyPackageVersions: Set<String>? = null,
     ): Boolean {
-        val includeVersionRange = includeRule.riskyPackageVersions?.get(riskyPackageKey)
-        var ignoreByIncludeRule = false
-
-        if (includeVersionRange == null && !includeRule.riskyPackageVersions.isNullOrEmpty()) {
-            ignoreByIncludeRule = true
-        } else if (includeVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
-            // riskyPackageVersions为空时不忽略风险组件，避免漏报
-            ignoreByIncludeRule = riskyPackageVersions.none {
+        var included = match(includeRule.vulIds, cveId) ||
+            match(includeRule.vulIds, vulId) ||
+            match(includeRule.riskyPackageKeys, riskyPackageKey) ||
+            includeRule.riskyPackageVersions?.isEmpty() == true
+        val versionRange = riskyPackageKey?.let { includeRule.riskyPackageVersions?.get(it) }
+        if (!included && versionRange != null) {
+            // 未扫描出组件版本且存在该组件的版本范围时直接包含在结果中
+            // 只要有一个版本被包含，就包含该组件
+            included = riskyPackageVersions.isNullOrEmpty() || riskyPackageVersions.any {
                 try {
-                    includeVersionRange.contains(VersionNumber(it))
+                    versionRange.contains(VersionNumber(it))
                 } catch (e: VersionNumber.UnsupportedVersionException) {
                     // 不支持的版本格式不忽略，避免漏报
                     logger.warn("unsupported pkg[$riskyPackageKey] version[$it]")
@@ -81,19 +74,29 @@ data class MergedFilterRule(
                 }
             }
         }
+        return included
+    }
 
-        if (ignoreByIncludeRule) {
-            return true
-        }
+    @Suppress("SwallowedException")
+    private fun ignored(
+        vulId: String,
+        cveId: String? = null,
+        riskyPackageKey: String? = null,
+        riskyPackageVersions: Set<String>? = null,
+        severity: Int? = null
+    ): Boolean {
+        var ignored = match(ignoreRule.vulIds, cveId) ||
+            match(ignoreRule.vulIds, vulId) ||
+            match(ignoreRule.riskyPackageKeys, riskyPackageKey) ||
+            minSeverityLevel != null && severity != null && severity < minSeverityLevel!! ||
+            ignoreRule.riskyPackageVersions?.isEmpty() == true
 
-        val ignoreVersionRange = ignoreRule.riskyPackageVersions?.get(riskyPackageKey)
-        var ignoreByIgnoreRule = false
+        val ignoreVersionRange = riskyPackageKey?.let { ignoreRule.riskyPackageVersions?.get(it) }
 
-        // riskyPackageVersions为空列表时将忽略该组件的所有漏洞
-        if (ignoreRule.riskyPackageVersions?.isEmpty() == true) {
-            ignoreByIgnoreRule = true
-        } else if (ignoreVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
-            ignoreByIgnoreRule = riskyPackageVersions.any {
+        // 未扫描出组件版本时不进行版本范围判断
+        if (!ignored && ignoreVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
+            // 全部版本都被忽略时才忽略该组件
+            ignored = riskyPackageVersions.all {
                 try {
                     ignoreVersionRange.contains(VersionNumber(it))
                 } catch (e: VersionNumber.UnsupportedVersionException) {
@@ -104,27 +107,23 @@ data class MergedFilterRule(
             }
         }
 
-        return ignoreByIgnoreRule
-    }
-
-    fun containsRiskyPackageVersionsRule(): Boolean {
-        return !ignoreRule.riskyPackageVersions.isNullOrEmpty() || !includeRule.riskyPackageVersions.isNullOrEmpty()
+        return ignored
     }
 
     /**
      * 不在包含列表或在忽略列表中的许可证将被忽略
      */
     fun shouldIgnore(licenseName: String): Boolean {
-        return ignoreByIncludeRule(includeRule.licenses, licenseName) ||
-            ignoreByIgnoreRule(ignoreRule.licenses, licenseName)
+        return !includeRule.isEmpty() && !match(includeRule.licenses, licenseName) ||
+            match(ignoreRule.licenses, licenseName)
     }
 
-    private fun ignoreByIgnoreRule(ignore: Set<String>?, result: String?): Boolean {
-        return ignore != null && result in ignore || ignore?.isEmpty() == true
+    fun isEmpty(): Boolean {
+        return includeRule.isEmpty() && ignoreRule.isEmpty() && minSeverityLevel == null
     }
 
-    private fun ignoreByIncludeRule(include: Set<String>?, result: String?): Boolean {
-        return !include.isNullOrEmpty() && result !in include
+    private fun match(set: Set<String>?, item: String?): Boolean {
+        return set?.isEmpty() == true || !set.isNullOrEmpty() && item in set
     }
 
     companion object {

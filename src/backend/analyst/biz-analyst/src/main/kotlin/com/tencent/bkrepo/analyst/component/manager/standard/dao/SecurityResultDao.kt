@@ -58,10 +58,6 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
                 )
             }
 
-            val filterCriteria = SecurityFilterCriteriaBuilder(rule, ignored).build()
-            if (filterCriteria.isNotEmpty()) {
-                andCriteria.addAll(filterCriteria)
-            }
             if (andCriteria.isNotEmpty()) {
                 criteria.andOperator(andCriteria)
             }
