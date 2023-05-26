@@ -81,7 +81,14 @@ open class SubtaskPoller(
             val subtaskId = event.subtask.latestSubScanTaskId
             logger.info("clean result[$result], subtask[$subtaskId], dispatcher[${dispatcher.name()}]")
         }
-        if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher.isNullOrEmpty()) {
+
+        // oldStatus为null时说明是复用扫描结果，此时不调用executor接口清理
+        val reuseResult = event.oldStatus == null
+        if (
+            SubScanTaskStatus.finishedStatus(event.subtask.status) &&
+            event.dispatcher.isNullOrEmpty() &&
+            !reuseResult
+        ) {
             val subtaskId = event.subtask.latestSubScanTaskId!!
             val result = executorClient.ifAvailable?.stop(subtaskId)
             logger.info("stop subtask[$subtaskId] executor result[$result]")
