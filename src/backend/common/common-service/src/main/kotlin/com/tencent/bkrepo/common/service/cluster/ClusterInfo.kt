@@ -69,4 +69,8 @@ data class ClusterInfo(
      * 密钥
      * */
     var secretKey: String? = null,
+    /**
+     * udp port
+     */
+    var udpPort: Int? = null
 )

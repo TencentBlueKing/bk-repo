@@ -386,7 +386,5 @@ abstract class AbstractReplicaService(
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractReplicaService::class.java)
         private const val PAGE_SIZE = 1000
-        const val RETRY_COUNT = 2
-        const val DELAY_IN_SECONDS: Long = 2
     }
 }

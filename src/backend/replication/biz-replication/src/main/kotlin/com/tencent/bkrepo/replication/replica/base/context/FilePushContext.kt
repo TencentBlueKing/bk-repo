@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.exception
+package com.tencent.bkrepo.replication.replica.base.context
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.pojo.Response
+import okhttp3.OkHttpClient
 
-/**
- * 通用文件错误码
- */
-enum class ReplicationMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
-    REMOTE_CLUSTER_CONNECT_ERROR(1, "remote.cluster.connect.error"),
-    REMOTE_CLUSTER_SSL_ERROR(2, "remote.cluster.ssl.error"),
-    TASK_STATUS_INVALID(3, "task.status.invalid"),
-    TASK_ENABLED_FALSE(4, "task.enabled.false"),
-    CLUSTER_NODE_EXISTS(5, "cluster.node.existed"),
-    CLUSTER_NODE_NOT_FOUND(6, "cluster.node.notfound"),
-    SCHEDULED_JOB_LOADING(7, "schedule.job.loading"),
-    TASK_DISABLE_UPDATE(8, "task.disable.update"),
-    CLUSTER_CENTER_NODE_EXISTS(9, "cluster.center.node.existed"),
-    REPLICA_TASK_NOT_FOUND(10, "replica.task.notfound"),
-    REPLICA_ARTIFACT_BROKEN(11, "replica.artifact.broken"),
-    ;
-
-    override fun getBusinessCode() = businessCode
-    override fun getKey() = key
-    override fun getModuleCode() = 3
+class FilePushContext(
+    val context: ReplicaContext,
+    val sha256: String? = null,
+    val size: Long? = null,
+    val digest: String? = null,
+    val name: String,
+    val token: String? = null,
+    val responseType: Class<*> = Response::class.java,
+    httpClient: OkHttpClient? = null
+) {
+    val httpClient: OkHttpClient = httpClient ?: context.httpClient
 }
