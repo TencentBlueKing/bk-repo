@@ -35,7 +35,10 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 
-class ReactiveArtifactFileFactory(
+/**
+ * 制品文件工厂
+ * */
+class CoArtifactFileFactory(
     storageProperties: StorageProperties,
     storageHealthMonitorHelper: StorageHealthMonitorHelper
 ) {
@@ -49,16 +52,16 @@ class ReactiveArtifactFileFactory(
         lateinit var storageHealthMonitorHelper: StorageHealthMonitorHelper
         const val ARTIFACT_FILES = "artifact.files"
 
-        suspend fun buildArtifactFile(): ReactiveArtifactFile {
+        suspend fun buildArtifactFile(): CoArtifactFile {
             val storageCredentials = getStorageCredentials()
-            return ReactiveArtifactFile(storageCredentials, storageProperties, getMonitor(storageCredentials)).apply {
+            return CoArtifactFile(storageCredentials, storageProperties, getMonitor(storageCredentials)).apply {
                 track(this)
             }
         }
 
-        fun buildArtifactFileOnNotHttpRequest(storageCredentials: StorageCredentials?): ReactiveArtifactFile {
+        fun buildArtifactFileOnNotHttpRequest(storageCredentials: StorageCredentials?): CoArtifactFile {
             val credentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
-            return ReactiveArtifactFile(credentials, storageProperties, getMonitor(credentials))
+            return CoArtifactFile(credentials, storageProperties, getMonitor(credentials))
         }
 
         @Suppress("UNCHECKED_CAST")

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFA
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
 import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
+import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration.Companion.GLOBAL_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.DispatcherConfiguration
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.request.ProjectScanConfigurationPageRequest
@@ -124,6 +125,12 @@ class ProjectScanConfigurationServiceImpl(
         return projectScanConfigurationDao.findByProjectId(projectId)
             ?.let { Converter.convert(it) }
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
+    }
+
+    override fun findProjectOrGlobalScanConfiguration(projectId: String): ProjectScanConfiguration? {
+        val configuration = projectScanConfigurationDao.findByProjectId(projectId)
+            ?: projectScanConfigurationDao.findByProjectId(GLOBAL_PROJECT_ID)
+        return configuration?.let { Converter.convert(it) }
     }
 
     private fun check(projectScanConfiguration: ProjectScanConfiguration) {

@@ -51,7 +51,7 @@ class CleanupFileVisitor(
     private val stagingPath: Path,
     private val fileStorage: FileStorage,
     private val fileLocator: FileLocator,
-    private val credentials: StorageCredentials
+    private val credentials: StorageCredentials,
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
@@ -62,7 +62,7 @@ class CleanupFileVisitor(
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
         try {
-            if (isExpired(attributes, expireDays)) {
+            if (isExpired(attributes, expireDays) && !isNFSTempFile(filePath)) {
                 if (isTempFile(filePath) || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
@@ -138,8 +138,16 @@ class CleanupFileVisitor(
         return fileStorage.exist(path, filename, credentials)
     }
 
+    /**
+     * 判断是否是nfs临时文件
+     * */
+    private fun isNFSTempFile(filePath: Path): Boolean {
+        return filePath.fileName.toString().startsWith(NFS_TEMP_FILE_PREFIX)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
         private const val permitsPerSecond = 30.0
+        private const val NFS_TEMP_FILE_PREFIX = ".nfs"
     }
 }

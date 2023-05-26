@@ -3,6 +3,7 @@
         <Header v-if="!ciMode" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
+        <GlobalUploadViewport />
         <Login v-if="!ciMode" />
     </div>
 </template>
@@ -73,13 +74,13 @@
                         localStorage.setItem('projectId', projectId)
 
                         projectId && projectId !== urlProjectId && this.$router.replace({
-                            name: 'repoList',
+                            name: 'repositories',
                             params: {
                                 projectId
                             }
                         })
                     }
-                    
+
                     userInfo.admin && this.getClusterList()
                 })
             }
