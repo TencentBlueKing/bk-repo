@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -89,6 +90,9 @@ class FileReferenceCleanupJob(
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
         try {
             if (sha256.isNotBlank() && storageService.exist(sha256, storageCredentials)) {
+                if (existNode(sha256)) {
+                    return
+                }
                 storageService.delete(sha256, storageCredentials)
             } else {
                 (context as FileJobContext).fileMissing.incrementAndGet()
@@ -102,6 +106,21 @@ class FileReferenceCleanupJob(
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
+    /**
+     * 检查Node表中是否还存在对应sha256的node
+     */
+    private fun existNode(sha256: String): Boolean {
+        (0 until SHARDING_COUNT).forEach {
+            val query = Query(where(Node::sha256).isEqualTo(sha256))
+            val exist = mongoTemplate.findOne(query, Node::class.java, COLLECTION_NODE_PREFIX+it) != null
+            if (exist) {
+                logger.info("sha256[$sha256] still has existed node in collection[$it]")
+                return true
+            }
+        }
+        return false
+    }
+
     private fun getCredentials(key: String): StorageCredentials? {
         return cacheMap.getOrPut(key) {
             storageCredentialsClient.findByKey(key).data ?: return null
@@ -113,6 +132,7 @@ class FileReferenceCleanupJob(
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NAME_PREFIX = "file_reference_"
+        private const val COLLECTION_NODE_PREFIX = "node_"
     }
 
     data class FileReferenceData(private val map: Map<String, Any?>) {
@@ -120,6 +140,11 @@ class FileReferenceCleanupJob(
         val sha256: String by map
         val credentialsKey: String? = map[CREDENTIALS] as String?
     }
+
+    data class Node(
+        val id: String,
+        val sha256: String?
+    )
 
     override fun mapToEntity(row: Map<String, Any?>): FileReferenceData {
         return FileReferenceData(row)
