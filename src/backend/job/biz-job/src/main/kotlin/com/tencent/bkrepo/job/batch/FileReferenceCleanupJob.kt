@@ -104,7 +104,7 @@ class FileReferenceCleanupJob(
         }
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
     /**
      * 检查Node表中是否还存在对应sha256的node
