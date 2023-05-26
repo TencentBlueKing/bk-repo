@@ -729,5 +729,6 @@
     "ruleIgnoreByVulComponent": "Filter By Vul Component Name",
     "ruleIgnoreRiskyComponentPlaceholder": "Risky component name, multiple component names were separated by newlines",
     "ruleIgnoreRiskyComponentTip": "The risky component should be filtered, multiple component names were separated by newlines",
-    "repositories": "Repository"
+    "repositories": "Repository",
+    "portTip": "Please enter the correct port"
 }
