@@ -67,8 +67,10 @@ data class MergedFilterRule(
         val includeVersionRange = includeRule.riskyPackageVersions?.get(riskyPackageKey)
         var ignoreByIncludeRule = false
 
-        // riskyPackageVersions为空时不忽略风险组件，避免漏报
-        if (includeVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
+        if (includeVersionRange == null && !includeRule.riskyPackageVersions.isNullOrEmpty()) {
+            ignoreByIncludeRule = true
+        } else if (includeVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
+            // riskyPackageVersions为空时不忽略风险组件，避免漏报
             ignoreByIncludeRule = riskyPackageVersions.none {
                 try {
                     includeVersionRange.contains(VersionNumber(it))
@@ -87,7 +89,10 @@ data class MergedFilterRule(
         val ignoreVersionRange = ignoreRule.riskyPackageVersions?.get(riskyPackageKey)
         var ignoreByIgnoreRule = false
 
-        if (ignoreVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
+        // riskyPackageVersions为空列表时将忽略该组件的所有漏洞
+        if (ignoreRule.riskyPackageVersions?.isEmpty() == true) {
+            ignoreByIgnoreRule = true
+        } else if (ignoreVersionRange != null && !riskyPackageVersions.isNullOrEmpty()) {
             ignoreByIgnoreRule = riskyPackageVersions.any {
                 try {
                     ignoreVersionRange.contains(VersionNumber(it))
