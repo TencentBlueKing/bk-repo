@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.edge
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -39,6 +40,7 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.repository.api.NodeClient
+import feign.FeignException
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.scheduling.annotation.Scheduled
@@ -62,8 +64,14 @@ class EdgeReplicaTaskJob(
             logger.info("start to get edge replica task")
             val deferredResult = try {
                 centerReplicaTaskClient.getEdgeReplicaTask(clusterProperties.self.name!!)
-            } catch (ignore: Exception) {
-                logger.warn("get edge replica task error: ", ignore)
+            } catch (e: FeignException) {
+                if (e.status() != HttpStatus.NOT_MODIFIED.value) {
+                    logger.error("get edge replica task error: ", e)
+                }
+                continue
+            }
+            catch (ignore: Exception) {
+                logger.error("get edge replica task error: ", ignore)
                 continue
             }
             if (!deferredResult.hasResult()) {
