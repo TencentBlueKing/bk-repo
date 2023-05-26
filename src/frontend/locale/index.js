@@ -89,7 +89,9 @@ export default (r) => {
         setLsLocale(localeLang)
         locale.use(lang[localeLang.replace('-', '')])
         axios.defaults.headers.common['Accept-Language'] = localeLang
-        Vue.prototype.$ajax.defaults.headers.common['Accept-Language'] = localeLang
+        if (Vue.prototype.$ajax?.defaults) {
+            Vue.prototype.$ajax.defaults.headers.common['Accept-Language'] = localeLang
+        }
         document.querySelector('html').setAttribute('lang', localeLang)
 
         return localeLang

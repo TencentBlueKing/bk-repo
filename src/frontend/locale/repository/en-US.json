@@ -361,7 +361,7 @@
     "compliantLicenseRule": "only compliant licenses",
     "unknownLicenseRule": "no unknown license",
     "vulnerability": "vulnerability",
-    "securityHole": "security hole",
+    "securityVulnerability": "security vulnerability",
     "license": "License",
     "sensitiveInfo": "sensitive information",
     "scanArtMsg": "added to scan queue",
@@ -729,5 +729,8 @@
     "ruleIgnoreByVulComponent": "Filter By Vul Component Name",
     "ruleIgnoreRiskyComponentPlaceholder": "Risky component name, multiple component names were separated by newlines",
     "ruleIgnoreRiskyComponentTip": "The risky component should be filtered, multiple component names were separated by newlines",
-    "repositories": "Repository"
+    "repositories": "Repository",
+    "lessOneSecondTip": "Less than 1 second",
+    "selectFileTip": "Please select file",
+    "noProjectData":"No Project Data"
 }
