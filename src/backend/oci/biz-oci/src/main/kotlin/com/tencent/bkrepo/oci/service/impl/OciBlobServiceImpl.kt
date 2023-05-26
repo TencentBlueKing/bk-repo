@@ -124,7 +124,7 @@ class OciBlobServiceImpl(
                     OciResponseUtils.buildBlobMountResponse(
                         domain = domain,
                         locationStr = OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
-                        status = e.status,
+                        status = HttpStatus.ACCEPTED,
                         response = HttpContextHolder.getResponse()
                     )
                     return
