@@ -104,7 +104,10 @@ class UserServiceImpl constructor(
         }
         // check asstUsers
         request.asstUsers.forEach {
-            userRepository.findFirstByUserId(request.userId) ?: run {
+            if (!validateEntityUser(it)) {
+                throw ErrorCodeException(AuthMessageCode.AUTH_ENTITY_USER_NOT_EXIST)
+            }
+            userRepository.findFirstByUserId(it) ?: run {
                 val createRequest = CreateUserRequest(userId = it, name = it)
                 createUser(createRequest)
             }
