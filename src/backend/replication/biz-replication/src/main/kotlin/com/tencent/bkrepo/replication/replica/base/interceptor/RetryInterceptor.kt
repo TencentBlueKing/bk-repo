@@ -28,9 +28,13 @@
 package com.tencent.bkrepo.replication.replica.base.interceptor
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Interceptor
 import okhttp3.Request
@@ -40,9 +44,10 @@ import org.slf4j.LoggerFactory
 /**
  * 针对特定请求失败进行重试
  */
-class RetryInterceptor(
-    private val localDataManager: LocalDataManager
-) : Interceptor {
+class RetryInterceptor : Interceptor {
+
+    private val localDataManager by lazy { SpringContextUtils.getBean<LocalDataManager>() }
+
     override fun intercept(chain: Interceptor.Chain): Response {
         var request: Request = chain.request()
         var response: Response? = null
@@ -53,7 +58,7 @@ class RetryInterceptor(
             try {
                 response = chain.proceed(request)
                 // 针对429返回需要做延时重试
-                responseOK = if (response.code == 429) {
+                responseOK = if (response.code in retryCode) {
                     Thread.sleep(500)
                     false
                 } else {
@@ -84,11 +89,18 @@ class RetryInterceptor(
         val (projectId, repoName) = getRepoFromHeader(request)
         val sha256 = getSha256FromHeader(request)
         val size = getSizeFromHeader(request)
+        val rangeStr = getContentRangeFromHeader(request)
         if (projectId.isNullOrEmpty()) return request
         if (repoName.isNullOrEmpty()) return request
         if (sha256.isNullOrEmpty()) return request
+        if (rangeStr.isNullOrEmpty()) return request
         if (size == null) return request
-        val retryBody = StreamRequestBody(localDataManager.loadInputStream(sha256, size, projectId, repoName), size)
+        val (start, end) = HttpUtils.getRangeInfo(rangeStr)
+        val range = Range(start, end, size)
+        val retryBody = StreamRequestBody(
+            localDataManager.loadInputStreamByRange(sha256, range, projectId, repoName),
+            size
+        )
         return request.newBuilder().method(request.method, retryBody).build()
     }
 
@@ -110,6 +122,13 @@ class RetryInterceptor(
     }
 
     /**
+     * 从请求头中获取对于content-range信息
+     */
+    private fun getContentRangeFromHeader(request: Request): String? {
+        return request.header(CONTENT_RANGE)
+    }
+
+    /**
      * 从请求头中获取对于文件大小信息
      */
     private fun getSizeFromHeader(request: Request): Long? {
@@ -118,5 +137,6 @@ class RetryInterceptor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(RetryInterceptor::class.java)
+        private val retryCode = listOf(429, 408)
     }
 }

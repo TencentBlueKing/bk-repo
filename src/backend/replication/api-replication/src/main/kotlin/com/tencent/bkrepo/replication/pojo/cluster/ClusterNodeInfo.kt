@@ -64,6 +64,8 @@ data class ClusterNodeInfo(
     var accessKey: String? = null,
     @ApiModelProperty("集群密钥", required = false)
     var secretKey: String? = null,
+    @ApiModelProperty("udp端口", required = false)
+    var udpPort: Int? = null,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("集群额外信息")
