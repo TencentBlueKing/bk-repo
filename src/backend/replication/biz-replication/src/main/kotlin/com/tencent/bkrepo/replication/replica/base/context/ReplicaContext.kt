@@ -120,7 +120,7 @@ class ReplicaContext(
         val readTimeout = Duration.ofMillis(READ_TIMEOUT)
         val writeTimeout = Duration.ofMillis(WRITE_TIMEOUT)
         val closeTimeout = Duration.ofMillis(CLOSE_TIMEOUT)
-        httpClient = if (cluster.username != null) {
+        httpClient = if (cluster.username != null && cluster.password != null) {
             OkHttpClientPool.getHttpClient(
                 replicationProperties.timoutCheckHosts,
                 cluster,

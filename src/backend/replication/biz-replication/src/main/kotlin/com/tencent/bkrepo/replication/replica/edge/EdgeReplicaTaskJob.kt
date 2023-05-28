@@ -27,24 +27,28 @@
 
 package com.tencent.bkrepo.replication.replica.edge
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
+import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.repository.api.NodeClient
-import feign.FeignException
+import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.io.IOException
+import java.time.Duration
 
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
@@ -56,35 +60,42 @@ class EdgeReplicaTaskJob(
 
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
         by lazy { FeignClientFactory.create(clusterProperties.center, "replication", clusterProperties.self.name) }
+    private val okhttpClient = OkHttpClientPool.getHttpClient(
+        replicationProperties.timoutCheckHosts,
+        clusterProperties.center,
+        Duration.ofSeconds(30),
+        Duration.ofSeconds(30),
+        Duration.ZERO,
+        SignInterceptor(clusterProperties.center)
+    )
 
     @Suppress("LoopWithTooManyJumpStatements")
     @Scheduled(fixedDelay = 1000L)
     fun run() {
         while (true) {
             logger.info("start to get edge replica task")
-            val deferredResult = try {
-                centerReplicaTaskClient.getEdgeReplicaTask(clusterProperties.self.name!!)
-            } catch (e: FeignException) {
-                if (e.status() != HttpStatus.NOT_MODIFIED.value) {
-                    logger.error("get edge replica task error: ", e)
+            val url = UrlUtils.extractDomain(clusterProperties.center.url)
+                .plus("/replication/cluster/task/edge/claim?clusterName=${clusterProperties.self.name}")
+            val request = Request.Builder().url(url).get().build()
+            try {
+                okhttpClient.newCall(request).execute().use {
+                    if (it.isSuccessful) {
+                        val taskRecord = it.body!!.string().readJsonString<Response<EdgeReplicaTaskRecord>>().data!!
+                        logger.info("get edge replica task: $taskRecord")
+                        if (!taskRecord.fullPath.isNullOrEmpty()) {
+                            replicaFile(taskRecord)
+                        }
+                        if (!taskRecord.packageName.isNullOrEmpty() && !taskRecord.packageVersion.isNullOrEmpty()) {
+                            replicaPackageVersion(taskRecord)
+                        }
+                    } else {
+                        logger.error("get edge replica task failed: ${it.code}, ${it.body?.string()}")
+                    }
                 }
+            } catch (e: IOException) {
                 continue
             }
-            catch (ignore: Exception) {
-                logger.error("get edge replica task error: ", ignore)
-                continue
-            }
-            if (!deferredResult.hasResult()) {
-                continue
-            }
-            val taskRecord = deferredResult.result.toString().readJsonString<Response<EdgeReplicaTaskRecord>>().data!!
-            logger.info("get edge replica task: $taskRecord")
-            if (!taskRecord.fullPath.isNullOrEmpty()) {
-                replicaFile(taskRecord)
-            }
-            if (!taskRecord.packageName.isNullOrEmpty() && !taskRecord.packageVersion.isNullOrEmpty()) {
-                replicaPackageVersion(taskRecord)
-            }
+
         }
     }
 
@@ -105,11 +116,12 @@ class EdgeReplicaTaskJob(
                 replicaContext.replicator.replicaFile(replicaContext, nodeInfo)
                 status = ExecutionStatus.SUCCESS
             } catch (e: Exception) {
+                logger.error("replica file error: ", e)
                 status = ExecutionStatus.FAILED
                 errorReason = e.localizedMessage
             } finally {
                 logger.info("edge replica task: $edgeReplicaTaskRecord")
-                centerReplicaTaskClient.reportEdgeReplicaTaskResult(this)
+//                centerReplicaTaskClient.reportEdgeReplicaTaskResult(this)
             }
         }
     }

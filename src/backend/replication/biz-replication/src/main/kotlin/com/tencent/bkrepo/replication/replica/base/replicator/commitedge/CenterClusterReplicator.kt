@@ -40,7 +40,6 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
-import java.time.temporal.ChronoUnit
 
 @Component
 @Conditional(CommitEdgeCenterCondition::class)
@@ -60,7 +59,7 @@ class CenterClusterReplicator(
         )
         EdgeReplicaContextHolder.setEdgeReplicaTask(edgeReplicaTaskRecord)
         // TODO 动态设置timeout
-        edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, 10, ChronoUnit.MINUTES)
+//        edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, 10, ChronoUnit.MINUTES)
         return true
     }
 

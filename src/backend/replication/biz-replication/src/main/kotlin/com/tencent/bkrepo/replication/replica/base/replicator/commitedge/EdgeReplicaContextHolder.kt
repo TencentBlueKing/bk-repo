@@ -42,30 +42,43 @@ object EdgeReplicaContextHolder {
 
     fun addDeferredResult(clusterName: String, deferredResult: DeferredResult<Response<EdgeReplicaTaskRecord>>) {
         val key = "$clusterName-${UUID.randomUUID()}"
-        deferredResult.onCompletion { deferredResultMap.remove(key) }
-        deferredResult.onTimeout { deferredResultMap.remove(key) }
-        deferredResult.onError { deferredResultMap.remove(key) }
+        deferredResult.onCompletion {
+            logger.info("remove key on completion: $key")
+            deferredResultMap.remove(key)
+        }
+        deferredResult.onTimeout {
+            logger.info("remove key on timeout: $key")
+            deferredResultMap.remove(key)
+        }
+        deferredResult.onError {
+            logger.info("remove key on error: $key")
+            deferredResultMap.remove(key)
+        }
         deferredResultMap[key] = deferredResult
     }
 
     fun setEdgeReplicaTask(edgeReplicaTaskRecord: EdgeReplicaTaskRecord) {
         with(edgeReplicaTaskRecord) {
-            var key = deferredResultMap.keys().toList()
-                .firstOrNull { it.startsWith(edgeReplicaTaskRecord.execClusterName) }
-            var retryTime = 3
-            while (key == null && retryTime > 0) {
-                retryTime --
-                key = deferredResultMap.keys().toList()
+            var retryTime = 8
+            while (retryTime > 0) {
+                retryTime--
+                val key = deferredResultMap.keys().toList()
                     .firstOrNull { it.startsWith(edgeReplicaTaskRecord.execClusterName) }
-            }
-            val deferredResult = deferredResultMap[key]
-            if (deferredResult == null || deferredResult.isSetOrExpired) {
-                throw RuntimeException()
-            }
-            if (!deferredResult.isSetOrExpired) {
+                if (key == null) {
+                    logger.info("key is null: ${edgeReplicaTaskRecord.execClusterName}")
+                    Thread.sleep(5000)
+                    continue
+                }
+                val deferredResult = deferredResultMap[key]
+                if (deferredResult == null || deferredResult.isSetOrExpired) {
+                    logger.info("deferredReuslt is invaild: $key")
+                    Thread.sleep(5000)
+                    continue
+                }
                 logger.info("send edge task: $edgeReplicaTaskRecord")
                 deferredResult.setResult(ResponseBuilder.success(this))
                 deferredResultMap.remove(key)
+                break
             }
         }
     }
