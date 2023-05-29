@@ -27,28 +27,33 @@
 
 package com.tencent.bkrepo.replication.replica.base.replicator.commitedge
 
+import com.tencent.bkrepo.common.api.net.speedtest.Counter
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.handler.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
+import java.time.temporal.ChronoUnit
 
 @Component
 @Conditional(CommitEdgeCenterCondition::class)
 class CenterClusterReplicator(
     localDataManager: LocalDataManager,
-    replicationProperties: ReplicationProperties,
+    clusterArtifactReplicationHandler: ClusterArtifactReplicationHandler,
+    private val replicationProperties: ReplicationProperties,
     private val clusterProperties: ClusterProperties,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
-): ClusterReplicator(localDataManager, replicationProperties) {
+): ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         node.clusterNames?.firstOrNull { it != clusterProperties.self.name }
@@ -58,8 +63,8 @@ class CenterClusterReplicator(
             nodeDetail = NodeDetail(node)
         )
         EdgeReplicaContextHolder.setEdgeReplicaTask(edgeReplicaTaskRecord)
-        // TODO 动态设置timeout
-//        edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, 10, ChronoUnit.MINUTES)
+        val estimateTime = getEstimatedTime(context.remoteCluster.url, node.size)
+        edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, estimateTime, ChronoUnit.SECONDS)
         return true
     }
 
@@ -68,6 +73,37 @@ class CenterClusterReplicator(
         packageSummary: PackageSummary,
         packageVersion: PackageVersion
     ): Boolean {
-        return super.replicaPackageVersion(context, packageSummary, packageVersion)
+        packageVersion.clusterNames?.firstOrNull()
+            ?: return super.replicaPackageVersion(context, packageSummary, packageVersion)
+        val edgeReplicaTaskRecord = edgeReplicaTaskRecordService.createPackageVersionReplicaTaskRecord(
+            context = context,
+            packageSummary = packageSummary,
+            packageVersion = packageVersion
+        )
+        EdgeReplicaContextHolder.setEdgeReplicaTask(edgeReplicaTaskRecord)
+        val estimateTime = getEstimatedTime(context.remoteCluster.url, packageVersion.size)
+        edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, estimateTime, ChronoUnit.SECONDS)
+        return true
+    }
+
+    private fun getEstimatedTime(url: String, size: Long): Long {
+        val timeoutCheckHosts = replicationProperties.timoutCheckHosts
+        val rate = timeoutCheckHosts.firstOrNull { url.contains(it[HOST_KEY].toString()) }
+            ?.get(RATE_KEY)?.toDouble() ?: DEFAULT_RATE
+        val estimatedTime = if (size <= MIN_TIMEOUT * Counter.MB * rate) {
+            MIN_TIMEOUT
+        } else {
+            size / Counter.MB / rate
+        } * 1.5
+        logger.info("replica to $url maybe will cost $estimatedTime seconds to transfer, size is $size")
+        return estimatedTime.toLong()
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CenterClusterReplicator::class.java)
+        private const val HOST_KEY = "host"
+        private const val RATE_KEY = "rate"
+        private const val MIN_TIMEOUT = 60.0
+        private const val DEFAULT_RATE = 1.0
     }
 }

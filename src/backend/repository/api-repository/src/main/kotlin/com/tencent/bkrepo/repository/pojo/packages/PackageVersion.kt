@@ -70,6 +70,6 @@ data class PackageVersion(
     val contentPath: String? = null,
     @ApiModelProperty("清单文件路径")
     val manifestPath: String? = null,
-    @ApiModelProperty("")
+    @ApiModelProperty("集群名")
     val clusterNames: Set<String>? = null
 )

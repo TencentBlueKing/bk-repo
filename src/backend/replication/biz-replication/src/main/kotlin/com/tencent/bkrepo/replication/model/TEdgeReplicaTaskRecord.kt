@@ -39,7 +39,7 @@ data class TEdgeReplicaTaskRecord(
     var repoName: String,
     var fullPath: String? = null,
     var sha256: String? = null,
-    var packageName: String? = null,
+    var packageKey: String? = null,
     var packageVersion: String? = null,
     var status: ExecutionStatus,
     var errorReason: String? = null

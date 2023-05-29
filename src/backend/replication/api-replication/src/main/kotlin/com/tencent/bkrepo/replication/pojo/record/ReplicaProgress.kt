@@ -44,10 +44,6 @@ data class ReplicaProgress(
      */
     var failed: Long = 0,
     /**
-     * 边缘节点协同分发数量
-     */
-    var edge: Long = 0,
-    /**
      * 数据大小, 单位bytes
      */
     var totalSize: Long = 0

@@ -59,7 +59,7 @@ object EdgeReplicaContextHolder {
 
     fun setEdgeReplicaTask(edgeReplicaTaskRecord: EdgeReplicaTaskRecord) {
         with(edgeReplicaTaskRecord) {
-            var retryTime = 8
+            var retryTime = 12
             while (retryTime > 0) {
                 retryTime--
                 val key = deferredResultMap.keys().toList()

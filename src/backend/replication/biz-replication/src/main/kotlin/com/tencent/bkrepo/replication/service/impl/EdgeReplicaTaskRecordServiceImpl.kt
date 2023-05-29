@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.replication.service.impl
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.replication.dao.EdgeReplicaTaskRecordDao
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TEdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
@@ -38,10 +41,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.temporal.TemporalUnit
@@ -54,10 +57,10 @@ class EdgeReplicaTaskRecordServiceImpl(
     override fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord {
         with(nodeDetail) {
             val clusterName = clusterNames?.firstOrNull { it != clusterProperties.self.name }
-//                ?: throw ErrorCodeException()
+                ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_CLUSTER_NOT_FOUND)
             return edgeReplicaTaskRecordDao.insert(
                 TEdgeReplicaTaskRecord(
-                    execClusterName = clusterName!!,
+                    execClusterName = clusterName,
                     destClusterName = context.remoteCluster.name,
                     projectId = projectId,
                     repoName = repoName,
@@ -76,14 +79,14 @@ class EdgeReplicaTaskRecordServiceImpl(
     ): EdgeReplicaTaskRecord {
         with(packageVersion) {
             val clusterName = clusterNames?.firstOrNull { it != clusterProperties.self.name }
-//                ?: throw ErrorCodeException()
+                ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_CLUSTER_NOT_FOUND)
             return edgeReplicaTaskRecordDao.insert(
                 TEdgeReplicaTaskRecord(
-                    execClusterName = clusterName!!,
+                    execClusterName = clusterName,
                     destClusterName = context.remoteCluster.name,
                     projectId = packageSummary.projectId,
                     repoName = packageSummary.repoName,
-                    packageName = packageSummary.name,
+                    packageKey = packageSummary.key,
                     packageVersion = name,
                     status = ExecutionStatus.RUNNING
                 )
@@ -92,10 +95,11 @@ class EdgeReplicaTaskRecordServiceImpl(
     }
 
     override fun updateStatus(id: String, status: ExecutionStatus, errorReason: String?) {
-        val query = Query(where(TEdgeReplicaTaskRecord::id).isEqualTo(id))
+        val query = Query(Criteria.where(ID).isEqualTo(id))
         val update = Update().set(TEdgeReplicaTaskRecord::status.name, status)
             .set(TEdgeReplicaTaskRecord::errorReason.name, errorReason)
         edgeReplicaTaskRecordDao.updateFirst(query, update)
+        logger.info("update task[$id] success, status[$status], errorReason[$errorReason]")
     }
 
     override fun delete(id: String) {
@@ -108,10 +112,10 @@ class EdgeReplicaTaskRecordServiceImpl(
         var record = edgeReplicaTaskRecordDao.findById(id)!!
         while (record.status == ExecutionStatus.RUNNING) {
             if (System.currentTimeMillis() - startTime > timeoutMillis) {
-//                throw ErrorCodeException()
                 logger.error("wait edge cluster executing task[$id] timeout")
-                return
+                throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_TIMEOUT, id)
             }
+            Thread.sleep(5000)
             record = edgeReplicaTaskRecordDao.findById(id)!!
         }
     }
@@ -129,7 +133,7 @@ class EdgeReplicaTaskRecordServiceImpl(
             repoName = repoName,
             fullPath = fullPath,
             sha256 = sha256,
-            packageName = packageName,
+            packageKey = packageKey,
             packageVersion = packageVersion,
             status = status,
             errorReason = errorReason

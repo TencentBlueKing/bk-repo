@@ -27,12 +27,16 @@
 
 package com.tencent.bkrepo.replication.replica.edge
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -40,8 +44,10 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.base.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -55,7 +61,8 @@ import java.time.Duration
 class EdgeReplicaTaskJob(
     private val clusterProperties: ClusterProperties,
     private val replicationProperties: ReplicationProperties,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val packageClient: PackageClient
 ) {
 
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
@@ -68,40 +75,55 @@ class EdgeReplicaTaskJob(
         Duration.ZERO,
         SignInterceptor(clusterProperties.center)
     )
+    private val executor = ManualThreadPoolExecutor.instance
 
     @Suppress("LoopWithTooManyJumpStatements")
     @Scheduled(fixedDelay = 1000L)
     fun run() {
         while (true) {
-            logger.info("start to get edge replica task")
-            val url = UrlUtils.extractDomain(clusterProperties.center.url)
-                .plus("/replication/cluster/task/edge/claim?clusterName=${clusterProperties.self.name}")
-            val request = Request.Builder().url(url).get().build()
-            try {
-                okhttpClient.newCall(request).execute().use {
-                    if (it.isSuccessful) {
-                        val taskRecord = it.body!!.string().readJsonString<Response<EdgeReplicaTaskRecord>>().data!!
-                        logger.info("get edge replica task: $taskRecord")
-                        if (!taskRecord.fullPath.isNullOrEmpty()) {
-                            replicaFile(taskRecord)
-                        }
-                        if (!taskRecord.packageName.isNullOrEmpty() && !taskRecord.packageVersion.isNullOrEmpty()) {
-                            replicaPackageVersion(taskRecord)
-                        }
-                    } else {
-                        logger.error("get edge replica task failed: ${it.code}, ${it.body?.string()}")
-                    }
-                }
-            } catch (e: IOException) {
+            if (executor.activeCount == executor.maximumPoolSize) {
+                Thread.sleep(5000)
+                logger.info("executing replica task count is ${executor.maximumPoolSize}, stop claim task from center")
                 continue
             }
+            claimTaskFromCenter()
+        }
+    }
 
+    private fun claimTaskFromCenter() {
+        val url = UrlUtils.extractDomain(clusterProperties.center.url)
+            .plus("/replication/cluster/task/edge/claim?clusterName=${clusterProperties.self.name}")
+        val request = Request.Builder().url(url).get().build()
+        try {
+            okhttpClient.newCall(request).execute().use {
+                handleResponse(it)
+            }
+        } catch (e: IOException) {
+            logger.error("get edge replica task failed: ", e)
+            return
+        }
+    }
+
+    private fun handleResponse(it: okhttp3.Response) {
+        if (it.isSuccessful) {
+            val taskRecord = it.body!!.string().readJsonString<Response<EdgeReplicaTaskRecord>>().data!!
+            if (!taskRecord.fullPath.isNullOrEmpty()) {
+                executor.execute(Runnable { replicaFile(taskRecord) }.trace())
+            }
+            if (!taskRecord.packageKey.isNullOrEmpty() && !taskRecord.packageVersion.isNullOrEmpty()) {
+                executor.execute(Runnable { replicaPackageVersion(taskRecord) }.trace())
+            }
+        } else if (it.code == HttpStatus.NOT_MODIFIED.value) {
+            // do nothing
+        } else {
+            logger.error("get edge replica task failed: ${it.code}, ${it.body?.string()}")
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
     private fun replicaFile(edgeReplicaTaskRecord: EdgeReplicaTaskRecord) {
         with(edgeReplicaTaskRecord) {
+            logger.info("start to replica file[$projectId/$repoName$fullPath]")
             val replicaContext = ReplicaContext(
                 taskDetail = taskDetail,
                 taskObject = taskObject,
@@ -120,14 +142,39 @@ class EdgeReplicaTaskJob(
                 status = ExecutionStatus.FAILED
                 errorReason = e.localizedMessage
             } finally {
-                logger.info("edge replica task: $edgeReplicaTaskRecord")
-//                centerReplicaTaskClient.reportEdgeReplicaTaskResult(this)
+                centerReplicaTaskClient.reportEdgeReplicaTaskResult(this)
             }
         }
     }
 
-    private fun replicaPackageVersion(taskRecord: EdgeReplicaTaskRecord) {
-
+    @Suppress("TooGenericExceptionCaught")
+    private fun replicaPackageVersion(edgeReplicaTaskRecord: EdgeReplicaTaskRecord) {
+        with(edgeReplicaTaskRecord) {
+            logger.info("start to replica package version[$projectId/$repoName/$packageKey/$packageVersion]")
+            val replicaContext = ReplicaContext(
+                taskDetail = taskDetail,
+                taskObject = taskObject,
+                taskRecord = taskRecord,
+                localRepo = localRepo,
+                remoteCluster = remoteCluster,
+                replicationProperties = replicationProperties
+            )
+            try {
+                val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey!!).data
+                    ?: throw PackageNotFoundException(packageKey!!)
+                val packageVersion =
+                    packageClient.findVersionByName(projectId, repoName, packageKey!!, packageVersion!!).data
+                        ?: throw VersionNotFoundException(packageVersion!!)
+                replicaContext.replicator.replicaPackageVersion(replicaContext, packageSummary, packageVersion)
+                status = ExecutionStatus.SUCCESS
+            } catch (e: Exception) {
+                logger.error("replica package version error: ", e)
+                status = ExecutionStatus.FAILED
+                errorReason = e.localizedMessage
+            } finally {
+                centerReplicaTaskClient.reportEdgeReplicaTaskResult(this)
+            }
+        }
     }
 
     companion object {
