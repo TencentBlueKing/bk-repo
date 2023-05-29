@@ -1,0 +1,42 @@
+# 初始化iam
+{{- if .Values.init.iam -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.names.fullname" . }}-init-iam
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: init-iam
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: init-iam
+    spec:
+      containers:
+        - name: init-iam
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global "bkrepo" .Values.common) }}
+          imagePullPolicy: {{ .Values.init.mongodb.image.pullPolicy }}
+          workingDir: /data/workspace/support-files/bkiam
+          command:
+            - "/bin/bash"
+            - "-c"
+            - |
+              # 修改auth链接
+              sed -i 's/bkrepo-auth.service.consul:25902/{{- .Values.gateway.host -}}\/auth/g' *.json
+              # 导入模型
+              for i in $(find . -name '*.json'|sort)
+              do
+               python3 do_migrate.py -t {{ .Values.config.bkrepoIamApigwUrl }} -a "{{ .Values.config.bkrepoAppCode }}" -s "{{ .Values.config.bkrepoAppSecret }}" -f  $i --apigateway
+              done
+      restartPolicy: OnFailure
+{{- end -}}

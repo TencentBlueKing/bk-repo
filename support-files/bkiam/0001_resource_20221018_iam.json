@@ -9,7 +9,7 @@
                 "name_en": "bkrepo",
                 "clients": "bk-repo",
                 "provider_config": {
-                    "host": "https://xxxx/auth",
+                    "host": "http://bkrepo-auth.service.consul:25902",
                     "auth": "basic",
                     "healthz": "/external/bkiam/callback/health"
                 }
