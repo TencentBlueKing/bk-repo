@@ -25,13 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.remote
+package com.tencent.bkrepo.common.api.constant
 
-/**
- * 返回头中的WWW_AUTHENTICATE字段包含的属性
- */
-data class AuthenticationProperty(
-    val service: String,
-    val scope: String? = null,
-    val authUrl: String
-)
+object AuthenticationKeys {
+    const val BEARER_REALM = "Bearer realm"
+    const val SERVICE = "service"
+    const val SCOPE = "scope"
+}

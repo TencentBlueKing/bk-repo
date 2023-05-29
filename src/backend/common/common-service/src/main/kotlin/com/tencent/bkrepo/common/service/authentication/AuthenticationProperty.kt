@@ -25,21 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.constant
+package com.tencent.bkrepo.common.service.authentication
 
-import com.tencent.bkrepo.common.api.message.MessageCode
-
-enum class OciMessageCode(private val key: String) : MessageCode {
-    OCI_FILE_ALREADY_EXISTS("oci.file.already.exists"),
-    OCI_FILE_NOT_FOUND("oci.file.not.found"),
-    OCI_FILE_UPLOAD_FORBIDDEN("oci.file.upload.forbidden"),
-    OCI_REPO_NOT_FOUND("oci.repo.not.found"),
-    OCI_DELETE_RULES("oci.delete.rules"),
-    OCI_VERSION_NOT_FOUND("oci.version.not.found"),
-    OCI_MANIFEST_INVALID("oci.manifest.invalid"),
-    OCI_REMOTE_CREDENTIALS_INVALID("oci.remote.credentials.invalid")
-    ;
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 19
-}
+/**
+ * 返回头中的WWW_AUTHENTICATE字段包含的属性
+ */
+data class AuthenticationProperty(
+    val service: String,
+    val scope: String? = null,
+    val authUrl: String
+)
