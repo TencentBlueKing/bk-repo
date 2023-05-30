@@ -375,7 +375,7 @@
     "compliantLicenseRule": "仅有合规的许可证",
     "unknownLicenseRule": "无未知许可证",
     "vulnerability": "漏洞",
-    "securityHole": "安全漏洞",
+    "securityVulnerability": "安全漏洞",
     "license":"许可证",
     "sensitiveInfo":"敏感信息",
     "scanArtMsg": "已添加到扫描队列",
@@ -741,5 +741,8 @@
     "ruleIgnoreRiskyComponentPlaceholder": "风险组件名，多个风险组件通过换行分隔",
     "ruleIgnoreRiskyComponentTip": "将被过滤的风险组件名，多个风险组件通过换行分隔",
     "repositories": "制品仓库",
-    "portTip": "请填写正确的端口号"
+    "portTip": "请填写正确的端口号"，
+    "lessOneSecondTip": "小于1秒",
+    "selectFileTip": "请选择文件",
+    "noProjectData":"无项目数据"
 }

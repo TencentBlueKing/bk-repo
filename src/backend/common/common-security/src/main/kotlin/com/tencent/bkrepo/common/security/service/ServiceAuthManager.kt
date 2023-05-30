@@ -37,9 +37,9 @@ import com.tencent.bkrepo.common.security.util.JwtUtils
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
+import kotlin.concurrent.thread
 
 @Component // 使用kotlin时，spring aop对@Import导入的bean不生效
 class ServiceAuthManager(
@@ -49,6 +49,20 @@ class ServiceAuthManager(
     private val signingKey = JwtUtils.createSigningKey(properties.secretKey)
 
     private var token: String = generateSecurityToken()
+
+    init {
+        // 使用单独的一个线程刷新token，防止被其他业务影响。
+        thread(isDaemon = true, name = REFRESH_THREAD_NAME) {
+            while (true) {
+                try {
+                    refreshSecurityToken()
+                    Thread.sleep(REFRESH_DELAY)
+                } catch (e: Exception) {
+                    logger.error("Refresh token failed", e)
+                }
+            }
+        }
+    }
 
     fun getSecurityToken(): String {
         return token
@@ -66,7 +80,6 @@ class ServiceAuthManager(
         }
     }
 
-    @Scheduled(fixedDelay = REFRESH_DELAY)
     fun refreshSecurityToken() {
         logger.info("Refreshing security token")
         token = generateSecurityToken()
@@ -80,5 +93,6 @@ class ServiceAuthManager(
         private val logger = LoggerFactory.getLogger(ServiceAuthManager::class.java)
         private const val TOKEN_EXPIRATION = 10 * 60 * 1000L
         private const val REFRESH_DELAY = TOKEN_EXPIRATION - 60 * 1000L
+        private const val REFRESH_THREAD_NAME = "ms-token-refresh"
     }
 }
