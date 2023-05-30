@@ -111,7 +111,7 @@ class OciBlobServiceImpl(
         with(artifactInfo) {
             val domain = ociOperationService.getReturnDomain(HttpContextHolder.getRequest())
             val ociDigest = OciDigest(mount)
-            val (mountProjectId, mountRepoName) = splitRepoInfo(from!!)
+            val (mountProjectId, mountRepoName) = splitRepoInfo(from) ?: Pair(projectId, repoName)
             if (mountProjectId != projectId && mountRepoName != repoName) {
                 try {
                     permissionManager.checkRepoPermission(
@@ -130,10 +130,10 @@ class OciBlobServiceImpl(
                     return
                 }
             }
-            val (existFullPath, md5, size) = ociOperationService.getNodeByDigest(
+            val nodeProperty = ociOperationService.getNodeByDigest(
                 mountProjectId, mountRepoName, ociDigest.toString()
             )
-            if (existFullPath == null) {
+            if (nodeProperty.fullPath == null) {
                 logger.warn("Could not find $ociDigest in repo $mountProjectId|$mountRepoName to mount")
                 val uuidCreated = startAppend(this)
                 OciResponseUtils.buildBlobMountResponse(
@@ -147,10 +147,10 @@ class OciBlobServiceImpl(
             val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                size = size!!.toLong(),
+                size = nodeProperty.size!!.toLong(),
                 sha256 = ociDigest.hex,
                 fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest),
-                md5 = md5!!
+                md5 = nodeProperty.md5!!
             )
             val repoDetail = repoClient.getRepoDetail(projectId, repoName).data
             ociOperationService.createNode(nodeCreateRequest, repoDetail!!.storageCredentials)
@@ -164,7 +164,8 @@ class OciBlobServiceImpl(
         }
     }
 
-    private fun splitRepoInfo(from: String): Pair<String, String> {
+    private fun splitRepoInfo(from: String?): Pair<String, String>? {
+        if (from.isNullOrEmpty()) return null
         val values = from.split(CharPool.SLASH)
         return Pair(values[0], values[1])
     }

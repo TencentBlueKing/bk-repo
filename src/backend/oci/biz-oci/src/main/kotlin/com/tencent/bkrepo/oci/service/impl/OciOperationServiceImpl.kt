@@ -75,6 +75,7 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.node.NodeProperty
 import com.tencent.bkrepo.oci.pojo.response.OciImage
 import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTag
@@ -917,7 +918,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = artifactInfo.reference
-                ).first
+                ).fullPath
             }
         }
         return artifactInfo.getArtifactFullPath()
@@ -930,7 +931,7 @@ class OciOperationServiceImpl(
         projectId: String,
         repoName: String,
         digestStr: String
-    ): Triple<String?, String?, Int?> {
+    ): NodeProperty {
         val ociDigest = OciDigest(digestStr)
         val queryModel = NodeQueryBuilder()
             .select(NODE_FULL_PATH, MD5, OCI_NODE_SIZE)
@@ -943,13 +944,13 @@ class OciOperationServiceImpl(
                 "Could not find $digestStr " +
                     "in repo $projectId|$repoName"
             )
-            return Triple(null, null, null)
+            return NodeProperty()
         }
-        if (result.records.isEmpty()) return Triple(null, null, null)
-        return Triple(
-            result.records[0][NODE_FULL_PATH] as String,
-            result.records[0][MD5] as String?,
-            result.records[0][OCI_NODE_SIZE] as Int?
+        if (result.records.isEmpty()) return NodeProperty()
+        return NodeProperty(
+            fullPath = result.records[0][NODE_FULL_PATH] as String,
+            md5 = result.records[0][MD5] as String?,
+            size = result.records[0][OCI_NODE_SIZE] as Int?
         )
     }
 
@@ -967,7 +968,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = artifactInfo.reference
-                ).first
+                ).fullPath
             return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
         }
         if (artifactInfo is OciBlobArtifactInfo) {
@@ -976,7 +977,7 @@ class OciOperationServiceImpl(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 digestStr = digestStr
-            ).first
+            ).fullPath
         }
         return null
     }

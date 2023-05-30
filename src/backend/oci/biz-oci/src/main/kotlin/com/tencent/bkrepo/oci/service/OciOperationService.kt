@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.node.NodeProperty
 import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
@@ -150,7 +151,7 @@ interface OciOperationService {
         projectId: String,
         repoName: String,
         digestStr: String
-    ): Triple<String?, String?, Int?>
+    ): NodeProperty
 
     /**
      * 针对老的docker仓库的数据做兼容性处理
