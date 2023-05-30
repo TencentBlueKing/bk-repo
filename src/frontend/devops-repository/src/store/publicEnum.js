@@ -141,3 +141,5 @@ export const FILTER_METHOD_SEVERITY = 1
 
 // 通过风险组件名过滤
 export const FILTER_METHOD_RISKY_COMPONENT = 2
+// 通过风险组件版本过滤
+export const FILTER_METHOD_RISKY_COMPONENT_VERSION = 3

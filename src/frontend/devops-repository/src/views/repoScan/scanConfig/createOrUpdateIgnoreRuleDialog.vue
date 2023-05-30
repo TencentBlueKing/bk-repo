@@ -53,6 +53,9 @@
             <bk-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT" :desc="$t('ruleIgnoreRiskyComponentTip')" desc-type="icon" :label="$t('bugPackageName')" :required="false" property="riskyPackageKeys">
                 <bk-input v-if="!ignoreAllVul" type="textarea" :placeholder="$t('ruleIgnoreRiskyComponentPlaceholder')" v-model="riskyPackageKeys"></bk-input>
             </bk-form-item>
+            <bk-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT_VERSION" :desc="$t('ruleIgnoreRiskyComponentVersionTip')" desc-type="icon" :label="$t('riskyComponentVersionRange')" :required="false" property="riskyPackageVersions">
+                <bk-input v-if="!ignoreAllVul" type="textarea" :placeholder="$t('ruleIgnoreRiskyComponentPlaceholder')" v-model="riskyPackageVersions"></bk-input>
+            </bk-form-item>
         </bk-form>
     </bk-dialog>
 </template>
@@ -60,6 +63,7 @@
     import { mapActions } from 'vuex'
     import {
         FILTER_METHOD_RISKY_COMPONENT,
+        FILTER_METHOD_RISKY_COMPONENT_VERSION,
         FILTER_METHOD_SEVERITY,
         FILTER_METHOD_VUL_ID,
         FILTER_RULE_IGNORE,
@@ -132,10 +136,12 @@
                 FILTER_METHOD_VUL_ID: FILTER_METHOD_VUL_ID,
                 FILTER_METHOD_SEVERITY: FILTER_METHOD_SEVERITY,
                 FILTER_METHOD_RISKY_COMPONENT: FILTER_METHOD_RISKY_COMPONENT,
+                FILTER_METHOD_RISKY_COMPONENT_VERSION: FILTER_METHOD_RISKY_COMPONENT_VERSION,
                 showDialog: false,
                 ignoreRule: {},
                 vulIds: '',
                 riskyPackageKeys: '',
+                riskyPackageVersions: '',
                 ignoreAllVul: false,
                 title: '',
                 repos: [],
@@ -151,6 +157,10 @@
                     {
                         type: FILTER_METHOD_RISKY_COMPONENT,
                         name: this.$t('ruleIgnoreByVulComponent')
+                    },
+                    {
+                        type: FILTER_METHOD_RISKY_COMPONENT_VERSION,
+                        name: this.$t('ruleIgnoreByVulComponentVersion')
                     }
                 ],
                 selectedFilterMethod: FILTER_METHOD_VUL_ID,
@@ -194,8 +204,20 @@
                         this.selectedFilterMethod = FILTER_METHOD_SEVERITY
                     } else if (this.ignoreRule.riskyPackageKeys) {
                         this.selectedFilterMethod = FILTER_METHOD_RISKY_COMPONENT
+                    } else if (this.ignoreRule.riskyPackageVersions) {
+                        this.selectedFilterMethod = FILTER_METHOD_RISKY_COMPONENT_VERSION
                     } else {
                         this.selectedFilterMethod = FILTER_METHOD_VUL_ID
+                    }
+
+                    if (this.ignoreRule.riskyPackageVersions) {
+                        const pkgVersionRange = []
+                        for (const pkg in this.ignoreRule.riskyPackageVersions) {
+                            pkgVersionRange.push(`${pkg} ${this.ignoreRule.riskyPackageVersions[pkg]}`)
+                        }
+                        this.riskyPackageVersions = pkgVersionRange.join('\n')
+                    } else {
+                        this.riskyPackageVersions = ''
                     }
 
                     this.ignoreAllVul = this.ignoreRule.vulIds !== undefined && this.ignoreRule.vulIds !== null && this.ignoreRule.vulIds.length === 0
@@ -217,6 +239,9 @@
                 }
                 if (newVal !== FILTER_METHOD_RISKY_COMPONENT) {
                     this.riskyPackageKeys = ''
+                }
+                if (newVal !== FILTER_METHOD_RISKY_COMPONENT_VERSION) {
+                    this.riskyPackageVersions = ''
                 }
             },
             filterTypeChanged (val) {
@@ -244,6 +269,17 @@
                 if (this.riskyPackageKeys) {
                     this.ignoreRule.riskyPackageKeys = this.riskyPackageKeys.trim().split('\n')
                 }
+
+                if (this.riskyPackageVersions) {
+                    this.ignoreRule.riskyPackageVersions = {}
+                    const versions = this.riskyPackageVersions.trim().split(/\n+/)
+                    versions.forEach(v => {
+                        const trimVer = v.trim()
+                        const indexOfSpace = trimVer.indexOf(' ')
+                        this.ignoreRule.riskyPackageVersions[trimVer.substring(0, indexOfSpace)] = trimVer.substring(indexOfSpace).trim()
+                    })
+                }
+
                 const promise = this.ignoreRule.id
                     ? this.updateIgnoreRule(this.ignoreRule)
                     : this.createIgnoreRule(this.ignoreRule)
