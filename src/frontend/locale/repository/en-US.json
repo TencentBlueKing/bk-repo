@@ -730,7 +730,7 @@
     "ruleIgnoreRiskyComponentPlaceholder": "Risky component name, multiple component names were separated by newlines",
     "ruleIgnoreRiskyComponentTip": "The risky component should be filtered, multiple component names were separated by newlines",
     "repositories": "Repository",
-    "portTip": "Please enter the correct port"，
+    "portTip": "Please enter the correct port",
     "lessOneSecondTip": "Less than 1 second",
     "selectFileTip": "Please select file",
     "noProjectData":"No Project Data"

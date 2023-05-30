@@ -741,7 +741,7 @@
     "ruleIgnoreRiskyComponentPlaceholder": "风险组件名，多个风险组件通过换行分隔",
     "ruleIgnoreRiskyComponentTip": "将被过滤的风险组件名，多个风险组件通过换行分隔",
     "repositories": "制品仓库",
-    "portTip": "请填写正确的端口号"，
+    "portTip": "请填写正确的端口号",
     "lessOneSecondTip": "小于1秒",
     "selectFileTip": "请选择文件",
     "noProjectData":"无项目数据"
