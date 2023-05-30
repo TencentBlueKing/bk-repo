@@ -98,10 +98,6 @@ data class UpdateFilterRuleRequest(
             errMsg.append("ignore[$type], severity[$severity]\n")
         }
 
-        if (projectId != SYSTEM_PROJECT_ID && projectIds != null) {
-            errMsg.append("projectIds[$projectIds]\n")
-        }
-
         // 校验版本范围格式是否正确
         try {
             riskyPackageVersions?.values?.forEach { CompositeVersionRange.build(it) }
@@ -132,6 +128,9 @@ data class UpdateFilterRuleRequest(
     }
 
     private fun checkProjectId() {
+        if (projectId != SYSTEM_PROJECT_ID && projectIds != null) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID,"projectIds[$projectIds]")
+        }
         if (projectId == SYSTEM_PROJECT_ID && projectIds == null) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectIds[$projectIds] could not be null")
         }

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.pojo.response.filter
 
+import com.tencent.bkrepo.analyst.pojo.Constant
 import com.tencent.bkrepo.analyst.utils.VersionNumber
 import org.slf4j.LoggerFactory
 
@@ -108,6 +109,18 @@ data class MergedFilterRule(
         }
 
         return ignored
+    }
+
+    fun add(rule: FilterRule) {
+        if (rule.type == Constant.FILTER_RULE_TYPE_IGNORE) {
+            val severity = rule.severity
+            if (severity != null && (this.minSeverityLevel == null || severity > this.minSeverityLevel!!)) {
+                this.minSeverityLevel = severity
+            }
+            this.ignoreRule.add(rule)
+        } else if (rule.type == Constant.FILTER_RULE_TYPE_INCLUDE) {
+            this.includeRule.add(rule)
+        }
     }
 
     /**

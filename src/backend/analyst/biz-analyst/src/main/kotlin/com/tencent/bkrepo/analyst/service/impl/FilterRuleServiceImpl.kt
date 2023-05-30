@@ -29,8 +29,6 @@ package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.dao.FilterRuleDao
 import com.tencent.bkrepo.analyst.model.TFilterRule
-import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
-import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_INCLUDE
 import com.tencent.bkrepo.analyst.pojo.Constant.SYSTEM_PROJECT_ID
 import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
@@ -122,19 +120,15 @@ class FilterRuleServiceImpl(private val filterRuleDao: FilterRuleDao) : FilterRu
 
     private fun merge(rules: List<FilterRule>): MergedFilterRule {
         val mergedFilterRule = MergedFilterRule()
-        for (rule in rules) {
-            if (rule.type == FILTER_RULE_TYPE_IGNORE) {
-                val severity = rule.severity
-                val minSeverityLevel = mergedFilterRule.minSeverityLevel
-                if (severity != null && (minSeverityLevel == null || severity > minSeverityLevel)) {
-                    mergedFilterRule.minSeverityLevel = severity
-                }
-                mergedFilterRule.ignoreRule.add(rule)
-            } else if (rule.type == FILTER_RULE_TYPE_INCLUDE) {
-                mergedFilterRule.includeRule.add(rule)
-            }
-        }
 
+        // 先添加系统规则，后添加项目定的规则，项目定的规则可以覆盖系统规则
+        rules
+            .filter { it.projectId == SYSTEM_PROJECT_ID }
+            .forEach { mergedFilterRule.add(it) }
+
+        rules
+            .filter { it.projectId != SYSTEM_PROJECT_ID }
+            .forEach { mergedFilterRule.add(it) }
         return mergedFilterRule
     }
 

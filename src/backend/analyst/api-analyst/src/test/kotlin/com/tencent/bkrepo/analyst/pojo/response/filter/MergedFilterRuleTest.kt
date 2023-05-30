@@ -111,6 +111,48 @@ class MergedFilterRuleTest {
     }
 
     @Test
+    fun testOverrideRiskyPackageVersions() {
+        val mergeFilterRule = MergedFilterRule()
+        mergeFilterRule.includeRule.add(
+            FilterRule(
+                name = "",
+                description = "",
+                projectId = "",
+                riskyPackageVersions = mapOf("com.tencent.bkrepo:bkrepo" to "<3.0.0")
+            )
+        )
+        Assertions.assertFalse(
+            mergeFilterRule.shouldIgnore(
+                vulId = "BKREPO-2011-11211",
+                riskyPackageKey = "com.tencent.bkrepo:bkrepo",
+                riskyPackageVersions = setOf("2.3.0")
+            )
+        )
+        mergeFilterRule.includeRule.add(
+            FilterRule(
+                name = "",
+                description = "",
+                projectId = "",
+                riskyPackageVersions = mapOf("com.tencent.bkrepo:bkrepo" to "<2.0.0")
+            )
+        )
+        Assertions.assertTrue(
+            mergeFilterRule.shouldIgnore(
+                vulId = "BKREPO-2011-11211",
+                riskyPackageKey = "com.tencent.bkrepo:bkrepo",
+                riskyPackageVersions = setOf("2.3.0")
+            )
+        )
+        Assertions.assertFalse(
+            mergeFilterRule.shouldIgnore(
+                vulId = "BKREPO-2011-11211",
+                riskyPackageKey = "com.tencent.bkrepo:bkrepo",
+                riskyPackageVersions = setOf("1.3.0")
+            )
+        )
+    }
+
+    @Test
     fun testIgnoreRiskyPackageKeys() {
         val mergeFilterRule = MergedFilterRule()
         mergeFilterRule.ignoreRule.add(
