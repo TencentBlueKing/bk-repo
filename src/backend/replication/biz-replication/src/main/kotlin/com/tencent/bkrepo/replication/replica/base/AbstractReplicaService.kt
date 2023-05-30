@@ -319,7 +319,6 @@ abstract class AbstractReplicaService(
         errorReason: String? = null,
         record: ReplicationRecord
     ) {
-        if (task.replicaType != ReplicaType.RUN_ONCE) return
         logger.info(
             toJson(
                 convertToReplicationRecordDetailMetricsRecord(
