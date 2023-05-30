@@ -131,6 +131,8 @@ class StandardResultManager(
         val page = if (arguments.rule?.isEmpty() == false) {
             // 由于组件版本范围查询较为复杂，无法在数据库查询语句中实现，因此将数据全部查出，在服务中过滤符合范围条件的组件漏洞
             securityResultDao.list(credentialsKey, sha256, scanner.name, pageLimit, arguments)
+        } else if (arguments.ignored) {
+            Page(pageLimit.pageNumber, pageLimit.pageSize, 0, emptyList())
         } else {
             securityResultDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
         }
