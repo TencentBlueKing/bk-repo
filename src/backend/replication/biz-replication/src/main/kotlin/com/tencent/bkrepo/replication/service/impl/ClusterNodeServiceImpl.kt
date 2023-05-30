@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
@@ -41,9 +42,12 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
+import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
+import com.tencent.bkrepo.replication.fdtp.FdtpAFTClientFactory
 import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -59,9 +63,11 @@ import com.tencent.bkrepo.replication.util.HttpUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
+import java.io.ByteArrayInputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
+import kotlin.random.Random
 
 @Service
 class ClusterNodeServiceImpl(
@@ -133,7 +139,8 @@ class ClusterNodeServiceImpl(
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now(),
-                detectType = detectType
+                detectType = detectType,
+                udpPort = udpPort
             )
             if (ping && detectType == DetectType.PING) {
                 // 检测远程集群网络连接是否可用
@@ -168,6 +175,7 @@ class ClusterNodeServiceImpl(
                 appId = request.appId
                 accessKey = request.accessKey
                 secretKey = request.secretKey
+                udpPort = udpPort
                 lastModifiedBy = SecurityUtils.getUserId()
                 lastModifiedDate = LocalDateTime.now()
             }
@@ -244,6 +252,16 @@ class ClusterNodeServiceImpl(
      */
     fun tryConnectNonRemoteCluster(remoteClusterInfo: ClusterInfo) {
         with(remoteClusterInfo) {
+            if (udpPort != null) {
+                connectWithUdp(this)
+            } else {
+                connectWithPing(this)
+            }
+        }
+    }
+
+    private fun connectWithPing(remoteClusterInfo: ClusterInfo) {
+        with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
                 // 由于调整了AuthHandler顺序，BasicAuth在前，SignAuth在后，所以没有用户名密码时，不能传Basic认证请求头
@@ -256,6 +274,23 @@ class ClusterNodeServiceImpl(
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.warn("ping cluster [$name] failed, reason: $message")
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
+            }
+        }
+    }
+    private fun connectWithUdp(clusterInfo: ClusterInfo) {
+        with(clusterInfo) {
+            try {
+                val client = FdtpAFTClientFactory.createAFTClient(clusterInfo)
+                val data = Random.nextBytes(1)
+                val inputStream = ByteArrayInputStream(data)
+                val headers = DefaultFdtpHeaders()
+                val sha256 = data.inputStream().sha256()
+                headers.add(SHA256, sha256)
+                client.sendStream(inputStream, headers)
+            } catch (exception: Exception) {
+                val message = exception.message ?: UNKNOWN
+                logger.warn("connect cluster [$name] with udp failed, reason: $message")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name.orEmpty())
             }
         }
@@ -320,6 +355,7 @@ class ClusterNodeServiceImpl(
                     appId = it.appId,
                     accessKey = it.accessKey,
                     secretKey = it.secretKey,
+                    udpPort = it.udpPort,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -340,7 +376,8 @@ class ClusterNodeServiceImpl(
                     password = crypto(it.password, true),
                     appId = it.appId,
                     accessKey = it.accessKey,
-                    secretKey = it.secretKey
+                    secretKey = it.secretKey,
+                    udpPort =  it.udpPort
                 )
             }
         }

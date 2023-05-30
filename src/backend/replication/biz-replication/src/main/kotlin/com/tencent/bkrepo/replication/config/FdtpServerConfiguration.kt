@@ -29,6 +29,8 @@ package com.tencent.bkrepo.replication.config
 
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
+import com.tencent.bkrepo.replication.controller.api.BaseCacheHandler
+import com.tencent.bkrepo.replication.controller.api.ReplicationFdtpAFTRequestHandler
 import com.tencent.bkrepo.replication.fdtp.DefaultFdtpAFTRequestHandler
 import com.tencent.bkrepo.replication.fdtp.FdtpAFTRequestHandler
 import com.tencent.bkrepo.replication.fdtp.FdtpAFTServer
@@ -38,13 +40,22 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 
 @Configuration
 @EnableConfigurationProperties(FdtpServerProperties::class)
 class FdtpServerConfiguration {
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(FdtpAFTRequestHandler::class)
     fun fdtpAFTRequestHandler() = DefaultFdtpAFTRequestHandler()
+
+
+    @Bean
+    @Primary
+    fun replicationFdtpAFTRequestHandler(
+        baseCacheHandler: BaseCacheHandler
+    ) = ReplicationFdtpAFTRequestHandler(baseCacheHandler)
+
 
     @Bean
     fun fdtpAFTServer(

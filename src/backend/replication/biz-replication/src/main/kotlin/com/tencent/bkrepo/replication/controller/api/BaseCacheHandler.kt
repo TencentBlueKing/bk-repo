@@ -25,36 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.cluster.request
+package com.tencent.bkrepo.replication.controller.api
 
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-/**
- * 更新集群节点请求
- */
-@ApiModel("更新集群节点请求")
-data class ClusterNodeUpdateRequest(
-    @ApiModelProperty("添加的集群名称", required = true)
-    var name: String,
-    @ApiModelProperty("集群地址", required = false)
-    var url: String? = null,
-    @ApiModelProperty("集群的证书", required = false)
-    var certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = false)
-    var username: String? = null,
-    @ApiModelProperty("集群认证密码", required = false)
-    var password: String? = null,
-    @ApiModelProperty("集群节点类型", required = true)
-    var type: ClusterNodeType,
-    @ApiModelProperty("连通性检测方式", required = true)
-    var detectType: DetectType? = null,
-    @ApiModelProperty("集群appId", required = false)
-    var appId: String? = null,
-    @ApiModelProperty("集群访问凭证", required = false)
-    var accessKey: String? = null,
-    @ApiModelProperty("集群密钥", required = false)
-    var secretKey: String? = null,
-    @ApiModelProperty("udp port", required = false)
-    var udpPort: Int? = null,
-)
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
+
+@Component
+class BaseCacheHandler(
+    storageProperties: StorageProperties,
+    private val storageCredentialsClient: StorageCredentialsClient,
+) {
+
+    private val defaultCredentials = storageProperties.defaultStorageCredentials()
+    val credentialsCache: LoadingCache<String, StorageCredentials> = CacheBuilder.newBuilder()
+        .maximumSize(MAX_CACHE_COUNT)
+        .expireAfterWrite(CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
+        .build(CacheLoader.from { key -> findStorageCredentials(key) })
+
+
+
+    private fun findStorageCredentials(storageKey: String?): StorageCredentials {
+        if (storageKey.isNullOrBlank()) {
+            return defaultCredentials
+        }
+        return storageCredentialsClient.findByKey(storageKey).data ?: defaultCredentials
+    }
+
+    companion object {
+        private const val MAX_CACHE_COUNT = 10L
+        private const val CACHE_EXPIRE_MINUTES = 5L
+    }
+}

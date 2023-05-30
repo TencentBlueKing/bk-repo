@@ -40,7 +40,7 @@
                         if (userInfo.admin) {
                             // TODO: 管理员创建项目引导页
                             this.$bkMessage({
-                                message: '无项目数据',
+                                message: this.$t('noProjectData'),
                                 theme: 'error'
                             })
                             this.$router.replace({
@@ -52,7 +52,7 @@
                         } else {
                             // TODO: 普通用户无项目提示页
                             this.$bkMessage({
-                                message: '无项目数据',
+                                message: this.$t('noProjectData'),
                                 theme: 'error'
                             })
                             this.$router.replace({

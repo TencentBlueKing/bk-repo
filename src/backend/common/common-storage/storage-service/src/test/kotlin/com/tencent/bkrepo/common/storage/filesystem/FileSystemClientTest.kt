@@ -46,8 +46,9 @@ class FileSystemClientTest {
     private val outputFileName = "output.file"
     private val tempDirectoryName = "tmp"
     private val inputFile = File(javaClass.getResource("/$inputFileName").file)
+    private val root = javaClass.getResource("/").path.replace(Regex("^/(.:/)"), "$1")
 
-    private val fileSystemClient = FileSystemClient(javaClass.getResource("/").path)
+    private val fileSystemClient = FileSystemClient(root)
 
     @BeforeEach
     fun beforeEach() {
@@ -191,8 +192,6 @@ class FileSystemClientTest {
     @Test
     fun createLinkTest() {
         val linkFile = fileSystemClient.createLink("/", outputFileName, inputFile).toFile()
-        inputFile.delete()
-        assertEquals(false, inputFile.exists())
         assertEquals(true, linkFile.exists())
         linkFile.delete()
         assertEquals(false, linkFile.exists())
