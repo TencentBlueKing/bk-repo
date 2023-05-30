@@ -103,7 +103,7 @@ const routes = [
                 component: repoToken,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoToken', label: '访问令牌' }
+                        { name: 'repoToken', label: '个人令牌' }
                     ]
                 }
             },
