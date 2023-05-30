@@ -1,5 +1,5 @@
 # 初始化iam
-{{- if .Values.init.iam -}}
+{{- if .Values.rbac.create -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -36,7 +36,7 @@ spec:
               # 导入模型
               for i in $(find . -name '*.json'|sort)
               do
-               python3 do_migrate.py -t {{ .Values.config.bkrepoIamApigwUrl }} -a "{{ .Values.config.bkrepoAppCode }}" -s "{{ .Values.config.bkrepoAppSecret }}" -f  $i --apigateway
+               python3 do_migrate.py -t {{ .Values.iamApigwUrl }} -a "{{ .Values.bkrepoAppCode }}" -s "{{ .Values.bkrepoAppSecret }}" -f  $i --apigateway
               done
       restartPolicy: OnFailure
 {{- end -}}
