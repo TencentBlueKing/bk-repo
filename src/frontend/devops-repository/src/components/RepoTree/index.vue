@@ -64,9 +64,11 @@
                 const flatNodes = []
                 const flatten = treeData => {
                     treeData.forEach(treeNode => {
-                        flatNodes.push(treeNode)
-                        // 过滤未展开文件夹
-                        this.openList.includes(treeNode.roadMap) && flatten(treeNode.children || [])
+                        if (typeof (treeNode) !== 'undefined') {
+                            flatNodes.push(treeNode)
+                            // 过滤未展开文件夹
+                            this.openList.includes(treeNode.roadMap) && flatten(treeNode.children || [])
+                        }
                     })
                 }
                 flatten(this.tree)
