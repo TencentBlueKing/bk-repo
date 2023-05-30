@@ -161,6 +161,14 @@ init:
   entrance:
     enabled: false
     bkCiProjectInnerUrl:
+  iam:
+    enabled: true
+    image:
+      registry: registry.hub.docker.com
+      repository: bkrepo/bkrepo-init-rbac
+      tag: 1.1.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   ## bcs repo配置
   bcs:
     enabled: false

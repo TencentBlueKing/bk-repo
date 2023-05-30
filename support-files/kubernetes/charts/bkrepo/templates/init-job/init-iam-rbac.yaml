@@ -25,8 +25,8 @@ spec:
     spec:
       containers:
         - name: init-iam
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global "bkrepo" .Values.common) }}
-          imagePullPolicy: {{ .Values.init.mongodb.image.pullPolicy }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
+          imagePullPolicy: {{ .Values.init.iam.image.pullPolicy }}
           workingDir: /data/workspace/support-files/bkiam
           command:
             - "/bin/bash"
