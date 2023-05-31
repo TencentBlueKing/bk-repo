@@ -50,5 +50,10 @@ data class CryptoProperties(
         "FOeZ0arf5NrWDFoKU30Crw2ozmRBcDvtjDVH9sn8oLC2ObCFItlM=",
     var publicKeyStr: String = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGqA4a4" +
         "/g2trRqWsKxPHrerxwY6a1Y9FIghM2uyVcpmE6PYHf6cTSUZ23+jXoVC9Vj/A+n+Xtl2RAzX6lzqshIz6jirViGCOmS0HkCLgF4MhhOWj9" +
-        "/ylRxZ8ZPiLs3Cbb6kwLYX3rlVxnpfQEz/IZRMg7giXu/6KwYyFWBZN6fjwIDAQAB"
+        "/ylRxZ8ZPiLs3Cbb6kwLYX3rlVxnpfQEz/IZRMg7giXu/6KwYyFWBZN6fjwIDAQAB",
+
+    // Key长度 16/24/32Bytes
+    var aesKey: String = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    // IV长度 16Bytes
+    var aesIv: String = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 )

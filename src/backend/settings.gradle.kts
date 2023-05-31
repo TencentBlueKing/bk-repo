@@ -86,3 +86,10 @@ includeAll(":common:common-checker")
 includeAll(":conan")
 includeAll(":fs")
 includeAll(":config")
+includeAll(":proxy")
+include("proxy:api-proxy")
+findProject(":proxy:api-proxy")?.name = "api-proxy"
+include("proxy:biz-proxy")
+findProject(":proxy:biz-proxy")?.name = "biz-proxy"
+include("proxy:boot-proxy")
+findProject(":proxy:boot-proxy")?.name = "boot-proxy"
