@@ -29,10 +29,12 @@ package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 @Document("edge_replica_task_record")
 data class TEdgeReplicaTaskRecord(
     var id: String? = null,
+    var taskId: String,
     var execClusterName: String,
     var destClusterName: String,
     var projectId: String,
@@ -42,5 +44,7 @@ data class TEdgeReplicaTaskRecord(
     var packageKey: String? = null,
     var packageVersion: String? = null,
     var status: ExecutionStatus,
-    var errorReason: String? = null
+    var errorReason: String? = null,
+    var startTime: LocalDateTime,
+    var endTime: LocalDateTime? = null
 )

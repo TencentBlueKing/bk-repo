@@ -52,6 +52,7 @@ import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
 import com.tencent.bkrepo.replication.replica.base.replicator.commitedge.CenterClusterReplicator
+import com.tencent.bkrepo.replication.replica.base.replicator.commitedge.CenterRemoteReplicator
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
@@ -153,7 +154,10 @@ class ReplicaContext(
             remoteCluster.type == ClusterNodeType.STANDALONE && !isCommitEdgeCenterNode ->
                 SpringContextUtils.getBean<ClusterReplicator>()
             remoteCluster.type == ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
-            remoteCluster.type == ClusterNodeType.REMOTE -> SpringContextUtils.getBean<RemoteReplicator>()
+            remoteCluster.type == ClusterNodeType.REMOTE && isCommitEdgeCenterNode ->
+                SpringContextUtils.getBean<CenterRemoteReplicator>()
+            remoteCluster.type == ClusterNodeType.REMOTE && !isCommitEdgeCenterNode ->
+                SpringContextUtils.getBean<RemoteReplicator>()
             else -> throw UnsupportedOperationException()
         }
     }

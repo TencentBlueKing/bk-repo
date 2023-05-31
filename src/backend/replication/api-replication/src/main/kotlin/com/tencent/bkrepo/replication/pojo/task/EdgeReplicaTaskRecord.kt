@@ -32,6 +32,7 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import java.time.LocalDateTime
 
 data class EdgeReplicaTaskRecord(
     var id: String? = null,
@@ -48,5 +49,7 @@ data class EdgeReplicaTaskRecord(
     var packageKey: String? = null,
     var packageVersion: String? = null,
     var status: ExecutionStatus,
-    var errorReason: String? = null
+    var errorReason: String? = null,
+    var startTime: LocalDateTime,
+    var endTime: LocalDateTime? = null
 )

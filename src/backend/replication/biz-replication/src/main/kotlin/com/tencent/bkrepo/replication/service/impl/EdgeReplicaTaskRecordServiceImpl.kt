@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.temporal.TemporalUnit
 
 @Service
@@ -60,13 +61,15 @@ class EdgeReplicaTaskRecordServiceImpl(
                 ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_CLUSTER_NOT_FOUND)
             return edgeReplicaTaskRecordDao.insert(
                 TEdgeReplicaTaskRecord(
+                    taskId = context.taskDetail.task.id,
                     execClusterName = clusterName,
                     destClusterName = context.remoteCluster.name,
                     projectId = projectId,
                     repoName = repoName,
                     fullPath = fullPath,
                     sha256 = sha256,
-                    status = ExecutionStatus.RUNNING
+                    status = ExecutionStatus.RUNNING,
+                    startTime = LocalDateTime.now()
                 )
             ).convert(context)
         }
@@ -82,13 +85,15 @@ class EdgeReplicaTaskRecordServiceImpl(
                 ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_CLUSTER_NOT_FOUND)
             return edgeReplicaTaskRecordDao.insert(
                 TEdgeReplicaTaskRecord(
+                    taskId = context.taskDetail.task.id,
                     execClusterName = clusterName,
                     destClusterName = context.remoteCluster.name,
                     projectId = packageSummary.projectId,
                     repoName = packageSummary.repoName,
                     packageKey = packageSummary.key,
                     packageVersion = name,
-                    status = ExecutionStatus.RUNNING
+                    status = ExecutionStatus.RUNNING,
+                    startTime = LocalDateTime.now()
                 )
             ).convert(context)
         }
@@ -98,6 +103,7 @@ class EdgeReplicaTaskRecordServiceImpl(
         val query = Query(Criteria.where(ID).isEqualTo(id))
         val update = Update().set(TEdgeReplicaTaskRecord::status.name, status)
             .set(TEdgeReplicaTaskRecord::errorReason.name, errorReason)
+            .set(TEdgeReplicaTaskRecord::endTime.name, LocalDateTime.now())
         edgeReplicaTaskRecordDao.updateFirst(query, update)
         logger.info("update task[$id] success, status[$status], errorReason[$errorReason]")
     }
@@ -136,7 +142,9 @@ class EdgeReplicaTaskRecordServiceImpl(
             packageKey = packageKey,
             packageVersion = packageVersion,
             status = status,
-            errorReason = errorReason
+            errorReason = errorReason,
+            startTime = startTime,
+            endTime = endTime
         )
     }
 

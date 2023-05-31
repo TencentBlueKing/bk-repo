@@ -27,16 +27,11 @@
 
 package com.tencent.bkrepo.replication.replica.base.replicator.commitedge
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
-import com.tencent.bkrepo.replication.replica.base.handler.ClusterArtifactReplicationHandler
-import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
+import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.context.annotation.Conditional
@@ -45,30 +40,10 @@ import java.time.temporal.ChronoUnit
 
 @Component
 @Conditional(CommitEdgeCenterCondition::class)
-class CenterClusterReplicator(
-    localDataManager: LocalDataManager,
-    clusterArtifactReplicationHandler: ClusterArtifactReplicationHandler,
-    private val replicationProperties: ReplicationProperties,
-    private val clusterProperties: ClusterProperties,
-    private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
-): ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
-
-    override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
-        node.clusterNames?.firstOrNull { it != clusterProperties.self.name }
-            ?: return super.replicaFile(context, node)
-        val edgeReplicaTaskRecord = edgeReplicaTaskRecordService.createNodeReplicaTaskRecord(
-            context = context,
-            nodeDetail = NodeDetail(node)
-        )
-        EdgeReplicaContextHolder.setEdgeReplicaTask(edgeReplicaTaskRecord)
-        val estimateTime = EdgeReplicaContextHolder.getEstimatedTime(
-            timoutCheckHosts = replicationProperties.timoutCheckHosts,
-            url = context.remoteCluster.url,
-            size = node.size
-        )
-        edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, estimateTime, ChronoUnit.SECONDS)
-        return true
-    }
+class CenterRemoteReplicator(
+    private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService,
+    private val replicationProperties: ReplicationProperties
+): RemoteReplicator() {
 
     override fun replicaPackageVersion(
         context: ReplicaContext,

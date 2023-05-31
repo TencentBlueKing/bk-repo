@@ -64,9 +64,12 @@ class ClusterReplicaTaskController(
         return ResponseBuilder.success(replicaTaskService.listTaskObject(taskKey))
     }
 
-    override fun getEdgeReplicaTask(clusterName: String): DeferredResult<Response<EdgeReplicaTaskRecord>> {
+    override fun getEdgeReplicaTask(
+        clusterName: String,
+        replicatingNum: Int
+    ): DeferredResult<Response<EdgeReplicaTaskRecord>> {
         val deferredResult = DeferredResult<Response<EdgeReplicaTaskRecord>>(30000L)
-        EdgeReplicaContextHolder.addDeferredResult(clusterName, deferredResult)
+        EdgeReplicaContextHolder.addDeferredResult(clusterName, replicatingNum, deferredResult)
         return deferredResult
     }
 

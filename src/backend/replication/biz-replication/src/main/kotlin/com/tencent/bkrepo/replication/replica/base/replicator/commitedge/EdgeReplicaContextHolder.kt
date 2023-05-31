@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.replication.replica.base.replicator.commitedge
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.net.speedtest.Counter
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import org.slf4j.LoggerFactory
 import org.springframework.web.context.request.async.DeferredResult
@@ -40,8 +43,17 @@ object EdgeReplicaContextHolder {
     private val logger = LoggerFactory.getLogger(EdgeReplicaContextHolder::class.java)
     private val deferredResultMap = ConcurrentHashMap<String, DeferredResult<Response<EdgeReplicaTaskRecord>>>()
 
-    fun addDeferredResult(clusterName: String, deferredResult: DeferredResult<Response<EdgeReplicaTaskRecord>>) {
-        val key = "$clusterName-${UUID.randomUUID()}"
+    private const val HOST_KEY = "host"
+    private const val RATE_KEY = "rate"
+    private const val MIN_TIMEOUT = 60.0
+    private const val DEFAULT_RATE = 1.0
+
+    fun addDeferredResult(
+        clusterName: String,
+        replicatingNum: Int,
+        deferredResult: DeferredResult<Response<EdgeReplicaTaskRecord>>
+    ) {
+        val key = "$clusterName-${UUID.randomUUID()}-$replicatingNum"
         deferredResult.onCompletion {
             logger.info("remove key on completion: $key")
             deferredResultMap.remove(key)
@@ -57,13 +69,15 @@ object EdgeReplicaContextHolder {
         deferredResultMap[key] = deferredResult
     }
 
+    @Suppress("LoopWithTooManyJumpStatements")
     fun setEdgeReplicaTask(edgeReplicaTaskRecord: EdgeReplicaTaskRecord) {
         with(edgeReplicaTaskRecord) {
             var retryTime = 12
             while (retryTime > 0) {
                 retryTime--
                 val key = deferredResultMap.keys().toList()
-                    .firstOrNull { it.startsWith(edgeReplicaTaskRecord.execClusterName) }
+                    .filter { it.startsWith(edgeReplicaTaskRecord.execClusterName) }
+                    .minByOrNull { it.split("-").last().toInt() }
                 if (key == null) {
                     logger.info("key is null: ${edgeReplicaTaskRecord.execClusterName}")
                     Thread.sleep(5000)
@@ -75,11 +89,29 @@ object EdgeReplicaContextHolder {
                     Thread.sleep(5000)
                     continue
                 }
+
+                if (!deferredResult.setResult(ResponseBuilder.success(this))) {
+                    logger.info("deferredResult set failed: $key")
+                    continue
+                }
                 logger.info("send edge task: $edgeReplicaTaskRecord")
-                deferredResult.setResult(ResponseBuilder.success(this))
                 deferredResultMap.remove(key)
-                break
+                return
             }
+            logger.error("no edge cluster node claim task")
+            throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_TIMEOUT)
         }
+    }
+
+    fun getEstimatedTime(timoutCheckHosts: List<Map<String, String>>, url: String, size: Long): Long {
+        val rate = timoutCheckHosts.firstOrNull { url.contains(it[HOST_KEY].toString()) }
+            ?.get(RATE_KEY)?.toDouble() ?: DEFAULT_RATE
+        val estimatedTime = if (size <= MIN_TIMEOUT * Counter.MB * rate) {
+            MIN_TIMEOUT
+        } else {
+            size / Counter.MB / rate
+        } * 1.5
+        logger.info("replica to $url maybe will cost $estimatedTime seconds to transfer, size is $size")
+        return estimatedTime.toLong()
     }
 }

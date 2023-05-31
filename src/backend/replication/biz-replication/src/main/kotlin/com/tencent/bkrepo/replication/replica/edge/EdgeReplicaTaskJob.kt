@@ -51,10 +51,11 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.time.Duration
+import javax.annotation.PostConstruct
 
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
@@ -77,27 +78,36 @@ class EdgeReplicaTaskJob(
     )
     private val executor = ManualThreadPoolExecutor.instance
 
-    @Suppress("LoopWithTooManyJumpStatements")
-    @Scheduled(fixedDelay = 1000L)
+    @PostConstruct
     fun run() {
-        while (true) {
-            if (executor.activeCount == executor.maximumPoolSize) {
-                Thread.sleep(5000)
-                logger.info("executing replica task count is ${executor.maximumPoolSize}, stop claim task from center")
-                continue
+        Thread {
+            while (true) {
+                try {
+                    if (executor.activeCount == executor.maximumPoolSize) {
+                        Thread.sleep(5000)
+                        logger.info("executing replica task count is ${executor.maximumPoolSize}, " +
+                            "stop claim task from center")
+                        continue
+                    }
+                    claimTaskFromCenter()
+                } catch (e: Exception) {
+                    logger.error("execute replica task error: ", e)
+                }
             }
-            claimTaskFromCenter()
-        }
+        }.start()
     }
 
     private fun claimTaskFromCenter() {
         val url = UrlUtils.extractDomain(clusterProperties.center.url)
-            .plus("/replication/cluster/task/edge/claim?clusterName=${clusterProperties.self.name}")
+            .plus("/replication/cluster/task/edge/claim" +
+                "?clusterName=${clusterProperties.self.name}&replicatingNum=${executor.activeCount}")
         val request = Request.Builder().url(url).get().build()
         try {
             okhttpClient.newCall(request).execute().use {
                 handleResponse(it)
             }
+        } catch (_: SocketTimeoutException) {
+            return
         } catch (e: IOException) {
             logger.error("get edge replica task failed: ", e)
             return

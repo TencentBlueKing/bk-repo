@@ -65,7 +65,10 @@ interface ClusterReplicaTaskClient {
 
     @ApiOperation("认领Edge分发任务")
     @GetMapping("/edge/claim")
-    fun getEdgeReplicaTask(@RequestParam clusterName: String): DeferredResult<Response<EdgeReplicaTaskRecord>>
+    fun getEdgeReplicaTask(
+        @RequestParam clusterName: String,
+        @RequestParam replicatingNum: Int
+    ): DeferredResult<Response<EdgeReplicaTaskRecord>>
 
     @ApiOperation("上报Edge分发任务结果")
     @PostMapping("/edge/report")
