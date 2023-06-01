@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.configuration
 
 import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory.Companion.DISTRIBUTED_COUNT_REDIS
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
 @ConfigurationProperties("scanner")
 data class ScannerProperties(
@@ -59,9 +60,17 @@ data class ScannerProperties(
     /**
      * 结果报告数据导出配置
      */
-    var reportExport: ReportExportProperties? = null
+    var reportExport: ReportExportProperties? = null,
+    /**
+     * 任务最长执行时间，超过后将不再重试而是直接转为超时状态
+     */
+    var maxTaskDuration: Duration = Duration.ofSeconds(EXPIRED_SECONDS)
 ) {
     companion object {
+        /**
+         * 任务过期时间
+         */
+        const val EXPIRED_SECONDS = 24 * 60 * 60L
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
         const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
         const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
