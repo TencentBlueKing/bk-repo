@@ -226,9 +226,9 @@ class ScanServiceImpl @Autowired constructor(
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun finishBlockTimeoutSubScanTask() {
-        val blockTimeout = scannerProperties.blockTimeout.toMillis()
+        val blockTimeout = scannerProperties.blockTimeout.seconds
         if (blockTimeout != 0L) {
-            subScanTaskDao.blockedTimeoutTasks(scannerProperties.blockTimeout.toMillis()).records.forEach { subtask ->
+            subScanTaskDao.blockedTimeoutTasks(blockTimeout).records.forEach { subtask ->
                 logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
                 finishSubtask(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name)
             }
