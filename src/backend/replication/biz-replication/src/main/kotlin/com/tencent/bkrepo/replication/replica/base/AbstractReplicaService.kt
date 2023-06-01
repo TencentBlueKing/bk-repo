@@ -36,7 +36,6 @@ import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
@@ -319,7 +318,6 @@ abstract class AbstractReplicaService(
         errorReason: String? = null,
         record: ReplicationRecord
     ) {
-        if (task.replicaType != ReplicaType.RUN_ONCE) return
         logger.info(
             toJson(
                 convertToReplicationRecordDetailMetricsRecord(
