@@ -188,6 +188,7 @@ class AuthInterceptor(
     }
 
     private fun setAuthAttribute(userId: String, appId: String, request: HttpServletRequest) {
+        val projectAccess = userProjectApiSet.any { request.requestURI.contains(it) }
         val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
         val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.contains(it) }
         val userInfo = userService.getUserInfoById(userId)
@@ -196,8 +197,8 @@ class AuthInterceptor(
             val createRequest = CreateUserRequest(userId = userId, name = userId)
             userService.createUser(createRequest)
         }
-
-        if (!anonymousAccess && !isAdmin && !userAccess) {
+        val condition = !anonymousAccess && !isAdmin && !userAccess && !projectAccess
+        if (condition) {
             logger.warn("user [$userId] can not access the endpoint [${request.requestURI}]")
             throw IllegalArgumentException("user access admin endpoint")
         }
