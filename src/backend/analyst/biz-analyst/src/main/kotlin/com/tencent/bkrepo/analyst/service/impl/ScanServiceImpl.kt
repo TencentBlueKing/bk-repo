@@ -29,6 +29,8 @@ package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.component.AnalystLoadBalancer
 import com.tencent.bkrepo.analyst.component.ReportExporter
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
@@ -90,7 +92,8 @@ class ScanServiceImpl @Autowired constructor(
     @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
     private val redisTemplate: RedisTemplate<String, String>,
-    private val reportExporter: ReportExporter
+    private val reportExporter: ReportExporter,
+    private val scannerProperties: ScannerProperties,
 ) : ScanService {
 
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String): ScanTask {
@@ -223,9 +226,12 @@ class ScanServiceImpl @Autowired constructor(
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun finishBlockTimeoutSubScanTask() {
-        subScanTaskDao.blockedTimeoutTasks(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS).records.forEach { subtask ->
-            logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
-            finishSubtask(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name)
+        val blockTimeout = scannerProperties.blockTimeout.seconds
+        if (blockTimeout != 0L) {
+            subScanTaskDao.blockedTimeoutTasks(blockTimeout).records.forEach { subtask ->
+                logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
+                finishSubtask(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name)
+            }
         }
     }
 
@@ -281,11 +287,6 @@ class ScanServiceImpl @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScanServiceImpl::class.java)
-
-        /**
-         * 默认任务最长执行时间，超过后会触发重试
-         */
-        private const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
 
         /**
          * 最大允许重复执行次数
