@@ -99,8 +99,10 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         throughput: Throughput
     ) {
         val category = context.repositoryDetail.category
-        val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
-        repository.onDownloadSuccess(context, artifactResource, throughput)
+        if (category != RepositoryCategory.VIRTUAL) {
+            val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
+            repository.onDownloadSuccess(context, artifactResource, throughput)
+        }
     }
 
     override fun buildDownloadRecord(
@@ -109,8 +111,10 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     ): PackageDownloadRecord? {
         with(context) {
             val category = context.repositoryDetail.category
-            val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
-            return repository.buildDownloadRecord(this, artifactResource)
+            return if (category != RepositoryCategory.VIRTUAL) {
+                val repository = ArtifactContextHolder.getRepository(category) as AbstractArtifactRepository
+                repository.buildDownloadRecord(this, artifactResource)
+            } else null
         }
     }
 
@@ -138,8 +142,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     @Suppress("NestedBlockDepth")
     protected fun <R> mapFirstRepo(
         context: ArtifactContext,
-        // 遍历完成后是否恢复为虚拟仓库的上下文
-        recoverContext: Boolean = true,
+        // 遍历完成后是否恢复上下文信息为虚拟仓库
+        revertContextFinally: Boolean = true,
         category: RepositoryCategory? = null,
         action: (ArtifactContext) -> R?
     ): R? {
@@ -156,7 +160,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val subRepoDetail = repositoryClient.getRepoDetail(context.projectId, member.name).data!!
                 modifyContext(context, subRepoDetail)
                 action(context)?.let {
-                    if (recoverContext) {
+                    if (revertContextFinally) {
                         modifyContext(context, originRepoDetail)
                     }
                     return it
@@ -174,8 +178,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
      */
     protected fun <R> mapEachSubRepo(
         context: ArtifactContext,
-        // 遍历完成后是否恢复为虚拟仓库的上下文
-        recoverContext: Boolean = true,
+        // 遍历完成后是否恢复上下文信息为虚拟仓库
+        revertContextFinally: Boolean = true,
         category: RepositoryCategory? = null,
         action: (ArtifactContext) -> R?
     ): MutableList<R> {
@@ -197,7 +201,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
         }
-        if (recoverContext) {
+        if (revertContextFinally) {
             modifyContext(context, originRepoDetail)
         }
         return mapResult
@@ -208,8 +212,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
      */
     protected fun <R> mapEachLocalAndFirstRemote(
         context: ArtifactContext,
-        // 遍历完成后是否恢复为虚拟仓库的上下文
-        recoverContext: Boolean = true,
+        // 遍历完成后是否恢复上下文信息为虚拟仓库
+        revertContextFinally: Boolean = true,
         action: (ArtifactContext) -> R?
     ): MutableList<R> {
         val originRepoDetail = context.repositoryDetail
@@ -234,7 +238,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 logger.warn("Failed to execute map with repo[$member]: ${ignored.message}")
             }
         }
-        if (recoverContext) {
+        if (revertContextFinally) {
             modifyContext(context, originRepoDetail)
         }
         return mapResult

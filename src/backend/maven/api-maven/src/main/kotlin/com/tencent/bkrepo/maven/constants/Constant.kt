@@ -38,6 +38,7 @@ const val FULL_PATH = "fullPath"
 const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
 const val SNAPSHOT_TIMESTAMP = "snapshot-timestamp"
+const val SNAPSHOT_BUILD_NUMBER = "snapshot-build-number"
 
 const val METADATA_KEY_PACKAGING = "packaging"
 const val METADATA_KEY_GROUP_ID = "groupId"
