@@ -1,10 +1,10 @@
 # 初始化iam
-{{ if .Values.rbac.create }}
+{{ if .Values.init.iam.enable }}
 {{- if .Values.iamApigwUrl -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.names.fullname" . }}-init-iam
+  name: {{ include "common.names.fullname" . }}-init-iam-rbac
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: init-iam-rbac
     {{- if .Values.commonLabels }}
