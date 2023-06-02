@@ -118,11 +118,18 @@ class EdgeReplicaTaskRecordServiceImpl(
         var record = edgeReplicaTaskRecordDao.findById(id)!!
         while (record.status == ExecutionStatus.RUNNING) {
             if (System.currentTimeMillis() - startTime > timeoutMillis) {
-                logger.error("wait edge cluster executing task[$id] timeout")
-                throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_TIMEOUT, id)
+                logger.error("wait edge cluster executing task[${record.taskId}] timeout")
+                throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_TIMEOUT, record.taskId)
             }
             Thread.sleep(5000)
             record = edgeReplicaTaskRecordDao.findById(id)!!
+        }
+        if (record.status == ExecutionStatus.FAILED) {
+            logger.error("edge execute task[${record.taskId}] failed: ${record.errorReason}")
+            throw ErrorCodeException(
+                ReplicationMessageCode.REPLICA_TASK_FAILED,
+                record.taskId, record.errorReason.orEmpty()
+            )
         }
     }
 

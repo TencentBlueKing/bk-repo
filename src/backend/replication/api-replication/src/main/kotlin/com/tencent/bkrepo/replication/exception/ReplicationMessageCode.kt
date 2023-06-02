@@ -46,6 +46,7 @@ enum class ReplicationMessageCode(private val businessCode: Int, private val key
     REPLICA_ARTIFACT_BROKEN(11, "replica.artifact.broken"),
     REPLICA_TASK_TIMEOUT(12, "replica.task.timeout"),
     REPLICA_CLUSTER_NOT_FOUND(13, "replica.cluster.not-found"),
+    REPLICA_TASK_FAILED(14, "replica.task.failed"),
     ;
 
     override fun getBusinessCode() = businessCode
