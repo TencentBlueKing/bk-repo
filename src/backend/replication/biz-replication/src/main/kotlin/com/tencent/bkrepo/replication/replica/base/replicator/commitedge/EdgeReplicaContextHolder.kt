@@ -99,7 +99,10 @@ object EdgeReplicaContextHolder {
                 return
             }
             logger.error("no edge cluster node claim task")
-            throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_TIMEOUT)
+            throw ErrorCodeException(
+                ReplicationMessageCode.REPLICA_TASK_TIMEOUT,
+                edgeReplicaTaskRecord.taskDetail.task.id
+            )
         }
     }
 
