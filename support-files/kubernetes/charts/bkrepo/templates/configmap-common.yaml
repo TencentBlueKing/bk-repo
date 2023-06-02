@@ -45,7 +45,7 @@ data:
     auth.iam.apigwBaseUrl: {{ .Values.iamApigwUrl }}
     auth.iam.appCode: {{ .Values.bkrepoAppCode }}
     auth.iam.appSecret: {{ .Values.bkrepoAppSecret }}
-    auth.iam.applyJoinUserGroupUrl: {{ .Values.iamHost }}/apply-join-user-group?system_id={{ .Values.systemId }}
+    auth.iam.applyJoinUserGroupUrl: https://{{ .Values.iamHost }}/apply-join-user-group?system_id={{ .Values.systemId }}
     auth.iam.systemId: {{ .Values.systemId }}
     {{- end }}
     cluster:
