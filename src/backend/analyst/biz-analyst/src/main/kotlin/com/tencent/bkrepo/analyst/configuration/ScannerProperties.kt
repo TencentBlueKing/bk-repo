@@ -67,12 +67,20 @@ data class ScannerProperties(
      * 为0时表示任务将不会因为阻塞而超时
      */
     var blockTimeout: Duration = Duration.ofMillis(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS),
+    /**
+     * 任务最长执行时间，超过后将不再重试而是直接转为超时状态
+     */
+    var maxTaskDuration: Duration = Duration.ofSeconds(EXPIRED_SECONDS)
 ) {
     companion object {
         /**
          * 默认任务最长执行时间，超过后会触发重试
          */
         const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
+        /**
+         * 任务过期时间
+         */
+        const val EXPIRED_SECONDS = 24 * 60 * 60L
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
         const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
         const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
