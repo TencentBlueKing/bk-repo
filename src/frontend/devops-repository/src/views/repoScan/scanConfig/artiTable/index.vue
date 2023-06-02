@@ -54,7 +54,7 @@
         watch: {
             initData: {
                 handler (data) {
-                    this.defaultRules = data.map(r => {
+                    this.defaultRules = data.filter(r => r.rules).map(r => {
                         return r.rules?.reduce((target, item) => {
                             target[item.field] = {
                                 ...item,
@@ -63,7 +63,7 @@
                             return target
                         }, {})
                     })
-                    this.showAddBtn = Boolean(data.length)
+                    this.showAddBtn = Boolean(this.defaultRules.length)
                 },
                 immediate: true,
                 deep: true
@@ -72,8 +72,19 @@
         methods: {
             getConfig () {
                 return new Promise((resolve, reject) => {
-                    if (!this.showAddBtn) resolve([])
-                    else {
+                    const generic = this.scanType.includes('GENERIC')
+                    if (!this.showAddBtn && !generic) {
+                        // package
+                        resolve([
+                            {
+                                field: 'latestVersion',
+                                value: true,
+                                operation: 'EQ'
+                            }
+                        ])
+                    } else if (!this.showAddBtn && generic) {
+                        resolve([])
+                    } else {
                         const rules = this.defaultRules
                             .map(rs => {
                                 return {
