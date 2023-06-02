@@ -30,7 +30,6 @@ package com.tencent.bkrepo.analyst.service.impl
 import com.tencent.bkrepo.analyst.component.AnalystLoadBalancer
 import com.tencent.bkrepo.analyst.component.ReportExporter
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
-import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
@@ -250,8 +249,10 @@ class ScanServiceImpl @Autowired constructor(
             val expiredTimestamp =
                 Timestamp.valueOf(task.lastModifiedDate).time + scannerProperties.maxTaskDuration.toMillis()
             if (task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES || System.currentTimeMillis() >= expiredTimestamp) {
-                logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] " +
-                                "exceed max execute times or timeout[${task.lastModifiedDate}]")
+                logger.info(
+                    "subTask[${task.id}] of parentTask[${task.parentScanTaskId}] " +
+                        "exceed max execute times or timeout[${task.lastModifiedDate}]"
+                )
                 val targetState = if (task.status == SubScanTaskStatus.EXECUTING.name) {
                     SubScanTaskStatus.TIMEOUT.name
                 } else {
