@@ -30,6 +30,7 @@ package com.tencent.bkrepo.repository.service.node.impl.center
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -39,7 +40,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
-import com.tencent.bkrepo.repository.util.ClusterUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger

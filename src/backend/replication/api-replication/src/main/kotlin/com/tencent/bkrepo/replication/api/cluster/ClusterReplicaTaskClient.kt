@@ -30,14 +30,18 @@ package com.tencent.bkrepo.replication.api.cluster
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.context.request.async.DeferredResult
 
 @RequestMapping("/cluster/task")
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaTaskClient")
@@ -58,4 +62,15 @@ interface ClusterReplicaTaskClient {
     @ApiOperation("查询同步任务对象")
     @GetMapping("/object/list/{taskKey}")
     fun listObject(@PathVariable taskKey: String): Response<List<ReplicaObjectInfo>>
+
+    @ApiOperation("认领Edge分发任务")
+    @GetMapping("/edge/claim")
+    fun getEdgeReplicaTask(
+        @RequestParam clusterName: String,
+        @RequestParam replicatingNum: Int
+    ): DeferredResult<Response<EdgeReplicaTaskRecord>>
+
+    @ApiOperation("上报Edge分发任务结果")
+    @PostMapping("/edge/report")
+    fun reportEdgeReplicaTaskResult(@RequestBody edgeReplicaTaskRecord: EdgeReplicaTaskRecord): Response<Void>
 }
