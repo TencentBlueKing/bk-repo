@@ -204,11 +204,11 @@ class ClusterReplicator(
                 return buildNodeCreateRequest(this, node)?.let {
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
                     ) {
+                        // 1. 同步文件数据
                         logger.info(
                             "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
                                 "will be pushed to the remote server ${cluster.name}, try the $retry time!"
                         )
-                        // 1. 同步文件数据
                         try {
                             artifactReplicationHandler.blobPush(
                                 filePushContext = FilePushContext(

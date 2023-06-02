@@ -175,7 +175,7 @@ class ClusterNodeServiceImpl(
                 appId = request.appId
                 accessKey = request.accessKey
                 secretKey = request.secretKey
-                udpPort = udpPort
+                udpPort = request.udpPort
                 lastModifiedBy = SecurityUtils.getUserId()
                 lastModifiedDate = LocalDateTime.now()
             }

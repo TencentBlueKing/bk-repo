@@ -61,12 +61,22 @@ data class ScannerProperties(
      * 结果报告数据导出配置
      */
     var reportExport: ReportExportProperties? = null,
+
+    /**
+     * 阻塞超时时间，项目提交的分析任务数量超过配额后继续提交的任务会进入阻塞状态，阻塞超过这个时间将会阻塞超时导致任务失败
+     * 为0时表示任务将不会因为阻塞而超时
+     */
+    var blockTimeout: Duration = Duration.ofMillis(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS),
     /**
      * 任务最长执行时间，超过后将不再重试而是直接转为超时状态
      */
     var maxTaskDuration: Duration = Duration.ofSeconds(EXPIRED_SECONDS)
 ) {
     companion object {
+        /**
+         * 默认任务最长执行时间，超过后会触发重试
+         */
+        const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
         /**
          * 任务过期时间
          */

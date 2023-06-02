@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.packages.impl.center
+package com.tencent.bkrepo.replication.dao
 
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.PackageDao
-import com.tencent.bkrepo.repository.dao.PackageDependentsDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.service.packages.impl.PackageDependentsServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.replication.model.TEdgeReplicaTaskRecord
+import org.springframework.stereotype.Repository
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterPackageDependentsServiceImpl(
-    private val packageDao: PackageDao,
-    packageDependentsDao: PackageDependentsDao
-) : PackageDependentsServiceImpl(
-    packageDao, packageDependentsDao
-) {
-    override fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage? {
-        return packageDao
-            .findByKey(projectId, repoName, packageKey)
-            ?.also { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
-    }
-}
+@Repository
+class EdgeReplicaTaskRecordDao : SimpleMongoDao<TEdgeReplicaTaskRecord>()

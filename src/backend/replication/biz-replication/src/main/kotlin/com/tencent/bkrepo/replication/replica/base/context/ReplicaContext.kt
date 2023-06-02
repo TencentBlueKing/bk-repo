@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.replication.replica.base.context
 
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
@@ -49,13 +51,15 @@ import com.tencent.bkrepo.replication.replica.base.replicator.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.RemoteReplicator
 import com.tencent.bkrepo.replication.replica.base.replicator.Replicator
+import com.tencent.bkrepo.replication.replica.base.replicator.commitedge.CenterClusterReplicator
+import com.tencent.bkrepo.replication.replica.base.replicator.commitedge.CenterRemoteReplicator
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class ReplicaContext(
-    taskDetail: ReplicaTaskDetail,
+    val taskDetail: ReplicaTaskDetail,
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
@@ -111,18 +115,13 @@ class ReplicaContext(
             artifactReplicaClient = FeignClientFactory.create(cluster)
             blobReplicaClient = FeignClientFactory.create(cluster)
         }
-        replicator = when (remoteCluster.type) {
-            ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
-            ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
-            ClusterNodeType.REMOTE -> SpringContextUtils.getBean<RemoteReplicator>()
-            else -> throw UnsupportedOperationException()
-        }
+        replicator = buildReplicator()
 
         targetVersions = initImageTargetTag()
         val readTimeout = Duration.ofMillis(READ_TIMEOUT)
         val writeTimeout = Duration.ofMillis(WRITE_TIMEOUT)
         val closeTimeout = Duration.ofMillis(CLOSE_TIMEOUT)
-        httpClient = if (cluster.username != null) {
+        httpClient = if (cluster.username != null && cluster.password != null) {
             OkHttpClientPool.getHttpClient(
                 replicationProperties.timoutCheckHosts,
                 cluster,
@@ -142,6 +141,24 @@ class ReplicaContext(
                 SignInterceptor(cluster),
                 RetryInterceptor()
                 )
+        }
+    }
+
+    private fun buildReplicator(): Replicator {
+        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
+        val isCommitEdgeCenterNode = clusterProperties.role == ClusterNodeType.CENTER &&
+            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        return when {
+            remoteCluster.type == ClusterNodeType.STANDALONE && isCommitEdgeCenterNode ->
+                SpringContextUtils.getBean<CenterClusterReplicator>()
+            remoteCluster.type == ClusterNodeType.STANDALONE && !isCommitEdgeCenterNode ->
+                SpringContextUtils.getBean<ClusterReplicator>()
+            remoteCluster.type == ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
+            remoteCluster.type == ClusterNodeType.REMOTE && isCommitEdgeCenterNode ->
+                SpringContextUtils.getBean<CenterRemoteReplicator>()
+            remoteCluster.type == ClusterNodeType.REMOTE && !isCommitEdgeCenterNode ->
+                SpringContextUtils.getBean<RemoteReplicator>()
+            else -> throw UnsupportedOperationException()
         }
     }
 

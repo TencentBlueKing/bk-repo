@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.node.NodeProperty
 import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
@@ -144,13 +145,13 @@ interface OciOperationService {
     fun getNodeFullPath(artifactInfo: OciArtifactInfo): String?
 
     /**
-     * 根据sha256值获取对应的node fullpath
+     * 根据sha256值获取对应的node fullpath,md5,size
      */
     fun getNodeByDigest(
         projectId: String,
         repoName: String,
         digestStr: String
-    ): Pair<String?, String?>
+    ): NodeProperty
 
     /**
      * 针对老的docker仓库的数据做兼容性处理
