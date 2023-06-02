@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.packages.impl.center
+package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.PackageDao
-import com.tencent.bkrepo.repository.dao.PackageDependentsDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.service.packages.impl.PackageDependentsServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import java.time.temporal.TemporalUnit
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterPackageDependentsServiceImpl(
-    private val packageDao: PackageDao,
-    packageDependentsDao: PackageDependentsDao
-) : PackageDependentsServiceImpl(
-    packageDao, packageDependentsDao
-) {
-    override fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage? {
-        return packageDao
-            .findByKey(projectId, repoName, packageKey)
-            ?.also { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
-    }
+interface EdgeReplicaTaskRecordService {
+
+    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
+
+    fun createPackageVersionReplicaTaskRecord(
+        context: ReplicaContext,
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion
+    ): EdgeReplicaTaskRecord
+
+    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
+
+    fun delete(id: String)
+
+    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
 }
