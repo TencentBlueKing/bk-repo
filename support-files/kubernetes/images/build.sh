@@ -156,7 +156,7 @@ fi
 if [[ $ALL -eq 1 || $INIT_RBAC -eq 1 ]] ; then
     log "构建init-rbac镜像..."
     rm -rf $tmp_dir/*
-    mkdir -p $WORKING_DIR/$BUILDPATH/support-files/bkiam
+    mkdir -p $tmp_dir/support-files/bkiam
     cp -rf $ROOT_DIR/support-files/bkiam/* $tmp_dir/support-files/bkiam
 fi
 
