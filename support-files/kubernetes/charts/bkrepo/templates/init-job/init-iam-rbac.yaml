@@ -6,7 +6,7 @@ kind: Job
 metadata:
   name: {{ include "common.names.fullname" . }}-init-iam
   labels: {{- include "common.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: init-iam
+    app.kubernetes.io/component: init-iam-rbac
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
@@ -21,10 +21,10 @@ spec:
   template:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
-        app.kubernetes.io/component: init-iam
+        app.kubernetes.io/component: init-iam-rbac
     spec:
       containers:
-        - name: init-iam
+        - name: init-iam-rbac
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.init.iam.image.pullPolicy }}
           workingDir: /data/workspace/support-files/bkiam
