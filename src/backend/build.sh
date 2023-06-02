@@ -178,7 +178,7 @@ fi
 if [[ $ALL -eq 1 || $INIT_RBAC -eq 1 ]] ; then
     log "构建init-rbac镜像..."
     rm -rf $tmp_dir/*
-    cp -rf $ROOT_DIR/support-files/bkiam/* $tmp_dir/
+    cp -rf $ROOT_DIR/support-files/bkiam/* $tmp_dir/support-files/bkiam/
     docker build -f init/init-rbac.Dockerfile -t $REGISTRY/bkrepo-init-rbac:$VERSION $tmp_dir --no-cache --network=host
     if [[ $PUSH -eq 1 ]] ; then
         docker push $REGISTRY/bkrepo-init-rbac:$VERSION
