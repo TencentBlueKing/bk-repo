@@ -1,5 +1,5 @@
 # 初始化iam
-{{ if .Values.init.iam.enable }}
+{{ if .Values.init.iam.enabled }}
 {{- if .Values.iamApigwUrl -}}
 apiVersion: batch/v1
 kind: Job
