@@ -28,6 +28,9 @@
 package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.component.AnalystLoadBalancer
+import com.tencent.bkrepo.analyst.component.ReportExporter
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
@@ -74,6 +77,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.sql.Timestamp
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -88,10 +92,12 @@ class ScanServiceImpl @Autowired constructor(
     private val taskStateMachine: StateMachine,
     @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
-    private val redisTemplate: RedisTemplate<String, String>
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val reportExporter: ReportExporter,
+    private val scannerProperties: ScannerProperties,
 ) : ScanService {
 
-    override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
+    override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String): ScanTask {
         val context = CreateTaskContext(scanRequest = scanRequest, triggerType = triggerType, userId = userId)
         val event = Event(ScanTaskEvent.CREATE.name, context)
         val transitResult = taskStateMachine.sendEvent(ScanTaskStatus.PENDING.name, event)
@@ -177,6 +183,7 @@ class ScanServiceImpl @Autowired constructor(
             val subtask = subScanTaskDao.findById(subTaskId) ?: return
             logger.info("report result, parentTask[${subtask.parentScanTaskId}], subTask[$subTaskId]")
             finishSubtask(subtask = subtask, targetState = scanStatus, scanExecutorResult = scanExecutorResult)
+            scanExecutorResult?.let { reportExporter.export(subtask, it) }
         }
     }
 
@@ -220,9 +227,12 @@ class ScanServiceImpl @Autowired constructor(
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun finishBlockTimeoutSubScanTask() {
-        subScanTaskDao.blockedTimeoutTasks(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS).records.forEach { subtask ->
-            logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
-            finishSubtask(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name)
+        val blockTimeout = scannerProperties.blockTimeout.seconds
+        if (blockTimeout != 0L) {
+            subScanTaskDao.blockedTimeoutTasks(blockTimeout).records.forEach { subtask ->
+                logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
+                finishSubtask(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name)
+            }
         }
     }
 
@@ -236,8 +246,13 @@ class ScanServiceImpl @Autowired constructor(
                 ?: return null
 
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
-            if (task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
-                logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] exceed max execute times")
+            val expiredTimestamp =
+                Timestamp.valueOf(task.lastModifiedDate).time + scannerProperties.maxTaskDuration.toMillis()
+            if (task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES || System.currentTimeMillis() >= expiredTimestamp) {
+                logger.info(
+                    "subTask[${task.id}] of parentTask[${task.parentScanTaskId}] " +
+                        "exceed max execute times or timeout[${task.lastModifiedDate}]"
+                )
                 val targetState = if (task.status == SubScanTaskStatus.EXECUTING.name) {
                     SubScanTaskStatus.TIMEOUT.name
                 } else {
@@ -278,11 +293,6 @@ class ScanServiceImpl @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScanServiceImpl::class.java)
-
-        /**
-         * 默认任务最长执行时间，超过后会触发重试
-         */
-        private const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
 
         /**
          * 最大允许重复执行次数

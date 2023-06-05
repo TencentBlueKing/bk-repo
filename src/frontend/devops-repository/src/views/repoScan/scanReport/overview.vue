@@ -30,16 +30,16 @@
     import { segmentNumberThree } from '@repository/utils'
     import { mapActions } from 'vuex'
     import { SCAN_TYPE_LICENSE, SCAN_TYPE_SECURITY } from '../../../store/publicEnum'
-    const nowTime = new Date(
-        `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
-    ).getTime() + 3600 * 1000 * 24
+    import moment from 'moment'
+    import { before, zeroTime } from '@repository/utils/date'
+    const nowTime = moment()
     export default {
         props: {
             scanPlan: Object
         },
         data () {
             return {
-                filterTime: [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)],
+                filterTime: [zeroTime(before(30)), nowTime.toDate()],
                 overview: {
                     artifactCount: 0,
                     critical: 0,
@@ -55,19 +55,19 @@
                     {
                         text: this.$t('last 7 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
+                            return [zeroTime(before(7)), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 15 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
+                            return [zeroTime(before(15)), nowTime.toDate()]
                         }
                     },
                     {
                         text: this.$t('last 30 days'),
                         value () {
-                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
+                            return [zeroTime(before(30)), nowTime.toDate()]
                         }
                     }
                 ]

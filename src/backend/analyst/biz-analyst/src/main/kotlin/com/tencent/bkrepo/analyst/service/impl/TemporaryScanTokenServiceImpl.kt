@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.EXPIRED_SECONDS
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
@@ -50,6 +52,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -109,6 +112,10 @@ class TemporaryScanTokenServiceImpl(
 
     override fun getToolInput(subtaskId: String): ToolInput {
         val subtask = scanService.get(subtaskId)
+
+        // 设置后续操作使用的用户的身份为任务触发者
+        HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, subtask.createdBy)
+
         val scanner = subtask.scanner as StandardScanner
         with(subtask) {
             val fullPaths = getFullPaths(subtask)
@@ -209,6 +216,5 @@ class TemporaryScanTokenServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(TemporaryScanTokenServiceImpl::class.java)
-        private const val EXPIRED_SECONDS = 24 * 60 * 60L
     }
 }

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
@@ -84,7 +84,7 @@ class UserServiceImpl constructor(
     lateinit var projectClient: ProjectClient
 
     @Autowired
-    lateinit var bkAuthConfig: BkAuthConfig
+    lateinit var bkAuthConfig: DevopsAuthConfig
 
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
@@ -102,8 +102,16 @@ class UserServiceImpl constructor(
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
-        if (!request.asstUsers.all { validateEntityUser(it) }) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_ENTITY_USER_NOT_EXIST)
+        // check asstUsers
+        request.asstUsers.forEach {
+            val asstUser = userRepository.findFirstByUserId(it)
+            if (asstUser != null && asstUser.group) {
+                throw ErrorCodeException(AuthMessageCode.AUTH_ENTITY_USER_NOT_EXIST)
+            } else if (asstUser != null && !asstUser.group) {
+                return@forEach
+            }
+            val createRequest = CreateUserRequest(userId = it, name = it)
+            createUser(createRequest)
         }
         val hashPwd = if (request.pwd == null) {
             DataDigestUtils.md5FromStr(IDUtil.genRandomId())

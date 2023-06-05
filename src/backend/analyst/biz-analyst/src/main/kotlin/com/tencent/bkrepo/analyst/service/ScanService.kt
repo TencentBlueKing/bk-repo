@@ -45,7 +45,7 @@ interface ScanService {
      * @param triggerType 触发类型
      * @param userId 用户id，传入null时表示系统触发扫描，不校验用户权限
      */
-    fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String? = null): ScanTask
+    fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String): ScanTask
 
     /**
      * 从流水线创建扫描任务

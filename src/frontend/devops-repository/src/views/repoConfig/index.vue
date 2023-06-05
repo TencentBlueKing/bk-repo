@@ -456,7 +456,7 @@
             },
             toRepoList () {
                 this.$router.push({
-                    name: 'repoList'
+                    name: 'repositories'
                 })
             },
             checkRemoteUrl (val) {

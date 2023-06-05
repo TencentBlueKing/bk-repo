@@ -33,6 +33,8 @@ package com.tencent.bkrepo.opdata.controller
 
 import com.google.common.net.HttpHeaders.CONTENT_TYPE
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.SearchRequest
 import com.tencent.bkrepo.opdata.service.GrafanaService
@@ -47,6 +49,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/grafana")
+@Principal(PrincipalType.GENERAL)
 class GrafanaController @Autowired constructor(
     private val grafanaService: GrafanaService
 ) {

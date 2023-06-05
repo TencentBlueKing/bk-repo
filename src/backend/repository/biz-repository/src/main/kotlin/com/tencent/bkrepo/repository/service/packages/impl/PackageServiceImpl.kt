@@ -517,6 +517,7 @@ class PackageServiceImpl(
                     extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath,
                     manifestPath = it.manifestPath,
+                    clusterNames = it.clusterNames
                 )
             }
         }

@@ -1,0 +1,49 @@
+name: Check Tested Label
+
+on:
+  pull_request:
+    branches: [ master ]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+jobs:
+  check-tested-label:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+      - name: Check tested label of issues
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410
+        with:
+          script: |
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+              page: 1
+            });
+            const regex = /#[\d]{1,6}/g;
+            let issues = [];
+            for (const commit of commits.data) {
+              const matches = commit.commit.message.match(regex);
+              if (matches) {
+                issues.push(...matches.map(match => match.substring(1)));
+              }
+            }
+            issues = [...new Set(issues)]; // remove duplicates
+            console.log(`Check tested label of issues: ${issues.join(', ')}`);
+            
+            let issuesNotTested = [];
+            for (issueNum of issues) {
+               const issue = await github.rest.issues.get({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   issue_number: issueNum
+               });
+               testedLabels = issue.data.labels.filter(label => label.name === "tested")
+               if (testedLabels.length === 0) {
+                  issuesNotTested.push(issueNum)
+               }
+            }
+            if (issuesNotTested.length !== 0) {
+               core.setFailed(`PR contains untested issues[${issuesNotTested.join(', ')}]`)
+            }

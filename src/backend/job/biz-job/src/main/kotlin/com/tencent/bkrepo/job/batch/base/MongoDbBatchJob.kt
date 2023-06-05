@@ -37,6 +37,7 @@ import com.tencent.bkrepo.job.executor.IdentityTask
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.bson.types.ObjectId
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
@@ -134,7 +135,10 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
         var sum = 0L
         measureNanoTime {
             do {
-                val query = buildQuery().addCriteria(Criteria.where(ID).gt(lastId)).limit(batchSize)
+                val query = buildQuery()
+                    .addCriteria(Criteria.where(ID).gt(lastId))
+                    .limit(batchSize)
+                    .with(Sort.by(ID).ascending())
                 entityClass().fields.forEach {
                     val filedName = if (it.name.equals(JAVA_ID)) ID else it.name
                     query.fields().include(filedName)

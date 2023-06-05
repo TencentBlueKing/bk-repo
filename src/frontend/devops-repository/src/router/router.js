@@ -44,15 +44,15 @@ const routes = [
     {
         path: '/ui/:projectId',
         component: repoHome,
-        redirect: { name: 'repoList' },
+        redirect: { name: 'repositories' },
         children: [
             {
                 path: 'repoList',
-                name: 'repoList',
+                name: 'repositories',
                 component: repoList,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoList', label: '仓库列表' }
+                        { name: 'repositories', label: '仓库列表' }
                     ]
                 }
             },
@@ -62,7 +62,7 @@ const routes = [
                 component: repoConfig,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'repositories', label: '仓库列表' },
                         { name: 'repoConfig', label: '仓库配置' }
                     ]
                 }
@@ -103,7 +103,7 @@ const routes = [
                 component: repoToken,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoToken', label: '访问令牌' }
+                        { name: 'repoToken', label: '个人令牌' }
                     ]
                 }
             },
@@ -236,13 +236,13 @@ const routes = [
                         ]
                     } else if (repoType === 'generic') {
                         to.meta.breadcrumb = [
-                            { name: 'repoList', label: '仓库列表' },
+                            { name: 'repositories', label: '仓库列表' },
                             { name: 'repoGeneric', label: '{repoName}', template: 'repoGeneric' },
                             { name: 'artiReport', label: '制品扫描结果' }
                         ]
                     } else if (repoType) {
                         to.meta.breadcrumb = [
-                            { name: 'repoList', label: '仓库列表' },
+                            { name: 'repositories', label: '仓库列表' },
                             { name: 'commonList', label: '{repoName}', template: 'commonList' },
                             { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' },
                             { name: 'artiReport', label: '制品扫描结果' }
@@ -290,7 +290,7 @@ const routes = [
                 component: repoGeneric,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'repositories', label: '仓库列表' },
                         { name: 'repoGeneric', label: '{repoName}', template: 'repoGeneric' }
                     ]
                 }
@@ -301,7 +301,7 @@ const routes = [
                 component: commonPackageList,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'repositories', label: '仓库列表' },
                         { name: 'commonList', label: '{repoName}', template: 'commonList' }
                     ]
                 }
@@ -312,7 +312,7 @@ const routes = [
                 component: commonPackageDetail,
                 meta: {
                     breadcrumb: [
-                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'repositories', label: '仓库列表' },
                         { name: 'commonList', label: '{repoName}', template: 'commonList' },
                         { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' }
                     ]

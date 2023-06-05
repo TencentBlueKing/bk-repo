@@ -57,5 +57,7 @@ class ClusterNodeCreateRequest(
     @ApiModelProperty("创建节点时是否检测连通性", required = false)
     var ping: Boolean = true,
     @ApiModelProperty("连通性检测方式", required = true)
-    var detectType: DetectType = DetectType.PING
+    var detectType: DetectType = DetectType.PING,
+    @ApiModelProperty("udp port", required = false)
+    var udpPort: Int? = null,
 )

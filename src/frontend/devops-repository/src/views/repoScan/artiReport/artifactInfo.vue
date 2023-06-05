@@ -14,7 +14,7 @@
             <div class="flex-align-center">
                 <span class="mr20" style="color:var(--fontSubsidiaryColor);">{{ $t('qualityRules')}}</span>
                 <span v-if="subtaskOverview.qualityRedLine" class="repo-tag SUCCESS">{{$t('pass')}}</span>
-                <span v-else class="repo-tag FAILED">{{$t('notPass')}}}</span>
+                <span v-else class="repo-tag FAILED">{{$t('notPass')}}</span>
             </div>
             <div v-for="item in qualityRules" :key="item">{{ item }}</div>
         </div>

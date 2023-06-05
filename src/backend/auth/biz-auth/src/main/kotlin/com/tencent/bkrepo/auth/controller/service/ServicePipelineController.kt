@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServicePipelineClient
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
+import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServicePipelineController @Autowired constructor(
-    private val bkAuthPipelineService: BkAuthPipelineService
+    private val bkAuthPipelineService: DevopsPipelineService
 ) : ServicePipelineClient {
     override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
         return ResponseBuilder.success(bkAuthPipelineService.listPermissionPipelines(uid, projectId))

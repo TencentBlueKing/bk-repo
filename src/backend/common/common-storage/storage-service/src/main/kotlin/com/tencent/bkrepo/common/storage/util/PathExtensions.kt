@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.util
 
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -60,7 +61,7 @@ fun Path.createNewOutputStream(): OutputStream {
     }
     return Files.newOutputStream(
         this,
-        StandardOpenOption.CREATE_NEW
+        StandardOpenOption.CREATE_NEW,
     )
 }
 
@@ -83,4 +84,20 @@ fun Path.delete(): Boolean {
     }
     // 目录还存在内容
     return false
+}
+
+/**
+ * 判断文件是否存在
+ * 传统的Files.exist()底层使用stat来获取文件的属性，通过属性来判断文件是否存在。
+ * 但是在nfs中，stat会使用缓存，导致判断不正确，而open方法则请求nfs server，以保持一致性。
+ * 在更加需要准确判断文件时，可以使用此方法。
+ * @return 文件存在，返回true。如果path是目录或者不存在则返回false
+ * */
+fun Path.existReal(): Boolean {
+    return try {
+        this.toFile().inputStream().close()
+        true
+    } catch (e: FileNotFoundException) {
+        false
+    }
 }

@@ -196,8 +196,10 @@ class KubernetesDispatcher(
             val job = batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
             val failed = job.status?.failed ?: 0
             // 只清理失败的job，因为成功的job说明结果也上报成功了，不需要再次分发
-            if (failed > 0) {
-                return cleanJob(jobName)
+            return if (failed > 0) {
+                cleanJob(jobName)
+            } else {
+                false
             }
         }
 
