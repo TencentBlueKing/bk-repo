@@ -31,4 +31,7 @@
 
 dependencies {
     implementation(project(":proxy:api-proxy"))
+    implementation(project(":common:common-service"))
+    implementation(project(":common:common-security"))
+    implementation(project(":common:common-artifact:artifact-service"))
 }

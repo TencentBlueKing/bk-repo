@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
@@ -45,6 +46,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import net.bytebuddy.utility.RandomString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -70,6 +72,7 @@ class ProxyServiceImpl(
             displayName = request.displayName,
             projectId = request.projectId,
             clusterName = request.clusterName,
+            ip = StringPool.UNKNOWN,
             secretKey = secretKey,
             sessionKey = StringPool.EMPTY,
             ticket = Random.nextInt(),
@@ -90,10 +93,10 @@ class ProxyServiceImpl(
         return tProxy.convert()
     }
 
-    override fun page(projectId: String, pageNum: Int, pageSize: Int): Page<ProxyInfo> {
+    override fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo> {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
-        val pageRequest = Pages.ofRequest(pageNum, pageSize)
-        val page = proxyRepository.findByProjectId(projectId, pageRequest)
+        val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
+        val page = proxyRepository.findByOption(projectId, option)
         return Pages.ofResponse(pageRequest, page.totalElements, page.content.map { it.convert() })
     }
 
@@ -101,25 +104,26 @@ class ProxyServiceImpl(
         val userId = SecurityUtils.getUserId()
         val tProxy = proxyRepository.findByProjectIdAndName(request.projectId, request.name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, request.name)
-        permissionManager.checkProjectPermission(PermissionAction.READ, tProxy.projectId)
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, tProxy.projectId)
         request.displayName?.let { tProxy.displayName = it }
+        request.ip?.let { tProxy.ip = it }
         tProxy.lastModifiedBy = userId
         tProxy.lastModifiedDate = LocalDateTime.now()
         return proxyRepository.save(tProxy).convert()
     }
 
     override fun delete(projectId: String, name: String) {
-        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
+        proxyRepository.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
-        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
-        proxyRepository.deleteById(tProxy.id!!)
+        proxyRepository.deleteByProjectIdAndName(projectId, name)
     }
 
     override fun ticket(projectId: String, name: String): Int {
         val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
 
-        return if (tProxy.ticketCreateInstant.plusSeconds(20).isAfter(Instant.now())) {
+        return if (!tProxy.ticketCreateInstant.plusSeconds(15).isAfter(Instant.now())) {
             val ticket = Random.nextInt()
             tProxy.ticket = ticket
             tProxy.ticketCreateInstant = Instant.now()
@@ -146,6 +150,7 @@ class ProxyServiceImpl(
             val sessionKey = AESUtils.encrypt(RandomString.make(32), secretKey)
             tProxy.status = ProxyStatus.ONLINE
             tProxy.sessionKey = sessionKey
+            tProxy.ip = HttpContextHolder.getClientAddress()
             proxyRepository.save(tProxy)
             return sessionKey
         }
@@ -186,6 +191,7 @@ class ProxyServiceImpl(
         displayName = displayName,
         projectId = projectId,
         clusterName = clusterName,
+        ip = ip,
         status = status
     )
 

@@ -29,8 +29,10 @@ package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
 import com.tencent.bkrepo.auth.service.ProxyService
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
@@ -41,6 +43,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("Proxy管理接口")
@@ -57,9 +60,21 @@ class ProxyController(
     }
 
     @ApiOperation("查询Proxy信息")
-    @GetMapping("/info/{name}")
-    fun info(@PathVariable name: String): Response<ProxyInfo> {
-        return ResponseBuilder.success()
+    @GetMapping("/info/{projectId}/{name}")
+    fun info(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<ProxyInfo> {
+        return ResponseBuilder.success(proxyService.getInfo(projectId, name))
+    }
+
+    @ApiOperation("分页查询Proxy信息")
+    @GetMapping("/page/info/{projectId}")
+    fun page(
+        @PathVariable projectId: String,
+        @RequestParam proxyListOption: ProxyListOption
+    ): Response<Page<ProxyInfo>> {
+        return ResponseBuilder.success(proxyService.page(projectId, proxyListOption))
     }
 
     @ApiOperation("更新Proxy")
@@ -69,9 +84,12 @@ class ProxyController(
     }
 
     @ApiOperation("删除Proxy")
-    @DeleteMapping("/delete/{name}")
-    fun delete(@PathVariable name: String): Response<Void> {
-        proxyService.delete(name)
+    @DeleteMapping("/delete/{projectId}/{name}")
+    fun delete(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<Void> {
+        proxyService.delete(projectId, name)
         return ResponseBuilder.success()
     }
 }

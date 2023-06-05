@@ -25,62 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.proxy.artifact
 
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
-import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import org.springframework.stereotype.Component
 
-/**
- * Proxy服务接口
- */
-interface ProxyService {
-
-    /**
-     * 创建Proxy
-     */
-    fun create(request: ProxyCreateRequest): ProxyInfo
-
-    /**
-     * 查询Proxy信息
-     */
-    fun getInfo(projectId: String, name: String): ProxyInfo
-
-    /**
-     * 分页查询Proxy信息
-     */
-    fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo>
-
-    /**
-     * 更新Proxy
-     */
-    fun update(request: ProxyUpdateRequest): ProxyInfo
-
-    /**
-     * 删除Proxy
-     */
-    fun delete(projectId: String, name: String)
-
-    /**
-     * 获取ticket
-     */
-    fun ticket(projectId: String, name: String): Int
-
-    /**
-     * Proxy开机认证
-     */
-    fun startup(request: ProxyStatusRequest): String
-
-    /**
-     * Proxy关机
-     */
-    fun shutdown(request: ProxyStatusRequest)
-
-    /**
-     * Proxy上报心跳
-     */
-    fun heartbeat(projectId: String, name: String)
-}
+@Component
+class ProxyRemoteRepository : RemoteRepository()

@@ -39,6 +39,7 @@ data class TProxy(
     var displayName: String,
     var projectId: String,
     var clusterName: String,
+    var ip: String,
     var secretKey: String,
     var sessionKey: String,
     var ticket: Int,
