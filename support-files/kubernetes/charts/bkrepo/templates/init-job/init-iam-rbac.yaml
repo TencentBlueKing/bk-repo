@@ -23,7 +23,6 @@ spec:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: init-iam-rbac
     spec:
-      {{- if .Values.iam.enabled }}
       initContainers:
         - name: wait-for-iam-rbac
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
@@ -34,7 +33,6 @@ spec:
             - |
               sleep 30;
               echo "init-rbac is available";
-      {{- end }}
       containers:
         - name: init-iam-rbac
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
@@ -44,6 +42,7 @@ spec:
             - "/bin/bash"
             - "-c"
             - |
+              echo "run do_migrate command";
               # 修改auth链接
               sed -i 's/bkrepo-auth.service.consul:25902/{{- .Values.gateway.host -}}\/auth/g' *.json
               # 导入模型
@@ -51,6 +50,7 @@ spec:
               do
                python3 do_migrate.py -t {{ .Values.iamApigwUrl }} -a "{{ .Values.bkrepoAppCode }}" -s "{{ .Values.bkrepoAppSecret }}" -f  $i --apigateway
               done
+              echo "do_migrate finished";
       restartPolicy: OnFailure
 {{- end -}}
 {{- end -}}
