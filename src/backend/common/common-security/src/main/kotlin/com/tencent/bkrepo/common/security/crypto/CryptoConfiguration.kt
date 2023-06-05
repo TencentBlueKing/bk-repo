@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.security.crypto
 
+import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -37,4 +38,7 @@ import org.springframework.context.annotation.Configuration
 class CryptoConfiguration {
     @Bean
     fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+
+    @Bean
+    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
 }

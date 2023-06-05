@@ -25,56 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.proxy
+package com.tencent.bkrepo.auth.api.proxy
 
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
-import com.tencent.bkrepo.auth.service.ProxyService
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
+import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
 
-@Api("Proxy状态接口")
-@RestController
-@RequestMapping("/proxy/status")
-class ProxyStatusController(
-    private val proxyService: ProxyService
-) {
+@Api(tags = ["PROXY_AUTH"], description = "Proxy认证接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyAuthClient")
+@RequestMapping("/proxy/auth")
+interface ProxyAuthClient {
 
     @GetMapping("/ticket/{projectId}/{name}")
     fun ticket(
         @PathVariable projectId: String,
         @PathVariable name: String
-    ): Response<Int> {
-        return ResponseBuilder.success(proxyService.ticket(projectId, name))
-    }
+    ): Response<Int>
 
     @PostMapping("/startup")
     fun startup(
         @RequestBody proxyStatusRequest: ProxyStatusRequest
-    ): Response<String> {
-        return ResponseBuilder.success(proxyService.startup(proxyStatusRequest))
-    }
+    ): Response<String>
 
     @PostMapping("/shutdown")
     fun shutdown(
         @RequestBody proxyStatusRequest: ProxyStatusRequest
-    ): Response<Void> {
-        proxyService.shutdown(proxyStatusRequest)
-        return ResponseBuilder.success()
-    }
+    ): Response<Void>
 
     @PostMapping("/heartbeat/{projectId}/{name}")
     fun heartbeat(
         @PathVariable projectId: String,
         @PathVariable name: String
-    ): Response<Void> {
-        proxyService.heartbeat(projectId, name)
-        return ResponseBuilder.success()
-    }
+    ): Response<Void>
 }

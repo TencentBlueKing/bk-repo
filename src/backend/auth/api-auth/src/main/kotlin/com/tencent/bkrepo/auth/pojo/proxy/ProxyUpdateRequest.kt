@@ -37,5 +37,7 @@ data class ProxyUpdateRequest(
     @ApiModelProperty("名称")
     val name: String,
     @ApiModelProperty("展示名")
-    val displayName: String? = null
+    val displayName: String? = null,
+    @ApiModelProperty("IP")
+    val ip: String? = null
 )

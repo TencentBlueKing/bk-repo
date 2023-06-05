@@ -40,6 +40,8 @@ data class ProxyInfo(
     val projectId: String,
     @ApiModelProperty("集群名")
     val clusterName: String,
+    @ApiModelProperty("IP")
+    val ip: String,
     @ApiModelProperty("状态")
     val status: ProxyStatus
 )

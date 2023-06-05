@@ -55,5 +55,5 @@ data class CryptoProperties(
     // Key长度 16/24/32Bytes
     var aesKey: String = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     // IV长度 16Bytes
-    var aesIv: String = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    var aesIv: String = "aaaaaaaaaaaaaaaa"
 )

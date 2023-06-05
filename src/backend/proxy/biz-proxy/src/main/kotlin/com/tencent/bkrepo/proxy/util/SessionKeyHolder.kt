@@ -25,62 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.proxy.util
 
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
-import com.tencent.bkrepo.common.api.pojo.Page
+object SessionKeyHolder {
 
-/**
- * Proxy服务接口
- */
-interface ProxyService {
+    private var sessionKey: String = ""
 
-    /**
-     * 创建Proxy
-     */
-    fun create(request: ProxyCreateRequest): ProxyInfo
+    fun setSessionKey(key: String) {
+        sessionKey = key
+    }
 
-    /**
-     * 查询Proxy信息
-     */
-    fun getInfo(projectId: String, name: String): ProxyInfo
-
-    /**
-     * 分页查询Proxy信息
-     */
-    fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo>
-
-    /**
-     * 更新Proxy
-     */
-    fun update(request: ProxyUpdateRequest): ProxyInfo
-
-    /**
-     * 删除Proxy
-     */
-    fun delete(projectId: String, name: String)
-
-    /**
-     * 获取ticket
-     */
-    fun ticket(projectId: String, name: String): Int
-
-    /**
-     * Proxy开机认证
-     */
-    fun startup(request: ProxyStatusRequest): String
-
-    /**
-     * Proxy关机
-     */
-    fun shutdown(request: ProxyStatusRequest)
-
-    /**
-     * Proxy上报心跳
-     */
-    fun heartbeat(projectId: String, name: String)
+    fun getSessionKey(): String {
+        if (sessionKey.isNotBlank()) {
+            return sessionKey
+        }
+        throw RuntimeException()
+    }
 }

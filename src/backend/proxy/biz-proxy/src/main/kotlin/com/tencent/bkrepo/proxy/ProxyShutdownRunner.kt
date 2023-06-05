@@ -25,62 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.proxy
 
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
+import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
-import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.security.util.AESUtils
+import com.tencent.bkrepo.proxy.util.ProxyEnv
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import javax.annotation.PreDestroy
 
-/**
- * Proxy服务接口
- */
-interface ProxyService {
+@Component
+class ProxyShutdownRunner(
+    private val proxyAuthClient: ProxyAuthClient
+) {
 
-    /**
-     * 创建Proxy
-     */
-    fun create(request: ProxyCreateRequest): ProxyInfo
+    @PreDestroy
+    fun shutdown() {
+        val projectId = ProxyEnv.getProjectId()
+        val name = ProxyEnv.getName()
+        val secretKey = ProxyEnv.getSecretKey()
+        val ticket = proxyAuthClient.ticket(projectId, name).data!!
+        val shutdownRequest = ProxyStatusRequest(
+            projectId = projectId,
+            name = name,
+            message = AESUtils.encrypt("$name:shutdown:$ticket", secretKey)
+        )
+        proxyAuthClient.shutdown(shutdownRequest)
+        logger.info("shutdown")
+    }
 
-    /**
-     * 查询Proxy信息
-     */
-    fun getInfo(projectId: String, name: String): ProxyInfo
-
-    /**
-     * 分页查询Proxy信息
-     */
-    fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo>
-
-    /**
-     * 更新Proxy
-     */
-    fun update(request: ProxyUpdateRequest): ProxyInfo
-
-    /**
-     * 删除Proxy
-     */
-    fun delete(projectId: String, name: String)
-
-    /**
-     * 获取ticket
-     */
-    fun ticket(projectId: String, name: String): Int
-
-    /**
-     * Proxy开机认证
-     */
-    fun startup(request: ProxyStatusRequest): String
-
-    /**
-     * Proxy关机
-     */
-    fun shutdown(request: ProxyStatusRequest)
-
-    /**
-     * Proxy上报心跳
-     */
-    fun heartbeat(projectId: String, name: String)
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProxyShutdownRunner::class.java)
+    }
 }

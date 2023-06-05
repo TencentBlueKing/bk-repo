@@ -25,62 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.proxy.controller
 
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
-import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
+import com.tencent.bkrepo.proxy.service.DownloadService
+import com.tencent.bkrepo.proxy.service.UploadService
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * Proxy服务接口
- */
-interface ProxyService {
+@RestController
+@RequestMapping("/generic")
+class GenericController(
+    private val uploadService: UploadService,
+    private val downloadService: DownloadService
+) {
 
-    /**
-     * 创建Proxy
-     */
-    fun create(request: ProxyCreateRequest): ProxyInfo
+    @GetMapping(GENERIC_MAPPING_URI)
+    fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
+        downloadService.download(artifactInfo)
+    }
 
-    /**
-     * 查询Proxy信息
-     */
-    fun getInfo(projectId: String, name: String): ProxyInfo
-
-    /**
-     * 分页查询Proxy信息
-     */
-    fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo>
-
-    /**
-     * 更新Proxy
-     */
-    fun update(request: ProxyUpdateRequest): ProxyInfo
-
-    /**
-     * 删除Proxy
-     */
-    fun delete(projectId: String, name: String)
-
-    /**
-     * 获取ticket
-     */
-    fun ticket(projectId: String, name: String): Int
-
-    /**
-     * Proxy开机认证
-     */
-    fun startup(request: ProxyStatusRequest): String
-
-    /**
-     * Proxy关机
-     */
-    fun shutdown(request: ProxyStatusRequest)
-
-    /**
-     * Proxy上报心跳
-     */
-    fun heartbeat(projectId: String, name: String)
+    @PutMapping(GENERIC_MAPPING_URI)
+    fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
+        uploadService.upload(artifactInfo, file)
+    }
 }

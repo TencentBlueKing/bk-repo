@@ -28,14 +28,47 @@
 package com.tencent.bkrepo.auth.repository
 
 import com.tencent.bkrepo.auth.model.TProxy
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ProxyRepository: MongoRepository<TProxy, String> {
-    fun findByProjectIdAndName(projectId: String, name: String): TProxy?
+class ProxyRepository: SimpleMongoDao<TProxy>() {
+    fun findByProjectIdAndName(projectId: String, name: String): TProxy? {
+        val query = Query(
+            Criteria.where(TProxy::projectId.name).isEqualTo(projectId)
+                .and(TProxy::name.name).isEqualTo(name)
+        )
+        return this.findOne(query)
+    }
 
-    fun findByProjectId(projectId: String, pageable: Pageable): Page<TProxy>
+    fun findByOption(projectId: String, option: ProxyListOption): Page<TProxy> {
+        with(option) {
+            val pageable = Pages.ofRequest(pageNumber, pageSize)
+            val query = Query(
+                Criteria.where(TProxy::projectId.name).isEqualTo(projectId)
+                    .apply {
+                        name?.let { and(TProxy::name.name).isEqualTo(name) }
+                        displayName?.let { and(TProxy::displayName.name).isEqualTo(displayName) }
+                    }
+            )
+            val total = count(query)
+            val data = find(query.with(pageable))
+            return PageImpl(data, pageable, total)
+        }
+    }
+
+    fun deleteByProjectIdAndName(projectId: String, name: String) {
+        val query = Query(
+            Criteria.where(TProxy::projectId.name).isEqualTo(projectId)
+                .and(TProxy::name.name).isEqualTo(name)
+        )
+        this.remove(query)
+    }
 }
