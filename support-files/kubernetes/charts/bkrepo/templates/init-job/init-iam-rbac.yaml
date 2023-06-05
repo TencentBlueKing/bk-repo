@@ -23,20 +23,17 @@ spec:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: init-iam-rbac
     spec:
-      initContainers:
-        - name: wait-for-iam-rbac
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
-          imagePullPolicy: {{ .Values.init.iam.image.pullPolicy }}
-          command:
-            - "/bin/sh"
-            - "-c"
-            - |
-              sleep 30;
-              echo "init-rbac is available";
       containers:
         - name: init-iam-rbac
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.init.iam.image.pullPolicy }}
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+            requests:
+              cpu: "0.5"
+              memory: "500Mi"
           workingDir: /data/workspace/support-files/bkiam
           command:
             - "/bin/bash"
