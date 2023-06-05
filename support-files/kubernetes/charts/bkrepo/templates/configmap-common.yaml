@@ -41,13 +41,6 @@ data:
     job.repoRefreshJobProperties.types: HELM,OCI
     plugin.path: /data/workspace/plugin/
     management.metrics.collectByLog: true
-    {{- if .Values.iamApigwUrl }}
-    auth.iam.apigwBaseUrl: {{ .Values.iamApigwUrl }}
-    auth.iam.appCode: {{ .Values.bkrepoAppCode }}
-    auth.iam.appSecret: {{ .Values.bkrepoAppSecret }}
-    auth.iam.applyJoinUserGroupUrl: https://{{ .Values.iamHost }}/apply-join-user-group?system_id={{ .Values.systemId }}
-    auth.iam.systemId: {{ .Values.systemId }}
-    {{- end }}
     cluster:
       region: {{ .Values.common.region }}
       architecture: {{ .Values.cluster.architecture }}

@@ -133,13 +133,6 @@ cluster:
   self:
     name: edge
 
-## 权限v3-rbac相关配置
-iamApigwUrl: 
-bkrepoAppCode: 
-bkrepoAppSecret: 
-iamHost: 
-systemId: bk-repo
-
 init:
   ## curl镜像地址
   curl:
@@ -389,8 +382,14 @@ auth:
     ## 指定realm类型，支持local/devops
     realm: local
     ## realm 指定为devops或者bkiamv3配置
+    ## 权限v3-rbac相关配置
     iam: 
       callbackUser: bk_iam
+      systemId: 
+      apigwBaseUrl:  
+      appCode:  
+      appSecret: 
+      applyJoinUserGroupUrl: 
     ## realm 指定为devops配置
     devops:
       # bkci accountId in bkrepo
