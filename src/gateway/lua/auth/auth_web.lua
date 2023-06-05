@@ -47,11 +47,16 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
     if not bk_ticket then
-        ngx.exit(401)
-        return
+        local mobile_user = oauthUtil:verify_mobile_gateway()
+        if mobile_user == nil then
+            ngx.exit(401)
+            return
+        end
+        username = mobile_user
+    else
+        username = oauthUtil:verify_ticket(bk_ticket, "ticket")
+        token = bk_ticket
     end
-    username = oauthUtil:verify_ticket(bk_ticket, "ticket")
-    token = bk_ticket
 elseif config.auth_mode == "ci" then
     local ci_login_token = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
     if not ci_login_token then

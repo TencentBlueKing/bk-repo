@@ -54,7 +54,8 @@ config = {
   bkci = {
     host = "__BK_CI_HOST__",
     port = "__BK_CI_PORT__"
-  }
+  },
+  mobileSiteToken = "__BK_CI_MOBILE_SITE_TOKEN__"
 }
   
 require("init_common")
