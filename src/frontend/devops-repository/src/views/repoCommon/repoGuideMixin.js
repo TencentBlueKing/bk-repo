@@ -40,6 +40,14 @@ export default {
         sourceRepoName () {
             return this.$route.query.sourceName || ''
         },
+        // 是否是 软件源模式
+        whetherSoftware () {
+            return this.$route.path.startsWith('/software')
+        },
+        // 远程仓库下，软件源模式下不显示某些操作
+        noShowOption () {
+            return this.storeType === 'remote' || this.whetherSoftware
+        },
         dockerGuide () {
             return [
                 {
@@ -51,7 +59,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -141,7 +149,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -239,7 +247,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -463,7 +471,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -540,7 +548,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -633,7 +641,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -699,7 +707,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -756,7 +764,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'remote' || this.$route.path.startsWith('/software'))
+                this.noShowOption
                     ? undefined
                     : {
                         title: this.$t('push'),
@@ -780,7 +788,7 @@ export default {
                         }
                     ]
                 },
-                (this.storeType === 'virtual' || this.$route.path.startsWith('/software'))
+                (this.storeType === 'virtual' || this.whetherSoftware)
                     ? undefined
                     : {
                         title: this.$t('delete'),
