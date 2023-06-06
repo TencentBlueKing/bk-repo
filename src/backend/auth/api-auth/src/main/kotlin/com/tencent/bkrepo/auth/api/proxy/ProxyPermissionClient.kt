@@ -25,23 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.service
+package com.tencent.bkrepo.auth.api.proxy
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Service
-class DownloadService : ArtifactService() {
+@Api(tags = ["PROXY_PERMISSION"], description = "Proxy权限接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyPermissionClient")
+@RequestMapping("/proxy/permission")
+interface ProxyPermissionClient {
 
-    fun download(artifactInfo: GenericArtifactInfo) {
-        repository.download(
-            ArtifactDownloadContext(
-                repo = ArtifactContextHolder.getRepoDetail(),
-                artifact = artifactInfo
-            )
-        )
-    }
+    @ApiOperation("校验权限")
+    @PostMapping("/check")
+    fun checkPermission(
+        @RequestBody request: CheckPermissionRequest
+    ): Response<Boolean>
 }

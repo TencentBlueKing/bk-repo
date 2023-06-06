@@ -25,23 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.service
+package com.tencent.bkrepo.repository.controller.proxy
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.service.node.NodeService
+import org.springframework.web.bind.annotation.RestController
 
-@Service
-class DownloadService : ArtifactService() {
+@RestController
+class ProxyNodeController(
+    private val nodeService: NodeService
+) : ProxyNodeClient {
+    override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+        val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+        return ResponseBuilder.success(nodeService.getNodeDetail(artifactInfo))
+    }
 
-    fun download(artifactInfo: GenericArtifactInfo) {
-        repository.download(
-            ArtifactDownloadContext(
-                repo = ArtifactContextHolder.getRepoDetail(),
-                artifact = artifactInfo
-            )
-        )
+    override fun createNode(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.createNode(nodeCreateRequest))
     }
 }

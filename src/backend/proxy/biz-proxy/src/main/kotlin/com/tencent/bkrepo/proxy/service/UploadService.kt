@@ -28,13 +28,16 @@
 package com.tencent.bkrepo.proxy.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import org.springframework.stereotype.Service
 
 @Service
-class UploadService {
+class UploadService : ArtifactService() {
 
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
-
+        val context = ArtifactUploadContext(file)
+        repository.upload(context)
     }
 }

@@ -25,23 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.service
+package com.tencent.bkrepo.auth.api.proxy
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Service
-class DownloadService : ArtifactService() {
+@Api(tags = ["PROXY_USER"], description = "Proxy用户接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyUserClient")
+@RequestMapping("/proxy/user")
+interface ProxyUserClient {
 
-    fun download(artifactInfo: GenericArtifactInfo) {
-        repository.download(
-            ArtifactDownloadContext(
-                repo = ArtifactContextHolder.getRepoDetail(),
-                artifact = artifactInfo
-            )
-        )
-    }
+    @ApiOperation("用户info")
+    @GetMapping("/userinfo/{uid}")
+    fun userInfoById(
+        @PathVariable uid: String
+    ): Response<UserInfo?>
 }

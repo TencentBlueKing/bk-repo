@@ -25,23 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.service
+package com.tencent.bkrepo.proxy.job
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
+import com.tencent.bkrepo.proxy.util.ProxyEnv
+import com.tencent.bkrepo.proxy.util.SessionKeyHolder
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 
-@Service
-class DownloadService : ArtifactService() {
+@Component
+class ProxyHeartbeatJob(
+    private val proxyAuthClient: ProxyAuthClient
+) {
 
-    fun download(artifactInfo: GenericArtifactInfo) {
-        repository.download(
-            ArtifactDownloadContext(
-                repo = ArtifactContextHolder.getRepoDetail(),
-                artifact = artifactInfo
-            )
-        )
+    @Scheduled(fixedRate = 100000)
+    fun heartbeat() {
+        try {
+            SessionKeyHolder.getSessionKey()
+        } catch (_: RuntimeException) {
+            return
+        }
+        val projectId = ProxyEnv.getProjectId()
+        val name = ProxyEnv.getName()
+        proxyAuthClient.heartbeat(projectId, name)
     }
 }
