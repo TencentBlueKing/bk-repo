@@ -200,6 +200,7 @@ class ClusterReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             var type: String = replicationProperties.pushType
+            var downGrade = false
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 return buildNodeCreateRequest(this, node)?.let {
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
@@ -217,7 +218,8 @@ class ClusterReplicator(
                                     size = it.size,
                                     sha256 = it.sha256
                                 ),
-                                pushType = type
+                                pushType = type,
+                                downGrade = downGrade
                             )
                         } catch (throwable: Throwable) {
                             logger.warn(
@@ -232,6 +234,7 @@ class ClusterReplicator(
                                     throwable.code == HttpStatus.UNAUTHORIZED.value )
                             ) {
                                 type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                                downGrade = true
                             }
                             throw throwable
                         }

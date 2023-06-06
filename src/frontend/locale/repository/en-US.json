@@ -736,6 +736,7 @@
     "ruleIgnoreRiskyComponentVersionTip": "Versions of vulnerable components to be filtered, separated by space between component name and version range. Separate multiple version ranges of the same component by semicolon ';'. Version ranges are separated by comma ','. Separate multiple vulnerable components by line break. For example:<br>org.apache.logging.log4j:log4j-core <=2.15.0<br>org.springframework.data:spring-data-commons >=1.13,<=1.13.10;>=2.0,<=2.0.5;>1.0,<1.13",
     "riskyComponentVersionRange": "version range",
     "repositories": "Repository",
+    "portTip": "Please enter the correct port",
     "lessOneSecondTip": "Less than 1 second",
     "selectFileTip": "Please select file",
     "noProjectData":"No Project Data",

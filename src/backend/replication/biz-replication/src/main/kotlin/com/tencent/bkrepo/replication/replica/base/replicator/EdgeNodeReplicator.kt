@@ -108,6 +108,7 @@ class EdgeNodeReplicator(
         with(context) {
             val sha256 = node.sha256.orEmpty()
             var type: String = replicationProperties.pushType
+            var downGrade = false
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 if (blobReplicaClient?.check(sha256)?.data != true) {
                     try {
@@ -118,7 +119,8 @@ class EdgeNodeReplicator(
                                 size = node.size,
                                 sha256 = node.sha256
                             ),
-                            pushType = type
+                            pushType = type,
+                            downGrade = downGrade
                         )
                     } catch (throwable: Throwable) {
                         logger.warn(
@@ -132,6 +134,7 @@ class EdgeNodeReplicator(
                                 throwable.code == HttpStatus.UNAUTHORIZED.value )
                         ) {
                             type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                            downGrade = true
                         }
                         throw throwable
                     }

@@ -747,6 +747,7 @@
     "ruleIgnoreRiskyComponentVersionTip": "将被过滤的风险组件版本，组件名与版本范围通过空格分隔，同一组件多个版本范围通过分号';'分隔，版本范围通过逗号分隔','，多个风险组件通过换行分隔，例如：<br>org.apache.logging.log4j:log4j-core <=2.15.0<br>org.springframework.data:spring-data-commons >=1.13,<=1.13.10;>=2.0,<=2.0.5;>1.0,<1.13",
     "riskyComponentVersionRange": "版本范围",
     "repositories": "制品仓库",
+    "portTip": "请填写正确的端口号",
     "lessOneSecondTip": "小于1秒",
     "selectFileTip": "请选择文件",
     "noProjectData":"无项目数据",
