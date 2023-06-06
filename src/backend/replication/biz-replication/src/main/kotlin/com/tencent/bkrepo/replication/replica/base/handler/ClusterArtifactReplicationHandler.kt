@@ -67,14 +67,15 @@ class ClusterArtifactReplicationHandler(
 
     override fun blobPush(
         filePushContext: FilePushContext,
-        pushType: String
+        pushType: String,
+        downGrade: Boolean
     ) : Boolean {
         val newType = filterRepoWithPushType(
-            pushType, filePushContext.context.localProjectId, filePushContext.context.localRepoName
+            pushType, filePushContext.context.localProjectId, filePushContext.context.localRepoName, downGrade
         )
         return when (newType) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
-                super.blobPush(filePushContext, newType)
+                super.blobPush(filePushContext, newType, downGrade)
             }
             WayOfPushArtifact.PUSH_WITH_FDTP.value -> {
                 pushWithFdtp(filePushContext)
@@ -86,25 +87,16 @@ class ClusterArtifactReplicationHandler(
         }
     }
 
-    private fun filterRepoWithPushType(pushType: String, projectId: String, repoName: String): String {
-        return when (pushType) {
-            WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
-                if (filterProjectRepo(projectId, repoName, replicationProperties.chunkedRepos)) {
-                    return pushType
-                } else {
-                    return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-                }
-            }
-            WayOfPushArtifact.PUSH_WITH_FDTP.value -> {
-                if (filterProjectRepo(projectId, repoName, replicationProperties.fdtpRepos)) {
-                    return pushType
-                } else {
-                    return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-                }
-            }
-            else -> {
-                return pushType
-            }
+    private fun filterRepoWithPushType(pushType: String, projectId: String, repoName: String, downGrade: Boolean): String {
+        if (downGrade) return pushType
+        return if (filterProjectRepo(projectId, repoName, replicationProperties.chunkedRepos)) {
+            WayOfPushArtifact.PUSH_WITH_CHUNKED.value
+        } else if (filterProjectRepo(projectId, repoName, replicationProperties.fdtpRepos)) {
+            return WayOfPushArtifact.PUSH_WITH_FDTP.value
+        } else if (filterProjectRepo(projectId, repoName, replicationProperties.httpRepos)) {
+            return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+        } else {
+            return pushType
         }
     }
 
