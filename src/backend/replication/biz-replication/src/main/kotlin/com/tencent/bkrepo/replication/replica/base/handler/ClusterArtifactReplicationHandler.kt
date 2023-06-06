@@ -227,7 +227,7 @@ class ClusterArtifactReplicationHandler(
             } catch (e: ExecutionException) {
                 // 当不支持fdtp方式进行传输时抛出异常，进行降级处理
                 logger.warn(
-                    "Error occurred while pushing file $sha256 with the fdtp way, error is $e"
+                    "Error occurred while pushing file $sha256 with the fdtp way, errors is ${e.message}", e
                 )
                 throw ArtifactPushException(e.message.orEmpty(), HttpStatus.METHOD_NOT_ALLOWED.value)
             }
