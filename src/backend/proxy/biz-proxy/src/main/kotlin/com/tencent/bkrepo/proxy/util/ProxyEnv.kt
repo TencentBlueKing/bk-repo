@@ -35,12 +35,14 @@ object ProxyEnv {
     private const val PROJECT_ID = "bkrepo.proxy.project.id"
     private const val NAME = "bkrepo.proxy.name"
     private const val SECRET_KEY = "bkrepo.proxy.secret.key"
+    private const val CLUSTER_NAME = "bkrepo.proxy.cluster.name"
     private const val GATEWAY = "bkrepo.gateway"
     private const val PROXY_PROPERTIES_FILE_NAME = ".proxy.properties"
 
     private var projectId: String? = null
     private var name: String? = null
     private var secretKey: String? = null
+    private var clusterName: String? = null
     private var gateway: String? = null
 
     private val properties = Properties()
@@ -70,6 +72,15 @@ object ProxyEnv {
             }
         }
         return secretKey!!
+    }
+
+    fun getClusterName(): String {
+        if (clusterName.isNullOrBlank()) {
+            synchronized(this) {
+                clusterName = getProperty(CLUSTER_NAME)
+            }
+        }
+        return clusterName!!
     }
 
     fun getGateway(): String {

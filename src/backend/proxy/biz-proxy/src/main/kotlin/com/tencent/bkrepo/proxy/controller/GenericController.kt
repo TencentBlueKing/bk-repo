@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.proxy.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.proxy.service.DownloadService
@@ -42,16 +44,32 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/generic")
 class GenericController(
     private val uploadService: UploadService,
-    private val downloadService: DownloadService
+    private val downloadService: DownloadService,
+    private val proxyPermissionManager: ProxyPermissionManager
 ) {
 
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
-        downloadService.download(artifactInfo)
+        with(artifactInfo) {
+            proxyPermissionManager.checkNodePermission(
+                PermissionAction.READ,
+                projectId,
+                repoName,
+                getArtifactFullPath()
+            )
+            downloadService.download(this)
+        }
     }
 
     @PutMapping(GENERIC_MAPPING_URI)
     fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
+        with(artifactInfo) {
+            proxyPermissionManager.checkRepoPermission(
+                PermissionAction.WRITE,
+                projectId,
+                repoName
+            )
+        }
         uploadService.upload(artifactInfo, file)
     }
 }

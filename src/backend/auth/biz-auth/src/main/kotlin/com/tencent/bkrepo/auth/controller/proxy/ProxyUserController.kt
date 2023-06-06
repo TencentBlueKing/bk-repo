@@ -25,23 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.service
+package com.tencent.bkrepo.auth.controller.proxy
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-@Service
-class DownloadService : ArtifactService() {
-
-    fun download(artifactInfo: GenericArtifactInfo) {
-        repository.download(
-            ArtifactDownloadContext(
-                repo = ArtifactContextHolder.getRepoDetail(),
-                artifact = artifactInfo
-            )
-        )
+@RestController
+class ProxyUserController(
+    private val userService: UserService
+) : ProxyUserClient {
+    override fun userInfoById(uid: String): Response<UserInfo?> {
+        return ResponseBuilder.success(userService.getUserInfoById(uid))
     }
 }
