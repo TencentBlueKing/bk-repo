@@ -60,7 +60,8 @@ abstract class ArtifactReplicationHandler(
 
     open fun blobPush(
         filePushContext: FilePushContext,
-        pushType: String = WayOfPushArtifact.PUSH_WITH_CHUNKED.value
+        pushType: String = WayOfPushArtifact.PUSH_WITH_CHUNKED.value,
+        downGrade: Boolean = false
     ) : Boolean {
         return pushFileInChunks(filePushContext)
     }
