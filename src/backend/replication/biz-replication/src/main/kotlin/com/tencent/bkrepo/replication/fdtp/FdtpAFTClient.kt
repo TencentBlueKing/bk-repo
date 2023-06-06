@@ -44,7 +44,9 @@ import io.netty.util.concurrent.GenericProgressiveFutureListener
 import io.netty.util.concurrent.Promise
 import java.io.File
 import java.io.InputStream
+import java.net.ConnectException
 import java.net.InetSocketAddress
+import org.slf4j.LoggerFactory
 import org.springframework.beans.BeansException
 import org.springframework.cloud.sleuth.Tracer
 
@@ -53,7 +55,7 @@ import org.springframework.cloud.sleuth.Tracer
  * 底层使用fdtp的多路复用传输，即多个stream复用一个fdtp连接
  * */
 class FdtpAFTClient(
-    remoteAddress: InetSocketAddress,
+    private val remoteAddress: InetSocketAddress,
     poolMap: SimpleChannelPoolMap,
     val certificate: String?,
     val authManager: FdtpAuthManager,
@@ -67,7 +69,7 @@ class FdtpAFTClient(
         headers: FdtpHeaders,
         progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
-        val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
+        val fdtStream = createStream()
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
         val chunkStream = FdtpChunkStream(ChunkedFile(file, properties.chunkSize), stream)
@@ -79,7 +81,7 @@ class FdtpAFTClient(
         headers: FdtpHeaders,
         progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
-        val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
+        val fdtStream = createStream()
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
         val chunkStream = FdtpChunkStream(ChunkedStream(inputStream, properties.chunkSize), stream)
@@ -130,5 +132,20 @@ class FdtpAFTClient(
             // ignore
         }
         return null
+    }
+
+    private fun createStream(): FdtpStream {
+        try {
+            return FdtpAFTHelper.createStream(channelPool, certificate, authManager)
+        } catch (e: ConnectException) {
+            val remoteHost = remoteAddress.address.hostAddress
+            val remotePort = remoteAddress.port
+            logger.error("Can't connect $remoteHost:$remotePort.")
+            throw e
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FdtpAFTClient::class.java)
     }
 }

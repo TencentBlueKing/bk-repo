@@ -49,6 +49,7 @@ import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import io.netty.channel.ChannelProgressiveFuture
 import io.netty.channel.ChannelProgressiveFutureListener
+import java.net.ConnectException
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -224,7 +225,7 @@ class ClusterArtifactReplicationHandler(
                     logger.warn(logMessage)
                     throw ArtifactPushException(logMessage)
                 }
-            } catch (e: ExecutionException) {
+            } catch (e: ConnectException) {
                 // 当不支持fdtp方式进行传输时抛出异常，进行降级处理
                 logger.warn(
                     "Error occurred while pushing file $sha256 with the fdtp way, errors is ${e.message}", e
