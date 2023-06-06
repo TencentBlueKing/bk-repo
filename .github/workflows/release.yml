@@ -18,7 +18,7 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           branch="${version%%-rc.*}"
-          rc="${{ env.GITHUB_REF_NAME##*\. }}"
+          rc="$(echo $version | grep -o '[0-9]*$')"
           if [[ "$rc" == "1" ]]; then
             git checkout -b release-$branch
             git push origin release-$branch
