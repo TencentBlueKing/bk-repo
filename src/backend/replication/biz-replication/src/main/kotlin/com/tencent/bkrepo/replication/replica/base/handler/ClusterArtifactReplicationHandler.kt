@@ -87,7 +87,9 @@ class ClusterArtifactReplicationHandler(
         }
     }
 
-    private fun filterRepoWithPushType(pushType: String, projectId: String, repoName: String, downGrade: Boolean): String {
+    private fun filterRepoWithPushType(
+        pushType: String, projectId: String, repoName: String, downGrade: Boolean
+    ): String {
         if (downGrade) return pushType
         return if (filterProjectRepo(projectId, repoName, replicationProperties.chunkedRepos)) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value
@@ -225,7 +227,7 @@ class ClusterArtifactReplicationHandler(
             } catch (e: ExecutionException) {
                 // 当不支持fdtp方式进行传输时抛出异常，进行降级处理
                 logger.warn(
-                    "Error occurred while pushing file $sha256 with the fdtp way, error is ${e.message}"
+                    "Error occurred while pushing file $sha256 with the fdtp way, error is $e"
                 )
                 throw ArtifactPushException(e.message.orEmpty(), HttpStatus.METHOD_NOT_ALLOWED.value)
             }
