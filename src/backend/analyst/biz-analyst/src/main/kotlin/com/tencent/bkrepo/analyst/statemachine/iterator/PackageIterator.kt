@@ -108,7 +108,7 @@ class PackageIterator(
                     .ifEmpty { listOf(pkg.latestVersion) }
                     .asSequence()
                     .filter { version ->
-                        val valuesToMatch = mapOf(
+                        val valuesToMatch = mutableMapOf<String, Any>(
                             Package::projectId.name to pkg.projectId,
                             Package::repoName.name to pkg.repoName,
                             PackageSummary::type.name to pkg.type,
@@ -116,6 +116,7 @@ class PackageIterator(
                             RuleArtifact::name.name to pkg.artifactName,
                             RuleArtifact::version.name to version
                         )
+                        valuesToMatch[RULE_FIELD_LATEST_VERSION] = (version == pkg.latestVersion)
                         RuleMatcher.match(position.rule, valuesToMatch)
                     }
                     .map { version -> pkg.copy(packageVersion = version) }
@@ -147,7 +148,7 @@ class PackageIterator(
      */
     private fun packageSummaryRule(rule: Rule): Rule {
         require(rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND)
-        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name))
+        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name, RULE_FIELD_LATEST_VERSION))
     }
 
     /**
@@ -266,6 +267,7 @@ class PackageIterator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PackageIterator::class.java)
+        private const val RULE_FIELD_LATEST_VERSION = "latestVersion"
 
         private val packageSelect = listOf(
             PackageSummary::projectId.name,
