@@ -16,8 +16,13 @@ jobs:
           git config user.email "64278246+bkci-bot@users.noreply.github.com"
       - name: Create release branch
         run: |
-          git checkout -b release-${GITHUB_REF_NAME#v}
-          git push origin release-${GITHUB_REF_NAME#v}
+          version="${GITHUB_REF_NAME#v}"
+          branch="${version%%-rc.*}"
+          rc="${{ env.GITHUB_REF_NAME##*\. }}"
+          if [[ "$rc" == "1" ]]; then
+            git checkout -b release-$branch
+            git push origin release-$branch
+          fi
   frontend:
     needs: prepare-release
     name: Build frontend
