@@ -226,7 +226,7 @@ export default {
                     title: this.$t('mavenGuideTitle'),
                     main: [
                         {
-                            subTitle: this.$t('mavenGuideSubTitle1'),
+                            subTitle: this.noShowOption ? this.$t('mavenGuideSubTitle1') : this.$t('mavenGuideSubTitle1Special'),
                             codeList: [
                                 '<mirror>',
                                 `       <id>${this.projectId}-${this.repoName}</id>`,
@@ -257,7 +257,7 @@ export default {
                                 codeList: [
                                     '<distributionManagement>',
                                     '       <repository>',
-                                    '               <!--id值与配置的server id 一致-->',
+                                    `               <!--${this.$t('mavenPushGuideCodeListAnnotate')}-->`,
                                     `               <id>${this.projectId}-${this.repoName}</id>`,
                                     `               <name>${this.repoName}</name>`,
                                     `               <url>${this.repoUrl}/</url>`,
