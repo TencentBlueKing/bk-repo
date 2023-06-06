@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.fdtp.FdtpVersion
 import com.tencent.bkrepo.fdtp.SimpleChannelPoolMap
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpFrameStream
@@ -44,6 +45,8 @@ import io.netty.util.concurrent.Promise
 import java.io.File
 import java.io.InputStream
 import java.net.InetSocketAddress
+import org.springframework.beans.BeansException
+import org.springframework.cloud.sleuth.Tracer
 
 /**
  * 使用fdtp协议传输artifact file
@@ -62,7 +65,7 @@ class FdtpAFTClient(
     fun sendFile(
         file: File,
         headers: FdtpHeaders,
-        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
         val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
         val streamId = fdtStream.id
@@ -74,7 +77,7 @@ class FdtpAFTClient(
     fun sendStream(
         inputStream: InputStream,
         headers: FdtpHeaders,
-        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
         val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
         val streamId = fdtStream.id
@@ -89,7 +92,7 @@ class FdtpAFTClient(
         headers: FdtpHeaders,
         stream: DefaultFdtpFrameStream,
         chunkStream: FdtpChunkStream,
-        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
         val channel = fdtStream.channel
         var progressivePromise: ChannelProgressivePromise? = null
@@ -103,6 +106,9 @@ class FdtpAFTClient(
         clientHandler.put(streamId, promise)
         headers.add(FdtpHeaderNames.FDTP_VERSION, FdtpVersion.FDTP_1_0.text())
         headers.add(FdtpHeaderNames.STREAM_ID, stream.id().toString())
+        getTranceId()?.let {
+            headers.add(TRACE_ID, it)
+        }
         val headerFrame = DefaultFdtpHeaderFrame(headers, false).stream(stream)
         channel.writeAndFlush(headerFrame)
         if (progressivePromise == null) {
@@ -111,5 +117,18 @@ class FdtpAFTClient(
             channel.writeAndFlush(chunkStream, progressivePromise)
         }
         return promise
+    }
+
+    /**
+     * 获取traceId
+     * */
+    private fun getTranceId(): String? {
+        try {
+            val tracer = SpringContextUtils.getBean<Tracer>()
+            return tracer.currentSpan()?.context()?.traceId()
+        } catch (ignore: BeansException) {
+            // ignore
+        }
+        return null
     }
 }

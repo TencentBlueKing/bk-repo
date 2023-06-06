@@ -27,31 +27,4 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
-import com.tencent.bkrepo.fdtp.codec.FdtpServerCodec
-import io.netty.channel.ChannelInitializer
-import io.netty.channel.udt.UdtChannel
-import io.netty.handler.ssl.SslContext
-import io.netty.handler.timeout.IdleStateHandler
-
-class FdtpAFTServerInitializer(
-    private val sslCtx: SslContext?,
-    private val requestHandler: FdtpAFTRequestHandler,
-    val fdtpAuthManager: FdtpAuthManager,
-) :
-    ChannelInitializer<UdtChannel>() {
-    override fun initChannel(ch: UdtChannel) {
-        val pipeline = ch.pipeline()
-        if (sslCtx != null) {
-            pipeline.addLast(sslCtx.newHandler(ch.alloc()))
-        }
-        pipeline.addLast(IdleStateHandler(0, 0, MAX_IDLE_TIME_IN_SECONDS))
-            .addLast(FdtpAFTServerAuthHandler(fdtpAuthManager))
-            .addLast(FdtpServerCodec())
-            .addLast(FdtpTracingHandler())
-            .addLast(FdtpAFTServerHandler(requestHandler))
-    }
-
-    companion object {
-        const val MAX_IDLE_TIME_IN_SECONDS = 60
-    }
-}
+const val TRACE_ID = "traceId"
