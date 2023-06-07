@@ -30,6 +30,9 @@ package com.tencent.bkrepo.analyst.pojo.request.filter
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_INCLUDE
 import com.tencent.bkrepo.analyst.pojo.Constant.SYSTEM_PROJECT_ID
+import com.tencent.bkrepo.analyst.utils.CompositeVersionRange
+import com.tencent.bkrepo.analyst.utils.VersionNumber
+import com.tencent.bkrepo.analyst.utils.VersionRange
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import io.swagger.annotations.ApiModel
@@ -70,6 +73,9 @@ data class UpdateFilterRuleRequest(
     @ApiModelProperty("存在风险的包")
     val riskyPackageKeys: Set<String>? = null,
 
+    @ApiModelProperty("存在风险的包和版本，key为存在风险的包名，value为存在风险的包版本范围")
+    val riskyPackageVersions: Map<String, String>? = null,
+
     @ApiModelProperty("需要忽略的漏洞，空集合表示忽略所有")
     val vulIds: Set<String>? = null,
 
@@ -82,26 +88,51 @@ data class UpdateFilterRuleRequest(
     @ApiModelProperty("匹配成功后忽略漏洞，false表示匹配成功时候保留漏洞其余的忽略")
     val type: Int = FILTER_RULE_TYPE_IGNORE
 ) {
+    @Suppress("TooGenericExceptionCaught")
     fun check() {
+        checkFilterCondition()
+        checkProjectId()
+        val errMsg = StringBuilder()
+        // 保留规则不允许设置最小漏洞等级
+        if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
+            errMsg.append("ignore[$type], severity[$severity]\n")
+        }
+
+        // 校验版本范围格式是否正确
+        try {
+            riskyPackageVersions?.values?.forEach { CompositeVersionRange.build(it) }
+        } catch (e: VersionRange.UnsupportedVersionRangeException) {
+            errMsg.append(e.message).append("\n")
+        } catch (e: VersionNumber.UnsupportedVersionException) {
+            errMsg.append(e.message).append("\n")
+        }
+
+        if (errMsg.isNotEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, errMsg.toString())
+        }
+    }
+
+    private fun checkFilterCondition() {
         var count = 0
         riskyPackageKeys?.let { count++ }
         vulIds?.let { count++ }
         severity?.let { count++ }
         licenseNames?.let { count++ }
+        riskyPackageVersions?.let { count++ }
         if (count > 1) {
             throw ErrorCodeException(
                 CommonMessageCode.PARAMETER_INVALID,
-                "[riskyPackageKey, vulIds, severity, licenseNames] only one could be set"
+                "[riskyPackageKey, riskyPackageVersions, vulIds, severity, licenseNames] only one could be set"
             )
         }
+    }
 
-        // 保留规则不允许设置最小漏洞等级
-        if (type == FILTER_RULE_TYPE_INCLUDE && severity != null) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ignore[$type], severity[$severity]")
-        }
-
+    private fun checkProjectId() {
         if (projectId != SYSTEM_PROJECT_ID && projectIds != null) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectIds[$projectIds]")
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID,"projectIds[$projectIds]")
+        }
+        if (projectId == SYSTEM_PROJECT_ID && projectIds == null) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectIds[$projectIds] could not be null")
         }
     }
 }

@@ -55,6 +55,7 @@ internal class CachedFileWriterTest {
     fun afterEach() {
         Files.deleteIfExists(cachePath.resolve(filename))
         Files.deleteIfExists(tempPath.resolve(filename))
+        Files.deleteIfExists(tempPath.resolve(filename.plus(".locked")))
     }
 
     @Test

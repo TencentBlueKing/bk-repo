@@ -29,7 +29,7 @@
                     :title="$t('noCrtTitle')">
                 </empty-data>
             </template>
-            <bk-table-column type="expand" width="30">
+            <bk-table-column type="expand" width="40">
                 <template #default="{ row }">
                     <div class="leak-title">{{$t('licenceInfo')}}</div>
                     <div class="leak-tip">

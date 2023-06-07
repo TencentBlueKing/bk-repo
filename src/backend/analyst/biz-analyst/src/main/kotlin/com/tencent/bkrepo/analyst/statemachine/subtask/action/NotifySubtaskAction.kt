@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.analyst.statemachine.subtask.action
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
-import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
+import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.NotifySubtaskContext
@@ -42,7 +42,7 @@ import com.tencent.bkrepo.statemachine.TransitResult
 @Action
 class NotifySubtaskAction(
     private val subScanTaskDao: SubScanTaskDao,
-    private val projectScanConfigurationDao: ProjectScanConfigurationDao,
+    private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val scannerMetrics: ScannerMetrics,
     private val scannerProperties: ScannerProperties,
     private val lockOperation: LockOperation
@@ -55,7 +55,9 @@ class NotifySubtaskAction(
         // 此处不要求锁绝对可靠，极端情况下有两个进程同时持有锁时只会导致project执行的任务数量超过配额
         val lockKey = notifySubtaskLockKey(projectId)
         lockOperation.doWithLock(lockKey) {
-            val subtaskCountLimit = projectScanConfigurationDao.findByProjectId(projectId)?.subScanTaskCountLimit
+            val subtaskCountLimit = projectScanConfigurationService
+                .findProjectOrGlobalScanConfiguration(projectId)
+                ?.subScanTaskCountLimit
                 ?: scannerProperties.defaultProjectSubScanTaskCountLimit
             val countToUpdate = (subtaskCountLimit - subScanTaskDao.scanningCount(projectId)).toInt()
             if (countToUpdate > 0) {

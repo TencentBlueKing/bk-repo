@@ -151,7 +151,7 @@ abstract class PushClient(
             .readTimeout(DEFAULT_READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .writeTimeout(DEFAULT_WRITE_TIMEOUT_MINUTES, TimeUnit.MINUTES)
-            .addInterceptor(RetryInterceptor(localDataManager))
+            .addInterceptor(RetryInterceptor())
             .addNetworkInterceptor(ProgressInterceptor())
             .build()
     }

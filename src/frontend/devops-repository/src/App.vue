@@ -3,6 +3,7 @@
         <Header v-if="!ciMode" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
+        <GlobalUploadViewport />
         <Login v-if="!ciMode" />
     </div>
 </template>
@@ -39,7 +40,7 @@
                         if (userInfo.admin) {
                             // TODO: 管理员创建项目引导页
                             this.$bkMessage({
-                                message: '无项目数据',
+                                message: this.$t('noProjectData'),
                                 theme: 'error'
                             })
                             this.$router.replace({
@@ -51,7 +52,7 @@
                         } else {
                             // TODO: 普通用户无项目提示页
                             this.$bkMessage({
-                                message: '无项目数据',
+                                message: this.$t('noProjectData'),
                                 theme: 'error'
                             })
                             this.$router.replace({
@@ -73,13 +74,13 @@
                         localStorage.setItem('projectId', projectId)
 
                         projectId && projectId !== urlProjectId && this.$router.replace({
-                            name: 'repoList',
+                            name: 'repositories',
                             params: {
                                 projectId
                             }
                         })
                     }
-                    
+
                     userInfo.admin && this.getClusterList()
                 })
             }

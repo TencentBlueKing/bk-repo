@@ -10,7 +10,7 @@
       <el-table-column prop="description" label="描述" width="300" />
       <el-table-column prop="projectIds" label="生效项目" width="300">
         <template slot-scope="scope">
-          {{ scope.row.projectIds !== undefined && scope.row.projectIds.length === 0 ? '全部' : scope.row.projectIds }}
+          {{ scope.row.projectIds && scope.row.projectIds.length === 0 ? '全部' : scope.row.projectIds }}
         </template>
       </el-table-column>
       <el-table-column align="right">

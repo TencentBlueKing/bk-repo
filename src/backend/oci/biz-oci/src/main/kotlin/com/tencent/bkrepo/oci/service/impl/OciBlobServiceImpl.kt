@@ -31,15 +31,18 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
@@ -47,11 +50,10 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.service.OciOperationService
+import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -59,8 +61,8 @@ import org.springframework.stereotype.Service
 class OciBlobServiceImpl(
     private val storage: StorageService,
     private val repoClient: RepositoryClient,
-    private val nodeClient: NodeClient,
-    private val ociOperationService: OciOperationService
+    private val ociOperationService: OciOperationService,
+    private val permissionManager: PermissionManager
 ) : OciBlobService {
 
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
@@ -109,23 +111,49 @@ class OciBlobServiceImpl(
         with(artifactInfo) {
             val domain = ociOperationService.getReturnDomain(HttpContextHolder.getRequest())
             val ociDigest = OciDigest(mount)
-            val fileName = ociDigest.fileName()
-            val queryModel = NodeQueryBuilder()
-                .select(NODE_FULL_PATH)
-                .projectId(projectId)
-                .repoName(repoName)
-                .name(fileName)
-                .sortByAsc(NODE_FULL_PATH)
-            nodeClient.search(queryModel.build()).data ?: run {
-                logger.warn("Could not find $fileName in repo ${getRepoIdentify()} to mount")
+            val (mountProjectId, mountRepoName) = splitRepoInfo(from) ?: Pair(projectId, repoName)
+            if (mountProjectId != projectId && mountRepoName != repoName) {
+                try {
+                    permissionManager.checkRepoPermission(
+                        action = PermissionAction.READ,
+                        projectId = mountProjectId,
+                        repoName = mountRepoName
+                    )
+                } catch (e: ErrorCodeException) {
+                    val uuidCreated = startAppend(this)
+                    OciResponseUtils.buildBlobMountResponse(
+                        domain = domain,
+                        locationStr = OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
+                        status = HttpStatus.ACCEPTED,
+                        response = HttpContextHolder.getResponse()
+                    )
+                    return
+                }
+            }
+            val nodeProperty = ociOperationService.getNodeByDigest(
+                mountProjectId, mountRepoName, ociDigest.toString()
+            )
+            if (nodeProperty.fullPath == null) {
+                logger.warn("Could not find $ociDigest in repo $mountProjectId|$mountRepoName to mount")
+                val uuidCreated = startAppend(this)
                 OciResponseUtils.buildBlobMountResponse(
                     domain = domain,
-                    locationStr = "",
+                    locationStr = OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
                     status = HttpStatus.ACCEPTED,
                     response = HttpContextHolder.getResponse()
                 )
                 return
             }
+            val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                size = nodeProperty.size!!.toLong(),
+                sha256 = ociDigest.hex,
+                fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest),
+                md5 = nodeProperty.md5!!
+            )
+            val repoDetail = repoClient.getRepoDetail(projectId, repoName).data
+            ociOperationService.createNode(nodeCreateRequest, repoDetail!!.storageCredentials)
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             OciResponseUtils.buildBlobMountResponse(
                 domain = domain,
@@ -134,6 +162,12 @@ class OciBlobServiceImpl(
                 response = HttpContextHolder.getResponse()
             )
         }
+    }
+
+    private fun splitRepoInfo(from: String?): Pair<String, String>? {
+        if (from.isNullOrEmpty()) return null
+        val values = from.split(CharPool.SLASH)
+        return Pair(values[0], values[1])
     }
 
     /**

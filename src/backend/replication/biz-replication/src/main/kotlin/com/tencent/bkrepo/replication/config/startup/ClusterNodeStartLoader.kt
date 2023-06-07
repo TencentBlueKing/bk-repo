@@ -71,34 +71,48 @@ class ClusterNodeStartLoader(
     private fun initClusterNodeCreateRequest(): ClusterNodeCreateRequest? {
         return with(clusterProperties) {
             when (role) {
-                ClusterNodeType.CENTER -> ClusterNodeCreateRequest(
-                    name = self.name ?: center.name.orEmpty(),
-                    url = if (self.url.isNotBlank()) normalizeUrl(self.url) else normalizeUrl(center.url),
-                    certificate = self.certificate ?: center.certificate.orEmpty(),
-                    username = self.username ?: center.username.orEmpty(),
-                    password = self.password ?: center.password.orEmpty(),
-                    appId = self.appId ?: center.appId,
-                    accessKey = self.accessKey ?: center.accessKey,
-                    secretKey = self.secretKey ?: center.secretKey,
-                    type = ClusterNodeType.CENTER,
-                    ping = false,
-                    detectType = PING
-                )
-                ClusterNodeType.EDGE -> ClusterNodeCreateRequest(
-                    name = self.name.orEmpty(),
-                    url = normalizeUrl(self.url),
-                    certificate = self.certificate.orEmpty(),
-                    username = self.username.orEmpty(),
-                    password = self.password.orEmpty(),
-                    appId = self.appId,
-                    accessKey = self.accessKey,
-                    secretKey = self.secretKey,
-                    type = ClusterNodeType.EDGE,
-                    ping = false,
-                    detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING
-                )
+                ClusterNodeType.CENTER -> buildCenterClusterNodeCreateRequest(clusterProperties)
+                ClusterNodeType.EDGE -> buildEdgeClusterNodeCreateRequest(clusterProperties)
                 else -> null
             }
+        }
+    }
+
+    private fun buildCenterClusterNodeCreateRequest(clusterProperties: ClusterProperties) : ClusterNodeCreateRequest {
+        with(clusterProperties) {
+            return ClusterNodeCreateRequest(
+                name = self.name ?: center.name.orEmpty(),
+                url = if (self.url.isNotBlank()) normalizeUrl(self.url) else normalizeUrl(center.url),
+                certificate = self.certificate ?: center.certificate.orEmpty(),
+                username = self.username ?: center.username.orEmpty(),
+                password = self.password ?: center.password.orEmpty(),
+                appId = self.appId ?: center.appId,
+                accessKey = self.accessKey ?: center.accessKey,
+                secretKey = self.secretKey ?: center.secretKey,
+                type = ClusterNodeType.CENTER,
+                ping = false,
+                detectType = PING,
+                udpPort = self.udpPort ?: center.udpPort
+            )
+        }
+    }
+
+    private fun buildEdgeClusterNodeCreateRequest(clusterProperties: ClusterProperties) : ClusterNodeCreateRequest {
+        with(clusterProperties) {
+            return ClusterNodeCreateRequest(
+                name = self.name.orEmpty(),
+                url = normalizeUrl(self.url),
+                certificate = self.certificate.orEmpty(),
+                username = self.username.orEmpty(),
+                password = self.password.orEmpty(),
+                appId = self.appId,
+                accessKey = self.accessKey,
+                secretKey = self.secretKey,
+                type = ClusterNodeType.EDGE,
+                ping = false,
+                detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING,
+                udpPort = self.udpPort
+            )
         }
     }
 

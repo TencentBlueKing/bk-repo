@@ -55,6 +55,9 @@ const val BUILD_ID = "buildId"
 const val TASK_ID = "taskId"
 const val NAME = "name"
 
+const val RETRY_COUNT = 2
+const val DELAY_IN_SECONDS: Long = 1
+
 /**
  * metrics
  */

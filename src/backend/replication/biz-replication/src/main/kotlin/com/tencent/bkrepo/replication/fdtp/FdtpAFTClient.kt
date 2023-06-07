@@ -34,9 +34,12 @@ import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaderFrame
 import com.tencent.bkrepo.fdtp.codec.FdtpChunkStream
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaderNames
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaders
+import io.netty.channel.ChannelProgressiveFuture
+import io.netty.channel.ChannelProgressivePromise
 import io.netty.handler.stream.ChunkedFile
 import io.netty.handler.stream.ChunkedStream
 import io.netty.util.concurrent.DefaultPromise
+import io.netty.util.concurrent.GenericProgressiveFutureListener
 import io.netty.util.concurrent.Promise
 import java.io.File
 import java.io.InputStream
@@ -59,20 +62,25 @@ class FdtpAFTClient(
     fun sendFile(
         file: File,
         headers: FdtpHeaders,
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
     ): Promise<FullFdtpAFTResponse> {
         val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
         val chunkStream = FdtpChunkStream(ChunkedFile(file, properties.chunkSize), stream)
-        return send0(fdtStream, streamId, headers, stream, chunkStream)
+        return send0(fdtStream, streamId, headers, stream, chunkStream, progressListener)
     }
 
-    fun sendStream(inputStream: InputStream, headers: FdtpHeaders): Promise<FullFdtpAFTResponse> {
+    fun sendStream(
+        inputStream: InputStream,
+        headers: FdtpHeaders,
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+    ): Promise<FullFdtpAFTResponse> {
         val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
         val chunkStream = FdtpChunkStream(ChunkedStream(inputStream, properties.chunkSize), stream)
-        return send0(fdtStream, streamId, headers, stream, chunkStream)
+        return send0(fdtStream, streamId, headers, stream, chunkStream, progressListener)
     }
 
     private fun send0(
@@ -81,8 +89,15 @@ class FdtpAFTClient(
         headers: FdtpHeaders,
         stream: DefaultFdtpFrameStream,
         chunkStream: FdtpChunkStream,
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
     ): Promise<FullFdtpAFTResponse> {
         val channel = fdtStream.channel
+        var progressivePromise: ChannelProgressivePromise? = null
+        progressListener?.let {
+            progressivePromise = channel.newProgressivePromise()
+            progressivePromise!!.addListener(progressListener)
+        }
+
         val promise = DefaultPromise<FullFdtpAFTResponse>(channel.eventLoop())
         val clientHandler = channel.pipeline().get(FdtpAFTClientHandler::class.java)
         clientHandler.put(streamId, promise)
@@ -90,7 +105,11 @@ class FdtpAFTClient(
         headers.add(FdtpHeaderNames.STREAM_ID, stream.id().toString())
         val headerFrame = DefaultFdtpHeaderFrame(headers, false).stream(stream)
         channel.writeAndFlush(headerFrame)
-        channel.writeAndFlush(chunkStream)
+        if (progressivePromise == null) {
+            channel.writeAndFlush(chunkStream)
+        } else {
+            channel.writeAndFlush(chunkStream, progressivePromise)
+        }
         return promise
     }
 }

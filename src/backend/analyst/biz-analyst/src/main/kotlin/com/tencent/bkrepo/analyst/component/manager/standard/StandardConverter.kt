@@ -141,7 +141,11 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         securityResults?.forEach { securityResult ->
             val severityLevel = Level.valueOf(securityResult.severity.toUpperCase()).level
             val shouldIgnore = filterRule?.shouldIgnore(
-                securityResult.vulId, securityResult.cveId, securityResult.pkgName, severityLevel
+                securityResult.vulId,
+                securityResult.cveId,
+                securityResult.pkgName,
+                securityResult.pkgVersions,
+                severityLevel
             )
             if (shouldIgnore != true) {
                 val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
