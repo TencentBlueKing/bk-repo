@@ -45,6 +45,8 @@ import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException
+import org.springframework.web.context.request.async.DeferredResult
 
 /**
  * 全局统一异常处理
@@ -112,6 +114,17 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
             messageCode = CommonMessageCode.MEDIA_TYPE_UNSUPPORTED
         )
         return response(errorCodeException)
+    }
+
+    @ExceptionHandler(AsyncRequestTimeoutException::class)
+    fun handleException(exception: AsyncRequestTimeoutException): DeferredResult<Response<Void>> {
+        val errorCodeException = ErrorCodeException(
+            status = HttpStatus.NOT_MODIFIED,
+            messageCode = CommonMessageCode.RESOURCE_EXPIRED
+        )
+        val deferredResult = DeferredResult<Response<Void>>()
+        deferredResult.setResult(response(errorCodeException))
+        return deferredResult
     }
 
     @ExceptionHandler(Exception::class)

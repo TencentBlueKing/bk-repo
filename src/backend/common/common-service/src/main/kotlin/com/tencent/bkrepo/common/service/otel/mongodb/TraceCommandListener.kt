@@ -33,7 +33,6 @@ import com.mongodb.event.CommandStartedEvent
 import com.mongodb.event.CommandSucceededEvent
 import org.bson.BsonDocument
 import org.bson.BsonValue
-import org.slf4j.LoggerFactory
 import org.springframework.cloud.sleuth.Span
 import org.springframework.cloud.sleuth.Tracer
 import java.util.concurrent.ConcurrentHashMap
@@ -79,21 +78,16 @@ class TraceCommandListener(
 
         val childSpan = childSpanBuilder.start()
         requestContext[event.requestId] = childSpan
-        if (logger.isDebugEnabled) {
-            logger.debug("Created a child span [$childSpan] for mongo instrumentation")
-        }
     }
 
     override fun commandSucceeded(event: CommandSucceededEvent) {
         val span = requestContext[event.requestId] ?: return
-        logger.debug("Get a child span [$span] from request context")
         span.end()
         requestContext.remove(event.requestId)
     }
 
     override fun commandFailed(event: CommandFailedEvent) {
         val span = requestContext[event.requestId] ?: return
-        logger.debug("Get a child span [$span] from request context")
         span.error(event.throwable)
         span.end()
         requestContext.remove(event.requestId)
@@ -127,7 +121,6 @@ class TraceCommandListener(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(TraceCommandListener::class.java)
         val COMMANDS_WITH_COLLECTION_NAME = setOf(
             "aggregate", "count", "distinct", "mapReduce", "geoSearch", "delete", "find", "findAndModify",
             "insert", "update", "collMod", "compact", "convertToCapped", "create", "createIndexes", "drop",

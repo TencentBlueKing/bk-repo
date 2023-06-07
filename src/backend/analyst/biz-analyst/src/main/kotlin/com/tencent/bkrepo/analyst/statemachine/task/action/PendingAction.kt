@@ -29,7 +29,6 @@ package com.tencent.bkrepo.analyst.statemachine.task.action
 
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
-import com.tencent.bkrepo.analyst.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.event.listener.ScanTaskStatusChangedEventListener
@@ -43,6 +42,7 @@ import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
+import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration
@@ -75,7 +75,7 @@ import java.time.LocalDateTime
 @Suppress("LongParameterList")
 class PendingAction(
     private val scannerProperties: ScannerProperties,
-    private val projectScanConfigurationDao: ProjectScanConfigurationDao,
+    private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val scanPlanDao: ScanPlanDao,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scannerService: ScannerService,
@@ -159,7 +159,7 @@ class PendingAction(
     }
 
     private fun customMetadata(metadata: List<TaskMetadata>, projectId: String, scanner: Scanner): List<TaskMetadata> {
-        val projectScanConfiguration = projectScanConfigurationDao.findByProjectId(projectId)
+        val projectScanConfiguration = projectScanConfigurationService.findProjectOrGlobalScanConfiguration(projectId)
         val customMetadata = metadata.filter { it.key != TASK_METADATA_DISPATCHER }
 
         val dispatcher = projectScanConfiguration

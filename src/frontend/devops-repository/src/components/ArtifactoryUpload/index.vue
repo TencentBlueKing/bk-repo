@@ -64,19 +64,19 @@
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('fileName'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('fileName'),
                             trigger: 'blur'
                         }
                     ],
                     expires: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('express'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('expire'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^[0-9]+$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('express'),
+                            message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('expire'),
                             trigger: 'blur'
                         }
                     ]
@@ -88,7 +88,7 @@
             async getFiles () {
                 if (!this.file.blob) {
                     this.$bkMessage({
-                        message: '请选择文件',
+                        message: this.$t('selectFileTip'),
                         theme: 'error'
                     })
                     return

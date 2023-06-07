@@ -45,7 +45,7 @@ import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.service.FileOperationService
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
-import com.tencent.bkrepo.fs.server.storage.ReactiveArtifactFileFactory
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import com.tencent.bkrepo.fs.server.utils.SpringContextUtils
 import com.tencent.devops.service.config.ServiceProperties
@@ -70,7 +70,7 @@ val beans = beans {
     bean<GlobalExceptionHandler>()
     bean<BlockNodeServiceImpl>()
     bean<ReactiveRequestContextFilter>()
-    bean<ReactiveArtifactFileFactory>()
+    bean<CoArtifactFileFactory>()
     bean<CoStorageManager>()
     bean<ArtifactFileCleanupFilterFunction>()
     bean<FileNodeService>()

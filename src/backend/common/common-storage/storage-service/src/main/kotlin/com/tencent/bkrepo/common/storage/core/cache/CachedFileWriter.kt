@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.common.storage.core.cache
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.storage.util.createNewOutputStream
+import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import java.io.OutputStream
 import java.nio.file.FileAlreadyExistsException
@@ -44,32 +46,35 @@ import java.nio.file.Path
  * @param tempPath 临时路径
  *
  * 处理逻辑：
- * 1. 在该目录下原子创建一个临时文件
+ * 1. 在[tempPath]下原子创建锁文件[filename].locked
+ * 1. 在[tempPath]下创建一个临时文件
  * 2. 数据写入该临时文件
  * 3. 数据写完毕后，将该文件move到[cachePath]位置
  *
  * 并发处理逻辑：对于同一个文件[filename]，可能存在多个并发下载请求触发缓存
- * 1. 首先判断目录临时文件是否存在，存在则跳过(说明此时有其它请求正在进行缓存)
- * 2. 不存在则按照上述缓存逻辑执行
- * 3. 在极少数情况下第1、2存在并发问题，导致多个请求都进行缓存,但只有原子创建文件成功的才可以进行缓存
+ * 1. 首先看是否可以获取到锁，如果不能则跳过（说明此时有其它请求正在进行缓存）
+ * 2. 获取锁成功后，执行上述流程
+ * 3. 最后判断当前的锁拥有者是否是自己，不是则跳过，理由同上。（NFS的原子创建不保证原子性，所以获取到锁的请求不一定唯一，这里需要再次校验缓存的执行者）
+ * 4. 判断[cachePath]是否存在缓存文件，没有则执行move操作。（如果[cachePath]已经有文件，再进行move，可能会删除使用中的缓存文件）
  *
  */
 class CachedFileWriter(
     private val cachePath: Path,
     private val filename: String,
-    tempPath: Path
+    tempPath: Path,
 ) : StreamReadListener {
 
-    private var tempFilePath: Path = tempPath.resolve(filename)
+    private val taskId = StringPool.randomStringByLongValue(prefix = CACHE_PREFIX, suffix = CACHE_SUFFIX)
+    private var tempFilePath: Path = tempPath.resolve(taskId)
+    private var lockFilePath: Path = tempPath.resolve(filename.plus(LOCK_SUFFIX))
     private var cacheFilePath = cachePath.resolve(filename)
     private var outputStream: OutputStream? = null
 
     init {
         try {
-            if (Files.exists(tempFilePath) || Files.exists(cacheFilePath)) {
-                logger.debug("Path[$tempFilePath] or [$cacheFilePath] exists, ignore caching")
-            } else {
-                outputStream = tempFilePath.createNewOutputStream()
+            if (!cacheFilePath.existReal() && tryLock()) {
+                outputStream = Files.newOutputStream(tempFilePath)
+                logger.info("Prepare cache file[$cacheFilePath].")
             }
         } catch (ignore: FileAlreadyExistsException) {
             // 如果目录或者文件已存在则忽略
@@ -106,23 +111,73 @@ class CachedFileWriter(
             try {
                 it.flush()
                 it.closeQuietly()
-                if (!Files.exists(cachePath)) {
-                    Files.createDirectories(cachePath)
-                }
-                Files.move(tempFilePath, cacheFilePath)
-                logger.info("Success cache file $filename")
-            } catch (ignore: FileAlreadyExistsException) {
-                logger.info("File[$cacheFilePath] already exists")
-            } catch (exception: Exception) {
-                // 已经由其他进程缓存
-                if (Files.exists(cacheFilePath)) {
-                    logger.info("File[$cacheFilePath] already exists")
-                } else {
-                    logger.error("Finish CacheFileWriter error: $exception", exception)
-                }
+                moveToCachePath()
             } finally {
                 close()
+                Files.deleteIfExists(tempFilePath)
             }
+        }
+    }
+
+    /**
+     * 尝试获取锁
+     * 原子生成.locked的锁文件
+     * @return 成功生成锁文件返回true,否则返回false
+     * */
+    private fun tryLock(): Boolean {
+        return try {
+            lockFilePath.createNewOutputStream().use {
+                it.write(taskId.toByteArray())
+            }
+            true
+        } catch (e: FileAlreadyExistsException) {
+            // ignore
+            false
+        }
+    }
+
+    /**
+     * 释放锁
+     * 删除锁文件
+     * */
+    private fun releaseLock() {
+        Files.deleteIfExists(lockFilePath)
+    }
+
+    /**
+     * 判断锁的拥有者是否是自己
+     * */
+    private fun isSelfLock(): Boolean {
+        if (!Files.exists(lockFilePath)) {
+            return false
+        }
+        Files.newInputStream(lockFilePath).use {
+            val lockId = String(it.readBytes())
+            return lockId == taskId
+        }
+    }
+
+    /**
+     * 将文件移动到缓存路径
+     * */
+    private fun moveToCachePath() {
+        if (!Files.exists(cachePath)) {
+            Files.createDirectories(cachePath)
+        }
+        if (!isSelfLock()) {
+            return
+        }
+        try {
+            if (!cacheFilePath.existReal()) {
+                Files.move(tempFilePath, cacheFilePath)
+                logger.info("Success cache file $filename")
+            }
+        } catch (ignore: FileAlreadyExistsException) {
+            logger.info("File[$cacheFilePath] already exists")
+        } catch (exception: Exception) {
+            logger.error("Finish CacheFileWriter error: $exception", exception)
+        } finally {
+            releaseLock()
         }
     }
 
@@ -139,6 +194,9 @@ class CachedFileWriter(
     }
 
     companion object {
+        private const val LOCK_SUFFIX = ".locked"
+        private const val CACHE_PREFIX = "cache_"
+        private const val CACHE_SUFFIX = ".temp"
         private val logger = LoggerFactory.getLogger(CachedFileWriter::class.java)
     }
 }

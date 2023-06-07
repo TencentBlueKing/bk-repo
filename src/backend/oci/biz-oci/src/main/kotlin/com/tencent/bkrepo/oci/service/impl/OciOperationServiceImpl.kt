@@ -59,6 +59,7 @@ import com.tencent.bkrepo.oci.constant.MD5
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OCI_NODE_FULL_PATH
+import com.tencent.bkrepo.oci.constant.OCI_NODE_SIZE
 import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
@@ -74,6 +75,7 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.node.NodeProperty
 import com.tencent.bkrepo.oci.pojo.response.OciImage
 import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTag
@@ -527,12 +529,6 @@ class OciOperationServiceImpl(
         try {
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
-            // 当文件有创建，则删除文件
-            try {
-                storageService.delete(request.sha256!!, storageCredentials)
-            } catch (exception: Exception) {
-                logger.error("Failed to delete new created file[${request.sha256}]", exception)
-            }
             // 异常往上抛
             throw exception
         }
@@ -922,7 +918,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = artifactInfo.reference
-                ).first
+                ).fullPath
             }
         }
         return artifactInfo.getArtifactFullPath()
@@ -935,10 +931,10 @@ class OciOperationServiceImpl(
         projectId: String,
         repoName: String,
         digestStr: String
-    ): Pair<String?, String?> {
+    ): NodeProperty {
         val ociDigest = OciDigest(digestStr)
         val queryModel = NodeQueryBuilder()
-            .select(NODE_FULL_PATH, MD5)
+            .select(NODE_FULL_PATH, MD5, OCI_NODE_SIZE)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
@@ -948,10 +944,14 @@ class OciOperationServiceImpl(
                 "Could not find $digestStr " +
                     "in repo $projectId|$repoName"
             )
-            return Pair(null, null)
+            return NodeProperty()
         }
-        if (result.records.isEmpty()) return Pair(null, null)
-        return Pair(result.records[0][NODE_FULL_PATH] as String, result.records[0][MD5] as String?)
+        if (result.records.isEmpty()) return NodeProperty()
+        return NodeProperty(
+            fullPath = result.records[0][NODE_FULL_PATH] as String,
+            md5 = result.records[0][MD5] as String?,
+            size = result.records[0][OCI_NODE_SIZE] as Int?
+        )
     }
 
     /**
@@ -968,7 +968,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = artifactInfo.reference
-                ).first
+                ).fullPath
             return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
         }
         if (artifactInfo is OciBlobArtifactInfo) {
@@ -977,7 +977,7 @@ class OciOperationServiceImpl(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 digestStr = digestStr
-            ).first
+            ).fullPath
         }
         return null
     }

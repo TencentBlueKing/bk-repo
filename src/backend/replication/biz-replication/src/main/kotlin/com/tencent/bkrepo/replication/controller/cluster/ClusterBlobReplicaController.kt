@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.replication.api.BlobReplicaClient.Companion.BLOB_PULL_URI
+import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource

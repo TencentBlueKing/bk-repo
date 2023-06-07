@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.pojo
 
-import com.tencent.bkrepo.common.query.model.Rule
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -36,5 +35,5 @@ data class AutoScanConfiguration(
     @ApiModelProperty("自动扫描的仓库")
     val autoScanRepoNames: List<String> = emptyList(),
     @ApiModelProperty("自动扫描制品匹配规则")
-    val autoScanMatchRule: Rule? = null
+    val autoScanMatchRule: String? = null
 )

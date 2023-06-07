@@ -148,7 +148,8 @@ body {
         color: var(--dangerColor);
         background-color: #FFDDDD;
     }
-    &.INIT {
+    &.INIT
+    &.CANCEL  {
         color: var(--fontSubsidiaryColor);
         background-color: #EFF2F6; // 30% CBD5E0
     }

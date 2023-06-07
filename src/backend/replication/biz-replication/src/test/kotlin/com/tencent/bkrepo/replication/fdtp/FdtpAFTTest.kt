@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
@@ -49,11 +50,6 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockkObject
-import java.io.ByteArrayInputStream
-import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -61,6 +57,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
 import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider
+import java.io.ByteArrayInputStream
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FdtpAFTTest {
@@ -77,10 +77,13 @@ class FdtpAFTTest {
         val fdtpAuthManager = FdtpAuthManager(serviceAuthManager)
         val fdtpServerProperties = FdtpServerProperties()
         server = FdtpAFTServer(fdtpServerProperties, handler, fdtpAuthManager)
-        val serverAddress = InetSocketAddress("127.0.0.1", fdtpServerProperties.port)
+        val clusterInfo = ClusterInfo(
+            url = "http://127.0.0.1:8080/replication",
+            udpPort = fdtpServerProperties.port
+        )
         val fdtpClientProperties = FdtpClientProperties(chunkSize = 8192)
         clientFactory = FdtpAFTClientFactory(fdtpAuthManager, fdtpClientProperties)
-        client = FdtpAFTClientFactory.createAFTClient(serverAddress, null)
+        client = FdtpAFTClientFactory.createAFTClient(clusterInfo)
     }
 
     private fun mockPrerequisites() {

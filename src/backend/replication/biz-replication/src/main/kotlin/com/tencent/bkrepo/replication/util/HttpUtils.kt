@@ -30,8 +30,9 @@ package com.tencent.bkrepo.replication.util
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
+import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
@@ -42,8 +43,6 @@ import java.net.MalformedURLException
 import java.net.URL
 
 object HttpUtils {
-    private const val RETRY_COUNT = 2
-    private const val DELAY_IN_SECONDS: Long = 1
     /**
      * 封装请求
      */
@@ -82,9 +81,9 @@ object HttpUtils {
         path: String = StringPool.EMPTY,
         params: String = StringPool.EMPTY,
     ): String {
-        val builder = StringBuilder(UrlFormatter.formatHost(url))
+        val builder = StringBuilder(url)
         if (path.isNotBlank()) {
-            builder.append(CharPool.SLASH).append(path)
+            builder.append(CharPool.SLASH).append(path.trimStart(CharPool.SLASH))
         }
         if (params.isNotBlank()) {
             if (builder.contains(CharPool.QUESTION)) {
@@ -153,5 +152,13 @@ object HttpUtils {
         } catch (e: Exception) {
             throw e
         }
+    }
+
+    /**
+     * 从Content-Range头中解析出起始位置
+     */
+    fun getRangeInfo(range: String): Pair<Long, Long> {
+        val values = range.split("-")
+        return Pair(values[0].toLong(), values[1].toLong())
     }
 }

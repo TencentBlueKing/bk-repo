@@ -100,9 +100,9 @@ class UserFilterRuleController(private val filterRuleService: FilterRuleService)
     @Permission(ResourceType.PROJECT, PermissionAction.READ)
     fun listRules(
         @PathVariable("projectId") projectId: String,
-        @RequestParam planId: String? = null,
-        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
-        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
+        @RequestParam(required = false) planId: String? = null,
+        @RequestParam(required = false) pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @RequestParam(required = false) pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<FilterRule>> {
         val request = ListFilterRuleRequest(
             projectId = projectId,

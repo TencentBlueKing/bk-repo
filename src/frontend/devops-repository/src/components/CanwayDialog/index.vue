@@ -5,7 +5,9 @@
         :close-icon="false">
         <template #tools>
             <div class="canway-dialog-header flex-align-center">
-                <span class="mr20 canway-dialog-title text-overflow" :title="title">{{ title }}</span>
+                <slot name="header">
+                    <span class="mr20 canway-dialog-title text-overflow" :title="title">{{ title }}</span>
+                </slot>
                 <i class="bk-icon icon-close hover-btn" @click="$emit('cancel')"></i>
             </div>
         </template>

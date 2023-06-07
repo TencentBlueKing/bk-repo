@@ -7,5 +7,11 @@ export function before (days) {
 
 // 获取传输时间的零点零分零秒的date
 export function zeroTime (date) {
-    return moment([date.year(), date.month(), date.date()]).toDate()
+    if (date instanceof Date) {
+        return moment([date.getFullYear(), date.getMonth(), date.getDate()]).toDate()
+    } else if (date instanceof moment) {
+        return moment([date.year(), date.month(), date.date()]).toDate()
+    } else {
+        return moment([moment().year(), moment().month(), moment().date()]).toDate()
+    }
 }

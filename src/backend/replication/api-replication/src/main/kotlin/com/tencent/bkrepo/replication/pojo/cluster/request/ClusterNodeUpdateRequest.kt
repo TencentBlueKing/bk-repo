@@ -54,5 +54,7 @@ data class ClusterNodeUpdateRequest(
     @ApiModelProperty("集群访问凭证", required = false)
     var accessKey: String? = null,
     @ApiModelProperty("集群密钥", required = false)
-    var secretKey: String? = null
+    var secretKey: String? = null,
+    @ApiModelProperty("udp port", required = false)
+    var udpPort: Int? = null,
 )

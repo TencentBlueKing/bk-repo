@@ -28,10 +28,8 @@
 package com.tencent.bkrepo.common.service.util.okhttp
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import org.slf4j.LoggerFactory
-import sun.security.ssl.SSLSocketImpl
-import java.io.Closeable
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.SocketAddress
@@ -44,6 +42,8 @@ import javax.net.ssl.SSLParameters
 import javax.net.ssl.SSLSession
 import javax.net.ssl.SSLSocket
 import kotlin.system.measureNanoTime
+import org.slf4j.LoggerFactory
+import sun.security.ssl.SSLSocketImpl
 
 /**
  * 不安全的ssl socket。重写了SSLSocketImpl的close方法，允许强势关闭连接。
@@ -209,7 +209,9 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
                 return
             }
             val timeoutFuture = threadPool.schedule(
-                Runnable{ closeImmediately() }.trace(), closeTimeout, TimeUnit.SECONDS
+                Runnable { closeImmediately() }.trace(),
+                closeTimeout,
+                TimeUnit.SECONDS,
             )
             val closeTime = measureNanoTime { delegate.closeQuietly() }
             if (closeTime < Duration.ofSeconds(closeTimeout).toNanos()) {
@@ -224,13 +226,16 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
     @Synchronized
     fun closeImmediately() {
         try {
-            val closeSocketMethod = SSLSocketImpl::class.java.getDeclaredMethod("closeSocket", Boolean::class.java)
+            val clazz = SSLSocketImpl::class.java
+            val closeSocketMethod = clazz.getDeclaredMethod("closeSocket", Boolean::class.java)
             closeSocketMethod.isAccessible = true
             if (!delegate.isClosed) {
                 closeSocketMethod.invoke(delegate, false)
-                val tlsIsClosedField = SSLSocketImpl::class.java.getDeclaredField("tlsIsClosed")
-                tlsIsClosedField.isAccessible = true
-                tlsIsClosedField.set(delegate, true)
+                // 低版本的jdk没有这个字段，但是并不影响socket的关闭
+                clazz.declaredFields.firstOrNull { it.name == "tlsIsClosed" }?.let {
+                    it.isAccessible = true
+                    it.set(delegate, true)
+                }
                 logger.info("Success close socket $delegate")
             }
         } catch (e: Exception) {

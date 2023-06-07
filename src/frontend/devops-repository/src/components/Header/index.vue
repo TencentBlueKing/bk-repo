@@ -1,7 +1,7 @@
 <template>
     <div class="bkrepo-header flex-align-center">
         <div class="flex-align-center">
-            <router-link class="flex-align-center bkrepo-logo" :to="{ name: 'repoList' }">
+            <router-link class="flex-align-center bkrepo-logo" :to="{ name: 'repositories' }">
                 <svg
                     :width="34"
                     :height="34"
@@ -91,7 +91,7 @@
                 if (this.projectId === projectId) return
                 this.checkPM({ projectId })
                 this.$router.push({
-                    name: 'repoList',
+                    name: 'repositories',
                     params: {
                         projectId
                     },

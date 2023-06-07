@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.api.constant
 
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -87,3 +88,5 @@ fun String.urlEncode() = URLEncoder.encode(this, StandardCharsets.UTF_8.displayN
     // 一般情况下，服务器会兼容+和%20,但是在签名时则需要保证空格的编码要两者完全一致，所以我们这里统一转换成%20
     return this.replace("+", "%20")
 }
+
+fun String.urlDecode() = URLDecoder.decode(this, StandardCharsets.UTF_8.displayName())

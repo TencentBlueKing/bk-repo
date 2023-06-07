@@ -307,7 +307,7 @@
             ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl']),
             toRepoList () {
                 this.$router.push({
-                    name: 'repoList'
+                    name: 'repositories'
                 })
             },
             getRepoInfoHandler () {

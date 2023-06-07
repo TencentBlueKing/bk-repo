@@ -95,6 +95,10 @@ data class TClusterNode(
      * 最近上报心跳时间
      */
     var lastReportTime: LocalDateTime? = null,
+    /**
+     * udp port
+     */
+    var udpPort: Int? = null,
 
     /**
      * 审计信息
