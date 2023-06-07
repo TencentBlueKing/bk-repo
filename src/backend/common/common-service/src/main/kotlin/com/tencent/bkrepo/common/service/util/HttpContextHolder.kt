@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.service.util
 
+import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import org.springframework.web.context.request.RequestContextHolder
@@ -66,7 +67,10 @@ object HttpContextHolder {
     }
 
     fun getClientAddress(request: HttpServletRequest): String {
-        var address = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
+        var address = request.getAttribute(CLIENT_ADDRESS)?.toString()
+        if (address.isNullOrBlank()) {
+            address = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
+        }
         address = if (address.isNullOrBlank()) {
             request.getHeader(HttpHeaders.X_REAL_IP)
         } else {
