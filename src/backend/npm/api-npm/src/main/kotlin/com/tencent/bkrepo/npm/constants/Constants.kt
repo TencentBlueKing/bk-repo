@@ -67,6 +67,8 @@ const val SEARCH_REQUEST = "search_request"
 
 const val PKG_NAME = "pkg_name"
 
+const val REQUEST_URI = "requestURI"
+
 // constants map
 val ERROR_MAP = mapOf("error" to "not_found", "reason" to "document not found")
 

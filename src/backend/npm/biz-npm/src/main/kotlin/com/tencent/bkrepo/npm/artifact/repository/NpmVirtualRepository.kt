@@ -81,11 +81,7 @@ class NpmVirtualRepository : VirtualRepository() {
 
     @Suppress("UNCHECKED_CAST")
     override fun query(context: ArtifactQueryContext): InputStream? {
-        val result = mapEachLocalAndFirstRemote(context) {
-            require(it is ArtifactQueryContext)
-            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
-            repository.query(it)
-        } as List<InputStream>
+        val result = super.query(context) as List<InputStream>
         val metadataList = result.map {
             it.use { inputStream ->
                 JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)

@@ -51,12 +51,12 @@ class PypiVirtualRepository : VirtualRepository() {
         val request = context.request
         if (!request.servletPath.startsWith("/ext/version/detail") && !request.requestURI.endsWith(SLASH)) {
             val response = HttpContextHolder.getResponse()
-            return response.sendRedirect(request.requestURL.toString().ensureSuffix(SLASH))
+            response.sendRedirect(request.requestURL.toString().ensureSuffix(SLASH))
+            return null
         }
-        return mapFirstRepo(context) {
-            require(it is ArtifactQueryContext)
-            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
-            repository.query(it)
+        return mapFirstRepo(context) { sub, repository ->
+            require(sub is ArtifactQueryContext)
+            repository.query(sub)
         }
     }
 

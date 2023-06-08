@@ -52,7 +52,6 @@ import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RemoteUrlRequest
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.Interceptor
@@ -66,7 +65,7 @@ import java.net.Proxy
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /**
@@ -121,11 +120,10 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     }
 
     /**
-     *  获取远程URL响应
+     *  根据远程仓库配置获取响应
      */
-    fun getRemoteUrlResponse(remoteUrlRequest: RemoteUrlRequest): Response {
-        with (remoteUrlRequest) {
-            val remoteConfiguration = RemoteConfiguration(credentials = credentials, network = network)
+    fun getResponse(remoteConfiguration: RemoteConfiguration): Response {
+        with(remoteConfiguration) {
             val httpClient = createHttpClient(remoteConfiguration)
             val request = Request.Builder().url(url)
                 .removeHeader(USER_AGENT)

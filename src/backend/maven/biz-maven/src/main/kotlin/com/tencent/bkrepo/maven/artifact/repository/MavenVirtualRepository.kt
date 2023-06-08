@@ -31,10 +31,13 @@
 
 package com.tencent.bkrepo.maven.artifact.repository
 
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.artifact.constant.NODE_DETAIL_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -48,17 +51,21 @@ import org.springframework.stereotype.Component
 @Component
 class MavenVirtualRepository : VirtualRepository() {
 
+    override fun query(context: ArtifactQueryContext): Any? {
+        throw MethodNotAllowedException()
+    }
+
     @Suppress("UNCHECKED_CAST", "ReturnCount")
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.artifactInfo.getArtifactFullPath()
         // 从成员仓库中取最新时间戳的snapshot版本元数据文件或元数据摘要文件
         if (fullPath.isSnapshotMetadataUri() || fullPath.isSnapshotMetadataChecksumUri()) {
-            val resources = mapEachLocalAndFirstRemote(context, false) {
-                require(it is ArtifactDownloadContext)
-                val repository =
-                    ArtifactContextHolder.getRepository(it.repositoryDetail.category) as AbstractArtifactRepository
-                val resource = repository.onDownload(it)
-                val timestamp = it.getAndRemoveAttribute<String>(SNAPSHOT_TIMESTAMP)
+            val resources = mapEachLocalAndFirstRemote(context, false) { sub, repository ->
+                require(sub is ArtifactDownloadContext)
+                require(repository is AbstractArtifactRepository)
+                val resource = repository.onDownload(sub)
+                context.request.removeAttribute(NODE_DETAIL_KEY)
+                val timestamp = sub.getAndRemoveAttribute<String>(SNAPSHOT_TIMESTAMP)
                 val sha1 = with(context.response) {
                     getHeader(X_CHECKSUM_SHA1)?.also { setHeader(X_CHECKSUM_SHA1, null) }
                 }

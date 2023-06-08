@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.REQUEST_URI
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.handler.NpmPackageHandler
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
@@ -99,7 +100,7 @@ class NpmRemoteRepository(
             }
             val remoteConfiguration = context.getRemoteConfiguration()
             val httpClient = createHttpClient(remoteConfiguration)
-            context.putAttribute("requestURI", "/${packageInfo.first}/${packageInfo.second}")
+            context.putAttribute(REQUEST_URI, "/${packageInfo.first}/${packageInfo.second}")
             val downloadUri = createRemoteSearchUrl(context)
             val request = Request.Builder().url(downloadUri).build()
             val response = httpClient.newCall(request).execute()
@@ -137,7 +138,7 @@ class NpmRemoteRepository(
 
     private fun createRemoteSearchUrl(context: ArtifactContext): String {
         val configuration = context.getRemoteConfiguration()
-        val requestURI = context.getStringAttribute("requestURI")
+        val requestURI = context.getStringAttribute(REQUEST_URI)
         val artifactUri =
             requestURI ?: context.request.requestURI.substringAfterLast(context.artifactInfo.getRepoIdentify())
         val queryString = context.request.queryString

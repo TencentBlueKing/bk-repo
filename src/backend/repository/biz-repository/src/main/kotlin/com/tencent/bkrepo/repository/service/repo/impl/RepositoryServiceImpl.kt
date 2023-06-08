@@ -380,16 +380,21 @@ class RepositoryServiceImpl(
 
     override fun testRemoteUrl(remoteUrlRequest: RemoteUrlRequest): ConnectionStatusInfo {
         val remoteRepository = ArtifactContextHolder.getRepository(RepositoryCategory.REMOTE) as RemoteRepository
+        val remoteConfiguration = RemoteConfiguration(
+            url = remoteUrlRequest.url,
+            credentials = remoteUrlRequest.credentials,
+            network = remoteUrlRequest.network
+        )
         return try {
-            val response = remoteRepository.getRemoteUrlResponse(remoteUrlRequest)
+            val response = remoteRepository.getResponse(remoteConfiguration)
             val reason = HttpStatus.valueOf(response.code).reasonPhrase
-            ConnectionStatusInfo(response.code < 400, "${response.code} $reason")
-        } catch (exception: SocketTimeoutException) {
+            ConnectionStatusInfo(response.code < HttpStatus.BAD_REQUEST.value, "${response.code} $reason")
+        } catch (ignore: SocketTimeoutException) {
             ConnectionStatusInfo(false, "${HttpStatus.REQUEST_TIMEOUT.value} ${HttpStatus.REQUEST_TIMEOUT.name}")
-        } catch (exception: UnknownHostException) {
-            ConnectionStatusInfo(false, ("Unknown Host" + exception.message?.let { ": $it" }))
-        } catch (exception: Exception) {
-            ConnectionStatusInfo(false, exception.message ?: exception.javaClass.simpleName)
+        } catch (ignore: UnknownHostException) {
+            ConnectionStatusInfo(false, ("Unknown Host" + ignore.message?.let { ": $it" }))
+        } catch (ignore: Exception) {
+            ConnectionStatusInfo(false, ignore.message ?: ignore.javaClass.simpleName)
         }
     }
 

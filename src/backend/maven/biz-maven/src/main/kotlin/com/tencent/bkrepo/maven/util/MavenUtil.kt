@@ -3,6 +3,8 @@ package com.tencent.bkrepo.maven.util
 import com.google.common.io.ByteStreams
 import com.google.common.io.CharStreams
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.maven.enum.MavenMessageCode
+import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import org.apache.commons.lang3.StringUtils
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -41,5 +43,16 @@ object MavenUtil {
     fun extractPath(packageKey: String): String {
         val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
         return StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+    }
+
+    /**
+     * 从路径中提取出packageKey
+     */
+    fun extractPackageKey(fullPath: String): String {
+        val pathList = fullPath.trim('/').split("/")
+        if (pathList.size <= 1) throw MavenBadRequestException(MavenMessageCode.MAVEN_ARTIFACT_DELETE, fullPath)
+        val artifactId = pathList.last()
+        val groupId = StringUtils.join(pathList.subList(0, pathList.size - 1), ".")
+        return PackageKeys.ofGav(groupId, artifactId)
     }
 }

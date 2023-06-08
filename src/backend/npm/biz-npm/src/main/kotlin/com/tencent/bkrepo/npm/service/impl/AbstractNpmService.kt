@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import com.tencent.bkrepo.npm.constants.REQUEST_URI
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
@@ -112,7 +113,7 @@ open class AbstractNpmService {
 		val packageFullPath = NpmUtils.getPackageMetadataPath(name)
 		val context = ArtifactQueryContext()
 		context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
-		context.putAttribute("requestURI", name)
+		context.putAttribute(REQUEST_URI, name)
 		val inputStream =
 			ArtifactContextHolder.getRepository().query(context) as? InputStream
 				?: throw NpmArtifactNotFoundException("document not found")

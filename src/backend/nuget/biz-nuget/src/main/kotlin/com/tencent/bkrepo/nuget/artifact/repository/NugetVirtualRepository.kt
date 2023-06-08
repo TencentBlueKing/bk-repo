@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -81,11 +80,7 @@ class NugetVirtualRepository(
 
     @Suppress("UNCHECKED_CAST")
     private fun enumerateVersions(context: ArtifactQueryContext): List<String>? {
-        val result = mapEachLocalAndFirstRemote(context) {
-            require(it is ArtifactQueryContext)
-            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
-            repository.query(it) as List<String>?
-        }.takeIf { it.isNotEmpty() } ?: return null
+        val result = (super.query(context) as List<List<String>>).takeIf { it.isNotEmpty() } ?: return null
         return result.flatten().toSet().sortedWith {
             v1, v2 -> NugetVersionUtils.compareSemVer(v1, v2)
         }
@@ -97,11 +92,10 @@ class NugetVirtualRepository(
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
         val virtualRepoName = context.repoName
-        val result = mapEachLocalAndFirstRemote(context) {
-            require(it is ArtifactQueryContext)
-            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
-            it.artifactInfo.repoName = virtualRepoName
-            repository.query(it) as RegistrationIndex?
+        val result = mapEachLocalAndFirstRemote(context) { sub, repository ->
+            require(sub is ArtifactQueryContext)
+            sub.artifactInfo.repoName = virtualRepoName
+            repository.query(sub) as RegistrationIndex?
         }.takeIf { it.isNotEmpty() } ?: return null
         return result.reduce { acc, element ->
             RemoteRegistrationUtils.combineRegistrationIndex(acc, element, nugetArtifactInfo, v3RegistrationUrl)
@@ -114,11 +108,10 @@ class NugetVirtualRepository(
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
         val virtualRepoName = context.repoName
-        val result = mapEachLocalAndFirstRemote(context) {
-            require(it is ArtifactQueryContext)
-            val repository = ArtifactContextHolder.getRepository(it.repositoryDetail.category)
-            it.artifactInfo.repoName = virtualRepoName
-            repository.query(it) as RegistrationPage?
+        val result = mapEachLocalAndFirstRemote(context) { sub, repository ->
+            require(sub is ArtifactQueryContext)
+            sub.artifactInfo.repoName = virtualRepoName
+            repository.query(sub) as RegistrationPage?
         }.takeIf { it.isNotEmpty() } ?: return null
         return result.reduce { acc, element ->
             RemoteRegistrationUtils.combineRegistrationPage(acc, element, nugetArtifactInfo, v3RegistrationUrl)
