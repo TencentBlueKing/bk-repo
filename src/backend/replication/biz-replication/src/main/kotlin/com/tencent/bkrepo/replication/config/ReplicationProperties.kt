@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.config
 
+import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
 
@@ -70,5 +71,23 @@ data class ReplicationProperties(
     /**
      * 一次性查询的page size
      */
-    var pageSize: Int = 500
-)
+    var pageSize: Int = 500,
+    /**
+     * 集群间制品同步方式：
+     * 追加上传：CHUNKED
+     * 普通上传（单个请求）：DEFAULT
+     * */
+    var pushType: String = WayOfPushArtifact.PUSH_WITH_DEFAULT.value,
+    /**
+     * 使用追加上传项目
+     * */
+    var chunkedRepos: List<String> = emptyList(),
+    /**
+     * 使用fdtp上传项目
+     * */
+    var fdtpRepos: List<String> = emptyList(),
+    /**
+     * 使用http上传项目
+     * */
+    var httpRepos: List<String> = emptyList()
+    )

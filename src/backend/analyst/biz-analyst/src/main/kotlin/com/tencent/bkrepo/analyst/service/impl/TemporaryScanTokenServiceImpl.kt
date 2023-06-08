@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.EXPIRED_SECONDS
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
@@ -215,6 +216,5 @@ class TemporaryScanTokenServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(TemporaryScanTokenServiceImpl::class.java)
-        private const val EXPIRED_SECONDS = 24 * 60 * 60L
     }
 }

@@ -2,7 +2,7 @@
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
- * 
+ *
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -42,7 +42,7 @@ import kotlin.concurrent.thread
  * 网络带宽测速
  * */
 class NetSpeedTest(
-    val settings: SpeedTestSettings
+    val settings: SpeedTestSettings,
 ) {
     private val logger = LoggerFactory.getLogger(NetSpeedTest::class.java)
 
@@ -65,7 +65,7 @@ class NetSpeedTest(
             }
             val countDownLatch = CountDownLatch(concurrent)
             for (i in 0 until concurrent) {
-                thread {
+                thread(isDaemon = true) {
                     doUpload()
                     countDownLatch.countDown()
                 }

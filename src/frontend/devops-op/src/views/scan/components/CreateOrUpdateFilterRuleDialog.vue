@@ -62,7 +62,10 @@
         <el-input v-if="!ignoreAllVul" v-model="vulIds" placeholder="请输入漏洞ID，多个漏洞ID通过换行分隔" type="textarea" />
       </el-form-item>
       <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT" label="风险组件名" :required="false" prop="riskyPackageKeys">
-        <el-input v-model="riskyPackageKeys" placeholder="请输入风险组件名，多个组件通过换行分隔" type="textarea" />
+        <el-input :autosize="true" v-model="riskyPackageKeys" placeholder="请输入风险组件名，多个组件通过换行分隔" type="textarea" />
+      </el-form-item>
+      <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT_VERSION" label="风险组件版本" :required="false" prop="riskyPackageVersions">
+        <el-input :autosize="true" v-model="riskyPackageVersions" placeholder="请输入风险组件版本范围，多个组件通过换行分隔，例如org.springframework:spring-messaging >=5.0,<=5.0.4;>=4.3,<=4.3.15;<=4.0.0;>=4.0,<4.3" type="textarea" />
       </el-form-item>
     </el-form>
     <div slot="footer">
@@ -76,7 +79,7 @@
 import _ from 'lodash'
 import {
   createFilterRule,
-  FILTER_METHOD_RISKY_COMPONENT, FILTER_METHOD_SEVERITY, FILTER_METHOD_VUL_ID,
+  FILTER_METHOD_RISKY_COMPONENT, FILTER_METHOD_RISKY_COMPONENT_VERSION, FILTER_METHOD_SEVERITY, FILTER_METHOD_VUL_ID,
   RULE_TYPE_IGNORE,
   RULE_TYPE_INCLUDE,
   updateFilterRule
@@ -108,6 +111,7 @@ export default {
       FILTER_METHOD_VUL_ID: FILTER_METHOD_VUL_ID,
       FILTER_METHOD_SEVERITY: FILTER_METHOD_SEVERITY,
       FILTER_METHOD_RISKY_COMPONENT: FILTER_METHOD_RISKY_COMPONENT,
+      FILTER_METHOD_RISKY_COMPONENT_VERSION: FILTER_METHOD_RISKY_COMPONENT_VERSION,
       rules: {
         name: [
           {
@@ -126,6 +130,7 @@ export default {
       ignoreRule: this.newRule(),
       vulIds: '',
       riskyPackageKeys: '',
+      riskyPackageVersions: '',
       ignoreAllVul: false,
       includeAllProjects: false,
       projects: [],
@@ -159,6 +164,10 @@ export default {
         {
           type: FILTER_METHOD_RISKY_COMPONENT,
           name: '通过风险组件名过滤'
+        },
+        {
+          type: FILTER_METHOD_RISKY_COMPONENT_VERSION,
+          name: '通过风险组件版本过滤'
         }
       ],
       selectedFilterMethod: FILTER_METHOD_VUL_ID
@@ -191,6 +200,9 @@ export default {
       if (newVal !== FILTER_METHOD_RISKY_COMPONENT) {
         this.riskyPackageKeys = ''
       }
+      if (newVal !== FILTER_METHOD_RISKY_COMPONENT_VERSION) {
+        this.riskyPackageVersions = ''
+      }
     },
     close() {
       this.showDialog = false
@@ -217,6 +229,16 @@ export default {
 
       if (this.riskyPackageKeys) {
         this.ignoreRule.riskyPackageKeys = this.riskyPackageKeys.trim().split('\n')
+      }
+
+      if (this.riskyPackageVersions) {
+        this.ignoreRule.riskyPackageVersions = {}
+        const versions = this.riskyPackageVersions.trim().split(/\n+/)
+        versions.forEach(v => {
+          const trimVer = v.trim()
+          const indexOfSpace = trimVer.indexOf(' ')
+          this.ignoreRule.riskyPackageVersions[trimVer.substring(0, indexOfSpace)] = trimVer.substring(indexOfSpace).trim()
+        })
       }
 
       this.$refs['form'].validate((valid) => {
@@ -253,12 +275,26 @@ export default {
         this.ignoreRule = _.cloneDeep(this.updatingRule)
       }
 
+      this.includeAllProjects = this.ignoreRule.projectIds && this.ignoreRule.projectIds.length === 0
+
       if (this.ignoreRule.severity) {
         this.selectedFilterMethod = FILTER_METHOD_SEVERITY
       } else if (this.ignoreRule.riskyPackageKeys) {
         this.selectedFilterMethod = FILTER_METHOD_RISKY_COMPONENT
+      } else if (this.ignoreRule.riskyPackageVersions) {
+        this.selectedFilterMethod = FILTER_METHOD_RISKY_COMPONENT_VERSION
       } else {
         this.selectedFilterMethod = FILTER_METHOD_VUL_ID
+      }
+
+      if (this.ignoreRule.riskyPackageVersions) {
+        const pkgVersionRange = []
+        for (const pkg in this.ignoreRule.riskyPackageVersions){
+          pkgVersionRange.push(`${pkg} ${this.ignoreRule.riskyPackageVersions[pkg]}`)
+        }
+        this.riskyPackageVersions = pkgVersionRange.join('\n')
+      } else {
+        this.riskyPackageVersions = ''
       }
 
       this.riskyPackageKeys = this.ignoreRule.riskyPackageKeys ? this.ignoreRule.riskyPackageKeys.join('\n') : ''

@@ -38,7 +38,7 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
-import com.tencent.bkrepo.replication.replica.base.impl.remote.base.DefaultHandler
+import com.tencent.bkrepo.replication.replica.base.handler.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
 import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail

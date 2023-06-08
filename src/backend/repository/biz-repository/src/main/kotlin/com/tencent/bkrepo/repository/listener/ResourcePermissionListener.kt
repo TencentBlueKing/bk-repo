@@ -88,14 +88,13 @@ class ResourcePermissionListener(
     }
 
     private fun isNeedLocalPermission(projectId: String): Boolean {
-        if (projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(GIT_PROJECT_PREFIX)) {
+        if (projectId.startsWith(CODE_PROJECT_PREFIX)) {
             return false
         }
         return true
     }
 
     companion object {
-        private const val GIT_PROJECT_PREFIX = "git_"
         private const val CODE_PROJECT_PREFIX = "CODE_"
     }
 }

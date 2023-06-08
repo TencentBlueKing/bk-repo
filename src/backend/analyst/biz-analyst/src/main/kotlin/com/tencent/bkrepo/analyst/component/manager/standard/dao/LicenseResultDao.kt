@@ -32,6 +32,8 @@ import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResul
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
@@ -46,15 +48,24 @@ class LicenseResultDao : ResultItemDao<TLicenseResult>() {
                 andCriteria.add(Criteria(dataKey(LicenseResult::licenseName.name)).inValues(licenseIds))
             }
 
-            val filterCriteria = LicenseFilterCriteriaBuilder(rule, ignored).build()
-            if (filterCriteria.isNotEmpty()) {
-                andCriteria.addAll(filterCriteria)
-            }
             if (andCriteria.isNotEmpty()) {
                 criteria.andOperator(andCriteria)
             }
 
             return criteria
         }
+    }
+
+    override fun toPage(
+        records: List<TLicenseResult>,
+        pageLimit: PageLimit,
+        arguments: LoadResultArguments
+    ): Page<TLicenseResult> {
+        arguments as StandardLoadResultArguments
+        val matchedData = records.filter {
+            val shouldIgnore = arguments.rule!!.shouldIgnore(it.data.licenseName)
+            shouldIgnore && arguments.ignored || !shouldIgnore && !arguments.ignored
+        }
+        return super.toPage(matchedData, pageLimit, arguments)
     }
 }

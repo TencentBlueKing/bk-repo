@@ -27,15 +27,17 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.fdtp.SimpleChannelPoolMap
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.util.concurrent.DefaultThreadFactory
-import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.stereotype.Component
+import java.net.InetSocketAddress
+import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * fdtp-aft client工厂
@@ -71,17 +73,24 @@ class FdtpAFTClientFactory(fdtpAuthManager: FdtpAuthManager, clientProperties: F
         lateinit var poolMap: SimpleChannelPoolMap
         lateinit var fdtpAuthManager: FdtpAuthManager
         lateinit var clientProperties: FdtpClientProperties
-        private val clientCache = ConcurrentHashMap<InetSocketAddress, FdtpAFTClient>()
+        private val clientCache = ConcurrentHashMap<ClusterInfo, FdtpAFTClient>()
 
         /**
          * 创建一个fdtp-aft客户端
          * */
-        fun createAFTClient(socketAddress: InetSocketAddress, certificate: String?): FdtpAFTClient {
-            return clientCache[socketAddress] ?: synchronized(socketAddress) {
-                clientCache[socketAddress]?.let { return it }
-                val newClient = FdtpAFTClient(socketAddress, poolMap, certificate, fdtpAuthManager, clientProperties)
-                clientCache.putIfAbsent(socketAddress, newClient)
-                newClient
+        fun createAFTClient(clusterInfo: ClusterInfo, defaultPort: Int? = null): FdtpAFTClient {
+            with(clusterInfo) {
+                return clientCache[clusterInfo] ?: synchronized(clusterInfo) {
+                    clientCache[clusterInfo]?.let { return it }
+                    val host = URL(url).host
+                    val udpPort = udpPort ?: defaultPort
+                    val serverAddress = InetSocketAddress(host, udpPort!!)
+                    val newClient = FdtpAFTClient(
+                        serverAddress, poolMap, certificate, fdtpAuthManager, clientProperties
+                    )
+                    clientCache.putIfAbsent(clusterInfo, newClient)
+                    newClient
+                }
             }
         }
     }

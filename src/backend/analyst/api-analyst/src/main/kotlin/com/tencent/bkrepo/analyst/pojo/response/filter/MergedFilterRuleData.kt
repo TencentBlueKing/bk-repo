@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.analyst.pojo.response.filter
 
+import com.tencent.bkrepo.analyst.utils.CompositeVersionRange
 import org.springframework.util.ReflectionUtils
 
 data class MergedFilterRuleData(
+    var riskyPackageVersions: MutableMap<String, CompositeVersionRange>? = null,
     var riskyPackageKeys: MutableSet<String>? = null,
     var vulIds: MutableSet<String>? = null,
     var licenses: MutableSet<String>? = null
@@ -40,6 +42,16 @@ data class MergedFilterRuleData(
         rule.riskyPackageKeys?.let {
             this.riskyPackageKeys = add(this.riskyPackageKeys, rule, FilterRule::riskyPackageKeys.name)
         }
+        rule.riskyPackageVersions?.let {
+            this.riskyPackageVersions = this.riskyPackageVersions ?: HashMap()
+            it.forEach { (pkg, versions) ->
+                this.riskyPackageVersions!![pkg] = CompositeVersionRange.build(versions)
+            }
+        }
+    }
+
+    fun isEmpty(): Boolean {
+        return riskyPackageVersions == null && riskyPackageKeys == null && vulIds == null && licenses == null
     }
 
     private fun add(target: MutableSet<String>?, rule: FilterRule, ruleName: String): MutableSet<String> {

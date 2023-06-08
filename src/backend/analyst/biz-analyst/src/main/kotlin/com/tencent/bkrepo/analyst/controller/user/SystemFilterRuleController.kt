@@ -80,8 +80,8 @@ class SystemFilterRuleController(private val filterRuleService: FilterRuleServic
     @ApiOperation("分页获取规则")
     @GetMapping
     fun listSystemRules(
-        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
-        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
+        @RequestParam(required = false) pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @RequestParam(required = false) pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<FilterRule>> {
         val request = ListFilterRuleRequest(
             projectId = SYSTEM_PROJECT_ID,

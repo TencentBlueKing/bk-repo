@@ -1,9 +1,10 @@
 import Vue from 'vue'
 import { mapState, mapMutations } from 'vuex'
 import ConfirmDialog from '@repository/components/ConfirmDialog'
+import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
 export default {
     name: 'App',
-    components: { ConfirmDialog },
+    components: { ConfirmDialog, GlobalUploadViewport },
     computed: {
         ...mapState(['userInfo', 'projectList']),
         projectId () {
