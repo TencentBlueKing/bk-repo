@@ -60,8 +60,12 @@
             }
         },
         watch: {
-            baseData () {
-                this.proxyList = this.baseData.configuration.proxy.channelList
+            baseData: {
+                handler () {
+                    this.proxyList = this.baseData.configuration.proxy?.channelList || []
+                },
+                immediate: true
+
             }
         },
         created () {
