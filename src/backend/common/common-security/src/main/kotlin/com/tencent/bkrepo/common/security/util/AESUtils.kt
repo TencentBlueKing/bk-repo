@@ -25,20 +25,54 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.common.security.util
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import cn.hutool.crypto.Mode
+import cn.hutool.crypto.Padding
+import cn.hutool.crypto.symmetric.AES
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+/**
+ * AES对称加密工具类
+ */
+class AESUtils(
+    cryptoProperties: CryptoProperties
+) {
+    init {
+        aes = AES(
+            Mode.CBC,
+            Padding.PKCS5Padding,
+            cryptoProperties.aesKey.toByteArray(),
+            cryptoProperties.aesIv.toByteArray()
+        )
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    }
+
+    companion object {
+        lateinit var aes: AES
+
+        /**
+         * 加密
+         */
+        fun encrypt(value: String): String {
+            return aes.encryptBase64(value)
+        }
+
+        /**
+         * 解密
+         */
+        fun decrypt(value: String): String {
+            return aes.decryptStr(value)
+        }
+
+        fun encrypt(value: String, key: String): String {
+            val aes = AES(Mode.ECB, Padding.PKCS5Padding, key.toByteArray())
+            return aes.encryptBase64(value)
+        }
+
+        fun decrypt(value: String, key: String): String {
+            val aes = AES(Mode.ECB, Padding.PKCS5Padding, key.toByteArray())
+            return aes.decryptStr(value)
+        }
+    }
 }

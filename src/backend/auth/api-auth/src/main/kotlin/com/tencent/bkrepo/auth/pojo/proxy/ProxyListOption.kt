@@ -25,20 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.auth.pojo.proxy
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
-
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
-}
+data class ProxyListOption(
+    val name: String? = null,
+    val displayName: String? = null,
+    val pageNumber: Int,
+    val pageSize: Int
+)

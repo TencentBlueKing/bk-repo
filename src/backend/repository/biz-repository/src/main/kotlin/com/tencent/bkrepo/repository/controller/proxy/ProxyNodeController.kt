@@ -25,20 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.repository.controller.proxy
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.service.node.NodeService
+import org.springframework.web.bind.annotation.RestController
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+@RestController
+class ProxyNodeController(
+    private val nodeService: NodeService
+) : ProxyNodeClient {
+    override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+        val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+        return ResponseBuilder.success(nodeService.getNodeDetail(artifactInfo))
+    }
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    override fun createNode(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.createNode(nodeCreateRequest))
+    }
 }

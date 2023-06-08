@@ -25,20 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.proxy.artifact
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+class ProxyArtifactConfigurer : ArtifactConfigurerSupport() {
+    override fun getRepositoryType(): RepositoryType = RepositoryType.GENERIC
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<ProxyLocalRepository>()
+
+    override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<ProxyRemoteRepository>()
+
+    override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<ProxyVirtualRepository>()
+
+    override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = HttpAuthSecurityCustomizer {
+        it.includePattern("/**")
+    }
 }

@@ -25,20 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.proxy.service
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import org.springframework.stereotype.Service
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+@Service
+class UploadService : ArtifactService() {
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
+        val context = ArtifactUploadContext(file)
+        repository.upload(context)
+    }
 }

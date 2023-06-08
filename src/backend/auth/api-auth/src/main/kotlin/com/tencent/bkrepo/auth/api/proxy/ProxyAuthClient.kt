@@ -25,20 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.auth.api.proxy
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+@Api(tags = ["PROXY_AUTH"], description = "Proxy认证接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyAuthClient")
+@RequestMapping("/proxy/auth")
+interface ProxyAuthClient {
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    @GetMapping("/ticket/{projectId}/{name}")
+    fun ticket(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<Int>
+
+    @PostMapping("/startup")
+    fun startup(
+        @RequestBody proxyStatusRequest: ProxyStatusRequest
+    ): Response<String>
+
+    @PostMapping("/shutdown")
+    fun shutdown(
+        @RequestBody proxyStatusRequest: ProxyStatusRequest
+    ): Response<Void>
+
+    @PostMapping("/heartbeat/{projectId}/{name}")
+    fun heartbeat(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<Void>
 }

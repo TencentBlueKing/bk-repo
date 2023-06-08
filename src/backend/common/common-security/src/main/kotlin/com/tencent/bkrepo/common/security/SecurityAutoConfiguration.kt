@@ -43,11 +43,14 @@ import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
+import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
+import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -62,7 +65,8 @@ import org.springframework.context.annotation.Import
     HttpAuthConfiguration::class,
     ServiceAuthConfiguration::class,
     ActuatorAuthConfiguration::class,
-    CryptoConfiguration::class
+    CryptoConfiguration::class,
+    ProxyAuthConfiguration::class
 )
 class SecurityAutoConfiguration {
 
@@ -95,5 +99,23 @@ class SecurityAutoConfiguration {
                 nodeClient = nodeClient
             )
         }
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun proxyPermissionManager(
+        repositoryClient: RepositoryClient,
+        permissionResource: ServicePermissionClient,
+        externalPermissionResource: ServiceExternalPermissionClient,
+        userResource: ServiceUserClient,
+        nodeClient: NodeClient
+    ): ProxyPermissionManager {
+        return ProxyPermissionManager(
+            repositoryClient = repositoryClient,
+            permissionResource = permissionResource,
+            externalPermissionResource = externalPermissionResource,
+            userResource = userResource,
+            nodeClient = nodeClient
+        )
     }
 }

@@ -25,20 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.auth.controller.proxy
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
+import com.tencent.bkrepo.auth.service.ProxyService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+@RestController
+class ProxyAuthController(
+    private val proxyService: ProxyService
+): ProxyAuthClient {
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    override fun ticket(projectId: String, name: String): Response<Int> {
+        return ResponseBuilder.success(proxyService.ticket(projectId, name))
+    }
+
+    override fun startup(proxyStatusRequest: ProxyStatusRequest): Response<String> {
+        return ResponseBuilder.success(proxyService.startup(proxyStatusRequest))
+    }
+
+    override fun shutdown(proxyStatusRequest: ProxyStatusRequest): Response<Void> {
+        proxyService.shutdown(proxyStatusRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun heartbeat(projectId: String, name: String): Response<Void> {
+        proxyService.heartbeat(projectId, name)
+        return ResponseBuilder.success()
+    }
 }

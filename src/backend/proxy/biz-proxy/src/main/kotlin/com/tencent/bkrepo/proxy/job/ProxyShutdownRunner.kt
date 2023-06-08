@@ -25,20 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.proxy.job
 
+import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.proxy.util.ProxyEnv
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import javax.annotation.PreDestroy
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+@Component
+class ProxyShutdownRunner(
+    private val proxyAuthClient: ProxyAuthClient
+) {
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    @PreDestroy
+    fun shutdown() {
+        val projectId = ProxyEnv.getProjectId()
+        val name = ProxyEnv.getName()
+        val secretKey = ProxyEnv.getSecretKey()
+        val ticket = proxyAuthClient.ticket(projectId, name).data!!
+        val shutdownRequest = ProxyStatusRequest(
+            projectId = projectId,
+            name = name,
+            message = AESUtils.encrypt("$name:shutdown:$ticket", secretKey)
+        )
+        proxyAuthClient.shutdown(shutdownRequest)
+        logger.info("shutdown")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProxyShutdownRunner::class.java)
+    }
 }

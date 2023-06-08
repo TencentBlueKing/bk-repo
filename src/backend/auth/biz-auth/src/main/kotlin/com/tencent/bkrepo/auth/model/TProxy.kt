@@ -25,20 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.auth.model
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.Instant
+import java.time.LocalDateTime
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
-
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
-}
+@Document("proxy")
+data class TProxy(
+    var id: String? = null,
+    var name: String,
+    var displayName: String,
+    var projectId: String,
+    var clusterName: String,
+    var ip: String,
+    var secretKey: String,
+    var sessionKey: String,
+    var ticket: Int,
+    var ticketCreateInstant: Instant,
+    var status: ProxyStatus,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var heartbeatTime: LocalDateTime? = null
+)

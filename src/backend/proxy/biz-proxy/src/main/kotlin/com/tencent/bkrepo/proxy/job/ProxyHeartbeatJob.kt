@@ -25,20 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.crypto
+package com.tencent.bkrepo.proxy.job
 
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.security.util.RsaUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
+import com.tencent.bkrepo.proxy.util.ProxyEnv
+import com.tencent.bkrepo.proxy.util.SessionKeyHolder
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 
-@Configuration
-@EnableConfigurationProperties(CryptoProperties::class)
-class CryptoConfiguration {
-    @Bean
-    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
+@Component
+class ProxyHeartbeatJob(
+    private val proxyAuthClient: ProxyAuthClient
+) {
 
-    @Bean
-    fun aesUtils(cryptoProperties: CryptoProperties) = AESUtils(cryptoProperties)
+    @Scheduled(fixedRate = 100000)
+    fun heartbeat() {
+        try {
+            SessionKeyHolder.getSessionKey()
+        } catch (_: RuntimeException) {
+            return
+        }
+        val projectId = ProxyEnv.getProjectId()
+        val name = ProxyEnv.getName()
+        proxyAuthClient.heartbeat(projectId, name)
+    }
 }
