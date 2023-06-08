@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageServiceTest.Companion.buildCreateRequest
 import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.service.packages.StageService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -76,6 +77,9 @@ class StageServiceTest @Autowired constructor(
 
     @MockBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
+
+    @MockBean
+    private lateinit var repositoryService: RepositoryService
 
     @BeforeAll
     fun beforeAll() {
