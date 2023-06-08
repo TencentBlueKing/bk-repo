@@ -79,7 +79,7 @@ class MavenVirtualRepository : VirtualRepository() {
             }
         }
         // 上传版本时请求包级别元数据及其摘要, 从默认部署仓库返回
-        if ((context.artifactInfo as MavenArtifactInfo).isMetadata()) {
+        if ((context.artifactInfo as MavenArtifactInfo).isAboutPackageMetadata()) {
             val deploymentRepo = (context.repositoryDetail.configuration as VirtualConfiguration).deploymentRepo
             if (!deploymentRepo.isNullOrBlank()) {
                 repositoryClient.getRepoDetail(context.projectId, deploymentRepo).data?.let {

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.maven.constants.PACKAGE_METADATA_AND_CHECKSUM_REGEX
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import java.util.regex.Pattern
 
@@ -69,9 +70,9 @@ class MavenArtifactInfo(
         return hasGroupId() && hasArtifactId() && hasVersion()
     }
 
-    fun isMetadata(): Boolean {
+    fun isAboutPackageMetadata(): Boolean {
         val filename = this.getArtifactFullPath().split("/").last()
-        return Pattern.matches("^maven-metadata\\.xml(\\.([a-z0-9]+))*", filename)
+        return Pattern.matches(PACKAGE_METADATA_AND_CHECKSUM_REGEX, filename)
     }
 
     fun isSnapshot(): Boolean {

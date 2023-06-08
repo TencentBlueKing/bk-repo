@@ -86,7 +86,7 @@ class MavenRemoteRepository(
      * 如果远程下载失败则改为使用缓存
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return if ((context.artifactInfo as MavenArtifactInfo).isMetadata()) {
+        return if ((context.artifactInfo as MavenArtifactInfo).isAboutPackageMetadata()) {
             val remoteConfiguration = context.getRemoteConfiguration()
             val httpClient = createHttpClient(remoteConfiguration)
             val downloadUrl = createRemoteDownloadUrl(context)
