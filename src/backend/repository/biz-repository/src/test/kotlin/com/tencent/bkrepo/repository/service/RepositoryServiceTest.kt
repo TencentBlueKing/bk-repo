@@ -53,6 +53,7 @@ import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRe
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
@@ -131,7 +132,7 @@ class RepositoryServiceTest @Autowired constructor(
         val size = 51L
         repeat(size.toInt()) { repositoryService.createRepo(createRequest("repo$it")) }
         // 兼容性测试
-        var page = repositoryService.listRepoPage(UT_PROJECT_ID, 0, 10)
+        var page = repositoryService.listRepoPage(UT_PROJECT_ID, 0, 10, RepoListOption())
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -139,14 +140,14 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(1, page.pageNumber)
 
         // 测试第一页
-        page = repositoryService.listRepoPage(UT_PROJECT_ID, 1, 10)
+        page = repositoryService.listRepoPage(UT_PROJECT_ID, 1, 10, RepoListOption())
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(1, page.pageNumber)
 
-        page = repositoryService.listRepoPage(UT_PROJECT_ID, 6, 10)
+        page = repositoryService.listRepoPage(UT_PROJECT_ID, 6, 10, RepoListOption())
         assertEquals(1, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -154,7 +155,7 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(6, page.pageNumber)
 
         // 测试空页码
-        page = repositoryService.listRepoPage(UT_PROJECT_ID, 7, 10)
+        page = repositoryService.listRepoPage(UT_PROJECT_ID, 7, 10, RepoListOption())
         assertEquals(0, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
