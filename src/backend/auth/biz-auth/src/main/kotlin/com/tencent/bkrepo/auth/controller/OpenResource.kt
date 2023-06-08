@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -53,6 +54,20 @@ open class OpenResource(private val permissionService: PermissionService) {
             logger.warn("user not match [$userContext, $userId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
+    }
+
+    /**
+     *  userId's assetUsers contain userContext or userContext be admin
+     */
+    fun preCheckUserOrAssetUser(userId: String, users:List<UserInfo>) {
+        val userContext = SecurityUtils.getUserId()
+            if (!SecurityUtils.isAdmin()
+                && userContext.isNotEmpty()
+                && !users.any { userInfo -> userInfo.userId.equals(userId) }
+            ) {
+                logger.warn("user and it's asstUsers not match userContext  [$userContext, $userId]")
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+            }
     }
 
     /**
