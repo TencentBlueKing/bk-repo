@@ -1,6 +1,10 @@
 spring:
   application:
     name: proxy
+  cloud:
+    consul:
+      discovery:
+        enabled: false
 
 server:
   port: 80

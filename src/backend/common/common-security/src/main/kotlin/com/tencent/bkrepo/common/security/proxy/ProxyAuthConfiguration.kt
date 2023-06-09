@@ -27,39 +27,21 @@
 
 package com.tencent.bkrepo.common.security.proxy
 
-import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.service.ServiceAuthManager
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import feign.RequestInterceptor
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 @EnableConfigurationProperties(ProxyAuthProperties::class)
-@Import(ServiceAuthManager::class)
-class ProxyAuthConfiguration {
-
-    @Bean
-    fun proxyRequestInterceptor(): RequestInterceptor {
-        return RequestInterceptor { requestTemplate ->
-            HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let {
-                requestTemplate.header(MS_AUTH_HEADER_UID, it.toString())
-            } ?: requestTemplate.header(MS_AUTH_HEADER_UID, SYSTEM_USER)
-        }
-    }
+class ProxyAuthConfiguration{
 
     @Bean
     fun proxyAuthInterceptor(
-        serviceAuthManager: ServiceAuthManager,
         proxyAuthProperties: ProxyAuthProperties
     ): ProxyAuthInterceptor {
-        return ProxyAuthInterceptor(serviceAuthManager, proxyAuthProperties)
+        return ProxyAuthInterceptor(proxyAuthProperties)
     }
 
     @Bean
@@ -68,7 +50,7 @@ class ProxyAuthConfiguration {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 registry.addInterceptor(proxyAuthInterceptor)
                     .addPathPatterns(listOf("/proxy/**"))
-                    .excludePathPatterns(listOf("/proxy/auth/**"))
+                    .excludePathPatterns(listOf("/proxy/auth/ticket/**","/proxy/auth/startup","/proxy/auth/shutdown"))
                 super.addInterceptors(registry)
             }
         }

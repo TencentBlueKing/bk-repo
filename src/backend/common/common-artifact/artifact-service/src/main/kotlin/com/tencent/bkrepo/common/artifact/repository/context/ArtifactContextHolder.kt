@@ -47,22 +47,28 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
+import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.core.env.Environment
+import org.springframework.core.env.get
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
-@Suppress("LateinitUsage") // 静态成员通过init构造函数初始化
+@Suppress("LateinitUsage", "LongParameterList", "TooManyFunctions") // 静态成员通过init构造函数初始化
 class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
     repositoryClient: RepositoryClient,
     nodeClient: NodeClient,
+    environment: Environment,
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 ) {
 
@@ -72,6 +78,7 @@ class ArtifactContextHolder(
         Companion.repositoryClient = repositoryClient
         Companion.nodeClient = nodeClient
         Companion.httpAuthSecurity = httpAuthSecurity
+        Companion.environment = environment
         require(artifactConfigurers.isNotEmpty()) { "No ArtifactConfigurer found!" }
         artifactConfigurers.forEach {
             artifactConfigurerMap[it.getRepositoryType()] = it
@@ -83,7 +90,14 @@ class ArtifactContextHolder(
         private lateinit var compositeRepository: CompositeRepository
         private lateinit var repositoryClient: RepositoryClient
         private lateinit var nodeClient: NodeClient
+
+
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
+        private lateinit var environment: Environment
+
+        private val proxyRepositoryClient: ProxyRepositoryClient
+            by lazy { ProxyFeignClientFactory.create("repository") }
+        private val proxyNodeClient: ProxyNodeClient by lazy { ProxyFeignClientFactory.create("repository") }
 
         private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
         private val repositoryDetailCache = CacheBuilder.newBuilder()
@@ -233,8 +247,8 @@ class ArtifactContextHolder(
         private fun queryRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
                 val repoType = getCurrentArtifactConfigurer().getRepositoryType().name
-                val response = repositoryClient.getRepoDetail(projectId, repoName, repoType)
-                return response.data ?: queryRepoDetailFormExtraRepoType(projectId, repoName)
+                return getRepositoryDetailOrNull(projectId, repoName, repoType)
+                    ?: queryRepoDetailFormExtraRepoType(projectId, repoName)
             }
         }
 
@@ -246,7 +260,7 @@ class ArtifactContextHolder(
             val repoTypeList = getCurrentArtifactConfigurer().getRepositoryTypes()
             var otherRepo: RepositoryDetail? = null
             repoTypeList.forEach {
-                val repo = repositoryClient.getRepoDetail(projectId, repoName, it.name).data
+                val repo = getRepositoryDetailOrNull(projectId, repoName, it.name)
                 if (repo != null) {
                     otherRepo = repo
                     return@forEach
@@ -264,13 +278,35 @@ class ArtifactContextHolder(
             }
 
             val artifactInfo = getArtifactInfo(request) ?: return null
-            val nodeDetail = nodeClient.getNodeDetail(
+            val nodeDetail = getNodeDetailOrNull(
                 projectId = projectId ?: artifactInfo.projectId,
                 repoName = repoName ?: artifactInfo.repoName,
                 fullPath = fullPath ?: artifactInfo.getArtifactFullPath()
-            ).data
+            )
             nodeDetail?.let { request.setAttribute(NODE_DETAIL_KEY, nodeDetail) }
             return nodeDetail
+        }
+
+        private fun getRepositoryDetailOrNull(
+            projectId: String,
+            repoName: String,
+            repoType: String
+        ): RepositoryDetail? {
+            val applicationName = environment["spring.application.name"]
+            return if (applicationName != "proxy") {
+                repositoryClient.getRepoDetail(projectId, repoName, repoType).data
+            } else {
+                proxyRepositoryClient.getRepoDetail(projectId, repoName, repoType).data
+            }
+        }
+
+        private fun getNodeDetailOrNull(projectId: String, repoName: String, fullPath: String): NodeDetail? {
+            val applicationName = environment["spring.application.name"]
+            return if (applicationName != "proxy") {
+                nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            } else {
+                proxyNodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            }
         }
     }
 

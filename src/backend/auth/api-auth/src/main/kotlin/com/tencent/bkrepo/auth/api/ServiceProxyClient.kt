@@ -25,29 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.job
+package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
-import com.tencent.bkrepo.common.service.proxy.ProxyEnv
-import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
-import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Component
-class ProxyHeartbeatJob {
+@Api(tags = ["SERVICE_PROXY"], description = "服务Proxy接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceProxyClient")
+@RequestMapping("/service/proxy")
+interface ServiceProxyClient {
 
-    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    @Scheduled(fixedRate = 10000)
-    fun heartbeat() {
-        try {
-            SessionKeyHolder.getSessionKey()
-        } catch (_: RuntimeException) {
-            return
-        }
-        val projectId = ProxyEnv.getProjectId()
-        val name = ProxyEnv.getName()
-        proxyAuthClient.heartbeat(projectId, name)
-    }
+    @ApiOperation("获取Proxy加密存储的密钥")
+    @GetMapping("/key/{projectId}/{name}")
+    fun getEncryptedKey(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<ProxyKey>
 }

@@ -30,8 +30,9 @@ package com.tencent.bkrepo.proxy.job
 import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.proxy.util.ProxyEnv
-import com.tencent.bkrepo.proxy.util.SessionKeyHolder
+import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.Ordered
@@ -42,9 +43,10 @@ import org.springframework.stereotype.Component
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class ProxyStartupRunner(
-    private val proxyAuthClient: ProxyAuthClient
-) : ApplicationRunner {
+class ProxyStartupRunner: ApplicationRunner {
+
+    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
+
     @Retryable(Exception::class, maxAttempts = 3, backoff = Backoff(delay = 5 * 1000, multiplier = 1.0))
     override fun run(args: ApplicationArguments?) {
         val projectId = ProxyEnv.getProjectId()

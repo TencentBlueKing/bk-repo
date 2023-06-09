@@ -25,29 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.job
+package com.tencent.bkrepo.repository.controller.proxy
 
-import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
-import com.tencent.bkrepo.common.service.proxy.ProxyEnv
-import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
-import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.springframework.web.bind.annotation.RestController
 
-@Component
-class ProxyHeartbeatJob {
+@RestController
+class ProxyRepositoryController(
+    private val repositoryService: RepositoryService
+) : ProxyRepositoryClient {
+    override fun getRepoDetail(projectId: String, repoName: String, type: String?): Response<RepositoryDetail?> {
+        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, type))
+    }
 
-    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    @Scheduled(fixedRate = 10000)
-    fun heartbeat() {
-        try {
-            SessionKeyHolder.getSessionKey()
-        } catch (_: RuntimeException) {
-            return
-        }
-        val projectId = ProxyEnv.getProjectId()
-        val name = ProxyEnv.getName()
-        proxyAuthClient.heartbeat(projectId, name)
+    override fun getRepoInfo(projectId: String, repoName: String): Response<RepositoryInfo?> {
+        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, null))
     }
 }

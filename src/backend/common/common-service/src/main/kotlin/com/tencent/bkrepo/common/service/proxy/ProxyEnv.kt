@@ -25,8 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.util
+package com.tencent.bkrepo.common.service.proxy
 
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import org.springframework.core.io.ClassPathResource
 import java.util.Properties
 
@@ -89,7 +90,7 @@ object ProxyEnv {
                 gateway = getProperty(GATEWAY)
             }
         }
-        return gateway!!
+        return UrlFormatter.formatHost(gateway!!)
     }
 
     private fun getProperty(key: String): String {

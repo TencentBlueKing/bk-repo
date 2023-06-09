@@ -25,29 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.job
+package com.tencent.bkrepo.auth.controller.service
 
-import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
-import com.tencent.bkrepo.common.service.proxy.ProxyEnv
-import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
-import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.auth.api.ServiceProxyClient
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
+import com.tencent.bkrepo.auth.service.ProxyService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-@Component
-class ProxyHeartbeatJob {
-
-    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    @Scheduled(fixedRate = 10000)
-    fun heartbeat() {
-        try {
-            SessionKeyHolder.getSessionKey()
-        } catch (_: RuntimeException) {
-            return
-        }
-        val projectId = ProxyEnv.getProjectId()
-        val name = ProxyEnv.getName()
-        proxyAuthClient.heartbeat(projectId, name)
+@RestController
+class ServiceProxyController(
+    private val proxyService: ProxyService
+) : ServiceProxyClient {
+    override fun getEncryptedKey(projectId: String, name: String): Response<ProxyKey> {
+        return ResponseBuilder.success(proxyService.getEncryptedKey(projectId, name))
     }
 }

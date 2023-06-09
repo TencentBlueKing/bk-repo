@@ -25,20 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.util
+package com.tencent.bkrepo.auth.controller.proxy
 
-object SessionKeyHolder {
+import com.tencent.bkrepo.auth.api.proxy.ProxyOauthAuthorizationClient
+import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.service.OauthAuthorizationService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-    private var sessionKey: String = ""
+@RestController
+class ProxyOauthAuthorizationController(
+    private val oauthAuthorizationService: OauthAuthorizationService
+) : ProxyOauthAuthorizationClient {
 
-    fun setSessionKey(key: String) {
-        sessionKey = key
+    override fun getToken(accessToken: String): Response<OauthToken?> {
+        return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
     }
 
-    fun getSessionKey(): String {
-        if (sessionKey.isNotBlank()) {
-            return sessionKey
-        }
-        throw RuntimeException()
+    override fun validateToken(accessToken: String): Response<String?> {
+        return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
     }
 }

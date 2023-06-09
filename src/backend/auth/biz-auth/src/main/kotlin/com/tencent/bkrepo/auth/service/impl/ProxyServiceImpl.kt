@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
@@ -98,6 +99,13 @@ class ProxyServiceImpl(
         val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
         val page = proxyRepository.findByOption(projectId, option)
         return Pages.ofResponse(pageRequest, page.totalElements, page.content.map { it.convert() })
+    }
+
+    override fun getEncryptedKey(projectId: String, name: String): ProxyKey {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
+        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+            ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
+        return ProxyKey(tProxy.secretKey, tProxy.sessionKey)
     }
 
     override fun update(request: ProxyUpdateRequest): ProxyInfo {

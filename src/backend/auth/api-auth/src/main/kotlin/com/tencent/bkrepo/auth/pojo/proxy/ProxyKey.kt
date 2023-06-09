@@ -25,29 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.job
+package com.tencent.bkrepo.auth.pojo.proxy
 
-import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
-import com.tencent.bkrepo.common.service.proxy.ProxyEnv
-import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
-import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
-
-@Component
-class ProxyHeartbeatJob {
-
-    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    @Scheduled(fixedRate = 10000)
-    fun heartbeat() {
-        try {
-            SessionKeyHolder.getSessionKey()
-        } catch (_: RuntimeException) {
-            return
-        }
-        val projectId = ProxyEnv.getProjectId()
-        val name = ProxyEnv.getName()
-        proxyAuthClient.heartbeat(projectId, name)
-    }
-}
+data class ProxyKey(
+    val encSecretKey: String,
+    val encSessionKey: String
+)

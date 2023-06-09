@@ -25,46 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api.proxy
+package com.tencent.bkrepo.repository.api.proxy
 
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["PROXY_USER"], description = "Proxy用户接口")
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyUserClient")
-@RequestMapping("/proxy/user")
-interface ProxyUserClient {
+@Api("仓库服务接口")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyRepositoryClient", primary = false)
+@RequestMapping("/proxy/repo")
+interface ProxyRepositoryClient {
 
-    @ApiOperation("用户info")
-    @GetMapping("/userinfo/{uid}")
-    fun userInfoById(
-        @PathVariable uid: String
-    ): Response<UserInfo?>
+    @ApiOperation("查询仓库详情")
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getRepoDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @RequestParam type: String? = null
+    ): Response<RepositoryDetail?>
 
-    @ApiOperation("校验用户token")
-    @PostMapping("/token")
-    fun checkToken(
-        @ApiParam(value = "用户id")
-        @RequestParam uid: String,
-        @ApiParam(value = "用户token")
-        @RequestParam token: String
-    ): Response<Boolean>
-
-    @ApiOperation("创建用户")
-    @PostMapping("/create")
-    fun createUser(
-        @RequestBody request: CreateUserRequest
-    ): Response<Boolean>
+    @ApiOperation("查询仓库信息")
+    @GetMapping("/info/{projectId}/{repoName}")
+    fun getRepoInfo(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String
+    ): Response<RepositoryInfo?>
 }

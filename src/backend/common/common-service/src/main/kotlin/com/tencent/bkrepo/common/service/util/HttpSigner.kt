@@ -189,4 +189,6 @@ object HttpSigner {
     const val SIGN = "sig"
     const val SIGN_BODY = "sign_body"
     const val TIME_SPLIT = ";"
+    const val PROXY_NAME = "proxy_name"
+    const val PROJECT_ID = "project_id"
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,34 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.manager
+package com.tencent.bkrepo.common.security.manager.proxy
 
-import com.tencent.bkrepo.auth.api.ServiceAccountClient
-import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.auth.api.proxy.ProxyAccountClient
+import com.tencent.bkrepo.auth.api.proxy.ProxyOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 
-@Suppress("SpringJavaInjectionPointsAutowiringInspection")
-open class AuthenticationManager {
-    @Autowired
-    private lateinit var serviceUserClient: ServiceUserClient
-
-    @Autowired
-    private lateinit var serviceAccountClient: ServiceAccountClient
-
-    @Autowired
-    private lateinit var serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
+class ProxyAuthenticationManager : AuthenticationManager() {
+    private val proxyUserClient: ProxyUserClient by lazy { ProxyFeignClientFactory.create("auth") }
+    private val proxyAccountClient: ProxyAccountClient by lazy { ProxyFeignClientFactory.create("auth") }
+    private val proxyOauthAuthorizationClient: ProxyOauthAuthorizationClient
+        by lazy { ProxyFeignClientFactory.create("auth") }
 
     /**
      * 校验普通用户类型账户
      * @throws AuthenticationException 校验失败
      */
-    open fun checkUserAccount(uid: String, token: String): String {
-        val response = serviceUserClient.checkToken(uid, token)
+    override fun checkUserAccount(uid: String, token: String): String {
+        val response = proxyUserClient.checkToken(uid, token)
         return if (response.data == true) uid else throw AuthenticationException("Authorization value check failed")
     }
 
@@ -60,44 +56,43 @@ open class AuthenticationManager {
      * 校验平台账户
      * @throws AuthenticationException 校验失败
      */
-    open fun checkPlatformAccount(accessKey: String, secretKey: String): String {
-        val response = serviceAccountClient.checkAccountCredential(accessKey, secretKey)
+    override fun checkPlatformAccount(accessKey: String, secretKey: String): String {
+        val response = proxyAccountClient.checkAccountCredential(accessKey, secretKey)
         return response.data ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 
     /**
      * 校验Oauth Token
      */
-    open fun checkOauthToken(accessToken: String): String {
-        val response = serviceOauthAuthorizationClient.validateToken(accessToken)
+    override fun checkOauthToken(accessToken: String): String {
+        val response = proxyOauthAuthorizationClient.validateToken(accessToken)
         return response.data ?: throw AuthenticationException("Access token check failed.")
     }
 
     /**
      * 普通用户类型账户
      */
-    open fun createUserAccount(userId: String) {
+    override fun createUserAccount(userId: String) {
         val request = CreateUserRequest(userId = userId, name = userId)
-        serviceUserClient.createUser(request)
+        proxyUserClient.createUser(request)
     }
 
     /**
      * 根据用户id[userId]查询用户信息
      * 当用户不存在时返回`null`
      */
-    open fun findUserAccount(userId: String): UserInfo? {
-        return serviceUserClient.userInfoById(userId).data
+    override fun findUserAccount(userId: String): UserInfo? {
+        return proxyUserClient.userInfoById(userId).data
     }
 
-    open fun findOauthToken(accessToken: String): OauthToken? {
-        return serviceOauthAuthorizationClient.getToken(accessToken).data
+    override fun findOauthToken(accessToken: String): OauthToken? {
+        return proxyOauthAuthorizationClient.getToken(accessToken).data
     }
 
     /**
      * 根据appId和ak查找sk
      * */
-    open fun findSecretKey(appId: String, accessKey: String): String? {
-        return serviceAccountClient.findSecretKey(appId, accessKey).data
+    override fun findSecretKey(appId: String, accessKey: String): String? {
+        return proxyAccountClient.findSecretKey(appId, accessKey).data
     }
-
 }

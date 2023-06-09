@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.auth.controller.proxy
 
 import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -40,5 +41,15 @@ class ProxyUserController(
 ) : ProxyUserClient {
     override fun userInfoById(uid: String): Response<UserInfo?> {
         return ResponseBuilder.success(userService.getUserInfoById(uid))
+    }
+
+    override fun checkToken(uid: String, token: String): Response<Boolean> {
+        userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
+        return ResponseBuilder.success(true)
+    }
+
+    override fun createUser(request: CreateUserRequest): Response<Boolean> {
+        userService.createUser(request)
+        return ResponseBuilder.success(true)
     }
 }

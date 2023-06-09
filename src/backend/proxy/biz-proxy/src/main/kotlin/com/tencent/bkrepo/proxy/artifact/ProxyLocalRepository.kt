@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.constant.BKREPO_META
@@ -48,7 +49,6 @@ import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.net.URLDecoder
 import java.util.Base64
@@ -58,8 +58,7 @@ import javax.servlet.http.HttpServletRequest
 @Component
 class ProxyLocalRepository: LocalRepository() {
 
-    @Autowired
-    private lateinit var proxyNodeClient: ProxyNodeClient
+    private val proxyNodeClient: ProxyNodeClient by lazy { ProxyFeignClientFactory.create("repository") }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
