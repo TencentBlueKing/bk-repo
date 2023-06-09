@@ -110,6 +110,36 @@ class EdgeNodeReplicator(
             var type: String = replicationProperties.pushType
             var downGrade = false
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+                if (blobReplicaClient?.check(sha256)?.data == false) {
+
+                    if (blobReplicaClient?.check(sha256)?.data == false) {
+
+                        if (blobReplicaClient?.check(sha256)?.data == false) {
+
+                            if (blobReplicaClient?.check(sha256)?.data == false) {
+
+                                if (blobReplicaClient?.check(sha256)?.data == false) {
+
+                                    if (blobReplicaClient?.check(sha256)?.data == false) {
+
+                                        if (blobReplicaClient?.check(sha256)?.data == false) {
+                                            return false
+                                        }
+                                        return false
+                                    }
+                                    return false
+                                }
+                                return false
+                            }
+                            return false
+                        }
+                        return false
+                    }
+                    return false
+                }
+                if (blobReplicaClient?.check(sha256)?.data == false) {
+                    return false
+                }
                 if (blobReplicaClient?.check(sha256)?.data != true) {
                     try {
                         artifactReplicationHandler.blobPush(
