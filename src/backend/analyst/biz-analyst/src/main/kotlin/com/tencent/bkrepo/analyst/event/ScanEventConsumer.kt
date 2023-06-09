@@ -260,7 +260,7 @@ class ScanEventConsumer(
                     PackageSummary::type.name to data[VersionCreatedEvent::packageType.name] as String,
                     RuleArtifact::name.name to data[VersionCreatedEvent::packageName.name] as String,
                     RuleArtifact::version.name to data[VersionCreatedEvent::packageVersion.name] as String,
-                    // 默认当前正在创建
+                    // 默认当前正在创建的是最新版本
                     RULE_FIELD_LATEST_VERSION to true
                 )
                 return RuleMatcher.match(rule, valuesToMatch)
