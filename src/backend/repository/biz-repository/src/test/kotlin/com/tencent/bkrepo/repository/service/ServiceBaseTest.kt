@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -55,6 +56,7 @@ import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.dao.ProxyChannelDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -109,6 +111,9 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var messageSupplier: MessageSupplier
 
+    @MockBean
+    lateinit var resourcePermissionListener: ResourcePermissionListener
+
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
@@ -143,6 +148,7 @@ open class ServiceBaseTest {
 
         whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
+        whenever(resourcePermissionListener.handle(any<ProjectCreatedEvent>())).then {}
     }
 
     fun initRepoForUnitTest(
