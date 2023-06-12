@@ -91,17 +91,14 @@
                 focusContent: this.$t('toggle'),
                 direction: this.$route.query.direction || 'DESC',
                 filterProjectList: [],
-                property: ''
+                property: 'createdDate'
             }
         },
         computed: {
             ...mapState(['projectList', 'userList'])
         },
         created () {
-            this.filterProjectList = this.projectList.filter(project => {
-                return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-            }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
-            this.pagination.total = this.projectList.length
+            this.queryProjects()
         },
         methods: {
             ...mapActions([
@@ -146,14 +143,17 @@
                             project.id = project.name
                             project.name = project.displayName
                         })
-                        this.pagination.total = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).length
-                        this.filterProjectList = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+                        this.setPageData(res)
                     }
                 )
+            },
+            setPageData (res) {
+                this.pagination.total = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).length
+                this.filterProjectList = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
             }
         }
     }
