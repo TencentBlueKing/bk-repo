@@ -25,37 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.artifact
+package com.tencent.bkrepo.proxy.artifact.context
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
-import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.proxy.artifact.context.ProxyArtifactClient
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
+import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
-@Configuration
-class ProxyArtifactConfigurer : ArtifactConfigurerSupport() {
+class ProxyArtifactClient : ArtifactClient() {
 
-    @Bean
-    fun proxyArtifactClient(): ArtifactClient {
-        return ProxyArtifactClient()
+    private val proxyRepositoryClient: ProxyRepositoryClient by lazy { ProxyFeignClientFactory.create("repository") }
+    private val proxyNodeClient: ProxyNodeClient by lazy { ProxyFeignClientFactory.create("repository") }
+
+    override fun getNodeDetailOrNull(projectId: String, repoName: String, fullPath: String): NodeDetail? {
+        return proxyNodeClient.getNodeDetail(projectId, repoName, fullPath).data
     }
 
-    override fun getRepositoryType(): RepositoryType = RepositoryType.GENERIC
-
-    override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<ProxyLocalRepository>()
-
-    override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<ProxyRemoteRepository>()
-
-    override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<ProxyVirtualRepository>()
-
-    override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = HttpAuthSecurityCustomizer {
-        it.includePattern("/**")
+    override fun getRepositoryDetailOrNull(projectId: String, repoName: String, repoType: String): RepositoryDetail? {
+        return proxyRepositoryClient.getRepoDetail(projectId, repoName, repoType).data
     }
 }

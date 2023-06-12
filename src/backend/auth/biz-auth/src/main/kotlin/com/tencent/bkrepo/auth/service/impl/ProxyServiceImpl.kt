@@ -48,9 +48,9 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import net.bytebuddy.utility.RandomString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.security.SecureRandom
 import java.time.Instant
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -63,11 +63,11 @@ class ProxyServiceImpl(
     override fun create(request: ProxyCreateRequest): ProxyInfo {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, request.projectId)
         val userId = SecurityUtils.getUserId()
-        var name = RandomString.make(6)
+        var name = randomString(PROXY_NAME_LEN)
         while (checkExist(request.projectId, name)) {
-            name = RandomString.make(6)
+            name = randomString(PROXY_NAME_LEN)
         }
-        val secretKey = AESUtils.encrypt(RandomString.make(32))
+        val secretKey = AESUtils.encrypt(randomString(PROXY_KEY_LEN))
         val tProxy = TProxy(
             name = name,
             displayName = request.displayName,
@@ -76,7 +76,7 @@ class ProxyServiceImpl(
             ip = StringPool.UNKNOWN,
             secretKey = secretKey,
             sessionKey = StringPool.EMPTY,
-            ticket = Random.nextInt(),
+            ticket = secureRandom.nextInt(),
             ticketCreateInstant = Instant.now(),
             createdBy = userId,
             createdDate = LocalDateTime.now(),
@@ -155,7 +155,7 @@ class ProxyServiceImpl(
                 expression = AESUtils.encrypt("$name:$STARTUP_OPERATION:${tProxy.ticket}", secretKey) == message,
                 name = message
             )
-            val sessionKey = AESUtils.encrypt(RandomString.make(32), secretKey)
+            val sessionKey = AESUtils.encrypt(randomString(PROXY_KEY_LEN), secretKey)
             tProxy.status = ProxyStatus.ONLINE
             tProxy.sessionKey = sessionKey
             tProxy.ip = HttpContextHolder.getClientAddress()
@@ -194,7 +194,7 @@ class ProxyServiceImpl(
         return proxyRepository.findByProjectIdAndName(projectId, name) != null
     }
 
-    fun TProxy.convert() = ProxyInfo(
+    private fun TProxy.convert() = ProxyInfo(
         name = name,
         displayName = displayName,
         projectId = projectId,
@@ -203,10 +203,21 @@ class ProxyServiceImpl(
         status = status
     )
 
+    private fun randomString(length: Int): String {
+        val buffer = ByteArray(length / 2)
+        SecureRandom().nextBytes(buffer)
+        return buffer.joinToString("") { String.format("%02x", it) }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ProxyServiceImpl::class.java)
         private const val N_EXPIRED_SEC = 30L
         private const val STARTUP_OPERATION = "startup"
         private const val SHUTDOWN_OPERATION = "shutdown"
+
+        private const val PROXY_NAME_LEN = 10
+        private const val PROXY_KEY_LEN = 32
+
+        private val secureRandom = SecureRandom()
     }
 }

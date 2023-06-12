@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.manager.proxy
+package com.tencent.bkrepo.proxy.security
 
 import com.tencent.bkrepo.auth.api.proxy.ProxyAccountClient
 import com.tencent.bkrepo.auth.api.proxy.ProxyOauthAuthorizationClient

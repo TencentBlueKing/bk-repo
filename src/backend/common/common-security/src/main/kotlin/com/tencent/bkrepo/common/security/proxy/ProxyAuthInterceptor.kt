@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.PROXY_NAME
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.apache.commons.codec.digest.HmacAlgorithms
+import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.AsyncHandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.io.ByteArrayOutputStream
@@ -75,8 +76,10 @@ class ProxyAuthInterceptor(
                     throw AuthenticationException("Invalid signature, server signature string: $signatureStr")
                 }
             } catch (e: RemoteErrorCodeException) {
+                logger.error("proxy auth error: ", e)
                 throw AuthenticationException(e.localizedMessage)
             } catch (e: CryptoException) {
+                logger.error("proxy auth crypto error: ", e)
                 throw AuthenticationException(e.localizedMessage)
             }
         }
@@ -89,5 +92,9 @@ class ProxyAuthInterceptor(
 
     private fun getUrlPath(request: HttpServletRequest): String {
         return request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProxyAuthInterceptor::class.java)
     }
 }

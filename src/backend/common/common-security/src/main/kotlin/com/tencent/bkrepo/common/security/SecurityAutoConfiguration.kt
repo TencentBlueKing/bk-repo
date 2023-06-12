@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
-import com.tencent.bkrepo.common.security.manager.proxy.ProxyAuthenticationManager
 import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
@@ -52,7 +51,6 @@ import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
@@ -127,13 +125,7 @@ class SecurityAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnExpression("'\${spring.application.name}' == 'proxy'")
-    fun proxyAuthenticationManager(): AuthenticationManager {
-        return ProxyAuthenticationManager()
-    }
-
-    @Bean
-    @ConditionalOnExpression("'\${spring.application.name}' != 'proxy'")
+    @ConditionalOnMissingBean
     fun defaultAuthenticationManager(): AuthenticationManager {
         return AuthenticationManager()
     }

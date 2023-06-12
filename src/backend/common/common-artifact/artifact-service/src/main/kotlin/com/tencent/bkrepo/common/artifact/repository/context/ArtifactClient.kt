@@ -25,34 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api.proxy
+package com.tencent.bkrepo.common.artifact.repository.context
 
-import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.beans.factory.annotation.Autowired
 
-@Api(tags = ["PROXY_OAUTHAUTHORIZATION"], description = "Proxy Oauth授权接口")
-@Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyOauthAuthorizationClient")
-@RequestMapping("/proxy/oauth")
-interface ProxyOauthAuthorizationClient {
+@Suppress("SpringJavaInjectionPointsAutowiringInspection")
+open class ArtifactClient {
 
-    @ApiOperation("获取oauth token信息")
-    @GetMapping("/token")
-    fun getToken(
-        @RequestParam accessToken: String
-    ): Response<OauthToken?>
+    @Autowired
+    private lateinit var repositoryClient: RepositoryClient
 
-    @ApiOperation("验证oauth token")
-    @GetMapping("/token/validate")
-    fun validateToken(
-        @RequestParam accessToken: String
-    ): Response<String?>
+    @Autowired
+    private lateinit var nodeClient: NodeClient
+
+    open fun getRepositoryDetailOrNull(
+        projectId: String,
+        repoName: String,
+        repoType: String
+    ): RepositoryDetail? {
+        return repositoryClient.getRepoDetail(projectId, repoName, repoType).data
+    }
+
+    open fun getNodeDetailOrNull(projectId: String, repoName: String, fullPath: String): NodeDetail? {
+        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+    }
 }

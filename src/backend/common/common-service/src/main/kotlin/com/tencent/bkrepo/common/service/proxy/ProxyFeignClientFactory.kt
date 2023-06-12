@@ -53,8 +53,8 @@ object ProxyFeignClientFactory {
     inline fun <reified T> create(serviceName: String): T {
         val gateway = ProxyEnv.getGateway()
 //        val url = FeignClientFactory.normalizeUrl(gateway, serviceName)
-        val url = when(serviceName) {
-            "auth" ->"http://localhost:25902"
+        val url = when (serviceName) {
+            "auth" -> "http://localhost:25902"
             "repository" -> "http://localhost:25901"
             else -> ""
         }
@@ -76,8 +76,6 @@ object ProxyFeignClientFactory {
                 .errorDecoder(SpringContextUtils.getBean())
                 .target(T::class.java, url) as Any
         } as T
-
-
     }
 
     fun createInterceptor(): RequestInterceptor {

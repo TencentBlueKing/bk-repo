@@ -25,34 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api.proxy
+package com.tencent.bkrepo.generic.controller
 
-import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
+import com.tencent.bkrepo.generic.service.ProxyService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
-@Api(tags = ["PROXY_OAUTHAUTHORIZATION"], description = "Proxy Oauth授权接口")
-@Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyOauthAuthorizationClient")
-@RequestMapping("/proxy/oauth")
-interface ProxyOauthAuthorizationClient {
+@RestController
+@RequestMapping("/api/proxy")
+class ProxyController(
+    private val proxyService: ProxyService
+) {
 
-    @ApiOperation("获取oauth token信息")
-    @GetMapping("/token")
-    fun getToken(
-        @RequestParam accessToken: String
-    ): Response<OauthToken?>
-
-    @ApiOperation("验证oauth token")
-    @GetMapping("/token/validate")
-    fun validateToken(
-        @RequestParam accessToken: String
-    ): Response<String?>
+    @GetMapping("/download/{projectId}/{name}/proxy.jar")
+    fun download(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ) {
+        proxyService.download(projectId, name)
+    }
 }
