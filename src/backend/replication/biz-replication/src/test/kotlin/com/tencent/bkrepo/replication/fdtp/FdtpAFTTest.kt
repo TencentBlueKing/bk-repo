@@ -49,6 +49,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.mockkObject
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -61,6 +62,8 @@ import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FdtpAFTTest {
@@ -111,6 +114,11 @@ class FdtpAFTTest {
 
     @BeforeAll
     fun startFdtpServer() {
+        val tracer = mockk<OtelTracer>()
+        mockkObject(SpringContextUtils.Companion)
+        every { SpringContextUtils.getBean<Tracer>() } returns tracer
+        every { tracer.currentSpan() } returns null
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
         server.start()
     }
 

@@ -54,7 +54,6 @@ import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
 @Component
