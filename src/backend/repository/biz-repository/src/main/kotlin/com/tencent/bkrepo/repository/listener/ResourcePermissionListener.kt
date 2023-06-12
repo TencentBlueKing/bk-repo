@@ -34,9 +34,9 @@ package com.tencent.bkrepo.repository.listener
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -54,8 +54,6 @@ class ResourcePermissionListener(
     /**
      * 创建项目时，为当前用户创建对应项目的管理员权限
      */
-    @Async
-    @EventListener(ProjectCreatedEvent::class)
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
