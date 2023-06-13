@@ -42,7 +42,6 @@ enum class RepositoryType {
     PYPI,
     NPM,
     HELM,
-    RDS,
     COMPOSER,
     RPM,
     NUGET,
