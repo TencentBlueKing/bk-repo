@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
@@ -35,11 +37,14 @@ import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.dao.ReplicaNodeDispatchConfigDao
 import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaNodeDispatchConfig
-import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigRequest
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchRuleInfo
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigRequest
 import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.net.URL
 
@@ -48,6 +53,10 @@ class ReplicaNodeDispatchServiceImpl(
     private val replicaNodeDispatchConfigDao: ReplicaNodeDispatchConfigDao,
     private val replicationProperties: ReplicationProperties
 ): ReplicaNodeDispatchService {
+
+
+    @Value(SERVER_HOST)
+    private lateinit var host: String
 
     override fun createReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigRequest) {
         val configs = replicaNodeDispatchConfigDao.findAllByRuleIndexAndRuleTypeAndNodeUrl(
@@ -63,6 +72,16 @@ class ReplicaNodeDispatchServiceImpl(
             }
         }
         replicaNodeDispatchConfigDao.save(config)
+    }
+
+    override fun deleteReplicaNodeDispatchConfig(id: String) {
+        val result = replicaNodeDispatchConfigDao.findById(id)
+        if (result.isPresent) {
+            replicaNodeDispatchConfigDao.deleteById(id)
+        } else {
+            throw ErrorCodeException(ReplicationMessageCode.REPLICA_NODE_DISPATCH_CONFIG_NOT_FOUND, id)
+        }
+        logger.info("delete config for id [$id] success.")
     }
 
     override fun listAllReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo> {
@@ -83,6 +102,11 @@ class ReplicaNodeDispatchServiceImpl(
 
 
     override fun <T> findReplicaClientByTargetHost(url: String, target: Class<T>): T? {
+        // 账户密码没配置时需要降级为本地执行
+        if (replicationProperties.dispatchUser.isNullOrEmpty()
+            || replicationProperties.dispatchPwd.isNullOrEmpty()) {
+            return null
+        }
         val baseUrl = URL(url)
         val ruleInfo = ReplicaNodeDispatchRuleInfo(
             ruleType = OperationType.IN,
@@ -104,6 +128,9 @@ class ReplicaNodeDispatchServiceImpl(
                     }
                 }
             } ?: return null
+            //  当查询到配置为当前机器时直接执行
+            if (selfNode(filterConfig.nodeUrl)) return null
+            logger.info("task will be executed with node ${filterConfig.nodeUrl}")
             val clusterInfo = ClusterInfo(
                 name = filterConfig.nodeUrl,
                 url = filterConfig.nodeUrl,
@@ -112,6 +139,19 @@ class ReplicaNodeDispatchServiceImpl(
             )
             return FeignClientFactory.create(target, clusterInfo, normalizeUrl = false)
         }
+    }
+
+    private fun selfNode(nodeUrl: String): Boolean {
+        if (nodeUrl.contains("$LOCAL_HOST${StringPool.COLON}")) {
+            return true
+        }
+        if (nodeUrl.contains("$LOCAL_HOST_IP${StringPool.COLON}")) {
+            return true
+        }
+        if (nodeUrl.contains("$host${StringPool.COLON}")) {
+            return true
+        }
+        return false
     }
 
     private fun buildRule(ruleInfo: ReplicaNodeDispatchRuleInfo): Rule {
@@ -125,6 +165,10 @@ class ReplicaNodeDispatchServiceImpl(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ReplicaNodeDispatchServiceImpl::class.java)
+        private const val SERVER_HOST = "\${spring.cloud.client.ip-address}"
+        private const val LOCAL_HOST = "localhost"
+        private const val LOCAL_HOST_IP = "127.0.0.1"
 
         fun buildTReplicaNodeDispatchConfig(
             request: ReplicaNodeDispatchConfigRequest
@@ -140,6 +184,7 @@ class ReplicaNodeDispatchServiceImpl(
 
         fun convertTo(config: TReplicaNodeDispatchConfig): ReplicaNodeDispatchConfigInfo {
             return ReplicaNodeDispatchConfigInfo(
+                id = config.id,
                 nodeUrl = config.nodeUrl,
                 ruleIndex = config.ruleIndex,
                 ruleType = config.ruleType,
@@ -147,6 +192,7 @@ class ReplicaNodeDispatchServiceImpl(
                 enable = config.enable
             )
         }
+
     }
 }
 
