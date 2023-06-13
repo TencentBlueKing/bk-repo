@@ -67,7 +67,7 @@ class ClusterArtifactReplicationHandler(
     val listener: ProgressListener
 ) : ArtifactReplicationHandler(localDataManager, replicationProperties) {
 
-
+    //不支持yaml list配置 https://github.com/spring-projects/spring-framework/issues/16381
     @Value("\${replication.chunkedRepos:}")
     private var chunkedRepos: List<String> = emptyList()
 
