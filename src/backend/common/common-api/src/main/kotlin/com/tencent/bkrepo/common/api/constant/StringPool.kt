@@ -59,6 +59,7 @@ object StringPool {
     const val UTF_8 = "UTF-8"
     const val BYTES = "bytes"
     const val NO_CACHE = "no-cache"
+    const val URL_REGEX = "(\\w+):\\/\\/([^/:]+)(:\\d*)?([^# ]*)"
 
     private val alphabet: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
@@ -78,9 +79,11 @@ object StringPool {
 fun String.ensurePrefix(prefix: CharSequence): String {
     return if (startsWith(prefix)) this else StringBuilder(prefix).append(this).toString()
 }
+
 fun String.ensureSuffix(suffix: CharSequence): String {
     return if (endsWith(suffix)) this else this + suffix
 }
+
 fun String.ensurePrefix(prefix: Char) = if (startsWith(prefix)) this else prefix + this
 fun String.ensureSuffix(suffix: Char) = if (endsWith(suffix)) this else this + suffix
 fun String.urlEncode() = URLEncoder.encode(this, StandardCharsets.UTF_8.displayName()).apply {
