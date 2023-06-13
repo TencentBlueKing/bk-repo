@@ -89,5 +89,10 @@ data class ReplicationProperties(
     /**
      * 使用http上传项目
      * */
-    var httpRepos: List<String> = emptyList()
+    var httpRepos: List<String> = emptyList(),
+    /**
+     * 分发任务调度服务器所需账户密码
+     */
+    var dispatchUser: String? = null,
+    var dispatchPwd: String? = null
     )

@@ -35,9 +35,11 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
@@ -65,17 +67,20 @@ import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodePermissionService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService
+import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
+import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
+@RefreshScope
 @Service
 class RemoteNodeServiceImpl(
     private val clusterNodePermissionService: ClusterNodePermissionService,
@@ -84,7 +89,8 @@ class RemoteNodeServiceImpl(
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
-    private val manualReplicaJobExecutor: ManualReplicaJobExecutor
+    private val manualReplicaJobExecutor: ManualReplicaJobExecutor,
+    private val replicaNodeDispatchService: ReplicaNodeDispatchService
 ) : RemoteNodeService {
     private val executors = RunOnceThreadPoolExecutor.instance
     override fun remoteClusterCreate(
@@ -219,12 +225,32 @@ class RemoteNodeServiceImpl(
         remoteClusterCreate(projectId, repoName, RemoteCreateRequest(listOf(taskRequest)))
     }
 
-    override fun executeRunOnceTask(projectId: String, repoName: String, name: String) {
+    override fun executeRunOnceTask(projectId: String, repoName: String, name: String, dispatch: Boolean) {
         val taskDetail = getTaskDetail(projectId, repoName, name)
         if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
-        executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
+        val executeClient = buildExecuteClientClient(taskDetail.task.remoteClusters.first(), dispatch)
+        if (executeClient == null) {
+            executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
+        } else {
+            executeClient.executeRunOnceTask(projectId, repoName, name)
+        }
+    }
+
+
+    private fun buildExecuteClientClient(
+        remoteCluster: ClusterNodeName, dispatch: Boolean
+    ) : ReplicaTaskOperationClient? {
+        return if (dispatch) {
+            val clusterInfo = clusterNodeService.getByClusterId(remoteCluster.id)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, remoteCluster.id)
+            replicaNodeDispatchService.findReplicaClientByTargetHost(
+                clusterInfo.url, ReplicaTaskOperationClient::class.java
+            )
+        } else {
+            null
+        }
     }
 
     override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {
