@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 
 data class ReplicaNodeDispatchConfigInfo(
 
+    var id: String? = null,
     /**
      * 执行具体分发逻辑的服务地址
      */

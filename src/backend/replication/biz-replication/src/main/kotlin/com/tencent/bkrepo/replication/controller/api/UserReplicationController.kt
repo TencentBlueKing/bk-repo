@@ -35,7 +35,9 @@ import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
 import com.tencent.bkrepo.replication.service.ReplicaExtService
 import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import io.swagger.annotations.Api
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -79,6 +81,17 @@ class UserReplicationController(
         @RequestBody request: ReplicaNodeDispatchConfigRequest
     ): Response<Void> {
         replicaNodeDispatchService.createReplicaNodeDispatchConfig(request)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 删除分发任务执行服务器对应调度配置
+     */
+    @DeleteMapping("/dispatch/config/delete/{id}")
+    fun delete(
+        @PathVariable id: String
+    ): Response<Void> {
+        replicaNodeDispatchService.deleteReplicaNodeDispatchConfig(id)
         return ResponseBuilder.success()
     }
 

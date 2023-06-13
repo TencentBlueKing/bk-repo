@@ -231,11 +231,17 @@ class RemoteNodeServiceImpl(
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
         val executeClient = buildExecuteClientClient(taskDetail.task.remoteClusters.first(), dispatch)
-        if (executeClient == null) {
-            executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
-        } else {
-            executeClient.executeRunOnceTask(projectId, repoName, name)
+
+        executeClient?.let{
+            try{
+                executeClient.executeRunOnceTask(projectId, repoName, name)
+                return
+            } catch (e: Exception) {
+                // fegin连不上时需要降级为本地执行
+                logger.warn("Cloud not run task on remote node, will run with current node")
+            }
         }
+        executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
     }
 
 

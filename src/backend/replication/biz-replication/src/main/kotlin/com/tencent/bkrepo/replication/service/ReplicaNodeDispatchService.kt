@@ -43,6 +43,11 @@ interface ReplicaNodeDispatchService {
     fun createReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigRequest)
 
     /**
+     * 删除分发服务器调度配置
+     */
+    fun deleteReplicaNodeDispatchConfig(id: String)
+
+    /**
      * 获取所有分发服务器调度配置
      */
     fun listAllReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo>

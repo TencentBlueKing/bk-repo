@@ -41,5 +41,9 @@ interface ReplicaNodeDispatchConfigDao  : MongoRepository<TReplicaNodeDispatchCo
     fun findAllByRuleIndexAndRuleTypeAndNodeUrl(
         ruleIndex: String, ruleType: OperationType, nodeUrl: String
     ): List<TReplicaNodeDispatchConfig>
+
+    fun deleteByRuleIndexAndRuleTypeAndNodeUrl(
+        ruleIndex: String, ruleType: OperationType, nodeUrl: String
+    )
 }
 
