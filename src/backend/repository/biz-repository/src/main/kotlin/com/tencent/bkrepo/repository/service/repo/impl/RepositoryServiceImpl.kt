@@ -386,7 +386,7 @@ class RepositoryServiceImpl(
             network = remoteUrlRequest.network
         )
         return try {
-            val response = remoteRepository.getResponse(remoteConfiguration)
+            val response = remoteRepository.headRequest(remoteConfiguration)
             val reason = HttpStatus.valueOf(response.code).reasonPhrase
             ConnectionStatusInfo(response.code < HttpStatus.BAD_REQUEST.value, "${response.code} $reason")
         } catch (ignore: SocketTimeoutException) {

@@ -120,12 +120,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     }
 
     /**
-     *  根据远程仓库配置获取响应
+     *  根据远程仓库配置发送HEAD请求
      */
-    fun getResponse(remoteConfiguration: RemoteConfiguration): Response {
+    fun headRequest(remoteConfiguration: RemoteConfiguration): Response {
         with(remoteConfiguration) {
             val httpClient = createHttpClient(remoteConfiguration)
-            val request = Request.Builder().url(url)
+            val request = Request.Builder().head().url(url)
                 .removeHeader(USER_AGENT)
                 .addHeader(USER_AGENT, "${UUID.randomUUID()}")
                 .build()
