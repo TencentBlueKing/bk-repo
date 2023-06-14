@@ -86,7 +86,7 @@ class ResourcePermissionListener(
     }
 
     private fun isNeedLocalPermission(projectId: String): Boolean {
-        if (projectId.startsWith(CODE_PROJECT_PREFIX)) {
+        if (projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(CLOSED_SOURCE_PREFIX)) {
             return false
         }
         return true
@@ -94,5 +94,6 @@ class ResourcePermissionListener(
 
     companion object {
         private const val CODE_PROJECT_PREFIX = "CODE_"
+        private const val CLOSED_SOURCE_PREFIX = "CLOSED_SOURCE_"
     }
 }
