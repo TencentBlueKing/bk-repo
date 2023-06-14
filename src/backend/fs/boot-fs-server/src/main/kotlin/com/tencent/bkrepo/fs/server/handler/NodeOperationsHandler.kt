@@ -147,8 +147,17 @@ class NodeOperationsHandler(
             return ReactiveResponseBuilder.success(attributes)
         }
     }
+
     suspend fun getStat(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
+            if (repoName == "nfs") {
+                val nfsRes = StatResponse(
+                    subNodeCount = 739047,
+                    size = 203100698531,
+                    capacity = -1
+                )
+                return ReactiveResponseBuilder.success(nfsRes)
+            }
             val cacheKey = "$projectId-$repoName-$fullPath"
             var res = statCache.getIfPresent(cacheKey)
             if (res == null) {
