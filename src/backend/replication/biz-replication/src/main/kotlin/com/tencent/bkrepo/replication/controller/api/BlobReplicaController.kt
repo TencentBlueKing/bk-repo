@@ -31,12 +31,13 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.replication.constant.BLOB_CHECK_URI
 import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
 import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
@@ -57,6 +58,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.io.File
 
 /**
  * blob数据同步接口
@@ -84,6 +86,7 @@ class BlobReplicaController(
     fun push(
         @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
+        @RequestParam size: String? = null,
         @RequestParam storageKey: String? = null
     ): Response<Void> {
         logger.info("The file with sha256 [$sha256] will be handled!")
@@ -91,13 +94,21 @@ class BlobReplicaController(
         if (storageService.exist(sha256, credentials)) {
             return ResponseBuilder.success()
         }
-        val artifactFile = ArtifactFileFactory.build(file, credentials)
-        if (artifactFile.getFileSha256() != sha256) {
-            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
+        if (!size.isNullOrEmpty() && size.toLong() != file.size) {
+            throw ErrorCodeException(ArtifactMessageCode.SIZE_CHECK_FAILED, file.size)
         }
+        val artifactFile = buildArtifactFile(file, credentials)
         logger.info("The file with sha256 [$sha256] will be stored!")
         storageService.store(sha256, artifactFile, credentials)
         return ResponseBuilder.success()
+    }
+
+    private fun buildArtifactFile(file: MultipartFile, credentials: StorageCredentials): ArtifactFile {
+        val fileName =  file.originalFilename
+        val filepath: String = credentials.upload.location + "/" + fileName
+        val artifactFile = File(filepath)
+        file.transferTo(artifactFile)
+        return artifactFile.toArtifactFile()
     }
 
     @GetMapping(BLOB_CHECK_URI)

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.fdtp.FdtpAFTClientFactory
@@ -156,6 +157,7 @@ class ClusterArtifactReplicationHandler(
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(FILE, sha256, StreamRequestBody(rateLimitInputStream, size))
+                .addFormDataPart(SIZE, size.toString())
                 .addFormDataPart(SHA256, sha256).apply {
                     storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
                 }.build()
