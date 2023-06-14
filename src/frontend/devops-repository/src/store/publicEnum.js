@@ -157,16 +157,19 @@ export const storeTypeEnum = [
     {
         id: 'local',
         name: 'localStore',
-        icon: 'local-store'
+        icon: 'local-store',
+        info: 'localStoreInfo'
     },
     {
         id: 'remote',
         name: 'remoteStore',
-        icon: 'remote-store'
+        icon: 'remote-store',
+        info: 'remoteStoreInfo'
     },
     {
         id: 'virtual',
         name: 'virtualStore',
-        icon: 'virtual-store'
+        icon: 'virtual-store',
+        info: 'virtualStoreInfo'
     }
 ]
