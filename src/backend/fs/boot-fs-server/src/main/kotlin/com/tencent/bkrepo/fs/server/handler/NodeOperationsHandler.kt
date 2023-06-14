@@ -276,7 +276,7 @@ class NodeOperationsHandler(
     }
 
     private val statCache = CacheBuilder.newBuilder()
-        .maximumSize(1000).expireAfterWrite(Duration.ofMinutes(2)).build<String, StatResponse>()
+        .maximumSize(1000).expireAfterWrite(Duration.ofMinutes(5)).build<String, StatResponse>()
 
     companion object {
         private const val UNKNOWN = -1L
