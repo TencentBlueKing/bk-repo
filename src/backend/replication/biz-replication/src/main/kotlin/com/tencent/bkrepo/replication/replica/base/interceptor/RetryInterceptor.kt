@@ -71,14 +71,18 @@ class RetryInterceptor : Interceptor {
                 logger.warn(
                     "The result of request ${request.url} is failure and error is ${e.message}", e
                 )
+                // 只针对分块上传的所有请求进行重试
+                if (request.header(CHUNKED_UPLOAD) == null) {
+                    enableRetry = false
+                }
                 // 如果第2次重试还是失败，抛出失败异常
-                if (tryCount == 2) throw e
+                if (tryCount == 2 || !enableRetry) throw e
             } finally {
                 // 只针对分块上传的所有请求进行重试
                 if (request.header(CHUNKED_UPLOAD) == null) {
                     enableRetry = false
                 }
-                if (!responseOK && tryCount < 2) {
+                if (!responseOK && tryCount < 2 && enableRetry) {
                     logger.warn(
                         "The result of request ${request.url} is failure and code is ${response?.code}" +
                             ", will retry it - $tryCount"
