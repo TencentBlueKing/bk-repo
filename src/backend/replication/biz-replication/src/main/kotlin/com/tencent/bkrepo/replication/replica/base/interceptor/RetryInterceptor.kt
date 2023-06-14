@@ -42,7 +42,6 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
-import java.net.SocketTimeoutException
 
 /**
  * 只针对分块上传流程中的请求失败进行重试
