@@ -308,7 +308,8 @@
             deleteVersionHandler ({ name: version } = this.currentVersion) {
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('deleteVersionTitle', { version }),
+                    message: this.$t('deleteVersionTitle', { name: '' }),
+                    subMessage: version,
                     confirmFn: () => {
                         return this.deleteVersion({
                             projectId: this.projectId,

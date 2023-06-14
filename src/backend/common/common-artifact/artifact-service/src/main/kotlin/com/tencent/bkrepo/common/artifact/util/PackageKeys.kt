@@ -42,7 +42,6 @@ object PackageKeys {
     private const val DOCKER = "docker"
     private const val NPM = "npm"
     private const val HELM = "helm"
-    private const val RDS = "rds"
     private const val RPM = "rpm"
     private const val PYPI = "pypi"
     private const val COMPOSER = "composer"
@@ -110,14 +109,6 @@ object PackageKeys {
         return ofName(HELM, name)
     }
 
-    /**
-     * 生成rds格式key
-     *
-     * 例子: rds://test
-     */
-    fun ofRds(name: String): String {
-        return ofName(RDS, name)
-    }
 
     /**
      * 生成rpm格式key
@@ -182,15 +173,6 @@ object PackageKeys {
      */
     fun resolveHelm(helmKey: String): String {
         return resolveName(HELM, helmKey)
-    }
-
-    /**
-     * 解析rds格式的key
-     *
-     * 例子: rds://test  ->  test
-     */
-    fun resolveRds(rdsKey: String): String {
-        return resolveName(RDS, rdsKey)
     }
 
     /**
