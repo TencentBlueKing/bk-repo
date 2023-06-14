@@ -22,7 +22,7 @@
                 <template #empty>
                     <empty-data :is-loading="isLoading"></empty-data>
                 </template>
-                <bk-table-column type="selection" width="40"></bk-table-column>
+                <bk-table-column type="selection" width="60"></bk-table-column>
                 <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                     <template #default="{ row }">
                         <span>{{replaceRepoName(row.name)}}</span>
