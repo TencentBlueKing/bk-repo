@@ -35,6 +35,7 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
@@ -208,6 +209,7 @@ abstract class ArtifactReplicationHandler(
                     "${filePushContext.context.localProjectId}|${filePushContext.context.localRepoName}"
                 )
                 .add(SHA256, sha256)
+                .add(SIZE, size.toString())
                 .build()
             val property = RequestProperty(
                 requestBody = patchBody,
