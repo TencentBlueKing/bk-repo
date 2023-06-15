@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -104,11 +105,15 @@ class BlobReplicaController(
     }
 
     private fun buildArtifactFile(file: MultipartFile, credentials: StorageCredentials): ArtifactFile {
-        val fileName =  file.originalFilename
-        val filepath: String = credentials.upload.location + "/" + fileName
-        val artifactFile = File(filepath)
-        file.transferTo(artifactFile)
-        return artifactFile.toArtifactFile()
+        val fileName = file.originalFilename
+        return if (fileName.isNullOrEmpty()) {
+            ArtifactFileFactory.build(file, credentials)
+        } else {
+            val filepath: String = credentials.upload.location + "/" + fileName
+            val artifactFile = File(filepath)
+            file.transferTo(artifactFile)
+            artifactFile.toArtifactFile()
+        }
     }
 
     @GetMapping(BLOB_CHECK_URI)
