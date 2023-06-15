@@ -64,7 +64,7 @@
                     <breadcrumb v-else :list="breadcrumb"></breadcrumb>
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
-                            v-if="multiSelect.length && !$route.path.startsWith('/software')"
+                            v-if="multiSelect.length && !whetherSoftware"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
@@ -146,17 +146,17 @@
                                     ...(!row.metadata.forbidStatus ? [
                                         { clickEvent: () => handlerDownload(row), label: $t('download') },
                                         ...(repoName !== 'pipeline' ? [
-                                            (permission.edit && !$route.path.startsWith('/software')) && { clickEvent: () => renameRes(row), label: $t('rename') },
-                                            (permission.write && !$route.path.startsWith('/software')) && { clickEvent: () => moveRes(row), label: $t('move') },
-                                            (permission.write && !$route.path.startsWith('/software')) && { clickEvent: () => copyRes(row), label: $t('copy') }
+                                            (permission.edit && !whetherSoftware) && { clickEvent: () => renameRes(row), label: $t('rename') },
+                                            (permission.write && !whetherSoftware) && { clickEvent: () => moveRes(row), label: $t('move') },
+                                            (permission.write && !whetherSoftware) && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
-                                            (showRepoScan(row) && !$route.path.startsWith('/software')) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
+                                            (showRepoScan(row) && !whetherSoftware) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
-                                    (!row.folder && !$route.path.startsWith('/software')) && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    (permission.delete && repoName !== 'pipeline' && !$route.path.startsWith('/software')) && { clickEvent: () => deleteRes(row), label: $t('delete') }
+                                    (!row.folder && !whetherSoftware) && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    (permission.delete && repoName !== 'pipeline' && !whetherSoftware) && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
                         </template>
@@ -280,6 +280,10 @@
             },
             searchFileName () {
                 return this.$route.query.fileName
+            },
+            // 是否是 软件源模式
+            whetherSoftware () {
+                return this.$route.path.startsWith('/software')
             }
         },
         watch: {

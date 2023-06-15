@@ -50,8 +50,8 @@
                                         repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
                                         showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
                                     ] : []),
-                                    (!(storeType === 'virtual') && !$route.path.startsWith('/software')) && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    (!(storeType === 'virtual') && permission.delete && !$route.path.startsWith('/software')) && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
+                                    (!(storeType === 'virtual') && !whetherSoftware) && { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    (!(storeType === 'virtual') && permission.delete && !whetherSoftware) && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
                                 ]"></operation-list>
                         </div>
                     </infinite-scroll>
@@ -145,16 +145,20 @@
             storeType () {
                 return this.$route.query.storeType || ''
             },
+            // 是否是 软件源模式
+            whetherSoftware () {
+                return this.$route.path.startsWith('/software')
+            },
             showRepoScan () {
                 // 虚拟仓库屏蔽安全扫描操作
                 // 软件源屏蔽安全扫描操作
                 const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
-                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.whetherSoftware
             },
             showPromotion () {
                 // 远程或虚拟仓库不显示晋级操作
                 // 软件源不显示晋级操作
-                return this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
+                return this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual') && !this.whetherSoftware
             },
             // 虚拟仓库的仓库来源，虚拟仓库时需要更换repoName为此值
             sourceRepoName () {

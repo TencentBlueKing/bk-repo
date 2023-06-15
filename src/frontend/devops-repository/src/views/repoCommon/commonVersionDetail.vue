@@ -232,9 +232,13 @@
                     return target
                 }, {})
             },
+            // 是否是 软件源模式
+            whetherSoftware () {
+                return this.$route.path.startsWith('/software')
+            },
             showRepoScan () {
                 const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
-                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')
+                return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType) && !(this.storeType === 'virtual') && !this.whetherSoftware
             },
             operationBtns () {
                 const basic = this.detail.basic
@@ -242,12 +246,12 @@
                 return [
                     ...(!metadataMap.forbidStatus
                         ? [
-                            (this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')) && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
+                            (this.permission.edit && !(this.storeType === 'remote') && !(this.storeType === 'virtual') && !this.whetherSoftware) && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
                             this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanArtifact') }
                         ]
                         : []),
-                    (!(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')) && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
-                    (this.permission.delete && !(this.storeType === 'virtual') && !this.$route.path.startsWith('/software')) && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
+                    (!(this.storeType === 'virtual') && !this.whetherSoftware) && { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
+                    (this.permission.delete && !(this.storeType === 'virtual') && !this.whetherSoftware) && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             }
         },
