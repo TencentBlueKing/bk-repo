@@ -2,7 +2,7 @@
     <div class="scan-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
             <div class="flex-align-center">
-                <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('create') }}</bk-button>
+                <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('newAnalysis') }}</bk-button>
             </div>
             <div class="flex-align-center">
                 <bk-input
