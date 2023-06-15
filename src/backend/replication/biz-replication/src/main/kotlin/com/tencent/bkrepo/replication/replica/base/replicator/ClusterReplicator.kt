@@ -255,7 +255,7 @@ class ClusterReplicator(
 
     private fun doubleCheck(context: ReplicaContext, sha256: String) {
         var count = 0
-        while (count < DOUBLE_CHECK_COUNT) {
+        while (count < FILE_EXIST_CHECK_RETRY_COUNT) {
             if (context.blobReplicaClient!!.check(sha256, context.remoteRepo?.storageCredentials?.key).data == true){
                 break
             } else {
@@ -311,7 +311,7 @@ class ClusterReplicator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
-        private const val DOUBLE_CHECK_COUNT = 10
+        private const val FILE_EXIST_CHECK_RETRY_COUNT = 10
 
         fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
             return "$projectId/$repoName/${clusterInfo.hashCode()}"
