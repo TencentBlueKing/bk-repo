@@ -39,8 +39,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
-import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -73,7 +73,8 @@ import java.util.regex.Pattern
 @Conditional(DefaultCondition::class)
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
-    private val servicePermissionClient: ServicePermissionClient
+    private val servicePermissionClient: ServicePermissionClient,
+    private val resourcePermissionListener: ResourcePermissionListener
 ) : ProjectService {
 
     override fun getProjectInfo(name: String): ProjectInfo? {
@@ -176,7 +177,7 @@ class ProjectServiceImpl(
             )
             return try {
                 projectDao.insert(project)
-                publishEvent(buildCreatedEvent(request))
+                resourcePermissionListener.handle(buildCreatedEvent(request))
                 logger.info("Create project [$name] success.")
                 convert(project)!!
             } catch (exception: DuplicateKeyException) {

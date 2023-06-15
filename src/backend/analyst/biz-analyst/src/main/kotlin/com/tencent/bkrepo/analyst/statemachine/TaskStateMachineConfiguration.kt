@@ -103,6 +103,8 @@ class TaskStateMachineConfiguration(
             transition(PULLED, PULLED, PULL, subtaskActions)
             transition(PULLED, EXECUTING, EXECUTE, subtaskActions)
             transition(PULLED, CREATED, DISPATCH_FAILED, subtaskActions)
+            // 超过最长允许执行的时间时，可能会从PULLED转移到FAILED状态
+            transition(PULLED, FAILED, SubtaskEvent.FAILED, subtaskActions)
 
             // finished state
             transition(BLOCKED, BLOCK_TIMEOUT, SubtaskEvent.BLOCK_TIMEOUT, subtaskActions)
