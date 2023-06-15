@@ -41,7 +41,7 @@ spec:
             - |
               echo "run do_migrate command";
               # 修改auth链接
-              sed -i 's/bkrepo-auth.service.consul:25902/{{- .Values.gateway.host -}}\/auth/g' *.json
+              sed -i 's/bkrepo.example.com/{{- .Values.gateway.host -}}\/auth/g' *.json
               # 导入模型
               for i in $(find . -name '*.json'|sort)
               do
