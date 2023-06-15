@@ -12,6 +12,7 @@ ALL=1
 GATEWAY=0
 BACKEND=0
 INIT=0
+INIT_RBAC=0
 BUILDPATH=
 SERVICE=
 
@@ -30,6 +31,7 @@ usage () {
             [ --gateway             [可选] 打包gateway镜像 ]
             [ --backend             [可选] 打包backend镜像 ]
             [ --init                [可选] 打包init镜像 ]
+            [ --init-rbac           [可选] 打包init-rbac镜像 ]
             [ -v, --version         [可选] 镜像版本tag, 默认latest ]
             [ -p, --push            [可选] 推送镜像到docker远程仓库，默认不推送 ]
             [ -r, --registry        [可选] docker仓库地址, 默认docker.io ]
@@ -95,6 +97,10 @@ while (( $# > 0 )); do
             ALL=0
             INIT=1
             ;;
+        --init-rbac )
+            ALL=0
+            INIT_RBAC=1
+            ;;
         --help | -h | '-?' )
             usage_and_exit 0
             ;;
@@ -145,4 +151,13 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     cp -rf $ROOT_DIR/support-files/sql/init-data.js $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data-ext.js $tmp_dir/
 fi
+
+# 构建init-rbac镜像
+if [[ $ALL -eq 1 || $INIT_RBAC -eq 1 ]] ; then
+    log "构建init-rbac镜像..."
+    rm -rf $tmp_dir/*
+    mkdir -p $tmp_dir/support-files/bkiam
+    cp -rf $ROOT_DIR/support-files/bkiam/* $tmp_dir/support-files/bkiam
+fi
+
 echo "BUILD SUCCESSFUL!"
