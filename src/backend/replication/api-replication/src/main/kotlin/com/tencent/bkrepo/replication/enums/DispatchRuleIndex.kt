@@ -28,5 +28,7 @@
 package com.tencent.bkrepo.replication.enums
 
 enum class DispatchRuleIndex(val value: String) {
-    RULE_WITH_HOST("host");
+    RULE_WITH_HOST("host"),
+    RULE_WITH_PROJECT("project"),
+    RULE_WITH_SIZE("size");
 }

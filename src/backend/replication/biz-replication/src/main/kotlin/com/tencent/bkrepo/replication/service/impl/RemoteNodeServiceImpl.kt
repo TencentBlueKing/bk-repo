@@ -39,7 +39,6 @@ import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
@@ -225,38 +224,45 @@ class RemoteNodeServiceImpl(
         remoteClusterCreate(projectId, repoName, RemoteCreateRequest(listOf(taskRequest)))
     }
 
+    // dispatch 默认为TRUE, fegin调用时为FALSE，避免feign调用时再次进行配置判断
     override fun executeRunOnceTask(projectId: String, repoName: String, name: String, dispatch: Boolean) {
         val taskDetail = getTaskDetail(projectId, repoName, name)
         if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
-        val executeClient = buildExecuteClientClient(taskDetail.task.remoteClusters.first(), dispatch)
-
-        executeClient?.let{
-            try{
-                executeClient.executeRunOnceTask(projectId, repoName, name)
-                return
-            } catch (e: Exception) {
-                // fegin连不上时需要降级为本地执行
-                logger.warn("Cloud not run task on remote node, will run with current node")
-            }
+        if (dispatch && executeWithRemoteClient(projectId, repoName, name, taskDetail)) {
+            return
         }
         executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
     }
 
 
-    private fun buildExecuteClientClient(
-        remoteCluster: ClusterNodeName, dispatch: Boolean
-    ) : ReplicaTaskOperationClient? {
-        return if (dispatch) {
-            val clusterInfo = clusterNodeService.getByClusterId(remoteCluster.id)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, remoteCluster.id)
-            replicaNodeDispatchService.findReplicaClientByTargetHost(
-                clusterInfo.url, ReplicaTaskOperationClient::class.java
-            )
-        } else {
-            null
+    /**
+     * 执行成功返回true，fegin连不上时需要降级为本地执行，返回false
+     */
+    private fun executeWithRemoteClient(
+        projectId: String, repoName: String, name: String,
+        taskDetail: ReplicaTaskDetail
+    ): Boolean {
+        buildExecuteClientClient(taskDetail)?.let {
+            try{
+                it.executeRunOnceTask(projectId, repoName, name)
+                return true
+            } catch (e: Exception) {
+                // fegin连不上时需要降级为本地执行
+                logger.warn("Cloud not run task on remote node, will run with current node")
+            }
         }
+        return false
+    }
+
+
+    private fun buildExecuteClientClient(
+        taskDetail: ReplicaTaskDetail
+    ) : ReplicaTaskOperationClient? {
+        return replicaNodeDispatchService.findReplicaClient(
+                taskDetail, ReplicaTaskOperationClient::class.java
+            )
     }
 
     override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.replication.service.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -43,6 +42,8 @@ import com.tencent.bkrepo.replication.model.TReplicaNodeDispatchConfig
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
 import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigCreateRequest
 import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigUpdateRequest
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -56,6 +57,7 @@ import java.net.URL
 @Component
 class ReplicaNodeDispatchServiceImpl(
     private val replicaNodeDispatchConfigDao: ReplicaNodeDispatchConfigDao,
+    private val clusterNodeService: ClusterNodeService,
     private val replicationProperties: ReplicationProperties
 ): ReplicaNodeDispatchService {
 
@@ -90,11 +92,37 @@ class ReplicaNodeDispatchServiceImpl(
         }
     }
 
-    override fun <T> findReplicaClientByTargetHost(url: String, target: Class<T>): T? {
+    /**
+     * 读取配置中的字段，然后根据对应字段获取数据然后进行比较
+     */
+    override fun <T> findReplicaClient(taskDetail: ReplicaTaskDetail, target: Class<T>): T? {
         if (!checkProperties()) return null
-        val baseUrl = URL(url)
-        val valuesToMatch = mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host)
-        return findReplicaClientByRuleIndex(valuesToMatch, target)
+        val valuesToMatch = buildValuesToMatch(taskDetail)
+        return findReplicaClientByRule(valuesToMatch, target)
+    }
+
+
+    private fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
+        val valuesToMatch = mutableMapOf<String, Any>()
+        DispatchRuleIndex.values().forEach {
+            when (it) {
+                DispatchRuleIndex.RULE_WITH_HOST -> {
+                    val remoteCluster = taskDetail.task.remoteClusters.first()
+                    val clusterInfo = clusterNodeService.getByClusterId(remoteCluster.id)
+                        ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, remoteCluster.id)
+                    val baseUrl = URL(clusterInfo.url)
+                    valuesToMatch[DispatchRuleIndex.RULE_WITH_HOST.value] = baseUrl.host
+                }
+                DispatchRuleIndex.RULE_WITH_PROJECT -> {
+                    valuesToMatch[DispatchRuleIndex.RULE_WITH_PROJECT.value] = taskDetail.task.projectId
+                }
+                DispatchRuleIndex.RULE_WITH_SIZE -> {
+                    valuesToMatch[DispatchRuleIndex.RULE_WITH_SIZE.value] = taskDetail.task.totalBytes ?: 0
+                }
+                else -> throw UnsupportedOperationException()
+            }
+        }
+        return valuesToMatch
     }
 
 
@@ -109,7 +137,7 @@ class ReplicaNodeDispatchServiceImpl(
         return true
     }
 
-    private fun <T> findReplicaClientByRuleIndex(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
+    private fun <T> findReplicaClientByRule(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
         if (valuesToMatch.isEmpty()) return null
         val filterConfig = listAllReplicaNodeDispatchConfig().firstOrNull {
             RuleMatcher.match(it.rule, valuesToMatch)
@@ -131,12 +159,8 @@ class ReplicaNodeDispatchServiceImpl(
      * localhost:port/127.0.0.1:port/当前节点ip:port
      */
     private fun selfNode(nodeUrl: String): Boolean {
-        if (nodeUrl.contains("$LOCAL_HOST${StringPool.COLON}")
-            || nodeUrl.contains("$LOCAL_HOST_IP${StringPool.COLON}")
-            || nodeUrl.contains("$serverIp${StringPool.COLON}")) {
-            return true
-        }
-        return false
+        val host = URL(nodeUrl).host
+        return listOf(LOCAL_HOST, LOCAL_HOST_IP, serverIp).contains(host)
     }
 
 

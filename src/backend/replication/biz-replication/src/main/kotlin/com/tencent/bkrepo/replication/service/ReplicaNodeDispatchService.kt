@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
 import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigCreateRequest
 import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigUpdateRequest
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 
 /**
  * 分发任务执行服务器对应调度逻辑处理接口
@@ -58,8 +59,8 @@ interface ReplicaNodeDispatchService {
     fun listAllReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo>
 
     /**
-     * 根据分发目标host获取对应的分发调度服务client信息
+     * 根据配置获取对应的分发调度服务client信息
      */
-    fun <T> findReplicaClientByTargetHost(url: String, target: Class<T>): T?
+    fun <T> findReplicaClient(taskDetail: ReplicaTaskDetail, target: Class<T>): T?
 }
 
