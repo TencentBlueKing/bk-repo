@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.fdtp.example.file
 
-import com.barchart.udt.StatusUDT
 import com.tencent.bkrepo.fdtp.FdtpError
 import com.tencent.bkrepo.fdtp.FdtpCodecUtil
 import com.tencent.bkrepo.fdtp.FdtpVersion
@@ -40,11 +39,12 @@ import com.tencent.bkrepo.fdtp.codec.FdtpHeaderFrame
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaderNames
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.fdtp.codec.FdtpStreamFrame
+import com.tencent.bkrepo.udt.StatusUDT
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.channel.udt.nio.NioUdtProvider
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -60,7 +60,7 @@ class FileServerHandler : SimpleChannelInboundHandler<FdtpStreamFrame>() {
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         val socket = NioUdtProvider.socketUDT(ctx.channel())
-        if (socket.status() == StatusUDT.NONEXIST) {
+        if (socket!!.status() == StatusUDT.NONEXIST) {
             logger.info("Peer close connection $socket")
         } else {
             logger.error("exceptionCaught $socket", cause)
