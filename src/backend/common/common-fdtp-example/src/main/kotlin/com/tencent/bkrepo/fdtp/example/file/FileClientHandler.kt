@@ -30,9 +30,9 @@ package com.tencent.bkrepo.fdtp.example.file
 import com.tencent.bkrepo.fdtp.codec.FdtpDataFrame
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaderFrame
 import com.tencent.bkrepo.fdtp.codec.FdtpStreamFrame
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.channel.udt.nio.NioUdtProvider
 import java.math.BigInteger
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
