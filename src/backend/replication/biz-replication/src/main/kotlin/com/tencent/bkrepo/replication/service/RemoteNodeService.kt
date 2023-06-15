@@ -70,7 +70,7 @@ interface RemoteNodeService {
      */
     fun createRunOnceTask(projectId: String, repoName: String, request: RemoteRunOnceTaskCreateRequest)
 
-/**
+    /**
      * 执行一次性执行任务
      */
     fun executeRunOnceTask(projectId: String, repoName: String, name: String, dispatch: Boolean = true)

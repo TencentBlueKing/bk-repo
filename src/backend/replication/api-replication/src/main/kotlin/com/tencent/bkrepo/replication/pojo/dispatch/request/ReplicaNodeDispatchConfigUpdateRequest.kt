@@ -25,24 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.dispatch
+package com.tencent.bkrepo.replication.pojo.dispatch.request
 
-import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
+import com.tencent.bkrepo.common.query.model.Rule
 
-data class ReplicaNodeDispatchRuleInfo(
+data class ReplicaNodeDispatchConfigUpdateRequest(
+    var id: String,
     /**
-     * 配置的规则
+     * 执行具体分发逻辑的服务地址
      */
-    var ruleType: OperationType,
-
-    /**
-     * 配置针对的属性
-     */
-    var ruleIndex: DispatchRuleIndex,
+    var nodeUrl: String,
 
     /**
-     * 配置针对的属性的值
+     * 规则
      */
-    var ruleValue: String
+    var rule: Rule,
+
+    /**
+     * 是否启用
+     */
+    val enable: Boolean
 )

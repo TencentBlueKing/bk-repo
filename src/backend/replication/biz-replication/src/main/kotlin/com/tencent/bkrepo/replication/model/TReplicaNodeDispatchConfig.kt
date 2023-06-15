@@ -27,23 +27,12 @@
 
 package com.tencent.bkrepo.replication.model
 
-import com.tencent.bkrepo.common.query.enums.OperationType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
  * 分发任务执行服务器对应调度配置
  */
 @Document("replica_node_dispatch_config")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "dispatch_config_ind",
-        def =  "{'nodeUrl': 1, 'ruleType': 1, 'ruleIndex': 1}",
-        background = true,
-        unique = true
-    )
-)
 data class TReplicaNodeDispatchConfig(
     var id: String? = null,
 
@@ -55,17 +44,7 @@ data class TReplicaNodeDispatchConfig(
     /**
      * 配置的规则
      */
-    var ruleType: OperationType,
-
-    /**
-     * 配置针对的属性
-     */
-    var ruleIndex: String,
-
-    /**
-     * 配置的value
-     */
-    var value: List<String>,
+    var rule: String,
 
     /**
      * 是否启用

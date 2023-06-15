@@ -27,28 +27,18 @@
 
 package com.tencent.bkrepo.replication.pojo.dispatch.request
 
-import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.Rule
 
-data class ReplicaNodeDispatchConfigRequest(
+data class ReplicaNodeDispatchConfigCreateRequest(
     /**
      * 执行具体分发逻辑的服务地址
      */
     var nodeUrl: String,
 
     /**
-     * 配置的规则
+     * 规则
      */
-    var ruleType: OperationType,
-
-    /**
-     * 配置针对的属性
-     */
-    var ruleIndex: String,
-
-    /**
-     * 配置的value
-     */
-    var value: List<String>,
+    var rule: Rule,
 
     /**
      * 是否启用

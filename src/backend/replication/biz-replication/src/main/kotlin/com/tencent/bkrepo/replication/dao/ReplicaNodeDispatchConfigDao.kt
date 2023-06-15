@@ -27,23 +27,12 @@
 
 package com.tencent.bkrepo.replication.dao
 
-import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.replication.model.TReplicaNodeDispatchConfig
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
 interface ReplicaNodeDispatchConfigDao  : MongoRepository<TReplicaNodeDispatchConfig, String> {
-    fun findAllByRuleIndexAndRuleTypeAndEnable(
-        ruleIndex: String, ruleType: OperationType, enable: Boolean
-    ): List<TReplicaNodeDispatchConfig>
-
-    fun findAllByRuleIndexAndRuleTypeAndNodeUrl(
-        ruleIndex: String, ruleType: OperationType, nodeUrl: String
-    ): List<TReplicaNodeDispatchConfig>
-
-    fun deleteByRuleIndexAndRuleTypeAndNodeUrl(
-        ruleIndex: String, ruleType: OperationType, nodeUrl: String
-    )
+    fun findAllByEnable(enable: Boolean): List<TReplicaNodeDispatchConfig>
 }
 

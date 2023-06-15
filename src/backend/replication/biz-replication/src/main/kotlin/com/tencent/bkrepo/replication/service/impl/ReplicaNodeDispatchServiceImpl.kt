@@ -29,7 +29,8 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -40,14 +41,18 @@ import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaNodeDispatchConfig
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
-import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchRuleInfo
-import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigRequest
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigCreateRequest
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigUpdateRequest
 import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import java.net.URL
 
+/**
+ * 分发任务执行服务器对应调度逻辑处理接口
+ */
 @Component
 class ReplicaNodeDispatchServiceImpl(
     private val replicaNodeDispatchConfigDao: ReplicaNodeDispatchConfigDao,
@@ -56,113 +61,84 @@ class ReplicaNodeDispatchServiceImpl(
 
 
     @Value(SERVER_HOST)
-    private lateinit var host: String
+    private lateinit var serverIp: String
 
-    override fun createReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigRequest) {
-        val configs = replicaNodeDispatchConfigDao.findAllByRuleIndexAndRuleTypeAndNodeUrl(
-            request.ruleIndex, request.ruleType, request.nodeUrl
-        )
-        val config = if (configs.isEmpty()) {
-            buildTReplicaNodeDispatchConfig(request)
-        } else {
-            val config = configs.first()
-            config.apply {
-                value = request.value
-                enable = request.enable
-            }
+    override fun createReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigCreateRequest) {
+        replicaNodeDispatchConfigDao.save(buildTReplicaNodeDispatchConfig(request))
+    }
+
+    override fun updateReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigUpdateRequest) {
+        val config = replicaNodeDispatchConfigDao.findByIdOrNull(request.id)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_NODE_DISPATCH_CONFIG_NOT_FOUND, request.id)
+        config.apply {
+            rule = request.rule.toJsonString()
+            enable = request.enable
         }
         replicaNodeDispatchConfigDao.save(config)
     }
 
     override fun deleteReplicaNodeDispatchConfig(id: String) {
-        val result = replicaNodeDispatchConfigDao.findById(id)
-        if (result.isPresent) {
-            replicaNodeDispatchConfigDao.deleteById(id)
-        } else {
-            throw ErrorCodeException(ReplicationMessageCode.REPLICA_NODE_DISPATCH_CONFIG_NOT_FOUND, id)
-        }
+        replicaNodeDispatchConfigDao.findByIdOrNull(id)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_NODE_DISPATCH_CONFIG_NOT_FOUND, id)
+        replicaNodeDispatchConfigDao.deleteById(id)
         logger.info("delete config for id [$id] success.")
     }
 
     override fun listAllReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo> {
-        return replicaNodeDispatchConfigDao.findAll().map {
+        return replicaNodeDispatchConfigDao.findAllByEnable(true).map {
             convertTo(it)
         }
     }
-
-    override fun getReplicaNodeDispatchConfig(
-        ruleIndex: String, ruleType: OperationType
-    ): List<ReplicaNodeDispatchConfigInfo> {
-        return replicaNodeDispatchConfigDao.findAllByRuleIndexAndRuleTypeAndEnable(
-            ruleIndex, ruleType, true
-        ).map {
-            convertTo(it)
-        }
-    }
-
 
     override fun <T> findReplicaClientByTargetHost(url: String, target: Class<T>): T? {
-        // 账户密码没配置时需要降级为本地执行
+        if (!checkProperties()) return null
+        val baseUrl = URL(url)
+        val valuesToMatch = mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host)
+        return findReplicaClientByRuleIndex(valuesToMatch, target)
+    }
+
+
+    /**
+     * 账户密码没配置时需要降级为本地执行
+     */
+    private fun checkProperties(): Boolean {
         if (replicationProperties.dispatchUser.isNullOrEmpty()
             || replicationProperties.dispatchPwd.isNullOrEmpty()) {
-            return null
+            return false
         }
-        val baseUrl = URL(url)
-        val ruleInfo = ReplicaNodeDispatchRuleInfo(
-            ruleType = OperationType.IN,
-            ruleIndex = DispatchRuleIndex.RULE_WITH_HOST,
-            ruleValue = baseUrl.host
+        return true
+    }
+
+    private fun <T> findReplicaClientByRuleIndex(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
+        if (valuesToMatch.isEmpty()) return null
+        val filterConfig = listAllReplicaNodeDispatchConfig().firstOrNull {
+            RuleMatcher.match(it.rule, valuesToMatch)
+        }?: return null
+        //  当查询到配置为当前机器时直接执行
+        if (selfNode(filterConfig.nodeUrl)) return null
+        logger.info("task will be executed with node ${filterConfig.nodeUrl}")
+        val clusterInfo = ClusterInfo(
+            name = filterConfig.nodeUrl,
+            url = filterConfig.nodeUrl,
+            username = replicationProperties.dispatchUser,
+            password = replicationProperties.dispatchPwd
         )
-        return findReplicaClientByRuleIndex(ruleInfo, target)
+        return FeignClientFactory.create(target, clusterInfo, normalizeUrl = false)
     }
 
-
-    private fun <T> findReplicaClientByRuleIndex(ruleInfo: ReplicaNodeDispatchRuleInfo, target: Class<T>): T? {
-        with(ruleInfo) {
-            val filterConfig = when(ruleIndex) {
-                DispatchRuleIndex.RULE_WITH_HOST -> {
-                    val rule = buildRule(ruleInfo)
-                    val configs = getReplicaNodeDispatchConfig(ruleIndex.value, ruleType)
-                    configs.firstOrNull {
-                        RuleMatcher.match(rule, mapOf(ruleIndex.value to it.value))
-                    }
-                }
-            } ?: return null
-            //  当查询到配置为当前机器时直接执行
-            if (selfNode(filterConfig.nodeUrl)) return null
-            logger.info("task will be executed with node ${filterConfig.nodeUrl}")
-            val clusterInfo = ClusterInfo(
-                name = filterConfig.nodeUrl,
-                url = filterConfig.nodeUrl,
-                username = replicationProperties.dispatchUser,
-                password = replicationProperties.dispatchPwd
-            )
-            return FeignClientFactory.create(target, clusterInfo, normalizeUrl = false)
-        }
-    }
-
+    /**
+     * 判断配置的执行节点是否为本机
+     * localhost:port/127.0.0.1:port/当前节点ip:port
+     */
     private fun selfNode(nodeUrl: String): Boolean {
-        if (nodeUrl.contains("$LOCAL_HOST${StringPool.COLON}")) {
-            return true
-        }
-        if (nodeUrl.contains("$LOCAL_HOST_IP${StringPool.COLON}")) {
-            return true
-        }
-        if (nodeUrl.contains("$host${StringPool.COLON}")) {
+        if (nodeUrl.contains("$LOCAL_HOST${StringPool.COLON}")
+            || nodeUrl.contains("$LOCAL_HOST_IP${StringPool.COLON}")
+            || nodeUrl.contains("$serverIp${StringPool.COLON}")) {
             return true
         }
         return false
     }
 
-    private fun buildRule(ruleInfo: ReplicaNodeDispatchRuleInfo): Rule {
-        with(ruleInfo) {
-            val value: Any = when (ruleType) {
-                OperationType.IN -> listOf(ruleValue)
-                else -> ruleValue
-            }
-            return Rule.QueryRule(ruleIndex.value, value, ruleType)
-        }
-    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaNodeDispatchServiceImpl::class.java)
@@ -171,14 +147,12 @@ class ReplicaNodeDispatchServiceImpl(
         private const val LOCAL_HOST_IP = "127.0.0.1"
 
         fun buildTReplicaNodeDispatchConfig(
-            request: ReplicaNodeDispatchConfigRequest
+            request: ReplicaNodeDispatchConfigCreateRequest
         ): TReplicaNodeDispatchConfig {
             return TReplicaNodeDispatchConfig(
                 nodeUrl = request.nodeUrl,
-                ruleIndex = request.ruleIndex,
-                ruleType = request.ruleType,
-                enable = request.enable,
-                value = request.value
+                rule = request.rule.toJsonString(),
+                enable = request.enable
             )
         }
 
@@ -186,9 +160,7 @@ class ReplicaNodeDispatchServiceImpl(
             return ReplicaNodeDispatchConfigInfo(
                 id = config.id,
                 nodeUrl = config.nodeUrl,
-                ruleIndex = config.ruleIndex,
-                ruleType = config.ruleType,
-                value = config.value,
+                rule = config.rule.readJsonString<Rule>(),
                 enable = config.enable
             )
         }
