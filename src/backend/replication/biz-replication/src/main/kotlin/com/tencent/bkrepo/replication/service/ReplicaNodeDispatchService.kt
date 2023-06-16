@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,32 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.exception
+package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigCreateRequest
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigUpdateRequest
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 
 /**
- * 通用文件错误码
+ * 分发任务执行服务器对应调度逻辑处理接口
  */
-enum class ReplicationMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
-    REMOTE_CLUSTER_CONNECT_ERROR(1, "remote.cluster.connect.error"),
-    REMOTE_CLUSTER_SSL_ERROR(2, "remote.cluster.ssl.error"),
-    TASK_STATUS_INVALID(3, "task.status.invalid"),
-    TASK_ENABLED_FALSE(4, "task.enabled.false"),
-    CLUSTER_NODE_EXISTS(5, "cluster.node.existed"),
-    CLUSTER_NODE_NOT_FOUND(6, "cluster.node.notfound"),
-    SCHEDULED_JOB_LOADING(7, "schedule.job.loading"),
-    TASK_DISABLE_UPDATE(8, "task.disable.update"),
-    CLUSTER_CENTER_NODE_EXISTS(9, "cluster.center.node.existed"),
-    REPLICA_TASK_NOT_FOUND(10, "replica.task.notfound"),
-    REPLICA_ARTIFACT_BROKEN(11, "replica.artifact.broken"),
-    REPLICA_TASK_TIMEOUT(12, "replica.task.timeout"),
-    REPLICA_CLUSTER_NOT_FOUND(13, "replica.cluster.not-found"),
-    REPLICA_TASK_FAILED(14, "replica.task.failed"),
-    REPLICA_NODE_DISPATCH_CONFIG_NOT_FOUND(15, "replica.node.dispatch.config.notfound"),
-    ;
+interface ReplicaNodeDispatchService {
 
-    override fun getBusinessCode() = businessCode
-    override fun getKey() = key
-    override fun getModuleCode() = 3
+
+    /**
+     * 创建分发服务器调度配置
+     */
+    fun createReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigCreateRequest)
+
+    /**
+     * 更新分发服务器调度配置
+     */
+    fun updateReplicaNodeDispatchConfig(request: ReplicaNodeDispatchConfigUpdateRequest)
+
+    /**
+     * 删除分发服务器调度配置
+     */
+    fun deleteReplicaNodeDispatchConfig(id: String)
+
+    /**
+     * 获取所有分发服务器调度配置
+     */
+    fun listAllReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo>
+
+    /**
+     * 根据配置获取对应的分发调度服务client信息
+     */
+    fun <T> findReplicaClient(taskDetail: ReplicaTaskDetail, target: Class<T>): T?
 }
+

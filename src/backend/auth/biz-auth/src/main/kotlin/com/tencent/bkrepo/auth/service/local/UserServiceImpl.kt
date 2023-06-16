@@ -418,6 +418,11 @@ class UserServiceImpl constructor(
         return record != null && !record.group
     }
 
+    override fun getRelatedUserById(asstUser: String, userName: String?): List<UserInfo> {
+        val query = UserQueryHelper.getUserByAsstUsers(asstUser, userName)
+        return mongoTemplate.find(query, TUser::class.java).map { UserRequestUtil.convToUserInfo(it) }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
     }
