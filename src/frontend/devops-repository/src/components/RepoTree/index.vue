@@ -14,7 +14,7 @@
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="mr10 node-text" :title="item.displayName" v-html="importantTransform(item.displayName)"></div>
+                        <div class="mr10 node-text" v-html="importantTransform(item.displayName)"></div>
                     </slot>
                     <div class="mr10 node-operation flex-align-center">
                         <slot name="operation" :item="item"></slot>

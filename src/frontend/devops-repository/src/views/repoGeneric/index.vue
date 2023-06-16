@@ -61,7 +61,7 @@
                         @enter="searchFile"
                         @clear="searchFile">
                     </bk-input>
-                    <breadcrumb v-else :list="breadcrumb"></breadcrumb>
+                    <breadcrumb v-else :list="breadcrumb" omit-middle></breadcrumb>
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
                             v-if="multiSelect.length"
