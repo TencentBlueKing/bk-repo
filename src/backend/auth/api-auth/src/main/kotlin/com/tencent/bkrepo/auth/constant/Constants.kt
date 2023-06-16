@@ -93,6 +93,7 @@ const val AUTH_API_ROLE_SYS_LIST_PREFIX = "api/role/sys/list"
 const val AUTH_API_PERMISSION_LIST_PREFIX = "api/permission/list/inproject"
 const val AUTH_API_PERMISSION_USER_PREFIX = "api/permission/user"
 const val AUTH_API_USER_UPDATE_PREFIX = "api/user/update/info"
+const val AUTH_API_USER_DELETE_PREFIX = "api/user/delete"
 
 const val AUTH_CLUSTER_TOKEN_INFO_PREFIX = "/cluster/temporary/token/info"
 const val AUTH_CLUSTER_TOKEN_DELETE_PREFIX = "/cluster/temporary/token/delete"

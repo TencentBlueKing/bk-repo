@@ -748,5 +748,8 @@
     "portTip": "请填写正确的端口号",
     "lessOneSecondTip": "小于1秒",
     "selectFileTip": "请选择文件",
-    "noProjectData":"无项目数据"
+    "noProjectData":"无项目数据",
+    "relatedUsers":"关联团队用户",
+    "assetUserTip": "请以g_开头",
+    "createGroupToken": "生成令牌"
 }

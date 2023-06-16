@@ -737,5 +737,8 @@
     "portTip": "Please enter the correct port",
     "lessOneSecondTip": "Less than 1 second",
     "selectFileTip": "Please select file",
-    "noProjectData":"No Project Data"
+    "noProjectData":"No Project Data",
+    "relatedUsers":"Related Users",
+    "assetUserTip": "Please start with g_",
+    "createGroupToken": "Create Token"
 }
