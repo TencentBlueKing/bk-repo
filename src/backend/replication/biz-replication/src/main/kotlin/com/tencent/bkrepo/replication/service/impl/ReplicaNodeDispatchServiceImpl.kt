@@ -139,15 +139,16 @@ class ReplicaNodeDispatchServiceImpl(
 
     private fun <T> findReplicaClientByRule(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
         if (valuesToMatch.isEmpty()) return null
-        val filterConfig = listAllReplicaNodeDispatchConfig().firstOrNull {
+        val filterConfigs = listAllReplicaNodeDispatchConfig().filter {
             RuleMatcher.match(it.rule, valuesToMatch)
-        }?: return null
+        }
+        val config = filterConfigs.randomOrNull() ?: return null
         //  当查询到配置为当前机器时直接执行
-        if (selfNode(filterConfig.nodeUrl)) return null
-        logger.info("task will be executed with node ${filterConfig.nodeUrl}")
+        if (selfNode(config.nodeUrl)) return null
+        logger.info("task will be executed with node ${config.nodeUrl}")
         val clusterInfo = ClusterInfo(
-            name = filterConfig.nodeUrl,
-            url = filterConfig.nodeUrl,
+            name = config.nodeUrl,
+            url = config.nodeUrl,
             username = replicationProperties.dispatchUser,
             password = replicationProperties.dispatchPwd
         )
