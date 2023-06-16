@@ -87,7 +87,7 @@ class ReplicaNodeDispatchServiceImpl(
     }
 
     override fun listAllReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo> {
-        return replicaNodeDispatchConfigDao.findAllByEnable(true).map {
+        return replicaNodeDispatchConfigDao.findAll().map {
             convertTo(it)
         }
     }
@@ -139,7 +139,7 @@ class ReplicaNodeDispatchServiceImpl(
 
     private fun <T> findReplicaClientByRule(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
         if (valuesToMatch.isEmpty()) return null
-        val filterConfigs = listAllReplicaNodeDispatchConfig().filter {
+        val filterConfigs = listEnableReplicaNodeDispatchConfig().filter {
             RuleMatcher.match(it.rule, valuesToMatch)
         }
         val config = filterConfigs.randomOrNull() ?: return null
@@ -153,6 +153,13 @@ class ReplicaNodeDispatchServiceImpl(
             password = replicationProperties.dispatchPwd
         )
         return FeignClientFactory.create(target, clusterInfo, normalizeUrl = false)
+    }
+
+
+    private fun listEnableReplicaNodeDispatchConfig(): List<ReplicaNodeDispatchConfigInfo> {
+        return replicaNodeDispatchConfigDao.findAllByEnable(true).map {
+            convertTo(it)
+        }
     }
 
     /**
