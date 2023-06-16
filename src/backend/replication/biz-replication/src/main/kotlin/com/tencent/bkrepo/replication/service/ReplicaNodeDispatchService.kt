@@ -62,5 +62,11 @@ interface ReplicaNodeDispatchService {
      * 根据配置获取对应的分发调度服务client信息
      */
     fun <T> findReplicaClient(taskDetail: ReplicaTaskDetail, target: Class<T>): T?
+
+
+    /**
+     * 根据host读取对应配置的执行client信息
+     */
+    fun <T> findReplicaClientByHost(host: String, target: Class<T>): T?
 }
 

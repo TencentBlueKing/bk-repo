@@ -100,7 +100,11 @@ class ReplicaNodeDispatchServiceImpl(
         val valuesToMatch = buildValuesToMatch(taskDetail)
         return findReplicaClientByRule(valuesToMatch, target)
     }
-
+    override fun <T> findReplicaClientByHost(host: String, target: Class<T>): T? {
+        if (!checkProperties()) return null
+        val baseUrl = URL(host)
+        return findReplicaClientByRule(mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host), target)
+    }
 
     private fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
         val valuesToMatch = mutableMapOf<String, Any>()
