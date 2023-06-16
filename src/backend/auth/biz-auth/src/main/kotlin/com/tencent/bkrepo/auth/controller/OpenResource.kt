@@ -60,14 +60,9 @@ open class OpenResource(private val permissionService: PermissionService) {
      *  userId's assetUsers contain userContext or userContext be admin
      */
     fun preCheckUserOrAssetUser(userId: String, users:List<UserInfo>) {
-        val userContext = SecurityUtils.getUserId()
-            if (!SecurityUtils.isAdmin()
-                && userContext.isNotEmpty()
-                && !users.any { userInfo -> userInfo.userId.equals(userId) }
-            ) {
-                logger.warn("user and it's asstUsers not match userContext  [$userContext, $userId]")
-                throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
-            }
+        if(!users.any { userInfo -> userInfo.userId.equals(userId) }) {
+            preCheckContextUser(userId)
+        }
     }
 
     /**
