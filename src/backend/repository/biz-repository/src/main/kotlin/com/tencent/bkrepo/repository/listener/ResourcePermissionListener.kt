@@ -34,9 +34,9 @@ package com.tencent.bkrepo.repository.listener
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -54,8 +54,6 @@ class ResourcePermissionListener(
     /**
      * 创建项目时，为当前用户创建对应项目的管理员权限
      */
-    @Async
-    @EventListener(ProjectCreatedEvent::class)
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
@@ -88,7 +86,7 @@ class ResourcePermissionListener(
     }
 
     private fun isNeedLocalPermission(projectId: String): Boolean {
-        if (projectId.startsWith(CODE_PROJECT_PREFIX)) {
+        if (projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(CLOSED_SOURCE_PREFIX)) {
             return false
         }
         return true
@@ -96,5 +94,6 @@ class ResourcePermissionListener(
 
     companion object {
         private const val CODE_PROJECT_PREFIX = "CODE_"
+        private const val CLOSED_SOURCE_PREFIX = "CLOSED_SOURCE_"
     }
 }

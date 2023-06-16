@@ -36,7 +36,6 @@
                         <operation-list
                             v-if="item.roadMap === selectedTreeNode.roadMap"
                             :list="[
-                                item.roadMap !== '0' && { clickEvent: () => showDetail(item), label: $t('detail') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => addFolder(item), label: $t('createFolder') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item), label: $t('uploadFile') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item, true), label: $t('uploadFolder') }

@@ -39,7 +39,7 @@ export default {
         )
     },
     // 查询包版本列表
-    getVersionList (_, { projectId, repoName, packageKey, version, current = 1, limit = 10 }) {
+    getVersionList (_, { projectId, repoName, packageKey, version, current = 1, limit = 10, sortProperty = 'createdDate' }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/version/page/${projectId}/${repoName}`,
             {
@@ -47,7 +47,8 @@ export default {
                     pageNumber: current,
                     pageSize: limit,
                     packageKey,
-                    version
+                    version,
+                    sortProperty
                 }
             }
         )
