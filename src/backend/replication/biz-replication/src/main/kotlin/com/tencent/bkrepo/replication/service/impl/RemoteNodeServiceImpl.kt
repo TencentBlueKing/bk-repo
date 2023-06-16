@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -65,17 +66,20 @@ import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodePermissionService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService
+import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
+import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
+@RefreshScope
 @Service
 class RemoteNodeServiceImpl(
     private val clusterNodePermissionService: ClusterNodePermissionService,
@@ -84,7 +88,8 @@ class RemoteNodeServiceImpl(
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
-    private val manualReplicaJobExecutor: ManualReplicaJobExecutor
+    private val manualReplicaJobExecutor: ManualReplicaJobExecutor,
+    private val replicaNodeDispatchService: ReplicaNodeDispatchService
 ) : RemoteNodeService {
     private val executors = RunOnceThreadPoolExecutor.instance
     override fun remoteClusterCreate(
@@ -219,12 +224,45 @@ class RemoteNodeServiceImpl(
         remoteClusterCreate(projectId, repoName, RemoteCreateRequest(listOf(taskRequest)))
     }
 
-    override fun executeRunOnceTask(projectId: String, repoName: String, name: String) {
+    // dispatch 默认为TRUE, fegin调用时为FALSE，避免feign调用时再次进行配置判断
+    override fun executeRunOnceTask(projectId: String, repoName: String, name: String, dispatch: Boolean) {
         val taskDetail = getTaskDetail(projectId, repoName, name)
         if (taskDetail.task.replicaType != ReplicaType.RUN_ONCE) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, name)
         }
+        if (dispatch && executeWithRemoteClient(projectId, repoName, name, taskDetail)) {
+            return
+        }
         executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
+    }
+
+
+    /**
+     * 执行成功返回true，fegin连不上时需要降级为本地执行，返回false
+     */
+    private fun executeWithRemoteClient(
+        projectId: String, repoName: String, name: String,
+        taskDetail: ReplicaTaskDetail
+    ): Boolean {
+        buildExecuteClientClient(taskDetail)?.let {
+            try{
+                it.executeRunOnceTask(projectId, repoName, name)
+                return true
+            } catch (e: Exception) {
+                // fegin连不上时需要降级为本地执行
+                logger.warn("Cloud not run task on remote node, will run with current node")
+            }
+        }
+        return false
+    }
+
+
+    private fun buildExecuteClientClient(
+        taskDetail: ReplicaTaskDetail
+    ) : ReplicaTaskOperationClient? {
+        return replicaNodeDispatchService.findReplicaClient(
+                taskDetail, ReplicaTaskOperationClient::class.java
+            )
     }
 
     override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {
