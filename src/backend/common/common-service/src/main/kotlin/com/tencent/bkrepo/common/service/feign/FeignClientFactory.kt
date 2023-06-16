@@ -83,10 +83,17 @@ object FeignClientFactory {
         target: Class<T>,
         remoteClusterInfo: ClusterInfo,
         serviceName: String? = null,
-        srcClusterName: String? = null
+        srcClusterName: String? = null,
+        normalizeUrl: Boolean = true
     ): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
-        val url = normalizeUrl(remoteClusterInfo.url, serviceName)
+        // normalizeUrl为true时，对配置的url进行服务名添加，
+        // 当为false时，直接使用传入的url，不做任何处理
+        val url = if (normalizeUrl) {
+            normalizeUrl(remoteClusterInfo.url, serviceName)
+        } else {
+            remoteClusterInfo.url
+        }
         return cache.getOrPut(remoteClusterInfo) {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
