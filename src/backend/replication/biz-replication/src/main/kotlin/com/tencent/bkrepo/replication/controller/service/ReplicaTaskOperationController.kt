@@ -38,7 +38,9 @@ import org.springframework.web.bind.annotation.RestController
 class ReplicaTaskOperationController(
     private val remoteNodeService: RemoteNodeService
     ) : ReplicaTaskOperationClient {
-    override fun createRunOnceTask(projectId: String, repoName: String, requests: RemoteRunOnceTaskCreateRequest): Response<Void> {
+    override fun createRunOnceTask(
+        projectId: String, repoName: String, requests: RemoteRunOnceTaskCreateRequest
+    ): Response<Void> {
         remoteNodeService.createRunOnceTask(projectId, repoName, requests, false)
         return ResponseBuilder.success()
     }
