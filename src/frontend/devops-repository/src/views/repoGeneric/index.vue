@@ -245,7 +245,8 @@
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
-                metadataLabelList: []
+                metadataLabelList: [],
+                debounceClickTreeNode: null
             }
         },
         computed: {
@@ -265,14 +266,16 @@
                 let node = this.genericTree
                 const road = this.selectedTreeNode.roadMap.split(',')
                 road.forEach(index => {
-                    breadcrumb.push({
-                        name: node[index].displayName,
-                        value: node[index],
-                        cilckHandler: item => {
-                            this.itemClickHandler(item.value)
-                        }
-                    })
-                    node = node[index].children
+                    if (node[index]) {
+                        breadcrumb.push({
+                            name: node[index].displayName,
+                            value: node[index],
+                            cilckHandler: item => {
+                                this.itemClickHandler(item.value)
+                            }
+                        })
+                        node = node[index].children
+                    }
                 })
                 return breadcrumb
             },
@@ -314,6 +317,7 @@
                     this.itemClickHandler(this.selectedTreeNode)
                 }
             }))
+            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
@@ -479,6 +483,10 @@
             },
             // 树组件选中文件夹
             itemClickHandler (node) {
+                // 添加防抖操作，防止用户在目录树之前一直快速切换，导致前端在某些情况下获取不到相应参数进而导致报错
+                this.debounceClickTreeNode(node)
+            },
+            clickTreeNodeHandler (node) {
                 this.selectedTreeNode = node
 
                 this.handlerPaginationChange()
@@ -584,7 +592,12 @@
                     path: fullPath
                 })
             },
-            refreshNodeChange () {
+            refreshNodeChange (destTreeData) {
+                // 在当前仓库中复制或移动文件夹后需要更新选中目录
+                if (destTreeData?.repoName && destTreeData?.folder && destTreeData?.repoName === this.repoName) {
+                    // 复制或移动之后需要默认选中目标文件夹
+                    this.itemClickHandler(destTreeData)
+                }
                 this.updateGenericTreeNode(this.selectedTreeNode)
                 this.getArtifactories()
             },
@@ -651,20 +664,22 @@
                     }
                 })
             },
-            moveRes ({ name, fullPath }) {
+            moveRes ({ name, fullPath, folder }) {
                 this.$refs.genericTreeDialog.setTreeData({
                     show: true,
                     type: 'move',
                     title: `${this.$t('move')} (${name})`,
-                    path: fullPath
+                    path: fullPath,
+                    folder: folder
                 })
             },
-            copyRes ({ name, fullPath }) {
+            copyRes ({ name, fullPath, folder }) {
                 this.$refs.genericTreeDialog.setTreeData({
                     show: true,
                     type: 'copy',
                     title: `${this.$t('copy')} (${name})`,
-                    path: fullPath
+                    path: fullPath,
+                    folder: folder
                 })
             },
             handlerUpload ({ fullPath }, folder = false) {
