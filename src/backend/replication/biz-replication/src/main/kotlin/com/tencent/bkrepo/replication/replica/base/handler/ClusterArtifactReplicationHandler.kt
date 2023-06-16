@@ -53,10 +53,13 @@ import io.netty.channel.ChannelProgressiveFutureListener
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.stereotype.Component
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
+@RefreshScope
 @Component
 class ClusterArtifactReplicationHandler(
     localDataManager: LocalDataManager,
@@ -65,6 +68,15 @@ class ClusterArtifactReplicationHandler(
     val listener: ProgressListener
 ) : ArtifactReplicationHandler(localDataManager, replicationProperties) {
 
+    //不支持yaml list配置 https://github.com/spring-projects/spring-framework/issues/16381
+    @Value("\${replication.chunkedRepos:}")
+    private var chunkedRepos: List<String> = emptyList()
+
+    @Value("\${replication.fdtpRepos:}")
+    private var fdtpRepos: List<String> = emptyList()
+
+    @Value("\${replication.httpRepos:}")
+    private var httpRepos: List<String> = emptyList()
 
     override fun blobPush(
         filePushContext: FilePushContext,
@@ -92,11 +104,11 @@ class ClusterArtifactReplicationHandler(
         pushType: String, projectId: String, repoName: String, downGrade: Boolean
     ): String {
         if (downGrade) return pushType
-        return if (filterProjectRepo(projectId, repoName, replicationProperties.chunkedRepos)) {
+        return if (filterProjectRepo(projectId, repoName, chunkedRepos)) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value
-        } else if (filterProjectRepo(projectId, repoName, replicationProperties.fdtpRepos)) {
+        } else if (filterProjectRepo(projectId, repoName, fdtpRepos)) {
             return WayOfPushArtifact.PUSH_WITH_FDTP.value
-        } else if (filterProjectRepo(projectId, repoName, replicationProperties.httpRepos)) {
+        } else if (filterProjectRepo(projectId, repoName, httpRepos)) {
             return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
         } else {
             return pushType
