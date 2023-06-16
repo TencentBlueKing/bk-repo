@@ -193,6 +193,7 @@ class OciRegistryRemoteRepository(
         } else {
             token?.let { requestBuilder.header(HttpHeaders.AUTHORIZATION, token) }
         }
+        // 拉取第三方仓库时，默认会返回v1版本的镜像格式
         if (url.contains("/manifests/")) {
             requestBuilder.header(HttpHeaders.ACCEPT, DOCKER_DISTRIBUTION_MANIFEST_V2)
         }
