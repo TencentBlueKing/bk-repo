@@ -29,16 +29,30 @@ package com.tencent.bkrepo.replication.api
 
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ReplicaTaskOperationClient")
 interface ReplicaTaskOperationClient {
+
+    /**
+     * 创建一次性分发任务
+     */
+    @PostMapping("/create/runOnceTask/{projectId}/{repoName}")
+    fun createRunOnceTask(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String,
+        @RequestBody requests: RemoteRunOnceTaskCreateRequest
+    ): Response<Void>
 
     /**
      * 手动调用一次性执行任务
