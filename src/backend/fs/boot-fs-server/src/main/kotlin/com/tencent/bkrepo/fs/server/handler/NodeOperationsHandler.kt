@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
-import com.google.common.cache.CacheBuilder
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
@@ -275,8 +275,8 @@ class NodeOperationsHandler(
         }
     }
 
-    private val statCache = CacheBuilder.newBuilder()
-        .maximumSize(1000).expireAfterWrite(Duration.ofMinutes(5)).build<String, StatResponse>()
+    private val statCache = Caffeine.newBuilder()
+        .maximumSize(1000).expireAfterWrite(Duration.ofDays(1)).build<String, StatResponse>()
 
     companion object {
         private const val UNKNOWN = -1L
