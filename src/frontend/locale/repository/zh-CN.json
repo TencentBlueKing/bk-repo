@@ -751,5 +751,9 @@
     "noProjectData":"无项目数据",
     "relatedUsers":"关联团队用户",
     "assetUserTip": "请以g_开头",
-    "createGroupToken": "生成令牌"
+    "createGroupToken": "生成令牌",
+    "exportReport":"导出报告",
+    "ExportRecordFilter":"导出记录筛选",
+    "scanTime":"扫描时间",
+    "exportReportInfo":"制品扫描记录正在生成报告中，请稍等..."
 }
