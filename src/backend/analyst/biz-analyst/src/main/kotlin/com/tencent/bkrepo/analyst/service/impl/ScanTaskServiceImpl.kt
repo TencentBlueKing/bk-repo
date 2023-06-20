@@ -38,6 +38,9 @@ import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.exception.ScanTaskNotFoundException
+import com.tencent.bkrepo.analyst.model.LeakDetailExport
+import com.tencent.bkrepo.analyst.model.LeakScanPlanExport
+import com.tencent.bkrepo.analyst.model.LicenseScanPlanExport
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.analyst.pojo.request.FileScanResultDetailRequest
@@ -59,6 +62,7 @@ import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.analyst.utils.EasyExcelUtils
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -69,6 +73,7 @@ import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -141,6 +146,41 @@ class ScanTaskServiceImpl(
         return subtasks(request, planArtifactLatestSubScanTaskDao)
     }
 
+    override fun exportScanPlanRecords(request: SubtaskInfoRequest) {
+        logger.info("exportScanPlanRecords request:${request.toJsonString()}")
+        with(request) {
+            if (id == null) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+            }
+            // 方案信息，获取方案名称
+            val scanPlan = scanPlanDao.find(projectId, id!!)
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+
+            val isLicenseScan = scanPlan.type.endsWith("_LICENSE")
+            // 获取任务信息
+            var pageNumber = 1
+            var page = planArtifactLatestSubScanTaskDao.pageBy(request)
+            val dataList = mutableListOf<Any>()
+            while (page.records.isNotEmpty()) {
+                page.records.forEach {
+                    if (isLicenseScan) {
+                        dataList.add(ScanLicenseConverter.convert(it))
+                    } else {
+                        dataList.add(Converter.convertToPlanExport(it))
+                    }
+                }
+                request.pageNumber = ++pageNumber
+                page = planArtifactLatestSubScanTaskDao.pageBy(request)
+            }
+
+            if (isLicenseScan) {
+                EasyExcelUtils.download(dataList, scanPlan.name, LicenseScanPlanExport::class.java)
+            } else {
+                EasyExcelUtils.download(dataList, scanPlan.name, LeakScanPlanExport::class.java)
+            }
+        }
+    }
+
     override fun planArtifactSubtaskOverview(subtaskId: String): SubtaskResultOverview {
         return subtaskOverview(subtaskId, planArtifactLatestSubScanTaskDao)
     }
@@ -203,6 +243,32 @@ class ScanTaskServiceImpl(
             { converter, req -> converter.convertToLoadArguments(req) },
             { converter, report -> converter.convertCveResult(report) }
         ) ?: Pages.buildPage(emptyList(), request.pageSize, request.pageNumber)
+    }
+
+    override fun exportLeakDetail(request: ArtifactVulnerabilityRequest) {
+        with(request) {
+            val subtask = planArtifactLatestSubScanTaskDao.findById(subScanTaskId!!)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+
+            var resultDetailPage = resultDetail(request)
+            var pageNumber = 1
+            val resultList = mutableListOf<ArtifactVulnerabilityInfo>()
+            while (resultDetailPage.records.isNotEmpty()) {
+                resultList.addAll(resultDetailPage.records)
+                resultDetailPage = resultDetail(
+                    ArtifactVulnerabilityRequest(
+                        projectId = projectId,
+                        subScanTaskId = subScanTaskId,
+                        pageNumber = ++pageNumber
+                    )
+                )
+            }
+            val dataList = mutableListOf<LeakDetailExport>()
+            resultList.forEach {
+                dataList.add(Converter.convertToDetailExport(it))
+            }
+            EasyExcelUtils.download(dataList, subtask.artifactName, LeakDetailExport::class.java)
+        }
     }
 
     override fun archiveSubtaskResultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo> {

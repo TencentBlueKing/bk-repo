@@ -193,13 +193,24 @@ object ScanPlanConverter {
     }
 
     fun convert(request: SubtaskInfoRequest): SubtaskInfoRequest {
-        request.highestLeakLevel = request.highestLeakLevel?.let { normalizedLevel(it) }
-        request.startDateTime = request.startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
-        request.endDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
-        if (!request.status.isNullOrEmpty()) {
-            request.subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(request.status!!)).map { it.name }
+        with(request) {
+            highestLeakLevel = highestLeakLevel?.let { normalizedLevel(it) }
+            startDateTime = startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+            endDateTime = endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+            if (!status.isNullOrEmpty()) {
+                subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(status!!)).map { it.name }
+                qualityRedLine = when (status) {
+                    ScanStatus.QUALITY_PASS.name -> true
+                    ScanStatus.QUALITY_UNPASS.name -> false
+                    ScanStatus.UN_QUALITY.name -> {
+                        unQuality = true
+                        null
+                    }
+                    else -> null
+                }
+            }
+            return request
         }
-        return request
     }
 
     fun duration(startDateTime: LocalDateTime?, finishedDateTime: LocalDateTime?): Long {
@@ -272,6 +283,9 @@ object ScanPlanConverter {
             ScanStatus.STOP -> listOf(SubScanTaskStatus.STOPPED)
             ScanStatus.FAILED -> listOf(SubScanTaskStatus.FAILED)
             ScanStatus.SUCCESS -> listOf(SubScanTaskStatus.SUCCESS)
+            ScanStatus.UN_QUALITY,
+            ScanStatus.QUALITY_PASS,
+            ScanStatus.QUALITY_UNPASS -> listOf(SubScanTaskStatus.SUCCESS)
         }
     }
 

@@ -73,9 +73,11 @@ data class SubtaskInfoRequest(
     @ApiModelProperty("制品扫描任务创建时间(截止)")
     var endDateTime: LocalDateTime? = null,
     @ApiModelProperty("页码")
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
     @ApiModelProperty("页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
     @ApiModelProperty("是否通过质量规则")
-    var qualityRedLine: Boolean? = null
+    var qualityRedLine: Boolean? = null,
+    @ApiModelProperty("未设置质量规则")
+    var unQuality: Boolean? = null
 )

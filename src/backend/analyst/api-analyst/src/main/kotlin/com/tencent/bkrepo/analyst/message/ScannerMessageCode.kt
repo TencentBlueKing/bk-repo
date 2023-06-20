@@ -49,7 +49,8 @@ enum class ScannerMessageCode(
     SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_USER("scanner.report.notify.message.trigger.user", 17),
     LICENSE_NOT_FOUND("license.not-found",18),
     SCAN_REPORT_NOTIFY_MESSAGE_LICENSE("scanner.report.notify.message.license",19),
-    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive",20);
+    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive",20),
+    EXPORT_REPORT_FAIL("export.report.fail", 21);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
