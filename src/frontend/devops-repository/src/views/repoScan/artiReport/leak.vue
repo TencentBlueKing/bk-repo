@@ -27,6 +27,7 @@
                 <bk-option :id="false" :name="$t('activeVul')"></bk-option>
             </bk-select>
             <div class="flex-1 flex-end-center">
+                <bk-button class="mr10" theme="default" @click="exportReport">{{$t('exportReport')}}</bk-button>
                 <bk-button theme="default" @click="$emit('rescan')">{{$t('rescan')}}</bk-button>
             </div>
         </div>
@@ -192,6 +193,15 @@
             generateId (len) {
                 const randomArr = window.crypto.getRandomValues(new Uint8Array((len || 40) / 2))
                 return Array.from(randomArr, n => n.toString(16).padStart(2, '0')).join('').toUpperCase()
+            },
+            exportReport () {
+                this.$bkNotify({
+                    title: this.$t('exportLeakReportInfo'),
+                    position: 'bottom-right',
+                    theme: 'success'
+                })
+                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}`
+                window.open(url, '_self')
             }
         }
     }

@@ -755,5 +755,6 @@
     "exportReport":"导出报告",
     "ExportRecordFilter":"导出记录筛选",
     "scanTime":"扫描时间",
-    "exportReportInfo":"制品扫描记录正在生成报告中，请稍等..."
+    "exportReportInfo":"制品扫描记录正在生成报告中，请稍等...",
+    "exportLeakReportInfo":"安全漏洞信息正在生成报告中，请稍等..."
 }
