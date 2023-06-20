@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.common.api.constant.PROXY_HEADER_NAME
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
@@ -60,6 +62,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
@@ -83,6 +86,7 @@ abstract class NodeBaseService(
     open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
+    open val routerControllerClient: RouterControllerClient
 ) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
@@ -196,6 +200,7 @@ abstract class NodeBaseService(
         with(node) {
             if (isGenericRepo(repo)) {
                 publishEvent(buildCreatedEvent(node))
+                createRouter(this)
             }
             reportNode2Bkbase(node)
             val createEnd = System.currentTimeMillis()
@@ -205,6 +210,15 @@ abstract class NodeBaseService(
                 rollbackCreate(parents, node, deletedTime)
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CREATE_TIMEOUT, fullPath)
             }
+        }
+    }
+
+    /**
+     * 创建下载转发路由
+     */
+    private fun createRouter(node: TNode) {
+        HeaderUtils.getHeader(PROXY_HEADER_NAME)?.let {
+            routerControllerClient.addNode(node.projectId, node.repoName, node.fullPath, it)
         }
     }
 

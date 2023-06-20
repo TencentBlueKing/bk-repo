@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.service.proxy
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+
 object SessionKeyHolder {
 
     private var sessionKey: String = ""
@@ -39,6 +42,6 @@ object SessionKeyHolder {
         if (sessionKey.isNotBlank()) {
             return sessionKey
         }
-        throw RuntimeException()
+        throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "sessionKey")
     }
 }

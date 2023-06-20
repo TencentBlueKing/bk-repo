@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.proxy.job
 
 import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
@@ -43,7 +44,7 @@ class ProxyHeartbeatJob {
     fun heartbeat() {
         try {
             SessionKeyHolder.getSessionKey()
-        } catch (_: RuntimeException) {
+        } catch (_: ErrorCodeException) {
             return
         }
         val projectId = ProxyEnv.getProjectId()

@@ -108,6 +108,8 @@ const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
 
 const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"
 
+const val PROXY_HEADER_NAME = "X-BKREPO-PROXY-NAME"
+
 /**
  * 验证是否允许下载时，写入request attributes的key
  */

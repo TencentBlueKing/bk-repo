@@ -30,9 +30,11 @@ package com.tencent.bkrepo.common.service.proxy
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.PROXY_HEADER_NAME
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.urlEncode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -80,6 +82,9 @@ object ProxyFeignClientFactory {
 
     fun createInterceptor(): RequestInterceptor {
         return RequestInterceptor {
+            val projectId = ProxyEnv.getProjectId()
+            val name = ProxyEnv.getName()
+            it.header(PROXY_HEADER_NAME, name)
             HeaderUtils.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.let { lang ->
                 it.header(HttpHeaders.ACCEPT_LANGUAGE, lang)
             }
@@ -87,13 +92,10 @@ object ProxyFeignClientFactory {
                 it.header(MS_AUTH_HEADER_UID, userId.toString())
             } ?: it.header(MS_AUTH_HEADER_UID, "system")
 
-            val projectId = ProxyEnv.getProjectId()
-            val name = ProxyEnv.getName()
-            val clusterName = ProxyEnv.getClusterName()
             val sessionKey: String
             try {
                 sessionKey = SessionKeyHolder.getSessionKey()
-            } catch (e: RuntimeException) {
+            } catch (e: ErrorCodeException) {
                 // 获取不到sessionKey时的请求不需要签名
                 return@RequestInterceptor
             }
