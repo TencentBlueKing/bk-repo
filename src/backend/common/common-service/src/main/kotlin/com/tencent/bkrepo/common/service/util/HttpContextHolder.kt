@@ -66,11 +66,20 @@ object HttpContextHolder {
         } else StringPool.UNKNOWN
     }
 
+    fun getClientAddressFromAttribute(): String {
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        return if (requestAttributes is ServletRequestAttributes) {
+            val request = requestAttributes.request
+            var address = request.getAttribute(CLIENT_ADDRESS)?.toString()
+            if (address.isNullOrBlank()) {
+                address = getClientAddress(request)
+            }
+            return address
+        } else StringPool.UNKNOWN
+    }
+
     fun getClientAddress(request: HttpServletRequest): String {
-        var address = request.getAttribute(CLIENT_ADDRESS)?.toString()
-        if (address.isNullOrBlank()) {
-            address = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
-        }
+        var address = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
         address = if (address.isNullOrBlank()) {
             request.getHeader(HttpHeaders.X_REAL_IP)
         } else {
