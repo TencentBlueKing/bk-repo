@@ -62,6 +62,12 @@ class ProxyAuthInterceptor(
         if (proxyAuthProperties.enabled) {
             val projectId = request.getParameter(PROJECT_ID)
             val name = request.getParameter(PROXY_NAME)
+            if (projectId.isNullOrBlank()) {
+                throw AuthenticationException("miss projectId")
+            }
+            if (name.isNullOrBlank()) {
+                throw AuthenticationException("miss name")
+            }
             try {
                 val proxyKey = serviceProxyClient.getEncryptedKey(projectId, name).data!!
                 val secretKey = AESUtils.decrypt(proxyKey.encSecretKey)

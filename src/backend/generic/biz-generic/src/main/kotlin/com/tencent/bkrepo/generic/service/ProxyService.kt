@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServiceProxyClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.generic.config.GenericProperties
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
 import java.net.URI
@@ -83,7 +85,8 @@ class ProxyService(
             writer.close()
             fs.close()
         } catch (e: Exception) {
-            throw e
+            logger.error("download proxy.jar error: ", e)
+            throw ArtifactNotFoundException("proxy.jar")
         }
         artifactResourceWriter.write(ArtifactResource(
             inputStream = ArtifactInputStream(proxyJar.inputStream(), Range.full(proxyJar.length())),
@@ -92,6 +95,7 @@ class ProxyService(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ProxyService::class.java)
         private const val FORMAT = """
 bkrepo.proxy.project.id=%s
 bkrepo.proxy.name=%s

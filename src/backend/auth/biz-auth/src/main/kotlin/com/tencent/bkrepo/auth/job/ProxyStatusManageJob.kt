@@ -25,58 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.job
 
 import com.tencent.bkrepo.auth.model.TProxy
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageImpl
+import com.tencent.bkrepo.auth.repository.ProxyRepository
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
-@Repository
-class ProxyRepository: SimpleMongoDao<TProxy>() {
-    fun findByProjectIdAndName(projectId: String, name: String): TProxy? {
-        val query = Query(
-            Criteria.where(TProxy::projectId.name).isEqualTo(projectId)
-                .and(TProxy::name.name).isEqualTo(name)
-        )
-        return this.findOne(query)
-    }
+@Component
+class ProxyStatusManageJob(
+    private val proxyRepository: ProxyRepository
+) {
 
-    fun findByOption(projectId: String, option: ProxyListOption): Page<TProxy> {
-        with(option) {
-            val pageable = Pages.ofRequest(pageNumber, pageSize)
-            val query = Query(
-                Criteria.where(TProxy::projectId.name).isEqualTo(projectId)
-                    .apply {
-                        name?.let { and(TProxy::name.name).isEqualTo(name) }
-                        displayName?.let { and(TProxy::displayName.name).isEqualTo(displayName) }
-                    }
-            )
-            val total = count(query)
-            val data = find(query.with(pageable))
-            return PageImpl(data, pageable, total)
+    @Scheduled(cron = "0 */1 * * * ? ")
+    fun checkHeartbeat() {
+        val proxyList = proxyRepository.findStatusNotOffline()
+        proxyList.forEach {
+            if (it.status == ProxyStatus.ONLINE &&
+                it.heartbeatTime?.isBefore(LocalDateTime.now().minusMinutes(1)) == true) {
+                updateStatus(it, ProxyStatus.NETWORK_ERROR)
+            }
+            if (it.status == ProxyStatus.NETWORK_ERROR &&
+                it.heartbeatTime?.isAfter(LocalDateTime.now().minusMinutes(1)) == true) {
+                updateStatus(it, ProxyStatus.ONLINE)
+            }
         }
     }
 
-    fun findStatusNotOffline(): List<TProxy> {
-        val query = Query(
-            Criteria.where(TProxy::status.name).ne(ProxyStatus.OFFLINE)
-        )
-        return find(query)
-    }
 
-    fun deleteByProjectIdAndName(projectId: String, name: String) {
+    private fun updateStatus(proxy: TProxy, status: ProxyStatus) {
         val query = Query(
-            Criteria.where(TProxy::projectId.name).isEqualTo(projectId)
-                .and(TProxy::name.name).isEqualTo(name)
+            Criteria.where(TProxy::projectId.name).isEqualTo(proxy.projectId)
+                .and(TProxy::name.name).isEqualTo(proxy.name)
         )
-        this.remove(query)
+        val update = Update().set(TProxy::status.name, status)
+        proxyRepository.updateFirst(query, update)
     }
 }

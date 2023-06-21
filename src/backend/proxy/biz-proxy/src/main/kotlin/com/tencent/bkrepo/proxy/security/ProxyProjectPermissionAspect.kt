@@ -27,17 +27,34 @@
 
 package com.tencent.bkrepo.proxy.security
 
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.aspectj.lang.ProceedingJoinPoint
+import org.aspectj.lang.annotation.Around
+import org.aspectj.lang.annotation.Aspect
+import org.springframework.web.servlet.HandlerMapping
 
-@Configuration
-@Import(ProxyProjectPermissionAspect::class)
-class ProxySecurityConfiguration {
+/**
+ * 校验上传下载的项目是否和Proxy所属项目一致
+ */
+@Aspect
+class ProxyProjectPermissionAspect {
 
-    @Bean
-    fun proxyAuthenticationManager(): AuthenticationManager {
-        return ProxyAuthenticationManager()
+    @Around(
+        "@within(org.springframework.web.bind.annotation.RestController) " +
+            "|| @annotation(org.springframework.web.bind.annotation.RestController)"
+    )
+    fun checkProject(point: ProceedingJoinPoint): Any? {
+        val request = HttpContextHolder.getRequest()
+        val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
+        require(uriAttribute is Map<*, *>)
+        val projectId = uriAttribute[PROJECT_ID]?.toString()
+        val proxyProjectId = ProxyEnv.getProjectId()
+        if (!projectId.isNullOrBlank() && projectId != proxyProjectId) {
+            throw PermissionException()
+        }
+        return point.proceed()
     }
 }
