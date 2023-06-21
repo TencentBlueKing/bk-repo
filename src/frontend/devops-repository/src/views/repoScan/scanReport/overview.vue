@@ -71,7 +71,7 @@
         },
         data () {
             return {
-                filterTime: [zeroTime(before(30)), nowTime.toDate()],
+                filterTime: [],
                 showExportDialog: false,
                 exportTime: [zeroTime(before(30)), nowTime.toDate()],
                 exportStatus: 'ALL',
