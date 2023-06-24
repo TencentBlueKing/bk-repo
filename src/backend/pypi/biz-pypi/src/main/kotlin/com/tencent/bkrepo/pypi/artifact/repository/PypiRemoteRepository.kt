@@ -33,6 +33,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.USER_AGENT
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -225,7 +226,7 @@ class PypiRemoteRepository : RemoteRepository() {
             val pypiInfo = ArtifactFileUtils.getPypiInfo(fileName, artifactFile)
             context.putAttribute(METADATA, pypiInfo)
         } catch (ignore: Exception) {
-            logger.warn("Cannot resolve pypi package metadata of [$fileName]: ${ignore.stackTraceToString()}")
+            logger.warn("Cannot resolve pypi package metadata of [$fileName]", ignore)
         }
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
@@ -233,6 +234,7 @@ class PypiRemoteRepository : RemoteRepository() {
         return ArtifactResource(
             artifactStream,
             context.artifactInfo.getResponseName(),
+            RepositoryIdentify(context.projectId, context.repoName),
             node,
             ArtifactChannel.PROXY,
             context.useDisposition

@@ -35,8 +35,11 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.constant.NODE_DETAIL_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -51,6 +54,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
@@ -131,7 +135,12 @@ class MavenLocalRepository(
      */
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val request = super.buildNodeCreateRequest(context)
+        val deploymentRepo = if (context.repositoryDetail.category == RepositoryCategory.VIRTUAL) {
+            val repo = repositoryClient.getRepoDetail(context.projectId, context.repoName).data!!
+            (repo.configuration as VirtualConfiguration).deploymentRepo.takeIf { !it.isNullOrEmpty() }
+        } else null
         return request.copy(
+            repoName = deploymentRepo ?: request.repoName,
             overwrite = true,
             nodeMetadata = mavenOperationService.createNodeMetaData(context.getArtifactFile())
         )
@@ -674,7 +683,8 @@ class MavenLocalRepository(
             }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+            val srcRepo = RepositoryIdentify(projectId, repoName)
+            return ArtifactResource(inputStream, responseName, srcRepo, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 
@@ -738,7 +748,7 @@ class MavenLocalRepository(
         checksumType: HashType? = null
     ): NodeDetail? {
         with(context) {
-            var node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
+            var node = ArtifactContextHolder.getNodeDetail(projectId, repoName, fullPath)
             if (node != null || checksumType == null) {
                 return node
             }
@@ -748,11 +758,12 @@ class MavenLocalRepository(
                     "in ${artifactInfo.getRepoIdentify()}"
             )
             val temPath = fullPath.removeSuffix(".${checksumType.ext}")
-            node = ArtifactContextHolder.getNodeDetail(fullPath = temPath)
+            node = ArtifactContextHolder.getNodeDetail(projectId, repoName, temPath)
             // 源文件存在，但是对应checksum文件不存在，需要生成
             if (node != null) {
                 verifyPath(context, temPath, checksumType)
-                node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
+                HttpContextHolder.getRequestOrNull()?.removeAttribute(NODE_DETAIL_KEY)
+                node = ArtifactContextHolder.getNodeDetail(projectId, repoName, fullPath)
             }
             return node
         }
@@ -866,84 +877,28 @@ class MavenLocalRepository(
      * 删除文件，删除对应文件后还需要更新对应的maven-metadata.xml文件, 同时还需要删除对应的metadata记录
      */
     override fun remove(context: ArtifactRemoveContext) {
-        when (context.artifactInfo) {
-            is MavenDeleteArtifactInfo -> {
-                deletePackageOrVersion(
-                    artifactInfo = context.artifactInfo as MavenDeleteArtifactInfo,
-                    userId = context.userId,
-                    storageCredentials = context.storageCredentials
-                )
-            }
-
-            else -> {
-                val fullPath = context.artifactInfo.getArtifactFullPath()
-                val nodeInfo = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
-                    ?: throw MavenArtifactNotFoundException(
-                        MavenMessageCode.MAVEN_ARTIFACT_NOT_FOUND, fullPath, context.artifactInfo.getRepoIdentify()
-                    )
-                if (nodeInfo.folder) {
-                    mavenOperationService.folderRemoveHandler(context, nodeInfo)?.let {
-                        deletePackageOrVersion(
-                            artifactInfo = it,
-                            userId = context.userId,
-                            storageCredentials = context.storageCredentials
-                        )
-                    }
-                } else {
-                    nodeRemoveHandler(context, nodeInfo)
-                }
-            }
-        }
-    }
-
-    /**
-     * 删除package或Version
-     */
-    fun deletePackageOrVersion(
-        artifactInfo: MavenDeleteArtifactInfo,
-        userId: String,
-        storageCredentials: StorageCredentials?
-    ) {
-        with(artifactInfo) {
-            logger.info("Will prepare to delete package [$packageName|$version] in repo ${getRepoIdentify()}")
-            if (version.isBlank()) {
-                mavenOperationService.deletePackage(artifactInfo, userId)
-            } else {
-                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
-                    mavenOperationService.removeVersion(artifactInfo, it, userId)
-                    // 需要更新对应的metadata.xml文件
-                    updatePackageMetadata(
-                        artifactInfo = artifactInfo,
-                        version = version,
-                        storageCredentials = storageCredentials,
-                        userId = userId
-                    )
-                } ?: throw VersionNotFoundException(version)
-            }
-        }
-    }
-
-    /**
-     * 删除节点以及更新对应maven-metadata.xml文件
-     */
-    private fun nodeRemoveHandler(context: ArtifactRemoveContext, node: NodeDetail) {
-        logger.info("Will try to delete node ${node.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}")
-        mavenOperationService.deleteNode(
-            artifactInfo = context.artifactInfo,
-            userId = context.userId
-        )
-        try {
-            node.fullPath.mavenGAVC()
-            // 更新对应的metadata文件
-            verifyMetadataContent(context, node.fullPath)
-            // 更新`/groupId/artifactId/maven-metadata.xml`文件
+        val (artifactInfo, nodeInfo) = mavenOperationService.removeAndCheckIfUpdateMetadata(context)
+        if (artifactInfo == null) return
+        if (nodeInfo == null) {
             updatePackageMetadata(
-                artifactInfo = context.artifactInfo,
-                version = node.name,
+                artifactInfo = artifactInfo,
+                version = (artifactInfo as MavenDeleteArtifactInfo).version,
                 storageCredentials = context.storageCredentials,
                 userId = context.userId
             )
-        } catch (ignore: IndexOutOfBoundsException) {
+        } else {
+            try {
+                nodeInfo.fullPath.mavenGAVC()
+                // 更新对应的metadata文件
+                verifyMetadataContent(context, nodeInfo.fullPath)
+                // 更新`/groupId/artifactId/maven-metadata.xml`文件
+                updatePackageMetadata(
+                    artifactInfo = artifactInfo,
+                    version = nodeInfo.name,
+                    storageCredentials = context.storageCredentials,
+                    userId = context.userId
+                )
+            } catch (ignore: IndexOutOfBoundsException) {}
         }
     }
 

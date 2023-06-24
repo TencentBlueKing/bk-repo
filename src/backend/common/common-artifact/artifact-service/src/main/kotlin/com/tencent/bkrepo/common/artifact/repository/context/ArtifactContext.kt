@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * 构件上下文
@@ -60,9 +61,9 @@ open class ArtifactContext(
     val userId: String = userId
     val artifactInfo: ArtifactInfo = artifact ?: request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
     var repositoryDetail: RepositoryDetail = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
-    var storageCredentials: StorageCredentials? = repositoryDetail.storageCredentials
+    val storageCredentials: StorageCredentials? = repositoryDetail.storageCredentials
     val projectId: String = repositoryDetail.projectId
-    var repoName: String = repositoryDetail.name
+    val repoName: String = repositoryDetail.name
 
     private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
 
@@ -73,6 +74,21 @@ open class ArtifactContext(
     fun copy(repositoryDetail: RepositoryDetail): ArtifactContext {
         val context = this.javaClass.newInstance()
         context.repositoryDetail = repositoryDetail
+        context.contextAttributes = this.contextAttributes
+        return context
+    }
+
+    /**
+     * 使用传入的[repositoryDetail]构造新的[ArtifactContext]实例
+     * [instantiation]: 实例化过程
+     */
+    open fun copyBy(
+        repositoryDetail: RepositoryDetail,
+        instantiation: ((ArtifactInfo) -> ArtifactContext)? = null
+    ): ArtifactContext {
+        val artifactInfo = this.artifactInfo.copy(repositoryDetail.projectId, repositoryDetail.name)
+        val context = instantiation?.invoke(artifactInfo)
+            ?: this::class.primaryConstructor!!.call(repositoryDetail, artifactInfo)
         context.contextAttributes = this.contextAttributes
         return context
     }

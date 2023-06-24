@@ -111,11 +111,12 @@ open class AbstractNpmService {
 		showCustomTarball: Boolean = true
 	): NpmPackageMetaData {
 		val packageFullPath = NpmUtils.getPackageMetadataPath(name)
-		val context = ArtifactQueryContext()
+		val repoDetail = repositoryClient.getRepoDetail(artifactInfo.projectId, artifactInfo.repoName).data!!
+		val context = ArtifactQueryContext(repoDetail, artifactInfo)
 		context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
 		context.putAttribute(REQUEST_URI, name)
 		val inputStream =
-			ArtifactContextHolder.getRepository().query(context) as? InputStream
+			ArtifactContextHolder.getRepository(repoDetail.category).query(context) as? InputStream
 				?: throw NpmArtifactNotFoundException("document not found")
 		val packageMetaData = inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
 		if (showCustomTarball && !showDefaultTarball()) {

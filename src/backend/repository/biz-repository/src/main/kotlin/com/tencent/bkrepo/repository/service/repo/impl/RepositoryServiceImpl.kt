@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -49,7 +50,6 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConf
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualRepositoryMember
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
@@ -675,11 +675,11 @@ class RepositoryServiceImpl(
         projectId: String,
         type: String
     ) {
-        with (configuration) {
+        with(configuration) {
             repositoryList = repositoryList.distinctBy { it.name }
             // 校验虚拟仓库配置中的仓库列表
             repositoryList.forEach {
-                val repoCategory = checkRepository(projectId, it.name, type).category
+                val repoCategory = checkRepository(it.projectId, it.name, type).category
                 if (it.category == null) {
                     it.category = repoCategory
                 }
@@ -692,7 +692,7 @@ class RepositoryServiceImpl(
             // 校验部署仓库
             deploymentRepo.takeUnless { it.isNullOrBlank() }?.run {
                 Preconditions.checkArgument(
-                    VirtualRepositoryMember(this, RepositoryCategory.LOCAL) in repositoryList,
+                    RepositoryIdentify(projectId, this, RepositoryCategory.LOCAL) in repositoryList,
                     configuration::deploymentRepo.name
                 )
             }

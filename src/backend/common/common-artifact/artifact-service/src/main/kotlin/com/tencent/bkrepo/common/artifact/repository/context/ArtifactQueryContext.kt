@@ -39,5 +39,5 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
  */
 open class ArtifactQueryContext(
     repo: RepositoryDetail? = null,
-    artifact: ArtifactInfo? = null,
+    artifact: ArtifactInfo? = null
 ) : ArtifactContext(repo, artifact)

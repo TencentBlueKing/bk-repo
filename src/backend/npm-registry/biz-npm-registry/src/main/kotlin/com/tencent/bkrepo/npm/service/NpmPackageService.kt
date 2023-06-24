@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.PackageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -305,7 +306,8 @@ class NpmPackageService(
             val content = npmPackage.toJsonString().toByteArray()
             val artifactResource = ArtifactResource(
                 inputStream = content.inputStream().artifactStream(Range.full(content.size.toLong())),
-                artifactName = PACKAGE_JSON
+                artifactName = PACKAGE_JSON,
+                srcRepo = RepositoryIdentify(projectId, repoName)
             )
             artifactResourceWriter.write(artifactResource)
         }
@@ -333,7 +335,8 @@ class NpmPackageService(
             val content = versionMetadata.toJsonString().toByteArray()
             val artifactResource = ArtifactResource(
                 inputStream = content.inputStream().artifactStream(Range.full(content.size.toLong())),
-                artifactName = PACKAGE_JSON
+                artifactName = PACKAGE_JSON,
+                srcRepo = RepositoryIdentify(projectId, repoName)
             )
             artifactResourceWriter.write(artifactResource)
         }

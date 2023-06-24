@@ -115,7 +115,7 @@ class ArtifactDownloadListener(
         val repoName = event.context.repoName
         val fullPath = event.context.artifactInfo.getArtifactFullPath()
         val userId = event.context.userId
-        val node = ArtifactContextHolder.getNodeDetail()
+        val node = ArtifactContextHolder.getNodeDetail(projectId, repoName, fullPath)
         if (node == null) {
             val downloadedEvent = NodeDownloadedEvent(
                 projectId = projectId,

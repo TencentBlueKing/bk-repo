@@ -30,6 +30,7 @@ package com.tencent.bkrepo.composer.artifact.repository
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -222,14 +223,15 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactPath = artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
-            val node = ArtifactContextHolder.getNodeDetail(fullPath = artifactPath)
+            val node = ArtifactContextHolder.getNodeDetail(projectId, repoName, artifactPath)
             node?.let {
                 downloadIntercept(context, it)
                 packageVersion(it)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
             }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+            val srcRepo = RepositoryIdentify(projectId, repoName)
+            return ArtifactResource(inputStream, responseName, srcRepo, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 

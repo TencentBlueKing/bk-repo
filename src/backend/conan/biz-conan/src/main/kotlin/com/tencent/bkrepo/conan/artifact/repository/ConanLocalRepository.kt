@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -137,6 +138,7 @@ class ConanLocalRepository : LocalRepository() {
                 return ArtifactResource(
                     inputStream,
                     context.artifactInfo.getResponseName(),
+                    RepositoryIdentify(projectId, repoName),
                     node,
                     ArtifactChannel.LOCAL,
                     context.useDisposition

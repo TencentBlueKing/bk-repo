@@ -32,17 +32,20 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
-import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.xml.Value
+import com.tencent.bkrepo.pypi.util.HttpUtil.getRedirectUrl
 import org.springframework.stereotype.Component
 
 @Component
-class PypiVirtualRepository : VirtualRepository() {
+class PypiVirtualRepository(
+    private val pypiProperties: PypiProperties
+) : VirtualRepository() {
 
     /**
      * 整合多个仓库的内容。
@@ -51,7 +54,7 @@ class PypiVirtualRepository : VirtualRepository() {
         val request = context.request
         if (!request.servletPath.startsWith("/ext/version/detail") && !request.requestURI.endsWith(SLASH)) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect(request.requestURL.toString().ensureSuffix(SLASH))
+            response.sendRedirect(getRedirectUrl(pypiProperties.domain, request.servletPath))
             return null
         }
         return mapFirstRepo(context) { sub, repository ->

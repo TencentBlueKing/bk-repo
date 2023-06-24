@@ -90,8 +90,9 @@ class EdgeNodeRedirectService(
             // 只重定向下载请求
             return false
         }
-        val node = ArtifactContextHolder.getNodeDetail()
-            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val node = ArtifactContextHolder.getNodeDetail(
+            artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
+        ) ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         val selfClusterName = clusterProperties.self.name
         if (logger.isDebugEnabled) {
             logger.debug("node cluster: ${node.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
@@ -109,8 +110,9 @@ class EdgeNodeRedirectService(
      * 获取边缘节点名称
      * */
     private fun getEdgeClusterName(artifactInfo: ArtifactInfo): String? {
-        val node = ArtifactContextHolder.getNodeDetail()
-            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val node = ArtifactContextHolder.getNodeDetail(
+            artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
+        ) ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         return node.clusterNames?.firstOrNull()
     }
 

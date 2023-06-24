@@ -35,7 +35,6 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
-import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -46,7 +45,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -96,35 +94,37 @@ import kotlin.system.measureTimeMillis
 class NpmClientServiceImpl(
     private val npmDependentHandler: NpmDependentHandler,
     private val metadataClient: MetadataClient,
-    private val npmPackageHandler: NpmPackageHandler,
-    private val permissionManager: PermissionManager
+    private val npmPackageHandler: NpmPackageHandler
 ) : NpmClientService, AbstractNpmService() {
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun publishOrUpdatePackage(
         userId: String,
         artifactInfo: NpmArtifactInfo,
         name: String
     ): NpmSuccessResponse {
-        checkVirtualDeployment(artifactInfo)
-        permissionManager.checkRepoPermission(PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName)
+        // 对虚拟仓库进行上传操作,需要将artifactInfo的仓库信息更改为默认部署仓库
+        val realArtifactInfo = queryVirtualDeployment(artifactInfo)?.let {
+            artifactInfo.copy(repoName = it) as NpmArtifactInfo
+        } ?: artifactInfo
         try {
             val npmPackageMetaData =
                 objectMapper.readValue(HttpContextHolder.getRequest().inputStream, NpmPackageMetaData::class.java)
             when {
                 isUploadRequest(npmPackageMetaData) -> {
                     measureTimeMillis {
-                        handlerPackagePublish(userId, artifactInfo, npmPackageMetaData)
+                        handlerPackagePublish(userId, realArtifactInfo, npmPackageMetaData)
                     }.apply {
                         logger.info(
                             "user [$userId] public npm package [$name] " +
-                                "to repo [${artifactInfo.getRepoIdentify()}] success, elapse $this ms"
+                                "to repo [${realArtifactInfo.getRepoIdentify()}] success, elapse $this ms"
                         )
                     }
                     return NpmSuccessResponse.createEntitySuccess()
                 }
                 isDeprecateRequest(npmPackageMetaData) -> {
-                    handlerPackageDeprecated(userId, artifactInfo, npmPackageMetaData)
+                    handlerPackageDeprecated(userId, realArtifactInfo, npmPackageMetaData)
                     return NpmSuccessResponse.updatePkgSuccess()
                 }
                 else -> {
@@ -195,57 +195,68 @@ class NpmClientServiceImpl(
         }
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun addDistTags(userId: String, artifactInfo: NpmArtifactInfo, name: String, tag: String) {
-        checkVirtualDeployment(artifactInfo)
-        permissionManager.checkRepoPermission(PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName)
+        // 对虚拟仓库添加dist tag时,转换为添加到默认部署仓库
+        val realArtifactInfo = queryVirtualDeployment(artifactInfo)?.let {
+            artifactInfo.copy(repoName = it) as NpmArtifactInfo
+        } ?: artifactInfo
         logger.info(
             "handling add distTags [$tag] request for package [$name] " +
-                "in repo [${artifactInfo.getRepoIdentify()}]"
+                "in repo [${realArtifactInfo.getRepoIdentify()}]"
         )
-        val packageMetaData = queryPackageInfo(artifactInfo, name, false)
+        val packageMetaData = queryPackageInfo(realArtifactInfo, name, false)
         val version = objectMapper.readValue(HttpContextHolder.getRequest().inputStream, String::class.java)
         if (packageMetaData.versions.map.containsKey(version)) {
             packageMetaData.distTags.set(tag, version)
-            doPackageFileUpload(userId, artifactInfo, packageMetaData)
+            doPackageFileUpload(userId, realArtifactInfo, packageMetaData)
         }
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun deleteDistTags(userId: String, artifactInfo: NpmArtifactInfo, name: String, tag: String) {
-        checkVirtualDeployment(artifactInfo)
-        permissionManager.checkRepoPermission(PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName)
+        // 对虚拟仓库删除dist tag时,转换为在默认部署仓库删除
+        val realArtifactInfo = queryVirtualDeployment(artifactInfo)?.let {
+            artifactInfo.copy(repoName = it) as NpmArtifactInfo
+        } ?: artifactInfo
         logger.info(
             "handling delete distTags [$tag] request for package [$name] " +
-                "in repo [${artifactInfo.getRepoIdentify()}]"
+                "in repo [${realArtifactInfo.getRepoIdentify()}]"
         )
         if (LATEST == tag) {
             logger.warn(
                 "dist tag for [latest] with package [$name] " +
-                    "in repo [${artifactInfo.getRepoIdentify()}] cannot be deleted."
+                    "in repo [${realArtifactInfo.getRepoIdentify()}] cannot be deleted."
             )
             return
         }
-        val packageMetaData = queryPackageInfo(artifactInfo, name, false)
+        val packageMetaData = queryPackageInfo(realArtifactInfo, name, false)
         packageMetaData.distTags.getMap().remove(tag)
-        doPackageFileUpload(userId, artifactInfo, packageMetaData)
+        doPackageFileUpload(userId, realArtifactInfo, packageMetaData)
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun updatePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String) {
-        checkVirtualDeployment(artifactInfo)
-        permissionManager.checkRepoPermission(PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName)
-        logger.info("handling update package request for package [$name] in repo [${artifactInfo.getRepoIdentify()}]")
+        val realArtifactInfo = queryVirtualDeployment(artifactInfo)?.let {
+            artifactInfo.copy(repoName = it) as NpmArtifactInfo
+        } ?: artifactInfo
+        logger.info(
+            "handling update package request for package [$name] in repo [${realArtifactInfo.getRepoIdentify()}]"
+        )
         val packageMetadata =
             objectMapper.readValue(HttpContextHolder.getRequest().inputStream, NpmPackageMetaData::class.java)
-        doPackageFileUpload(userId, artifactInfo, packageMetadata)
+        doPackageFileUpload(userId, realArtifactInfo, packageMetadata)
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.DELETE)
     override fun deleteVersion(
         artifactInfo: NpmArtifactInfo,
         name: String,
         version: String,
         tgzPath: String
     ) {
-        checkVirtualDeployment(artifactInfo)
-        permissionManager.checkRepoPermission(PermissionAction.DELETE, artifactInfo.projectId, artifactInfo.repoName)
+        val repoDetail = repositoryClient.getRepoDetail(artifactInfo.projectId, artifactInfo.repoName).data!!
+        if (repoDetail.category == RepositoryCategory.VIRTUAL) throw MethodNotAllowedException()
         logger.info("handling delete version [$version] request for package [$name].")
         val fullPathList = mutableListOf<String>()
         val packageKey = PackageKeys.ofNpm(name)
@@ -265,9 +276,10 @@ class NpmClientServiceImpl(
         }
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.DELETE)
     override fun deletePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String) {
-        checkVirtualDeployment(artifactInfo)
-        permissionManager.checkRepoPermission(PermissionAction.DELETE, artifactInfo.projectId, artifactInfo.repoName)
+        val repoDetail = repositoryClient.getRepoDetail(artifactInfo.projectId, artifactInfo.repoName).data!!
+        if (repoDetail.category == RepositoryCategory.VIRTUAL) throw MethodNotAllowedException()
         logger.info("handling delete package request for package [$name]")
         val fullPathList = mutableListOf<String>()
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
@@ -534,17 +546,14 @@ class NpmClientServiceImpl(
     }
 
     /**
-     *  查询虚拟仓库是否设置了默认部署仓库，如有则变换仓库信息
+     *  从[artifactInfo]查询是否为虚拟仓库且是否设置了默认部署仓库
      */
-    private fun checkVirtualDeployment(artifactInfo: NpmArtifactInfo) {
-        val repoDetail = ArtifactContextHolder.getRepoDetail()!!
-        if (repoDetail.category == RepositoryCategory.VIRTUAL) {
-            (repoDetail.configuration as VirtualConfiguration).deploymentRepo.takeUnless { it.isNullOrBlank() }?.let {
-                artifactInfo.repoName = it
-                val deploymentRepoDetail = checkRepositoryExist(artifactInfo.projectId, it)
-                HttpContextHolder.getRequest().setAttribute(REPO_KEY, deploymentRepoDetail)
-            } ?: throw MethodNotAllowedException()
-        }
+    private fun queryVirtualDeployment(artifactInfo: NpmArtifactInfo): String? {
+        val repoDetail = repositoryClient.getRepoDetail(artifactInfo.projectId, artifactInfo.repoName).data!!
+        return if (repoDetail.category == RepositoryCategory.VIRTUAL) {
+            (repoDetail.configuration as VirtualConfiguration).deploymentRepo.takeUnless { it.isNullOrBlank() }
+                ?: throw MethodNotAllowedException()
+        } else null
     }
 
     companion object {

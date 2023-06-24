@@ -36,5 +36,6 @@ package com.tencent.bkrepo.common.artifact.pojo
  */
 data class RepositoryIdentify(
     val projectId: String,
-    val name: String
+    val name: String,
+    var category: RepositoryCategory? = null
 )

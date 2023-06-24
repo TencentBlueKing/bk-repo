@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.resolve.response
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
@@ -42,6 +43,10 @@ class ArtifactResource(
      * value: 资源数据
      */
     val artifactMap: Map<String, ArtifactInputStream>,
+    /**
+     * 构件来源仓库
+     */
+    val srcRepo: RepositoryIdentify,
     /**
      * 节点信息，响应头中的sha256、md5、LastModify等信息会通过读取node信息写入
      */
@@ -76,10 +81,11 @@ class ArtifactResource(
     constructor(
         inputStream: ArtifactInputStream,
         artifactName: String,
+        srcRepo: RepositoryIdentify,
         node: NodeDetail? = null,
         channel: ArtifactChannel = ArtifactChannel.LOCAL,
         useDisposition: Boolean = false
-    ) : this(mapOf(artifactName to inputStream), node, channel, useDisposition)
+    ) : this(mapOf(artifactName to inputStream), srcRepo, node, channel, useDisposition)
 
     /**
      * 是否包含多个构件资源

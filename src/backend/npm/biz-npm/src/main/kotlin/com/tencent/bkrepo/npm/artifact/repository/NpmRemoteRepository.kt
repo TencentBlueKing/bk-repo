@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.npm.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -78,7 +79,7 @@ class NpmRemoteRepository(
     ) {
         // 存储package-version.json文件
         executor.execute {
-            cachePackageVersionMetadata(context)?.run {
+            getPackageVersionMetadata(context)?.run {
                 npmPackageHandler.createVersion(
                     context.userId, context.artifactInfo, this, artifactResource.getTotalSize()
                 )
@@ -87,21 +88,23 @@ class NpmRemoteRepository(
         }
     }
 
-    private fun cachePackageVersionMetadata(context: ArtifactDownloadContext): NpmVersionMetadata? {
+    private fun getPackageVersionMetadata(context: ArtifactDownloadContext): NpmVersionMetadata? {
         with(context) {
             val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
             val versionMetadataFullPath = NpmUtils.getVersionPackageMetadataPath(packageInfo.first, packageInfo.second)
-            if (nodeClient.checkExist(projectId, repoName, versionMetadataFullPath).data!!) {
+            val cacheNode = nodeClient.getNodeDetail(projectId, repoName, versionMetadataFullPath).data
+            if (cacheNode != null) {
                 logger.info(
-                    "version metadata [$versionMetadataFullPath] is already exits " +
-                        "in repo [$projectId/$repoName]"
+                    "version metadata [$versionMetadataFullPath] is already exist in repo [$projectId/$repoName]"
                 )
-                return null
+                storageManager.loadArtifactInputStream(cacheNode, context.storageCredentials)?.use {
+                    return JsonUtils.objectMapper.readValue(it, NpmVersionMetadata::class.java)
+                }
             }
             val remoteConfiguration = context.getRemoteConfiguration()
             val httpClient = createHttpClient(remoteConfiguration)
             context.putAttribute(REQUEST_URI, "/${packageInfo.first}/${packageInfo.second}")
-            val downloadUri = createRemoteSearchUrl(context)
+            val downloadUri = createRemoteDownloadUrl(context)
             val request = Request.Builder().url(downloadUri).build()
             val response = httpClient.newCall(request).execute()
             logger.info("$response")
@@ -126,21 +129,26 @@ class NpmRemoteRepository(
     }
 
     override fun query(context: ArtifactQueryContext): InputStream? {
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = createRemoteSearchUrl(context)
-        val request = Request.Builder().url(downloadUri).build()
-        val response = httpClient.newCall(request).execute()
-        return if (checkResponse(response)) {
-            onQueryResponse(context, response)
-        } else null
+        return (super.query(context) as InputStream?) ?: with(context) {
+            val cacheNode = nodeClient.getNodeDetail(projectId, repoName, getStringAttribute(NPM_FILE_FULL_PATH)!!).data
+            storageManager.loadArtifactInputStream(cacheNode, storageCredentials)
+        }
     }
 
-    private fun createRemoteSearchUrl(context: ArtifactContext): String {
+    override fun checkQueryResponse(response: Response): Boolean {
+        return super.checkQueryResponse(response) && run {
+            val contentType = response.body!!.contentType()
+            if (!contentType.toString().contains(APPLICATION_JSON_WITHOUT_CHARSET)) {
+                logger.warn("Response from [${response.request.url}] is not JSON format. Content-Type: $contentType")
+                false
+            } else true
+        }
+    }
+
+    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         val configuration = context.getRemoteConfiguration()
         val requestURI = context.getStringAttribute(REQUEST_URI)
-        val artifactUri =
-            requestURI ?: context.request.requestURI.substringAfterLast(context.artifactInfo.getRepoIdentify())
+        val artifactUri = requestURI ?: context.artifactInfo.getArtifactName()
         val queryString = context.request.queryString
         return UrlFormatter.format(configuration.url, artifactUri, queryString)
     }

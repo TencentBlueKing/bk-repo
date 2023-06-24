@@ -33,6 +33,7 @@ package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -309,7 +310,9 @@ class OciRegistryLocalRepository(
         if (context.request.method == HttpMethod.HEAD.name) {
             return null
         }
-        val node = ArtifactContextHolder.getNodeDetail()
+        val node = ArtifactContextHolder.getNodeDetail(
+            context.projectId, context.repoName, artifactInfo.getArtifactFullPath()
+        )
         val version = node!!.metadata[IMAGE_VERSION]?.toString() ?: return null
         return PackageDownloadRecord(
             projectId = context.projectId,
@@ -361,6 +364,7 @@ class OciRegistryLocalRepository(
         val resource = ArtifactResource(
             inputStream = inputStream,
             artifactName = context.artifactInfo.getResponseName(),
+            srcRepo = RepositoryIdentify(context.projectId, context.repoName),
             node = node,
             channel = ArtifactChannel.LOCAL,
             useDisposition = context.useDisposition
@@ -370,10 +374,10 @@ class OciRegistryLocalRepository(
     }
 
     private fun getNodeDetail(artifactInfo: OciArtifactInfo, fullPath: String): NodeDetail? {
-        return ArtifactContextHolder.getNodeDetail(fullPath = fullPath) ?: run {
+        return ArtifactContextHolder.getNodeDetail(artifactInfo.projectId, artifactInfo.repoName, fullPath) ?: run {
             val oldDockerPath = ociOperationService.getDockerNode(artifactInfo)
                 ?: return null
-            ArtifactContextHolder.getNodeDetail(fullPath = oldDockerPath)
+            ArtifactContextHolder.getNodeDetail(artifactInfo.projectId, artifactInfo.repoName, oldDockerPath)
         }
     }
 

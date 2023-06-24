@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.artifact.repository.remote
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.USER_AGENT
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.NetworkProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
@@ -107,6 +108,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
         val downloadUri = createRemoteDownloadUrl(context)
+        logger.info("Remote query url: $downloadUri, network config: ${remoteConfiguration.network}")
         val request = Request.Builder().url(downloadUri).build()
         return try {
             val response = httpClient.newCall(request).execute()
@@ -114,7 +116,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
                 onQueryResponse(context, response)
             } else null
         } catch (ignore: Exception) {
-            logger.warn("Failed to request or resolve response: ${ignore.stackTraceToString()}")
+            logger.warn("Failed to request or resolve response", ignore)
             null
         }
     }
@@ -158,6 +160,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             ArtifactResource(
                 this,
                 context.artifactInfo.getResponseName(),
+                RepositoryIdentify(context.projectId, context.repoName),
                 cacheNode,
                 ArtifactChannel.PROXY,
                 context.useDisposition
@@ -207,6 +210,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         return ArtifactResource(
             artifactStream,
             context.artifactInfo.getResponseName(),
+            RepositoryIdentify(context.projectId, context.repoName),
             node,
             ArtifactChannel.PROXY,
             context.useDisposition

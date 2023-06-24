@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -173,7 +174,7 @@ class HelmLocalRepository(
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
+        val node = ArtifactContextHolder.getNodeDetail(context.projectId, context.repoName, fullPath)
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
@@ -185,6 +186,7 @@ class HelmLocalRepository(
             return ArtifactResource(
                 inputStream,
                 context.artifactInfo.getResponseName(),
+                RepositoryIdentify(context.projectId, context.repoName),
                 node,
                 ArtifactChannel.LOCAL,
                 context.useDisposition

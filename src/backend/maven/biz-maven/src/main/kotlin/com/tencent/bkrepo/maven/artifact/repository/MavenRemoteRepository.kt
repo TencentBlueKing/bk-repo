@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.maven.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.constants.IS_ARTIFACT
 import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_ARTIFACT_ID
@@ -57,8 +56,6 @@ import com.tencent.bkrepo.maven.constants.SNAPSHOT_BUILD_NUMBER
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_TIMESTAMP
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
-import com.tencent.bkrepo.maven.enum.MavenMessageCode
-import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.service.MavenOperationService
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
@@ -104,37 +101,8 @@ class MavenRemoteRepository(
     }
 
     override fun remove(context: ArtifactRemoveContext) {
-        when (context.artifactInfo) {
-            is MavenDeleteArtifactInfo -> {
-                deletePackageOrVersion(
-                    artifactInfo = context.artifactInfo as MavenDeleteArtifactInfo,
-                    userId = context.userId
-                )
-            }
-            else -> {
-                val fullPath = context.artifactInfo.getArtifactFullPath()
-                val nodeInfo = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
-                    ?: throw MavenArtifactNotFoundException(
-                        MavenMessageCode.MAVEN_ARTIFACT_NOT_FOUND, fullPath, context.artifactInfo.getRepoIdentify()
-                    )
-                if (nodeInfo.folder) {
-                    mavenOperationService.folderRemoveHandler(context, nodeInfo)?.let {
-                        deletePackageOrVersion(
-                            artifactInfo = it,
-                            userId = context.userId
-                        )
-                    }
-                } else {
-                    logger.info(
-                        "Will try to delete node ${nodeInfo.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}"
-                    )
-                    mavenOperationService.deleteNode(
-                        artifactInfo = context.artifactInfo,
-                        userId = context.userId
-                    )
-                }
-            }
-        }
+        // 远程仓库不需要更新maven-metadata.xml
+        mavenOperationService.removeAndCheckIfUpdateMetadata(context)
     }
 
     @Suppress("NestedBlockDepth")
@@ -173,6 +141,7 @@ class MavenRemoteRepository(
         return ArtifactResource(
             artifactStream,
             context.artifactInfo.getResponseName(),
+            RepositoryIdentify(context.projectId, context.repoName),
             node,
             ArtifactChannel.PROXY,
             context.useDisposition
@@ -204,25 +173,6 @@ class MavenRemoteRepository(
             return mavenOperationService.buildPackageDownloadRecord(
                 projectId, repoName, artifactInfo.getArtifactFullPath()
             )
-        }
-    }
-
-    /**
-     * 删除package或Version
-     */
-    private fun deletePackageOrVersion(
-        artifactInfo: MavenDeleteArtifactInfo,
-        userId: String
-    ) {
-        with(artifactInfo) {
-            logger.info("Will prepare to delete package [$packageName|$version] in repo ${getRepoIdentify()}")
-            if (version.isBlank()) {
-                mavenOperationService.deletePackage(artifactInfo, userId)
-            } else {
-                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
-                    mavenOperationService.removeVersion(artifactInfo, it, userId)
-                } ?: throw VersionNotFoundException(version)
-            }
         }
     }
 

@@ -65,7 +65,7 @@ class NugetVirtualRepository(
 ) : VirtualRepository() {
 
     override fun query(context: ArtifactQueryContext): Any? {
-        return when(context.getAttribute<NugetQueryType>(QUERY_TYPE)!!) {
+        return when (context.getAttribute<NugetQueryType>(QUERY_TYPE)!!) {
             NugetQueryType.PACKAGE_VERSIONS -> enumerateVersions(context)
             NugetQueryType.SERVICE_INDEX -> feed(context.artifactInfo as NugetArtifactInfo)
             NugetQueryType.REGISTRATION_INDEX -> registrationIndex(context)
@@ -86,33 +86,25 @@ class NugetVirtualRepository(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun registrationIndex(context: ArtifactQueryContext): RegistrationIndex? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
-        val virtualRepoName = context.repoName
-        val result = mapEachLocalAndFirstRemote(context) { sub, repository ->
-            require(sub is ArtifactQueryContext)
-            sub.artifactInfo.repoName = virtualRepoName
-            repository.query(sub) as RegistrationIndex?
-        }.takeIf { it.isNotEmpty() } ?: return null
+        val result = (super.query(context) as List<RegistrationIndex>).takeIf { it.isNotEmpty() } ?: return null
         return result.reduce { acc, element ->
             RemoteRegistrationUtils.combineRegistrationIndex(acc, element, nugetArtifactInfo, v3RegistrationUrl)
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun registrationPage(context: ArtifactQueryContext): RegistrationPage? {
         val nugetArtifactInfo = context.artifactInfo as NugetRegistrationArtifactInfo
         val v3BaseUrl = NugetUtils.getV3Url(nugetArtifactInfo)
         val registrationPath = context.getStringAttribute(REGISTRATION_PATH)!!
         val v3RegistrationUrl = "$v3BaseUrl/$registrationPath"
-        val virtualRepoName = context.repoName
-        val result = mapEachLocalAndFirstRemote(context) { sub, repository ->
-            require(sub is ArtifactQueryContext)
-            sub.artifactInfo.repoName = virtualRepoName
-            repository.query(sub) as RegistrationPage?
-        }.takeIf { it.isNotEmpty() } ?: return null
+        val result = (super.query(context) as List<RegistrationPage>).takeIf { it.isNotEmpty() } ?: return null
         return result.reduce { acc, element ->
             RemoteRegistrationUtils.combineRegistrationPage(acc, element, nugetArtifactInfo, v3RegistrationUrl)
         }

@@ -1,11 +1,12 @@
 package com.tencent.bkrepo.nuget.util
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.nuget.constant.INDEX
 import com.tencent.bkrepo.nuget.constant.NugetProperties
@@ -13,6 +14,7 @@ import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -64,15 +66,16 @@ object NugetUtils {
         return inputStream.use { IOUtils.toString(it, UTF_8) }
     }
 
-    fun getV2Url(artifactInfo: ArtifactInfo): String {
+    fun getV2Url(artifactInfo: ArtifactInfo? = null): String {
         val domain = UrlFormatter.formatHost(nugetProperties.domain)
-        return domain + artifactInfo.getRepoIdentify()
+        val repoUri = artifactInfo?.run { getRepoIdentify() }
+            ?: with(HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail) {
+                "/$projectId/$name"
+            }
+        return domain + repoUri
     }
 
-    fun getV3Url(artifactInfo: ArtifactInfo): String {
-        val domain = UrlFormatter.formatHost(nugetProperties.domain)
-        return domain + artifactInfo.getRepoIdentify() + CharPool.SLASH + "v3"
-    }
+    fun getV3Url(artifactInfo: ArtifactInfo? = null) = getV2Url(artifactInfo) + "/v3"
 
     fun buildPackageContentUrl(v3RegistrationUrl: String, packageId: String, version: String): URI {
         val packageContentUrl = StringJoiner("/")

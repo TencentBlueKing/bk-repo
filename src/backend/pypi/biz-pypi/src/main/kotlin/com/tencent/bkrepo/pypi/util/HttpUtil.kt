@@ -31,6 +31,9 @@
 
 package com.tencent.bkrepo.pypi.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -42,5 +45,9 @@ object HttpUtil {
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
         return connection.inputStream
+    }
+
+    fun getRedirectUrl(domain: String, requestPath: String): String {
+        return UrlFormatter.format(domain, requestPath).ensureSuffix(StringPool.SLASH)
     }
 }

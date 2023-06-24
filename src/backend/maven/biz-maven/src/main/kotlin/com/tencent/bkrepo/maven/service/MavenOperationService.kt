@@ -3,6 +3,7 @@ package com.tencent.bkrepo.maven.service
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -198,6 +199,59 @@ class MavenOperationService(
         ).map {
             MetadataModel(key = it.key, value = it.value)
         }.toMutableList()
+    }
+
+    /**
+     * 删除包/版本/目录节点/非目录节点, 返回结果指示是否需要更新相应的元数据文件
+     * [Pair.first]: 不为空时, 使用该ArtifactInfo更新包级别的maven-metadata.xml
+     * [Pair.second]: 版本元数据文件父目录节点, 不为空时尝试更新版本maven-metadata.xml
+     */
+    fun removeAndCheckIfUpdateMetadata(context: ArtifactRemoveContext): Pair<ArtifactInfo?, NodeDetail?> {
+        return when (context.artifactInfo) {
+            is MavenDeleteArtifactInfo -> {
+                val artifactInfo = context.artifactInfo as MavenDeleteArtifactInfo
+                deletePackageOrVersion(artifactInfo, context.userId)
+                Pair(if (artifactInfo.version.isNotBlank()) artifactInfo else null, null)
+            }
+            else -> {
+                val fullPath = context.artifactInfo.getArtifactFullPath()
+                val nodeInfo = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+                    ?: throw MavenArtifactNotFoundException(
+                        MavenMessageCode.MAVEN_ARTIFACT_NOT_FOUND, fullPath, context.artifactInfo.getRepoIdentify()
+                    )
+                if (nodeInfo.folder) {
+                    folderRemoveHandler(context, nodeInfo)?.let {
+                        deletePackageOrVersion(it, context.userId)
+                        Pair(if (it.version.isNotBlank()) it else null, null)
+                    } ?: Pair(null, null)
+                } else {
+                    logger.info(
+                        "Will try to delete node ${nodeInfo.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}"
+                    )
+                    deleteNode(context.artifactInfo, context.userId)
+                    Pair(context.artifactInfo, nodeInfo)
+                }
+            }
+        }
+    }
+
+    /**
+     * 删除package或Version
+     */
+    fun deletePackageOrVersion(
+        artifactInfo: MavenDeleteArtifactInfo,
+        userId: String
+    ) {
+        with(artifactInfo) {
+            logger.info("Will prepare to delete package [$packageName|$version] in repo ${getRepoIdentify()}")
+            if (version.isBlank()) {
+                deletePackage(artifactInfo, userId)
+            } else {
+                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                    removeVersion(artifactInfo, it, userId)
+                } ?: throw VersionNotFoundException(version)
+            }
+        }
     }
 
     fun deletePackage(artifactInfo: MavenDeleteArtifactInfo, userId: String) {

@@ -32,10 +32,6 @@
 package com.tencent.bkrepo.maven.artifact.repository
 
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
-import com.tencent.bkrepo.common.artifact.constant.NODE_DETAIL_KEY
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
@@ -60,11 +56,10 @@ class MavenVirtualRepository : VirtualRepository() {
         val fullPath = context.artifactInfo.getArtifactFullPath()
         // 从成员仓库中取最新时间戳的snapshot版本元数据文件或元数据摘要文件
         if (fullPath.isSnapshotMetadataUri() || fullPath.isSnapshotMetadataChecksumUri()) {
-            val resources = mapEachLocalAndFirstRemote(context, false) { sub, repository ->
+            val resources = mapEachLocalAndFirstRemote(context) { sub, repository ->
                 require(sub is ArtifactDownloadContext)
                 require(repository is AbstractArtifactRepository)
                 val resource = repository.onDownload(sub)
-                context.request.removeAttribute(NODE_DETAIL_KEY)
                 val timestamp = sub.getAndRemoveAttribute<String>(SNAPSHOT_TIMESTAMP)
                 val sha1 = with(context.response) {
                     getHeader(X_CHECKSUM_SHA1)?.also { setHeader(X_CHECKSUM_SHA1, null) }
@@ -73,22 +68,22 @@ class MavenVirtualRepository : VirtualRepository() {
                     Triple(timestamp, resource, sha1)
                 } else null
             } as List<Triple<String, ArtifactResource, String?>>
-            return resources.maxByOrNull { it.first }?.run {
+            val latestResource = resources.maxByOrNull { it.first }
+            resources.filterNot { it == latestResource }.forEach { it.second.getSingleStream().close() }
+            return latestResource?.run {
                 third?.let { context.response.setHeader(X_CHECKSUM_SHA1, it) }
                 second
             }
         }
         // 上传版本时请求包级别元数据及其摘要, 从默认部署仓库返回
         if ((context.artifactInfo as MavenArtifactInfo).isAboutPackageMetadata()) {
-            val deploymentRepo = (context.repositoryDetail.configuration as VirtualConfiguration).deploymentRepo
-            if (!deploymentRepo.isNullOrBlank()) {
-                repositoryClient.getRepoDetail(context.projectId, deploymentRepo).data?.let {
-                    modifyContext(context, it)
-                }
-                val repository =
-                    ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as AbstractArtifactRepository
-                return repository.onDownload(context)
-            }
+            try {
+                mapDeploymentRepo(context) { sub, repository ->
+                    require(sub is ArtifactDownloadContext)
+                    require(repository is AbstractArtifactRepository)
+                    repository.onDownload(sub)
+                }?.let { return it }
+            } catch (ignore: Exception) {}
         }
         return super.onDownload(context)
     }

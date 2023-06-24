@@ -34,6 +34,7 @@ package com.tencent.bkrepo.npm.artifact.repository
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -46,7 +47,6 @@ import com.tencent.bkrepo.npm.constant.LATEST
 import com.tencent.bkrepo.npm.constant.MAINTAINERS
 import com.tencent.bkrepo.npm.constant.NAME
 import com.tencent.bkrepo.npm.constant.NpmMessageCode
-import com.tencent.bkrepo.npm.constant.NpmProperties
 import com.tencent.bkrepo.npm.constant.PACKAGE
 import com.tencent.bkrepo.npm.constant.SHA_SUM
 import com.tencent.bkrepo.npm.pojo.artifact.NpmArtifactInfo
@@ -66,7 +66,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class NpmRegistryLocalRepository(
-    private val npmProperties: NpmProperties,
     private val packageDependentsClient: PackageDependentsClient
 ) : LocalRepository() {
 
@@ -104,7 +103,8 @@ class NpmRegistryLocalRepository(
                 val node = nodeClient.getNodeDetail(projectId, repoName, compatiblePath).data
                 val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
                 val responseName = artifactInfo.getResponseName()
-                return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+                val srcRepo = RepositoryIdentify(projectId, repoName)
+                return ArtifactResource(inputStream, responseName, srcRepo, node, ArtifactChannel.LOCAL, useDisposition)
             }
         }
     }

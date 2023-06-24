@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -96,7 +97,8 @@ class CompressedFileService(
                 }
                 artifactResource = ArtifactResource(
                     inputStream = ArtifactInputStream(byteArray.inputStream(), Range.full(byteArray.size.toLong())),
-                    artifactName = entry!!.name
+                    artifactName = entry!!.name,
+                    srcRepo = RepositoryIdentify(artifactInfo.projectId, artifactInfo.repoName)
                 )
                 artifactResourceWriter.write(artifactResource)
                 return

@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -223,8 +224,8 @@ class GenericLocalRepository(
             downloadIntercept(this, node)
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
-
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+            val srcRepo = RepositoryIdentify(projectId, repoName)
+            return ArtifactResource(inputStream, responseName, srcRepo, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 
@@ -256,7 +257,7 @@ class GenericLocalRepository(
                     ?: throw ArtifactNotFoundException(it.fullPath)
                 name to inputStream
             }
-            return ArtifactResource(nodeMap, useDisposition = true)
+            return ArtifactResource(nodeMap, RepositoryIdentify(projectId, repoName), useDisposition = true)
         }
     }
 
@@ -323,7 +324,8 @@ class GenericLocalRepository(
             val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
             name to inputStream
         }
-        return ArtifactResource(nodeMap, node, useDisposition = true)
+        val srcRepo = RepositoryIdentify(context.projectId, context.repoName)
+        return ArtifactResource(nodeMap, srcRepo, node, useDisposition = true)
     }
 
     private fun getNodeDetailsFromReq(allowFolder: Boolean): List<NodeDetail>? {
