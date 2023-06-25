@@ -33,22 +33,33 @@ import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
+import com.tencent.bkrepo.common.storage.innercos.retry
+import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
-import org.springframework.retry.annotation.Backoff
-import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
+import kotlin.system.exitProcess
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class ProxyStartupRunner: ApplicationRunner {
+class ProxyStartupRunner : ApplicationRunner {
 
     private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
 
-    @Retryable(Exception::class, maxAttempts = 3, backoff = Backoff(delay = 5 * 1000, multiplier = 1.0))
     override fun run(args: ApplicationArguments?) {
+        try {
+            retry(RETRY_TIME, block = {
+                startup()
+            })
+        } catch (e: Exception) {
+            logger.error("startup failed: ", e)
+            exitProcess(1)
+        }
+    }
+
+    private fun startup() {
         val projectId = ProxyEnv.getProjectId()
         val name = ProxyEnv.getName()
         val secretKey = ProxyEnv.getSecretKey()
@@ -56,10 +67,17 @@ class ProxyStartupRunner: ApplicationRunner {
         val startupRequest = ProxyStatusRequest(
             projectId = projectId,
             name = name,
-            message = AESUtils.encrypt("$name:startup:$ticket", secretKey)
+            message = AESUtils.encrypt("$name:$STARTUP_OPERATION:$ticket", secretKey)
         )
         val encSessionKey = proxyAuthClient.startup(startupRequest).data!!
         val sessionKey = AESUtils.decrypt(encSessionKey, secretKey)
         SessionKeyHolder.setSessionKey(sessionKey)
+        logger.info("startup success")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProxyStartupRunner::class.java)
+        private const val RETRY_TIME = 3
+        private const val STARTUP_OPERATION = "startup"
     }
 }

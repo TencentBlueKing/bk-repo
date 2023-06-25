@@ -36,6 +36,7 @@ import com.google.common.hash.Hashing
 import com.tencent.bkrepo.auth.api.ServiceProxyClient
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
@@ -97,7 +98,7 @@ class ProxyAuthInterceptor(
     }
 
     private fun getUrlPath(request: HttpServletRequest): String {
-        return request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        return request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString().ensurePrefix("/")
     }
 
     companion object {
