@@ -197,6 +197,8 @@
                 this.$router.push({
                     name: 'commonPackage',
                     query: {
+                        // 需要保留之前制品列表页的筛选项和页码相关参数
+                        ...this.$route.query,
                         repoName: this.repoName,
                         packageKey: pkg.key
                     }
