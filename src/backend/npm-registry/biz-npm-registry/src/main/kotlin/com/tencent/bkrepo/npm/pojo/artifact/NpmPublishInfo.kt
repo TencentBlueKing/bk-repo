@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.npm.pojo.artifact
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.npm.pojo.metadata.NpmAttachment
 import com.tencent.bkrepo.npm.pojo.metadata.NpmPackageMetadata
 import com.tencent.bkrepo.npm.pojo.metadata.NpmVersionMetadata
@@ -64,5 +65,11 @@ class NpmPublishInfo(
      */
     fun getVersionPackage(): NpmVersionMetadata {
         return packageMetadata.versions[version]!!
+    }
+
+    override fun copy(projectId: String?, repoName: String?): ArtifactInfo {
+        val artifactInfo = super.copy(projectId, repoName) as NpmPublishInfo
+        artifactInfo.tarball = this.tarball
+        return artifactInfo
     }
 }

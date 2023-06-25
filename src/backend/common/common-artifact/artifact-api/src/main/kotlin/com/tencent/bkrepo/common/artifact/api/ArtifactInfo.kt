@@ -134,10 +134,11 @@ open class ArtifactInfo(
             }
         }
         val artifactInfo = constructor.callBy(paramMap)
-        // 构造实例后初始化lateinit参数
+        // 构造实例后初始化lateinit属性
         properties.filter { it.isLateinit }.forEach { property ->
             try {
                 setPropertyValue(property, artifactInfo, getPropertyValue(property, this))
+            // 访问未初始化的lateinit属性时会捕获到UninitializedPropertyAccessException
             } catch (ignore: UninitializedPropertyAccessException) { }
         }
         return artifactInfo
@@ -150,6 +151,7 @@ open class ArtifactInfo(
                 property.get(target).apply { property.isAccessible = false }
             }
         } catch (ignore: InvocationTargetException) {
+            // 访问失败时会抛出InvocationTargetException, 真实的异常对象被封装了, 获取目标异常并重新抛出
             throw ignore.targetException
         }
     }
