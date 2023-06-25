@@ -81,9 +81,17 @@ object HttpUtils {
         path: String = StringPool.EMPTY,
         params: String = StringPool.EMPTY,
     ): String {
-        val builder = StringBuilder(url)
+        if (url.isBlank())
+            throw IllegalArgumentException("Url should not be blank")
+        val baseUrl = addProtocol(url.trim().trimEnd(CharPool.SLASH))
+        val extraUrl = URL(baseUrl, baseUrl.path)
+        val extraParams = baseUrl.query
+        val builder = StringBuilder(extraUrl.toString().trimEnd(CharPool.SLASH))
         if (path.isNotBlank()) {
             builder.append(CharPool.SLASH).append(path.trimStart(CharPool.SLASH))
+        }
+        if (!extraParams.isNullOrEmpty()) {
+            builder.append(CharPool.QUESTION).append(extraParams)
         }
         if (params.isNotBlank()) {
             if (builder.contains(CharPool.QUESTION)) {
@@ -96,14 +104,26 @@ object HttpUtils {
     }
 
     /**
-     * 针对url如果没传protocol， 则默认以https请求发送
+     * 当没有protocol时进行添加
      */
     fun addProtocol(registry: String): URL {
         try {
             return URL(registry)
         } catch (ignore: MalformedURLException) {
         }
-        val url = URL("${StringPool.HTTPS}$registry")
+        return addProtocolToHost(registry)
+    }
+
+    /**
+     * 针对url如果没传protocol， 则默认以https请求发送；
+     * 如果http请求无法访问，则以http发送
+     */
+    private fun addProtocolToHost(registry: String): URL {
+        val url = try {
+            URL("${StringPool.HTTPS}$registry")
+        } catch (ignore: MalformedURLException) {
+            throw IllegalArgumentException("Check your input url!")
+        }
         return try {
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
                 validateHttpsProtocol(url)
