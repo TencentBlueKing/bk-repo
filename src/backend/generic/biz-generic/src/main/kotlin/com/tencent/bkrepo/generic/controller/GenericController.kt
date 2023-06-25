@@ -48,8 +48,8 @@ import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
-import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.CompressedFileService
+import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -165,5 +165,15 @@ class GenericController(
         @RequestParam filePath: String,
     ) {
         compressedFileService.previewCompressedFile(artifactInfo, filePath)
+    }
+
+    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @GetMapping("/allow/download/$GENERIC_MAPPING_URI")
+    fun allowDownload(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam ip: String,
+        @RequestParam fromApp: Boolean
+    ): Response<Boolean> {
+        return ResponseBuilder.success(downloadService.allowDownload(artifactInfo, ip, fromApp))
     }
 }
