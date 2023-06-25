@@ -479,7 +479,7 @@
     "associatedScanner":"关联扫描器",
     "confirmDeleteScanMsg":"确认删除扫描方案{0} ?",
     "deleteScan": "删除扫描方案",
-    "lastScanTime":"上传扫描时间",
+    "lastScanTime":"上次扫描时间",
     "createScanPlan":"创建扫描方案",
     "planNameTip":"请输入方案名称",
     "planTypeTip":"请选择方案类型",
