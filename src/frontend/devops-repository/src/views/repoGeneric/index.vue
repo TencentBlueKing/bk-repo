@@ -13,21 +13,13 @@
             <div class="repo-generic-side"
                 :style="{ 'flex-basis': `${sideBarWidth}px` }"
                 v-bkloading="{ isLoading: treeLoading }">
-                <div class="pt10 pb10 pl20 pr20">
-                    <bk-input
-                        v-model.trim="importantSearch"
-                        :placeholder="$t('keySearchPlaceHolder')"
-                        clearable
-                        right-icon="bk-icon icon-search"
-                        @enter="searchFile"
-                        @clear="searchFile">
-                    </bk-input>
+                <div class="repo-generic-side-info">
+                    <span>{{$t('folderDirectory')}}</span>
                 </div>
                 <repo-tree
                     class="repo-generic-tree"
                     ref="repoTree"
                     :tree="genericTree"
-                    :important-search="importantSearch"
                     :open-list="sideTreeOpenList"
                     :selected-node="selectedTreeNode"
                     @icon-click="iconClickHandler"
@@ -51,23 +43,23 @@
             />
             <div class="repo-generic-table" v-bkloading="{ isLoading }">
                 <div class="multi-operation flex-between-center">
-                    <bk-input
-                        class="w250"
-                        v-if="searchFileName"
-                        v-model.trim="importantSearch"
-                        :placeholder="$t('keySearchPlaceHolder')"
-                        clearable
-                        right-icon="bk-icon icon-search"
-                        @enter="searchFile"
-                        @clear="searchFile">
-                    </bk-input>
-                    <breadcrumb v-else :list="breadcrumb" omit-middle></breadcrumb>
+                    <breadcrumb v-if="!searchFileName" :list="breadcrumb" omit-middle></breadcrumb>
+                    <span v-else> {{repoName + (searchFullPath || (selectedTreeNode && selectedTreeNode.fullPath) || '') }}</span>
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
                             v-if="multiSelect.length"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
+                        <bk-input
+                            class="w250 ml10"
+                            v-model.trim="inFolderSearchName"
+                            :placeholder="$t('inFolderSearchPlaceholder')"
+                            clearable
+                            right-icon="bk-icon icon-search"
+                            @enter="inFolderSearchFile"
+                            @clear="inFolderSearchFile">
+                        </bk-input>
                         <bk-button class="ml10"
                             @click="getArtifactories">
                             {{ $t('refresh') }}
@@ -224,9 +216,6 @@
                 moveBarWidth: 10,
                 isLoading: false,
                 treeLoading: false,
-                importantSearch: this.$route.query.fileName,
-                // 搜索路径文件夹下的内容
-                searchFullPath: '',
                 // 左侧树处于打开状态的目录
                 sideTreeOpenList: [],
                 sortType: 'lastModifiedDate',
@@ -245,7 +234,9 @@
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
                 metadataLabelList: [],
-                debounceClickTreeNode: null
+                debounceClickTreeNode: null,
+                inFolderSearchName: this.$route.query.fileName,
+                searchFullPath: ''
             }
         },
         computed: {
@@ -427,19 +418,18 @@
                 this.getArtifactoryList({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    fullPath: this.selectedTreeNode.fullPath,
-                    ...(this.searchFullPath
+                    fullPath: this.searchFullPath || this.selectedTreeNode?.fullPath,
+                    ...(this.inFolderSearchName
                         ? {
-                            fullPath: this.searchFullPath
-                        }
-                        : {
                             name: this.searchFileName
                         }
+                        : {}
                     ),
                     current: this.pagination.current,
                     limit: this.pagination.limit,
                     sortType: this.sortType,
-                    isPipeline: this.repoName === 'pipeline'
+                    isPipeline: this.repoName === 'pipeline',
+                    searchFlag: this.searchFileName
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
@@ -462,18 +452,6 @@
                 }).finally(() => {
                     this.isLoading = false
                 })
-            },
-            searchFile () {
-                if (this.importantSearch || this.searchFileName) {
-                    this.$router.replace({
-                        query: {
-                            ...this.$route.query,
-                            fileName: this.importantSearch
-                        }
-                    })
-                    this.searchFullPath = ''
-                    this.handlerPaginationChange()
-                }
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -851,6 +829,19 @@
                     || name.endsWith('log')
                     || name.endsWith('properties')
                     || name.endsWith('toml')
+            },
+            // 文件夹内部的搜索，根据文件名或文件夹名搜索
+            inFolderSearchFile () {
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        fileName: this.inFolderSearchName
+                    }
+                })
+                if (!this.inFolderSearchName) {
+                    this.searchFullPath = ''
+                }
+                this.handlerPaginationChange()
             }
         }
     }
@@ -886,6 +877,12 @@
             height: 100%;
             overflow: hidden;
             background-color: white;
+            &-info{
+                height: 50px;
+                display: flex;
+                align-items: center;
+                padding-left: 20px;
+            }
             .repo-generic-tree {
                 border-top: 1px solid var(--borderColor);
                 height: calc(100% - 50px);
