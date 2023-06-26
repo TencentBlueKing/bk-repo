@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.NIL
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey.TOTAL
+import com.tencent.bkrepo.analyst.model.LicenseScanPlanExport
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TScanPlan
@@ -42,6 +43,26 @@ import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import java.time.format.DateTimeFormatter
 
 object ScanLicenseConverter {
+
+    // 报告许可总数
+    private const val LICENSE_TOTAL = "total"
+
+    fun convert(subScanTask: TPlanArtifactLatestSubScanTask): LicenseScanPlanExport {
+        with(subScanTask) {
+            return LicenseScanPlanExport(
+                name = artifactName,
+                versionOrFullPath = version ?: fullPath,
+                repoName = repoName,
+                qualityRedLine = qualityRedLine?.let { if (it) "通过" else "不通过" } ?: "/",
+                total = getLicenseCount(LICENSE_TOTAL, subScanTask),
+                unRecommend = getLicenseCount(LicenseNature.UN_RECOMMEND.natureName, subScanTask),
+                unknown = getLicenseCount(LicenseNature.UNKNOWN.natureName, subScanTask),
+                unCompliance = getLicenseCount(LicenseNature.UN_COMPLIANCE.natureName, subScanTask),
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) ?: "/",
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime) / 1000
+            )
+        }
+    }
 
     fun convert(scanPlan: TScanPlan, subScanTasks: List<TPlanArtifactLatestSubScanTask>): ScanLicensePlanInfo {
         with(scanPlan) {
@@ -137,7 +158,8 @@ object ScanLicenseConverter {
                 finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine,
                 scanQuality = scanQuality,
-                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime)
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
+                scanStatus = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name
             )
         }
     }

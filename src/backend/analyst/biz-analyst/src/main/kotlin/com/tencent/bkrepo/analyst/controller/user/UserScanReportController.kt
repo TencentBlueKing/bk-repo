@@ -109,7 +109,7 @@ class UserScanReportController(private val scanTaskService: ScanTaskService) {
         return ResponseBuilder.success(scanTaskService.resultDetail(request))
     }
 
-    @ApiOperation("制品详情-漏洞数据-导出")
+    @ApiOperation("制品详情--漏洞数据--导出")
     @GetMapping("/export/artifact/leak/{projectId}/{subScanTaskId}")
     fun exportLeak(
         @ApiParam(value = "projectId") @PathVariable projectId: String,

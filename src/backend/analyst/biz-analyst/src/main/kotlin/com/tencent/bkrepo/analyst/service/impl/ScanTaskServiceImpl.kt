@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
+import com.google.common.util.concurrent.UncheckedExecutionException
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
@@ -66,6 +67,7 @@ import com.tencent.bkrepo.analyst.utils.EasyExcelUtils
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
@@ -148,37 +150,31 @@ class ScanTaskServiceImpl(
 
     override fun exportScanPlanRecords(request: SubtaskInfoRequest) {
         logger.info("exportScanPlanRecords request:${request.toJsonString()}")
-        with(request) {
-            if (id == null) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-            }
-            // 方案信息，获取方案名称
-            val scanPlan = scanPlanDao.find(projectId, id!!)
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-
-            val isLicenseScan = scanPlan.type.endsWith("_LICENSE")
-            // 获取任务信息
-            var pageNumber = 1
-            var page = planArtifactLatestSubScanTaskDao.pageBy(request)
-            val dataList = mutableListOf<Any>()
-            while (page.records.isNotEmpty()) {
-                page.records.forEach {
-                    if (isLicenseScan) {
-                        dataList.add(ScanLicenseConverter.convert(it))
-                    } else {
-                        dataList.add(Converter.convertToPlanExport(it))
-                    }
-                }
-                request.pageNumber = ++pageNumber
-                page = planArtifactLatestSubScanTaskDao.pageBy(request)
-            }
-
-            if (isLicenseScan) {
-                EasyExcelUtils.download(dataList, scanPlan.name, LicenseScanPlanExport::class.java)
-            } else {
-                EasyExcelUtils.download(dataList, scanPlan.name, LeakScanPlanExport::class.java)
-            }
+        if (request.id == null) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
         }
+        // 方案信息，获取方案名称
+        val scanPlan = scanPlanDao.find(request.projectId, request.id!!)
+            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+
+        val isLicenseScan = scanPlan.scanTypes.contains(ScanType.LICENSE.name)
+        // 获取任务信息
+        var pageNumber = 1
+        var page = planArtifactLatestSubScanTaskDao.pageBy(request)
+        val dataList = mutableListOf<Any>()
+        while (page.records.isNotEmpty()) {
+            page.records.forEach {
+                dataList.add(
+                    if (isLicenseScan) ScanLicenseConverter.convert(it)
+                    else Converter.convertToPlanExport(it)
+                )
+            }
+            request.pageNumber = ++pageNumber
+            page = planArtifactLatestSubScanTaskDao.pageBy(request)
+        }
+
+        val exportClass = if (isLicenseScan) LicenseScanPlanExport::class.java else LeakScanPlanExport::class.java
+        EasyExcelUtils.download(dataList, scanPlan.name, exportClass)
     }
 
     override fun planArtifactSubtaskOverview(subtaskId: String): SubtaskResultOverview {
@@ -368,7 +364,12 @@ class ScanTaskServiceImpl(
     ): FileLicensesResultOverview {
         val subtask = subtaskDao.findById(subScanTaskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
-        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        try {
+            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+        } catch (e: UncheckedExecutionException) {
+            logger.error("Failed to checkSubtaskPermission $e")
+            permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
+        }
         return ScanLicenseConverter.convert(subtask)
     }
 

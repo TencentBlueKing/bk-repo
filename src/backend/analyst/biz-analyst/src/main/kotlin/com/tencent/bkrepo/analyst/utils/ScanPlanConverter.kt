@@ -152,7 +152,12 @@ object ScanPlanConverter {
         }
     }
 
-    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?, artifactCount: Long): ScanPlanInfo {
+    fun convert(
+        scanPlan: TScanPlan,
+        latestScanTask: TScanTask?,
+        artifactCount: Long,
+        scanning: Boolean = false
+    ): ScanPlanInfo {
         with(scanPlan) {
             val scannerType = latestScanTask?.scannerType
             val overview = scanPlan.scanResultOverview
@@ -161,7 +166,13 @@ object ScanPlanConverter {
             val high = Converter.getCveCount(scannerType, Level.HIGH.levelName, overview)
             val medium = Converter.getCveCount(scannerType, Level.MEDIUM.levelName, overview)
             val low = Converter.getCveCount(scannerType, Level.LOW.levelName, overview)
-            val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
+            val status = if (scanning) {
+                ScanStatus.RUNNING.name
+            } else {
+                latestScanTask?.let {
+                    convertToScanStatus(it.status, isPlan = true).name
+                } ?: ScanStatus.INIT.name
+            }
 
             return ScanPlanInfo(
                 id = id!!,
@@ -234,7 +245,7 @@ object ScanPlanConverter {
                 projectId = projectId,
                 planType = planType,
                 name = planName,
-                status = convertToScanStatus(status).name,
+                status = convertToScanStatus(status, qualityRedLine).name,
                 recordId = id!!,
                 subTaskId = id!!
             )
@@ -289,7 +300,7 @@ object ScanPlanConverter {
         }
     }
 
-    fun convertToScanStatus(status: String?): ScanStatus {
+    fun convertToScanStatus(status: String?, qualityPass: Boolean? = null, isPlan: Boolean = false): ScanStatus {
         return when (status) {
             SubScanTaskStatus.BLOCKED.name,
             SubScanTaskStatus.CREATED.name,
@@ -306,7 +317,17 @@ object ScanPlanConverter {
             ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
 
             SubScanTaskStatus.SUCCESS.name,
-            ScanTaskStatus.FINISHED.name -> ScanStatus.SUCCESS
+            ScanTaskStatus.FINISHED.name -> {
+                if (isPlan) {
+                    ScanStatus.SUCCESS
+                } else {
+                    when (qualityPass) {
+                        null -> ScanStatus.UN_QUALITY
+                        true -> ScanStatus.QUALITY_PASS
+                        else -> ScanStatus.QUALITY_UNPASS
+                    }
+                }
+            }
 
             SubScanTaskStatus.BLOCK_TIMEOUT.name,
             SubScanTaskStatus.TIMEOUT.name,
