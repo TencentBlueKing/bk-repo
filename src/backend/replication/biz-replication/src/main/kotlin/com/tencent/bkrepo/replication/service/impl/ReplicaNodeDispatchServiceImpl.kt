@@ -28,21 +28,19 @@
 package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.dao.ReplicaNodeDispatchConfigDao
 import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaNodeDispatchConfig
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
 import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigCreateRequest
 import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigUpdateRequest
@@ -54,7 +52,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import java.net.URL
-import java.time.LocalDateTime
 
 /**
  * 分发任务执行服务器对应调度逻辑处理接口
@@ -193,27 +190,21 @@ class ReplicaNodeDispatchServiceImpl(
         username: String,
         password: String
     ): Boolean {
-        val clusterNodeInfo = ClusterNodeInfo(
-            id = null,
+        val remoteClusterInfo = ClusterInfo(
             name = config.nodeUrl,
-            status = ClusterNodeStatus.HEALTHY,
-            errorReason = null,
-            type = ClusterNodeType.STANDALONE,
             url = config.nodeUrl,
             username = username,
-            password = password,
-            certificate = null,
-            createdBy = SecurityUtils.getUserId(),
-            createdDate = LocalDateTime.now().toString(),
-            lastModifiedBy = SecurityUtils.getUserId(),
-            lastModifiedDate = LocalDateTime.now().toString(),
-            detectType = null,
-            lastReportTime = null
+            password = password
         )
         return try {
-            clusterNodeService.tryConnect(clusterNodeInfo)
+            val replicationService = FeignClientFactory.create(
+                ArtifactReplicaClient::class.java, remoteClusterInfo, normalizeUrl = false
+            )
+            val token = BasicAuthUtils.encode(username, password)
+            replicationService.ping(token)
             true
         } catch (ignore: Exception) {
+            logger.info("ping node ${config.nodeUrl} failed")
             false
         }
     }
