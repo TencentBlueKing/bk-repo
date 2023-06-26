@@ -132,6 +132,7 @@ body {
     color: var(--primaryColor);
     background-color: var(--bgHoverLighterColor);
     border: 1px solid transparent;
+    vertical-align: middle;
     &:before {
         content: attr(data-name);
     }
