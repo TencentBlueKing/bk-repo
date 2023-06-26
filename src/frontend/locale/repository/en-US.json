@@ -740,5 +740,7 @@
     "noProjectData":"No Project Data",
     "relatedUsers":"Related Users",
     "assetUserTip": "Please start with g_",
-    "createGroupToken": "Create Token"
+    "createGroupToken": "Create Token",
+    "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
+    "folderDirectory":"Folder directory"
 }

@@ -751,5 +751,7 @@
     "noProjectData":"无项目数据",
     "relatedUsers":"关联团队用户",
     "assetUserTip": "请以g_开头",
-    "createGroupToken": "生成令牌"
+    "createGroupToken": "生成令牌",
+    "inFolderSearchPlaceholder":"请输入文件/文件夹名称搜索",
+    "folderDirectory":"文件夹目录"
 }
