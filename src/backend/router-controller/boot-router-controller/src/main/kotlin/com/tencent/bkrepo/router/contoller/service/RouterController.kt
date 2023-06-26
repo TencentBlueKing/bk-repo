@@ -31,6 +31,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.router.api.RouterControllerClient
+import com.tencent.bkrepo.router.pojo.AddRouterNodeRequest
+import com.tencent.bkrepo.router.pojo.RemoveRouterNodeRequest
+import com.tencent.bkrepo.router.pojo.RouterNode
 import com.tencent.bkrepo.router.pojo.RouterPolicy
 import com.tencent.bkrepo.router.service.NodeRedirectService
 import com.tencent.bkrepo.router.service.RouterAdminService
@@ -98,5 +101,20 @@ class RouterController(
      * */
     override fun listRouterPolicies(): Response<List<RouterPolicy>> {
         return ResponseBuilder.success(routerAdminService.listPolicies())
+    }
+
+    /**
+     * 添加路由节点
+     * */
+    override fun addRouterNode(userId: String, request: AddRouterNodeRequest): Response<RouterNode> {
+        return ResponseBuilder.success(routerAdminService.addRouterNode(request))
+    }
+
+    /**
+     * 删除路由节点
+     */
+    override fun removeRouterNode(userId: String, request: RemoveRouterNodeRequest): Response<Void> {
+        routerAdminService.removeRouterNode(request)
+        return ResponseBuilder.success()
     }
 }
