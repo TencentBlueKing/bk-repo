@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
 import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 class ProxyArtifactClient : ArtifactClient() {
@@ -45,5 +47,19 @@ class ProxyArtifactClient : ArtifactClient() {
 
     override fun getRepositoryDetailOrNull(projectId: String, repoName: String, repoType: String): RepositoryDetail? {
         return proxyRepositoryClient.getRepoDetail(projectId, repoName, repoType).data
+    }
+
+    override fun listNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        includeFolder: Boolean,
+        deep: Boolean
+    ): List<NodeInfo>? {
+        return proxyNodeClient.listNode(projectId, repoName, fullPath, includeFolder, deep).data
+    }
+
+    override fun updateAccessDate(request: NodeUpdateAccessDateRequest) {
+        proxyNodeClient.updateNodeAccessDate(request)
     }
 }

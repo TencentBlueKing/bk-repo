@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -47,6 +49,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -62,8 +65,13 @@ class ProxyLocalRepository: LocalRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = proxyNodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            node?.let { downloadIntercept(context, it) }
+            val node = ArtifactContextHolder.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath())
+//            val node = proxyNodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+                ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+            if (node.folder) {
+                return downloadFolder(this, node)
+            }
+            downloadIntercept(context, node)
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
@@ -87,6 +95,30 @@ class ProxyLocalRepository: LocalRepository() {
                 // 异常往上抛
                 throw exception
             }
+        }
+    }
+
+    private fun downloadFolder(context: ArtifactDownloadContext, node: NodeDetail): ArtifactResource? {
+        with(context) {
+            val nodeList = proxyNodeClient.listNode(
+                projectId = projectId,
+                repoName = repoName,
+                path = artifactInfo.getArtifactFullPath(),
+                includeFolder = false,
+                deep = true
+            ).data.orEmpty()
+            nodeList.forEach {
+                val nodeDetail = NodeDetail(it)
+                downloadIntercept(context, nodeDetail)
+            }
+            // 构造name-node map
+            val prefix = "${node.fullPath}/"
+            val nodeMap = nodeList.associate {
+                val name = it.fullPath.removePrefix(prefix)
+                val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
+                name to inputStream
+            }
+            return ArtifactResource(nodeMap, node, useDisposition = true)
         }
     }
 

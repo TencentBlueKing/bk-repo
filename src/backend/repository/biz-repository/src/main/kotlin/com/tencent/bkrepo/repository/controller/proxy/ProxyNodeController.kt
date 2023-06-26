@@ -29,10 +29,14 @@ package com.tencent.bkrepo.repository.controller.proxy
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.springframework.web.bind.annotation.RestController
 
@@ -47,5 +51,27 @@ class ProxyNodeController(
 
     override fun createNode(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
         return ResponseBuilder.success(nodeService.createNode(nodeCreateRequest))
+    }
+
+    override fun listNode(
+        projectId: String,
+        repoName: String,
+        path: String,
+        includeFolder: Boolean,
+        deep: Boolean,
+        includeMetadata: Boolean
+    ): Response<List<NodeInfo>> {
+        val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
+        val nodeListOption = NodeListOption(
+            includeFolder = includeFolder,
+            includeMetadata = includeMetadata,
+            deep = deep
+        )
+        return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
+    }
+
+    override fun updateNodeAccessDate(nodeUpdateAccessDateRequest: NodeUpdateAccessDateRequest): Response<Void> {
+        nodeService.updateNodeAccessDate(nodeUpdateAccessDateRequest)
+        return ResponseBuilder.success()
     }
 }
