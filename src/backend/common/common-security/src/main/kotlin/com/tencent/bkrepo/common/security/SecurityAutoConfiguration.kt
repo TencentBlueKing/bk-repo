@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
 import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
@@ -73,7 +74,8 @@ class SecurityAutoConfiguration {
         externalPermissionResource: ServiceExternalPermissionClient,
         userResource: ServiceUserClient,
         nodeClient: NodeClient,
-        clusterProperties: ClusterProperties
+        clusterProperties: ClusterProperties,
+        httpAuthProperties: HttpAuthProperties
     ): PermissionManager {
         return if (clusterProperties.role == ClusterNodeType.EDGE
             && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
@@ -84,7 +86,8 @@ class SecurityAutoConfiguration {
                 externalPermissionResource = externalPermissionResource,
                 userResource = userResource,
                 nodeClient = nodeClient,
-                clusterProperties = clusterProperties
+                clusterProperties = clusterProperties,
+                httpAuthProperties = httpAuthProperties
             )
         } else {
             PermissionManager(
@@ -92,7 +95,8 @@ class SecurityAutoConfiguration {
                 permissionResource = permissionResource,
                 externalPermissionResource = externalPermissionResource,
                 userResource = userResource,
-                nodeClient = nodeClient
+                nodeClient = nodeClient,
+                httpAuthProperties = httpAuthProperties
             )
         }
     }

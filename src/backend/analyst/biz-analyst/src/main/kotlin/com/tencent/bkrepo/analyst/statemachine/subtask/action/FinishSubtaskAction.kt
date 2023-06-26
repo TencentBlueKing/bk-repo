@@ -175,7 +175,7 @@ class FinishSubtaskAction(
 
         // 质量规则检查结果
         val planId = subTask.planId
-        val qualityPass = if (planId != null && overview.isNotEmpty()) {
+        val qualityPass = if (planId != null) {
             scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
         } else {
             null

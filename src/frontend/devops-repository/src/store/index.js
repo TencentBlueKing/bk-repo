@@ -63,8 +63,11 @@ const storeObject = {
         UPDATE_TREE (state, { roadMap, list }) {
             let tree = state.genericTree
             roadMap.split(',').forEach(index => {
-                if (!tree[index].children) Vue.set(tree[index], 'children', [])
-                tree = tree[index].children
+                // 在移动或复制操作中选择的是最后一层元素时，可能是undefined，此时自然不应该执行后续操作
+                if (tree[index]) {
+                    if (!tree[index]?.children) Vue.set(tree[index], 'children', [])
+                    tree = tree[index].children
+                }
             })
             list = list.map(item => {
                 const children = (tree.find(oldItem => oldItem.fullPath === item.fullPath) || {}).children || []

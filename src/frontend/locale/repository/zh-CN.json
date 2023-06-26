@@ -771,5 +771,10 @@
     "storeSource":"仓库来源",
     "localStoreInfo":"上传并管理你自己的软件包",
     "remoteStoreInfo":"代理和缓存远程托管的软件包",
-    "virtualStoreInfo":"将本地和远程软件包合并到一个地方"
+    "virtualStoreInfo":"将本地和远程软件包合并到一个地方",
+    "relatedUsers":"关联团队用户",
+    "assetUserTip": "请以g_开头",
+    "createGroupToken": "生成令牌",
+    "inFolderSearchPlaceholder":"请输入文件/文件夹名称搜索",
+    "folderDirectory":"文件夹目录"
 }

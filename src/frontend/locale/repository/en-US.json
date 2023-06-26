@@ -760,5 +760,10 @@
     "storeSource":"Store source",
     "localStoreInfo":"Upload and resolve your own packages",
     "remoteStoreInfo":"Proxy and cache packages hosted remotely",
-    "virtualStoreInfo":"Combine local and remote packages in one place"
+    "virtualStoreInfo":"Combine local and remote packages in one place",
+    "relatedUsers":"Related Users",
+    "assetUserTip": "Please start with g_",
+    "createGroupToken": "Create Token",
+    "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
+    "folderDirectory":"Folder directory"
 }
