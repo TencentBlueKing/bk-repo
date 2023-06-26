@@ -106,14 +106,14 @@ class RouterController(
     /**
      * 添加路由节点
      * */
-    override fun addRouterNode(userId: String, request: AddRouterNodeRequest): Response<RouterNode> {
+    override fun addRouterNode(request: AddRouterNodeRequest): Response<RouterNode> {
         return ResponseBuilder.success(routerAdminService.addRouterNode(request))
     }
 
     /**
      * 删除路由节点
      */
-    override fun removeRouterNode(userId: String, request: RemoveRouterNodeRequest): Response<Void> {
+    override fun removeRouterNode(request: RemoveRouterNodeRequest): Response<Void> {
         routerAdminService.removeRouterNode(request)
         return ResponseBuilder.success()
     }
