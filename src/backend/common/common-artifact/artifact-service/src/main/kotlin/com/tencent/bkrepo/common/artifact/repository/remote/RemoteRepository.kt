@@ -80,11 +80,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val remoteConfiguration = context.getRemoteConfiguration()
             val httpClient = createHttpClient(remoteConfiguration)
             val downloadUrl = createRemoteDownloadUrl(context)
-            val request = Request.Builder()
-                .removeHeader(USER_AGENT)
-                .addHeader(USER_AGENT, "${UUID.randomUUID()}")
-                .url(downloadUrl)
-                .build()
+            val request = Request.Builder().url(downloadUrl).build()
             logger.info("Remote download url: $downloadUrl, network config: ${remoteConfiguration.network}")
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {

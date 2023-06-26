@@ -118,16 +118,36 @@ class PypiRemoteRepository : RemoteRepository() {
         }
     }
 
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return getCacheArtifactResource(context) ?: run {
+            val remoteConfiguration = context.getRemoteConfiguration()
+            val httpClient = createHttpClient(remoteConfiguration)
+            val downloadUrl = createRemoteDownloadUrl(context)
+            val request = Request.Builder().url(downloadUrl).apply {
+                // PyPI清华源会根据User-Agent阻断频繁请求, 因此随机化这个请求头
+                if (downloadUrl.contains(TSINGHUA_MIRROR_KEY)) {
+                    removeHeader(USER_AGENT)
+                    addHeader(USER_AGENT, "${UUID.randomUUID()}")
+                }
+            }.build()
+            logger.info("Remote download url: $downloadUrl, network config: ${remoteConfiguration.network}")
+            val response = httpClient.newCall(request).execute()
+            return if (checkResponse(response)) {
+                onDownloadResponse(context, response)
+            } else null
+        }
+    }
+
     fun remoteRequest(context: ArtifactQueryContext): String? {
         val listUri = generateRemoteListUrl(context)
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
-        val build: Request = Request.Builder()
-            .get()
-            .url(listUri)
-            .removeHeader(USER_AGENT)
-            .addHeader(USER_AGENT, "${UUID.randomUUID()}")
-            .build()
+        val build: Request = Request.Builder().get().url(listUri).apply {
+            if (listUri.contains(TSINGHUA_MIRROR_KEY)) {
+                removeHeader(USER_AGENT)
+                addHeader(USER_AGENT, "${UUID.randomUUID()}")
+            }
+        }.build()
         return okHttpClient.newCall(build).execute().body?.string()
     }
 
@@ -399,6 +419,7 @@ class PypiRemoteRepository : RemoteRepository() {
     }
 
     companion object {
+        private const val TSINGHUA_MIRROR_KEY = "tsinghua"
         val logger: Logger = LoggerFactory.getLogger(PypiRemoteRepository::class.java)
     }
 }
