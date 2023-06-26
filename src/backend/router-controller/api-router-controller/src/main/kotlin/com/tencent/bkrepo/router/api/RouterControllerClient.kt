@@ -29,6 +29,9 @@ package com.tencent.bkrepo.router.api
 
 import com.tencent.bkrepo.common.api.constant.ROUTER_CONTROLLER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.router.pojo.AddRouterNodeRequest
+import com.tencent.bkrepo.router.pojo.RemoveRouterNodeRequest
+import com.tencent.bkrepo.router.pojo.RouterNode
 import com.tencent.bkrepo.router.pojo.RouterPolicy
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -37,6 +40,8 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -45,7 +50,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/service/router")
 interface RouterControllerClient {
     @ApiOperation("添加节点位置")
-    @PostMapping("/node/{projectId}/{repoName}")
+    @PostMapping("/node/location/{projectId}/{repoName}")
     fun addNode(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
@@ -54,7 +59,7 @@ interface RouterControllerClient {
     )
 
     @ApiOperation("删除节点位置")
-    @DeleteMapping("/node/{projectId}/{repoName}")
+    @DeleteMapping("/node/location/{projectId}/{repoName}")
     fun removeNode(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
@@ -63,7 +68,7 @@ interface RouterControllerClient {
     )
 
     @ApiOperation("获取重定向的URL")
-    @GetMapping("/location/{projectId}/{repoName}")
+    @GetMapping("/node/location/{projectId}/{repoName}")
     fun getRedirectUrl(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
@@ -74,4 +79,16 @@ interface RouterControllerClient {
     @ApiOperation("获取路由策略")
     @GetMapping("/policy/list")
     fun listRouterPolicies(): Response<List<RouterPolicy>>
+
+    @PostMapping("/node")
+    fun addRouterNode(
+        @RequestAttribute userId: String,
+        @RequestBody request: AddRouterNodeRequest,
+    ): Response<RouterNode>
+
+    @DeleteMapping("/node")
+    fun removeRouterNode(
+        @RequestAttribute userId: String,
+        @RequestBody request: RemoveRouterNodeRequest,
+    ): Response<Void>
 }
