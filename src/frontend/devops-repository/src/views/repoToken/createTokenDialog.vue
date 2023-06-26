@@ -49,6 +49,7 @@
             return {
                 show: false,
                 loading: false,
+                userName: '',
                 tokenFormData: {
                     name: '',
                     expiredAt: ''
@@ -84,7 +85,7 @@
                 this.loading = true
                 this.addToken({
                     projectId: this.$route.params.projectId,
-                    username: this.userInfo.username,
+                    username: this.userName,
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
                 }).then(({ id }) => {

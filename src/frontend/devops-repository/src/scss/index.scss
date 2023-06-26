@@ -132,6 +132,10 @@ body {
     color: var(--primaryColor);
     background-color: var(--bgHoverLighterColor);
     border: 1px solid transparent;
+    max-width: 350px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     &:before {
         content: attr(data-name);
     }

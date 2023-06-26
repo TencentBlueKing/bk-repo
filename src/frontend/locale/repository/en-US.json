@@ -743,5 +743,10 @@
     "enable": "Enable",
     "disable": "Disable",
     "newToken": "New Access Token",
-    "newAnalysis": "New Analysis Plan"
+    "newAnalysis": "New Analysis Plan",
+    "relatedUsers":"Related Users",
+    "assetUserTip": "Please start with g_",
+    "createGroupToken": "Create Token",
+    "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
+    "folderDirectory":"Folder directory"
 }

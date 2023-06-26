@@ -90,4 +90,6 @@ interface UserService {
     fun removeUserAccount(userId: String, accountId: String): Boolean
 
     fun validateEntityUser(userId: String): Boolean
+
+    fun getRelatedUserById(asstUser: String, userName: String? = null): List<UserInfo>
 }

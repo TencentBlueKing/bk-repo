@@ -93,6 +93,7 @@
                 })
             },
             createToken () {
+                this.$refs.createToken.userName = this.userInfo.username
                 this.$refs.createToken.showDialogHandler()
             }
         }
