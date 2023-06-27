@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -54,14 +54,14 @@ import java.nio.file.StandardOpenOption
 @Service
 class ProxyService(
     private val serviceProxyClient: ServiceProxyClient,
-    private val artifactResourceWriter: DefaultArtifactResourceWriter,
+    private val artifactResourceWriter: ArtifactResourceWriter,
     private val permissionManager: PermissionManager,
     private val genericProperties: GenericProperties,
     private val clusterProperties: ClusterProperties
 ) {
 
     fun download(projectId: String, name: String) {
-        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
         val encryptedKey = try {
             serviceProxyClient.getEncryptedKey(projectId, name).data!!
         } catch (e: RemoteErrorCodeException) {

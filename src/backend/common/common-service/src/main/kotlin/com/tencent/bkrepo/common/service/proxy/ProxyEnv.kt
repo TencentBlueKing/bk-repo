@@ -47,7 +47,7 @@ object ProxyEnv {
     private var gateway: String? = null
 
     private val properties = Properties()
-    private val propertyFile = ClassPathResource(PROXY_PROPERTIES_FILE_NAME).file
+    private val propertyFileResource = ClassPathResource(PROXY_PROPERTIES_FILE_NAME)
     fun getProjectId(): String {
         if (projectId.isNullOrBlank()) {
             synchronized(this) {
@@ -95,11 +95,11 @@ object ProxyEnv {
 
     private fun getProperty(key: String): String {
         if (properties.isEmpty) {
-            if (!propertyFile.exists()) {
+            if (!propertyFileResource.exists()) {
                 throw RuntimeException()
             }
 
-            properties.load(propertyFile.inputStream())
+            properties.load(propertyFileResource.inputStream)
         }
         return properties.getProperty(key)
     }

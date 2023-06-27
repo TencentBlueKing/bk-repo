@@ -48,6 +48,10 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.router.api.RouterControllerClient
+import com.tencent.bkrepo.router.enum.RouterNodeType
+import com.tencent.bkrepo.router.pojo.AddRouterNodeRequest
+import com.tencent.bkrepo.router.pojo.RemoveRouterNodeRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
@@ -58,7 +62,8 @@ import kotlin.random.Random
 @Service
 class ProxyServiceImpl(
     private val proxyRepository: ProxyRepository,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val routerControllerClient: RouterControllerClient
 ) : ProxyService {
     override fun create(request: ProxyCreateRequest): ProxyInfo {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, request.projectId)
@@ -125,6 +130,7 @@ class ProxyServiceImpl(
         proxyRepository.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
         proxyRepository.deleteByProjectIdAndName(projectId, name)
+        routerControllerClient.removeRouterNode(RemoveRouterNodeRequest(name, SecurityUtils.getUserId()))
     }
 
     override fun ticket(projectId: String, name: String): Int {
@@ -160,6 +166,16 @@ class ProxyServiceImpl(
             tProxy.sessionKey = sessionKey
             tProxy.ip = HttpContextHolder.getClientAddress()
             proxyRepository.save(tProxy)
+            routerControllerClient.addRouterNode(
+                AddRouterNodeRequest(
+                    id = tProxy.name,
+                    name = tProxy.displayName,
+                    description = StringPool.EMPTY,
+                    type = RouterNodeType.PROXY,
+                    location = "${StringPool.HTTP}${tProxy.ip}",
+                    operator = tProxy.createdBy
+                )
+            )
             return sessionKey
         }
     }

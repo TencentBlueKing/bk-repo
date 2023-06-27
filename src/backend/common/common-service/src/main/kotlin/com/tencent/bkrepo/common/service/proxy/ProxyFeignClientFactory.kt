@@ -54,12 +54,12 @@ object ProxyFeignClientFactory {
 
     inline fun <reified T> create(serviceName: String): T {
         val gateway = ProxyEnv.getGateway()
-//        val url = FeignClientFactory.normalizeUrl(gateway, serviceName)
-        val url = when (serviceName) {
-            "auth" -> "http://localhost:25902"
-            "repository" -> "http://localhost:25901"
-            else -> ""
-        }
+        val url = FeignClientFactory.normalizeUrl(gateway, serviceName)
+//        val url = when (serviceName) {
+//            "auth" -> "http://localhost:25902"
+//            "repository" -> "http://localhost:25901"
+//            else -> ""
+//        }
         return clientCacheMap.getOrPut(T::class.java) {
             Feign.builder().logLevel(Logger.Level.BASIC)
                 .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(T::class.java))
