@@ -22,13 +22,13 @@
             title: {
                 type: String,
                 default () {
-                    return this.$t('No Data')
+                    return this.$t('noData')
                 }
             },
             searchTitle: {
                 type: String,
                 default () {
-                    return this.$t('Search Result Is Empty')
+                    return this.$t('noSearchData')
                 }
             },
             subTitle: String,

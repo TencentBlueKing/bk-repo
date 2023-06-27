@@ -64,7 +64,7 @@ class IpSegmentInterceptor(
             return true
         }
 
-        val clientIp = HttpContextHolder.getClientAddress()
+        val clientIp = HttpContextHolder.getClientAddressFromAttribute()
         val officeNetworkIpSegment = if (officeNetworkEnabled) properties.officeNetwork.whiteList else emptyList()
         val ipSegment = officeNetworkIpSegment.plus(customIpSegment)
         ipSegment.forEach {
