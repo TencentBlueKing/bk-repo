@@ -752,5 +752,8 @@
     "assetUserTip": "请以g_开头",
     "createGroupToken": "生成令牌",
     "inFolderSearchPlaceholder":"请输入文件/文件夹名称搜索",
-    "folderDirectory":"文件夹目录"
+    "folderDirectory":"文件夹目录",
+    "batchDownload":"批量下载",
+    "noFilenameErrorInfo":"抱歉，服务器获取文件名称异常，请稍后重试",
+    "batchDownloadBackTypeErrorInfo":"批量下载文件失败，请稍后重试"
 }

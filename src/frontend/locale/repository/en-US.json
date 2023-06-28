@@ -741,5 +741,8 @@
     "assetUserTip": "Please start with g_",
     "createGroupToken": "Create Token",
     "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
-    "folderDirectory":"Folder directory"
+    "folderDirectory":"Folder directory",
+    "batchDownload":"Batch download",
+    "noFilenameErrorInfo":"Sorry, the server got the file name abnormally, please try again later",
+    "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later"
 }
