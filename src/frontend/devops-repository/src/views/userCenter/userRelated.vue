@@ -32,7 +32,7 @@
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('associatedUser')">
-                <template #default="{ row }">{{row.asstUsers}}</template>
+                <template #default="{ row }">{{row.asstUsers.toLocaleString()}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
