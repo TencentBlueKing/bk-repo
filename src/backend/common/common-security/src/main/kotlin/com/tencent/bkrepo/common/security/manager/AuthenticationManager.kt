@@ -29,8 +29,10 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -46,6 +48,9 @@ open class AuthenticationManager {
 
     @Autowired
     private lateinit var serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
+
+    @Autowired
+    private lateinit var serviceTemporaryTokenClient: ServiceTemporaryTokenClient
 
     /**
      * 校验普通用户类型账户
@@ -100,4 +105,7 @@ open class AuthenticationManager {
         return serviceAccountClient.findSecretKey(appId, accessKey).data
     }
 
+    open fun getTokenInfo(token: String): TemporaryTokenInfo? {
+        return serviceTemporaryTokenClient.getTokenInfo(token).data
+    }
 }

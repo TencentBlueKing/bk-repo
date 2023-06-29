@@ -29,8 +29,10 @@ package com.tencent.bkrepo.proxy.security
 
 import com.tencent.bkrepo.auth.api.proxy.ProxyAccountClient
 import com.tencent.bkrepo.auth.api.proxy.ProxyOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.proxy.ProxyTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -41,6 +43,8 @@ class ProxyAuthenticationManager : AuthenticationManager() {
     private val proxyUserClient: ProxyUserClient by lazy { ProxyFeignClientFactory.create("auth") }
     private val proxyAccountClient: ProxyAccountClient by lazy { ProxyFeignClientFactory.create("auth") }
     private val proxyOauthAuthorizationClient: ProxyOauthAuthorizationClient
+        by lazy { ProxyFeignClientFactory.create("auth") }
+    private val proxyTemporaryTokenClient: ProxyTemporaryTokenClient
         by lazy { ProxyFeignClientFactory.create("auth") }
 
     /**
@@ -94,5 +98,9 @@ class ProxyAuthenticationManager : AuthenticationManager() {
      * */
     override fun findSecretKey(appId: String, accessKey: String): String? {
         return proxyAccountClient.findSecretKey(appId, accessKey).data
+    }
+
+    override fun getTokenInfo(token: String): TemporaryTokenInfo? {
+        return proxyTemporaryTokenClient.getTokenInfo(token).data
     }
 }

@@ -66,7 +66,6 @@ class ProxyLocalRepository: LocalRepository() {
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val node = ArtifactContextHolder.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath())
-//            val node = proxyNodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
                 ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             if (node.folder) {
                 return downloadFolder(this, node)
