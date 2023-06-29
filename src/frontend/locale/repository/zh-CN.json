@@ -755,5 +755,6 @@
     "folderDirectory":"文件夹目录",
     "batchDownload":"批量下载",
     "noFilenameErrorInfo":"抱歉，服务器获取文件名称异常，请稍后重试",
-    "batchDownloadBackTypeErrorInfo":"批量下载文件失败，请稍后重试"
+    "batchDownloadBackTypeErrorInfo":"批量下载文件失败，请稍后重试",
+    "batchDownloadingInfo":"您批量选中的文件正在进行下载中，请稍候..."
 }

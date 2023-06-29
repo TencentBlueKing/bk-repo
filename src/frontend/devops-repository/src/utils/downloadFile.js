@@ -33,6 +33,11 @@ export function customizeDownloadFile (projectId, repoName, fullPaths) {
             link.click()
             window.URL.revokeObjectURL(blobUrl)
             document.body.removeChild(link)
+            vm.$bkNotify({
+                title: vm.$t('batchDownloadingInfo'),
+                position: 'bottom-right',
+                theme: 'success'
+            })
         } else {
             vm.$bkMessage({
                 message: vm.$t('noFilenameErrorInfo'),

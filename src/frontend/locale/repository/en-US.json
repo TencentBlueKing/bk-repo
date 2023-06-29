@@ -744,5 +744,6 @@
     "folderDirectory":"Folder directory",
     "batchDownload":"Batch download",
     "noFilenameErrorInfo":"Sorry, the server got the file name abnormally, please try again later",
-    "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later"
+    "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later",
+    "batchDownloadingInfo":"The files you selected in batches are being downloaded, please wait..."
 }
