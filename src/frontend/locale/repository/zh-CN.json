@@ -366,10 +366,10 @@
     "finishTime": "完成时间",
     "storagePath": "存储路径",
     "leakLevelEnum": {
-        "CRITICAL": "危急",
-        "HIGH": "高级",
-        "MEDIUM": "中级",
-        "LOW": "低级"
+        "CRITICAL": "严重",
+        "HIGH": "高危",
+        "MEDIUM": "中危",
+        "LOW": "低危"
     },
     "totalNumVulnerability": "漏洞总数",
     "recommendLicenseRule": "仅有推荐使用的许可证",
