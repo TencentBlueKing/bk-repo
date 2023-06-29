@@ -20,16 +20,16 @@
                     </bk-form-item>
                     <bk-form-item :label="$t('isDisplay')">
                         <bk-radio-group v-model="repoBaseInfo.display">
-                            <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                            <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                            <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
+                            <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'generic'">
                         <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                             :label="$t(`${type}Download`)" :property="`${type}.enable`">
                             <bk-radio-group v-model="repoBaseInfo[type].enable">
-                                <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                                <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                                <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
+                                <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                             </bk-radio-group>
                             <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
                                 <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
