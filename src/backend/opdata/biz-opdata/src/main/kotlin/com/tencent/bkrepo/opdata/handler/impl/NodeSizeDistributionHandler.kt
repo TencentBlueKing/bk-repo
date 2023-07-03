@@ -53,9 +53,7 @@ class NodeSizeDistributionHandler(
 
     @Suppress("UNCHECKED_CAST")
     override fun handle(target: Target, result: MutableList<Any>) {
-        val resultList = if (target.data.toString().isBlank()) {
-            sizeDistributionMetricsRepository.findAll()
-        } else {
+        val resultList = if (target.data is Map<*, *>) {
             val data = target.data as Map<String, Any>
             val projectId = data[OPDATA_PROJECT_ID] as String?
             val repoName = data[OPDATA_REPO_NAME] as String?
@@ -66,6 +64,8 @@ class NodeSizeDistributionHandler(
             } else {
                 sizeDistributionMetricsRepository.findByProjectIdAndRepoName(projectId, repoName)
             }
+        } else {
+            sizeDistributionMetricsRepository.findAll()
         }
         val resultMap = mutableMapOf<String, Long>()
         resultList.forEach {
