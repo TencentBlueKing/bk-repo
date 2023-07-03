@@ -29,17 +29,25 @@ package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.auth.api.ServiceProxyClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.bound
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.generic.config.GenericProperties
 import org.slf4j.LoggerFactory
@@ -62,14 +70,47 @@ class ProxyService(
 
     fun download(projectId: String, name: String) {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
-        val encryptedKey = try {
-            serviceProxyClient.getEncryptedKey(projectId, name).data!!
-        } catch (e: RemoteErrorCodeException) {
-            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
-        }
         val proxyJar = File(genericProperties.proxyPath)
+        val tmpJar = writeProxyProperties(proxyJar, projectId, name)
+        downloadProxy(tmpJar, projectId, name)
+    }
+
+    private fun downloadProxy(proxyJar: File, projectId: String, name: String) {
+        val range = if (HeaderUtils.getHeader(HttpHeaders.RANGE).isNullOrBlank()) {
+            Range.full(proxyJar.length())
+        } else {
+            HttpRangeUtils.resolveRange(HttpContextHolder.getRequest(), proxyJar.length())
+        }
         try {
-            val fs = FileSystems.newFileSystem(URI.create("jar:${proxyJar.toURI()}"), mapOf("create" to "true"))
+            artifactResourceWriter.write(
+                ArtifactResource(
+                    inputStream = ArtifactInputStream(proxyJar.bound(range), range),
+                    artifactName = "proxy.jar",
+                    useDisposition = true
+                )
+            )
+        } catch (e: ArtifactResponseException) {
+            val principal = SecurityUtils.getPrincipal()
+            val message = LocaleMessageUtils.getLocalizedMessage(e.messageCode, e.params)
+            val code = e.messageCode.getCode()
+            val clientAddress = HttpContextHolder.getClientAddress()
+            val xForwardedFor = HttpContextHolder.getXForwardedFor()
+            logger.warn(
+                "User[$principal],ip[$clientAddress] download proxy[$projectId/$name] failed[$code]$message" +
+                    " X_FORWARDED_FOR: $xForwardedFor"
+            )
+        } finally {
+            logger.info(proxyJar.absolutePath)
+            proxyJar.delete()
+        }
+    }
+
+    private fun writeProxyProperties(proxyJar: File, projectId: String, name: String): File {
+        try {
+            val secretKey = getSecretKey(projectId, name)
+            val tmpJar = Files.createTempFile("proxy", ".jar").toFile()
+            tmpJar.outputStream().use { proxyJar.inputStream().copyTo(it) }
+            val fs = FileSystems.newFileSystem(URI.create("jar:${tmpJar.toURI()}"), mapOf("create" to "true"))
             val properties = fs.getPath("BOOT-INF/classes/.proxy.properties")
             val writer = Files.newBufferedWriter(
                 properties,
@@ -78,20 +119,23 @@ class ProxyService(
             )
             val content = String.format(
                 FORMAT,
-                projectId, name, AESUtils.decrypt(encryptedKey.encSecretKey),
+                projectId, name, secretKey,
                 clusterProperties.self.name, UrlUtils.extractDomain(genericProperties.domain)
             )
             writer.write(content)
             writer.close()
             fs.close()
+            return tmpJar
         } catch (e: Exception) {
-            logger.error("download proxy.jar error: ", e)
             throw ArtifactNotFoundException("proxy.jar")
         }
-        artifactResourceWriter.write(ArtifactResource(
-            inputStream = ArtifactInputStream(proxyJar.inputStream(), Range.full(proxyJar.length())),
-            artifactName = "proxy.jar"
-        ))
+    }
+
+    private fun getSecretKey(projectId: String, name: String) = try {
+        val encryptedKey = serviceProxyClient.getEncryptedKey(projectId, name).data!!
+        AESUtils.decrypt(encryptedKey.encSecretKey)
+    } catch (e: RemoteErrorCodeException) {
+        throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
     }
 
     companion object {
