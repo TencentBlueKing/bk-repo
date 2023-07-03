@@ -42,9 +42,6 @@ const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 const val HOST = "Host"
-const val BEARER_REALM = "Bearer realm"
-const val SERVICE = "service"
-const val SCOPE = "scope"
 const val PATCH = "PATCH"
 const val POST = "POST"
 const val NODE_FULL_PATH = "fullPath"
@@ -98,6 +95,9 @@ const val MD5 = "md5"
 const val OCI_MANIFEST = "manifest.json"
 const val STAGE_TAG = "stageTag"
 
+const val REQUEST_TAG_LIST = "tagList"
+const val REQUEST_IMAGE = "image"
+
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"
 
@@ -117,6 +117,8 @@ const val PROV_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.provenance.v1
 const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"
 
 const val OCI_IMAGE_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"
+
+const val DOCKER_DISTRIBUTION_MANIFEST_V2 = "application/vnd.docker.distribution.manifest.v2+json"
 
 // Content Descriptor
 const val CONTENT_DESCRIPTOR_MEDIA_TYPE = "application/vnd.oci.descriptor.v1+json"

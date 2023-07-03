@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.oci.listener.base
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -57,12 +58,22 @@ open class EventExecutor(
     ): Future<Boolean> {
         return threadPoolExecutor.submit<Boolean> {
             try {
-                replicationEventHandler(event)
+                eventHandler(event)
                 true
             } catch (exception: Throwable) {
                 logger.warn("Error occurred while executing the oci event: $exception")
                 false
             }
+        }
+    }
+
+    private fun eventHandler(event: ArtifactEvent) {
+        when (event.type) {
+            EventType.REPLICATION_THIRD_PARTY -> replicationEventHandler(event)
+            EventType.REPO_CREATED, EventType.REPO_REFRESHED, EventType.REPO_UPDATED -> {
+                ociOperationService.getPackagesFromThirdPartyRepo(event.projectId, event.repoName)
+            }
+            else -> UnsupportedOperationException()
         }
     }
 

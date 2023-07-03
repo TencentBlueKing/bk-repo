@@ -32,14 +32,19 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -68,6 +73,8 @@ import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciVersionNotFoundException
+import com.tencent.bkrepo.oci.extension.ImagePackageInfoPullExtension
+import com.tencent.bkrepo.oci.extension.ImagePackagePullContext
 import com.tencent.bkrepo.oci.model.Descriptor
 import com.tencent.bkrepo.oci.model.ManifestSchema2
 import com.tencent.bkrepo.oci.model.TOciReplicationRecord
@@ -99,6 +106,8 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
+import com.tencent.devops.plugin.api.PluginManager
+import com.tencent.devops.plugin.api.applyExtension
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -119,8 +128,9 @@ class OciOperationServiceImpl(
     private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient,
     private val ociProperties: OciProperties,
-    private val ociReplicationRecordDao: OciReplicationRecordDao
-) : OciOperationService {
+    private val ociReplicationRecordDao: OciReplicationRecordDao,
+    private val pluginManager: PluginManager
+    ) : OciOperationService {
 
     /**
      * 检查package 对应的version是否存在
@@ -1091,6 +1101,47 @@ class OciOperationServiceImpl(
             )
         }
         return OciTagResult(result.totalRecords, data)
+    }
+
+    override fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String,) {
+        val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data ?: throw RepoNotFoundException("$projectId|$repoName")
+        buildImagePackagePullContext(projectId, repoName, repositoryDetail.configuration).forEach {
+            pluginManager.applyExtension<ImagePackageInfoPullExtension> {
+                queryAndCreateDockerPackageInfo(it)
+            }
+        }
+    }
+
+    private fun buildImagePackagePullContext(
+        projectId: String,
+        repoName: String,
+        config: RepositoryConfiguration
+    ): List<ImagePackagePullContext> {
+        return when (config) {
+            is RemoteConfiguration -> {
+                listOf(
+                    ImagePackagePullContext(
+                        projectId = projectId,
+                        repoName = repoName,
+                        remoteUrl = UrlFormatter.addProtocol(config.url),
+                        userName = config.credentials.username,
+                        password = config.credentials.password
+                    )
+                )
+            }
+            is CompositeConfiguration -> {
+                config.proxy.channelList.map {
+                    ImagePackagePullContext(
+                        projectId = projectId,
+                        repoName = repoName,
+                        remoteUrl = UrlFormatter.addProtocol(it.url),
+                        userName = it.username,
+                        password = it.password
+                    )
+                }
+            }
+            else -> throw UnsupportedOperationException()
+        }
     }
 
     private fun buildString(stageTag: List<String>): String {

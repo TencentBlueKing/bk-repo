@@ -193,4 +193,9 @@ interface OciOperationService {
         pageSize: Int,
         tag: String?
     ): OciTagResult
+
+    /**
+     * 拉取第三方镜像仓库package信息
+     */
+    fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String)
 }

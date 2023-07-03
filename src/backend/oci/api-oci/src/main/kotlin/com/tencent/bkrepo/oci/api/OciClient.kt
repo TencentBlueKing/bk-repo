@@ -34,10 +34,10 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-
 
 
 @Api("oci")
@@ -50,5 +50,12 @@ interface OciClient {
     @PostMapping("/packageCreate")
     fun packageCreate(
         @RequestBody record: OciReplicationRecordInfo
+    ): Response<Void>
+
+    @ApiOperation("定时从第三方仓库拉取对应的package信息")
+    @PostMapping("/pull/package/{projectId}/{repoName}")
+    fun pullThirdPartyPackages(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
     ): Response<Void>
 }

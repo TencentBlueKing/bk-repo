@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.helm.api.HelmClient
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.job.batch.base.DefaultRepoJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.RepoRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
+import com.tencent.bkrepo.oci.api.OciClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -49,7 +51,8 @@ import org.springframework.stereotype.Component
 @EnableConfigurationProperties(RepoRefreshJobProperties::class)
 class RepoRefreshJob(
     private val properties: RepoRefreshJobProperties,
-    private val helmClient: HelmClient
+    private val helmClient: HelmClient,
+    private val ociClient: OciClient
 ) : DefaultRepoJob(properties) {
 
     private val types: List<String>
@@ -75,7 +78,15 @@ class RepoRefreshJob(
                 val config = configuration.readJsonString<RepositoryConfiguration>()
                 if (checkConfigType(config)) {
                     logger.info("Refresh request will be sent in repo $projectId|$name")
-                    helmClient.refreshIndexYamlAndPackage(projectId, name)
+                    when (row.type) {
+                        RepositoryType.HELM.name -> {
+                            helmClient.refreshIndexYamlAndPackage(projectId, name)
+                        }
+                        RepositoryType.OCI.name, RepositoryType.DOCKER.name -> {
+                            ociClient.pullThirdPartyPackages(projectId, name)
+                        }
+                        else -> throw UnsupportedOperationException()
+                    }
                 }
             } catch (e: Exception) {
                 throw JobExecuteException("Failed to send refresh request for repo ${row.projectId}|${row.name}.", e)

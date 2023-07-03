@@ -38,10 +38,6 @@ interface ImagePackageInfoPullExtension: ExtensionPoint {
      * 拉取第三方镜像仓库package信息,并存储到对应仓库中
      */
     fun queryAndCreateDockerPackageInfo(
-        projectId: String,
-        repoName:String,
-        remoteUrl: String,
-        userName: String? = null,
-        password: String? = null
+        context: ImagePackagePullContext
     )
 }

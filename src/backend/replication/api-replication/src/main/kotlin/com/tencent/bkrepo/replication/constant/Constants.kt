@@ -29,9 +29,6 @@ package com.tencent.bkrepo.replication.constant
 
 const val DEFAULT_VERSION = "1.0.0"
 
-const val BEARER_REALM = "Bearer realm"
-const val SERVICE = "service"
-const val SCOPE = "scope"
 const val REPOSITORY = "repository"
 const val URL = "url"
 

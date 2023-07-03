@@ -42,8 +42,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class OciPackageController(
     private val operationService: OciOperationService,
-    private val ociReplicationRecordDao: OciReplicationRecordDao
-): OciClient {
+    private val ociReplicationRecordDao: OciReplicationRecordDao,
+    ): OciClient {
     override fun packageCreate(record: OciReplicationRecordInfo): Response<Void> {
         with(record) {
             val ociArtifactInfo = OciManifestArtifactInfo(
@@ -64,5 +64,10 @@ class OciPackageController(
             }
             return ResponseBuilder.success()
         }
+    }
+
+    override fun pullThirdPartyPackages(projectId: String, repoName: String): Response<Void> {
+        operationService.getPackagesFromThirdPartyRepo(projectId, repoName)
+        return ResponseBuilder.success()
     }
 }
