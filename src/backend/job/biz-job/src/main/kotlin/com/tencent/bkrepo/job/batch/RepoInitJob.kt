@@ -77,24 +77,21 @@ class RepoInitJob(
     }
 
     override fun run(row: ProxyRepoData, collectionName: String, context: JobContext) {
-        with(row) {
-            try {
-                val config = configuration.readJsonString<RepositoryConfiguration>()
-                if (checkConfigType(config)) {
-                    logger.info("init request will be sent in repo $projectId|$name")
-                    when (row.type) {
-                        RepositoryType.HELM.name -> {
-                            helmClient.initIndexAndPackage(projectId, name)
-                        }
-                        RepositoryType.OCI.name, RepositoryType.DOCKER.name -> {
-                            ociClient.getPackagesFromThirdPartyRepo(projectId, name)
-                        }
-                        else -> throw UnsupportedOperationException()
-                    }
+        try {
+            val config = row.configuration.readJsonString<RepositoryConfiguration>()
+            if (!checkConfigType(config)) return
+            logger.info("init request will be sent in repo ${row.projectId}|${row.name}")
+            when (row.type) {
+                RepositoryType.HELM.name -> {
+                    helmClient.initIndexAndPackage(row.projectId, row.name)
                 }
-            } catch (e: Exception) {
-                throw JobExecuteException("Failed to send refresh request for repo ${row.projectId}|${row.name}.", e)
+                RepositoryType.OCI.name, RepositoryType.DOCKER.name -> {
+                    ociClient.getPackagesFromThirdPartyRepo(row.projectId, row.name)
+                }
+                else -> throw UnsupportedOperationException()
             }
+        } catch (e: Exception) {
+            throw JobExecuteException("Failed to send refresh request for repo ${row.projectId}|${row.name}.", e)
         }
     }
 

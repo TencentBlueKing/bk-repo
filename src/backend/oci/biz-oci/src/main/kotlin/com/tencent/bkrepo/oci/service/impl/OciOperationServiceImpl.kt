@@ -1104,7 +1104,8 @@ class OciOperationServiceImpl(
     }
 
     override fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String,) {
-        val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data ?: throw RepoNotFoundException("$projectId|$repoName")
+        val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+            ?: throw RepoNotFoundException("$projectId|$repoName")
         buildImagePackagePullContext(projectId, repoName, repositoryDetail.configuration).forEach {
             pluginManager.applyExtension<ImagePackageInfoPullExtension> {
                 queryAndCreateDockerPackageInfo(it)
