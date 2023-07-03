@@ -56,6 +56,9 @@ class ResourcePermissionListener(
      */
     fun handle(event: ProjectCreatedEvent) {
         with(event) {
+            if (!createPermission) {
+                return
+            }
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
