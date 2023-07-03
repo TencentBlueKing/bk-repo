@@ -10,7 +10,7 @@
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
                     <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value">
                         <div class="flex-column flex-center repo-type-radio">
-                            <Icon size="32" :name="repo" />
+                            <Icon size="32" :name="repo.value" />
                             <span>{{repo.label}}</span>
                         </div>
                     </bk-radio-button>

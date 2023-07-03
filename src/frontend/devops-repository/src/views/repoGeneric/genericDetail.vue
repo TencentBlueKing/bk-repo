@@ -213,7 +213,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('add') + this.$t('success')
+                        message: this.$t('add') + this.$t('space') + this.$t('success')
                     })
                     this.hiddenAddMetadata()
                     this.getDetail()
@@ -232,7 +232,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('delete') + this.$t('metadata') + this.$t('success')
+                        message: this.$t('delete') + this.$t('space') + this.$t('metadata') + this.$t('space') + this.$t('success')
                     })
                     this.getDetail()
                 })
