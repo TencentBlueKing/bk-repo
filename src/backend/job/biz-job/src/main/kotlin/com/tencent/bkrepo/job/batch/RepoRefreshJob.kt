@@ -83,7 +83,7 @@ class RepoRefreshJob(
                             helmClient.refreshIndexYamlAndPackage(projectId, name)
                         }
                         RepositoryType.OCI.name, RepositoryType.DOCKER.name -> {
-                            ociClient.pullThirdPartyPackages(projectId, name)
+                            ociClient.getPackagesFromThirdPartyRepo(projectId, name)
                         }
                         else -> throw UnsupportedOperationException()
                     }

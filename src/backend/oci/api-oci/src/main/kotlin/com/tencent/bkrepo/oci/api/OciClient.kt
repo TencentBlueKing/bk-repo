@@ -54,7 +54,7 @@ interface OciClient {
 
     @ApiOperation("定时从第三方仓库拉取对应的package信息")
     @PostMapping("/pull/package/{projectId}/{repoName}")
-    fun pullThirdPartyPackages(
+    fun getPackagesFromThirdPartyRepo(
         @PathVariable projectId: String,
         @PathVariable repoName: String
     ): Response<Void>

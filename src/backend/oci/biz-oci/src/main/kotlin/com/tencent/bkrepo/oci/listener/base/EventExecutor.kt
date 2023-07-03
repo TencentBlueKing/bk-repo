@@ -40,10 +40,12 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 
-open class EventExecutor(
+@Component
+class EventExecutor(
     open val nodeClient: NodeClient,
     open val repositoryClient: RepositoryClient,
     open val ociOperationService: OciOperationService

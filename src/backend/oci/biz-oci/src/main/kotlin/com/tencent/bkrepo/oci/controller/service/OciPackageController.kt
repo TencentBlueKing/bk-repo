@@ -28,9 +28,12 @@
 package com.tencent.bkrepo.oci.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.oci.api.OciClient
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
+import com.tencent.bkrepo.oci.listener.base.EventExecutor
 import com.tencent.bkrepo.oci.model.TOciReplicationRecord
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
@@ -43,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController
 class OciPackageController(
     private val operationService: OciOperationService,
     private val ociReplicationRecordDao: OciReplicationRecordDao,
+    private val eventExecutor: EventExecutor
     ): OciClient {
     override fun packageCreate(record: OciReplicationRecordInfo): Response<Void> {
         with(record) {
@@ -66,8 +70,12 @@ class OciPackageController(
         }
     }
 
-    override fun pullThirdPartyPackages(projectId: String, repoName: String): Response<Void> {
-        operationService.getPackagesFromThirdPartyRepo(projectId, repoName)
+    override fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String): Response<Void> {
+        eventExecutor.submit(RepoCreatedEvent(
+            projectId = projectId,
+            repoName = repoName,
+            userId = SecurityUtils.getUserId()
+        ))
         return ResponseBuilder.success()
     }
 }

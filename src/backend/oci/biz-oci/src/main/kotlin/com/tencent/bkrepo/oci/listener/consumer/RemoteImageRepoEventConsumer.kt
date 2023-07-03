@@ -30,9 +30,6 @@ package com.tencent.bkrepo.oci.listener.consumer
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.oci.listener.base.EventExecutor
-import com.tencent.bkrepo.oci.service.OciOperationService
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
@@ -44,11 +41,8 @@ import java.util.function.Consumer
  */
 @Component("remoteOciRepo")
 class RemoteImageRepoEventConsumer(
-    override val nodeClient: NodeClient,
-    override val repositoryClient: RepositoryClient,
-    override val ociOperationService: OciOperationService
-) : Consumer<Message<ArtifactEvent>>
-, EventExecutor(nodeClient, repositoryClient, ociOperationService){
+    private val eventExecutor: EventExecutor
+) : Consumer<Message<ArtifactEvent>>{
 
     /**
      * 允许接收的事件类型
@@ -64,7 +58,7 @@ class RemoteImageRepoEventConsumer(
             return
         }
         logger.info("current repo operation message header is ${message.headers}")
-        submit(message.payload)
+        eventExecutor.submit(message.payload)
     }
 
     companion object {

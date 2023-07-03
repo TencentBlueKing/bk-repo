@@ -87,7 +87,7 @@ class RepoInitJob(
                             helmClient.initIndexAndPackage(projectId, name)
                         }
                         RepositoryType.OCI.name, RepositoryType.DOCKER.name -> {
-                            ociClient.pullThirdPartyPackages(projectId, name)
+                            ociClient.getPackagesFromThirdPartyRepo(projectId, name)
                         }
                         else -> throw UnsupportedOperationException()
                     }
