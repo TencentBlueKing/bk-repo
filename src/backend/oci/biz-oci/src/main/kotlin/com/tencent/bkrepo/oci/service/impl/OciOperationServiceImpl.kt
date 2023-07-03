@@ -1117,31 +1117,41 @@ class OciOperationServiceImpl(
         repoName: String,
         config: RepositoryConfiguration
     ): List<ImagePackagePullContext> {
-        return when (config) {
+        val result = mutableListOf<ImagePackagePullContext>()
+        when (config) {
             is RemoteConfiguration -> {
-                listOf(
-                    ImagePackagePullContext(
+                try {
+                    val remoteUrl = UrlFormatter.addProtocol(config.url)
+                    result.add(ImagePackagePullContext(
                         projectId = projectId,
                         repoName = repoName,
-                        remoteUrl = UrlFormatter.addProtocol(config.url),
+                        remoteUrl = remoteUrl,
                         userName = config.credentials.username,
                         password = config.credentials.password
-                    )
-                )
+                    ))
+                } catch (e: Exception) {
+                    logger.warn("illegal remote url ${config.url} for repo $projectId|$repoName")
+                }
             }
             is CompositeConfiguration -> {
-                config.proxy.channelList.map {
-                    ImagePackagePullContext(
-                        projectId = projectId,
-                        repoName = repoName,
-                        remoteUrl = UrlFormatter.addProtocol(it.url),
-                        userName = it.username,
-                        password = it.password
-                    )
+                config.proxy.channelList.forEach {
+                    try {
+                        val remoteUrl = UrlFormatter.addProtocol(it.url)
+                        result.add(ImagePackagePullContext(
+                            projectId = projectId,
+                            repoName = repoName,
+                            remoteUrl = remoteUrl,
+                            userName = it.username,
+                            password = it.password
+                        ))
+                    } catch (e: Exception) {
+                        logger.warn("illegal proxy url ${it.url} for repo $projectId|$repoName")
+                    }
                 }
             }
             else -> throw UnsupportedOperationException()
         }
+        return result
     }
 
     private fun buildString(stageTag: List<String>): String {
