@@ -57,8 +57,8 @@ class DockerPackageNodeMapper(
             val manifestInfo = try {
                 ManifestParser.parseManifest(inputStream)
             } catch (e: Exception) {
-                // 针对v1版本的镜像无法获取到对应的节点列表
-                throw UnsupportedOperationException("Deprecation of Docker V1 image format!")
+                // 针对v1版本的镜像或者manifest.json文件异常时无法获取到对应的节点列表
+                throw ArtifactNotFoundException("Could not read manifest.json, $e")
             }
             manifestInfo!!.descriptors?.forEach {
                 val replace = it.replace(":", "__")
