@@ -34,18 +34,26 @@ package com.tencent.bkrepo.pypi.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.util.version.SemVersion
+import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class PypiWebService(
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val packageClient: PackageClient
 ) {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
@@ -76,11 +84,55 @@ class PypiWebService(
         pageNumber: Int,
         pageSize: Int
     ): Page<PackageVersion> {
-        val nodeList = nodeClient.listNode(
+        val data = nodeClient.listNodePage(
             projectId = pypiArtifactInfo.projectId,
             repoName = pypiArtifactInfo.repoName,
-            path = packageKey
-        )
-        return Page(1,1,1, emptyList())
+            path = PathUtils.normalizePath(packageKey.removePrefix(KEY_PREFIX)),
+            option = NodeListOption(pageNumber, pageSize, includeFolder = false, deep = true)
+        ).data!!
+        val packageVersionList = data.records.map {
+            val version = parseSemVersion(it.path).toString()
+            val packageVersion = packageClient.findVersionByName(it.projectId, it.repoName, packageKey, version).data
+            buildPackageVersion(it, version, packageVersion)
+        }.sortedBy { it.name }
+        return Page(pageNumber, pageSize, data.totalRecords, packageVersionList)
+    }
+
+    /**
+     * python存在相同版本号，但是语言版本、系统不同的包
+     */
+    private fun buildPackageVersion(
+        it: NodeInfo,
+        version: String,
+        packageVersion: PackageVersion?
+    ) = PackageVersion(
+        createdBy = it.createdBy,
+        createdDate = LocalDateTime.parse(it.createdDate),
+        lastModifiedBy = it.lastModifiedBy,
+        lastModifiedDate = LocalDateTime.parse(it.lastModifiedDate),
+        name = version,
+        size = it.size,
+        downloads = packageVersion?.downloads ?: 0,
+        stageTag = packageVersion?.stageTag ?: emptyList(),
+        metadata = it.metadata ?: emptyMap(),
+        packageMetadata = it.nodeMetadata ?: emptyList(),
+        tags = packageVersion?.tags ?: emptyList(),
+        extension = packageVersion?.extension ?: emptyMap(),
+        clusterNames = it.clusterNames
+    )
+
+    /**
+     * 解析版本, path格式 /packageName/packageVersion/packageFilename
+     */
+    private fun parseSemVersion(path: String) = try {
+        SemVersionParser.parse(path.split("/")[2])
+    } catch (ignore: IndexOutOfBoundsException) {
+        SemVersion(0, 0, 0)
+    } catch (ignore: IllegalArgumentException) {
+        SemVersion(0, 0, 0)
+    }
+
+    companion object {
+        private const val KEY_PREFIX = "pypi://"
     }
 }

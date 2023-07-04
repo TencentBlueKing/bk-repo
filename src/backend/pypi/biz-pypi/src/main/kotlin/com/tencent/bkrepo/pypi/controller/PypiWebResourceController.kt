@@ -72,6 +72,13 @@ class PypiWebResourceController(
         pageNumber: Int,
         pageSize: Int
     ): Response<Page<PackageVersion>> {
-        return ResponseBuilder.success()
+        return ResponseBuilder.success(
+            pypiWebService.versionListPage(
+                pypiArtifactInfo,
+                packageKey,
+                pageNumber,
+                pageSize
+            )
+        )
     }
 }
