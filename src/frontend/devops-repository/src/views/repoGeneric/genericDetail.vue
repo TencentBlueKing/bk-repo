@@ -35,8 +35,8 @@
                     <create-token-dialog ref="createToken"></create-token-dialog>
                 </div>
             </bk-tab-panel>
-            <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
-                <div class="version-metadata display-block" :data-title="$t('metaData')">
+            <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metadata')">
+                <div class="version-metadata display-block" :data-title="$t('metadata')">
                     <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
@@ -213,7 +213,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('add') + this.$t('success')
+                        message: this.$t('add') + this.$t('space') + this.$t('success')
                     })
                     this.hiddenAddMetadata()
                     this.getDetail()
@@ -232,7 +232,7 @@
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('delete') + this.$t('metadata') + this.$t('success')
+                        message: this.$t('delete') + this.$t('space') + this.$t('metadata') + this.$t('space') + this.$t('success')
                     })
                     this.getDetail()
                 })
