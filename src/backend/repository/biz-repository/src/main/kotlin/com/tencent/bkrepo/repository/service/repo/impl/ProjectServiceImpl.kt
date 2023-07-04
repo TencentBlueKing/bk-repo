@@ -51,7 +51,9 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -73,9 +75,12 @@ import java.util.regex.Pattern
 @Conditional(DefaultCondition::class)
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
-    private val servicePermissionClient: ServicePermissionClient,
-    private val resourcePermissionListener: ResourcePermissionListener
+    private val servicePermissionClient: ServicePermissionClient
 ) : ProjectService {
+
+    @Autowired
+    @Lazy
+    private lateinit var resourcePermissionListener: ResourcePermissionListener
 
     override fun getProjectInfo(name: String): ProjectInfo? {
         return convert(projectDao.findByName(name))

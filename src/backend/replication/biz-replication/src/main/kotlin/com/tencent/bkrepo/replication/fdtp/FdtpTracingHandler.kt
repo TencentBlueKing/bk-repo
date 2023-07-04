@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.service
+package com.tencent.bkrepo.replication.fdtp
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
-import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
-import com.tencent.bkrepo.replication.service.RemoteNodeService
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.fdtp.codec.FdtpDataFrame
+import com.tencent.bkrepo.fdtp.codec.FdtpHeaderFrame
+import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelInboundHandlerAdapter
+import org.slf4j.MDC
 
-@RestController
-class ReplicaTaskOperationController(
-    private val remoteNodeService: RemoteNodeService
-    ) : ReplicaTaskOperationClient {
-    override fun createRunOnceTask(
-        projectId: String, repoName: String, requests: RemoteRunOnceTaskCreateRequest
-    ): Response<Void> {
-        remoteNodeService.createRunOnceTask(projectId, repoName, requests, false)
-        return ResponseBuilder.success()
-    }
-
-    override fun executeRunOnceTask(projectId: String, repoName: String, name: String): Response<Void> {
-        remoteNodeService.executeRunOnceTask(projectId, repoName, name, false)
-        return ResponseBuilder.success()
+/**
+ * 支持链路追踪
+ * */
+class FdtpTracingHandler : ChannelInboundHandlerAdapter() {
+    private val traceIdMap = mutableMapOf<Int, String>()
+    override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
+        var traceId: String? = null
+        if (msg is FdtpHeaderFrame) {
+            val streamId = msg.stream()!!.id()
+            traceId = msg.headers().get(TRACE_ID).orEmpty()
+            traceIdMap[streamId] = traceId
+        }
+        if (msg is FdtpDataFrame) {
+            val streamId = msg.stream()!!.id()
+            traceId = traceIdMap[streamId].orEmpty()
+        }
+        MDC.put(TRACE_ID, traceId)
+        super.channelRead(ctx, msg)
+        MDC.remove(TRACE_ID)
+        if (msg is FdtpHeaderFrame && msg.isEndStream()) {
+            val streamId = msg.stream()!!.id()
+            traceIdMap.remove(streamId)
+        }
+        if (msg is FdtpDataFrame && msg.isEndStream()) {
+            val streamId = msg.stream()!!.id()
+            traceIdMap.remove(streamId)
+        }
     }
 }

@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.dao.ReplicaNodeDispatchConfigDao
 import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
@@ -100,7 +102,11 @@ class ReplicaNodeDispatchServiceImpl(
         val valuesToMatch = buildValuesToMatch(taskDetail)
         return findReplicaClientByRule(valuesToMatch, target)
     }
-
+    override fun <T> findReplicaClientByHost(host: String, target: Class<T>): T? {
+        if (!checkProperties()) return null
+        val baseUrl = URL(host)
+        return findReplicaClientByRule(mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host), target)
+    }
 
     private fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
         val valuesToMatch = mutableMapOf<String, Any>()
@@ -139,20 +145,68 @@ class ReplicaNodeDispatchServiceImpl(
 
     private fun <T> findReplicaClientByRule(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
         if (valuesToMatch.isEmpty()) return null
-        val filterConfigs = listEnableReplicaNodeDispatchConfig().filter {
+        val configNodes = listEnableReplicaNodeDispatchConfig().filter {
             RuleMatcher.match(it.rule, valuesToMatch)
         }
-        val config = filterConfigs.randomOrNull() ?: return null
-        //  当查询到配置为当前机器时直接执行
-        if (selfNode(config.nodeUrl)) return null
-        logger.info("task will be executed with node ${config.nodeUrl}")
+        val filterNode = filterNodes(configNodes) ?: return null
+        logger.info("task will be executed with node ${filterNode.nodeUrl}")
         val clusterInfo = ClusterInfo(
-            name = config.nodeUrl,
-            url = config.nodeUrl,
+            name = filterNode.nodeUrl,
+            url = filterNode.nodeUrl,
             username = replicationProperties.dispatchUser,
             password = replicationProperties.dispatchPwd
         )
         return FeignClientFactory.create(target, clusterInfo, normalizeUrl = false)
+    }
+
+    /**
+     * 从查询出的配置中取出对应的节点信息
+     */
+    private fun filterNodes(configNodes: List<ReplicaNodeDispatchConfigInfo>): ReplicaNodeDispatchConfigInfo? {
+        val filterList = mutableListOf<String>()
+        var config = configNodes.randomOrNull() ?: return null
+        filterList.add(config.id!!)
+        while(
+            !selfNode(config.nodeUrl) &&
+            !filterHealthyNodes(config, replicationProperties.dispatchUser!!, replicationProperties.dispatchPwd!!)
+        ) {
+            val remainConfigNodes = configNodes.filter { !filterList.contains(it.id) }
+            if (remainConfigNodes.isEmpty()) return null
+            config = remainConfigNodes.random()
+            filterList.add(config.id!!)
+        }
+        //  当查询到配置为当前机器时直接执行
+        if (selfNode(config.nodeUrl)) return null
+        return config
+    }
+
+
+
+    /**
+     * 通过ping接口过滤出可访问的节点
+     */
+    private fun filterHealthyNodes(
+        config: ReplicaNodeDispatchConfigInfo,
+        username: String,
+        password: String
+    ): Boolean {
+        val remoteClusterInfo = ClusterInfo(
+            name = config.nodeUrl,
+            url = config.nodeUrl,
+            username = username,
+            password = password
+        )
+        return try {
+            val replicationService = FeignClientFactory.create(
+                ArtifactReplicaClient::class.java, remoteClusterInfo, normalizeUrl = false
+            )
+            val token = BasicAuthUtils.encode(username, password)
+            replicationService.ping(token)
+            true
+        } catch (ignore: Exception) {
+            logger.info("ping node ${config.nodeUrl} failed")
+            false
+        }
     }
 
 

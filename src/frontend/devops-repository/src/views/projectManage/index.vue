@@ -17,8 +17,8 @@
                     v-model="property"
                     :clearable="true"
                     @change="queryProjects">
-                    <bk-option id="name" :name="$t('Order by Project Name')"></bk-option>
-                    <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
+                    <bk-option id="name" :name="$t('projectNameSorting')"></bk-option>
+                    <bk-option id="createdDate" :name="$t('creatTimeSorting')"></bk-option>
                 </bk-select>
                 <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                     <div class="ml10 sort-order flex-center" @click="changeDirection">

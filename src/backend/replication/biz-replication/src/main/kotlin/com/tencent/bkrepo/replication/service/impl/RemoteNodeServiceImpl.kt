@@ -218,10 +218,46 @@ class RemoteNodeServiceImpl(
         eventBasedReplicaJobExecutor.execute(taskDetail, event)
     }
 
-    override fun createRunOnceTask(projectId: String, repoName: String, request: RemoteRunOnceTaskCreateRequest) {
+    // dispatch 默认为TRUE, fegin调用时为FALSE，避免feign调用时再次进行配置判断
+    override fun createRunOnceTask(
+        projectId: String, repoName: String, request: RemoteRunOnceTaskCreateRequest, dispatch: Boolean
+    ) {
+        if (dispatch && createWithRemoteClient(projectId, repoName, request)) {
+            return
+        }
         val repo = localDataManager.findRepoByName(projectId, repoName)
         val taskRequest = convertRemoteConfigCreateRequest(request, repo.type)
         remoteClusterCreate(projectId, repoName, RemoteCreateRequest(listOf(taskRequest)))
+    }
+
+
+    private fun createWithRemoteClient(
+        projectId: String, repoName: String,
+        request: RemoteRunOnceTaskCreateRequest
+    ): Boolean {
+        val host = if (!request.clusterId.isNullOrEmpty()) {
+            val clusterInfo = clusterNodeService.getByClusterId(request.clusterId!!)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId!!)
+            clusterInfo.url
+        } else {
+            addProtocol(request.registry!!).toString()
+        }
+        buildExecuteClientWithHost(host)?.let {
+            try{
+                it.createRunOnceTask(projectId, repoName, request)
+                return true
+            } catch (e: Exception) {
+                // fegin连不上时需要降级为本地执行
+                logger.warn("Cloud not run task on remote node, will run with current node")
+            }
+        }
+        return false
+    }
+
+    private fun buildExecuteClientWithHost(host: String) : ReplicaTaskOperationClient? {
+        return replicaNodeDispatchService.findReplicaClientByHost(
+            host, ReplicaTaskOperationClient::class.java
+        )
     }
 
     // dispatch 默认为TRUE, fegin调用时为FALSE，避免feign调用时再次进行配置判断
@@ -244,7 +280,7 @@ class RemoteNodeServiceImpl(
         projectId: String, repoName: String, name: String,
         taskDetail: ReplicaTaskDetail
     ): Boolean {
-        buildExecuteClientClient(taskDetail)?.let {
+        buildExecuteClient(taskDetail)?.let {
             try{
                 it.executeRunOnceTask(projectId, repoName, name)
                 return true
@@ -257,7 +293,7 @@ class RemoteNodeServiceImpl(
     }
 
 
-    private fun buildExecuteClientClient(
+    private fun buildExecuteClient(
         taskDetail: ReplicaTaskDetail
     ) : ReplicaTaskOperationClient? {
         return replicaNodeDispatchService.findReplicaClient(

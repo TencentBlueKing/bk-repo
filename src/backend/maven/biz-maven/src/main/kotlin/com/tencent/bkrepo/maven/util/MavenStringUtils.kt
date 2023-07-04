@@ -131,10 +131,11 @@ object MavenStringUtils {
     }
 
     fun MavenVersion.setVersion(artifactName: String) {
-        val artifactNameRegex = String.format(
+        val newVersion = this.version.removeSuffix(SNAPSHOT_SUFFIX).replace("+", "\\+")
+        var artifactNameRegex = String.format(
             ARTIFACT_FORMAT,
             this.artifactId,
-            this.version.removeSuffix(SNAPSHOT_SUFFIX),
+            newVersion,
             this.packaging
         )
         val matcher = Pattern.compile(artifactNameRegex).matcher(artifactName)

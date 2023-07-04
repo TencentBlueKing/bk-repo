@@ -24,7 +24,7 @@
                 <bk-form-item :label="$t('scanScheme')" :required="true" property="id" error-display-type="normal">
                     <bk-select
                         v-model="genericForm.id"
-                        :placeholder="$t('please select a scanning scheme')">
+                        :placeholder="$t('scanningSchemeTip')">
                         <bk-option v-for="scan in scanList" :key="scan.id" :id="scan.id" :name="scan.name"></bk-option>
                     </bk-select>
                 </bk-form-item>

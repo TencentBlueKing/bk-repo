@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.service
+package com.tencent.bkrepo.replication.fdtp
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
-import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
-import com.tencent.bkrepo.replication.service.RemoteNodeService
-import org.springframework.web.bind.annotation.RestController
-
-@RestController
-class ReplicaTaskOperationController(
-    private val remoteNodeService: RemoteNodeService
-    ) : ReplicaTaskOperationClient {
-    override fun createRunOnceTask(
-        projectId: String, repoName: String, requests: RemoteRunOnceTaskCreateRequest
-    ): Response<Void> {
-        remoteNodeService.createRunOnceTask(projectId, repoName, requests, false)
-        return ResponseBuilder.success()
-    }
-
-    override fun executeRunOnceTask(projectId: String, repoName: String, name: String): Response<Void> {
-        remoteNodeService.executeRunOnceTask(projectId, repoName, name, false)
-        return ResponseBuilder.success()
-    }
-}
+const val TRACE_ID = "traceId"

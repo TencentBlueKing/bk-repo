@@ -13,8 +13,8 @@ if [ "$access_key" != "" ] && [ "$secret_key" != "" ]; then
 fi
 
 
-bcs_access_key=$BK_REPO_ACCESSKEY
-bcs_secret_key=$BK_REPO_SECRETKEY
+bcs_access_key=$BK_REPO_BCS_ACCESSKEY
+bcs_secret_key=$BK_REPO_BCS_SECRETKEY
 
 if [ "$bcs_access_key" != "" ] && [ "$bcs_secret_key" != "" ]; then
      sed -i "s/609f9939e6944c5c8a842d88acf85edc/$bcs_access_key/g" init-data-ext.js

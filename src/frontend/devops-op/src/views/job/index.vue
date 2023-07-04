@@ -43,11 +43,8 @@
         label="运行中"
         width="100"
       >
-        <template v-if="scope.row.runnig === true" slot-scope="scope">
-          <label>是</label>
-        </template>
-        <template v-if="scope.row.runnig !== true" slot-scope="scope">
-          <label>否</label>
+        <template slot-scope="scope">
+          {{scope.row.running ? "是":"否"}}
         </template>
       </el-table-column>
       <el-table-column
@@ -71,11 +68,13 @@
         width="120"
       />
       <el-table-column label="操作" min-width="120px">
-        <template v-if="scope.row.runnig === true && scope.row.enabled === true" slot-scope="scope">
-          <el-button size="mini" type="primary" @click="changeRunning(scope.row)">停止</el-button>
-        </template>
-        <template v-if="scope.row.runnig !== true && scope.row.enabled === true" slot-scope="scope">
-          <el-button size="mini" type="primary" @click="changeRunning(scope.row)">启动</el-button>
+        <template slot-scope="scope">
+          <template v-if="scope.row.running && scope.row.enabled">
+            <el-button size="mini" type="primary" @click="changeRunning(scope.row)">停止</el-button>
+          </template>
+          <template v-if="!scope.row.running && scope.row.enabled">
+            <el-button size="mini" type="primary" @click="changeRunning(scope.row)">启动</el-button>
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -105,7 +104,7 @@ export default {
   },
   methods: {
     changeEnabled(job) {
-      update(job.name, job.enabled, job.runnig).then(() => {
+      update(job.name, job.enabled, job.running).then(() => {
         this.query()
       })
       let jobName
@@ -122,12 +121,12 @@ export default {
       updateConfig(values, 'job')
     },
     changeRunning(job) {
-      const message = job.runnig !== true ? '启动成功' : '停止成功'
+      const message = job.running !== true ? '启动成功' : '停止成功'
       this.$message({
         message: message,
         type: 'success'
       })
-      update(job.name, job.enabled, !job.runnig).then(() => {
+      update(job.name, job.enabled, !job.running).then(() => {
         this.query()
       })
     },

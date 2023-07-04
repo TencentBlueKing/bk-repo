@@ -38,9 +38,9 @@
                         v-model="property"
                         :clearable="false"
                         @change="handlerPaginationChange()">
-                        <bk-option id="name" :name="$t('Order by name')"></bk-option>
-                        <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
-                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
+                        <bk-option id="name" :name="$t('nameSorting')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('lastModifiedTimeSorting')"></bk-option>
+                        <bk-option id="downloads" :name="$t('downloadSorting')"></bk-option>
                     </bk-select>
                     <bk-popover :content="$t('toggle') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
@@ -197,6 +197,8 @@
                 this.$router.push({
                     name: 'commonPackage',
                     query: {
+                        // 需要保留之前制品列表页的筛选项和页码相关参数
+                        ...this.$route.query,
                         repoName: this.repoName,
                         packageKey: pkg.key
                     }
