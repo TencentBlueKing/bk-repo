@@ -23,10 +23,10 @@ export const repoEnum = MODE_CONFIG === 'ci'
 
 // 远程及虚拟仓库支持创建的仓库
 export const repoSupportEnum = [
-    'maven',
-    'npm',
-    'pypi',
-    'nuget'
+    { label: 'Maven', value: 'maven' },
+    { label: 'Npm', value: 'npm' },
+    { label: 'Pypi', value: 'pypi' },
+    { label: 'Nuget', value: 'nuget' }
 ]
 
 // 文件类型

@@ -424,10 +424,13 @@
         watch: {
             storeType: {
                 handler (val) {
-                    //  远程及虚拟仓库，目前只支持maven、npm、pypi、nuget四种仓库
-                    this.filterRepoEnum = val === 'local' ? repoEnum : repoEnum.filter(item => repoSupportEnum.includes(item))
+                    //  远程及虚拟仓库，目前只支持maven、npm、pypi、nuget四种仓库,
+                    // 因为可能支持创建的远程及虚拟仓库，在本地仓库支持创建的仓库中不存在，所以需要两者匹配才能在创建远程及虚拟仓库时显示
+                    this.filterRepoEnum = val === 'local'
+                        ? repoEnum
+                        : repoSupportEnum.map((item) => repoEnum.find((st) => item.value === st.value))
                     // 因为远程仓库和虚拟仓库没有generic类型且远程仓库支持的制品类型有限，所以需要将其重新赋默认值
-                    this.repoBaseInfo.type = this.filterRepoEnum[0] || ''
+                    this.repoBaseInfo.type = this.filterRepoEnum[0]?.value || ''
                 }
             },
             deploymentRepoCheckList: {
