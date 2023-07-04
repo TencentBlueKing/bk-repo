@@ -27,31 +27,38 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
-import com.tencent.bkrepo.fdtp.codec.FdtpServerCodec
-import io.netty.channel.ChannelInitializer
-import io.netty.channel.udt.UdtChannel
-import io.netty.handler.ssl.SslContext
-import io.netty.handler.timeout.IdleStateHandler
+import com.tencent.bkrepo.fdtp.codec.FdtpDataFrame
+import com.tencent.bkrepo.fdtp.codec.FdtpHeaderFrame
+import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelInboundHandlerAdapter
+import org.slf4j.MDC
 
-class FdtpAFTServerInitializer(
-    private val sslCtx: SslContext?,
-    private val requestHandler: FdtpAFTRequestHandler,
-    val fdtpAuthManager: FdtpAuthManager,
-) :
-    ChannelInitializer<UdtChannel>() {
-    override fun initChannel(ch: UdtChannel) {
-        val pipeline = ch.pipeline()
-        if (sslCtx != null) {
-            pipeline.addLast(sslCtx.newHandler(ch.alloc()))
+/**
+ * 支持链路追踪
+ * */
+class FdtpTracingHandler : ChannelInboundHandlerAdapter() {
+    private val traceIdMap = mutableMapOf<Int, String>()
+    override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
+        var traceId: String? = null
+        if (msg is FdtpHeaderFrame) {
+            val streamId = msg.stream()!!.id()
+            traceId = msg.headers().get(TRACE_ID).orEmpty()
+            traceIdMap[streamId] = traceId
         }
-        pipeline.addLast(IdleStateHandler(0, 0, MAX_IDLE_TIME_IN_SECONDS))
-            .addLast(FdtpAFTServerAuthHandler(fdtpAuthManager))
-            .addLast(FdtpServerCodec())
-            .addLast(FdtpTracingHandler())
-            .addLast(FdtpAFTServerHandler(requestHandler))
-    }
-
-    companion object {
-        const val MAX_IDLE_TIME_IN_SECONDS = 60
+        if (msg is FdtpDataFrame) {
+            val streamId = msg.stream()!!.id()
+            traceId = traceIdMap[streamId].orEmpty()
+        }
+        MDC.put(TRACE_ID, traceId)
+        super.channelRead(ctx, msg)
+        MDC.remove(TRACE_ID)
+        if (msg is FdtpHeaderFrame && msg.isEndStream()) {
+            val streamId = msg.stream()!!.id()
+            traceIdMap.remove(streamId)
+        }
+        if (msg is FdtpDataFrame && msg.isEndStream()) {
+            val streamId = msg.stream()!!.id()
+            traceIdMap.remove(streamId)
+        }
     }
 }

@@ -36,6 +36,8 @@ import io.netty.channel.pool.ChannelPool
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.stream.ChunkedWriteHandler
+import java.io.IOException
+import java.net.ConnectException
 import java.security.cert.CertificateException
 import javax.net.ssl.SSLException
 
@@ -53,7 +55,11 @@ object FdtpAFTHelper {
         var channel: Channel
         var streamId: Int
         do {
-            channel = channelPool.acquire().get()
+            try {
+                channel = channelPool.acquire().sync().get()
+            } catch (e: IOException) {
+                throw ConnectException("connect refuse.")
+            }
             streamId = generateStreamId(channel)
             // stream id小于0的不再使用，等待空闲自动关闭
         } while (streamId < 0)
