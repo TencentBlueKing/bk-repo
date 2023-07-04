@@ -84,7 +84,15 @@ class NodeSearchServiceImpl(
             repos.filter { it !in (exRepo.split(',')) }
         } else repos
 
-        if (genericRepos.isEmpty()) return listOf()
+        if (genericRepos.isEmpty()) {
+            return listOf(
+                ProjectPackageOverview(
+                    projectId = projectId,
+                    repos = mutableSetOf(),
+                    sum = 0L
+                )
+            )
+        }
         return transTree(projectId, genericRepos)
     }
 

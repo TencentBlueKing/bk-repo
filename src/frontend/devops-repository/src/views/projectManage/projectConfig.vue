@@ -13,7 +13,7 @@
                         <span>{{ currentProject.description }}</span>
                     </bk-form-item>
                     <bk-form-item>
-                        <bk-button theme="primary" @click="showProjectDialog">{{ $t('modify') }}</bk-button>
+                        <bk-button theme="primary" @click="showProjectDialog">{{ $t('edit') }}</bk-button>
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
