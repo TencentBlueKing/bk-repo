@@ -24,14 +24,14 @@
             </bk-form-item>
             <template v-if="storeType === 'remote'">
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
-                    <bk-input style="width:400px" v-model.trim="repoBaseInfo.url"></bk-input>
+                    <bk-input class="w480" v-model.trim="repoBaseInfo.url"></bk-input>
                     <bk-button theme="primary" :disabled="disableTestUrl" :loading="disableTestUrl" @click="onClickTestRemoteUrl">{{ $t('testRemoteUrl') }}</bk-button>
                 </bk-form-item>
                 <bk-form-item :label="$t('account')" property="credentials.username" error-display-type="normal">
-                    <bk-input style="width:400px" v-model.trim="repoBaseInfo.credentials.username"></bk-input>
+                    <bk-input class="w480" v-model.trim="repoBaseInfo.credentials.username"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('password')" property="credentials.password" error-display-type="normal">
-                    <bk-input style="width:400px" type="password" v-model.trim="repoBaseInfo.credentials.password"></bk-input>
+                    <bk-input class="w480" type="password" v-model.trim="repoBaseInfo.credentials.password"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('networkProxy')" property="switcher">
                     <template>
@@ -41,16 +41,16 @@
                 </bk-form-item>
                 <template v-if="repoBaseInfo.network.switcher">
                     <bk-form-item label="IP" property="network.proxy.host" :required="true" error-display-type="normal">
-                        <bk-input style="width:400px" v-model.trim="repoBaseInfo.network.proxy.host"></bk-input>
+                        <bk-input class="w480" v-model.trim="repoBaseInfo.network.proxy.host"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('port')" property="network.proxy.port" :required="true" error-display-type="normal">
-                        <bk-input style="width:400px" type="number" :max="65535" :min="1" v-model.trim="repoBaseInfo.network.proxy.port"></bk-input>
+                        <bk-input class="w480" type="number" :max="65535" :min="1" v-model.trim="repoBaseInfo.network.proxy.port"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('account')" property="network.proxy.username">
-                        <bk-input style="width:400px" v-model.trim="repoBaseInfo.network.proxy.username"></bk-input>
+                        <bk-input class="w480" v-model.trim="repoBaseInfo.network.proxy.username"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('password')" property="network.proxy.password">
-                        <bk-input style="width:400px" type="password" v-model.trim="repoBaseInfo.network.proxy.password"></bk-input>
+                        <bk-input class="w480" type="password" v-model.trim="repoBaseInfo.network.proxy.password"></bk-input>
                     </bk-form-item>
                 </template>
             </template>
@@ -69,7 +69,7 @@
                 <bk-form-item :label="$t('uploadTargetStore')" property="uploadTargetStore">
                     <bk-select
                         v-model="repoBaseInfo.deploymentRepo"
-                        style="width:300px;"
+                        class="w480"
                         :show-empty="false"
                         :placeholder="$t('pleaseSelect') + $t('uploadTargetStore')">
                         <bk-option v-for="item in deploymentRepoCheckList" :key="item.name" :id="item.name" :name="item.name">
