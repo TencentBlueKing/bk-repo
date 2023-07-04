@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -151,31 +152,30 @@ class OciRegistryRemoteRepository(
         logger.info("Remote request $downloadUrl will be sent")
         val tokenKey = buildTokenCacheKey(context.getStringAttribute(PROXY_URL)!!, property.imageName)
         val request = buildRequest(downloadUrl, remoteConfiguration, tokenCache.getIfPresent(tokenKey))
-        val response = httpClient!!.newCall(request).execute()
-        var responseWithAuth: Response? = null
         try {
-            if (response.isSuccessful) return onResponse(context, response)
-            // 针对返回401进行token获取
-            val token = getAuthenticationCode(context, response, remoteConfiguration, property.imageName)
-            if (token.isNullOrBlank()) return null
-            tokenCache.put(tokenKey, token)
-            val requestWithToken = buildRequest(
-                url = downloadUrl,
-                configuration = remoteConfiguration,
-                addBasicInterceptor = false,
-                token = token
-            )
-            responseWithAuth = httpClient
-                .newCall(requestWithToken)
-                .execute()
-            return if (checkResponse(responseWithAuth)) {
-                onResponse(context, responseWithAuth)
-            } else null
-        } finally {
-            response.body?.close()
-            responseWithAuth?.body?.close()
+            httpClient!!.newCall(request).execute().use {
+                if (it.isSuccessful) return onResponse(context, it)
+                // 针对返回401进行token获取
+                val token = getAuthenticationCode(context, it, remoteConfiguration, property.imageName) ?: return null
+                tokenCache.put(tokenKey, token)
+                val requestWithToken = buildRequest(
+                    url = downloadUrl,
+                    configuration = remoteConfiguration,
+                    addBasicInterceptor = false,
+                    token = token
+                )
+                httpClient.newCall(requestWithToken).execute().use {responseWithAuth ->
+                    return if (checkResponse(responseWithAuth)) {
+                        onResponse(context, responseWithAuth)
+                    } else null
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error occurred while sending request $downloadUrl", e)
+            throw NodeNotFoundException(downloadUrl)
         }
     }
+
 
     private fun onResponse(context: ArtifactContext, response: Response): Any? {
         if (context is ArtifactDownloadContext) {
@@ -314,17 +314,19 @@ class OciRegistryRemoteRepository(
         imageName: String
     ): String? {
         if (response.code != HttpStatus.UNAUTHORIZED.value) {
+            logger.warn("response code is ${response.code} for url ${response.request.url}")
             return null
         }
         val wwwAuthenticate = response.header(WWW_AUTHENTICATE)
         if (wwwAuthenticate.isNullOrBlank() || !wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX)) {
+            logger.warn("response wwwAuthenticate header $wwwAuthenticate is illegal")
             return null
         }
         val url = context.getStringAttribute(PROXY_URL)!!
         val scope = getScope(url, imageName)
         val authProperty = AuthenticationUtil.parseWWWAuthenticateHeader(wwwAuthenticate, scope)
         if (authProperty == null)  {
-            logger.warn("Auth url can not be parsed from header!")
+            logger.warn("Auth url can not be parsed from header $wwwAuthenticate!")
             return null
         }
         val urlStr = AuthenticationUtil.buildAuthenticationUrl(authProperty, configuration.credentials.username)
@@ -346,7 +348,7 @@ class OciRegistryRemoteRepository(
                     " code is ${it.code} and response is $error"
                 logger.warn(errMsg)
                 throw ErrorCodeException(
-                    OciMessageCode.OCI_REMOTE_CONFIGURATION_ERROR,
+                    OciMessageCode.OCI_REMOTE_CREDENTIALS_INVALID,
                     errMsg
                 )
             }
@@ -360,7 +362,6 @@ class OciRegistryRemoteRepository(
                 )
             }
         }
-
     }
 
     /**
@@ -405,7 +406,7 @@ class OciRegistryRemoteRepository(
             inputStream = artifactStream,
             artifactName = context.artifactInfo.getResponseName(),
             node = node,
-            channel = ArtifactChannel.LOCAL
+            channel = ArtifactChannel.PROXY
         )
         return buildResponse(
             cacheNode = node,
