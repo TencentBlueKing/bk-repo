@@ -142,7 +142,7 @@ class OciBlobServiceImpl(
             val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                size = nodeProperty.size!!.toLong(),
+                size = nodeProperty.size!!,
                 sha256 = ociDigest.hex,
                 fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest),
                 md5 = nodeProperty.md5!!
