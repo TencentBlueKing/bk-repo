@@ -25,21 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.replication.fdtp
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
-
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterProjectServiceImpl(
-    projectDao: ProjectDao,
-    servicePermissionClient: ServicePermissionClient
-) : ProjectServiceImpl(
-    projectDao,
-    servicePermissionClient
-)
+const val TRACE_ID = "traceId"

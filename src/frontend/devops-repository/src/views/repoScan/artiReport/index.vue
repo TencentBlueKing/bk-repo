@@ -102,8 +102,8 @@
                 const { scanType, scanName } = this.$route.query
                 this.$router.push({
                     name: 'scanReport',
-                    params: { projectId: this.projectId, planId: this.planId },
-                    query: { viewType: this.viewType, scanType: scanType, scanName: scanName }
+                    params: { ...this.$route.params, projectId: this.projectId, planId: this.planId },
+                    query: { ...this.$route.query, viewType: this.viewType, scanType: scanType, scanName: scanName }
                 })
             },
             backToRepo () {
@@ -111,13 +111,14 @@
                 this.$router.push({
                     name: this.subtaskOverview.packageKey ? 'commonPackage' : 'repoGeneric',
                     params: {
+                        ...this.$route.params,
                         projectId: this.projectId,
                         repoType: this.subtaskOverview.repoType?.toLowerCase()
                     },
                     query: (
                         this.subtaskOverview.packageKey
-                            ? { repoName: this.subtaskOverview.repoName, packageKey, version }
-                            : { repoName: this.subtaskOverview.repoName, path }
+                            ? { ...this.$route.query, repoName: this.subtaskOverview.repoName, packageKey, version }
+                            : { ...this.$route.query, repoName: this.subtaskOverview.repoName, path }
                     )
                 })
             }

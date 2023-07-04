@@ -22,10 +22,10 @@
                         v-model="property"
                         :clearable="false"
                         @change="changeSortType">
-                        <bk-option id="name" :name="$t('Order by name')"></bk-option>
-                        <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
-                        <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
-                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
+                        <bk-option id="name" :name="$t('nameSorting')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('lastModifiedTimeSorting')"></bk-option>
+                        <bk-option id="createdDate" :name="$t('creatTimeSorting')"></bk-option>
+                        <bk-option id="downloads" :name="$t('downloadSorting')"></bk-option>
                     </bk-select>
                     <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">

@@ -1,24 +1,24 @@
 // 仓库类型
 export const repoEnum = MODE_CONFIG === 'ci'
     ? [
-        'generic',
-        'helm',
-        // 'rds',
-        'docker',
-        'nuget'
+        { label: 'Generic', value: 'generic' },
+        { label: 'Helm', value: 'helm' },
+        { label: 'Docker', value: 'docker' },
+        // { label: 'Rds', value: 'rds' },
+        { label: 'Nuget', value: 'nuget' }
     ]
     : [
-        'generic',
-        'docker',
-        'maven',
-        'pypi',
-        'npm',
-        'helm',
-        // 'rds',
-        'composer',
-        'rpm',
-        // 'git',
-        'nuget'
+        { label: 'Generic', value: 'generic' },
+        { label: 'Docker', value: 'docker' },
+        { label: 'Maven', value: 'maven' },
+        { label: 'Pypi', value: 'pypi' },
+        { label: 'Npm', value: 'npm' },
+        { label: 'Helm', value: 'helm' },
+        // { label: 'Rds', value: 'rds' },
+        { label: 'Composer', value: 'composer' },
+        { label: 'Rpm', value: 'rpm' },
+        { label: 'Git', value: 'git' },
+        { label: 'Nuget', value: 'nuget' }
     ]
 
 // 远程及虚拟仓库支持创建的仓库

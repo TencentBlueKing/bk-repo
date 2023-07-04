@@ -2,7 +2,7 @@
     <div class="repo-search-container" v-bkloading="{ isLoading }">
         <div class="repo-search-tools flex-column">
             <div class="name-tool flex-center">
-                <type-select :repo-list="repoEnum.filter(r => r !== 'generic')" :repo-type="repoType" @change="changeRepoType"></type-select>
+                <type-select :repo-list="repoEnum.filter(r => r.value !== 'generic')" :repo-type="repoType" @change="changeRepoType"></type-select>
                 <bk-input
                     v-focus
                     style="width:390px"
@@ -25,9 +25,9 @@
                         v-model="property"
                         :clearable="false"
                         @change="changeSortType">
-                        <bk-option id="name" :name="$t('Order by last modified time')"></bk-option>
-                        <bk-option id="lastModifiedDate" :name="$t('Order by Original Creation Time')"></bk-option>
-                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
+                        <bk-option id="name" :name="$t('lastModifiedTimeSorting')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('creatTimeSorting')"></bk-option>
+                        <bk-option id="downloads" :name="$t('downloadSorting')"></bk-option>
                     </bk-select>
                     <bk-popover :content="$t('toggle') + $t('space') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">

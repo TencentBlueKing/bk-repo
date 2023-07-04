@@ -10,10 +10,10 @@
         <i class="ml10 devops-icon" :class="showDropdown ? 'icon-angle-up' : 'icon-angle-down'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
             <bk-radio-group :value="repoType" class="repo-type-radio-group" @change="changeType">
-                <bk-radio-button v-for="repo in repoList" :key="repo" :value="repo">
+                <bk-radio-button v-for="repo in repoList" :key="repo.value" :value="repo.value">
                     <div class="flex-column flex-center repo-type-radio">
-                        <Icon size="32" :name="repo" />
-                        <span>{{repo}}</span>
+                        <Icon size="32" :name="repo.value" />
+                        <span>{{repo.label}}</span>
                     </div>
                 </bk-radio-button>
             </bk-radio-group>

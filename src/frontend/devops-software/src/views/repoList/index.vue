@@ -6,14 +6,14 @@
                 class="w250"
                 :placeholder="$t('repoEnterTip')"
                 clearable
-                @enter="handlerPaginationChange()"
-                @clear="handlerPaginationChange()"
+                @enter="handlerPaginationChange"
+                @clear="handlerPaginationChange"
                 right-icon="bk-icon icon-search">
             </bk-input>
             <bk-select
                 v-model="query.category"
                 class="ml10 w250"
-                @change="handlerPaginationChange()"
+                @change="handlerPaginationChange"
                 :placeholder="$t('allStoreTypes')">
                 <bk-option v-for="category in storeTypeEnum" :key="category.id" :id="category.id" :name="$t(category.name)">
                     <div class="flex-align-center">
@@ -25,12 +25,12 @@
             <bk-select
                 v-model="query.type"
                 class="ml10 w250"
-                @change="handlerPaginationChange()"
+                @change="handlerPaginationChange"
                 :placeholder="$t('allTypes')">
-                <bk-option v-for="type in repoEnum.filter(r => r !== 'generic')" :key="type" :id="type" :name="type">
+                <bk-option v-for="type in repoEnum.filter(r => r.value !== 'generic')" :key="type.value" :id="type.value" :name="type.label">
                     <div class="flex-align-center">
-                        <Icon size="20" :name="type" />
-                        <span class="ml10 flex-1 text-overflow">{{type}}</span>
+                        <Icon size="20" :name="type.value" />
+                        <span class="ml10 flex-1 text-overflow">{{type.label}}</span>
                     </div>
                 </bk-option>
             </bk-select>
@@ -39,7 +39,7 @@
                 class="ml10 w250"
                 searchable
                 :placeholder="$t('inputProject')"
-                @change="handlerPaginationChange()"
+                @change="handlerPaginationChange"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
                 :list="projectList">
                 <bk-option v-for="option in projectList"
@@ -102,7 +102,14 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import { repoEnum, storeTypeEnum } from '@repository/store/publicEnum'
-    import { formatDate } from '@repository/utils'
+    import { formatDate, debounce } from '@repository/utils'
+    import { cloneDeep } from 'lodash'
+    const paginationParams = {
+        count: 0,
+        current: 1,
+        limit: 20,
+        limitList: [10, 20, 40]
+    }
     export default {
         name: 'repoList',
         data () {
@@ -115,21 +122,40 @@
                     projectId: this.$route.query.projectId,
                     name: this.$route.query.name,
                     type: this.$route.query.type,
-                    category: this.$route.query.category
+                    category: this.$route.query.category,
+                    c: this.$route.query.c || 1,
+                    l: this.$route.query.l || 20
                 },
-                pagination: {
-                    count: 0,
-                    current: 1,
-                    limit: 20,
-                    limitList: [10, 20, 40]
-                }
+                pagination: cloneDeep(paginationParams),
+                debounceGetListData: null
             }
         },
         computed: {
             ...mapState(['projectList', 'userList'])
         },
+        watch: {
+            '$route.query' () {
+                if (Object.values(this.$route.query).filter(Boolean)?.length === 0) {
+                    // 此时需要将筛选条件清空，否则会导致点击菜单的时候筛选条件还在，不符合产品要求(点击菜单清空筛选条件，重新请求最新数据)
+                    this.query = {
+                        c: 1,
+                        l: 20
+                    }
+                    // 此时需要将页码相关参数重置，否则会导致点击制品列表菜单后不能返回首页(页码为1，每页大小为20)
+                    this.pagination = cloneDeep(paginationParams)
+                    this.handlerPaginationChange()
+                }
+            }
+        },
+
         created () {
-            this.handlerPaginationChange()
+            // 此处的两个顺序不能更换，否则会导致请求数据时报错，防抖这个方法不是function
+            this.debounceGetListData = debounce(this.getListData, 100)
+            // 当从制品仓库列表页进入依赖源仓库的详情页后点击上方面包屑返回会导致页码相关参数变为string类型，
+            // 而bk-pagination的页码相关参数要求为number类型，导致页码不对应，出现一系列问题
+            const dependentCurrent = parseInt(this.$route.query.c || 1)
+            const dependentLimit = parseInt(this.$route.query.l || 20)
+            this.handlerPaginationChange({ current: dependentCurrent, limit: dependentLimit })
         },
         methods: {
             formatDate,
@@ -154,7 +180,7 @@
                 this.$router.replace({
                     query: this.query
                 })
-                this.getListData()
+                this.debounceGetListData ? this.debounceGetListData() : this.getListData()
             },
             toPackageList ({ projectId, repoType, name }) {
                 this.$router.push({
@@ -164,7 +190,10 @@
                         repoType
                     },
                     query: {
-                        repoName: name
+                        repoName: name,
+                        ...this.$route.query,
+                        c: this.pagination.current,
+                        l: this.pagination.limit
                     }
                 })
             }
