@@ -155,24 +155,50 @@ class OciRegistryRemoteRepository(
         try {
             httpClient!!.newCall(request).execute().use {
                 if (it.isSuccessful) return onResponse(context, it)
-                // 针对返回401进行token获取
-                val token = getAuthenticationCode(context, it, remoteConfiguration, property.imageName) ?: return null
-                tokenCache.put(tokenKey, token)
-                val requestWithToken = buildRequest(
-                    url = downloadUrl,
-                    configuration = remoteConfiguration,
-                    addBasicInterceptor = false,
-                    token = token
-                )
-                httpClient.newCall(requestWithToken).execute().use {responseWithAuth ->
-                    return if (checkResponse(responseWithAuth)) {
-                        onResponse(context, responseWithAuth)
-                    } else null
+                if (it.code != HttpStatus.UNAUTHORIZED.value) {
+                    logger.warn("response code is ${it.code} for url $downloadUrl")
+                    return null
                 }
+                return doRequestWithToken(
+                    context = context,
+                    wwwAuthenticate = it.header(WWW_AUTHENTICATE),
+                    remoteConfiguration = remoteConfiguration,
+                    imageName = property.imageName,
+                    tokenKey = tokenKey,
+                    downloadUrl = downloadUrl
+                )
             }
         } catch (e: Exception) {
             logger.error("Error occurred while sending request $downloadUrl", e)
             throw NodeNotFoundException(downloadUrl)
+        }
+    }
+
+    /**
+     * 当返回401时，按照docker标准协议去拉取token，然后进行文件下载
+     */
+    private fun doRequestWithToken(
+        context: ArtifactContext,
+        wwwAuthenticate: String?,
+        remoteConfiguration: RemoteConfiguration,
+        imageName: String,
+        tokenKey: String,
+        downloadUrl: String,
+    ): Any? {
+        // 针对返回401进行token获取
+        val proxyUrl = context.getStringAttribute(PROXY_URL)!!
+        val token = getAuthenticationCode(proxyUrl, wwwAuthenticate, remoteConfiguration, imageName) ?: return null
+        tokenCache.put(tokenKey, token)
+        val requestWithToken = buildRequest(
+            url = downloadUrl,
+            configuration = remoteConfiguration,
+            addBasicInterceptor = false,
+            token = token
+        )
+        clientCache.getIfPresent(remoteConfiguration)!!.newCall(requestWithToken).execute().use {responseWithAuth ->
+            return if (checkResponse(responseWithAuth)) {
+                onResponse(context, responseWithAuth)
+            } else null
         }
     }
 
@@ -308,22 +334,16 @@ class OciRegistryRemoteRepository(
     }
 
     private fun getAuthenticationCode(
-        context: ArtifactContext,
-        response: Response,
+        proxyUrl: String,
+        wwwAuthenticate: String?,
         configuration: RemoteConfiguration,
         imageName: String
     ): String? {
-        if (response.code != HttpStatus.UNAUTHORIZED.value) {
-            logger.warn("response code is ${response.code} for url ${response.request.url}")
-            return null
-        }
-        val wwwAuthenticate = response.header(WWW_AUTHENTICATE)
         if (wwwAuthenticate.isNullOrBlank() || !wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX)) {
             logger.warn("response wwwAuthenticate header $wwwAuthenticate is illegal")
             return null
         }
-        val url = context.getStringAttribute(PROXY_URL)!!
-        val scope = getScope(url, imageName)
+        val scope = getScope(proxyUrl, imageName)
         val authProperty = AuthenticationUtil.parseWWWAuthenticateHeader(wwwAuthenticate, scope)
         if (authProperty == null)  {
             logger.warn("Auth url can not be parsed from header $wwwAuthenticate!")
