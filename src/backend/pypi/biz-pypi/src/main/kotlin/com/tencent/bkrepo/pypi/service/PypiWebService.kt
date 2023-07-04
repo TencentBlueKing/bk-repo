@@ -118,6 +118,7 @@ class PypiWebService(
         packageMetadata = it.nodeMetadata ?: emptyList(),
         tags = packageVersion?.tags ?: emptyList(),
         extension = packageVersion?.extension ?: emptyMap(),
+        contentPath = it.fullPath,
         clusterNames = it.clusterNames
     )
 
