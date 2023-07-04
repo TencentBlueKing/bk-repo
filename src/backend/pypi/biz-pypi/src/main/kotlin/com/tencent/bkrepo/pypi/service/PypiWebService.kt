@@ -33,15 +33,20 @@ package com.tencent.bkrepo.pypi.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Service
 
 @Service
-class PypiWebService {
+class PypiWebService(
+    private val nodeClient: NodeClient
+) {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String) {
@@ -62,5 +67,20 @@ class PypiWebService {
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun versionListPage(
+        pypiArtifactInfo: PypiArtifactInfo,
+        packageKey: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<PackageVersion> {
+        val nodeList = nodeClient.listNode(
+            projectId = pypiArtifactInfo.projectId,
+            repoName = pypiArtifactInfo.repoName,
+            path = packageKey
+        )
+        return Page(1,1,1, emptyList())
     }
 }
