@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -87,14 +88,14 @@ class PypiWebService(
         val data = nodeClient.listNodePage(
             projectId = pypiArtifactInfo.projectId,
             repoName = pypiArtifactInfo.repoName,
-            path = PathUtils.normalizePath(packageKey.removePrefix(KEY_PREFIX)),
+            path = PathUtils.normalizePath(PackageKeys.resolvePypi(packageKey)),
             option = NodeListOption(pageNumber, pageSize, includeFolder = false, deep = true)
         ).data!!
         val packageVersionList = data.records.map {
             val version = parseSemVersion(it.path).toString()
             val packageVersion = packageClient.findVersionByName(it.projectId, it.repoName, packageKey, version).data
             buildPackageVersion(it, version, packageVersion)
-        }.sortedBy { it.name }
+        }.sortedWith(compareByDescending<PackageVersion> { it.name }.thenByDescending { it.createdDate })
         return Page(pageNumber, pageSize, data.totalRecords, packageVersionList)
     }
 
@@ -131,9 +132,5 @@ class PypiWebService(
         SemVersion(0, 0, 0)
     } catch (ignore: IllegalArgumentException) {
         SemVersion(0, 0, 0)
-    }
-
-    companion object {
-        private const val KEY_PREFIX = "pypi://"
     }
 }
