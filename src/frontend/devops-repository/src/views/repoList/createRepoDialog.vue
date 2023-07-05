@@ -428,7 +428,7 @@
                     // 因为可能支持创建的远程及虚拟仓库，在本地仓库支持创建的仓库中不存在，所以需要两者匹配才能在创建远程及虚拟仓库时显示
                     this.filterRepoEnum = val === 'local'
                         ? repoEnum
-                        : repoSupportEnum.map((item) => repoEnum.find((st) => item.value === st.value))
+                        : repoSupportEnum.map((item) => repoEnum.find((st) => item.value === st.value)).filter(Boolean)
                     // 因为远程仓库和虚拟仓库没有generic类型且远程仓库支持的制品类型有限，所以需要将其重新赋默认值
                     this.repoBaseInfo.type = this.filterRepoEnum[0]?.value || ''
                 }
