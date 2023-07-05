@@ -150,7 +150,7 @@ class OciRegistryRemoteRepository(
         val property = getRemoteRequestProperty(context)
         val downloadUrl = createRemoteDownloadUrl(context, property)
         logger.info("Remote request $downloadUrl will be sent")
-        val tokenKey = buildTokenCacheKey(context.getStringAttribute(PROXY_URL)!!, property.imageName)
+        val tokenKey = buildTokenCacheKey(context.getStringAttribute(PROXY_URL)!!,remoteConfiguration.credentials.username, property.imageName)
         val request = buildRequest(downloadUrl, remoteConfiguration, tokenCache.getIfPresent(tokenKey))
         try {
             httpClient!!.newCall(request).execute().use {
@@ -350,7 +350,7 @@ class OciRegistryRemoteRepository(
             return null
         }
         val urlStr = AuthenticationUtil.buildAuthenticationUrl(authProperty, configuration.credentials.username)
-        logger.info("The url for authenticating is $urlStr")
+        logger.info("The url for authentication is $urlStr")
         if (urlStr.isNullOrEmpty()) return null
         val request = buildRequest(
             url = urlStr,
@@ -602,9 +602,9 @@ class OciRegistryRemoteRepository(
         return n
     }
 
-    private fun buildTokenCacheKey(remoteUrl: String, imageName: String): String {
+    private fun buildTokenCacheKey(remoteUrl: String, userName: String?, imageName: String): String {
         val scope = getScope(remoteUrl, imageName)
-        return "$remoteUrl${CharPool.COLON}$scope"
+        return "$remoteUrl${CharPool.COLON}$scope${CharPool.COLON}$userName"
     }
 
     companion object {
