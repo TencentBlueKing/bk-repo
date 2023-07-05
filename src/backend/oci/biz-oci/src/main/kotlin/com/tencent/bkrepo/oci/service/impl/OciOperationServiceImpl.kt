@@ -111,6 +111,11 @@ import com.tencent.devops.plugin.api.applyExtension
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.nio.charset.Charset
 import java.time.Instant
@@ -558,27 +563,22 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                     "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-        val manifestBytes = storageService.load(
-            nodeDetail.sha256.orEmpty(),
-            Range.full(nodeDetail.size),
-            storageCredentials
-        )!!.readText()
-        val schemaVersion = OciUtils.schemeVersion(manifestBytes)
+
+        val manifest = loadManifest(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)
         // 将该版本对应的blob sha256放到manifest节点的元数据中
-        var digestList: List<String>? = null
-        val (mediaType, manifest) = if (schemaVersion.schemaVersion == 1) {
+        val (mediaType, digestList) = if (manifest == null) {
             Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
-            val manifest = OciUtils.stringToManifestV2(manifestBytes)
             // 更新manifest文件的metadata
             val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
                 HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
             } else {
                 manifest.mediaType
             }
-            digestList = OciUtils.manifestIteratorDigest(manifest)
-            Pair(mediaTypeV2, manifest)
+            Pair(mediaTypeV2, OciUtils.manifestIteratorDigest(manifest))
         }
+
+        // 更新manifest节点元数据
         updateNodeMetaData(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
@@ -588,25 +588,35 @@ class OciOperationServiceImpl(
             digestList = digestList,
             sourceType = sourceType
         )
-        // 同步blob相关metadata
-        if (ociArtifactInfo.packageName.isNotEmpty()) {
-            if (schemaVersion.schemaVersion == 1) {
-                syncBlobInfoV1(
-                    ociArtifactInfo = ociArtifactInfo,
-                    manifestDigest = digest,
-                    manifestPath = nodeDetail.fullPath,
-                    sourceType = sourceType
-                )
-            } else {
-                syncBlobInfo(
-                    ociArtifactInfo = ociArtifactInfo,
-                    manifest = manifest!!,
-                    manifestDigest = digest,
-                    storageCredentials = storageCredentials,
-                    manifestPath = nodeDetail.fullPath,
-                    sourceType = sourceType
-                )
-            }
+
+
+        if (ociArtifactInfo.packageName.isEmpty()) return
+        // 处理manifest中的blob数据
+        syncBlobInfo(
+            ociArtifactInfo = ociArtifactInfo,
+            manifest = manifest,
+            storageCredentials = storageCredentials,
+            nodeDetail = nodeDetail,
+            sourceType = sourceType
+        )
+    }
+
+
+    private fun loadManifest(
+        sha256: String,
+        size: Long,
+        storageCredentials: StorageCredentials?
+    ): ManifestSchema2? {
+        val manifestBytes = storageService.load(
+            sha256,
+            Range.full(size),
+            storageCredentials
+        )!!.readText()
+
+        return try {
+            OciUtils.stringToManifestV2(manifestBytes)
+        } catch (e: OciBadRequestException) {
+            null
         }
     }
 
@@ -617,34 +627,17 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data ?: return false
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return false
-            val manifestBytes = storageService.load(
-                nodeDetail.sha256!!,
-                Range.full(nodeDetail.size),
-                repositoryDetail.storageCredentials
-            )!!.readText()
-            val manifest = OciUtils.stringToManifestV2(manifestBytes)
-            val descriptorList = OciUtils.manifestIterator(manifest)
-            // 用于判断是否所有blob都以存在
-            var existFlag: Boolean
-            var size: Long = 0
-
-            descriptorList.forEach {
-                size += it.size
-                existFlag = doSyncBlob(it, ociArtifactInfo, repositoryDetail.storageCredentials)
-                // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
-                if (!existFlag) return false
-            }
-            // 根据flag生成package信息以及package version信息
-            doPackageOperations(
-                manifestPath = manifestPath,
+            val manifest = loadManifest(
+                nodeDetail.sha256!!, nodeDetail.size, repositoryDetail.storageCredentials
+            ) ?: return false
+            return syncBlobInfo(
                 ociArtifactInfo = ociArtifactInfo,
-                manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
-                size = size,
-                chartYaml = null,
+                manifest = manifest,
+                storageCredentials = repositoryDetail.storageCredentials,
+                nodeDetail = nodeDetail,
                 sourceType = ArtifactChannel.REPLICATION,
                 userId = SYSTEM_USER
             )
-            return true
         }
     }
 
@@ -678,54 +671,77 @@ class OciOperationServiceImpl(
         )
     }
 
-    /**
-     * 同步fsLayers层的数据
-     */
-    private fun syncBlobInfoV1(
-        ociArtifactInfo: OciManifestArtifactInfo,
-        manifestDigest: OciDigest,
-        manifestPath: String,
-        sourceType: ArtifactChannel? = null
-    ) {
-        logger.info(
-            "Will start to sync fsLayers' blob info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                    "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
-        )
-        // 根据flag生成package信息以及packageversion信息
-        doPackageOperations(
-            manifestPath = manifestPath,
-            ociArtifactInfo = ociArtifactInfo,
-            manifestDigest = manifestDigest,
-            size = 0,
-            sourceType = sourceType
-        )
-    }
 
     /**
      * 同步blob层的数据和config里面的数据
      */
     private fun syncBlobInfo(
         ociArtifactInfo: OciManifestArtifactInfo,
-        manifest: ManifestSchema2,
-        manifestDigest: OciDigest,
+        nodeDetail: NodeDetail,
+        sourceType: ArtifactChannel? = null,
+        manifest: ManifestSchema2? = null,
         storageCredentials: StorageCredentials?,
-        manifestPath: String,
-        sourceType: ArtifactChannel? = null
-    ) {
+        userId: String = SecurityUtils.getUserId()
+    ): Boolean {
         logger.info(
             "Will start to sync blobs and config info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                    "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
+                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
         )
-        val descriptorList = OciUtils.manifestIterator(manifest)
+        // existFlag 判断manifest里的所有blob是否都已经创建节点
+        // size 整个镜像blob汇总的大小
+        // yamlContent 当为helm v3版本的chart包时，读取yaml内容
+        val (existFlag, size, yamlContent) = manifestHandler(
+            manifest, ociArtifactInfo, storageCredentials
+        )
+        // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
+        if (existFlag) {
+            // 第三方同步的索引更新等所有文件全部上传完成后才去进行
+            // 根据flag生成package信息以及package version信息
+            doPackageOperations(
+                manifestPath = nodeDetail.fullPath,
+                ociArtifactInfo = ociArtifactInfo,
+                manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
+                size = size,
+                yamlContent = yamlContent,
+                sourceType = sourceType,
+                userId = userId
+            )
+            return true
+        } else {
+            val query = Query.query(
+                where(TOciReplicationRecord::projectId).isEqualTo(ociArtifactInfo.projectId)
+                    .and(TOciReplicationRecord::repoName).isEqualTo(ociArtifactInfo.repoName)
+                    .and(TOciReplicationRecord::packageName).isEqualTo(ociArtifactInfo.packageName)
+                    .and(TOciReplicationRecord::packageVersion).isEqualTo(ociArtifactInfo.reference)
+            )
+            val update = Update().setOnInsert(TOciReplicationRecord::manifestPath.name, nodeDetail.fullPath)
+            ociReplicationRecordDao.upsert(query, update)
+            return false
+        }
+    }
+
+
+    /**
+     * 针对v2版本manifest文件做特殊处理
+     */
+    private fun manifestHandler(
+        manifest: ManifestSchema2?,
+        ociArtifactInfo: OciManifestArtifactInfo,
+        storageCredentials: StorageCredentials?
+    ): Triple<Boolean, Long, Map<String, Any>?> {
+        //当manifest为空时，可能是v1版本镜像,直接返回
+        if (manifest == null) return Triple(true, 0, null)
         // 用于判断是否所有blob都以存在
         var existFlag = true
-        var chartYaml: Map<String, Any>? = null
-        // 统计所有manifest中的文件size作为整个package version的size
+        // 统计所有mainfest中的文件size作为整个package version的size
         var size: Long = 0
+        val descriptorList = OciUtils.manifestIterator(manifest)
+        // 用于收集helm chart v3的yaml内容
+        var yamlContent: Map<String, Any>? = null
         // 同步layer以及config层blob信息
         descriptorList.forEach {
             size += it.size
-            chartYaml = when (it.mediaType) {
+            yamlContent = when (it.mediaType) {
                 CHART_LAYER_MEDIA_TYPE -> {
                     // 针对helm chart，需要将chart.yaml中相关信息存入对应节点中
                     loadArtifactInput(
@@ -740,28 +756,14 @@ class OciOperationServiceImpl(
                 else -> null
             }
             existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials)
+            if (!existFlag) {
+                // 第三方同步场景下，如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
+                return Triple(false, 0, null)
+            }
         }
-        // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
-        if (existFlag) {
-            // 根据flag生成package信息以及package version信息
-            doPackageOperations(
-                manifestPath = manifestPath,
-                ociArtifactInfo = ociArtifactInfo,
-                manifestDigest = manifestDigest,
-                size = size,
-                chartYaml = chartYaml,
-                sourceType = sourceType
-            )
-        } else {
-            ociReplicationRecordDao.save(TOciReplicationRecord(
-                projectId = ociArtifactInfo.projectId,
-                repoName = ociArtifactInfo.repoName,
-                packageName = ociArtifactInfo.packageName,
-                packageVersion = ociArtifactInfo.reference,
-                manifestPath = manifestPath
-            ))
-        }
+        return Triple(existFlag, size, yamlContent)
     }
+
 
     /**
      * 更新blobs的信息
@@ -827,7 +829,7 @@ class OciOperationServiceImpl(
         ociArtifactInfo: OciManifestArtifactInfo,
         manifestDigest: OciDigest,
         size: Long,
-        chartYaml: Map<String, Any>? = null,
+        yamlContent: Map<String, Any>? = null,
         sourceType: ArtifactChannel? = null,
         userId: String = SecurityUtils.getUserId()
     ) {
@@ -838,7 +840,7 @@ class OciOperationServiceImpl(
             val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
             val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
                 .apply {
-                    chartYaml?.let { this.putAll(chartYaml) }
+                    yamlContent?.let { this.putAll(yamlContent) }
                     sourceType?.let { this[SOURCE_TYPE] = sourceType }
                 }
             val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
@@ -860,8 +862,8 @@ class OciOperationServiceImpl(
             )
 
             // 针对helm chart包，将部分信息放入到package中
-            chartYaml?.let {
-                val (appVersion, description) = getMetaDataFromChart(chartYaml)
+            yamlContent?.let {
+                val (appVersion, description) = getMetaDataFromChart(yamlContent)
                 updatePackageInfo(
                     ociArtifactInfo = ociArtifactInfo,
                     appVersion = appVersion,
