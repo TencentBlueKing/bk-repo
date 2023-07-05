@@ -102,15 +102,21 @@ object UrlFormatter {
             throw IllegalArgumentException("Url should not be blank")
         val newUrl = addProtocol(url.trim().trimEnd(SLASH))
         val baseUrl = URL(newUrl, newUrl.path)
-        val baseParams = newUrl.query
         val builder = StringBuilder(baseUrl.toString().trimEnd(SLASH))
         if (path.isNotBlank()) {
             builder.append(SLASH).append(path.trimStart(SLASH))
         }
-        if (!baseParams.isNullOrEmpty()) {
-            builder.append(QUESTION).append(baseParams)
+        if (!newUrl.query.isNullOrEmpty()) {
+            builder.append(QUESTION).append(newUrl.query)
         }
-        if (params.isNotBlank()) {
+        return addParams(builder.toString(), params)
+    }
+
+    fun addParams(url: String, params: String): String {
+        val baseUrl = URL(url)
+        val builder = StringBuilder(baseUrl.toString())
+
+        if (params.isNotEmpty()) {
             if (builder.contains(QUESTION)) {
                 builder.append(CharPool.AND).append(params)
             } else {
