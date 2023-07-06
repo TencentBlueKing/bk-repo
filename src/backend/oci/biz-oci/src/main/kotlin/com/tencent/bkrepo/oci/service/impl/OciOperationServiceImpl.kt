@@ -261,12 +261,12 @@ class OciOperationServiceImpl(
         userId: String,
     ) {
         with(artifactInfo) {
-            val manifest = OciLocationUtils.buildManifestPath(packageName, version)
+            val manifestFolder = OciLocationUtils.buildManifestFolderPath(packageName, version)
             val blobsFolder = OciLocationUtils.blobVersionFolderLocation(version, packageName)
-                logger.info("Will delete blobsFolder [$blobsFolder] and manifest $manifest " +
+                logger.info("Will delete blobsFolder [$blobsFolder] and manifestFolder $manifestFolder " +
                                 "in package $packageName|$version in repo [$projectId/$repoName]")
-            // 删除manifest
-            deleteNode(projectId, repoName, manifest, userId)
+            // 删除manifestFolder
+            deleteNode(projectId, repoName, manifestFolder, userId)
             // 删除blobs
             deleteNode(projectId, repoName, blobsFolder, userId)
         }

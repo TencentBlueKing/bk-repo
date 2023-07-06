@@ -30,14 +30,15 @@ package com.tencent.bkrepo.oci.util
 import com.tencent.bkrepo.oci.constant.OCI_MANIFEST
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import org.slf4j.LoggerFactory
 
 object OciLocationUtils {
 
-    private val logger = LoggerFactory.getLogger(OciLocationUtils::class.java)
-
     fun buildManifestPath(packageName: String, tag: String): String {
-        return "/$packageName/manifest/$tag/$OCI_MANIFEST"
+        return buildManifestFolderPath(packageName, tag) + OCI_MANIFEST
+    }
+
+    fun buildManifestFolderPath(packageName: String, tag: String): String {
+        return "/$packageName/manifest/$tag/"
     }
 
     fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {
