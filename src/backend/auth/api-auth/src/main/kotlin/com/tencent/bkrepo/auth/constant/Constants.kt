@@ -39,6 +39,10 @@ const val PROJECT_MANAGE_ID = "project_manage"
 
 const val PROJECT_MANAGE_NAME = "项目管理员"
 
+const val PROJECT_VIEWER_ID = "project_view"
+
+const val PROJECT_VIEWER_NAME = "项目用户"
+
 const val REPO_MANAGE_ID = "repo_manage"
 
 const val REPO_MANAGE_NAME = "仓库管理员"

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -167,6 +168,16 @@ open class PermissionServiceImpl constructor(
                 addUserToRoleBatchCommon(addUserList, roleId!!)
                 removeUserFromRoleBatchCommon(removeUserList, roleId)
                 return true
+            //  update project user
+            } else if (permissionId == PROJECT_VIEWER_ID) {
+                val createRoleRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
+                val roleId = createRoleCommon(createRoleRequest)
+                val nomalUsers = getProjectNomalUser(projectId)
+                val addUserList = userId.filter { !nomalUsers.contains(it) }
+                val removeUserList = nomalUsers.filter { !userId.contains(it) }
+                addUserToRoleBatchCommon(addUserList, roleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, roleId)
+                return true
             } else {
                 checkPermissionExist(permissionId)
                 return updatePermissionById(permissionId, TPermission::users.name, userId)
@@ -216,6 +227,8 @@ open class PermissionServiceImpl constructor(
         if (user.admin) return true
         // check role project admin
         if (checkProjectAdmin(request, user.roles)) return true
+        // check role project user
+        if (checkProjectUser(request, user.roles)) return true
         // check role repo admin
         if (checkRepoAdmin(request, user.roles)) return true
         // check repo action
@@ -234,6 +247,23 @@ open class PermissionServiceImpl constructor(
             projectId = request.projectId!!, type = RoleType.PROJECT, admin = true, ids = queryRoles
         )
         if (result.isNotEmpty()) {
+            return true
+        }
+        return false
+    }
+
+    private fun checkProjectUser(request: CheckPermissionRequest, roles: List<String>): Boolean {
+        var queryRoles = emptyList<String>()
+        if (roles.isNotEmpty() && request.projectId != null) {
+            queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
+        }
+        if (queryRoles.isEmpty()) {
+            return false
+        }
+        if(roleRepository.findByIdIn(queryRoles).
+            any { tRole -> tRole.projectId.equals(request.projectId)&&tRole.roleId.equals(PROJECT_VIEWER_ID) }
+            && request.action.equals(PermissionAction.READ.toString())
+        ) {
             return true
         }
         return false
@@ -311,6 +341,9 @@ open class PermissionServiceImpl constructor(
         // 非管理员用户关联权限
         projectList.addAll(getNoAdminUserProject(userId))
 
+        // 取用户关联角色关联的项目
+        if(user.roles.isNotEmpty()) projectList.addAll(getUserRoleProject(user.roles))
+
         if (user.roles.isEmpty()) {
             return projectList.distinct()
         }
@@ -349,6 +382,7 @@ open class PermissionServiceImpl constructor(
         // 用户为项目管理员
         if (isUserLocalProjectAdmin(userId, projectId)) return getAllRepoByProjectId(projectId)
 
+        if (isUserLocalProjectUser(roles,projectId)) return getAllRepoByProjectId(projectId)
 
         val repoList = mutableListOf<String>()
 
@@ -379,6 +413,11 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
+    fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
+        return roleRepository.findAllById(roleIds).
+                any { role -> role.projectId.equals(projectId) && role.roleId.equals(PROJECT_VIEWER_ID) }
+    }
+
     fun getAllRepoByProjectId(projectId: String): List<String> {
         return repoClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
     }
@@ -388,6 +427,16 @@ open class PermissionServiceImpl constructor(
         permissionRepository.findByUsers(userId).forEach {
             if (it.actions.isNotEmpty() && it.projectId != null) {
                 projectList.add(it.projectId!!)
+            }
+        }
+        return projectList
+    }
+
+    private fun getUserRoleProject(roles: List<String>): List<String> {
+        val projectList = mutableListOf<String>()
+        roleRepository.findByIdIn(roles).forEach{
+            if (it.projectId.isNotEmpty() && it.projectId != null && it.roleId.equals(PROJECT_VIEWER_ID )) {
+                projectList.add(it.projectId)
             }
         }
         return projectList
@@ -495,7 +544,18 @@ open class PermissionServiceImpl constructor(
             createAt = LocalDateTime.now(),
             updateAt = LocalDateTime.now()
         )
-        return listOf(projectManager)
+        val projectViewer = Permission (
+            id = PROJECT_VIEWER_ID,
+            resourceType = ResourceType.PROJECT.toString(),
+            projectId = projectId,
+            permName = "project_view_permission",
+            users = getProjectNomalUser(projectId),
+            createBy = SecurityUtils.getUserId(),
+            updatedBy = SecurityUtils.getUserId(),
+            createAt = LocalDateTime.now(),
+            updateAt = LocalDateTime.now()
+            )
+        return listOf(projectManager, projectViewer)
     }
 
     companion object {
