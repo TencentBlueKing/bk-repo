@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -95,7 +96,9 @@ import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -103,6 +106,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import com.tencent.devops.plugin.api.PluginManager
@@ -131,8 +135,10 @@ class OciOperationServiceImpl(
     private val storageService: StorageService,
     private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient,
+    private val projectClient: ProjectClient,
     private val ociProperties: OciProperties,
     private val ociReplicationRecordDao: OciReplicationRecordDao,
+    private val storageCredentialsClient: StorageCredentialsClient,
     private val pluginManager: PluginManager
     ) : OciOperationService {
 
@@ -1001,38 +1007,71 @@ class OciOperationServiceImpl(
         }
     }
 
-    override fun refreshFullPathOfBlob(projectId: String, repoName: String, userId: String) {
-        val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+    override fun refreshFullPathOfBlob(projectId: String?, repoName: String?, userId: String) {
+        if (projectId.isNullOrEmpty()) {
+            projectClient.listProject().data.orEmpty().forEach {
+                repositoryClient.listRepo(
+                    projectId = projectId!!, type = RepositoryType.OCI.name
+                ).data.orEmpty().forEach {
+                    refreshPackage(it, userId)
+                }
+                repositoryClient.listRepo(
+                    projectId = projectId, type = RepositoryType.DOCKER.name
+                ).data.orEmpty().forEach {
+                    refreshPackage(it, userId)
+                }
+            }
+            return
+        }
+        if (repoName.isNullOrEmpty()) return
+        val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
-        val packageList = packageClient.listAllPackageNames(projectId, repoName).data ?: return
-        packageList.forEach { pName ->
-            packageClient.listAllVersion(projectId, repoName, pName).data.orEmpty().forEach { pVersion ->
-                refreshNode(pName, pVersion, repositoryDetail, userId)
+        if (repoInfo.type == RepositoryType.OCI || repoInfo.type == RepositoryType.DOCKER){
+            refreshPackage(repoInfo, userId)
+        }
+    }
+
+    private fun refreshPackage(
+        repoInfo: RepositoryInfo,
+        userId: String,
+    ) {
+        with(repoInfo) {
+            val packageList = packageClient.listAllPackageNames(projectId, name).data ?: return
+            packageList.forEach { pName ->
+                packageClient.listAllVersion(projectId, name, pName).data.orEmpty().forEach { pVersion ->
+                    refreshNode(
+                        repoInfo = repoInfo,
+                        pName = pName,
+                        pVersion = pVersion,
+                        userId = userId
+                    )
+                }
             }
         }
     }
 
     private fun refreshNode(
+        repoInfo: RepositoryInfo,
         pName: String,
         pVersion: PackageVersion,
-        repositoryDetail: RepositoryDetail,
         userId: String
     ) {
-        val packageName = PackageKeys.resolveName(repositoryDetail.type.name.toLowerCase(), pName)
+        val packageName = PackageKeys.resolveName(repoInfo.type.name.toLowerCase(), pName)
         val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion.name)
         logger.info("Manifest $manifestPath will be refreshed")
         val manifestNode = nodeClient.getNodeDetail(
-            repositoryDetail.projectId, repositoryDetail.name, manifestPath
+            repoInfo.projectId, repoInfo.name, manifestPath
         ).data ?: return
+        val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
         val manifest = loadManifest(
-            manifestNode.sha256!!, manifestNode.size, repositoryDetail.storageCredentials
+            manifestNode.sha256!!, manifestNode.size, storageCredentials
         ) ?: run {
             logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
             return
         }
         val ociArtifactInfo = OciManifestArtifactInfo(
-            projectId = repositoryDetail.projectId,
-            repoName = repositoryDetail.name,
+            projectId = repoInfo.projectId,
+            repoName = repoInfo.name,
             packageName = packageName,
             version = pVersion.name,
             reference = pVersion.name,

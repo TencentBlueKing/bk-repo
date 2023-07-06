@@ -192,5 +192,9 @@ interface OciOperationService {
     /**
      * oci blob 路径调整，由/packageName/blobs/XXX -> /packageName/blobs/version/XXX
      */
-    fun refreshFullPathOfBlob(projectId: String, repoName: String, userId: String = SecurityUtils.getUserId())
+    fun refreshFullPathOfBlob(
+        projectId: String? = null,
+        repoName: String? =null,
+        userId: String = SecurityUtils.getUserId()
+    )
 }

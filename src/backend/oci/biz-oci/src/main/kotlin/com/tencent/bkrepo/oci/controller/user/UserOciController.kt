@@ -208,12 +208,10 @@ class UserOciController(
     @PostMapping(OCI_BLOB_NODE_FULLPATH_REFRESH)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun refreshFullPathOfBlob(
-        @PathVariable
-        @ApiParam(value = OCI_PROJECT_ID, required = true)
-        projectId: String,
-        @PathVariable
-        @ApiParam(value = OCI_REPO_NAME, required = true)
-        repoName: String,
+        @RequestParam(required = false)
+        projectId: String? = null,
+        @RequestParam(required = false)
+        repoName: String? = null,
     ): Response<Void> {
         operationService.refreshFullPathOfBlob(projectId, repoName)
         return ResponseBuilder.success()
