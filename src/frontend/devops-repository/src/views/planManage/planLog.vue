@@ -21,7 +21,7 @@
                     :row-style="{ cursor: 'pointer' }"
                     size="small"
                     @row-click="showLogDetailHandler">
-                    <bk-table-column type="index" :label="$t('NO')" width="60"></bk-table-column>
+                    <bk-table-column type="index" :label="$t('NO')" width="70"></bk-table-column>
                     <bk-table-column :label="$t('runningStatus')" width="80">
                         <template #default="{ row }">
                             <span class="repo-tag" :class="row.status">{{$t(`asyncPlanStatusEnum.${row.status}`) || $t('notExecuted')}}</span>
