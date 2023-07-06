@@ -644,7 +644,7 @@
     "runningStatus":"Running status",
     "startExecutionTime":"Starting time",
     "endExecutionTime":"End Time",
-    "planLogTitle":"{0} execution log",
+    "planLogTitle":"{name} execution log",
     "usedQuotaCapacity":"Quota capacity used by the warehouse",
     "nodeTypeEnum": {
         "CENTER": "center",
