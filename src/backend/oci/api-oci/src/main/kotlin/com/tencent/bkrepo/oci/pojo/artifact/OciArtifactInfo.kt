@@ -73,5 +73,6 @@ open class OciArtifactInfo(
         const val OCI_USER_REPO_SUFFIX = "/repo/{projectId}/{repoName}"
         const val OCI_USER_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**"
         const val DOCKER_CATALOG_SUFFIX = "_catalog"
+        const val OCI_BLOB_NODE_FULLPATH_REFRESH = "/{projectId}/{repoName}/blob/node/refresh"
     }
 }

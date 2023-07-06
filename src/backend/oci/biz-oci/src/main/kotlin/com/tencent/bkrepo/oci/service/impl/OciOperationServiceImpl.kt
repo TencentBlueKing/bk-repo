@@ -311,7 +311,7 @@ class OciOperationServiceImpl(
         packageKey: String
     ) {
         with(artifactInfo) {
-            val nodeDetail = getBlobNodeDetail(
+            val nodeDetail = getImageNodeDetail(
                 projectId = projectId,
                 repoName = repoName,
                 name = artifactInfo.packageName,
@@ -335,7 +335,7 @@ class OciOperationServiceImpl(
     private fun findHelmChartYamlInfo(artifactInfo: OciArtifactInfo, version: String? = null): String? {
         with(artifactInfo) {
             if (version.isNullOrBlank()) return null
-            val nodeDetail = getBlobNodeDetail(
+            val nodeDetail = getImageNodeDetail(
                 projectId = projectId,
                 repoName = repoName,
                 name = artifactInfo.packageName,
@@ -365,7 +365,7 @@ class OciOperationServiceImpl(
         path: String? = null
     ) {
         val fullPath = path ?: digestStr?.let {
-            val nodeDetail = getBlobNodeDetail(
+            val nodeDetail = getImageNodeDetail(
                 projectId = projectId,
                 repoName = repoName,
                 name = packageName,
@@ -413,7 +413,7 @@ class OciOperationServiceImpl(
                 packageKey = packageKey,
                 version = version
             )
-            val nodeDetail = getBlobNodeDetail(
+            val nodeDetail = getImageNodeDetail(
                 projectId = projectId,
                 repoName = repoName,
                 name = name,
@@ -431,7 +431,7 @@ class OciOperationServiceImpl(
      * 获取node节点
      * 查不到抛出OciFileNotFoundException异常
      */
-    private fun getBlobNodeDetail(
+    private fun getImageNodeDetail(
         projectId: String,
         repoName: String,
         name: String,
@@ -520,7 +520,7 @@ class OciOperationServiceImpl(
                 md5 = fileInfo.md5,
                 sha256 = fileInfo.sha256
             )
-            createNode(newNodeRequest, storageCredentials)
+            createNode(newNodeRequest)
             null
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
@@ -540,7 +540,7 @@ class OciOperationServiceImpl(
     /**
      * 当使用追加上传时，文件已存储，只需存储节点信息
      */
-    override fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail {
+    override fun createNode(request: NodeCreateRequest): NodeDetail {
         try {
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
@@ -756,7 +756,7 @@ class OciOperationServiceImpl(
                 }
                 else -> null
             }
-            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials, userId)
+            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, userId)
             if (!existFlag) {
                 // 第三方同步场景下，如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
                 return Triple(false, 0, null)
@@ -772,7 +772,6 @@ class OciOperationServiceImpl(
     private fun doSyncBlob(
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?,
         userId: String = SecurityUtils.getUserId()
     ): Boolean {
         with(ociArtifactInfo) {
@@ -789,7 +788,6 @@ class OciOperationServiceImpl(
                 fullPath = fullPath,
                 descriptor = descriptor,
                 ociArtifactInfo = this,
-                storageCredentials = storageCredentials,
                 userId = userId
             )
         }
@@ -802,7 +800,6 @@ class OciOperationServiceImpl(
         fullPath: String,
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?,
         userId: String = SecurityUtils.getUserId()
     ): Boolean {
         with(ociArtifactInfo) {
@@ -818,7 +815,7 @@ class OciOperationServiceImpl(
                 md5 = nodeProperty.md5 ?: StringPool.UNKNOWN,
                 userId = userId
             )
-            createNode(nodeCreateRequest, storageCredentials)
+            createNode(nodeCreateRequest)
             deleteNode(
                 projectId = projectId,
                 repoName = repoName,
@@ -1120,6 +1117,36 @@ class OciOperationServiceImpl(
         buildImagePackagePullContext(projectId, repoName, repositoryDetail.configuration).forEach {
             pluginManager.applyExtension<ImagePackageInfoPullExtension> {
                 queryAndCreateDockerPackageInfo(it)
+            }
+        }
+    }
+
+    override fun refreshOciBlobFullPath(projectId: String, repoName: String, userId: String) {
+        val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+            ?: throw RepoNotFoundException("$projectId|$repoName")
+        val packageList = packageClient.listAllPackageNames(projectId, repoName).data ?: return
+        packageList.forEach { pName ->
+            packageClient.listAllVersion(projectId, repoName, pName).data.orEmpty().forEach { pVersion ->
+                val packageName = PackageKeys.resolveName(repositoryDetail.type.name.toLowerCase(), pName)
+                val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion.name)
+                logger.info("Manifest $manifestPath will be refreshed")
+                val manifestNode = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return
+                val manifest = loadManifest(manifestNode.sha256!!, manifestNode.size, repositoryDetail.storageCredentials)
+                    ?: run {
+                        logger.warn("The content of manifest.json $manifestPath is null, check the mediaType.")
+                        return
+                    }
+                val ociArtifactInfo = OciManifestArtifactInfo(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageName = packageName,
+                    version = pVersion.name,
+                    reference = pVersion.name,
+                    isValidDigest = false
+                )
+                OciUtils.manifestIterator(manifest).forEach {
+                    doSyncBlob(it, ociArtifactInfo, userId)
+                }
             }
         }
     }

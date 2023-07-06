@@ -29,6 +29,7 @@ package com.tencent.bkrepo.oci.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
@@ -124,7 +125,7 @@ interface OciOperationService {
     /**
      * 当使用追加上传时，文件已存储，只需存储节点信息
      */
-    fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail
+    fun createNode(request: NodeCreateRequest): NodeDetail
 
     /**
      * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
@@ -198,4 +199,9 @@ interface OciOperationService {
      * 拉取第三方镜像仓库package信息
      */
     fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String)
+
+    /**
+     * oci blob 路径调整，由/packageName/blobs/XXX -> /packageName/blobs/version/XXX
+     */
+    fun refreshOciBlobFullPath(projectId: String, repoName: String, userId: String = SecurityUtils.getUserId())
 }

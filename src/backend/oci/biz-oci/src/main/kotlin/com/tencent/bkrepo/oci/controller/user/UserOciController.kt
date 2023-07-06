@@ -41,6 +41,7 @@ import com.tencent.bkrepo.oci.constant.PAGE_NUMBER
 import com.tencent.bkrepo.oci.constant.PAGE_SIZE
 import com.tencent.bkrepo.oci.constant.USER_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_BLOB_NODE_FULLPATH_REFRESH
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_USER_MANIFEST_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_USER_REPO_SUFFIX
@@ -56,7 +57,6 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
-import javax.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -65,6 +65,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
 
 @Suppress("MVCPathVariableInspection")
 @Api("oci产品接口")
@@ -200,5 +201,20 @@ class UserOciController(
                 pageNumber = pageNumber
             )
         )
+    }
+
+    @ApiOperation("刷新oci下的所有blob节点路径")
+    @GetMapping(OCI_BLOB_NODE_FULLPATH_REFRESH)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun detailVersion(
+        @PathVariable
+        @ApiParam(value = OCI_PROJECT_ID, required = true)
+        projectId: String,
+        @PathVariable
+        @ApiParam(value = OCI_REPO_NAME, required = true)
+        repoName: String,
+    ): Response<Void> {
+        operationService.refreshOciBlobFullPath(projectId, repoName)
+        return ResponseBuilder.success()
     }
 }
