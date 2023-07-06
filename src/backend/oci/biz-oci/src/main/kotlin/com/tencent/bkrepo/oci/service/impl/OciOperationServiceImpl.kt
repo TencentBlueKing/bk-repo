@@ -691,12 +691,14 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
-            val nodeProperty = nodeClient.getDeletedNodeDetail(
-                projectId, repoName, fullPath
-            ).data?.firstOrNull{ it.sha256 == descriptor.sha256 }?.let {
-                NodeProperty(it.fullPath, it.md5, it.size)
-            } ?: getNodeByDigest(projectId, repoName, descriptor.digest)
-
+            var nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest)
+            if (nodeProperty.fullPath == null) {
+                nodeProperty = nodeClient.getDeletedNodeDetail(
+                    projectId, repoName, fullPath
+                ).data?.firstOrNull{ it.sha256 == descriptor.sha256 }?.let {
+                    NodeProperty(it.fullPath, it.md5, it.size)
+                } ?: return false
+            }
             if (nodeProperty.fullPath.isNullOrEmpty()) return false
             val newPath = OciLocationUtils.blobVersionPathLocation(reference, packageName, descriptor.filename)
             if (newPath != nodeProperty.fullPath) {
@@ -997,10 +999,11 @@ class OciOperationServiceImpl(
                 val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion.name)
                 logger.info("Manifest $manifestPath will be refreshed")
                 val manifestNode = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return
-                val manifest = loadManifest(manifestNode.sha256!!, manifestNode.size, repositoryDetail.storageCredentials)
-                    ?: run {
-                        logger.warn("The content of manifest.json $manifestPath is null, check the mediaType.")
-                        return
+                val manifest = loadManifest(
+                    manifestNode.sha256!!, manifestNode.size, repositoryDetail.storageCredentials
+                ) ?: run {
+                    logger.warn("The content of manifest.json $manifestPath is null, check the mediaType.")
+                    return
                     }
                 val ociArtifactInfo = OciManifestArtifactInfo(
                     projectId = projectId,
