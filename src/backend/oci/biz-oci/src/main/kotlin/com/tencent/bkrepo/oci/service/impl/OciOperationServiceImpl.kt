@@ -1030,6 +1030,7 @@ class OciOperationServiceImpl(
         OciUtils.manifestIterator(manifest).forEach {
             doSyncBlob(it, ociArtifactInfo, userId)
         }
+        logger.info("Manifest $manifestPath has been successfully refreshed")
     }
 
 
