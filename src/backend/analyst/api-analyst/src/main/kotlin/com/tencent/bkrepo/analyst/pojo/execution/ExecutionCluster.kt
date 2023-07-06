@@ -9,6 +9,7 @@ import io.swagger.annotations.ApiModelProperty
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = KubernetesJobExecutionCluster::class, name = KubernetesJobExecutionCluster.type),
+    JsonSubTypes.Type(value = DockerExecutionCluster::class, name = DockerExecutionCluster.type),
 )
 open class ExecutionCluster(
     @ApiModelProperty("执行集群名")

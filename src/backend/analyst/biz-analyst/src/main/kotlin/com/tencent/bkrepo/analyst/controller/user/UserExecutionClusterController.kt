@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @Api("扫描执行集群配置接口")
 @RestController
-@RequestMapping("/api/execution/cluster")
+@RequestMapping("/api/execution/clusters")
 @Principal(PrincipalType.ADMIN)
 class UserExecutionClusterController(private val executionClusterService: ExecutionClusterService) {
     @ApiOperation("创建集群")

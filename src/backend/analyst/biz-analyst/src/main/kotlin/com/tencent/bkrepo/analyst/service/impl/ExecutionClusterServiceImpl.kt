@@ -66,6 +66,15 @@ class ExecutionClusterServiceImpl(
         }
     }
 
+    override fun get(name: String): ExecutionCluster {
+        return executionClusterDao.findByName(name)?.config?.readJsonString()
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
+    }
+
+    override fun exists(name: String): Boolean {
+        return executionClusterDao.existsByName(name)
+    }
+
     override fun list(): List<ExecutionCluster> {
         return executionClusterDao.findAll().map { it.config.readJsonString() }
     }

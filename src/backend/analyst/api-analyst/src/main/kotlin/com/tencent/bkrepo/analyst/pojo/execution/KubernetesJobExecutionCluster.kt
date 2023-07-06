@@ -4,7 +4,7 @@ import io.swagger.annotations.ApiModelProperty
 import org.springframework.util.unit.DataSize
 
 @Suppress("LongParameterList", "MagicNumber")
-class KubernetesJobExecutionCluster(
+data class KubernetesJobExecutionCluster(
     override val name: String,
     @ApiModelProperty("命名空间")
     val namespace: String = "default",

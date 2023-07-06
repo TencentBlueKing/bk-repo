@@ -42,6 +42,7 @@ import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
+import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
@@ -74,6 +75,7 @@ import java.time.LocalDateTime
 @Action
 @Suppress("LongParameterList")
 class PendingAction(
+    private val executionClusterService: ExecutionClusterService,
     private val scannerProperties: ScannerProperties,
     private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val scanPlanDao: ScanPlanDao,
@@ -166,7 +168,8 @@ class PendingAction(
             ?.dispatcherConfiguration
             ?.firstOrNull { it.scanner == scanner.name }
             ?.dispatcher ?: scannerProperties.defaultDispatcher
-        return if (dispatcher.isEmpty() || dispatcher !in scanner.supportDispatchers) {
+        val dispatcherExists = dispatcher.isNotBlank() && executionClusterService.exists(dispatcher)
+        return if (!dispatcherExists || dispatcher !in scanner.supportDispatchers) {
             customMetadata
         } else {
             customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, dispatcher)
