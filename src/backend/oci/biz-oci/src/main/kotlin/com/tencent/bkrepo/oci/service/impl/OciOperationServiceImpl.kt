@@ -987,7 +987,7 @@ class OciOperationServiceImpl(
         }
     }
 
-    override fun refreshOciBlobFullPath(projectId: String, repoName: String, userId: String) {
+    override fun refreshFullPathOfBlob(projectId: String, repoName: String, userId: String) {
         val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
         val packageList = packageClient.listAllPackageNames(projectId, repoName).data ?: return

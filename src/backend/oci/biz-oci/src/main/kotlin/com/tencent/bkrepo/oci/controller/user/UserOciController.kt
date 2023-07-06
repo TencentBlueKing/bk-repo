@@ -206,7 +206,7 @@ class UserOciController(
     @ApiOperation("刷新oci下的所有blob节点路径")
     @GetMapping(OCI_BLOB_NODE_FULLPATH_REFRESH)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun detailVersion(
+    fun refreshFullPathOfBlob(
         @PathVariable
         @ApiParam(value = OCI_PROJECT_ID, required = true)
         projectId: String,
@@ -214,7 +214,7 @@ class UserOciController(
         @ApiParam(value = OCI_REPO_NAME, required = true)
         repoName: String,
     ): Response<Void> {
-        operationService.refreshOciBlobFullPath(projectId, repoName)
+        operationService.refreshFullPathOfBlob(projectId, repoName)
         return ResponseBuilder.success()
     }
 }
