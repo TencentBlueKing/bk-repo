@@ -100,6 +100,7 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
@@ -995,30 +996,42 @@ class OciOperationServiceImpl(
         val packageList = packageClient.listAllPackageNames(projectId, repoName).data ?: return
         packageList.forEach { pName ->
             packageClient.listAllVersion(projectId, repoName, pName).data.orEmpty().forEach { pVersion ->
-                val packageName = PackageKeys.resolveName(repositoryDetail.type.name.toLowerCase(), pName)
-                val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion.name)
-                logger.info("Manifest $manifestPath will be refreshed")
-                val manifestNode = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return
-                val manifest = loadManifest(
-                    manifestNode.sha256!!, manifestNode.size, repositoryDetail.storageCredentials
-                ) ?: run {
-                    logger.warn("The content of manifest.json $manifestPath is null, check the mediaType.")
-                    return
-                    }
-                val ociArtifactInfo = OciManifestArtifactInfo(
-                    projectId = projectId,
-                    repoName = repoName,
-                    packageName = packageName,
-                    version = pVersion.name,
-                    reference = pVersion.name,
-                    isValidDigest = false
-                )
-                OciUtils.manifestIterator(manifest).forEach {
-                    doSyncBlob(it, ociArtifactInfo, userId)
-                }
+                refreshNode(pName, pVersion, repositoryDetail, userId)
             }
         }
     }
+
+    private fun refreshNode(
+        pName: String,
+        pVersion: PackageVersion,
+        repositoryDetail: RepositoryDetail,
+        userId: String
+    ) {
+        val packageName = PackageKeys.resolveName(repositoryDetail.type.name.toLowerCase(), pName)
+        val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion.name)
+        logger.info("Manifest $manifestPath will be refreshed")
+        val manifestNode = nodeClient.getNodeDetail(
+            repositoryDetail.projectId, repositoryDetail.name, manifestPath
+        ).data ?: return
+        val manifest = loadManifest(
+            manifestNode.sha256!!, manifestNode.size, repositoryDetail.storageCredentials
+        ) ?: run {
+            logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
+            return
+        }
+        val ociArtifactInfo = OciManifestArtifactInfo(
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
+            packageName = packageName,
+            version = pVersion.name,
+            reference = pVersion.name,
+            isValidDigest = false
+        )
+        OciUtils.manifestIterator(manifest).forEach {
+            doSyncBlob(it, ociArtifactInfo, userId)
+        }
+    }
+
 
     private fun buildImagePackagePullContext(
         projectId: String,
