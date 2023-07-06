@@ -96,7 +96,6 @@ object ObjectBuildUtils {
     fun buildMetadata(
         mediaType: String,
         version: String?,
-        yamlData: Map<String, Any>? = null,
         digestList: List<String>? = null,
         sourceType: ArtifactChannel? = null
     ): MutableMap<String, Any> {
@@ -106,9 +105,6 @@ object ObjectBuildUtils {
             version?.let { this.put(IMAGE_VERSION, version) }
             digestList?.let { this.put(DIGEST_LIST, digestList) }
             sourceType?.let { this.put(SOURCE_TYPE, sourceType) }
-            yamlData?.let {
-                this.putAll(yamlData)
-            }
         }
     }
 

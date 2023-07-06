@@ -57,18 +57,6 @@ interface OciOperationService {
     )
 
     /**
-     * 当mediatype为CHART_LAYER_MEDIA_TYPE，需要解析chart.yaml文件
-     */
-    fun loadArtifactInput(
-        chartDigest: String?,
-        projectId: String,
-        repoName: String,
-        packageName: String,
-        version: String,
-        storageCredentials: StorageCredentials?
-    ): Map<String, Any>?
-
-    /**
      * 需要将blob中相关metadata写进package version中
      */
     fun updatePackageInfo(

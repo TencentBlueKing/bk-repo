@@ -44,16 +44,8 @@ object OciLocationUtils {
         return buildDigestManifestPath(packageName, OciDigest(reference))
     }
 
-    fun buildDigestManifestPathWithSha256(packageName: String, sha256: String): String {
-        return buildDigestManifestPath(packageName, OciDigest.fromSha256(sha256))
-    }
-
     private fun buildDigestManifestPath(packageName: String, ref: OciDigest): String {
         return buildPath(packageName, ref, "manifest")
-    }
-
-    fun buildDigestBlobsPath(packageName: String, digestStr: String): String {
-        return buildPath(packageName, OciDigest(digestStr), "blobs")
     }
 
     fun buildDigestBlobsPath(packageName: String, ref: OciDigest): String {
@@ -87,7 +79,11 @@ object OciLocationUtils {
     }
 
     fun blobVersionPathLocation(reference: String, packageName: String, fileName: String): String {
-            return "/$packageName/blobs/$reference/"+ fileName
+            return blobVersionFolderLocation(reference, packageName)+ fileName
+    }
+
+    fun blobVersionFolderLocation(reference: String, packageName: String): String {
+        return "/$packageName/blobs/$reference/"
     }
 
     private fun returnPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {
