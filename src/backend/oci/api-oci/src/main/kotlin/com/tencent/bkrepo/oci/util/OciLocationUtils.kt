@@ -34,11 +34,15 @@ import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 object OciLocationUtils {
 
     fun buildManifestPath(packageName: String, tag: String): String {
-        return buildManifestFolderPath(packageName, tag) + OCI_MANIFEST
+        return buildManifestVersionFolderPath(packageName, tag) + OCI_MANIFEST
     }
 
-    fun buildManifestFolderPath(packageName: String, tag: String): String {
-        return "/$packageName/manifest/$tag/"
+    fun buildManifestVersionFolderPath(packageName: String, tag: String): String {
+        return buildManifestFolderPath(packageName) +"$tag/"
+    }
+
+    fun buildManifestFolderPath(packageName: String): String {
+        return "/$packageName/manifest/"
     }
 
     fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {

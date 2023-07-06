@@ -262,7 +262,7 @@ class OciOperationServiceImpl(
         userId: String,
     ) {
         with(artifactInfo) {
-            val manifestFolder = OciLocationUtils.buildManifestFolderPath(packageName, version)
+            val manifestFolder = OciLocationUtils.buildManifestVersionFolderPath(packageName, version)
             val blobsFolder = OciLocationUtils.blobVersionFolderLocation(version, packageName)
                 logger.info("Will delete blobsFolder [$blobsFolder] and manifestFolder $manifestFolder " +
                                 "in package $packageName|$version in repo [$projectId/$repoName]")
@@ -791,10 +791,12 @@ class OciOperationServiceImpl(
         if (artifactInfo is OciManifestArtifactInfo) {
             // 根据类型解析实际存储路径，manifest获取路径有tag/digest
             if (artifactInfo.isValidDigest) {
+                val path = OciLocationUtils.buildManifestFolderPath(artifactInfo.packageName)
                 return getNodeByDigest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
-                    digestStr = artifactInfo.reference
+                    digestStr = artifactInfo.reference,
+                    path = path
                 ).fullPath
             }
         }
@@ -807,7 +809,8 @@ class OciOperationServiceImpl(
     override fun getNodeByDigest(
         projectId: String,
         repoName: String,
-        digestStr: String
+        digestStr: String,
+        path: String?
     ): NodeProperty {
         val ociDigest = OciDigest(digestStr)
         val queryModel = NodeQueryBuilder()
@@ -815,7 +818,11 @@ class OciOperationServiceImpl(
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
-            .sortByAsc(NODE_FULL_PATH)
+            .sortByAsc(NODE_FULL_PATH).apply {
+                path?.let {
+                    this.path(path, OperationType.PREFIX)
+                }
+            }
         val result = nodeClient.search(queryModel.build()).data ?: run {
             logger.warn(
                 "Could not find $digestStr " +
@@ -838,25 +845,29 @@ class OciOperationServiceImpl(
      * 2 docker-local/nginx/_uploads/ 临时存储上传的blobs，待manifest文件上传成功后移到到对应版本下，如docker-local/nginx/latest
      */
     override fun getDockerNode(artifactInfo: OciArtifactInfo): String? {
-        if (artifactInfo is OciManifestArtifactInfo) {
-            // 根据类型解析实际存储路径，manifest获取路径有tag/digest
-            if (artifactInfo.isValidDigest)
+        return when (artifactInfo) {
+            is OciManifestArtifactInfo -> {
+                // 根据类型解析实际存储路径，manifest获取路径有tag/digest
+                if (artifactInfo.isValidDigest){
+                    return getNodeByDigest(
+                        projectId = artifactInfo.projectId,
+                        repoName = artifactInfo.repoName,
+                        digestStr = artifactInfo.reference,
+                        path = "/${artifactInfo.packageName}/"
+                    ).fullPath
+                }
+                return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
+            }
+            is OciBlobArtifactInfo -> {
+                val digestStr = artifactInfo.digest ?: StringPool.EMPTY
                 return getNodeByDigest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
-                    digestStr = artifactInfo.reference
+                    digestStr = digestStr
                 ).fullPath
-            return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
+            }
+            else -> null
         }
-        if (artifactInfo is OciBlobArtifactInfo) {
-            val digestStr = artifactInfo.digest ?: StringPool.EMPTY
-            return getNodeByDigest(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                digestStr = digestStr
-            ).fullPath
-        }
-        return null
     }
 
     override fun getReturnDomain(request: HttpServletRequest): String {

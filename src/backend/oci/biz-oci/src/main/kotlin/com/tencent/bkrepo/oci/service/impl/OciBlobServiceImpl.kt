@@ -152,7 +152,6 @@ class OciBlobServiceImpl(
                 fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest),
                 md5 = nodeProperty.md5!!
             )
-            val repoDetail = repoClient.getRepoDetail(projectId, repoName).data
             ociOperationService.createNode(nodeCreateRequest)
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             OciResponseUtils.buildBlobMountResponse(

@@ -134,12 +134,13 @@ interface OciOperationService {
     fun getNodeFullPath(artifactInfo: OciArtifactInfo): String?
 
     /**
-     * 根据sha256值获取对应的node fullpath,md5,size
+     * 根据sha256值和path获取对应的node fullpath,md5,size
      */
     fun getNodeByDigest(
         projectId: String,
         repoName: String,
-        digestStr: String
+        digestStr: String,
+        path: String? = null
     ): NodeProperty
 
     /**
