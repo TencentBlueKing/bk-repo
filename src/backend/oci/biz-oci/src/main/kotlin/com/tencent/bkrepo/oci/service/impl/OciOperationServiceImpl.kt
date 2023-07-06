@@ -691,7 +691,7 @@ class OciOperationServiceImpl(
         // size 整个镜像blob汇总的大小
         // yamlContent 当为helm v3版本的chart包时，读取yaml内容
         val (existFlag, size, yamlContent) = manifestHandler(
-            manifest, ociArtifactInfo, storageCredentials
+            manifest, ociArtifactInfo, storageCredentials, userId
         )
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
@@ -727,7 +727,8 @@ class OciOperationServiceImpl(
     private fun manifestHandler(
         manifest: ManifestSchema2?,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        userId: String = SecurityUtils.getUserId()
     ): Triple<Boolean, Long, Map<String, Any>?> {
         //当manifest为空时，可能是v1版本镜像,直接返回
         if (manifest == null) return Triple(true, 0, null)
@@ -755,7 +756,7 @@ class OciOperationServiceImpl(
                 }
                 else -> null
             }
-            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials)
+            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials, userId)
             if (!existFlag) {
                 // 第三方同步场景下，如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
                 return Triple(false, 0, null)
@@ -771,7 +772,8 @@ class OciOperationServiceImpl(
     private fun doSyncBlob(
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        userId: String = SecurityUtils.getUserId()
     ): Boolean {
         with(ociArtifactInfo) {
             logger.info(
@@ -787,7 +789,8 @@ class OciOperationServiceImpl(
                 fullPath = fullPath,
                 descriptor = descriptor,
                 ociArtifactInfo = this,
-                storageCredentials = storageCredentials
+                storageCredentials = storageCredentials,
+                userId = userId
             )
         }
     }
@@ -799,24 +802,30 @@ class OciOperationServiceImpl(
         fullPath: String,
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        userId: String = SecurityUtils.getUserId()
     ): Boolean {
         with(ociArtifactInfo) {
-            val blobExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
-            // blob节点不存在，但是在同一仓库下存在digest文件
-            if (!blobExist) {
-                val (existFullPath, md5) = getNodeByDigest(projectId, repoName, descriptor.digest)
-                if (existFullPath == null) return false
-                val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    size = descriptor.size,
-                    sha256 = descriptor.sha256,
-                    fullPath = fullPath,
-                    md5 = md5 ?: StringPool.UNKNOWN
-                )
-                createNode(nodeCreateRequest, storageCredentials)
-            }
+            val nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest)
+            if (nodeProperty.fullPath.isNullOrEmpty()) return false
+            val newPath = OciLocationUtils.blobVersionPathLocation(reference, packageName, descriptor.filename)
+            val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                size = nodeProperty.size!!,
+                sha256 = descriptor.sha256,
+                fullPath = newPath,
+                md5 = nodeProperty.md5 ?: StringPool.UNKNOWN,
+                userId = userId
+            )
+            createNode(nodeCreateRequest, storageCredentials)
+            deleteNode(
+                projectId = projectId,
+                repoName = repoName,
+                packageName = packageName,
+                userId = userId,
+                path = fullPath
+            )
             return true
         }
     }

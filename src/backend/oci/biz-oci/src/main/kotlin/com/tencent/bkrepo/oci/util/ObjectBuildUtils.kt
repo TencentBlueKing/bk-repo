@@ -76,7 +76,8 @@ object ObjectBuildUtils {
         fullPath: String,
         sha256: String,
         md5: String,
-        metadata: List<MetadataModel>? = null
+        metadata: List<MetadataModel>? = null,
+        userId: String = SecurityUtils.getUserId()
     ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = projectId,
@@ -86,7 +87,7 @@ object ObjectBuildUtils {
             size = size,
             sha256 = sha256,
             md5 = md5,
-            operator = SecurityUtils.getUserId(),
+            operator = userId,
             overwrite = true,
             nodeMetadata = metadata
         )

@@ -86,6 +86,10 @@ object OciLocationUtils {
         }
     }
 
+    fun blobVersionPathLocation(reference: String, packageName: String, fileName: String): String {
+            return "/$packageName/blobs/$reference/"+ fileName
+    }
+
     private fun returnPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {
         with(ociArtifactInfo) {
             return "/$packageName/$type/$digest"
