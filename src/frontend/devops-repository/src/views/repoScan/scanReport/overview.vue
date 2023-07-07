@@ -136,10 +136,13 @@
                 }
             }
         },
-        watch: {
-            scanPlan: function () {
-                this.changeFilterTime()
-            }
+        created () {
+            // 在点击面包屑回退时需要设置时间选择的默认值
+            const startTime = this.$route.query?.startTime || ''
+            const endTime = this.$route.query?.endTime || ''
+            const backData = [startTime ? new Date(startTime) : '', endTime ? new Date(endTime) : '']?.filter(Boolean) || []
+            this.filterTime = backData || []
+            this.changeFilterTime('initFlag')
         },
         methods: {
             segmentNumberThree,
@@ -170,10 +173,11 @@
                     )
                 })
             },
-            changeFilterTime () {
+            // 注意，当时间改变时此处的 initFlag 会是上方时间选择器绑定的数组
+            changeFilterTime (initFlag) {
                 this.getScanReportOverview()
                 this.$emit('refreshData', 'formatISO', this.formatISO)
-                this.$emit('refresh', true)
+                this.$emit('refresh', { forceFlag: true, initFlag })
             },
             stopScanHandler () {
                 this.$confirm({
@@ -203,10 +207,12 @@
                 this.$router.push({
                     name: 'scanConfig',
                     params: {
+                        ...this.$route.params,
                         projectId: this.scanPlan.projectId,
                         planId: this.scanPlan.id
                     },
                     query: {
+                        ...this.$route.query,
                         scanName: this.scanPlan.name
                     }
                 })

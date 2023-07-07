@@ -940,7 +940,7 @@ class OciOperationServiceImpl(
         return NodeProperty(
             fullPath = result.records[0][NODE_FULL_PATH] as String,
             md5 = result.records[0][MD5] as String?,
-            size = result.records[0][OCI_NODE_SIZE] as Int?
+            size = result.records[0][OCI_NODE_SIZE].toString().toLong()
         )
     }
 
