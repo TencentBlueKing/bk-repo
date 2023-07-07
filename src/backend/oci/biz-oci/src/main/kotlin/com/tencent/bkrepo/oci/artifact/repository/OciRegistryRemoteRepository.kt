@@ -386,9 +386,7 @@ class OciRegistryRemoteRepository(
         }
     }
 
-    /**
-     * 可能请求的地址一样，但是
-     */
+
     private fun getScope(remoteUrl: String, imageName: String): String {
         val baseUrl = URL(remoteUrl)
         val target = baseUrl.path.removePrefix(StringPool.SLASH)
