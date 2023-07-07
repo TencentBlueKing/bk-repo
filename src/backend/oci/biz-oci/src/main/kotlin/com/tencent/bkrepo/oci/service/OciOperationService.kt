@@ -40,7 +40,6 @@ import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import javax.servlet.http.HttpServletRequest
 
 interface OciOperationService {
