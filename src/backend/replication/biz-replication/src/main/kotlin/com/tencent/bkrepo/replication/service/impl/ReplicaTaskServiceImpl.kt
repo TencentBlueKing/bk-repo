@@ -278,7 +278,17 @@ class ReplicaTaskServiceImpl(
     private fun computeNodeSize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
         val taskObject = replicaTaskObjects.first()
         return taskObject.pathConstraints!!.sumOf {
-            localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!).size
+            val node = localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!)
+            if (node.folder) {
+                try {
+                    localDataManager.listNode(localProjectId, taskObject.localRepoName, it.path!!).sumOf { n -> n.size }
+                } catch (e: Exception) {
+                    logger.warn("compute node[$localProjectId/${taskObject.localRepoName}${it.path}] size error: ", e)
+                    0
+                }
+            } else {
+                node.size
+            }
         }
     }
 
