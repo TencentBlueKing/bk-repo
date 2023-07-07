@@ -3,9 +3,11 @@ package com.tencent.bkrepo.analyst.dispatcher
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.pojo.execution.DockerExecutionCluster
+import com.tencent.bkrepo.analyst.pojo.execution.KubernetesDeploymentExecutionCluster
 import com.tencent.bkrepo.analyst.pojo.execution.KubernetesJobExecutionCluster
 import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration
 import com.tencent.bkrepo.statemachine.StateMachine
@@ -20,6 +22,7 @@ class SubtaskDispatcherFactory(
     private val executionClusterService: ExecutionClusterService,
     private val subScanTaskDao: SubScanTaskDao,
     private val scanService: ScanService,
+    private val scannerService: ScannerService,
     @Qualifier(TaskStateMachineConfiguration.STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
     private val temporaryScanTokenService: TemporaryScanTokenService,
@@ -35,6 +38,16 @@ class SubtaskDispatcherFactory(
                     scanService,
                     subtaskStateMachine,
                     temporaryScanTokenService
+                )
+            }
+
+            KubernetesDeploymentExecutionCluster.type -> {
+                KubernetesDeploymentDispatcher(
+                    executionCluster as KubernetesDeploymentExecutionCluster,
+                    scannerProperties,
+                    temporaryScanTokenService,
+                    subScanTaskDao,
+                    scannerService,
                 )
             }
 

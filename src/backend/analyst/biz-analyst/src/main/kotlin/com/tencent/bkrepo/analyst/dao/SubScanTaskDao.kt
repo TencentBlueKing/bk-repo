@@ -198,7 +198,7 @@ class SubScanTaskDao(
         return updateResult
     }
 
-    fun firstTaskByStatusIn(status: List<String>, dispatcher: String?): TSubScanTask? {
+    fun firstTaskByStatusIn(status: List<String>?, dispatcher: String?): TSubScanTask? {
         val query = buildStatusAndDispatcherQuery(status, dispatcher)
         return findOne(query)
     }
@@ -211,7 +211,7 @@ class SubScanTaskDao(
      *
      * @return 任务数量
      */
-    fun countTaskByStatusIn(status: List<String>, dispatcher: String?): Long {
+    fun countTaskByStatusIn(status: List<String>?, dispatcher: String?): Long {
         val query = buildStatusAndDispatcherQuery(status, dispatcher)
         return count(query)
     }
@@ -253,13 +253,13 @@ class SubScanTaskDao(
         return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
     }
 
-    private fun buildStatusAndDispatcherQuery(status: List<String>, dispatcher: String?): Query {
-        return Query(
-            Criteria().andOperator(
-                TSubScanTask::status.inValues(status),
-                dispatcherCriteria(dispatcher)
-            )
-        )
+    private fun buildStatusAndDispatcherQuery(status: List<String>?, dispatcher: String?): Query {
+        val criteria = ArrayList<Criteria>(2)
+        criteria.add(dispatcherCriteria(dispatcher))
+        if (!status.isNullOrEmpty()) {
+            criteria.add(TSubScanTask::status.inValues(status))
+        }
+        return Query(Criteria().andOperator(criteria))
     }
 
     private fun dispatcherCriteria(dispatcher: String?): Criteria {

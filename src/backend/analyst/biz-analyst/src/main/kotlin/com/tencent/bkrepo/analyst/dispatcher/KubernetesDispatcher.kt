@@ -48,9 +48,6 @@ import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
-import io.kubernetes.client.util.ClientBuilder
-import io.kubernetes.client.util.Config
-import io.kubernetes.client.util.credentials.AccessTokenAuthentication
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import kotlin.math.max
@@ -69,16 +66,7 @@ class KubernetesDispatcher(
     private val batchV1Api by lazy { BatchV1Api() }
 
     init {
-        val client = if (executionCluster.token != null && executionCluster.apiServer != null) {
-            ClientBuilder()
-                .setBasePath(executionCluster.apiServer)
-                .setAuthentication(AccessTokenAuthentication(executionCluster.token))
-                .build()
-        } else {
-            // 可通过KUBECONFIG环境变量设置config file路径
-            Config.defaultClient()
-        }
-        Configuration.setDefaultApiClient(client)
+        Configuration.setDefaultApiClient(createClient(executionCluster.kubernetesProperties))
     }
 
     override fun dispatch(subtask: SubScanTask): Boolean {
@@ -116,9 +104,10 @@ class KubernetesDispatcher(
     }
 
     override fun availableCount(): Int {
+        val k8sProps = executionCluster.kubernetesProperties
         val api = CoreV1Api()
         val quota = api.listNamespacedResourceQuota(
-            executionCluster.namespace,
+            k8sProps.namespace,
             null, null, null,
             null, null, null,
             null, null, null, null
@@ -135,8 +124,8 @@ class KubernetesDispatcher(
         val usedMem = used["limits.memory"]!!.number.toLong()
         val availableCpu = limitCpu - usedCpu
         val availableMem = limitMem - usedMem
-        val requireCpuPerTask = executionCluster.limitCpu
-        val requireMemPerTask = executionCluster.limitMem.toBytes()
+        val requireCpuPerTask = k8sProps.limitCpu
+        val requireMemPerTask = k8sProps.limitMem
         return if (availableCpu < requireCpuPerTask || availableMem < requireMemPerTask) {
             0
         } else {
@@ -156,9 +145,10 @@ class KubernetesDispatcher(
         val cmd = buildCommand(scanner.cmd, scannerProperties.baseUrl, subtask.taskId, subtask.token!!)
         val requestStorageSize = maxStorageSize(subtask.packageSize)
         val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
+        val k8sProps = executionCluster.kubernetesProperties
         val body = v1Job {
             metadata {
-                namespace = executionCluster.namespace
+                namespace = k8sProps.namespace
                 name = jobName
             }
             spec {
@@ -173,14 +163,14 @@ class KubernetesDispatcher(
                             command = cmd
                             resources {
                                 requests(
-                                    cpu = executionCluster.requestCpu,
-                                    memory = executionCluster.requestMem.toBytes(),
+                                    cpu = k8sProps.requestCpu,
+                                    memory = k8sProps.requestMem,
                                     ephemeralStorage = requestStorageSize
                                 )
                                 limits(
-                                    cpu = executionCluster.limitCpu,
-                                    memory = executionCluster.limitMem.toBytes(),
-                                    ephemeralStorage = executionCluster.limitStorage.toBytes()
+                                    cpu = k8sProps.limitCpu,
+                                    memory = k8sProps.limitMem,
+                                    ephemeralStorage = k8sProps.limitStorage
                                 )
                             }
                         }
@@ -189,8 +179,7 @@ class KubernetesDispatcher(
                 }
             }
         }
-
-        batchV1Api.createNamespacedJob(executionCluster.namespace, body, null, null, null)
+        batchV1Api.createNamespacedJob(k8sProps.namespace, body, null, null, null)
         logger.info("dispatch subtask[${subtask.taskId}] success")
         return true
     }
@@ -208,7 +197,7 @@ class KubernetesDispatcher(
         if (e.code == HttpStatus.CONFLICT.value) {
             logger.warn("subtask[${subtask.taskId}] job already exists, try to clean")
             val jobName = jobName(subtask)
-            val namespace = executionCluster.namespace
+            val namespace = executionCluster.kubernetesProperties.namespace
             val job = batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
             val failed = job.status?.failed ?: 0
             // 只清理失败的job，因为成功的job说明结果也上报成功了，不需要再次分发
@@ -226,7 +215,7 @@ class KubernetesDispatcher(
     private fun cleanJob(jobName: String): Boolean {
         logger.info("cleaning job[$jobName]")
         return ignoreApiException {
-            val namespace = executionCluster.namespace
+            val namespace = executionCluster.kubernetesProperties.namespace
             batchV1Api.deleteNamespacedJob(
                 jobName, namespace, null, null, null, null, "Foreground", null
             )
@@ -238,8 +227,9 @@ class KubernetesDispatcher(
     private fun jobName(subtask: SubScanTask) = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}"
 
     private fun maxStorageSize(fileSize: Long): Long {
-        val requestStorage = max(executionCluster.requestStorage.toBytes(), fileSize * MAX_FILE_SIZE_MULTIPLIER)
-        return min(executionCluster.limitStorage.toBytes(), requestStorage)
+        val k8sProps = executionCluster.kubernetesProperties
+        val requestStorage = max(k8sProps.requestStorage, fileSize * MAX_FILE_SIZE_MULTIPLIER)
+        return min(k8sProps.limitStorage, requestStorage)
     }
 
     private fun ignoreApiException(action: () -> Boolean): Boolean {
@@ -249,13 +239,6 @@ class KubernetesDispatcher(
             logger.error("request k8s api failed\n, ${e.string()}")
         }
         return false
-    }
-
-    private fun ApiException.string(): String {
-        return "message: $message\n" +
-                "code: $code\n" +
-                "headers: $responseHeaders\n" +
-                "body: $responseBody"
     }
 
     companion object {

@@ -42,6 +42,11 @@ abstract class SubtaskPushDispatcher<T: ExecutionCluster>(
     }
 
     /**
+     * 允许调度多少个任务
+     */
+    abstract fun availableCount(): Int
+
+    /**
      * 分发任务
      *
      * @param subtask 需要分发的任务
