@@ -30,5 +30,5 @@ package com.tencent.bkrepo.oci.pojo.node
 data class NodeProperty(
     var fullPath: String? = null,
     var md5: String? = null,
-    var size: Int? = null,
+    var size: Long? = null,
 )
