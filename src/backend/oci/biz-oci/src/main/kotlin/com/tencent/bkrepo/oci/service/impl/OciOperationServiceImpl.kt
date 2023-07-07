@@ -69,7 +69,6 @@ import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
-import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciVersionNotFoundException
 import com.tencent.bkrepo.oci.extension.ImagePackageInfoPullExtension
@@ -100,6 +99,7 @@ import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -179,7 +179,11 @@ class OciOperationServiceImpl(
             metadata = metadata,
             userId = userId
         )
-        metadataClient.saveMetadata(metadataSaveRequest)
+        try{
+            metadataClient.saveMetadata(metadataSaveRequest)
+        } catch (ignore: Exception) {
+            // 并发情况下会出现节点找不到问题
+        }
     }
 
     /**
@@ -401,14 +405,16 @@ class OciOperationServiceImpl(
      */
     private fun buildNodeCreateRequest(
         ociArtifactInfo: OciArtifactInfo,
-        artifactFile: ArtifactFile
+        artifactFile: ArtifactFile,
+        metadata: List<MetadataModel>? = null
     ): NodeCreateRequest {
 
         return ObjectBuildUtils.buildNodeCreateRequest(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             artifactFile = artifactFile,
-            fullPath = ociArtifactInfo.getArtifactFullPath()
+            fullPath = ociArtifactInfo.getArtifactFullPath(),
+            metadata = metadata
         )
     }
 
@@ -423,40 +429,22 @@ class OciOperationServiceImpl(
         fileInfo: FileInfo?,
         proxyUrl: String?
     ): NodeDetail? {
-        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile)
+        var metadata: List<MetadataModel>? = null
+        proxyUrl?.let {
+            metadata = mutableListOf(MetadataModel(key = PROXY_URL, value = proxyUrl, system = true))
+        }
+        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, metadata)
         val nodeDetail = if (fileInfo != null) {
             val newNodeRequest = request.copy(
                 size = fileInfo.size,
                 md5 = fileInfo.md5,
                 sha256 = fileInfo.sha256
             )
-            createNode(newNodeRequest)
-            null
+            nodeClient.createNode(newNodeRequest).data
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         }
-        proxyUrl?.let {
-            saveMetaData(
-                projectId = request.projectId,
-                repoName = request.repoName,
-                fullPath = request.fullPath,
-                metadata = mutableMapOf(PROXY_URL to proxyUrl),
-                userId = SecurityUtils.getUserId()
-            )
-        }
         return nodeDetail
-    }
-
-    /**
-     * 当使用追加上传时，文件已存储，只需存储节点信息
-     */
-    override fun createNode(request: NodeCreateRequest): NodeDetail {
-        try {
-            return nodeClient.createNode(request).data!!
-        } catch (exception: Exception) {
-            // 异常往上抛
-            throw exception
-        }
     }
 
     /**
@@ -516,15 +504,15 @@ class OciOperationServiceImpl(
         size: Long,
         storageCredentials: StorageCredentials?
     ): ManifestSchema2? {
-        val manifestBytes = storageService.load(
-            sha256,
-            Range.full(size),
-            storageCredentials
-        )!!.readText()
-
         return try {
+            val manifestBytes = storageService.load(
+                sha256,
+                Range.full(size),
+                storageCredentials
+            )!!.readText()
+
             OciUtils.stringToManifestV2(manifestBytes)
-        } catch (e: OciBadRequestException) {
+        } catch (e: Exception) {
             null
         }
     }
@@ -652,7 +640,7 @@ class OciOperationServiceImpl(
             existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, userId)
             if (!existFlag) {
                 // 第三方同步场景下，如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
-                return Pair(false, 0)
+                return Pair(existFlag, 0)
             }
         }
         return Pair(existFlag, size)
@@ -699,14 +687,13 @@ class OciOperationServiceImpl(
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
             var nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest)
-            if (nodeProperty.fullPath == null) {
+            if (nodeProperty == null) {
                 nodeProperty = nodeClient.getDeletedNodeDetail(
                     projectId, repoName, fullPath
                 ).data?.firstOrNull{ it.sha256 == descriptor.sha256 }?.let {
                     NodeProperty(it.fullPath, it.md5, it.size)
                 } ?: return false
             }
-            if (nodeProperty.fullPath.isNullOrEmpty()) return false
             val newPath = OciLocationUtils.blobVersionPathLocation(reference, packageName, descriptor.filename)
             if (newPath != nodeProperty.fullPath) {
                 // 创建新路径节点 /packageName/blobs/version/xxx
@@ -719,7 +706,7 @@ class OciOperationServiceImpl(
                     md5 = nodeProperty.md5 ?: StringPool.UNKNOWN,
                     userId = userId
                 )
-                createNode(nodeCreateRequest)
+                nodeClient.createNode(nodeCreateRequest)
             }
             // 删除临时存储路径节点 /packageName/blobs/xxx
             deleteNode(projectId, repoName, fullPath, userId)
@@ -785,7 +772,10 @@ class OciOperationServiceImpl(
             metadata = metadata,
             userId = SecurityUtils.getUserId()
         )
-        packageMetadataClient.saveMetadata(metadataSaveRequest)
+        try {
+            packageMetadataClient.saveMetadata(metadataSaveRequest)
+        } catch (ignore: Exception) {
+        }
     }
 
 
@@ -794,17 +784,16 @@ class OciOperationServiceImpl(
      * 特殊：manifest文件按tag存储， 但是查询时存在tag/digest
      */
     override fun getNodeFullPath(artifactInfo: OciArtifactInfo): String? {
-        if (artifactInfo is OciManifestArtifactInfo) {
-            // 根据类型解析实际存储路径，manifest获取路径有tag/digest
-            if (artifactInfo.isValidDigest) {
-                val path = OciLocationUtils.buildManifestFolderPath(artifactInfo.packageName)
-                return getNodeByDigest(
-                    projectId = artifactInfo.projectId,
-                    repoName = artifactInfo.repoName,
-                    digestStr = artifactInfo.reference,
-                    path = path
-                ).fullPath
-            }
+        if (artifactInfo is OciManifestArtifactInfo && artifactInfo.isValidDigest) {
+            // 根据类型解析实际存储路径，manifest获取路径有tag/digest,
+            // 当为digest 时，查当前仓库下，在package目录下，且sha256为digest的节点
+            val path = OciLocationUtils.buildManifestFolderPath(artifactInfo.packageName)
+            return getNodeByDigest(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                digestStr = artifactInfo.reference,
+                path = path
+            )?.fullPath
         }
         return artifactInfo.getArtifactFullPath()
     }
@@ -817,7 +806,7 @@ class OciOperationServiceImpl(
         repoName: String,
         digestStr: String,
         path: String?
-    ): NodeProperty {
+    ): NodeProperty? {
         val ociDigest = OciDigest(digestStr)
         val queryModel = NodeQueryBuilder()
             .select(NODE_FULL_PATH, MD5, OCI_NODE_SIZE)
@@ -829,14 +818,14 @@ class OciOperationServiceImpl(
                     this.path(path, OperationType.PREFIX)
                 }
             }
-        val result = nodeClient.search(queryModel.build()).data ?: run {
+        val result = nodeClient.search(queryModel.build()).data
+        if (result == null || result.records.isEmpty()) {
             logger.warn(
                 "Could not find $digestStr " +
                     "in repo $projectId|$repoName"
             )
-            return NodeProperty()
+            return null
         }
-        if (result.records.isEmpty()) return NodeProperty()
         return NodeProperty(
             fullPath = result.records[0][NODE_FULL_PATH] as String,
             md5 = result.records[0][MD5] as String?,
@@ -860,7 +849,7 @@ class OciOperationServiceImpl(
                         repoName = artifactInfo.repoName,
                         digestStr = artifactInfo.reference,
                         path = "/${artifactInfo.packageName}/"
-                    ).fullPath
+                    )?.fullPath
                 }
                 return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
             }
@@ -870,7 +859,7 @@ class OciOperationServiceImpl(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     digestStr = digestStr
-                ).fullPath
+                )?.fullPath
             }
             else -> null
         }
@@ -1050,6 +1039,10 @@ class OciOperationServiceImpl(
         }
     }
 
+    /**
+     * 调整blob目录
+     * 从/packageName/blobs/xxx 到/packageName/blobs/version/xxx
+     */
     private fun refreshNode(
         repoInfo: RepositoryInfo,
         pName: String,

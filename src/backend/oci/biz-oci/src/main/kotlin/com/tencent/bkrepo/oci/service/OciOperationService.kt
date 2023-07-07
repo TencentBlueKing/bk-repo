@@ -111,11 +111,6 @@ interface OciOperationService {
     ): Boolean
 
     /**
-     * 当使用追加上传时，文件已存储，只需存储节点信息
-     */
-    fun createNode(request: NodeCreateRequest): NodeDetail
-
-    /**
      * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
      * 特殊：对于manifest文件，node存tag
      */
@@ -141,7 +136,7 @@ interface OciOperationService {
         repoName: String,
         digestStr: String,
         path: String? = null
-    ): NodeProperty
+    ): NodeProperty?
 
     /**
      * 针对老的docker仓库的数据做兼容性处理
