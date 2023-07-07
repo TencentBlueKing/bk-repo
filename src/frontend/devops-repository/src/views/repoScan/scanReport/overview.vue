@@ -212,8 +212,7 @@
                 })
             },
             exportReport () {
-                let [startTime, endTime = nowTime.toDate()] = this.exportTime
-                startTime = startTime || zeroTime(before(30))
+                const [startTime, endTime] = this.exportTime.filter(Boolean)
                 const params = new URLSearchParams({
                     projectId: this.scanPlan.projectId,
                     id: this.scanPlan.id,
@@ -222,8 +221,8 @@
                         : {
                             status: this.exportStatus
                         }),
-                    startTime: startTime.toISOString(),
-                    endTime: endTime.toISOString()
+                    ...(startTime instanceof Date ? { startTime: startTime.toISOString() } : {}),
+                    ...(endTime instanceof Date ? { endTime: endTime.toISOString() } : {})
                 })
                 this.showExportDialog = false
                 this.$bkNotify({
