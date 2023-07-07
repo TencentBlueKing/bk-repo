@@ -45,27 +45,6 @@ import javax.servlet.http.HttpServletRequest
 interface OciOperationService {
 
     /**
-     * 保存节点元数据
-     */
-    fun saveMetaData(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        metadata: MutableMap<String, Any>,
-        userId: String
-    )
-
-    /**
-     * 需要将blob中相关metadata写进package version中
-     */
-    fun updatePackageInfo(
-        ociArtifactInfo: OciArtifactInfo,
-        packageKey: String,
-        appVersion: String? = null,
-        description: String? = null
-    )
-
-    /**
      * 查询包版本详情
      */
     fun detailVersion(

@@ -162,50 +162,6 @@ class OciOperationServiceImpl(
         )
     }
 
-    /**
-     * 保存节点元数据
-     */
-    override fun saveMetaData(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        metadata: MutableMap<String, Any>,
-        userId: String
-    ) {
-        val metadataSaveRequest = ObjectBuildUtils.buildMetadataSaveRequest(
-            projectId = projectId,
-            repoName = repoName,
-            fullPath = fullPath,
-            metadata = metadata,
-            userId = userId
-        )
-        try{
-            metadataClient.saveMetadata(metadataSaveRequest)
-        } catch (ignore: Exception) {
-            // 并发情况下会出现节点找不到问题
-        }
-    }
-
-    /**
-     * 需要将blob中相关metadata写进package version中
-     */
-    override fun updatePackageInfo(
-        ociArtifactInfo: OciArtifactInfo,
-        packageKey: String,
-        appVersion: String?,
-        description: String?
-    ) {
-        with(ociArtifactInfo) {
-            val packageUpdateRequest = ObjectBuildUtils.buildPackageUpdateRequest(
-                artifactInfo = this,
-                name = packageName,
-                appVersion = appVersion,
-                description = description,
-                packageKey = packageKey
-            )
-            packageClient.updatePackage(packageUpdateRequest)
-        }
-    }
 
     /**
      * 删除package
@@ -556,14 +512,21 @@ class OciOperationServiceImpl(
             digestList = digestList,
             sourceType = sourceType
         )
-        saveMetaData(
+
+        val metadataSaveRequest = ObjectBuildUtils.buildMetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
             metadata = metadata,
             userId = SecurityUtils.getUserId()
         )
+        try{
+            metadataClient.saveMetadata(metadataSaveRequest)
+        } catch (ignore: Exception) {
+            // 并发情况下会出现节点找不到问题
+        }
     }
+
 
 
     /**

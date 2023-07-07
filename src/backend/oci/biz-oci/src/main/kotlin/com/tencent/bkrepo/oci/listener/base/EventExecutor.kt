@@ -75,7 +75,7 @@ class EventExecutor(
             EventType.REPO_CREATED, EventType.REPO_REFRESHED, EventType.REPO_UPDATED -> {
                 ociOperationService.getPackagesFromThirdPartyRepo(event.projectId, event.repoName)
             }
-            else -> UnsupportedOperationException()
+            else -> throw UnsupportedOperationException()
         }
     }
 
