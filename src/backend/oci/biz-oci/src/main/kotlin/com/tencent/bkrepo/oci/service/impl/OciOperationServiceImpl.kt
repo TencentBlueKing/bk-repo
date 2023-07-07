@@ -54,7 +54,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
-import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_DATE
@@ -69,6 +68,7 @@ import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
+import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciVersionNotFoundException
 import com.tencent.bkrepo.oci.extension.ImagePackageInfoPullExtension
@@ -417,20 +417,18 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                     "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-
+        // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
+        // docker 客户端上传manifest时先按照schema2的格式上传，
+        // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
         val manifest = loadManifest(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)
-        // 将该版本对应的blob sha256放到manifest节点的元数据中
-        val (mediaType, digestList) = if (manifest == null) {
-            Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
+            ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
+        // 更新manifest文件的metadata
+        val mediaType = if (manifest.mediaType.isNullOrEmpty()) {
+            HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
         } else {
-            // 更新manifest文件的metadata
-            val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
-                HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-            } else {
-                manifest.mediaType
-            }
-            Pair(mediaTypeV2, OciUtils.manifestIteratorDigest(manifest))
+            manifest.mediaType
         }
+        val digestList = OciUtils.manifestIteratorDigest(manifest)
 
         // 更新manifest节点元数据
         updateNodeMetaData(
@@ -536,7 +534,7 @@ class OciOperationServiceImpl(
         ociArtifactInfo: OciManifestArtifactInfo,
         nodeDetail: NodeDetail,
         sourceType: ArtifactChannel? = null,
-        manifest: ManifestSchema2? = null,
+        manifest: ManifestSchema2,
         userId: String = SecurityUtils.getUserId()
     ): Boolean {
         logger.info(
@@ -579,12 +577,10 @@ class OciOperationServiceImpl(
      * 针对v2版本manifest文件做特殊处理
      */
     private fun manifestHandler(
-        manifest: ManifestSchema2?,
+        manifest: ManifestSchema2,
         ociArtifactInfo: OciManifestArtifactInfo,
         userId: String = SecurityUtils.getUserId()
     ): Pair<Boolean, Long> {
-        //当manifest为空时，可能是v1版本镜像,直接返回
-        if (manifest == null) return Pair(true, 0)
         // 用于判断是否所有blob都以存在
         var existFlag = true
         // 统计所有mainfest中的文件size作为整个package version的size
