@@ -72,7 +72,7 @@
                     {
                         icon: 'english',
                         name: 'English',
-                        id: 'en-US'
+                        id: 'en'
                     },
                     {
                         icon: 'chinese',
