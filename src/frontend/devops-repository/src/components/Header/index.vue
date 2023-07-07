@@ -32,9 +32,28 @@
                 </bk-option>
             </bk-select>
         </div>
-        <div style="text-align: end" @click="changeLanguage" class="language-select">
-            <img width="20" height="20" style="background-color: currentColor;float: left;margin-right: 3px" src="/ui/locale.svg" />
-            <span>{{ language === 'zh-cn' ? 'English' : '中文' }}</span>
+        <div style="text-align: end" class="language-select">
+            <bk-popover
+                theme="light navigation-message"
+                placement="bottom"
+                :arrow="false"
+                trigger="click"
+                ref="popoverRef"
+            >
+                <div class="flag-box">
+                    <Icon :name="curLang.icon" size="20" />
+                </div>
+                <template slot="content">
+                    <li
+                        v-for="(item, index) in icons"
+                        :key="index"
+                        :class="['bkci-dropdown-item', { active: curLang.id === item.id }]"
+                        @click="changeLanguage(item.id)">
+                        <Icon class="mr5" :name="item.icon" style="vertical-align: top;margin-bottom: 2px;" size="20" />
+                        {{item.name}}
+                    </li>
+                </template>
+            </bk-popover>
         </div>
         <User />
     </div>
@@ -46,9 +65,30 @@
     export default {
         name: 'bkrepoHeader',
         components: { User },
+        props: {
+            icons: {
+                type: Array,
+                default: () => [
+                    {
+                        icon: 'english',
+                        name: 'English',
+                        id: 'en-US'
+                    },
+                    {
+                        icon: 'chinese',
+                        name: '中文',
+                        id: 'zh-cn'
+                    }
+                ]
+            }
+        },
         data () {
             return {
-                language: ''
+                language: '',
+                curLang: {
+                    id: '',
+                    icon: ''
+                }
             }
         },
         computed: {
@@ -59,6 +99,7 @@
         },
         created () {
             this.language = cookies.get('blueking_language') || 'zh-cn'
+            this.curLang = this.icons.find(item => item.id === this.language) || { id: 'zh-cn', icon: 'chinese' }
         },
         methods: {
             ...mapActions(['checkPM']),
@@ -74,9 +115,9 @@
                     query: this.$route.query
                 })
             },
-            changeLanguage () {
+            changeLanguage (id) {
                 const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
-                if (this.language === 'zh-cn') {
+                if (id !== 'zh-cn') {
                     cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
                     cookies.set('blueking_language', 'en', { domain: BK_CI_DOMAIN, path: '/' })
                     location.reload()
@@ -131,7 +172,33 @@
         cursor: pointer;
     }
     .language-select {
-        margin-left: auto
+        margin-left: auto;
+    }
+}
+.flag-box{
+    margin-top: 7px;
+}
+.bkci-dropdown-item {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    line-height: 33px;
+    padding: 0 16px;
+    color: #63656e;
+    font-size: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: #fff;
+    cursor: pointer;
+    &:hover {
+        background-color: #f5f7fb;
+    }
+    &.disabled {
+        color: #dcdee5;
+        cursor: not-allowed;
+    }
+    &.active {
+        background-color: #f5f7fb;
     }
 }
 </style>
