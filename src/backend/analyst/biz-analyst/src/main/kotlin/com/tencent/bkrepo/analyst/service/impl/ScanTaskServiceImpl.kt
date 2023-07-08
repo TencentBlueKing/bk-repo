@@ -374,12 +374,7 @@ class ScanTaskServiceImpl(
     ): FileLicensesResultOverview {
         val subtask = subtaskDao.findById(subScanTaskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
-        try {
-            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
-        } catch (e: UncheckedExecutionException) {
-            logger.error("Failed to checkSubtaskPermission $e")
-            permissionCheckHandler.checkProjectPermission(subtask.projectId, PermissionAction.MANAGE)
-        }
+        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         return ScanLicenseConverter.convert(subtask)
     }
 
