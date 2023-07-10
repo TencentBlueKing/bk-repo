@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.google.common.util.concurrent.UncheckedExecutionException
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
