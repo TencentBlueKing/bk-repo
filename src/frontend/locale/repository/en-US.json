@@ -753,5 +753,5 @@
     "ExportRecordFilter":"Export record filter",
     "scanTime":"Scan time",
     "exportReportInfo":"Artifact scan record is generating report, please wait ...",
-    "exportLeakReportInfo":"Security vulnerability information is being reported, please wait...",
+    "exportLeakReportInfo":"Security vulnerability information is being reported, please wait..."
 }
