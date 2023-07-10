@@ -1,6 +1,6 @@
 <template>
     <main class="create-node-container" v-bkloading="{ isLoading }">
-        <bk-form class="mb20 plan-form" :label-width="100" :model="planForm" :rules="rules" ref="planForm">
+        <bk-form class="mb20 plan-form" :label-width="120" :model="planForm" :rules="rules" ref="planForm">
             <bk-form-item :label="$t('planName')" :required="true" property="name" error-display-type="normal">
                 <bk-input class="w480" v-model.trim="planForm.name" maxlength="32" show-word-limit :disabled="disabled"></bk-input>
             </bk-form-item>
@@ -16,10 +16,10 @@
                     </bk-radio>
                     <bk-radio value="SPECIFIED_TIME" :disabled="disabled">
                         <div class="flex-align-center">
-                            {{ $t('designatedTime') }}
+                            <span>{{ $t('designatedTime') }}</span>
                             <bk-date-picker
-                                class="ml10"
                                 v-if="planForm.executionStrategy === 'SPECIFIED_TIME'"
+                                class="ml10 w180"
                                 v-model="planForm.time"
                                 type="datetime"
                                 :disabled="disabled"
@@ -31,7 +31,7 @@
                     </bk-radio>
                     <bk-radio value="CRON_EXPRESSION" :disabled="disabled">
                         <div class="flex-align-center">
-                            {{ $t('timedExecution') }}
+                            <span>{{ $t('timedExecution') }}</span>
                             <template v-if="planForm.executionStrategy === 'CRON_EXPRESSION'">
                                 <bk-input v-if="disabled" class="ml10 w250" :value="planForm.cron" :disabled="disabled"></bk-input>
                                 <Cron v-else class="ml10" v-model="planForm.cron" />
@@ -101,6 +101,14 @@
                     </bk-option>
                 </bk-select>
             </bk-form-item>
+            <template v-if="routeName !== 'createPlan'">
+                <bk-form-item :label="$t('creator') + planForm.creator " property="creator">
+                    {{ userList[planForm.createdBy] && userList[planForm.createdBy].name || planForm.createdBy }}
+                </bk-form-item>
+                <bk-form-item :label="$t('createdDate')" property="createdDate">
+                    {{ formatDate(planForm.createdDate) }}
+                </bk-form-item>
+            </template>
             <bk-form-item :label="$t('description')">
                 <bk-input
                     class="w480"
@@ -111,8 +119,8 @@
                     :disabled="disabled">
                 </bk-input>
             </bk-form-item>
-            <bk-form-item>
-                <bk-button @click="$router.push({ name: 'planManage' })">{{$t('cancel')}}</bk-button>
+            <bk-form-item v-if="!disabled">
+                <bk-button @click="$emit('close')">{{$t('cancel')}}</bk-button>
                 <bk-button class="ml10" theme="primary" :loading="planForm.loading" @click="save">{{$t('confirm')}}</bk-button>
             </bk-form-item>
         </bk-form>
@@ -125,9 +133,16 @@
     import repositoryTable from './repositoryTable'
     import packageTable from './packageTable'
     import pathTable from './pathTable'
+    import { formatDate } from '@repository/utils'
     export default {
         name: 'createPlan',
         components: { Cron, CardRadioGroup, repositoryTable, packageTable, pathTable },
+        props: {
+            rowsData: {
+                type: Object,
+                default: () => {}
+            }
+        },
         data () {
             return {
                 conflictStrategyList: [
@@ -150,6 +165,8 @@
                     cron: '* * * * * ? *',
                     conflictStrategy: 'SKIP',
                     remoteClusterIds: [],
+                    creator: '',
+                    created_time: '',
                     description: ''
                 },
                 rules: {
@@ -200,12 +217,12 @@
             }
         },
         computed: {
-            ...mapState(['clusterList', 'repoListAll']),
+            ...mapState(['clusterList', 'userList']),
             projectId () {
                 return this.$route.params.projectId
             },
             routeName () {
-                return this.$route.name
+                return this.rowsData.routeName
             },
             disabled () {
                 return this.routeName === 'planDetail'
@@ -222,10 +239,11 @@
                 'getPlanDetail',
                 'updatePlan'
             ]),
+            formatDate,
             handlePlanDetail () {
                 this.isLoading = true
                 this.getPlanDetail({
-                    key: this.$route.params.planId
+                    key: this.rowsData.planId
                 }).then(({
                     task: {
                         name,
@@ -233,6 +251,8 @@
                         replicaType,
                         remoteClusters,
                         description,
+                        createdBy,
+                        createdDate,
                         setting: {
                             conflictStrategy,
                             executionStrategy,
@@ -258,7 +278,9 @@
                             : {}),
                         conflictStrategy,
                         remoteClusterIds: remoteClusters.map(v => v.id),
-                        description
+                        description,
+                        createdBy,
+                        createdDate
                     }
                     this.replicaTaskObjects = objects
                 }).finally(() => {
@@ -318,13 +340,14 @@
                 }
                 const request = this.routeName === 'createPlan'
                     ? this.createPlan({ body })
-                    : this.updatePlan({ body: { ...body, key: this.$route.params.planId } })
+                    : this.updatePlan({ body: { ...body, key: this.rowsData.planId } })
                 request.then(() => {
                     this.$bkMessage({
                         theme: 'success',
                         message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
-                    this.$router.back()
+                    this.$emit('close')
+                    this.$emit('confirm')
                 }).finally(() => {
                     this.planForm.loading = false
                 })
@@ -340,7 +363,6 @@
     .plan-form {
         max-width: 1080px;
         margin-top: 30px;
-        margin-left: 50px;
         .arrow-right-icon {
             position: relative;
             width: 20px;
@@ -379,7 +401,7 @@
                 display: flex;
                 align-items: center;
                 height: 32px;
-                min-width: 120px;
+                min-width: 80px;
                 .bk-radio-text {
                     height: 32px;
                     display: flex;
@@ -388,15 +410,12 @@
             }
         }
         ::v-deep .bk-form-radio {
-            min-width: 120px;
+            min-width: 80px;
             margin-right: 20px;
         }
         .icon-question-circle-shape {
             color: var(--fontSubsidiaryColor);
         }
     }
-}
-.card-radio-group ::v-deep.card-radio{
-    width: 300px;
 }
 </style>

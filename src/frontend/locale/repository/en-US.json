@@ -592,7 +592,6 @@
     "synchronizationPolicy":"Sync Policy",
     "lastExecutionTime":"Last Execution Time",
     "creator":"Creator",
-    "nextExecutionTime":"Next Execution Time",
     "execute":"Execute",
     "realTimeSync":"Real time",
     "executeImmediately":"Immediately",

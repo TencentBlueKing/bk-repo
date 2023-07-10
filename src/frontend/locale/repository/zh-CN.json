@@ -605,7 +605,6 @@
     "synchronizationPolicy":"同步策略",
     "lastExecutionTime":"上次执行时间",
     "creator":"创建者",
-    "nextExecutionTime":"下次执行时间",
     "execute":"执行",
     "realTimeSync":"实时同步",
     "executeImmediately":"立即执行",
