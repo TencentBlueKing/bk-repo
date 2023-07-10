@@ -748,5 +748,10 @@
     "assetUserTip": "Please start with g_",
     "createGroupToken": "Create Token",
     "inFolderSearchPlaceholder":"Please enter name to search",
-    "folderDirectory":"Folder directory"
+    "folderDirectory":"Folder directory",
+    "exportReport":"Export report",
+    "ExportRecordFilter":"Export record filter",
+    "scanTime":"Scan time",
+    "exportReportInfo":"Artifact scan record is generating report, please wait ...",
+    "exportLeakReportInfo":"Security vulnerability information is being reported, please wait..."
 }
