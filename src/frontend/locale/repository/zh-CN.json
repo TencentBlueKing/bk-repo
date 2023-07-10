@@ -657,7 +657,7 @@
     "runningStatus":"运行状态",
     "startExecutionTime":"开始执行时间",
     "endExecutionTime":"结束执行时间",
-    "planLogTitle":"{0} 执行日志",
+    "planLogTitle":"{name} 执行日志",
     "nodeTypeEnum": {
         "CENTER": "中心节点",
         "EDGE": "边缘节点",
