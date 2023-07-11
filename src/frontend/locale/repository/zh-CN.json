@@ -762,5 +762,6 @@
     "exportReportInfo":"制品扫描记录正在生成报告中，请稍等...",
     "exportLeakReportInfo":"安全漏洞信息正在生成报告中，请稍等...",
     "inFolderSearchPlaceholder":"请输入文件/文件夹名称搜索",
-    "folderDirectory":"文件夹目录"
+    "folderDirectory":"文件夹目录",
+    "errorPlanNameTips":"请输入 2-32 位字符的计划名称"
 }
