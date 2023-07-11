@@ -109,6 +109,19 @@ class UserScanReportController(private val scanTaskService: ScanTaskService) {
         return ResponseBuilder.success(scanTaskService.resultDetail(request))
     }
 
+    @ApiOperation("制品详情--漏洞数据--导出")
+    @GetMapping("/export/artifact/leak/{projectId}/{subScanTaskId}")
+    fun exportLeak(
+        @ApiParam(value = "projectId") @PathVariable projectId: String,
+        @ApiParam(value = "扫描记录id") @PathVariable subScanTaskId: String,
+        request: ArtifactVulnerabilityRequest
+    ) {
+        request.projectId = projectId
+        request.subScanTaskId = subScanTaskId
+        request.leakType = request.leakType?.let { normalizedLevel(it) }
+        scanTaskService.exportLeakDetail(request)
+    }
+
     @ApiOperation("制品详情--漏洞数据")
     @GetMapping("/artifact/count/{projectId}/{subScanTaskId}")
     fun artifactCount(

@@ -186,6 +186,13 @@ class UserScanPlanController(
         )
     }
 
+    @ApiOperation("扫描方案数据导出")
+    @GetMapping("/export")
+    fun planScanRecordExport(subtaskInfoRequest: SubtaskInfoRequest) {
+        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
+        scanTaskService.exportScanPlanRecords(ScanPlanConverter.convert(subtaskInfoRequest))
+    }
+
     @ApiOperation("文件/包关联的扫描方案列表")
     @GetMapping("/relation/artifact")
     fun artifactPlanList(

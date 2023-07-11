@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScannerDao
+import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.pojo.ScanPlan
@@ -74,7 +75,8 @@ class ScanPlanServiceImpl(
     private val scannerDao: ScannerDao,
     private val scannerService: ScannerService,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
-    private val permissionCheckHandler: ScannerPermissionCheckHandler
+    private val permissionCheckHandler: ScannerPermissionCheckHandler,
+    private val subScanTaskDao: SubScanTaskDao
 ) : ScanPlanService {
     override fun create(request: ScanPlan): ScanPlan {
         val operator = SecurityUtils.getUserId()
@@ -149,12 +151,14 @@ class ScanPlanServiceImpl(
         val scanTaskMap = scanTaskDao.findByIds(scanTaskIds).associateBy { it.id }
 
         val planArtifactCountMap = planArtifactLatestSubScanTaskDao.planArtifactCount(page.records.map { it.id!! })
+        val scanningPlan = subScanTaskDao.findScanning(projectId).map { it.planId }.distinct()
 
         val scanPlanInfoList = page.records.map {
             ScanPlanConverter.convert(
                 it,
                 scanTaskMap[it.latestScanTaskId],
-                planArtifactCountMap[it.id!!] ?: 0L
+                planArtifactCountMap[it.id!!] ?: 0L,
+                scanningPlan.contains(it.id)
             )
         }
 

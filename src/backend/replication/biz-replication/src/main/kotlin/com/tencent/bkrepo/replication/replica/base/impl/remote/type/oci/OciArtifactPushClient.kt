@@ -109,8 +109,13 @@ class OciArtifactPushClient(
         context: ReplicaContext
     ): Boolean {
         val manifestInput = localDataManager.loadInputStream(nodes[0])
-        val manifestInfo = ManifestParser.parseManifest(manifestInput)
-            ?: throw ArtifactNotFoundException("Can not read manifest info from content")
+        val manifestInfo = try {
+            ManifestParser.parseManifest(manifestInput)
+                ?: throw ArtifactNotFoundException("Can not read manifest info from content")
+        } catch (e: Exception) {
+            // 针对v1版本的镜像或者manifest.json文件异常时无法获取到对应的节点列表
+            throw ArtifactNotFoundException("Could not read manifest.json for remote, $e")
+        }
         logger.info("$name|$version's artifact will be pushed to the third party cluster ${context.cluster.name}")
         // 上传layer, 每次并发执行5个
         val semaphore = Semaphore(replicationProperties.threadNum)
