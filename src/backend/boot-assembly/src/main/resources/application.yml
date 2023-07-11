@@ -52,10 +52,6 @@ auth:
 
 scanner:
   defaultDispatcher: docker
-  dispatcher:
-    docker:
-      enabled: ${BK_REPO_ANALYST_DISPATCHER_DOCKER_ENABLED:false}
-      host: unix:///var/run/docker.sock
   baseUrl: ${BK_REPO_SCHEME:http}://${BK_REPO_HOST:bkrepo.example.com}:${BK_REPO_PORT:80}
   detailReportUrl: ${baseUrl}/ui
   frontEndBaseUrl: ${baseUrl}/ui
