@@ -16,7 +16,7 @@
             <bk-table-column label="制品名称" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
-                    <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
+                    <span class="hover-btn" :class="{ 'disabled': !['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(row.status) }" @click="showArtiReport(row)">{{ row.name }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column label="制品版本/存储路径" show-overflow-tooltip>
