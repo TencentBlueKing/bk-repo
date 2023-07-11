@@ -184,6 +184,16 @@ class SubScanTaskDao(
         return count(Query(criteria))
     }
 
+    /**
+     * 获取项目[projectId]扫描中的任务
+     */
+    fun findScanning(projectId: String): List<TSubScanTask> {
+        val criteria = Criteria
+            .where(TSubScanTask::projectId.name).isEqualTo(projectId)
+            .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+        return find(Query(criteria))
+    }
+
     fun updateStatus(
         subTaskIds: List<String>,
         status: SubScanTaskStatus
