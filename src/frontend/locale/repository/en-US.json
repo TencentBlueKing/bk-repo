@@ -752,7 +752,7 @@
     "batchDownload":"Batch download",
     "noFilenameErrorInfo":"Sorry, the server got the file name abnormally, please try again later",
     "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later",
-    "batchDownloadingInfo":"The files you selected in batches are being downloaded, please wait..."
+    "batchDownloadingInfo":"The files you selected in batches are being downloaded, please wait...",
     "inFolderSearchPlaceholder":"Please enter name to search",
     "folderDirectory":"Folder directory",
     "exportReport":"Export report",
