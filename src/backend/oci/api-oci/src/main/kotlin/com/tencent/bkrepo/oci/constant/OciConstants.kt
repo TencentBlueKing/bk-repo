@@ -95,7 +95,8 @@ const val MD5 = "md5"
 const val OCI_MANIFEST = "manifest.json"
 const val STAGE_TAG = "stageTag"
 
-const val REQUEST_TAG_LIST = "tagList"
+const val TAG_LIST_REQUEST = "tagList"
+const val CATALOG_REQUEST = "catalog"
 const val REQUEST_IMAGE = "image"
 
 // OCIScheme is the URL scheme for OCI-based requests

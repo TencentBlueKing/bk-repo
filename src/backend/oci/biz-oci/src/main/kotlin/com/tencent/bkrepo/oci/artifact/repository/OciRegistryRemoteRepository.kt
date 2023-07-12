@@ -57,6 +57,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.oci.constant.CATALOG_REQUEST
 import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_V2
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
@@ -67,10 +68,11 @@ import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
-import com.tencent.bkrepo.oci.constant.REQUEST_TAG_LIST
+import com.tencent.bkrepo.oci.constant.TAG_LIST_REQUEST
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_LIST_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
@@ -257,7 +259,8 @@ class OciRegistryRemoteRepository(
 
     fun createRemoteDownloadUrl(context: ArtifactContext, property: RemoteRequestProperty): String {
         return when (property.type) {
-            REQUEST_TAG_LIST -> createCatalogUrl(property)
+            CATALOG_REQUEST -> createCatalogUrl(property)
+            TAG_LIST_REQUEST -> createTagListUrl(property)
             else -> createUrl(property)
         }
     }
@@ -285,7 +288,7 @@ class OciRegistryRemoteRepository(
                     RemoteRequestProperty(
                         url = url,
                         params = params,
-                        type = REQUEST_TAG_LIST,
+                        type = CATALOG_REQUEST,
                         imageName = StringPool.EMPTY
                     )
                 } else {
@@ -294,6 +297,7 @@ class OciRegistryRemoteRepository(
                         url = url,
                         fullPath = fullPath,
                         params = params,
+                        type = TAG_LIST_REQUEST,
                         imageName = artifactInfo.packageName
                     )
                 }
@@ -326,10 +330,22 @@ class OciRegistryRemoteRepository(
      */
     private fun createCatalogUrl(property: RemoteRequestProperty): String {
         with(property) {
-            val baseUrl = URL(url)
-            val builder = UriBuilder.fromPath(OCI_API_PREFIX)
-                .host(baseUrl.host).scheme(baseUrl.protocol)
+            val builder = UriBuilder.fromUri(url)
                 .path(DOCKER_CATALOG_SUFFIX)
+                .queryParam(params)
+            return builder.build().toString()
+        }
+    }
+
+    /**
+     * 拼接tag list url
+     */
+    private fun createTagListUrl(property: RemoteRequestProperty): String {
+        with(property) {
+            val builder = UriBuilder.fromUri(url)
+                .path(OCI_API_PREFIX)
+                .path(imageName)
+                .path(TAGS_LIST_SUFFIX)
                 .queryParam(params)
             return builder.build().toString()
         }
