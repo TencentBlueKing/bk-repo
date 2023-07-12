@@ -67,8 +67,12 @@ class SecurityResultDao : ResultItemDao<TSecurityResult>() {
     }
 
     override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
-        query.with(Sort.by(Sort.Direction.DESC, dataKey(TSecurityResultData::severityLevel.name)))
-        return query
+        return query.with(
+            Sort.by(
+                Sort.Order(Sort.Direction.DESC, dataKey(TSecurityResultData::severityLevel.name)),
+                Sort.Order(Sort.Direction.ASC, TSecurityResult::id.name)
+            )
+        )
     }
 
     override fun toPage(

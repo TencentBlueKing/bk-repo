@@ -18,6 +18,7 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-sleuth")
     api(project(":common:common-stream"))
     api(project(":fs:api-fs-server"))
+    implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
