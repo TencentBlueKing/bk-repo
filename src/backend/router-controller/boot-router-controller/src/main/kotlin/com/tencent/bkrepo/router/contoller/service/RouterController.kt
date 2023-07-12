@@ -72,6 +72,10 @@ class RouterController(
         routerControllerService.removeNode(projectId, repoName, fullPath, routerNodeId)
     }
 
+    override fun removeNodes(projectId: String, repoName: String, fullPath: String) {
+        routerControllerService.remoteNodes(projectId, repoName, fullPath)
+    }
+
     /**
      * 获取文件的重定向地址。
      * 路由控制器，会根据配置的策略，生成一个转发地址。

@@ -66,6 +66,14 @@ interface RouterControllerClient {
         @RequestParam routerNodeId: String,
     )
 
+    @ApiOperation("批量删除")
+    @DeleteMapping("/nodes/location/{projectId}/{repoName}")
+    fun removeNodes(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String,
+    )
+
     @ApiOperation("获取重定向的URL")
     @GetMapping("/node/location/{projectId}/{repoName}")
     fun getRedirectUrl(
