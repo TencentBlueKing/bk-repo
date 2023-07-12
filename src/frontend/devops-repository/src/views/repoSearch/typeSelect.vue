@@ -5,7 +5,7 @@
         v-bk-clickoutside="hiddenDropdown">
         <div class="flex-column flex-center">
             <Icon size="24" :name="repoType" />
-            <span style="margin-top: -5px;">{{repoType}}</span>
+            <span style="margin-top: -5px;">{{changeRepoType(repoType)}}</span>
         </div>
         <i class="ml10 devops-icon" :class="showDropdown ? 'icon-angle-up' : 'icon-angle-down'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
@@ -45,6 +45,16 @@
             changeType (type) {
                 this.$emit('change', type)
                 this.hiddenDropdown()
+            },
+            changeRepoType (type) {
+                if (this.repoList.length > 0) {
+                    for (let i = 0; i < this.repoList.length; i++) {
+                        if (this.repoList[i].value === type) {
+                            return this.repoList[i].label
+                        }
+                    }
+                }
+                return 'Generic'
             }
         }
     }
