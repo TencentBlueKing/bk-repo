@@ -49,5 +49,6 @@ class PypiArtifactInfo(
         const val PYPI_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
         const val PYPI_EXT_PACKAGE_DELETE = "/package/delete/{projectId}/{repoName}"
         const val PYPI_EXT_VERSION_DELETE = "/version/delete/{projectId}/{repoName}"
+        const val PYPI_EXT_PACKAGE_LIST = "/version/page/{projectId}/{repoName}"
     }
 }

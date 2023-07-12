@@ -366,10 +366,10 @@
     "finishTime": "完成时间",
     "storagePath": "存储路径",
     "leakLevelEnum": {
-        "CRITICAL": "危急",
-        "HIGH": "高级",
-        "MEDIUM": "中级",
-        "LOW": "低级"
+        "CRITICAL": "严重",
+        "HIGH": "高危",
+        "MEDIUM": "中危",
+        "LOW": "低危"
     },
     "totalNumVulnerability": "漏洞总数",
     "recommendLicenseRule": "仅有推荐使用的许可证",
@@ -659,7 +659,7 @@
     "runningStatus":"运行状态",
     "startExecutionTime":"开始执行时间",
     "endExecutionTime":"结束执行时间",
-    "planLogTitle":"{0} 执行日志",
+    "planLogTitle":"{name} 执行日志",
     "nodeTypeEnum": {
         "CENTER": "中心节点",
         "EDGE": "边缘节点",
@@ -759,6 +759,11 @@
     "relatedUsers":"关联团队用户",
     "assetUserTip": "请以g_开头",
     "createGroupToken": "生成令牌",
+    "exportReport":"导出报告",
+    "ExportRecordFilter":"导出记录筛选",
+    "scanTime":"扫描时间",
+    "exportReportInfo":"制品扫描记录正在生成报告中，请稍等...",
+    "exportLeakReportInfo":"安全漏洞信息正在生成报告中，请稍等...",
     "inFolderSearchPlaceholder":"请输入文件/文件夹名称搜索",
     "folderDirectory":"文件夹目录",
     "localStore":"本地仓库",

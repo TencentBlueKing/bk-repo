@@ -172,11 +172,12 @@ class NpmPackageHandler {
         }
     }
 
-    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): Map<String, String> {
+    @Suppress("UNCHECKED_CAST")
+    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): Map<String, Any> {
         return npmVersionMetadata?.let {
             val value = JsonUtils.objectMapper.writeValueAsString(it)
             val npmProperties = JsonUtils.objectMapper.readValue(value, PackageProperties::class.java)
-            BeanUtils.beanToMap(npmProperties)
+            BeanUtils.beanToMap(npmProperties).filterValues { entryValue -> entryValue != null } as Map<String, Any>
         } ?: emptyMap()
     }
 
