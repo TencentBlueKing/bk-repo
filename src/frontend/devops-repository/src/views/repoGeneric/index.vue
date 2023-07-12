@@ -48,6 +48,12 @@
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
                             v-if="multiSelect.length"
+                            @click="handlerMultiDownload">
+                            {{$t('batchDownload')}}
+                        </bk-button>
+                        <bk-button
+                            v-if="multiSelect.length"
+                            class="ml10"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
@@ -190,6 +196,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate, debounce } from '@repository/utils'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
 
@@ -682,6 +689,10 @@
                         message
                     })
                 })
+            },
+            handlerMultiDownload () {
+                const fullPaths = this.multiSelect.map(r => r.fullPath)
+                customizeDownloadFile(this.projectId, this.repoName, fullPaths)
             },
             handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
                 this.forbidMetadata({
