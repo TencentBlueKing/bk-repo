@@ -47,6 +47,7 @@ class FdtpAFTServerInitializer(
         pipeline.addLast(IdleStateHandler(0, 0, MAX_IDLE_TIME_IN_SECONDS))
             .addLast(FdtpAFTServerAuthHandler(fdtpAuthManager))
             .addLast(FdtpServerCodec())
+            .addLast(FdtpTracingHandler())
             .addLast(FdtpAFTServerHandler(requestHandler))
     }
 

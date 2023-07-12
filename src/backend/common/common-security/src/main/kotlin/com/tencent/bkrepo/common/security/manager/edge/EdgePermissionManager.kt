@@ -33,6 +33,7 @@ import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -45,13 +46,15 @@ class EdgePermissionManager(
     externalPermissionResource: ServiceExternalPermissionClient,
     userResource: ServiceUserClient,
     nodeClient: NodeClient,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    httpAuthProperties: HttpAuthProperties
 ) : PermissionManager(
     repositoryClient,
     permissionResource,
     externalPermissionResource,
     userResource,
-    nodeClient
+    nodeClient,
+    httpAuthProperties
 ) {
 
     private val centerPermissionClient: ClusterPermissionClient

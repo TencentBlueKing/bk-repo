@@ -34,7 +34,9 @@ import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArgume
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
 
@@ -67,5 +69,9 @@ class LicenseResultDao : ResultItemDao<TLicenseResult>() {
             shouldIgnore && arguments.ignored || !shouldIgnore && !arguments.ignored
         }
         return super.toPage(matchedData, pageLimit, arguments)
+    }
+
+    override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
+        return query.with(Sort.by(Sort.Order(Sort.Direction.ASC, TLicenseResult::id.name)))
     }
 }

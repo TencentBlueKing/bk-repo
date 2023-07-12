@@ -37,6 +37,7 @@ import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.fdtp.FdtpAFTClientFactory
@@ -49,13 +50,16 @@ import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import io.netty.channel.ChannelProgressiveFuture
 import io.netty.channel.ChannelProgressiveFutureListener
+import java.net.ConnectException
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.stereotype.Component
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
+@RefreshScope
 @Component
 class ClusterArtifactReplicationHandler(
     localDataManager: LocalDataManager,
@@ -64,6 +68,15 @@ class ClusterArtifactReplicationHandler(
     val listener: ProgressListener
 ) : ArtifactReplicationHandler(localDataManager, replicationProperties) {
 
+    //不支持yaml list配置 https://github.com/spring-projects/spring-framework/issues/16381
+    @Value("\${replication.chunkedRepos:}")
+    private var chunkedRepos: List<String> = emptyList()
+
+    @Value("\${replication.fdtpRepos:}")
+    private var fdtpRepos: List<String> = emptyList()
+
+    @Value("\${replication.httpRepos:}")
+    private var httpRepos: List<String> = emptyList()
 
     override fun blobPush(
         filePushContext: FilePushContext,
@@ -91,11 +104,11 @@ class ClusterArtifactReplicationHandler(
         pushType: String, projectId: String, repoName: String, downGrade: Boolean
     ): String {
         if (downGrade) return pushType
-        return if (filterProjectRepo(projectId, repoName, replicationProperties.chunkedRepos)) {
+        return if (filterProjectRepo(projectId, repoName, chunkedRepos)) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value
-        } else if (filterProjectRepo(projectId, repoName, replicationProperties.fdtpRepos)) {
+        } else if (filterProjectRepo(projectId, repoName, fdtpRepos)) {
             return WayOfPushArtifact.PUSH_WITH_FDTP.value
-        } else if (filterProjectRepo(projectId, repoName, replicationProperties.httpRepos)) {
+        } else if (filterProjectRepo(projectId, repoName, httpRepos)) {
             return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
         } else {
             return pushType
@@ -156,6 +169,7 @@ class ClusterArtifactReplicationHandler(
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(FILE, sha256, StreamRequestBody(rateLimitInputStream, size))
+                .addFormDataPart(SIZE, size.toString())
                 .addFormDataPart(SHA256, sha256).apply {
                     storageKey?.let { addFormDataPart(STORAGE_KEY, it) }
                 }.build()
@@ -224,7 +238,7 @@ class ClusterArtifactReplicationHandler(
                     logger.warn(logMessage)
                     throw ArtifactPushException(logMessage)
                 }
-            } catch (e: ExecutionException) {
+            } catch (e: ConnectException) {
                 // 当不支持fdtp方式进行传输时抛出异常，进行降级处理
                 logger.warn(
                     "Error occurred while pushing file $sha256 with the fdtp way, errors is ${e.message}", e

@@ -2,7 +2,7 @@
     <div class="leak-list">
         <div class="flex-align-center">
             <bk-input
-                class="w250"
+                class="input-common"
                 v-model.trim="filter.vulId"
                 clearable
                 :placeholder="$t('bugSearchHolder')"
@@ -11,7 +11,7 @@
                 @clear="handlerPaginationChange()">
             </bk-input>
             <bk-select
-                class="ml10 w250"
+                class="ml10 input-level"
                 v-model="filter.severity"
                 :placeholder="$t('vulnerabilityLevel')"
                 @change="handlerPaginationChange()">
@@ -19,7 +19,7 @@
             </bk-select>
             <bk-select
                 v-if="subtaskOverview.scannerType === 'standard'"
-                class="ml10 w250"
+                class="ml10 input-common"
                 :clearable="false"
                 v-model="filter.ignored"
                 @change="handlerPaginationChange()">
@@ -27,6 +27,7 @@
                 <bk-option :id="false" :name="$t('activeVul')"></bk-option>
             </bk-select>
             <div class="flex-1 flex-end-center">
+                <bk-button class="mr10" theme="default" @click="exportReport">{{$t('exportReport')}}</bk-button>
                 <bk-button theme="default" @click="$emit('rescan')">{{$t('rescan')}}</bk-button>
             </div>
         </div>
@@ -192,6 +193,15 @@
             generateId (len) {
                 const randomArr = window.crypto.getRandomValues(new Uint8Array((len || 40) / 2))
                 return Array.from(randomArr, n => n.toString(16).padStart(2, '0')).join('').toUpperCase()
+            },
+            exportReport () {
+                this.$bkNotify({
+                    title: this.$t('exportLeakReportInfo'),
+                    position: 'bottom-right',
+                    theme: 'success'
+                })
+                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}`
+                window.open(url, '_self')
             }
         }
     }
@@ -207,6 +217,12 @@
     .leak-tip {
         padding: 0 20px 5px;
         color: var(--fontDisableColor);
+    }
+    .input-common{
+        width: 220px;
+    }
+    .input-level{
+        width: 150px;
     }
 }
 </style>

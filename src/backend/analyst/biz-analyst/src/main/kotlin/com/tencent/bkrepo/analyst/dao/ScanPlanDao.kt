@@ -128,9 +128,9 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         type?.let { criteria.and(TScanPlan::type.name).isEqualTo(type) }
         planNameContains?.let { criteria.and(TScanPlan::name.name).regex(".*$planNameContains.*") }
         val pageRequest = Pages.ofRequest(pageLimit.getNormalizedPageNumber(), pageLimit.getNormalizedPageSize())
-        val query = Query(criteria).with(pageRequest).with(Sort.by(TScanPlan::createdDate.name).descending())
+        val query = Query(criteria).with(Sort.by(TScanPlan::createdDate.name).descending())
 
-        return Pages.ofResponse(pageRequest, count(query), find(query))
+        return Pages.ofResponse(pageRequest, count(query), find(query.with(pageRequest)))
     }
 
     fun page(pageLimit: PageLimit? = null): List<TScanPlan> {
@@ -245,7 +245,12 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
     private fun buildQualityUpdate(quality: Map<String, Any?>): Update {
         val update = Update()
         quality.forEach { entry ->
-            update.set("${TScanPlan::scanQuality.name}.${entry.key}", entry.value)
+            val key = "${TScanPlan::scanQuality.name}.${entry.key}"
+            if (entry.value == null) {
+                update.unset(key)
+            } else {
+                update.set(key, entry.value)
+            }
         }
         return update
     }

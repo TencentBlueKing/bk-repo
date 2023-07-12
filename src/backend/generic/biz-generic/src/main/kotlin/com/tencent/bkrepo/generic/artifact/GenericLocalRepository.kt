@@ -51,6 +51,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -76,7 +79,6 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -230,35 +232,87 @@ class GenericLocalRepository(
     }
 
     /**
-     * 多节点下载， 节点不允许为目录
+     * 多节点下载, 支持同时下载文件和目录
      */
-    private fun downloadMultiNode(context: ArtifactDownloadContext): ArtifactResource? {
+    private fun downloadMultiNode(context: ArtifactDownloadContext): ArtifactResource {
         with(context) {
-            var prefix = artifacts!!.first().getArtifactFullPath()
             val fullPathList = artifacts!!.map { it.getArtifactFullPath() }
-            fullPathList.forEach {
-                prefix = PathUtils.getCommonPath(prefix, it)
-            }
-            val nodes = getNodeDetailsFromReq(false)
+            val commonParent = PathUtils.getCommonParentPath(fullPathList)
+            val nodes = getNodeDetailsFromReq(true)
                 ?: queryNodeDetailList(
-                    projectId = artifacts!!.first().projectId,
-                    repoName = artifacts!!.first().repoName,
+                    projectId = projectId,
+                    repoName = repoName,
                     paths = fullPathList,
-                    prefix = prefix
+                    prefix = commonParent
                 )
             val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
             if (notExistNodes.isNotEmpty()) {
                 throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
             }
-            nodes.forEach { downloadIntercept(this, it) }
-            val nodeMap = nodes.associate {
-                val name = it.fullPath.removePrefix(prefix)
-                val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials)
-                    ?: throw ArtifactNotFoundException(it.fullPath)
-                name to inputStream
-            }
-            return ArtifactResource(nodeMap, RepositoryIdentify(projectId, repoName), useDisposition = true)
+            val (folderNodes, fileNodes) = nodes.partition { it.folder }
+            // 添加所有目录节点的子节点, 检查文件数量和大小总和, 下载拦截
+            val allNodes = getSubNodes(
+                context = context,
+                folders = folderNodes,
+                includeFolder = true,
+                initialCount = fileNodes.size.toLong(),
+                initialSize = fileNodes.sumOf { it.size }
+            ) + nodes
+            // 通过给每个ZipEntry.name添加或移除公共前缀, 改变zip包内的目录结构
+            // 如果多个节点没有公共目录，例如下载/file1和/file2时, 根据repoName添加公共前缀, 给zip包添加一个以repoName命名的顶层目录
+            // 目的是保证zip包解压缩出来只有1个目录, 没有顶层目录时, 有些解压缩工具有可能会直接在当前目录解压出多个文件或目录
+            val prefixToAdd = if (PathUtils.isRoot(commonParent) && fullPathList.size > 1) "$repoName/" else ""
+            // 去掉多余的公共目录层级, 例如下载/a/b/c/file1和/a/b/c/file2时, 移除前缀/a/b/, 使得zip包的顶层目录为c
+            val prefixToRemove = if (fullPathList.size > 1) PathUtils.resolveParent(commonParent) else commonParent
+            // 支持下载空目录
+            val emptyStream = ArtifactInputStream(EmptyInputStream.INSTANCE, Range.full(0))
+            val nodeMap = allNodes.associateBy(
+                keySelector = {
+                    prefixToAdd + it.fullPath.removePrefix(prefixToRemove) + if (it.folder) StringPool.SLASH else ""
+                },
+                valueTransform = {
+                    if (it.folder) emptyStream else {
+                        storageManager.loadArtifactInputStream(it, storageCredentials)
+                            ?: throw ArtifactNotFoundException(it.fullPath)
+                    }
+                }
+            )
+            // 添加node是为了下载单个空目录的时候以zip包的形式下载, 否则下载的是一个空文件而不是目录
+            val node = if (allNodes.size == 1) allNodes.first() else null
+            return ArtifactResource(nodeMap, RepositoryIdentify(projectId, repoName), node, useDisposition = true)
         }
+    }
+
+    private fun getSubNodes(
+        context: ArtifactDownloadContext,
+        folders: List<NodeDetail>,
+        includeFolder: Boolean = false,
+        initialCount: Long = 0,
+        initialSize: Long = 0
+    ): List<NodeDetail> {
+        var totalSize = initialSize
+        val nodes = mutableListOf<NodeDetail>()
+        folders.forEach { folder ->
+            var pageNumber = 1
+            do {
+                val option = NodeListOption(
+                    pageNumber = pageNumber,
+                    pageSize = PAGE_SIZE,
+                    includeFolder = includeFolder,
+                    includeMetadata = true,
+                    deep = true
+                )
+                val records = nodeClient.listNodePage(folder.projectId, folder.repoName, folder.fullPath, option).data
+                    ?.records.takeUnless { it.isNullOrEmpty() }?.map { NodeDetail(it) } ?: break
+                records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
+                totalSize += records.sumOf { it.size }
+                checkFileTotalSize(totalSize)
+                nodes.addAll(records)
+                checkFileCount(initialCount + nodes.size)
+                pageNumber++
+            } while (records.size == PAGE_SIZE)
+        }
+        return nodes
     }
 
     private fun queryNodeDetailList(
@@ -272,7 +326,7 @@ class GenericLocalRepository(
         do {
             val option = NodeListOption(
                 pageNumber = pageNumber,
-                pageSize = 1000,
+                pageSize = PAGE_SIZE,
                 includeFolder = true,
                 includeMetadata = true,
                 deep = true
@@ -282,12 +336,7 @@ class GenericLocalRepository(
                 break
             }
             nodeDetailList.addAll(
-                records.filter { paths.contains(it.fullPath) }.map {
-                    if (it.folder) {
-                        throw BadRequestException(GenericMessageCode.DOWNLOAD_DIR_NOT_ALLOWED)
-                    }
-                    NodeDetail(it)
-                }
+                records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
             )
             pageNumber ++
         } while (nodeDetailList.size < paths.size)
@@ -300,23 +349,8 @@ class GenericLocalRepository(
      * @param node 目录节点详情
      */
     private fun downloadFolder(context: ArtifactDownloadContext, node: NodeDetail): ArtifactResource? {
-        // 检查文件数量
-        checkFileCount(node)
-        // 查询子节点
-        val nodes = nodeClient.listNode(
-            projectId = node.projectId,
-            repoName = node.repoName,
-            path = node.fullPath,
-            includeFolder = false,
-            deep = true,
-            includeMetadata = true
-        ).data.orEmpty()
-        // 检查目录大小
-        checkFolderSize(nodes)
-        nodes.forEach {
-            val nodeDetail = NodeDetail(it)
-            downloadIntercept(context, nodeDetail)
-        }
+        // 查询子节点, 检查文件数量和目录大小, 下载拦截
+        val nodes = getSubNodes(context, listOf(node))
         // 构造name-node map
         val prefix = "${node.fullPath}/"
         val nodeMap = nodes.associate {
@@ -342,21 +376,19 @@ class GenericLocalRepository(
      * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
      */
     @Throws(ErrorCodeException::class)
-    private fun checkFileCount(node: NodeDetail) {
+    private fun checkFileCount(fileCount: Long) {
         // 判断节点数量
-        val fileCount = nodeClient.countFileNode(node.projectId, node.repoName, node.fullPath).data ?: 0
         if (fileCount > BATCH_DOWNLOAD_COUNT_THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
     }
 
     /**
-     * 检查目录数据大小是否超过阈值
+     * 检查数据大小是否超过阈值
      * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
      */
     @Throws(ErrorCodeException::class)
-    private fun checkFolderSize(nodes: List<NodeInfo>) {
-        val totalSize = nodes.map { it.size }.sum()
+    private fun checkFileTotalSize(totalSize: Long) {
         if (totalSize > BATCH_DOWNLOAD_SIZE_THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
@@ -453,12 +485,12 @@ class GenericLocalRepository(
         private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
 
         /**
-         * 目录下载，子文件数量阈值
+         * 目录下载或批量下载，文件数量阈值
          */
         private const val BATCH_DOWNLOAD_COUNT_THRESHOLD = 1024
 
         /**
-         * 目录下载，目录大小阈值
+         * 目录下载或批量下载，数据大小阈值
          */
         private val BATCH_DOWNLOAD_SIZE_THRESHOLD = DataSize.ofGigabytes(10).toBytes()
 
@@ -468,5 +500,10 @@ class GenericLocalRepository(
          * 文件上传请求参数，是否需要同步至Commit Edge组网模式下的边缘节点
          */
         private const val PARAM_REPLICATE = "replicate"
+
+        /**
+         * 节点分页查询单页大小
+         */
+        private const val PAGE_SIZE = 1000
     }
 }

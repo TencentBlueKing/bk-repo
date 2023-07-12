@@ -67,7 +67,7 @@ class SoftwareRepositoryServiceImpl(
         criteria.and(TRepository::display).ne(false)
         criteria.and(TRepository::category).`is`(RepositoryCategory.LOCAL)
         if (repoType == null && !includeGeneric) criteria.and(TRepository::type)
-            .`in`(RepositoryType.HELM, RepositoryType.RDS)
+            .`in`(RepositoryType.HELM)
         if (repoType != null) {
             criteria.and(TRepository::type).isEqualTo(repoType)
         }

@@ -34,6 +34,7 @@ package com.tencent.bkrepo.generic.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -48,8 +49,8 @@ import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
-import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.CompressedFileService
+import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -59,6 +60,8 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -133,12 +136,13 @@ class GenericController(
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
 
-    @GetMapping(BATCH_MAPPING_URI)
+    @RequestMapping(BATCH_MAPPING_URI, method = [RequestMethod.GET, RequestMethod.POST])
     fun batchDownload(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestBody batchDownloadPaths: BatchDownloadPaths,
     ) {
+        Preconditions.checkNotBlank(batchDownloadPaths.paths, BatchDownloadPaths::paths.name)
         val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
             .distinctBy { it.getArtifactFullPath() }
         permissionManager.checkNodePermission(
@@ -165,5 +169,15 @@ class GenericController(
         @RequestParam filePath: String,
     ) {
         compressedFileService.previewCompressedFile(artifactInfo, filePath)
+    }
+
+    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @GetMapping("/allow/download/$GENERIC_MAPPING_URI")
+    fun allowDownload(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam ip: String,
+        @RequestParam fromApp: Boolean
+    ): Response<Boolean> {
+        return ResponseBuilder.success(downloadService.allowDownload(artifactInfo, ip, fromApp))
     }
 }

@@ -54,7 +54,7 @@ class RepositoryCommonUtils(
         }
     }
 
-    class RepositoryId(val projectId: String, val repoName: String, val type: RepositoryType) {
+    data class RepositoryId(val projectId: String, val repoName: String, val type: RepositoryType) {
         override fun toString(): String {
             return "$projectId/$repoName#$type"
         }
