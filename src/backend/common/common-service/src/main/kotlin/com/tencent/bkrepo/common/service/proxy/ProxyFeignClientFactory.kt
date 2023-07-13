@@ -27,25 +27,12 @@
 
 package com.tencent.bkrepo.common.service.proxy
 
-import com.google.common.hash.Hashing
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
-import com.tencent.bkrepo.common.api.constant.PROXY_HEADER_NAME
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.api.constant.urlEncode
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager
 import feign.Client
 import feign.Feign
 import feign.Logger
-import feign.RequestInterceptor
-import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.cloud.openfeign.FeignLoggerFactory
 
 object ProxyFeignClientFactory {
@@ -58,6 +45,7 @@ object ProxyFeignClientFactory {
 //        val url = when (serviceName) {
 //            "auth" -> "http://localhost:25902"
 //            "repository" -> "http://localhost:25901"
+//            "replication" -> "http://localhost:25903"
 //            else -> ""
 //        }
         return clientCacheMap.getOrPut(T::class.java) {
@@ -69,7 +57,7 @@ object ProxyFeignClientFactory {
                         CertTrustManager.trustAllHostname
                     )
                 )
-                .requestInterceptor(createInterceptor())
+                .requestInterceptor(ProxyRequestInterceptor())
                 .encoder(SpringContextUtils.getBean())
                 .decoder(SpringContextUtils.getBean())
                 .contract(SpringContextUtils.getBean())
@@ -78,43 +66,5 @@ object ProxyFeignClientFactory {
                 .errorDecoder(SpringContextUtils.getBean())
                 .target(T::class.java, url) as Any
         } as T
-    }
-
-    fun createInterceptor(): RequestInterceptor {
-        return RequestInterceptor {
-            val projectId = ProxyEnv.getProjectId()
-            val name = ProxyEnv.getName()
-            it.header(PROXY_HEADER_NAME, name)
-            HeaderUtils.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.let { lang ->
-                it.header(HttpHeaders.ACCEPT_LANGUAGE, lang)
-            }
-            HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let { userId ->
-                it.header(MS_AUTH_HEADER_UID, userId.toString())
-            } ?: it.header(MS_AUTH_HEADER_UID, "system")
-
-            val sessionKey: String
-            try {
-                sessionKey = SessionKeyHolder.getSessionKey()
-            } catch (e: ErrorCodeException) {
-                // 获取不到sessionKey时的请求不需要签名
-                return@RequestInterceptor
-            }
-            // 不要使用feign请求来上传文件，所以这里不存在文件请求，可以完全读取body进行签名
-            val bodyToHash = if (it.body() != null && it.body().isNotEmpty()) {
-                it.body()
-            } else {
-                StringPool.EMPTY.toByteArray()
-            }
-            val algorithm = HmacAlgorithms.HMAC_SHA_1.getName()
-            val startTime = System.currentTimeMillis() / HttpSigner.MILLIS_PER_SECOND
-            val endTime = startTime + HttpSigner.REQUEST_TTL
-            it.query(HttpSigner.PROXY_NAME, name)
-                .query(HttpSigner.PROJECT_ID, projectId)
-                .query(HttpSigner.SIGN_TIME, "$startTime${HttpSigner.TIME_SPLIT}$endTime".urlEncode())
-                .query(HttpSigner.SIGN_ALGORITHM, algorithm)
-            val bodyHash = Hashing.sha256().hashBytes(bodyToHash).toString()
-            val sig = HttpSigner.sign(it, bodyHash, sessionKey, algorithm)
-            it.query(HttpSigner.SIGN, sig)
-        }
     }
 }

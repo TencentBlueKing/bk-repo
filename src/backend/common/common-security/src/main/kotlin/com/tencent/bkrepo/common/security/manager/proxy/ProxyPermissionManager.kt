@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -47,13 +48,15 @@ class ProxyPermissionManager(
     permissionResource: ServicePermissionClient,
     externalPermissionResource: ServiceExternalPermissionClient,
     userResource: ServiceUserClient,
-    nodeClient: NodeClient
+    nodeClient: NodeClient,
+    httpAuthProperties: HttpAuthProperties
 ) : PermissionManager(
     repositoryClient,
     permissionResource,
     externalPermissionResource,
     userResource,
-    nodeClient
+    nodeClient,
+    httpAuthProperties
 ) {
 
     private val proxyPermissionClient: ProxyPermissionClient by lazy { ProxyFeignClientFactory.create("auth") }

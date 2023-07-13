@@ -25,27 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.proxy
+package com.tencent.bkrepo.auth.api.proxy
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
 
-@ApiModel("Proxy信息")
-data class ProxyInfo(
-    @ApiModelProperty("名称")
-    val name: String,
-    @ApiModelProperty("展示名")
-    val displayName: String,
-    @ApiModelProperty("项目Id")
-    val projectId: String,
-    @ApiModelProperty("集群名")
-    val clusterName: String,
-    @ApiModelProperty("IP")
-    val ip: String,
-    @ApiModelProperty("状态")
-    val status: ProxyStatus,
-    @ApiModelProperty("同步限速，单位Byte/s")
-    val syncRateLimit: Long,
-    @ApiModelProperty("同步时间段")
-    val syncTimeRange: String
-)
+@Api(tags = ["PROXY_PROXY"], description = "Proxy Proxy接口")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyProxyClient")
+@RequestMapping("/proxy/proxy")
+interface ProxyProxyClient {
+
+    @ApiOperation("查询Proxy信息")
+    @GetMapping("/info/{projectId}/{name}")
+    fun info(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<ProxyInfo>
+}

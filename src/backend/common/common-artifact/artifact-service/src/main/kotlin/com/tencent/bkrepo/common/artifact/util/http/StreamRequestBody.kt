@@ -25,27 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.proxy
+package com.tencent.bkrepo.common.artifact.util.http
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody
+import okio.BufferedSink
+import okio.source
+import java.io.InputStream
 
-@ApiModel("Proxy信息")
-data class ProxyInfo(
-    @ApiModelProperty("名称")
-    val name: String,
-    @ApiModelProperty("展示名")
-    val displayName: String,
-    @ApiModelProperty("项目Id")
-    val projectId: String,
-    @ApiModelProperty("集群名")
-    val clusterName: String,
-    @ApiModelProperty("IP")
-    val ip: String,
-    @ApiModelProperty("状态")
-    val status: ProxyStatus,
-    @ApiModelProperty("同步限速，单位Byte/s")
-    val syncRateLimit: Long,
-    @ApiModelProperty("同步时间段")
-    val syncTimeRange: String
-)
+/**
+ * 数据流请求体
+ */
+class StreamRequestBody(
+    private val inputStream: InputStream,
+    private val length: Long
+) : RequestBody() {
+
+    override fun contentLength(): Long {
+        return length
+    }
+
+    override fun contentType(): MediaType? {
+        return MEDIA_TYPE_STREAM
+    }
+
+    override fun writeTo(sink: BufferedSink) {
+        inputStream.source().use {
+            sink.writeAll(it)
+        }
+    }
+
+    companion object {
+        private val MEDIA_TYPE_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull()
+    }
+}

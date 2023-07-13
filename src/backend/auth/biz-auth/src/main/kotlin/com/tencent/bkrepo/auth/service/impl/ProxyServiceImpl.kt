@@ -83,6 +83,8 @@ class ProxyServiceImpl(
             sessionKey = StringPool.EMPTY,
             ticket = secureRandom.nextInt(),
             ticketCreateInstant = Instant.now(),
+            syncRateLimit = request.syncRateLimit.toBytes(),
+            syncTimeRange = request.syncTimeRange,
             createdBy = userId,
             createdDate = LocalDateTime.now(),
             lastModifiedBy = userId,
@@ -216,7 +218,9 @@ class ProxyServiceImpl(
         projectId = projectId,
         clusterName = clusterName,
         ip = ip,
-        status = status
+        status = status,
+        syncRateLimit = syncRateLimit,
+        syncTimeRange = syncTimeRange
     )
 
     private fun randomString(length: Int): String {

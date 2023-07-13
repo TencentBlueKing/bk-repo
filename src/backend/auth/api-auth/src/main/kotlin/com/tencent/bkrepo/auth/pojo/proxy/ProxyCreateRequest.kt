@@ -29,6 +29,7 @@ package com.tencent.bkrepo.auth.pojo.proxy
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import org.springframework.util.unit.DataSize
 
 @ApiModel("proxy创建请求")
 data class ProxyCreateRequest(
@@ -38,4 +39,8 @@ data class ProxyCreateRequest(
     val clusterName: String,
     @ApiModelProperty("展示名")
     val displayName: String,
+    @ApiModelProperty("同步限速")
+    val syncRateLimit: DataSize = DataSize.ofBytes(-1),
+    @ApiModelProperty("同步时间段")
+    val syncTimeRange: String = "0-24"
 )

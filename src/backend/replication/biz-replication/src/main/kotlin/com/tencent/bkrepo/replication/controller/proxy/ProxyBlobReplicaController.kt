@@ -25,27 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.proxy
+package com.tencent.bkrepo.replication.controller.proxy
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.controller.api.BaseCacheHandler
+import com.tencent.bkrepo.replication.controller.api.BlobReplicaController
+import com.tencent.bkrepo.replication.service.BlobChunkedService
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@ApiModel("Proxy信息")
-data class ProxyInfo(
-    @ApiModelProperty("名称")
-    val name: String,
-    @ApiModelProperty("展示名")
-    val displayName: String,
-    @ApiModelProperty("项目Id")
-    val projectId: String,
-    @ApiModelProperty("集群名")
-    val clusterName: String,
-    @ApiModelProperty("IP")
-    val ip: String,
-    @ApiModelProperty("状态")
-    val status: ProxyStatus,
-    @ApiModelProperty("同步限速，单位Byte/s")
-    val syncRateLimit: Long,
-    @ApiModelProperty("同步时间段")
-    val syncTimeRange: String
+@RestController
+@RequestMapping("/proxy")
+class ProxyBlobReplicaController(
+    storageService: StorageService,
+    blobChunkedService: BlobChunkedService,
+    baseCacheHandler: BaseCacheHandler
+) : BlobReplicaController(
+    storageService, blobChunkedService, baseCacheHandler
 )

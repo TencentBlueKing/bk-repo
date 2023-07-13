@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.util
+package com.tencent.bkrepo.auth.controller.proxy
 
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import okio.BufferedSink
-import okio.source
-import java.io.InputStream
+import com.tencent.bkrepo.auth.api.proxy.ProxyProxyClient
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.service.ProxyService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 数据流请求体
- */
-class StreamRequestBody(
-    private val inputStream: InputStream,
-    private val length: Long
-) : RequestBody() {
-
-    override fun contentLength(): Long {
-        return length
-    }
-
-    override fun contentType(): MediaType? {
-        return MEDIA_TYPE_STREAM
-    }
-
-    override fun writeTo(sink: BufferedSink) {
-        inputStream.source().use {
-            sink.writeAll(it)
-        }
-    }
-
-    companion object {
-        private val MEDIA_TYPE_STREAM = MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull()
+@RestController
+class ProxyProxyController(
+    private val proxyService: ProxyService
+) : ProxyProxyClient {
+    override fun info(projectId: String, name: String): Response<ProxyInfo> {
+        return ResponseBuilder.success(proxyService.getInfo(projectId, name))
     }
 }

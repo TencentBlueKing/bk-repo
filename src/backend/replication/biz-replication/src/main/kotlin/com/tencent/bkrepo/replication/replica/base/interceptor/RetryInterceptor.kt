@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.base.interceptor
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
@@ -37,7 +38,6 @@ import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.util.HttpUtils
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response

@@ -28,8 +28,11 @@
 package com.tencent.bkrepo.proxy.artifact
 
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
@@ -40,13 +43,22 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.proxy.artifact.resource.ProxyNodeResource
 import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -71,10 +83,36 @@ class ProxyLocalRepository: LocalRepository() {
                 return downloadFolder(this, node)
             }
             downloadIntercept(context, node)
-            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
+                ?: SecurityUtils.sudo { loadArtifactInputStreamFromServer(node, storageCredentials) }
+                ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
+    }
+
+    private fun loadArtifactInputStreamFromServer(
+        node: NodeDetail,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        if (node.folder) {
+            return null
+        }
+        val request = HttpContextHolder.getRequestOrNull()
+        val range = try {
+            request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("Failed to resolve http range: ${exception.message}")
+            throw ErrorCodeException(
+                status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
+            )
+        }
+        if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
+            return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        }
+        val nodeResource = ProxyNodeResource(node.sha256!!, range, storageCredentials, storageService)
+        return nodeResource.getArtifactInputStream()
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -114,7 +152,10 @@ class ProxyLocalRepository: LocalRepository() {
             val prefix = "${node.fullPath}/"
             val nodeMap = nodeList.associate {
                 val name = it.fullPath.removePrefix(prefix)
-                val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
+                val nodeDetail = NodeDetail(it)
+                val inputStream = storageManager.loadArtifactInputStream(nodeDetail, context.storageCredentials)
+                    ?: SecurityUtils.sudo { loadArtifactInputStreamFromServer(nodeDetail, context.storageCredentials) }
+                    ?: return null
                 name to inputStream
             }
             return ArtifactResource(nodeMap, node, useDisposition = true)

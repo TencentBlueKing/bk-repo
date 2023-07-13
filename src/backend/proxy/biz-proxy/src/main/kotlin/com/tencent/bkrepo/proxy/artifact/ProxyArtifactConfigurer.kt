@@ -35,7 +35,9 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.proxy.artifact.context.ProxyArtifactClient
+import com.tencent.bkrepo.proxy.artifact.storage.ProxyStorageService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -45,6 +47,11 @@ class ProxyArtifactConfigurer : ArtifactConfigurerSupport() {
     @Bean
     fun proxyArtifactClient(): ArtifactClient {
         return ProxyArtifactClient()
+    }
+
+    @Bean
+    fun proxyStorageService(): StorageService {
+        return ProxyStorageService()
     }
 
     override fun getRepositoryType(): RepositoryType = RepositoryType.GENERIC

@@ -25,27 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.proxy
+package com.tencent.bkrepo.proxy.job
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.auth.api.proxy.ProxyProxyClient
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.proxy.artifact.storage.ProxyStorageService
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
-@ApiModel("Proxy信息")
-data class ProxyInfo(
-    @ApiModelProperty("名称")
-    val name: String,
-    @ApiModelProperty("展示名")
-    val displayName: String,
-    @ApiModelProperty("项目Id")
-    val projectId: String,
-    @ApiModelProperty("集群名")
-    val clusterName: String,
-    @ApiModelProperty("IP")
-    val ip: String,
-    @ApiModelProperty("状态")
-    val status: ProxyStatus,
-    @ApiModelProperty("同步限速，单位Byte/s")
-    val syncRateLimit: Long,
-    @ApiModelProperty("同步时间段")
-    val syncTimeRange: String
-)
+/**
+ * Proxy同步数据任务
+ */
+@Component
+class ProxySyncJob(
+    private val storageService: ProxyStorageService
+) {
+
+    private val proxyProxyClient: ProxyProxyClient by lazy {
+        ProxyFeignClientFactory.create("auth")
+    }
+
+    @Scheduled(initialDelay = 10000, fixedRate = 1800000)
+    fun sync() {
+        val projectId = ProxyEnv.getProjectId()
+        val name = ProxyEnv.getName()
+        val proxyInfo = proxyProxyClient.info(projectId, name).data!!
+        val (startHour, endHour) = proxyInfo.syncTimeRange.split(StringPool.DASH).map { it.toInt() }
+        val currentHour = LocalDateTime.now().hour
+        if (currentHour < startHour || currentHour > endHour) {
+            return
+        }
+        storageService.sync(proxyInfo.syncRateLimit)
+    }
+}

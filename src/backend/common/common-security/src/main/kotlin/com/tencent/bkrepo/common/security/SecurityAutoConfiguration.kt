@@ -113,14 +113,16 @@ class SecurityAutoConfiguration {
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
         userResource: ServiceUserClient,
-        nodeClient: NodeClient
+        nodeClient: NodeClient,
+        httpAuthProperties: HttpAuthProperties
     ): ProxyPermissionManager {
         return ProxyPermissionManager(
             repositoryClient = repositoryClient,
             permissionResource = permissionResource,
             externalPermissionResource = externalPermissionResource,
             userResource = userResource,
-            nodeClient = nodeClient
+            nodeClient = nodeClient,
+            httpAuthProperties = httpAuthProperties
         )
     }
 

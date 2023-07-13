@@ -81,6 +81,7 @@ class StorageAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     fun storageService(
         properties: StorageProperties,
         threadPoolTaskExecutor: ThreadPoolTaskExecutor
