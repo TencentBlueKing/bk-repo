@@ -11,10 +11,10 @@
                     class="radio-flex"
                     v-model="planForm.executionStrategy"
                     @change="clearError">
-                    <bk-radio value="IMMEDIATELY" :disabled="disabled">
+                    <bk-radio value="IMMEDIATELY" :disabled="isDisabledExecutionStrategy || disabled">
                         <span>{{ $t('executeImmediately') }}</span>
                     </bk-radio>
-                    <bk-radio value="SPECIFIED_TIME" :disabled="disabled">
+                    <bk-radio value="SPECIFIED_TIME" :disabled="isDisabledExecutionStrategy || disabled">
                         <div class="flex-align-center">
                             {{ $t('designatedTime') }}
                             <bk-date-picker
@@ -29,7 +29,7 @@
                             </bk-date-picker>
                         </div>
                     </bk-radio>
-                    <bk-radio value="CRON_EXPRESSION" :disabled="disabled">
+                    <bk-radio value="CRON_EXPRESSION" :disabled="isDisabledExecutionStrategy || disabled">
                         <div class="flex-align-center">
                             {{ $t('timedExecution') }}
                             <template v-if="planForm.executionStrategy === 'CRON_EXPRESSION'">
@@ -38,7 +38,7 @@
                             </template>
                         </div>
                     </bk-radio>
-                    <bk-radio v-if="planForm.replicaObjectType === 'REPOSITORY'" value="REAL_TIME" :disabled="disabled">
+                    <bk-radio v-if="planForm.replicaObjectType === 'REPOSITORY'" value="REAL_TIME" :disabled="isDisabledRealTime || disabled">
                         <span>{{ $t('realTimeSync') }}</span>
                     </bk-radio>
                 </bk-radio-group>
@@ -130,6 +130,7 @@
         components: { Cron, CardRadioGroup, repositoryTable, packageTable, pathTable },
         data () {
             return {
+                isDisabledRealTime: false,
                 conflictStrategyList: [
                     { value: 'SKIP', label: this.$t('skipConflictLabel'), tip: this.$t('skipConflictTip') },
                     { value: 'OVERWRITE', label: this.$t('replacementArtifactLabel'), tip: this.$t('replacementArtifactTip') },
@@ -209,6 +210,28 @@
             },
             disabled () {
                 return this.routeName === 'planDetail'
+            },
+            /**
+             * 设置同步策略单选框
+             * 在分发计划编辑的时候，如果当前的策略是 [立即执行/指定时间/定时执行]，就不允许更改为[实时同步]。
+             * 如果当前的策略是[实时同步]，就不允许更改
+             * */
+            isDisabledExecutionStrategy () {
+                let isDisabled = false
+            
+                if (this.routeName === 'editPlan') {
+                    const { executionStrategy } = this.planForm
+                    const executionStatus = ['IMMEDIATELY', 'SPECIFIED_TIME', 'CRON_EXPRESSION'].includes(executionStrategy)
+                    
+                    if (executionStrategy === 'REAL_TIME' && executionStatus === false) {
+                        isDisabled = true
+                        this.isDisabledRealTime = false
+                    } else {
+                        isDisabled = false
+                        this.isDisabledRealTime = true
+                    }
+                }
+                return isDisabled
             }
         },
         created () {
