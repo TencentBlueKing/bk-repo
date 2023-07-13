@@ -38,4 +38,10 @@ interface NodeLocationRepository : MongoRepository<TNodeLocation, String> {
         repoName: String,
         fullPath: String,
     ): List<TNodeLocation>
+
+    fun deleteAllByProjectIdAndRepoNameAndFullPathStartingWith(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+    )
 }

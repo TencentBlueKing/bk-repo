@@ -61,4 +61,13 @@ interface RouterControllerService {
         fullPath: String,
         routerNodeId: String,
     )
+
+    /**
+     * 批量删除
+     * */
+    fun remoteNodes(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+    )
 }
