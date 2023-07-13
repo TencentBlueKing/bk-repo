@@ -173,10 +173,10 @@ class OciOperationServiceImpl(
             val packageKey = PackageKeys.ofName(repoDetail.type.name.toLowerCase(), packageName)
             if (version.isNotBlank()) {
                 packageClient.findVersionByName(
-                    projectId,
-                    repoName,
-                    packageKey,
-                    version
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey,
+                    version = version
                 ).data?.let {
                     removeVersion(
                         artifactInfo = this,
@@ -185,6 +185,11 @@ class OciOperationServiceImpl(
                         packageKey = packageKey
                     )
                 } ?: throw VersionNotFoundException(version)
+                if (!packageClient.listAllVersion(projectId, repoName, packageKey).data.isNullOrEmpty()) {
+                    return
+                }
+                // 当没有版本时删除删除package目录
+                deleteNode(projectId, repoName, "${StringPool.SLASH}$packageName", userId)
             } else {
                 // 删除package目录
                 deleteNode(projectId, repoName, "${StringPool.SLASH}$packageName", userId)
