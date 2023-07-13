@@ -330,10 +330,7 @@ class OciRegistryRemoteRepository(
      */
     private fun createCatalogUrl(property: RemoteRequestProperty): String {
         with(property) {
-            val builder = UriBuilder.fromUri(url)
-                .path(DOCKER_CATALOG_SUFFIX)
-                .queryParam(params)
-            return builder.build().toString()
+           return UrlFormatter.buildUrl(url, DOCKER_CATALOG_SUFFIX, params)
         }
     }
 
@@ -342,12 +339,12 @@ class OciRegistryRemoteRepository(
      */
     private fun createTagListUrl(property: RemoteRequestProperty): String {
         with(property) {
-            val builder = UriBuilder.fromUri(url)
+            val url = UriBuilder.fromUri(url)
                 .path(OCI_API_PREFIX)
                 .path(imageName)
                 .path(TAGS_LIST_SUFFIX)
-                .queryParam(params)
-            return builder.build().toString()
+                .build().toString()
+            return UrlFormatter.addParams(url, params)
         }
     }
 
