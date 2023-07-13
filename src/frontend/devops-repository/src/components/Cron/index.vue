@@ -1,5 +1,5 @@
 <template>
-    <div class="cron-container w250">
+    <div class="cron-container w180">
         <div class="flex-align-center" @click="showMain = !showMain">
             <bk-input class="cron-display" :value="value" readonly="readonly"></bk-input>
             <Icon class="cron-icon" name="cron" size="32" />
@@ -260,8 +260,8 @@
     }
     .cron-main {
         position: absolute;
-        width: 600px;
-        left: 0px;
+        width: 580px;
+        right: 0px;
         top: 35px;
         padding: 20px;
         z-index: 99;
@@ -284,6 +284,7 @@
                     display: flex;
                     align-items: center;
                     height: 32px;
+                    flex-shrink: 0;
                 }
             }
         }

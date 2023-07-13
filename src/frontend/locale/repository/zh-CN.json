@@ -605,7 +605,6 @@
     "synchronizationPolicy":"同步策略",
     "lastExecutionTime":"上次执行时间",
     "creator":"创建者",
-    "nextExecutionTime":"下次执行时间",
     "execute":"执行",
     "realTimeSync":"实时同步",
     "executeImmediately":"立即执行",
@@ -767,5 +766,6 @@
     "batchDownload":"批量下载",
     "noFilenameErrorInfo":"抱歉，服务器获取文件名称异常，请稍后重试",
     "batchDownloadBackTypeErrorInfo":"批量下载文件失败，请稍后重试",
-    "batchDownloadingInfo":"您批量选中的文件正在进行下载中，请稍候..."
+    "batchDownloadingInfo":"您批量选中的文件正在进行下载中，请稍候...",
+    "errorPlanNameTips":"请输入 2-32 位字符的计划名称"
 }
