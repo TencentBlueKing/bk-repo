@@ -85,7 +85,28 @@ class HelmOperationService(
                     )
                 }
             }
+            deleteIndex(this)
             updatePackageExtension(context)
+        }
+    }
+
+    /**
+     * 当该仓库下没有任何包时，删除对应的index.yaml文件
+     */
+    private fun deleteIndex(artifactInfo: HelmDeleteArtifactInfo) {
+        with(artifactInfo) {
+            if (!packageClient.listAllPackageNames(projectId, repoName).data.isNullOrEmpty()) {
+                return
+            }
+            // 删除index文件
+            nodeClient.deleteNode(
+                NodeDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = HelmUtils.getIndexCacheYamlFullPath(),
+                operator = SecurityUtils.getUserId()
+                )
+            )
         }
     }
 
