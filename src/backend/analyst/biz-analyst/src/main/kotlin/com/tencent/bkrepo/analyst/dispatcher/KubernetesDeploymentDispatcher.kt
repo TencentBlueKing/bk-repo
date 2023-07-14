@@ -22,7 +22,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.Compani
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.openapi.ApiException
-import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.AppsV1Api
 import io.kubernetes.client.openapi.models.V1Deployment
 import org.slf4j.LoggerFactory
@@ -41,11 +40,8 @@ class KubernetesDeploymentDispatcher(
     private val scannerService: ScannerService,
 ) : SubtaskPullDispatcher<KubernetesDeploymentExecutionCluster>(executionCluster) {
 
-    private val api: AppsV1Api? by lazy { AppsV1Api() }
-
-    init {
-        Configuration.setDefaultApiClient(createClient(executionCluster.kubernetesProperties))
-    }
+    private val client by lazy { createClient(executionCluster.kubernetesProperties) }
+    private val api: AppsV1Api? by lazy { AppsV1Api(client) }
 
     override fun dispatch() {
         val runningTaskCount = subScanTaskDao.countTaskByStatusIn(RUNNING_STATUS, executionCluster.name).toInt()
