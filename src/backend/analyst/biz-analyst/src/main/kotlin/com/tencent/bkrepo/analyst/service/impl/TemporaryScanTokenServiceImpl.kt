@@ -86,6 +86,21 @@ class TemporaryScanTokenServiceImpl(
         return token
     }
 
+    override fun setToken(subtaskId: String, token: String) {
+        redisTemplate.opsForValue().set(tokenKey(subtaskId), token, EXPIRED_SECONDS, TimeUnit.SECONDS)
+    }
+
+    override fun createExecutionClusterToken(executionClusterName: String): String {
+        val token = uniqueId()
+        val tokenKey = tokenKey(executionClusterName)
+        val ops = redisTemplate.opsForValue()
+        return if (ops.setIfAbsent(tokenKey, token) == true) {
+            token
+        } else {
+            ops.get(tokenKey)!!
+        }
+    }
+
     override fun createToken(subtaskIds: List<String>): Map<String, String> {
         val result = HashMap<String, String>(subtaskIds.size)
         redisTemplate.executePipelined { connection ->
@@ -111,8 +126,18 @@ class TemporaryScanTokenServiceImpl(
     }
 
     override fun getToolInput(subtaskId: String): ToolInput {
-        val subtask = scanService.get(subtaskId)
+        return getToolInput(scanService.get(subtaskId))
+    }
 
+    override fun pullToolInput(executionCluster: String): ToolInput? {
+        val subtask = scanService.pull(executionCluster)
+        return subtask?.let {
+            logger.info("executionCluster[$executionCluster] pull subtask[${it.taskId}]")
+            getToolInput(it)
+        }
+    }
+
+    private fun getToolInput(subtask: SubScanTask): ToolInput {
         // 设置后续操作使用的用户的身份为任务触发者
         HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, subtask.createdBy)
 

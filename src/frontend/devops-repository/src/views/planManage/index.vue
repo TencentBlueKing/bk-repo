@@ -1,7 +1,7 @@
 <template>
     <div class="plan-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="$router.push({ name: 'createPlan' })">{{ $t('create') }}</bk-button>
+            <bk-button icon="plus" theme="primary" @click="handleClickCreatePlan">{{ $t('create') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     class="w250"
@@ -46,7 +46,7 @@
                     <span class="hover-btn" @click="showPlanDetailHandler(row)">{{row.name}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('syncType')" width="80">
+            <bk-table-column :label="$t('syncType')" width="100" show-overflow-tooltip>
                 <template #default="{ row }">
                     {{ { 'REPOSITORY': $t('synchronizeRepository'), 'PACKAGE': $t('synchronizePackage'), 'PATH': $t('synchronizePath') }[row.replicaObjectType] }}
                 </template>
@@ -54,7 +54,7 @@
             <bk-table-column :label="$t('targetNode')" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.remoteClusters.map(v => v.name).join('、') }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('synchronizationPolicy')" width="80">
+            <bk-table-column :label="$t('synchronizationPolicy')" width="110" show-overflow-tooltip>
                 <template #default="{ row }">{{ getExecutionStrategy(row) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('lastExecutionTime')" prop="LAST_EXECUTION_TIME" width="150" sortable="custom">
@@ -64,15 +64,6 @@
                 <template #default="{ row }">
                     <span class="repo-tag" :class="row.lastExecutionStatus">{{row.lastExecutionStatus ? $t(`asyncPlanStatusEnum.${row.lastExecutionStatus}`) : $t('notExecuted')}}</span>
                 </template>
-            </bk-table-column>
-            <bk-table-column :label="$t('nextExecutionTime')" prop="NEXT_EXECUTION_TIME" width="150" :render-header="renderHeader">
-                <template #default="{ row }">{{formatDate(row.nextExecutionTime)}}</template>
-            </bk-table-column>
-            <bk-table-column :label="$t('creator')" width="90" show-overflow-tooltip>
-                <template #default="{ row }">{{userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy}}</template>
-            </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" prop="CREATED_TIME" width="150" :render-header="renderHeader">
-                <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('enablePlan')" width="70">
                 <template #default="{ row }">
@@ -113,6 +104,12 @@
         </bk-pagination>
         <plan-log v-model="planLog.show" :plan-data="planLog.planData"></plan-log>
         <plan-copy-dialog v-bind="planCopy" @cancel="planCopy.show = false" @refresh="handlerPaginationChange()"></plan-copy-dialog>
+        <bk-sideslider :is-show.sync="drawerSlider.isShow" :quick-close="true" :width="currentLanguage === 'zh-cn' ? 704 : 972">
+            <div slot="header">{{ drawerSlider.title }}</div>
+            <div slot="content" class="plan-side-content">
+                <create-plan :rows-data="drawerSlider.rowsData" @close="handleClickCloseDrawer" @confirm="handlerPaginationChange" />
+            </div>
+        </bk-sideslider>
     </div>
 </template>
 <script>
@@ -122,11 +119,18 @@
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { asyncPlanStatusEnum } from '@repository/store/publicEnum'
+    import createPlan from '@repository/views/planManage/createPlan'
+    import cookies from 'js-cookie'
     export default {
         name: 'plan',
-        components: { planLog, planCopyDialog, OperationList },
+        components: { planLog, planCopyDialog, OperationList, createPlan },
         data () {
             return {
+                drawerSlider: {
+                    isShow: false,
+                    title: '',
+                    rowsData: {}
+                },
                 asyncPlanStatusEnum,
                 isLoading: false,
                 showEnabled: undefined,
@@ -154,7 +158,10 @@
             }
         },
         computed: {
-            ...mapState(['userList'])
+            ...mapState(['userList']),
+            currentLanguage () {
+                return cookies.get('blueking_language') || 'zh-cn'
+            }
         },
         created () {
             this.handlerPaginationChange()
@@ -222,18 +229,31 @@
                 this.sortDirection = order === 'ascending' ? 'ASC' : 'DESC'
                 this.handlerPaginationChange()
             },
+            handleClickCloseDrawer () {
+                this.drawerSlider.isShow = false
+            },
+            handleClickCreatePlan () {
+                this.drawerSlider = {
+                    isShow: true,
+                    title: this.$t('createPlan'),
+                    rowsData: {
+                        ...this.$route.params,
+                        routeName: 'createPlan'
+                    }
+                }
+            },
             editPlanHandler ({ name, key, lastExecutionStatus, replicaType }) {
                 if (lastExecutionStatus || replicaType === 'REAL_TIME') return
-                this.$router.push({
-                    name: 'editPlan',
-                    params: {
+                this.drawerSlider = {
+                    isShow: true,
+                    title: this.$t('editPlan'),
+                    rowsData: {
                         ...this.$route.params,
-                        planId: key
-                    },
-                    query: {
-                        planName: name
+                        planId: key,
+                        planName: name,
+                        routeName: 'editPlan'
                     }
-                })
+                }
             },
             copyPlanHandler ({ name, key, description }) {
                 this.planCopy = {
@@ -272,14 +292,16 @@
                     this.getPlanListHandler()
                 })
             },
-            showPlanDetailHandler ({ key }) {
-                this.$router.push({
-                    name: 'planDetail',
-                    params: {
+            showPlanDetailHandler ({ name, key }) {
+                this.drawerSlider = {
+                    isShow: true,
+                    title: `${name}` + this.$t('space') + this.$t('detail'),
+                    rowsData: {
                         ...this.$route.params,
-                        planId: key
+                        planId: key,
+                        routeName: 'planDetail'
                     }
-                })
+                }
             },
             showPlanLogHandler (row) {
                 this.planLog.show = true
@@ -298,5 +320,8 @@
             color: var(--primaryColor);
         }
     }
+}
+.plan-side-content{
+    height: 100%;
 }
 </style>

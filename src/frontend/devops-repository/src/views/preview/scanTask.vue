@@ -156,7 +156,7 @@
                 this.handlerPaginationChange()
             },
             showArtiReport ({ recordId, name, status }) {
-                if (status !== 'SUCCESS') return
+                if (!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(status)) return
                 this.$router.push({
                     name: 'artiReport',
                     params: {

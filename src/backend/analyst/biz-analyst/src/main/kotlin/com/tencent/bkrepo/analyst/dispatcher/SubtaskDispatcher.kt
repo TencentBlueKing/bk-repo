@@ -34,13 +34,9 @@ import com.tencent.bkrepo.analyst.pojo.SubScanTask
  */
 interface SubtaskDispatcher {
     /**
-     * 分发任务
-     *
-     * @param subtask 需要分发的任务
-     *
-     * @return 是否分发成功
+     * 从数据库拉取并分发任务
      */
-    fun dispatch(subtask: SubScanTask): Boolean
+    fun dispatch()
 
     /**
      * 清理任务，会停止任务，并移除任务执行过程中占用的执行器相关资源
@@ -51,11 +47,6 @@ interface SubtaskDispatcher {
      * @return 是否清理成功
      */
     fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean
-
-    /**
-     * 允许调度多少个任务
-     */
-    fun availableCount(): Int
 
     fun name(): String
 }

@@ -51,14 +51,14 @@
                     tag: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + this.$t('tag'),
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('tag'),
                             trigger: 'blur'
                         }
                     ],
                     id: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + this.$t('scanScheme'),
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('scanScheme'),
                             trigger: 'change'
                         }
                     ]
@@ -142,14 +142,14 @@
                         break
                     case 'scan':
                         fn = this.submitScanFile()
-                        message = this.$t('join scan queue')
+                        message = this.$t('joinScanMsg')
                         break
                 }
                 fn.then(() => {
                     this.$emit('refresh', this.formDialog.version)
                     this.$bkMessage({
                         theme: 'success',
-                        message: message + this.$t('success')
+                        message: message + this.$t('space') + this.$t('success')
                     })
                     this.formDialog.show = false
                 }).finally(() => {

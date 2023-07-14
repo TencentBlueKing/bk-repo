@@ -592,7 +592,6 @@
     "synchronizationPolicy":"Sync Policy",
     "lastExecutionTime":"Last Execution Time",
     "creator":"Creator",
-    "nextExecutionTime":"Next Execution Time",
     "execute":"Execute",
     "realTimeSync":"Real time",
     "executeImmediately":"Immediately",
@@ -747,11 +746,18 @@
     "relatedUsers":"Related Users",
     "assetUserTip": "Please start with g_",
     "createGroupToken": "Create Token",
+    "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
+    "folderDirectory":"Folder directory",
+    "batchDownload":"Batch download",
+    "noFilenameErrorInfo":"Sorry, the server got the file name abnormally, please try again later",
+    "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later",
+    "batchDownloadingInfo":"The files you selected in batches are being downloaded, please wait...",
     "inFolderSearchPlaceholder":"Please enter name to search",
     "folderDirectory":"Folder directory",
     "exportReport":"Export report",
     "ExportRecordFilter":"Export record filter",
     "scanTime":"Scan time",
     "exportReportInfo":"Artifact scan record is generating report, please wait ...",
-    "exportLeakReportInfo":"Security vulnerability information is being reported, please wait..."
+    "exportLeakReportInfo":"Security vulnerability information is being reported, please wait...",
+    "errorPlanNameTips":"Please enter a plan name of 2-32 characters"
 }
