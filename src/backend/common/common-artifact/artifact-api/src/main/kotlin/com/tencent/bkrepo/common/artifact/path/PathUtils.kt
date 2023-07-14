@@ -283,6 +283,29 @@ object PathUtils {
     }
 
     /**
+     * 提取多个全路径的公共父目录
+     *
+     * [/a/b/c, /a/b/d] -> /a/b/
+     * [/a/b, /c]       -> /
+     * [/a/b/c]         -> /a/b/
+     */
+    fun getCommonParentPath(fullPaths: List<String>): String {
+        require(fullPaths.isNotEmpty())
+        val parents = fullPaths.distinct().map { resolveParent(it) }
+        val splitPaths = parents.map { path -> path.split(StringPool.SLASH).filter { it.isNotBlank() } }
+        val commonSplitPath = splitPaths.reduce { common, splitPath ->
+            common.onEachIndexed { index, segment ->
+                if (index >= splitPath.size || segment != splitPath[index]) {
+                    return@reduce common.take(index)
+                }
+            }
+        }
+        return if (commonSplitPath.isEmpty()) StringPool.ROOT else {
+            commonSplitPath.joinToString(StringPool.SLASH, StringPool.SLASH, StringPool.SLASH)
+        }
+    }
+
+    /**
      * 检查非法字符
      */
     private fun checkIllegalByte(name: String) {

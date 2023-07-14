@@ -420,10 +420,7 @@ open class PermissionManager(
         repoName: String,
         paths: List<String>
     ): List<NodeDetail> {
-        var prefix = paths.first()
-        paths.forEach {
-            prefix = PathUtils.getCommonPath(prefix, it)
-        }
+        val prefix = PathUtils.getCommonParentPath(paths)
         var pageNumber = 1
         val nodeDetailList = mutableListOf<NodeDetail>()
         do {
