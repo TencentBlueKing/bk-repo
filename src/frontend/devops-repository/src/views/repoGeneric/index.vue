@@ -13,21 +13,13 @@
             <div class="repo-generic-side"
                 :style="{ 'flex-basis': `${sideBarWidth}px` }"
                 v-bkloading="{ isLoading: treeLoading }">
-                <div class="pt10 pb10 pl20 pr20">
-                    <bk-input
-                        v-model.trim="importantSearch"
-                        :placeholder="$t('keySearchPlaceHolder')"
-                        clearable
-                        right-icon="bk-icon icon-search"
-                        @enter="searchFile"
-                        @clear="searchFile">
-                    </bk-input>
+                <div class="repo-generic-side-info">
+                    <span>{{$t('folderDirectory')}}</span>
                 </div>
                 <repo-tree
                     class="repo-generic-tree"
                     ref="repoTree"
                     :tree="genericTree"
-                    :important-search="importantSearch"
                     :open-list="sideTreeOpenList"
                     :selected-node="selectedTreeNode"
                     @icon-click="iconClickHandler"
@@ -36,7 +28,6 @@
                         <operation-list
                             v-if="item.roadMap === selectedTreeNode.roadMap"
                             :list="[
-                                item.roadMap !== '0' && { clickEvent: () => showDetail(item), label: $t('detail') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => addFolder(item), label: $t('createFolder') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item), label: $t('uploadFile') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item, true), label: $t('uploadFolder') }
@@ -52,23 +43,29 @@
             />
             <div class="repo-generic-table" v-bkloading="{ isLoading }">
                 <div class="multi-operation flex-between-center">
-                    <bk-input
-                        class="w250"
-                        v-if="searchFileName"
-                        v-model.trim="importantSearch"
-                        :placeholder="$t('keySearchPlaceHolder')"
-                        clearable
-                        right-icon="bk-icon icon-search"
-                        @enter="searchFile"
-                        @clear="searchFile">
-                    </bk-input>
-                    <breadcrumb v-else :list="breadcrumb"></breadcrumb>
+                    <breadcrumb v-if="!searchFileName" :list="breadcrumb" omit-middle></breadcrumb>
+                    <span v-else> {{repoName + (searchFullPath || (selectedTreeNode && selectedTreeNode.fullPath) || '') }}</span>
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
                             v-if="multiSelect.length"
+                            @click="handlerMultiDownload">
+                            {{$t('batchDownload')}}
+                        </bk-button>
+                        <bk-button
+                            v-if="multiSelect.length"
+                            class="ml10"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
+                        <bk-input
+                            class="w250 ml10"
+                            v-model.trim="inFolderSearchName"
+                            :placeholder="$t('inFolderSearchPlaceholder')"
+                            clearable
+                            right-icon="bk-icon icon-search"
+                            @enter="inFolderSearchFile"
+                            @clear="inFolderSearchFile">
+                        </bk-input>
                         <bk-button class="ml10"
                             @click="getArtifactories">
                             {{ $t('refresh') }}
@@ -115,7 +112,7 @@
 
                     <bk-table-column :label="$t('clusterNames')" prop="clusterNames" width="150">
                         <template #default="{ row }">
-                            {{ row.clusterNames.join() }}
+                            {{ row.clusterNames ? row.clusterNames.join() : row.clusterNames }}
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
@@ -201,6 +198,7 @@
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate, debounce } from '@repository/utils'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
 
@@ -228,9 +226,6 @@
                 moveBarWidth: 10,
                 isLoading: false,
                 treeLoading: false,
-                importantSearch: this.$route.query.fileName,
-                // 搜索路径文件夹下的内容
-                searchFullPath: '',
                 // 左侧树处于打开状态的目录
                 sideTreeOpenList: [],
                 sortType: 'lastModifiedDate',
@@ -249,6 +244,9 @@
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
                 metadataLabelList: [],
+                debounceClickTreeNode: null,
+                inFolderSearchName: this.$route.query.fileName,
+                searchFullPath: '',
                 showIamDenyDialog: false,
                 showData: {}
             }
@@ -270,14 +268,16 @@
                 let node = this.genericTree
                 const road = this.selectedTreeNode.roadMap.split(',')
                 road.forEach(index => {
-                    breadcrumb.push({
-                        name: node[index].displayName,
-                        value: node[index],
-                        cilckHandler: item => {
-                            this.itemClickHandler(item.value)
-                        }
-                    })
-                    node = node[index].children
+                    if (node[index]) {
+                        breadcrumb.push({
+                            name: node[index].displayName,
+                            value: node[index],
+                            cilckHandler: item => {
+                                this.itemClickHandler(item.value)
+                            }
+                        })
+                        node = node[index].children
+                    }
                 })
                 return breadcrumb
             },
@@ -319,6 +319,7 @@
                     this.itemClickHandler(this.selectedTreeNode)
                 }
             }))
+            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
@@ -430,19 +431,18 @@
                 this.getArtifactoryList({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    fullPath: this.selectedTreeNode.fullPath,
-                    ...(this.searchFullPath
+                    fullPath: this.searchFullPath || this.selectedTreeNode?.fullPath,
+                    ...(this.inFolderSearchName
                         ? {
-                            fullPath: this.searchFullPath
-                        }
-                        : {
                             name: this.searchFileName
                         }
+                        : {}
                     ),
                     current: this.pagination.current,
                     limit: this.pagination.limit,
                     sortType: this.sortType,
-                    isPipeline: this.repoName === 'pipeline'
+                    isPipeline: this.repoName === 'pipeline',
+                    searchFlag: this.searchFileName
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
@@ -466,18 +466,6 @@
                     this.isLoading = false
                 })
             },
-            searchFile () {
-                if (this.importantSearch || this.searchFileName) {
-                    this.$router.replace({
-                        query: {
-                            ...this.$route.query,
-                            fileName: this.importantSearch
-                        }
-                    })
-                    this.searchFullPath = ''
-                    this.handlerPaginationChange()
-                }
-            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
@@ -485,6 +473,10 @@
             },
             // 树组件选中文件夹
             itemClickHandler (node) {
+                // 添加防抖操作，防止用户在目录树之前一直快速切换，导致前端在某些情况下获取不到相应参数进而导致报错
+                this.debounceClickTreeNode(node)
+            },
+            clickTreeNodeHandler (node) {
                 this.selectedTreeNode = node
 
                 this.handlerPaginationChange()
@@ -589,7 +581,7 @@
                     type: 'rename',
                     name,
                     path: fullPath,
-                    title: `${this.$t('rename')} (${name})`
+                    title: `${this.$t('rename') + this.$t('space')} (${name})`
                 })
             },
             addFolder ({ fullPath }) {
@@ -598,7 +590,7 @@
                     loading: false,
                     type: 'add',
                     path: fullPath + '/',
-                    title: `${this.$t('create') + this.$t('folder')}`
+                    title: `${this.$t('create') + this.$t('space') + this.$t('folder')}`
                 })
             },
             handlerScan ({ name, fullPath }) {
@@ -612,7 +604,12 @@
                     path: fullPath
                 })
             },
-            refreshNodeChange () {
+            refreshNodeChange (destTreeData) {
+                // 在当前仓库中复制或移动文件夹后需要更新选中目录
+                if (destTreeData?.repoName && destTreeData?.folder && destTreeData?.repoName === this.repoName) {
+                    // 复制或移动之后需要默认选中目标文件夹
+                    this.itemClickHandler(destTreeData)
+                }
                 this.updateGenericTreeNode(this.selectedTreeNode)
                 this.getArtifactories()
             },
@@ -622,7 +619,7 @@
                     repoName: this.repoName,
                     show: true,
                     loading: false,
-                    title: `${this.$t('share')} (${name})`,
+                    title: `${this.$t('share') + this.$t('space')} (${name})`,
                     path: fullPath,
                     user: [],
                     ip: [],
@@ -717,20 +714,22 @@
                     }
                 })
             },
-            moveRes ({ name, fullPath }) {
+            moveRes ({ name, fullPath, folder }) {
                 this.$refs.genericTreeDialog.setTreeData({
                     show: true,
                     type: 'move',
                     title: `${this.$t('move')} (${name})`,
-                    path: fullPath
+                    path: fullPath,
+                    folder: folder
                 })
             },
-            copyRes ({ name, fullPath }) {
+            copyRes ({ name, fullPath, folder }) {
                 this.$refs.genericTreeDialog.setTreeData({
                     show: true,
                     type: 'copy',
                     title: `${this.$t('copy')} (${name})`,
-                    path: fullPath
+                    path: fullPath,
+                    folder: folder
                 })
             },
             handlerUpload ({ fullPath }, folder = false) {
@@ -786,6 +785,10 @@
                         })
                     }
                 })
+            },
+            handlerMultiDownload () {
+                const fullPaths = this.multiSelect.map(r => r.fullPath)
+                customizeDownloadFile(this.projectId, this.repoName, fullPaths)
             },
             handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
                 this.forbidMetadata({
@@ -1067,6 +1070,19 @@
                     || name.endsWith('log')
                     || name.endsWith('properties')
                     || name.endsWith('toml')
+            },
+            // 文件夹内部的搜索，根据文件名或文件夹名搜索
+            inFolderSearchFile () {
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        fileName: this.inFolderSearchName
+                    }
+                })
+                if (!this.inFolderSearchName) {
+                    this.searchFullPath = ''
+                }
+                this.handlerPaginationChange()
             }
         }
     }
@@ -1102,6 +1118,12 @@
             height: 100%;
             overflow: hidden;
             background-color: white;
+            &-info{
+                height: 50px;
+                display: flex;
+                align-items: center;
+                padding-left: 20px;
+            }
             .repo-generic-tree {
                 border-top: 1px solid var(--borderColor);
                 height: calc(100% - 50px);

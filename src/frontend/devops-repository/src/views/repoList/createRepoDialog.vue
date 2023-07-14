@@ -8,16 +8,16 @@
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
-                    <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
+                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value">
                         <div class="flex-column flex-center repo-type-radio">
-                            <Icon size="32" :name="repo" />
-                            <span>{{repo}}</span>
+                            <Icon size="32" :name="repo.value" />
+                            <span>{{repo.label}}</span>
                         </div>
                     </bk-radio-button>
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
-                <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
+                <bk-input class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
                     :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
@@ -30,8 +30,8 @@
             </bk-form-item>
             <bk-form-item :label="$t('isDisplay')">
                 <bk-radio-group v-model="repoBaseInfo.display">
-                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                    <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item
@@ -46,29 +46,29 @@
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
                     <bk-radio-group v-model="repoBaseInfo[type].enable">
-                        <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                        <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                        <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
+                        <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                     </bk-radio-group>
                     <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
-                        <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
+                        <bk-form-item :label="$t('fileName')" :label-width="80" class="mt10"
                             :property="`${type}.filename`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
                             <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
                         </bk-form-item>
-                        <bk-form-item :label="$t('metadata')" :label-width="60"
+                        <bk-form-item :label="$t('metadata')" :label-width="80"
                             :property="`${type}.metadata`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
                             <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
                         </bk-form-item>
                     </template>
                     <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
+                        <bk-form-item :label="$t('IP')" :label-width="80" class="mt10"
                             :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
                             <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
                             <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
                             <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
                         </bk-form-item>
-                        <bk-form-item :label="$t('whiteUser')" :label-width="150"
+                        <bk-form-item :label="$t('whiteUser')" :label-width="80"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
                             <bk-input v-if="isCommunity" class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
                             <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="w250" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>

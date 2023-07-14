@@ -37,27 +37,27 @@
                     </div>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('name')">
+            <bk-table-column :label="$t('name')" width="200px">
                 <template #default="{ row }">
                     <span v-bk-tooltips="{ content: row.fullName, placements: ['top'] }">{{ row.licenseId }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('dependPath')" prop="dependentPath"></bk-table-column>
-            <bk-table-column :label="`OSI` + $t('authenticated')" width="120">
-                <template #default="{ row }">{{ row.description ? `${row.isOsiApproved ? $t('authenticated') : $t('notAuthenticated')}` : '/' }}</template>
-            </bk-table-column>
-            <bk-table-column :label="`FSF` + $t('openSource')" width="120">
-                <template #default="{ row }">{{ row.description ? `${row.isFsfLibre ? $t('openSource') : $t('notOpenSource')}` : '/' }}</template>
-            </bk-table-column>
-            <bk-table-column :label="$t('recommendUse')" width="120">
-                <template #default="{ row }">{{ row.description ? `${row.recommended ? $t('recommended') : $t('notRecommended')}` : '/' }}</template>
-            </bk-table-column>
-            <bk-table-column :label="$t('compliance')" width="120">
-                <template #default="{ row }">
-                    <span v-if="row.description" class="repo-tag" :class="row.compliance ? 'SUCCESS' : 'FAILED'">{{ `${row.compliance ? $t('compliance') : $t('notCompliance')}` }}</span>
-                    <span v-else>/</span>
-                </template>
-            </bk-table-column>
+            <!--            <bk-table-column :label="`OSI` + $t('authenticated')" width="120">-->
+            <!--                <template #default="{ row }">{{ row.description ? `${row.isOsiApproved ? $t('authenticated') : $t('notAuthenticated')}` : '/' }}</template>-->
+            <!--            </bk-table-column>-->
+            <!--            <bk-table-column :label="`FSF` + $t('openSource')" width="120">-->
+            <!--                <template #default="{ row }">{{ row.description ? `${row.isFsfLibre ? $t('openSource') : $t('notOpenSource')}` : '/' }}</template>-->
+            <!--            </bk-table-column>-->
+            <!--            <bk-table-column :label="$t('recommendUse')" width="120">-->
+            <!--                <template #default="{ row }">{{ row.description ? `${row.recommended ? $t('recommended') : $t('notRecommended')}` : '/' }}</template>-->
+            <!--            </bk-table-column>-->
+            <!--            <bk-table-column :label="$t('compliance')" width="120">-->
+            <!--                <template #default="{ row }">-->
+            <!--                    <span v-if="row.description" class="repo-tag" :class="row.compliance ? 'SUCCESS' : 'FAILED'">{{ `${row.compliance ? $t('compliance') : $t('notCompliance')}` }}</span>-->
+            <!--                    <span v-else>/</span>-->
+            <!--                </template>-->
+            <!--            </bk-table-column>-->
         </bk-table>
         <bk-pagination
             class="p10"

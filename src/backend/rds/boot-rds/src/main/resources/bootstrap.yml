@@ -1,5 +1,0 @@
-spring.application.name: rds
-server.port: 25813
-
-rds:
-  domain: ${cluster.self.url}/rds

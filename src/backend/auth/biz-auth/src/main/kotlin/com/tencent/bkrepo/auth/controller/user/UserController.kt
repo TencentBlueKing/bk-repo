@@ -57,6 +57,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
@@ -133,9 +134,9 @@ class UserController @Autowired constructor(
     }
 
     @ApiOperation("删除用户")
-    @DeleteMapping("/{uid}")
+    @DeleteMapping("/delete/{uid}")
     fun deleteById(@PathVariable uid: String): Response<Boolean> {
-        preCheckContextUser(uid)
+        preCheckUserOrAssetUser(uid, userService.getRelatedUserById(SecurityUtils.getUserId()))
         userService.deleteById(uid)
         return ResponseBuilder.success(true)
     }
@@ -206,7 +207,7 @@ class UserController @Autowired constructor(
         @RequestParam expiredAt: String?,
         @RequestParam projectId: String?
     ): Response<Token?> {
-        preCheckContextUser(uid)
+        preCheckUserOrAssetUser(uid, userService.getRelatedUserById(SecurityUtils.getUserId()))
         // add user token
         val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
@@ -361,6 +362,16 @@ class UserController @Autowired constructor(
     fun validateEntityUser(@PathVariable uid: String): Response<Boolean> {
         preCheckContextUser(uid)
         return ResponseBuilder.success(userService.validateEntityUser(uid))
+    }
+
+    @ApiOperation("相关虚拟列表")
+    @GetMapping("/group")
+    fun userGroup(
+        @RequestParam userName: String? = null,
+        @RequestParam asstUser: String,
+    ): Response<List<UserInfo>> {
+        val result = userService.getRelatedUserById(asstUser,userName)
+        return ResponseBuilder.success(result)
     }
 
     companion object {

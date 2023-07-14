@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpMediaTypeNotAcceptableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MissingRequestHeaderException
@@ -112,6 +113,15 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
         val errorCodeException = ErrorCodeException(
             status = HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             messageCode = CommonMessageCode.MEDIA_TYPE_UNSUPPORTED
+        )
+        return response(errorCodeException)
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException::class)
+    fun handleException(exception: HttpMediaTypeNotAcceptableException): Response<Void> {
+        val errorCodeException = ErrorCodeException(
+            status = HttpStatus.NOT_ACCEPTABLE,
+            messageCode = CommonMessageCode.MEDIA_TYPE_UNACCEPTABLE
         )
         return response(errorCodeException)
     }

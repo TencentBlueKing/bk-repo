@@ -46,6 +46,17 @@ export default {
             }
         )
     },
+    getUserRelatedList (_, { current, limit, asstUser, userName }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/group`,
+            {
+                params: {
+                    asstUser,
+                    userName
+                }
+            }
+        )
+    },
     // 查询所有用户
     getRepoUserList ({ commit }) {
         return Vue.prototype.$ajax.get(
@@ -111,7 +122,7 @@ export default {
     // 删除用户
     deleteUser (_, userId) {
         return Vue.prototype.$ajax.delete(
-            `${authPrefix}/user/${userId}`
+            `${authPrefix}/user/delete/${userId}`
         )
     },
     validateEntityUser (_, userId) {
@@ -250,6 +261,13 @@ export default {
     getIamPermissionStatus () {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/auth/bkiamv3/status`
+        )
+    },
+    // 创建项目用户
+    createProjectUser (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/create/project`,
+            body
         )
     }
 }

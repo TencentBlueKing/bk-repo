@@ -103,7 +103,7 @@
             },
             submit () {
                 this.genericTreeData.loading = true
-                const { type, path, selectedNode } = this.genericTreeData
+                const { type, path, selectedNode, folder } = this.genericTreeData
                 this[type + 'Node']({
                     body: {
                         srcProjectId: this.projectId,
@@ -116,7 +116,17 @@
                     }
                 }).then(() => {
                     this.genericTreeData.show = false
-                    this.$emit('refresh')
+                    const destTreeData = {
+                        projectId: this.projectId,
+                        repoName: selectedNode.repoName || selectedNode.name,
+                        fullPath: `${selectedNode.fullPath || '/'}`,
+                        folder: folder
+                    }
+                    if (this.repoName === (selectedNode.repoName || selectedNode.name)) {
+                        destTreeData.roadMap = selectedNode.roadMap
+                    }
+                    // 复制和移动文件夹时需要更新选中的文件夹的上层目录，此时需要将相关数据返回父组件
+                    this.$emit('refresh', destTreeData)
                     this.$bkMessage({
                         theme: 'success',
                         message: this.$t(type) + this.$t('space') + this.$t('success')

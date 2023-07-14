@@ -620,7 +620,7 @@ class OciOperationServiceImpl(
 
             descriptorList.forEach {
                 size += it.size
-                existFlag = doSyncBlob(it, ociArtifactInfo, repositoryDetail.storageCredentials,null)
+                existFlag = doSyncBlob(it, ociArtifactInfo, repositoryDetail.storageCredentials)
                 // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
                 if (!existFlag) return false
             }
@@ -710,7 +710,7 @@ class OciOperationServiceImpl(
         // 用于判断是否所有blob都以存在
         var existFlag = true
         var chartYaml: Map<String, Any>? = null
-        // 统计所有mainfest中的文件size作为整个package version的size
+        // 统计所有manifest中的文件size作为整个package version的size
         var size: Long = 0
         // 同步layer以及config层blob信息
         descriptorList.forEach {
@@ -729,7 +729,7 @@ class OciOperationServiceImpl(
                 }
                 else -> null
             }
-            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials, chartYaml)
+            existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, storageCredentials)
         }
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
@@ -759,8 +759,7 @@ class OciOperationServiceImpl(
     private fun doSyncBlob(
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?,
-        chartYaml: Map<String, Any>? = null
+        storageCredentials: StorageCredentials?
     ): Boolean {
         with(ociArtifactInfo) {
             logger.info(
@@ -772,25 +771,23 @@ class OciOperationServiceImpl(
             }
             val blobDigest = OciDigest(descriptor.digest)
             val fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, blobDigest)
-            return updateBlobMetaData(
+            return createBlobNode(
                 fullPath = fullPath,
                 descriptor = descriptor,
                 ociArtifactInfo = this,
-                storageCredentials = storageCredentials,
-                yamlMap = chartYaml
+                storageCredentials = storageCredentials
             )
         }
     }
 
     /**
-     * 根据manifest文件中的信息更新blob metadata信息
+     * 检查blob节点是否存在，如不存在，则创建
      */
-    private fun updateBlobMetaData(
+    private fun createBlobNode(
         fullPath: String,
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        storageCredentials: StorageCredentials?,
-        yamlMap: Map<String, Any>? = null
+        storageCredentials: StorageCredentials?
     ): Boolean {
         with(ociArtifactInfo) {
             val blobExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
@@ -808,13 +805,6 @@ class OciOperationServiceImpl(
                 )
                 createNode(nodeCreateRequest, storageCredentials)
             }
-            updateNodeMetaData(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                mediaType = descriptor.mediaType,
-                chartYaml = yamlMap
-            )
             return true
         }
     }
@@ -950,7 +940,7 @@ class OciOperationServiceImpl(
         return NodeProperty(
             fullPath = result.records[0][NODE_FULL_PATH] as String,
             md5 = result.records[0][MD5] as String?,
-            size = result.records[0][OCI_NODE_SIZE] as Int?
+            size = result.records[0][OCI_NODE_SIZE].toString().toLong()
         )
     }
 

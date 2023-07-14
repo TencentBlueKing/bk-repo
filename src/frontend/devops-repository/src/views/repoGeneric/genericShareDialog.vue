@@ -57,7 +57,7 @@
             <bk-form-item :label="$t('visits')">
                 <bk-input v-model="genericShare.permits" :placeholder="$t('sharePlaceHolder2')"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="`${$t('validity')}(${$t('day')})`">
+            <bk-form-item :label="$t('validity')">
                 <bk-select
                     v-model="genericShare.time"
                     :clearable="false"

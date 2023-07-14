@@ -80,6 +80,11 @@ interface ScanTaskService {
     fun planArtifactSubtaskPage(request: SubtaskInfoRequest): Page<SubtaskInfo>
 
     /**
+     * 导出扫描方案记录
+     */
+    fun exportScanPlanRecords(request: SubtaskInfoRequest)
+
+    /**
      * 获取属于某个扫描方案的扫描子任务结果预览
      *
      * @param subtaskId 子扫描任务id
@@ -111,6 +116,11 @@ interface ScanTaskService {
      * 获取属于某个扫描方案的扫描子任务扫描报告详情
      */
     fun resultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo>
+
+    /**
+     * 导出漏洞详情数据
+     */
+    fun exportLeakDetail(request: ArtifactVulnerabilityRequest)
 
     /**
      * 获取属于某个扫描任务的扫描子任务扫描报告详情

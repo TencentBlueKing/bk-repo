@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -80,7 +81,8 @@ open class PermissionManager(
     private val permissionResource: ServicePermissionClient,
     private val externalPermissionResource: ServiceExternalPermissionClient,
     private val userResource: ServiceUserClient,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val httpAuthProperties: HttpAuthProperties
 ) {
 
     private val httpClient =
@@ -275,6 +277,10 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
+        // 判断是否开启认证
+        if (!httpAuthProperties.enabled) {
+            return
+        }
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
@@ -414,10 +420,7 @@ open class PermissionManager(
         repoName: String,
         paths: List<String>
     ): List<NodeDetail> {
-        var prefix = paths.first()
-        paths.forEach {
-            prefix = PathUtils.getCommonPath(prefix, it)
-        }
+        val prefix = PathUtils.getCommonParentPath(paths)
         var pageNumber = 1
         val nodeDetailList = mutableListOf<NodeDetail>()
         do {

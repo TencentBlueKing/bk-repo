@@ -4,6 +4,9 @@ import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Query.query
+import org.springframework.data.mongodb.core.query.and
+
 
 object UserQueryHelper {
 
@@ -60,6 +63,21 @@ object UserQueryHelper {
         }
         admin?.let { criteria.and(TUser::admin.name).`is`(admin) }
         locked?.let { criteria.and(TUser::locked.name).`is`(locked) }
+        return Query(criteria)
+    }
+
+    fun getUserByAsstUsers(userId: String, userName: String?): Query {
+        val criteria = Criteria()
+        userName?.let {
+            criteria.orOperator(
+                Criteria.where(TUser::userId.name).regex("^$userName"),
+                Criteria.where(TUser::name.name).regex("^$userName")
+            )
+        }
+        userId.let {
+            criteria.and(TUser::asstUsers.name).`in`( *arrayOf(userId))
+            criteria.and(TUser::group.name).`is`(true)
+        }
         return Query(criteria)
     }
 }

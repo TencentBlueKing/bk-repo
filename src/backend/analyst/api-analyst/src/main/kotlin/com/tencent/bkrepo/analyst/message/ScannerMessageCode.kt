@@ -49,7 +49,16 @@ enum class ScannerMessageCode(
     SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_USER("scanner.report.notify.message.trigger.user", 17),
     LICENSE_NOT_FOUND("license.not-found",18),
     SCAN_REPORT_NOTIFY_MESSAGE_LICENSE("scanner.report.notify.message.license",19),
-    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive",20);
+    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive",20),
+    EXPORT_REPORT_FAIL("export.report.fail", 21),
+    EXPORT_REPORT_STATUS_INIT("export.report.status.init", 22),
+    EXPORT_REPORT_STATUS_RUNNING("export.report.status.running", 23),
+    EXPORT_REPORT_STATUS_STOP("export.report.status.stop", 24),
+    EXPORT_REPORT_STATUS_SUCCESS("export.report.status.success", 25),
+    EXPORT_REPORT_STATUS_UN_QUALITY("export.report.status.un.quality", 26),
+    EXPORT_REPORT_STATUS_QUALITY_PASS("export.report.status.quality.pass", 27),
+    EXPORT_REPORT_STATUS_QUALITY_UN_PASS("export.report.status.quality.un.pass", 28),
+    EXPORT_REPORT_STATUS_FAILED("export.report.status.failed", 29);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

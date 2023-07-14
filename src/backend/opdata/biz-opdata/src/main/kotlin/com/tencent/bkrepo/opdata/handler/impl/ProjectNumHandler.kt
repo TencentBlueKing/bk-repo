@@ -55,7 +55,11 @@ class ProjectNumHandler @Autowired constructor(
 
     @Suppress("UNCHECKED_CAST")
     override fun handle(target: Target, result: MutableList<Any>) {
-        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val reqData = if (target.data is Map<*, *>) {
+            target.data as Map<String, Any>
+        } else {
+            null
+        }
         val projectType = ProjectType.valueOf(reqData?.get(PROJECT_TYPE) as? String ?: ProjectType.ALL.name)
         val count = projectModel.getProjectNum(projectType)
         val column = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
