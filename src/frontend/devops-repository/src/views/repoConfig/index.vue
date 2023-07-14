@@ -632,7 +632,8 @@
                     body.configuration.repositoryList = this.repoBaseInfo.virtualStoreList.map(item => {
                         return {
                             name: item.name,
-                            category: item.category
+                            category: item.category,
+                            projectId: item.projectId
                         }
                     })
                     body.configuration.deploymentRepo = this.repoBaseInfo.deploymentRepo
