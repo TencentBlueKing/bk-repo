@@ -111,6 +111,9 @@
                 return this.$route.params.taskId
             },
             isfiltering () {
+                if (this.filter.flag === 'initFlag') {
+                    delete this.filter.flag
+                }
                 return Boolean(Object.values(this.filter).join(''))
             }
         },
