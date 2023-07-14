@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.storage
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.storage.consistency.CnsConfiguration
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -52,6 +53,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 import org.springframework.retry.annotation.EnableRetry
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.ConcurrentHashMap
@@ -62,6 +64,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration(proxyBeanMethods = false)
 @EnableRetry
 @EnableConfigurationProperties(StorageProperties::class)
+@Import(CnsConfiguration::class)
 class StorageAutoConfiguration {
 
     @Bean

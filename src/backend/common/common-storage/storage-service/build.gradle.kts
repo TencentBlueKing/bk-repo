@@ -36,6 +36,7 @@ dependencies {
     api(project(":common:common-bksync"))
     api(project(":common:common-storage:storage-api"))
     api(project(":common:common-artifact:artifact-api"))
+    api(project(":common:common-frpc"))
 
     api("commons-codec:commons-codec")
     api("commons-io:commons-io")
@@ -46,4 +47,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.tencent.polaris:polaris-discovery-factory")
+    testImplementation(project(mapOf("path" to ":common:common-frpc")))
 }

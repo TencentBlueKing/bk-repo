@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.storage.filesystem
 
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.bound
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -59,7 +59,7 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     }
 
     override fun load(path: String, name: String, range: Range, client: FileSystemClient): InputStream? {
-        return client.load(path, name)?.bound(range)
+        return client.load(path, name)?.artifactStream(range)
     }
 
     override fun delete(path: String, name: String, client: FileSystemClient) {

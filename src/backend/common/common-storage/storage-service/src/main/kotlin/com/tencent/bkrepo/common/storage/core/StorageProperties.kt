@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.core
 
+import com.tencent.bkrepo.common.storage.consistency.CnsProperties
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.config.ResponseProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
@@ -59,6 +60,12 @@ data class StorageProperties(
      */
     @NestedConfigurationProperty
     var response: ResponseProperties = ResponseProperties(),
+
+    /**
+     * 一致性相关配置
+     * */
+    @NestedConfigurationProperty
+    var cns: CnsProperties = CnsProperties(),
 
     /**
      * 存储类型

@@ -100,7 +100,7 @@ class BlobReplicaController(
         }
         val artifactFile = buildArtifactFile(file, credentials)
         logger.info("The file with sha256 [$sha256] will be stored!")
-        storageService.store(sha256, artifactFile, credentials)
+        storageService.cnsStore(sha256, artifactFile, credentials)
         return ResponseBuilder.success()
     }
 

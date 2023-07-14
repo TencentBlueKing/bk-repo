@@ -39,15 +39,15 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.measureNanoTime
 
 /**
  * 存储服务抽象实现
  */
 @Suppress("TooGenericExceptionCaught")
-abstract class AbstractStorageService : OverlaySupport() {
+abstract class AbstractStorageService : ConsistencySupport() {
 
     override fun store(
         digest: String,
