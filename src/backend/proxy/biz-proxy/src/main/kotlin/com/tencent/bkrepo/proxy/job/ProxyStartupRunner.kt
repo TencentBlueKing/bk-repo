@@ -34,12 +34,16 @@ import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
 import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.proxy.constant.PID_FILE_PATH
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
+import java.io.File
+import java.lang.management.ManagementFactory
 import kotlin.system.exitProcess
 
 @Component
@@ -52,6 +56,7 @@ class ProxyStartupRunner : ApplicationRunner {
         try {
             retry(RETRY_TIME, block = {
                 startup()
+                writePidFile()
             })
         } catch (e: Exception) {
             logger.error("startup failed: ", e)
@@ -59,7 +64,9 @@ class ProxyStartupRunner : ApplicationRunner {
         }
     }
 
+    @Retryable(Exception::class)
     private fun startup() {
+        logger.info("startup")
         val projectId = ProxyEnv.getProjectId()
         val name = ProxyEnv.getName()
         val secretKey = ProxyEnv.getSecretKey()
@@ -73,6 +80,21 @@ class ProxyStartupRunner : ApplicationRunner {
         val sessionKey = AESUtils.decrypt(encSessionKey, secretKey)
         SessionKeyHolder.setSessionKey(sessionKey)
         logger.info("startup success")
+    }
+
+    private fun writePidFile() {
+        val file = File(PID_FILE_PATH)
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
+        }
+        val pid = getProcessId()
+        file.writeText(pid.toString())
+    }
+
+    private fun getProcessId(): Long {
+        val runtimeMXBean = ManagementFactory.getRuntimeMXBean()
+        val name = runtimeMXBean.name
+        return name.split("@")[0].toLong()
     }
 
     companion object {

@@ -25,46 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.proxy.job
+package com.tencent.bkrepo.proxy.constant
 
-import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
-import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.common.service.proxy.ProxyEnv
-import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
-import com.tencent.bkrepo.proxy.constant.PID_FILE_PATH
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
-import java.io.File
-import javax.annotation.PreDestroy
-
-@Component
-class ProxyShutdownRunner {
-
-    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    @PreDestroy
-    fun shutdown() {
-        val projectId = ProxyEnv.getProjectId()
-        val name = ProxyEnv.getName()
-        val secretKey = ProxyEnv.getSecretKey()
-        val ticket = proxyAuthClient.ticket(projectId, name).data!!
-        val shutdownRequest = ProxyStatusRequest(
-            projectId = projectId,
-            name = name,
-            message = AESUtils.encrypt("$name:shutdown:$ticket", secretKey)
-        )
-        proxyAuthClient.shutdown(shutdownRequest)
-        deletePidFile()
-        logger.info("shutdown")
-    }
-
-    private fun deletePidFile() {
-        val file = File(PID_FILE_PATH)
-        file.deleteOnExit()
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ProxyShutdownRunner::class.java)
-    }
-}
+const val PID_FILE_PATH = "runtime/proxy.pid"
