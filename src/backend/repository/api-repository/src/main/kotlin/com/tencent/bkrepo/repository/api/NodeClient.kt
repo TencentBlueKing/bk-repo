@@ -165,6 +165,10 @@ interface NodeClient {
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/queryWithoutCount")
+    fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
+
     @Deprecated("replace with listNodePage")
     @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")
