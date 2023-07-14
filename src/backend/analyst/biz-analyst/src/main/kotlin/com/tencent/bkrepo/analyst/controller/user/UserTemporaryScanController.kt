@@ -62,6 +62,18 @@ class UserTemporaryScanController(
         return ResponseBuilder.success(temporaryScanTokenService.getToolInput(subtaskId))
     }
 
+    @ApiOperation("拉取扫描子任务")
+    @GetMapping("/scan/subtask/input")
+    fun pullSubtask(
+        @RequestParam executionCluster: String,
+        @RequestParam token: String
+    ): Response<ToolInput?> {
+        temporaryScanTokenService.checkToken(executionCluster, token)
+        val toolInput = temporaryScanTokenService.pullToolInput(executionCluster)
+        toolInput?.let { temporaryScanTokenService.setToken(it.taskId, token) }
+        return ResponseBuilder.success(toolInput)
+    }
+
     @ApiOperation("扫描结果上报")
     @PostMapping("/scan/report")
     fun report(@RequestBody reportResultRequest: ReportResultRequest): Response<Void> {

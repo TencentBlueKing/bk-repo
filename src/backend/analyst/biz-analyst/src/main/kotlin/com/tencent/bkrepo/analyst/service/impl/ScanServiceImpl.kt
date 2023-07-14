@@ -198,6 +198,12 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
+    override fun peek(dispatcher: String?): SubScanTask? {
+        val subtask = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
+            ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS, dispatcher)
+        return subtask?.let { SubtaskConverter.convert(it, scannerService.get(it.scanner)) }
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
         val subtask = subScanTaskDao.findById(subScanTaskId)

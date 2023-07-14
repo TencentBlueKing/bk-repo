@@ -27,14 +27,40 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
-fun buildCommand(cmd: String, baseUrl: String, subtaskId: String, token: String): List<String> {
+import com.tencent.bkrepo.analyst.pojo.execution.KubernetesExecutionClusterProperties
+import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.ApiException
+import io.kubernetes.client.util.ClientBuilder
+import io.kubernetes.client.util.Config
+import io.kubernetes.client.util.credentials.AccessTokenAuthentication
+
+fun buildCommand(cmd: String, baseUrl: String, subtaskId: String, token: String, ): List<String> {
     val command = ArrayList<String>()
     command.addAll(cmd.split(" "))
     command.add("--url")
     command.add(baseUrl)
-    command.add("--task-id")
-    command.add(subtaskId)
     command.add("--token")
     command.add(token)
+    command.add("--task-id")
+    command.add(subtaskId)
     return command
+}
+
+fun createClient(k8sProps: KubernetesExecutionClusterProperties): ApiClient {
+    return if (k8sProps.token != null && k8sProps.apiServer != null) {
+        ClientBuilder()
+            .setBasePath(k8sProps.apiServer)
+            .setAuthentication(AccessTokenAuthentication(k8sProps.token))
+            .build()
+    } else {
+        // 可通过KUBECONFIG环境变量设置config file路径
+        Config.defaultClient()
+    }
+}
+
+fun ApiException.string(): String {
+    return "message: $message\n" +
+            "code: $code\n" +
+            "headers: $responseHeaders\n" +
+            "body: $responseBody"
 }
