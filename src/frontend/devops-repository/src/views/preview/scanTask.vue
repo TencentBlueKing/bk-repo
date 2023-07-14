@@ -51,6 +51,11 @@
             <bk-table-column label="扫描完成时间" width="150">
                 <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
             </bk-table-column>
+            <bk-table-column label="操作" width="100">
+                <template #default="{ row }">
+                    <bk-button text title="primary" :disabled="!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(row.status)" @click="showArtiReport(row)">查看</bk-button>
+                </template>
+            </bk-table-column>
         </bk-table>
         <bk-pagination
             class="pt10"
