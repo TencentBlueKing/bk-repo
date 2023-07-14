@@ -20,14 +20,14 @@
                     </bk-form-item>
                     <template v-if="repoBaseInfo.category === 'REMOTE'">
                         <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
-                            <bk-input style="width:400px" v-model.trim="repoBaseInfo.url"></bk-input>
+                            <bk-input class="w480" :placeholder="$t('pleaseInput') + $t('space') + $t('address')" v-model.trim="repoBaseInfo.url"></bk-input>
                             <bk-button theme="primary" :disabled="disableTestUrl" :loading="disableTestUrl" @click="onClickTestRemoteUrl">{{ $t('testRemoteUrl') }}</bk-button>
                         </bk-form-item>
                         <bk-form-item :label="$t('account')" property="credentials.username" error-display-type="normal">
-                            <bk-input style="width:400px" v-model.trim="repoBaseInfo.credentials.username"></bk-input>
+                            <bk-input class="w480" v-model.trim="repoBaseInfo.credentials.username"></bk-input>
                         </bk-form-item>
                         <bk-form-item :label="$t('password')" property="credentials.password" error-display-type="normal">
-                            <bk-input style="width:400px" type="password" v-model.trim="repoBaseInfo.credentials.password"></bk-input>
+                            <bk-input class="w480" type="password" v-model.trim="repoBaseInfo.credentials.password"></bk-input>
                         </bk-form-item>
                         <bk-form-item :label="$t('networkProxy')" property="switcher">
                             <template>
@@ -37,21 +37,36 @@
                         </bk-form-item>
                         <template v-if="repoBaseInfo.network.switcher">
                             <bk-form-item label="IP" property="network.proxy.host" :required="true" error-display-type="normal">
-                                <bk-input style="width:400px" v-model.trim="repoBaseInfo.network.proxy.host"></bk-input>
+                                <bk-input
+                                    class="w480"
+                                    :placeholder="$t('pleaseInput') + $t('space') + $t('networkProxy') + $t('space') + 'IP'"
+                                    v-model.trim="repoBaseInfo.network.proxy.host">
+                                </bk-input>
                             </bk-form-item>
                             <bk-form-item :label="$t('port')" property="network.proxy.port" :required="true" error-display-type="normal">
-                                <bk-input style="width:400px" type="number" :max="65535" :min="1" v-model.trim="repoBaseInfo.network.proxy.port"></bk-input>
+                                <bk-input
+                                    class="w480"
+                                    :class="{ 'bk-form-item is-error': errorProxyPortInfo }"
+                                    type="number"
+                                    :max="65535"
+                                    :min="1"
+                                    :placeholder="$t('repositoryProxyPortInfo')"
+                                    v-model.trim="repoBaseInfo.network.proxy.port"
+                                    @blur="onBlurProxyPort"
+                                    @focus="errorProxyPortInfo = false">
+                                </bk-input>
+                                <p class="form-error-tip" v-if="errorProxyPortInfo">{{$t('repositoryProxyPortInfo')}}</p>
                             </bk-form-item>
                             <bk-form-item :label="$t('account')" property="network.proxy.username">
-                                <bk-input style="width:400px" v-model.trim="repoBaseInfo.network.proxy.username"></bk-input>
+                                <bk-input class="w480" v-model.trim="repoBaseInfo.network.proxy.username"></bk-input>
                             </bk-form-item>
                             <bk-form-item :label="$t('password')" property="network.proxy.password">
-                                <bk-input style="width:400px" type="password" v-model.trim="repoBaseInfo.network.proxy.password"></bk-input>
+                                <bk-input class="w480" type="password" v-model.trim="repoBaseInfo.network.proxy.password"></bk-input>
                             </bk-form-item>
                         </template>
                     </template>
                     <template v-if="repoBaseInfo.category === 'VIRTUAL'">
-                        <bk-form-item :label=" $t('select') + $t('storageStore')" property="virtualStoreList" :required="true" error-display-type="normal">
+                        <bk-form-item :label=" $t('select') + $t('space') + $t('storageStore')" property="virtualStoreList" :required="true" error-display-type="normal">
                             <bk-button class="mb10" hover-theme="primary" @click="toCheckedStore">{{ $t('pleaseSelect') }}</bk-button>
                             <div class="virtual-check-container">
                                 <store-sort
@@ -65,9 +80,9 @@
                         <bk-form-item :label="$t('uploadTargetStore')" property="deploymentRepo">
                             <bk-select
                                 v-model="repoBaseInfo.deploymentRepo"
-                                style="width:300px;"
+                                class="w480"
                                 :show-empty="false"
-                                :placeholder="$t('pleaseSelect') + $t('uploadTargetStore')">
+                                :placeholder="$t('pleaseSelect') + $t('space') + $t('uploadTargetStore')">
                                 <bk-option v-for="item in deploymentRepoCheckList" :key="item.name" :id="item.name" :name="item.name">
                                 </bk-option>
                                 <div v-if="!deploymentRepoCheckList.length" class="form-tip mt10 ml10 mr10 mb10">
@@ -239,12 +254,12 @@
             const urlRule = [
                 {
                     required: true,
-                    message: this.$t('pleaseInput') + this.$t('address'),
+                    message: this.$t('pleaseInput') + this.$t('space') + this.$t('address'),
                     trigger: 'blur'
                 },
                 {
                     validator: this.checkRemoteUrl,
-                    message: this.$t('pleaseInput') + this.$t('legit') + this.$t('address'),
+                    message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('address'),
                     trigger: 'blur'
                 }
             ]
@@ -252,14 +267,14 @@
             const proxyHostRule = [
                 {
                     required: true,
-                    message: this.$t('pleaseInput') + this.$t('networkProxy') + 'IP',
+                    message: this.$t('pleaseInput') + this.$t('space') + this.$t('networkProxy') + this.$t('space') + 'IP',
                     trigger: 'blur'
                 }
             ]
             const proxyPortRule = [
                 {
                     required: true,
-                    message: this.$t('pleaseInput') + this.$t('networkProxy') + this.$t('port'),
+                    message: this.$t('pleaseInput') + this.$t('space') + this.$t('networkProxy') + this.$t('space') + this.$t('port'),
                     trigger: 'blur'
                 }
             ]
@@ -267,7 +282,7 @@
             const checkStorageRule = [
                 {
                     required: true,
-                    message: this.$t('noSelectStorageStore') + this.$t('save'),
+                    message: this.$t('noSelectStorageStore') + this.$t('space') + this.$t('save'),
                     trigger: 'blur'
                 }
             ]
@@ -330,7 +345,8 @@
                 urlRule,
                 proxyHostRule,
                 proxyPortRule,
-                checkStorageRule
+                checkStorageRule,
+                errorProxyPortInfo: false
             }
         },
         computed: {
@@ -434,6 +450,9 @@
                         this.repoBaseInfo.deploymentRepo = ''
                     }
                 }
+            },
+            'repoBaseInfo.network.switcher' (val) {
+                !val && (this.errorProxyPortInfo = false)
             }
         },
         created () {
@@ -450,6 +469,9 @@
             onUpdateList (list) {
                 this.repoBaseInfo.virtualStoreList = list
             },
+            onBlurProxyPort () {
+                this.errorProxyPortInfo = isNaN(Number(this.repoBaseInfo.network.proxy.port))
+            },
             // 选中的存储库弹窗确认事件
             onCheckedTargetStore (list) {
                 this.repoBaseInfo.virtualStoreList = list
@@ -465,11 +487,20 @@
             },
             // 创建远程仓库弹窗中测试远程链接
             onClickTestRemoteUrl () {
+                if (this.repoBaseInfo.network.switcher && (!this.repoBaseInfo.network.proxy.host || !this.repoBaseInfo.network.proxy.port)) {
+                    this.$bkMessage({
+                        theme: 'warning',
+                        limit: 3,
+                        message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('networkProxy')
+                    })
+                    return
+                }
+                if (this.repoBaseInfo.network.switcher && this.errorProxyPortInfo) return
                 if (!this.repoBaseInfo?.url || isEmpty(this.repoBaseInfo.url) || !this.checkRemoteUrl(this.repoBaseInfo?.url)) {
                     this.$bkMessage({
                         theme: 'warning',
                         limit: 3,
-                        message: this.$t('pleaseInput') + this.$t('legit') + this.$t('address')
+                        message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('address')
                     })
                 } else {
                     const body = {
@@ -571,6 +602,7 @@
                 })
             },
             async saveBaseInfo () {
+                if (this.repoBaseInfo.network.switcher && this.errorProxyPortInfo) return
                 await this.$refs.repoBaseInfo.validate()
                 const interceptors = []
                 if (this.repoType === 'generic') {

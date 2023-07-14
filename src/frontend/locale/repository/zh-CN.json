@@ -790,5 +790,6 @@
     "storeSource":"仓库来源",
     "localStoreInfo":"上传并管理你自己的软件包",
     "remoteStoreInfo":"代理和缓存远程托管的软件包",
-    "virtualStoreInfo":"将本地和远程软件包合并到一个地方"
+    "virtualStoreInfo":"将本地和远程软件包合并到一个地方",
+    "repositoryProxyPortInfo":"请输入 1-65535 之间的整数"
 }
