@@ -151,6 +151,10 @@ class NodeController(
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
+    override fun queryWithoutCount(queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
+        return ResponseBuilder.success(nodeSearchService.searchWithoutCount(queryModel))
+    }
+
     override fun listNode(
         projectId: String,
         repoName: String,
