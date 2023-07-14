@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.statemachine.StateMachine
 import io.kubernetes.client.openapi.ApiException
-import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import org.slf4j.LoggerFactory
@@ -63,11 +62,9 @@ class KubernetesDispatcher(
     executionCluster, scannerProperties, scanService, subtaskStateMachine, temporaryScanTokenService
 ) {
 
-    private val batchV1Api by lazy { BatchV1Api() }
-
-    init {
-        Configuration.setDefaultApiClient(createClient(executionCluster.kubernetesProperties))
-    }
+    private val client by lazy { createClient(executionCluster.kubernetesProperties) }
+    private val coreV1Api by lazy { CoreV1Api(client) }
+    private val batchV1Api by lazy { BatchV1Api(client) }
 
     override fun dispatch(subtask: SubScanTask): Boolean {
         logger.info("dispatch subtask[${subtask.taskId}] with ${executionCluster.name}")
@@ -105,8 +102,7 @@ class KubernetesDispatcher(
 
     override fun availableCount(): Int {
         val k8sProps = executionCluster.kubernetesProperties
-        val api = CoreV1Api()
-        val quota = api.listNamespacedResourceQuota(
+        val quota = coreV1Api.listNamespacedResourceQuota(
             k8sProps.namespace,
             null, null, null,
             null, null, null,
