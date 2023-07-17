@@ -25,6 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.tencent.bkrepo.analyst.utils
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
@@ -137,12 +139,13 @@ object ScanLicenseConverter {
                 finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine,
                 scanQuality = scanQuality,
-                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime)
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
+                scanStatus = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name
             )
         }
     }
 
-    private fun getLicenseCount(level: String, subtask: SubScanTaskDefinition): Long {
+    fun getLicenseCount(level: String, subtask: SubScanTaskDefinition): Long {
         return getLicenseCount(level, subtask.scanResultOverview)
     }
 

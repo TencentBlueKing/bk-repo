@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.interceptor
 
+import com.tencent.bkrepo.common.api.constant.DOWNLOAD_SOURCE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
@@ -40,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.interceptor.impl.OfficeNetworkIntercep
 import com.tencent.bkrepo.common.artifact.interceptor.impl.PackageMetadataInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
@@ -112,6 +114,10 @@ class DownloadInterceptorFactory(
         }
 
         private fun getDownloadSource(): DownloadInterceptorType {
+            val downloadSource = HttpContextHolder.getRequestOrNull()?.getAttribute(DOWNLOAD_SOURCE)?.toString()
+            if (!downloadSource.isNullOrBlank()) {
+                return DownloadInterceptorType.valueOf(downloadSource)
+            }
             val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT) ?: return DownloadInterceptorType.WEB
             logger.debug("download user agent: $userAgent")
             return when {

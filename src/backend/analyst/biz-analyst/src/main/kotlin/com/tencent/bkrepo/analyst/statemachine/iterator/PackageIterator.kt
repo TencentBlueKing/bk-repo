@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
 import com.tencent.bkrepo.analyst.utils.Request
 import org.slf4j.LoggerFactory
 import kotlin.math.min
@@ -267,7 +268,6 @@ class PackageIterator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PackageIterator::class.java)
-        private const val RULE_FIELD_LATEST_VERSION = "latestVersion"
 
         private val packageSelect = listOf(
             PackageSummary::projectId.name,

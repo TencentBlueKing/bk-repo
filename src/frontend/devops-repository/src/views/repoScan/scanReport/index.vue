@@ -1,6 +1,7 @@
 <template>
     <div class="scan-report-container">
         <report-overview
+            v-if="scanPlan.id"
             :scan-plan="scanPlan"
             class="mb10"
             @refreshData="refreshData"
@@ -15,7 +16,7 @@
                 </operation-list>
                 <bk-button class="ml10" :theme="isfiltering ? 'primary' : 'default'" @click="showFilterForm">{{ $t('filter') }}</bk-button>
             </div>
-            <filter-sideslider ref="filterSideslider" :scan-type="scanPlan.type" @filter="filterHandler"></filter-sideslider>
+            <filter-sideslider v-if="scanPlan.id" ref="filterSideslider" :scan-type="scanPlan.type" @filter="filterHandler"></filter-sideslider>
         </div>
         <div class="report-list flex-align-center" v-bkloading="{ isLoading }">
             <div class="mr20 view-task" v-show="viewType === 'TASKVIEW'">
@@ -78,7 +79,7 @@
                     <bk-table-column :label="$t('artifactName')" show-overflow-tooltip>
                         <template #default="{ row }">
                             <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
-                            <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
+                            <span class="hover-btn" :class="{ 'disabled': !['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(row.status) }" @click="showArtiReport(row)">{{ row.name }}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('artifactVersion') + '/' + $t('storagePath')" show-overflow-tooltip>
@@ -121,7 +122,7 @@
                                     viewType === 'OVERVIEW' && !scanPlan.readOnly && {
                                         label: $t('rescan'),
                                         clickEvent: () => startScanSingleHandler(row),
-                                        disabled: row.status !== 'SUCCESS' && row.status !== 'STOP' && row.status !== 'FAILED'
+                                        disabled: !['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS', 'STOP', 'FAILED'].includes(row.status)
                                     }
                                 ]"></operation-list>
                         </template>
@@ -149,9 +150,15 @@
     import reportOverview from './overview'
     import filterSideslider from './filterSideslider'
     import { mapActions } from 'vuex'
-    import { formatDate } from '@repository/utils'
+    import { formatDate, debounce } from '@repository/utils'
     import { scanStatusEnum, leakLevelEnum } from '@repository/store/publicEnum'
     import { SCAN_TYPE_SECURITY } from '../../../store/publicEnum'
+    const filterParams = {
+        name: '',
+        repoName: '',
+        highestLeakLevel: '',
+        status: ''
+    }
     export default {
         name: 'scanReport',
         components: {
@@ -192,7 +199,10 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                debounceGetReportListHandler: null,
+                dependentCurrent: parseInt(this.$route.query.rc || 1),
+                dependentLimit: parseInt(this.$route.query.rl || 20)
             }
         },
         computed: {
@@ -208,13 +218,15 @@
         },
         watch: {
             viewType (val) {
-                this.handlerPaginationChange()
-                if (val === 'TASKVIEW') this.handlerTaskPaginationChange()
+                this.$route.query.viewType = val
+                this.handlerViewPagination(val)
             }
         },
         created () {
+            // 添加防抖，否则会导致请求次数过多
+            this.debounceGetReportListHandler = debounce(this.getReportListHandler, 100)
             this.refreshScanPlan(this.projectId, this.planId)
-            this.handlerTaskPaginationChange()
+            this.handlerViewPagination(this.viewType)
         },
         methods: {
             formatDate,
@@ -227,11 +239,38 @@
                 'stopScan',
                 'getScanConfig'
             ]),
+            handlerViewPagination (val) {
+                if (val === 'OVERVIEW') {
+                    this.handlerPaginationChange({ current: this.dependentCurrent, limit: this.dependentLimit })
+                } else {
+                    // 因为任务视图下的任务列表是滚动加载的，所以没必要精确定位到具体是哪个任务，自然也就不用保留扫描记录列表页的页码及每页大小了
+                    this.handlerTaskPaginationChange()
+                }
+            },
             refreshData (key, value) {
                 this[key] = value
+                // 当设置时间之后，需要将设置的时间更新到VueRouter的query中，即浏览器的url中
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        startTime: this.formatISO?.startTime || '',
+                        endTime: this.formatISO?.endTime || ''
+                    }
+                })
             },
             refreshList (force) {
-                force ? this.handlerPaginationChange() : this.getReportListHandler()
+                if (force.forceFlag) {
+                    const initFlag = force.initFlag
+                    delete force.initFlag
+                    // 此时表明是点击面包屑返回或者当前url中携带了相关参数，此时需要根据url中的页码参数筛选
+                    if (initFlag === 'initFlag') {
+                        this.handlerPaginationChange({ current: this.dependentCurrent, limit: this.dependentLimit })
+                    } else {
+                        this.handlerPaginationChange()
+                    }
+                } else {
+                    this.getReportListHandler()
+                }
             },
             refreshScanPlan (projectId, planId) {
                 this.getScanConfig({ projectId: projectId, id: planId }).then(res => {
@@ -241,7 +280,14 @@
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
-                this.getReportListHandler()
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        rc: this.pagination.current,
+                        rl: this.pagination.limit
+                    }
+                })
+                this.debounceGetReportListHandler ? this.debounceGetReportListHandler() : this.getReportListHandler()
             },
             getReportListHandler () {
                 this.isLoading = true
@@ -268,7 +314,22 @@
             },
             filterHandler (filter) {
                 this.filter = filter
-                this.handlerPaginationChange()
+                const flag = filter.flag
+                // 此时不需要将这个子组件告知父组件是够是第一次筛选的状态同步到浏览器的url
+                delete filter.flag
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        ...filterParams,
+                        ...this.filter
+                    }
+                })
+                if (flag === 'initFlag') {
+                    // 如果是子组件告知的是第一次筛选，需要保留列表的页码等参数
+                    this.handlerPaginationChange({ current: this.dependentCurrent, limit: this.dependentLimit })
+                } else {
+                    this.handlerPaginationChange()
+                }
             },
             stopScanHandler ({ recordId }) {
                 this.stopScan({
@@ -283,7 +344,7 @@
                 })
             },
             showArtiReport ({ recordId, name, status }) {
-                if (status !== 'SUCCESS') return
+                if (!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(status)) return
                 this.$router.push({
                     name: 'artiReport',
                     params: {
@@ -330,8 +391,8 @@
                     projectId: this.projectId,
                     triggerType: this.scanPlan.readOnly ? 'PIPELINE' : 'MANUAL',
                     namePrefix: this.taskNameSearch || undefined,
-                    current: this.pagination.current,
-                    limit: this.pagination.limit
+                    current: this.taskPagination.current,
+                    limit: this.taskPagination.limit
                 }).then(({ records, totalRecords }) => {
                     load ? this.taskList.push(...records) : (this.taskList = records)
                     this.taskPagination.count = totalRecords

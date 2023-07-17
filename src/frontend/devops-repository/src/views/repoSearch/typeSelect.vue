@@ -5,15 +5,15 @@
         v-bk-clickoutside="hiddenDropdown">
         <div class="flex-column flex-center">
             <Icon size="24" :name="repoType" />
-            <span style="margin-top: -5px;">{{repoType}}</span>
+            <span style="margin-top: -5px;">{{changeRepoType(repoType)}}</span>
         </div>
         <i class="ml10 devops-icon" :class="showDropdown ? 'icon-angle-up' : 'icon-angle-down'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
             <bk-radio-group :value="repoType" class="repo-type-radio-group" @change="changeType">
-                <bk-radio-button v-for="repo in repoList" :key="repo" :value="repo">
+                <bk-radio-button v-for="repo in repoList" :key="repo.value" :value="repo.value">
                     <div class="flex-column flex-center repo-type-radio">
-                        <Icon size="32" :name="repo" />
-                        <span>{{repo}}</span>
+                        <Icon size="32" :name="repo.value" />
+                        <span>{{repo.label}}</span>
                     </div>
                 </bk-radio-button>
             </bk-radio-group>
@@ -45,6 +45,16 @@
             changeType (type) {
                 this.$emit('change', type)
                 this.hiddenDropdown()
+            },
+            changeRepoType (type) {
+                if (this.repoList.length > 0) {
+                    for (let i = 0; i < this.repoList.length; i++) {
+                        if (this.repoList[i].value === type) {
+                            return this.repoList[i].label
+                        }
+                    }
+                }
+                return 'Generic'
             }
         }
     }

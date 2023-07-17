@@ -40,8 +40,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
-import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -52,7 +52,9 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -77,6 +79,10 @@ class ProjectServiceImpl(
     private val servicePermissionClient: ServicePermissionClient,
     private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 ) : ProjectService {
+
+    @Autowired
+    @Lazy
+    private lateinit var resourcePermissionListener: ResourcePermissionListener
 
     override fun getProjectInfo(name: String): ProjectInfo? {
         return convert(projectDao.findByName(name))
@@ -184,7 +190,7 @@ class ProjectServiceImpl(
             )
             return try {
                 projectDao.insert(project)
-                publishEvent(buildCreatedEvent(request))
+                resourcePermissionListener.handle(buildCreatedEvent(request))
                 logger.info("Create project [$name] success.")
                 convert(project)!!
             } catch (exception: DuplicateKeyException) {

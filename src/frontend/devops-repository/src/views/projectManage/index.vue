@@ -17,8 +17,8 @@
                     v-model="property"
                     :clearable="true"
                     @change="queryProjects">
-                    <bk-option id="name" :name="$t('Order by Project Name')"></bk-option>
-                    <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
+                    <bk-option id="name" :name="$t('projectNameSorting')"></bk-option>
+                    <bk-option id="createdDate" :name="$t('creatTimeSorting')"></bk-option>
                 </bk-select>
                 <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                     <div class="ml10 sort-order flex-center" @click="changeDirection">
@@ -96,7 +96,7 @@
                 focusContent: this.$t('toggle'),
                 direction: this.$route.query.direction || 'DESC',
                 filterProjectList: [],
-                property: '',
+                property: 'createdDate',
                 iamStatus: false
             }
         },
@@ -104,13 +104,7 @@
             ...mapState(['projectList', 'userList'])
         },
         created () {
-            if (this.projectList.length === 0) {
-                this.getProjectList().then(() => {
-                    this.setPageData(this.projectList)
-                })
-            } else {
-                this.setPageData(this.projectList)
-            }
+            this.queryProjects()
             this.getIamPermissionStatus().then(res => {
                 this.iamStatus = res
             })
@@ -160,6 +154,14 @@
                     }
                 )
             },
+            setPageData (res) {
+                this.pagination.total = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).length
+                this.filterProjectList = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+            },
             createPermission (projectId) {
                 this.refreshIamPermission({ projectId: projectId }).then(res => {
                     if (res === true) {
@@ -174,14 +176,6 @@
                         })
                     }
                 })
-            },
-            setPageData (res) {
-                this.pagination.total = res.filter(project => {
-                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                }).length
-                this.filterProjectList = res.filter(project => {
-                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
             }
         }
     }

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.service.util
 
+import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import org.springframework.web.context.request.RequestContextHolder
@@ -62,6 +63,18 @@ object HttpContextHolder {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
         return if (requestAttributes is ServletRequestAttributes) {
             return getClientAddress(requestAttributes.request)
+        } else StringPool.UNKNOWN
+    }
+
+    fun getClientAddressFromAttribute(): String {
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        return if (requestAttributes is ServletRequestAttributes) {
+            val request = requestAttributes.request
+            var address = request.getAttribute(CLIENT_ADDRESS)?.toString()
+            if (address.isNullOrBlank()) {
+                address = getClientAddress(request)
+            }
+            return address
         } else StringPool.UNKNOWN
     }
 

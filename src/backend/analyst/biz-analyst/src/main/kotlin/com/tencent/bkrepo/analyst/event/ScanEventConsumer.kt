@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.pojo.AutoScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
@@ -253,12 +254,14 @@ class ScanEventConsumer(
             }
 
             if ((event.type == EventType.VERSION_CREATED || event.type == EventType.VERSION_UPDATED)) {
-                val valuesToMatch = mapOf(
+                val valuesToMatch = mapOf<String, Any>(
                     PackageSummary::projectId.name to projectId,
                     PackageSummary::repoName.name to repoName,
                     PackageSummary::type.name to data[VersionCreatedEvent::packageType.name] as String,
                     RuleArtifact::name.name to data[VersionCreatedEvent::packageName.name] as String,
-                    RuleArtifact::version.name to data[VersionCreatedEvent::packageVersion.name] as String
+                    RuleArtifact::version.name to data[VersionCreatedEvent::packageVersion.name] as String,
+                    // 默认当前正在创建的是最新版本
+                    RULE_FIELD_LATEST_VERSION to true
                 )
                 return RuleMatcher.match(rule, valuesToMatch)
             }

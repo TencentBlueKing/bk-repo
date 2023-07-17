@@ -39,4 +39,8 @@ data class RuleArtifact(
      * 制品版本
      */
     val version: String? = null
-)
+) {
+    companion object {
+        const val RULE_FIELD_LATEST_VERSION = "latestVersion"
+    }
+}

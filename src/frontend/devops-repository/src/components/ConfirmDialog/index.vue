@@ -10,7 +10,7 @@
                 <i :class="`bk-icon icon-${getIcon()}`"></i>
                 <span class="ml10">{{ message }}</span>
             </div>
-            <span class="confirm-tip">{{ subMessage }}</span>
+            <span class="confirm-tip" :title="subMessage">{{ subMessage }}</span>
         </div>
         <template #footer>
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
@@ -100,6 +100,10 @@
         margin-left: 35px;
         display: inline-block;
         margin-top: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 90%;
     }
 }
 </style>

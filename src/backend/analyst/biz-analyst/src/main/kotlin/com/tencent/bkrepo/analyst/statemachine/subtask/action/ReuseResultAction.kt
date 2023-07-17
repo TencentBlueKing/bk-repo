@@ -100,8 +100,8 @@ class ReuseResultAction(
             val now = LocalDateTime.now()
             val repoInfo = cacheableRepositoryClient.get(projectId, repoName)
             // 质量检查结果
-            val qualityPass = if (!qualityRule.isNullOrEmpty() && overview != null) {
-                scanQualityService.checkScanQualityRedLine(qualityRule, overview, context.scanner)
+            val qualityPass = if (!qualityRule.isNullOrEmpty()) {
+                scanQualityService.checkScanQualityRedLine(qualityRule, overview ?: emptyMap(), context.scanner)
             } else {
                 null
             }
