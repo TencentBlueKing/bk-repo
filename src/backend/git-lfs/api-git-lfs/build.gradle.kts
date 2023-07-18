@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,33 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
 
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    OCI,
-    CONAN,
-    GIT_LFS,
-    ;
-
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
+dependencies {
+    implementation(project(":common:common-api"))
 }

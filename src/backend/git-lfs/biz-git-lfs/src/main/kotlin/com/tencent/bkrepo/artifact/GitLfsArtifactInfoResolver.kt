@@ -29,33 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.artifact
 
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    OCI,
-    CONAN,
-    GIT_LFS,
-    ;
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.utils.OidUtils
+import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
+@Component
+@Resolver(GitLfsArtifactInfo::class)
+class GitLfsArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): GitLfsArtifactInfo {
+        val oid = artifactUri.removePrefix(StringPool.SLASH)
+        val realPath = OidUtils.convertToFullPath(oid)
+        return GitLfsArtifactInfo(projectId, repoName, realPath)
     }
 }
