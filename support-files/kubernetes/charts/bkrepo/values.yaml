@@ -188,6 +188,8 @@ common:
       ## filesystem配置，使用文件系统
       filesystem:
         path: /data/storage/store
+        upload:
+          location: /data/storage/temp
       ## innercos，使用对象存储终端存储文件
       innercos:
         ## cos secretId
