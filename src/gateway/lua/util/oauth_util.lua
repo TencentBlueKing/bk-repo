@@ -92,15 +92,13 @@ function _M:verify_ticket(bk_ticket, input_type)
             ngx.exit(401)
             return
         end
-        --- 获取所有回复
-        local responseBody = res:read_body()
         --- 设置HTTP保持连接
         httpc:set_keepalive(60000, 5)
         --- 转换JSON的返回数据为TABLE
-        local result = json.decode(responseBody)
+        local result = json.decode(res.body)
         --- 判断JSON转换是否成功
         if result == nil then
-            ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
+            ngx.log(ngx.ERR, "failed to parse get_ticket response：", res.body)
             ngx.exit(401)
             return
         end
@@ -117,6 +115,57 @@ function _M:verify_ticket(bk_ticket, input_type)
             user_cache_value = result.data.identity.username
         end
         user_cache:set(bk_ticket, user_cache_value, 180)
+    end
+    return user_cache_value
+end
+
+function _M:verify_bk_token(auth_url, token)
+    local user_cache = ngx.shared.user_info_store
+    local user_cache_value = user_cache:get(token)
+    if user_cache_value == nil then
+        local http_cli = http.new()
+        local auth = config.oauth
+        local query = "bk_app_code=" .. auth.app_code .. "&bk_app_secret=" .. auth.app_secret .. "&bk_token" .. token
+        local addr = "http://" .. auth_url .. "/api/c/compapi/v2/bk_login/get_user/?" .. query
+        --- 开始连接
+        http_cli:set_timeout(3000)
+        http_cli:connect(addr)
+        --- 发送请求
+        local res, err = http_cli:request_uri(addr, {
+            method = "GET",
+        })
+        --- 判断是否出错了
+        if not res then
+            ngx.log(ngx.ERR, "failed to request apigw: error", err)
+            ngx.exit(401)
+            return
+        end
+        --- 判断返回的状态码是否是200
+        if res.status ~= 200 then
+            ngx.log(ngx.STDERR, "failed to request apigw, status: ", res.status)
+            ngx.exit(401)
+            return
+        end
+        --- 转换JSON的返回数据为TABLE
+        local result = json.decode(res.body)
+        --- 判断JSON转换是否成功
+        if result == nil then
+            ngx.log(ngx.ERR, "failed to parse apigw  response：", res.body)
+            ngx.exit(401)
+            return
+        end
+
+        --- 判断返回码:Q!
+        if result.code ~= 0 then
+            if result.code == 1302403 then
+                ngx.exit(401)
+            end
+            ngx.log(ngx.INFO, "invalid user token: ", result.message)
+            ngx.exit(401)
+            return
+        end
+        user_cache_value = result.data.bk_username
+        user_cache:set(token, user_cache_value, 180)
     end
     return user_cache_value
 end
@@ -164,7 +213,7 @@ function _M:verify_bkrepo_token(bkrepo_login_token)
         local result = json.decode(res.body)
         --- 判断JSON转换是否成功
         if result == nil then
-            ngx.log(ngx.ERR, "failed to parse verify_bkrepo_token response：", responseBody)
+            ngx.log(ngx.ERR, "failed to parse verify_bkrepo_token response：", res.body)
             ngx.exit(401)
             return
         end
@@ -212,15 +261,13 @@ function _M:verify_ci_token(ci_login_token)
             ngx.exit(401)
             return
         end
-        --- 获取所有回复
-        local responseBody = res:read_body()
         --- 设置HTTP保持连接
         httpc:set_keepalive(60000, 5)
         --- 转换JSON的返回数据为TABLE
-        local result = json.decode(responseBody)
+        local result = json.decode(res.body)
         --- 判断JSON转换是否成功
         if result == nil then
-            ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
+            ngx.log(ngx.ERR, "failed to parse get_ticket response：", res.body)
             ngx.exit(401)
             return
         end
