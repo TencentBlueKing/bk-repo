@@ -98,7 +98,8 @@
                     delete: []
                 },
                 roleList: {},
-                admins: []
+                admins: [],
+                users: []
             }
         },
         computed: {
@@ -145,6 +146,7 @@
                     const manage = data.find(p => p.permName === 'project_manage_permission') || {}
                     const view = data.find(p => p.permName === 'project_view_permission') || {}
                     this.admins = manage.users
+                    this.users = view.users
                     this.manage = {
                         ...this.manage,
                         id: manage.id,
@@ -171,6 +173,11 @@
                 if (tab.name === this.$t('projectUser')) {
                     if (this.admins.length !== 0 && final.length !== 0) {
                         final = final.filter(v => !~this.admins.findIndex(w => w === v.id))
+                    }
+                }
+                if (tab.name === this.$t('projectManager')) {
+                    if (this.users.length !== 0 && final.length !== 0) {
+                        final = final.filter(v => !~this.users.findIndex(w => w === v.id))
                     }
                 }
                 return final

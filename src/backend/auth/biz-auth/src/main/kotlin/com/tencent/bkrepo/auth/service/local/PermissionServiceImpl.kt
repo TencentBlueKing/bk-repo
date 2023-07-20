@@ -158,25 +158,30 @@ open class PermissionServiceImpl constructor(
         with(request) {
             // update project admin
             if (permissionId == PROJECT_MANAGE_ID) {
-                val createRoleRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
-                val roleId = createRoleCommon(createRoleRequest)
-
+                val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
+                val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
+                val adminRoleId = createRoleCommon(createAdminRequest)
+                val normalRoleId = createRoleCommon(createUserRequest)
                 val users = getProjectAdminUser(projectId)
                 val addUserList = userId.filter { !users.contains(it) }
                 val removeUserList = users.filter { !userId.contains(it) }
 
-                addUserToRoleBatchCommon(addUserList, roleId!!)
-                removeUserFromRoleBatchCommon(removeUserList, roleId)
+                addUserToRoleBatchCommon(addUserList, adminRoleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, adminRoleId)
+                removeUserFromRoleBatchCommon(addUserList, normalRoleId!!)
                 return true
             //  update project user
             } else if (permissionId == PROJECT_VIEWER_ID) {
-                val createRoleRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
-                val roleId = createRoleCommon(createRoleRequest)
+                val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
+                val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
+                val adminRoleId = createRoleCommon(createAdminRequest)
+                val normalRoleId = createRoleCommon(createUserRequest)
                 val nomalUsers = getProjectNomalUser(projectId)
                 val addUserList = userId.filter { !nomalUsers.contains(it) }
                 val removeUserList = nomalUsers.filter { !userId.contains(it) }
-                addUserToRoleBatchCommon(addUserList, roleId!!)
-                removeUserFromRoleBatchCommon(removeUserList, roleId)
+                addUserToRoleBatchCommon(addUserList, normalRoleId!!)
+                removeUserFromRoleBatchCommon(removeUserList, normalRoleId)
+                removeUserFromRoleBatchCommon(addUserList, adminRoleId!!)
                 return true
             } else {
                 checkPermissionExist(permissionId)
