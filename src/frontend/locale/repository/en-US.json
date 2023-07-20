@@ -359,9 +359,9 @@
         "LOW": "Low"
     },
     "totalNumVulnerability": " vulnerabilities",
-    "recommendLicenseRule": "only recommended licenses",
-    "compliantLicenseRule": "only compliant licenses",
-    "unknownLicenseRule": "no unknown license",
+    "recommendLicenseRule": "No abandoned licenses",
+    "compliantLicenseRule": "No non-compliance licenses",
+    "unknownLicenseRule": "No unknown licenses",
     "vulnerability": "vulnerability",
     "securityVulnerability": "security vulnerability",
     "license": "License",
