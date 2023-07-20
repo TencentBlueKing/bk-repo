@@ -92,13 +92,15 @@ function _M:verify_ticket(bk_ticket, input_type)
             ngx.exit(401)
             return
         end
+        --- 获取所有回复
+        local responseBody = res:read_body()
         --- 设置HTTP保持连接
         httpc:set_keepalive(60000, 5)
         --- 转换JSON的返回数据为TABLE
-        local result = json.decode(res.body)
+        local result = json.decode(responseBody)
         --- 判断JSON转换是否成功
         if result == nil then
-            ngx.log(ngx.ERR, "failed to parse get_ticket response：", res.body)
+            ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
             ngx.exit(401)
             return
         end
@@ -158,7 +160,7 @@ function _M:verify_bk_token(auth_url, token)
         --- 判断返回码:Q!
         if result.code ~= 0 then
             if result.code == 1302403 then
-                ngx.exit(401)
+                ngx.exit(440)
             end
             ngx.log(ngx.INFO, "invalid user token: ", result.message)
             ngx.exit(401)
@@ -261,13 +263,15 @@ function _M:verify_ci_token(ci_login_token)
             ngx.exit(401)
             return
         end
+        --- 转换请求内容
+        local responseBody = res:read_body()
         --- 设置HTTP保持连接
         httpc:set_keepalive(60000, 5)
         --- 转换JSON的返回数据为TABLE
-        local result = json.decode(res.body)
+        local result = json.decode(responseBody)
         --- 判断JSON转换是否成功
         if result == nil then
-            ngx.log(ngx.ERR, "failed to parse get_ticket response：", res.body)
+            ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
             ngx.exit(401)
             return
         end
