@@ -127,8 +127,9 @@ function _M:verify_bk_token(auth_url, token)
     if user_cache_value == nil then
         local http_cli = http.new()
         local auth = config.oauth
-        local query = "bk_app_code=" .. auth.app_code .. "&bk_app_secret=" .. auth.app_secret .. "&bk_token" .. token
+        local query = "bk_app_code=" .. auth.app_code .. "&bk_app_secret=" .. auth.app_secret .. "&bk_token=" .. token
         local addr = "http://" .. auth_url .. "/api/c/compapi/v2/bk_login/get_user/?" .. query
+        ngx.log(ngx.ERR, "request url ", addr)
         --- 开始连接
         http_cli:set_timeout(3000)
         http_cli:connect(addr)
@@ -148,6 +149,7 @@ function _M:verify_bk_token(auth_url, token)
             ngx.exit(401)
             return
         end
+        ngx.log(ngx.ERR, "request result ", res.body)
         --- 转换JSON的返回数据为TABLE
         local result = json.decode(res.body)
         --- 判断JSON转换是否成功
