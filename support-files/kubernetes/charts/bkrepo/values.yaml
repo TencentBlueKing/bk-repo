@@ -262,6 +262,8 @@ gateway:
   ssmTokenUrl:
   ## ci模式必填，ssm env
   ssmEnv:
+  ## 蓝鲸apigw地址
+  bkApigwUrl:
   ## ci模式必填，app code
   appCode:
   ## ci模式必填，app token
