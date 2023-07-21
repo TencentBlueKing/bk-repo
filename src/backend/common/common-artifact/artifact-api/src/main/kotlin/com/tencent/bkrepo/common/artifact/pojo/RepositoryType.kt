@@ -49,7 +49,7 @@ enum class RepositoryType {
     GIT,
     OCI,
     CONAN,
-    GIT_LFS,
+    LFS,
     ;
 
     companion object {

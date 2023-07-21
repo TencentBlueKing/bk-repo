@@ -25,9 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.pojo
+package com.tencent.bkrepo.lfs.constant
 
-data class BatchResponse(
-    val transfer: String?,
-    val objects: List<LfsObject>
-)
+const val BASIC_TRANSFER = "basic"
+
+const val UPLOAD_OPERATION = "upload"
+const val DOWNLOAD_OPERATION = "download"
+const val VERIFY_OPERATION = "verify"

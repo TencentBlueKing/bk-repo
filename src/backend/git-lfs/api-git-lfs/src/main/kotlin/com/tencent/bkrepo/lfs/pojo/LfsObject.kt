@@ -25,23 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.utils
+package com.tencent.bkrepo.lfs.pojo
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-
-object OidUtils {
-
-    /**
-     * oid转换成真实存储节点的fullPath
-     */
-    fun convertToFullPath(oid: String): String {
-        return "/${oid.substring(0,2)}/${oid.substring(2,4)}/$oid"
-    }
-
-    /**
-     * 节点fullPath转换成oid
-     */
-    fun convertToOid(fullPath: String): String {
-        return fullPath.split(StringPool.SLASH).last()
-    }
-}
+data class LfsObject(
+    val oid: String,
+    val size: Long,
+    val authenticated: Boolean? = null,
+    val actions: Map<String, ActionDetail>? = null
+)

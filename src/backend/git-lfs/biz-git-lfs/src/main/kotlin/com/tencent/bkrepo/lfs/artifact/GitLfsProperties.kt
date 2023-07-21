@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.artifact
+package com.tencent.bkrepo.lfs.artifact
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

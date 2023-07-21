@@ -25,10 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.constant
+package com.tencent.bkrepo.lfs.pojo
 
-const val BASIC_TRANSFER = "basic"
+import com.fasterxml.jackson.annotation.JsonProperty
 
-const val UPLOAD_OPERATION = "upload"
-const val DOWNLOAD_OPERATION = "download"
-const val VERIFY_OPERATION = "verify"
+data class BatchRequest(
+    val operation: String,
+    val transfers: List<String>,
+    val ref: Map<String, String>,
+    val objects: List<LfsObject>,
+    @JsonProperty("hash_algo")
+    val hashAlgo: String = "sha256"
+)

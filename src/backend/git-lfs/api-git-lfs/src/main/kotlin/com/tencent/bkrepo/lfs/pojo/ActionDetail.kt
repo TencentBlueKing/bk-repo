@@ -25,10 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.service
+package com.tencent.bkrepo.lfs.pojo
 
-import org.springframework.stereotype.Service
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@Service
-class LockService {
-}
+data class ActionDetail(
+    val href: String,
+    val header: Map<String, String>,
+    @JsonProperty("expires_in")
+    val expiresIn: Long
+)

@@ -25,16 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.artifact
+package com.tencent.bkrepo.lfs.artifact
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
 
-class GitLfsArtifactInfo(
-    userId: String,
-    repo: String,
-    fullPath: String
-) : ArtifactInfo(
-    userId,
-    repo,
-    fullPath
-)
+@Configuration
+@EnableConfigurationProperties(GitLfsProperties::class)
+class GitLfsArtifactConfigurer : ArtifactConfigurerSupport() {
+    override fun getRepositoryType(): RepositoryType = RepositoryType.LFS
+
+    override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<GitLfsLocalRepository>()
+
+    override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<GitLfsRemoteRepository>()
+
+    override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<GitLfsVirtualRepository>()
+
+    override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer {
+        it.withPrefix("/lfs")
+    }
+}

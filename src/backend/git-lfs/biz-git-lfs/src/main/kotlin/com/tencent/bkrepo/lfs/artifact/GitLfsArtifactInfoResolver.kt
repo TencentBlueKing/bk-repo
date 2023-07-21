@@ -25,30 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.artifact
+package com.tencent.bkrepo.lfs.artifact
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.lfs.utils.OidUtils
+import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
 
-@Configuration
-@EnableConfigurationProperties(GitLfsProperties::class)
-class GitLfsArtifactConfigurer : ArtifactConfigurerSupport() {
-    override fun getRepositoryType(): RepositoryType = RepositoryType.GIT_LFS
-
-    override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<GitLfsLocalRepository>()
-
-    override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<GitLfsRemoteRepository>()
-
-    override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<GitLfsVirtualRepository>()
-
-    override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer {
-        it.withPrefix("/git-lfs")
+@Component
+@Resolver(GitLfsArtifactInfo::class)
+class GitLfsArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): GitLfsArtifactInfo {
+        val oid = artifactUri.removePrefix(StringPool.SLASH)
+        val realPath = OidUtils.convertToFullPath(oid)
+        return GitLfsArtifactInfo(projectId, repoName, realPath)
     }
 }

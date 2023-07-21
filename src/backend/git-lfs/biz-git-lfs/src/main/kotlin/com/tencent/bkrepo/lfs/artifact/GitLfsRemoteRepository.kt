@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.artifact
+package com.tencent.bkrepo.lfs.artifact
 
 import cn.hutool.core.codec.Base64Encoder
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
@@ -42,12 +42,12 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
-import com.tencent.bkrepo.constant.BASIC_TRANSFER
-import com.tencent.bkrepo.constant.DOWNLOAD_OPERATION
-import com.tencent.bkrepo.pojo.BatchRequest
-import com.tencent.bkrepo.pojo.BatchResponse
-import com.tencent.bkrepo.pojo.LfsObject
-import com.tencent.bkrepo.utils.OidUtils
+import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
+import com.tencent.bkrepo.lfs.constant.DOWNLOAD_OPERATION
+import com.tencent.bkrepo.lfs.pojo.BatchRequest
+import com.tencent.bkrepo.lfs.pojo.BatchResponse
+import com.tencent.bkrepo.lfs.pojo.LfsObject
+import com.tencent.bkrepo.lfs.utils.OidUtils
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -100,7 +100,7 @@ class GitLfsRemoteRepository : RemoteRepository() {
         )
         val requestBody = batchRequest.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val config = context.getRemoteConfiguration()
-        val url = "${config.url.removePrefix(StringPool.SLASH)}/git-lfs/info/lfs/objects/batch"
+        val url = "${config.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
         val credentials = config.credentials
         val authHeader = "Basic ${Base64Encoder.encode("${credentials.username}:${credentials.password}")}"
         val request2 = Request.Builder().url(url)

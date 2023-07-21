@@ -25,10 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.service
+package com.tencent.bkrepo.lfs.service
 
-import com.tencent.bkrepo.artifact.GitLfsArtifactInfo
-import com.tencent.bkrepo.artifact.GitLfsProperties
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
@@ -46,16 +44,18 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.constant.BASIC_TRANSFER
-import com.tencent.bkrepo.constant.UPLOAD_OPERATION
-import com.tencent.bkrepo.pojo.ActionDetail
-import com.tencent.bkrepo.pojo.BatchRequest
-import com.tencent.bkrepo.pojo.BatchResponse
-import com.tencent.bkrepo.pojo.LfsObject
+import com.tencent.bkrepo.lfs.artifact.GitLfsArtifactInfo
+import com.tencent.bkrepo.lfs.artifact.GitLfsProperties
+import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
+import com.tencent.bkrepo.lfs.constant.UPLOAD_OPERATION
+import com.tencent.bkrepo.lfs.pojo.ActionDetail
+import com.tencent.bkrepo.lfs.pojo.BatchRequest
+import com.tencent.bkrepo.lfs.pojo.BatchResponse
+import com.tencent.bkrepo.lfs.pojo.LfsObject
+import com.tencent.bkrepo.lfs.utils.OidUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.utils.OidUtils
 import org.springframework.stereotype.Service
 
 @Service
@@ -135,7 +135,7 @@ class ObjectService(
                     actions = mapOf(
                         request.operation to ActionDetail(
                             href = gitLfsProperties.domain.removeSuffix(StringPool.SLASH) +
-                                "/git-lfs/${repo.projectId}/${repo.name}/${it.oid}" +
+                                "/lfs/${repo.projectId}/${repo.name}/${it.oid}" +
                                 "?size=${it.size}&ref=${request.ref["name"]}",
                             header = mapOf(
                                 HttpHeaders.AUTHORIZATION to "Temporary $token",

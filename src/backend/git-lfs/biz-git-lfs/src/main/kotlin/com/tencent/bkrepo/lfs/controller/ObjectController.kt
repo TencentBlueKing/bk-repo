@@ -25,17 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.controller
+package com.tencent.bkrepo.lfs.controller
 
-import com.tencent.bkrepo.artifact.GitLfsArtifactInfo
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.pojo.BatchRequest
-import com.tencent.bkrepo.pojo.BatchResponse
-import com.tencent.bkrepo.service.ObjectService
+import com.tencent.bkrepo.lfs.artifact.GitLfsArtifactInfo
+import com.tencent.bkrepo.lfs.pojo.BatchRequest
+import com.tencent.bkrepo.lfs.pojo.BatchResponse
+import com.tencent.bkrepo.lfs.service.ObjectService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -47,7 +47,7 @@ import org.springframework.web.bind.annotation.RestController
 class ObjectController(
     private val objectService: ObjectService
 ) {
-    @PostMapping("{projectId}/{repoName}/objects/batch")
+    @PostMapping("/{projectId}/{repoName}/objects/batch")
     fun batch(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
@@ -57,19 +57,14 @@ class ObjectController(
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @PutMapping("{projectId}/{repoName}/**")
+    @PutMapping("/{projectId}/{repoName}/**")
     fun upload(@ArtifactPathVariable gitLfsArtifactInfo: GitLfsArtifactInfo, file: ArtifactFile) {
         objectService.upload(gitLfsArtifactInfo, file)
     }
 
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
-    @GetMapping("{projectId}/{repoName}/**")
+    @GetMapping("/{projectId}/{repoName}/**")
     fun download(@ArtifactPathVariable gitLfsArtifactInfo: GitLfsArtifactInfo) {
         objectService.download(gitLfsArtifactInfo)
-    }
-
-    @GetMapping("/")
-    fun hello(): String {
-        return "123"
     }
 }

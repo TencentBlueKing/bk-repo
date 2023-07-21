@@ -25,15 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.pojo
+package com.tencent.bkrepo.lfs.controller
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import org.springframework.web.bind.annotation.RestController
 
-data class BatchRequest(
-    val operation: String,
-    val transfers: List<String>,
-    val ref: Map<String, String>,
-    val objects: List<LfsObject>,
-    @JsonProperty("hash_algo")
-    val hashAlgo: String = "sha256"
-)
+@RestController
+class LockController {
+}

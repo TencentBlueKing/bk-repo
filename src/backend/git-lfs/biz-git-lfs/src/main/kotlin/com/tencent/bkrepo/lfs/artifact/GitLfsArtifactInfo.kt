@@ -25,11 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.artifact
+package com.tencent.bkrepo.lfs.artifact
 
-import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
-@Component
-class GitLfsLocalRepository : LocalRepository() {
-}
+class GitLfsArtifactInfo(
+    userId: String,
+    repo: String,
+    fullPath: String
+) : ArtifactInfo(
+    userId,
+    repo,
+    fullPath
+)

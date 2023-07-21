@@ -2,4 +2,4 @@ server.port: 25816
 
 spring:
   application:
-    name: git-lfs
+    name: lfs

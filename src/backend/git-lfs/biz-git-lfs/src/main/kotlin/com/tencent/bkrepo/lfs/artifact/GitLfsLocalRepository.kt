@@ -25,10 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.controller
+package com.tencent.bkrepo.lfs.artifact
 
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import org.springframework.stereotype.Component
 
-@RestController
-class LockController {
+@Component
+class GitLfsLocalRepository : LocalRepository() {
 }

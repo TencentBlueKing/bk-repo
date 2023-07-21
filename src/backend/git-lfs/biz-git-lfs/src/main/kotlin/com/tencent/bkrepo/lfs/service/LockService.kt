@@ -25,11 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.artifact
+package com.tencent.bkrepo.lfs.service
 
-import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 
-@Component
-class GitLfsVirtualRepository : VirtualRepository() {
+@Service
+class LockService {
 }

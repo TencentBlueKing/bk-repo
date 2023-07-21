@@ -25,13 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.pojo
+package com.tencent.bkrepo.lfs.pojo
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-data class ActionDetail(
-    val href: String,
-    val header: Map<String, String>,
-    @JsonProperty("expires_in")
-    val expiresIn: Long
+data class BatchResponse(
+    val transfer: String?,
+    val objects: List<LfsObject>
 )
