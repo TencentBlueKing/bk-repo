@@ -185,8 +185,6 @@ class PendingAction(
                 val pluginName = metadataMap[TaskMetadata.TASK_METADATA_PLUGIN_NAME]?.value ?: ""
                 "$pipelineName-$buildNo-$pluginName"
             }
-
-            ScanTriggerType.MANUAL_SINGLE -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
             else -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
         }
     }
