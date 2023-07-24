@@ -372,8 +372,8 @@
         "LOW": "低危"
     },
     "totalNumVulnerability": "漏洞总数",
-    "recommendLicenseRule": "仅有推荐使用的许可证",
-    "compliantLicenseRule": "仅有合规的许可证",
+    "recommendLicenseRule": "无废弃许可证",
+    "compliantLicenseRule": "无不合规许可证",
     "unknownLicenseRule": "无未知许可证",
     "vulnerability": "漏洞",
     "securityVulnerability": "安全漏洞",
