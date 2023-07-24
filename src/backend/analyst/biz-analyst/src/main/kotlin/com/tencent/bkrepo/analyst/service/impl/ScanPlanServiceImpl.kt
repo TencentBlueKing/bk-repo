@@ -41,6 +41,7 @@ import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.analyst.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.analyst.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelations
 import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.analyst.service.ScanPlanService
@@ -57,7 +58,6 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
@@ -262,20 +262,17 @@ class ScanPlanServiceImpl(
         }
     }
 
-    override fun artifactPlanList(request: ArtifactPlanRelationRequest): Map<String, Any?> {
+    override fun artifactPlanList(request: ArtifactPlanRelationRequest): ArtifactPlanRelations {
         val relations = artifactPlanRelation(request)
-        val scanStatus = if (relations.isEmpty()) {
-            null
+        return if (relations.isEmpty()) {
+            ArtifactPlanRelations(null, relations)
         } else {
-            ScanPlanConverter.artifactStatus(relations.map { it.status })
+            val scanStatus = relations.map { it.status }.let(ScanPlanConverter::artifactStatus)
+            ArtifactPlanRelations(scanStatus, relations)
         }
-        return mapOf(SCAN_STATUS to scanStatus, SCAN_PLANS to relations)
     }
 
-    override fun artifactPlanRelation(
-        request: ArtifactPlanRelationRequest,
-        checkPermission: Boolean
-    ): List<ArtifactPlanRelation> {
+    private fun artifactPlanRelation(request: ArtifactPlanRelationRequest): List<ArtifactPlanRelation> {
         with(request) {
             ScanParamUtil.checkParam(
                 repoType = RepositoryType.valueOf(repoType),
@@ -291,10 +288,8 @@ class ScanPlanServiceImpl(
                     ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
                 }
             }
-            if (checkPermission)
-                permissionCheckHandler.checkNodePermission(projectId, repoName, fullPath!!, PermissionAction.READ)
             val subtasks = planArtifactLatestSubScanTaskDao.findAll(projectId, repoName, fullPath!!)
-            val planIds = subtasks.filter { it.planId != null }.map { it.planId!! }
+            val planIds = subtasks.mapNotNull { it.planId }
             val scanPlanMap = scanPlanDao.findByIds(planIds, true).associateBy { it.id!! }
             return subtasks.map {
                 if (it.planId == null) {
@@ -304,16 +299,6 @@ class ScanPlanServiceImpl(
                 }
             }
         }
-    }
-
-    override fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String? {
-        val relations = artifactPlanRelation(request, false)
-
-        if (relations.isEmpty()) {
-            return null
-        }
-
-        return ScanPlanConverter.artifactStatus(relations.map { it.status })
     }
 
     private fun checkRunning(planId: String) {
@@ -390,6 +375,5 @@ class ScanPlanServiceImpl(
             ScanTaskStatus.SCANNING_SUBMITTED.name
         )
         private const val PLAN_NAME_LENGTH_MAX = 32
-        private const val SCAN_PLANS = "scanPlans"
     }
 }
