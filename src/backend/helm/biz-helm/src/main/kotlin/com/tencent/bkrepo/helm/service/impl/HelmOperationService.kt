@@ -84,6 +84,7 @@ class HelmOperationService(
                         userId = context.userId
                     )
                 }
+                packageClient.deletePackage(projectId, repoName, packageName)
             }
             deleteIndex(this)
             updatePackageExtension(context)
