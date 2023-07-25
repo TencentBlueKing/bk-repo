@@ -25,19 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.configuration
+package com.tencent.bkrepo.analyst.dispatcher.dsl
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobSpec
+import io.kubernetes.client.openapi.models.V1ObjectMeta
+import io.kubernetes.client.openapi.models.V1PodTemplateSpec
 
-@ConfigurationProperties("scanner.dispatcher.docker")
-data class DockerDispatcherProperties (
-    /**
-     * 是否启用
-     */
-    var enabled: Boolean = false,
-    var host: String = "unix://var/run/docker.sock",
-    var version: String = "1.23",
-    var connectTimeout: Int = 5000,
-    var readTimeout: Int = 0,
-    var maxTaskCount: Int = 1
-)
+/**
+ * 创建job并配置
+ */
+fun v1Job(configuration: V1Job.() -> Unit): V1Job {
+    return V1Job().apply(configuration)
+}
+
+/**
+ * 配置Job元数据
+ */
+fun V1Job.metadata(configuration: V1ObjectMeta.() -> Unit) {
+    if (metadata == null) {
+        metadata = V1ObjectMeta()
+    }
+    metadata!!.configuration()
+}
+
+/**
+ * 配置Job执行方式
+ */
+fun V1Job.spec(configuration: V1JobSpec.() -> Unit) {
+    if (spec == null) {
+        spec = V1JobSpec()
+    }
+    spec!!.configuration()
+}
+
+/**
+ * 配置Job用于创建Pod的模板
+ */
+fun V1JobSpec.template(configuration: V1PodTemplateSpec.() -> Unit) {
+    if (template == null) {
+        template = V1PodTemplateSpec()
+    }
+    template.configuration()
+}

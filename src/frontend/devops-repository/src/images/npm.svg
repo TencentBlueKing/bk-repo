@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>NPM</title>
+    <title>Npm</title>
     <g id="NPM" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
         <g id="npm" fill="#CB3837" fill-rule="nonzero">
             <path d="M-5.75855394e-16,32 L-5.75855394e-16,5.75855394e-16 L32,5.75855394e-16 L32,32 L-5.75855394e-16,32 Z M6.01841593,5.99662068 L6.01841593,25.9551783 L16.1033178,25.9551783 L16.1033178,10.1582512 L21.9800647,10.1582512 L21.9800647,25.9581123 L25.9810392,25.9581123 L25.9810392,5.99662068 L6.01841593,5.99662068 Z" id="形状"></path>

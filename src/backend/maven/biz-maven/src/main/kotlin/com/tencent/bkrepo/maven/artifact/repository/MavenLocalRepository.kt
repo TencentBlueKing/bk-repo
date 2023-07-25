@@ -62,8 +62,10 @@ import com.tencent.bkrepo.maven.constants.METADATA_KEY_CLASSIFIER
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_GROUP_ID
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_PACKAGING
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_VERSION
+import com.tencent.bkrepo.maven.constants.PACKAGE_KEY
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.constants.VERSION
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
@@ -1222,10 +1224,10 @@ class MavenLocalRepository(
     }
 
     override fun query(context: ArtifactQueryContext): MavenArtifactVersionData? {
-        val packageKey = context.request.getParameter("packageKey")
-        val version = context.request.getParameter("version")
-        val artifactId = packageKey.split(":").last()
-        val groupId = packageKey.removePrefix("gav://").split(":")[0]
+        val packageKey = context.request.getParameter(PACKAGE_KEY)
+        val version = context.request.getParameter(VERSION)
+        val artifactId = packageKey.split(StringPool.COLON).last()
+        val groupId = packageKey.removePrefix("gav://").split(StringPool.COLON)[0]
         val trueVersion = packageClient.findVersionByName(
             context.projectId,
             context.repoName,
@@ -1236,6 +1238,7 @@ class MavenLocalRepository(
             val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, trueVersion.contentPath!!
             ).data ?: return null
+            val type = jarNode.nodeMetadata.find { it.key == METADATA_KEY_PACKAGING }?.value as String?
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
@@ -1245,6 +1248,7 @@ class MavenLocalRepository(
                 groupId,
                 artifactId,
                 version,
+                type,
                 jarNode.size, jarNode.fullPath,
                 jarNode.createdBy, jarNode.createdDate,
                 jarNode.lastModifiedBy, jarNode.lastModifiedDate,

@@ -216,7 +216,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 dependenciesList.add(
                     DependenciesInfo(
                         key,
-                        value
+                        value.toString()
                     )
                 )
             }
@@ -231,7 +231,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 devDependenciesList.add(
                     DependenciesInfo(
                         key,
-                        value
+                        value.toString()
                     )
                 )
             }
