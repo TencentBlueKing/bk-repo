@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
@@ -57,14 +57,14 @@ class EdgeNodeRedirectService(
     private val clusterProperties: ClusterProperties,
     private val clusterNodeClient: ClusterNodeClient,
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
-) {
+) : DownloadRedirectService {
 
     /**
      * 重定向到默认集群节点
      * */
-    fun redirectToDefaultCluster(downloadContext: ArtifactDownloadContext) {
-        getEdgeClusterName(downloadContext.artifactInfo)?.let {
-            redirectToSpecificCluster(downloadContext, it)
+    override fun redirect(context: ArtifactDownloadContext) {
+        getEdgeClusterName(context.artifactInfo)?.let {
+            redirectToSpecificCluster(context, it)
         }
     }
 
@@ -84,7 +84,8 @@ class EdgeNodeRedirectService(
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
-    fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
+    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+        val artifactInfo = context.artifactInfo
         val method = HttpContextHolder.getRequest().method
         if (!method.equals(HttpMethod.GET.name, true)) {
             // 只重定向下载请求

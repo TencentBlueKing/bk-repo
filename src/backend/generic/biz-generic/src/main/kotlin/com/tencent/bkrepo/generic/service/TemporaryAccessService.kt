@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
+import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -103,9 +103,9 @@ class TemporaryAccessService(
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
+            if (redirectService.shouldRedirect(context)) {
                 // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
+                redirectService.redirect(context)
                 return
             }
             ArtifactContextHolder.getRepository(repo.category).download(context)

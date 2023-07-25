@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.repository.service.file.impl.edge
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
+import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory

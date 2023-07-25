@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
 import com.tencent.bkrepo.common.api.constant.DOWNLOAD_SOURCE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
+import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -88,9 +88,9 @@ class DownloadService(
             if (node.folder && !download) {
                 renderListView(node, this)
             } else {
-                if (redirectService.shouldRedirect(context.artifactInfo)) {
+                if (redirectService.shouldRedirect(context)) {
                     // 节点来自其他集群，重定向到其他节点。
-                    redirectService.redirectToDefaultCluster(context)
+                    redirectService.redirect(context)
                     return
                 }
                 repository.download(context)

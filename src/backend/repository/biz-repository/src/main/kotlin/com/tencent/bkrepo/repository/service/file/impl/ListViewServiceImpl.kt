@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.service.file.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
+import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -87,9 +87,9 @@ class ListViewServiceImpl(
             viewModelService.render(currentPath, headerList, rowList)
         } else {
             val context = ArtifactDownloadContext()
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
+            if (redirectService.shouldRedirect(context)) {
                 // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
+                redirectService.redirect(context)
                 return
             }
             ArtifactContextHolder.getRepository().download(context)

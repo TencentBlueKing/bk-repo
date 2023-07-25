@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
+import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -134,9 +134,9 @@ class ShareServiceImpl(
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = userId)
             HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
+            if (redirectService.shouldRedirect(context)) {
                 // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
+                redirectService.redirect(context)
                 return
             }
             context.shareUserId = shareRecord.createdBy
