@@ -281,12 +281,12 @@ class ScanPlanServiceImpl(
                 fullPath = fullPath
             )
             if (fullPath == null) {
-                fullPath = Request.request {
+                val packageVersion = Request.request {
                     packageClient.findVersionByName(projectId, repoName, packageKey!!, version!!)
-                }?.let {
-                    it.contentPath ?: it.manifestPath
-                    ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
                 }
+
+                fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
+                fullPath ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
             }
             val subtasks = planArtifactLatestSubScanTaskDao.findAll(projectId, repoName, fullPath!!)
             val planIds = subtasks.mapNotNull { it.planId }
