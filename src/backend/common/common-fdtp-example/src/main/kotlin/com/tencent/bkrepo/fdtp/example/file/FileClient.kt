@@ -32,9 +32,9 @@ import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaderFrame
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpChunkStream
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaderNames
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
-import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.handler.stream.ChunkedFile
 import io.netty.util.concurrent.DefaultThreadFactory
 import java.net.InetSocketAddress
