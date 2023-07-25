@@ -45,6 +45,13 @@ import kotlin.random.Random
 
 /**
  * 负责Leader选举
+ *
+ * 具体过程
+ * 1. 启动最早的服务，发起投票请求。
+ * 2. 等待其他服务的投票结果。
+ * 3. 当发起者全票通过时，发起者晋升为leader。
+ * 5. 发布leader事件，其他服务接受leader。
+ * 6. 定时发布leader心跳和检测leader，以维护leader信息。
  * */
 class LeaderElectionProcess(
     eventBus: EventBus,

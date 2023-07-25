@@ -197,6 +197,6 @@ class FileEventBus(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileEventBus::class.java)
-        private val EVENT_LOG_FILE_NAME = "event.log"
+        private const val EVENT_LOG_FILE_NAME = "event.log"
     }
 }

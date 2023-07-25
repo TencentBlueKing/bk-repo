@@ -28,7 +28,12 @@
 package com.tencent.bkrepo.common.frpc
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.frpc.event.*
+import com.tencent.bkrepo.common.frpc.event.Event
+import com.tencent.bkrepo.common.frpc.event.EventBus
+import com.tencent.bkrepo.common.frpc.event.EventProcess
+import com.tencent.bkrepo.common.frpc.event.GcPrepareAckEvent
+import com.tencent.bkrepo.common.frpc.event.GcPrepareEvent
+import com.tencent.bkrepo.common.frpc.event.GcRecoverEvent
 import com.tencent.bkrepo.common.frpc.event.call.AckCall
 import com.tencent.bkrepo.common.frpc.event.call.SimpleEventCall
 import org.apache.commons.io.input.ReversedLinesFileReader
@@ -41,20 +46,17 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 /**
- * 1. 怎么防止leader不是一个失联的服务
- * 服务与nfs联通，如果服务失联，那么服务列表为空。
- * 还有可能是能收到，但是写不出去。有没有可能会触发一直在写GC。
- * 多个GC发起者怎么处理
- * 1. 谁可以发起选举
- * 服务列表里启动时间排第一的服务
- * 启动时间相同怎么办？都发起投票，由于存在一个随机时间，所以竞争会下降很多
- * 几个阶段
- * 1. 选主
- * 2. gc准备阶段
- * 发布一个预gc事件，每个人停止发布，并回复自己的所处理的最后一个事件，要求最后一个处理的事件等于预gc事件
- * 3. gc阶段
- * 4. gc恢复阶段
- * 定时发布leader事件
+ * GC流程
+ *
+ * 负责对event.log进行清理。
+ * 具体过程
+ * 1. leader检测日志文件是否过大
+ * 2. leader发布gc预处理事件
+ * 3. 其他服务接受到gc预处理事件，停止发布事件，如果本地所有事件已经消费，返回预处理ack。
+ * 4. leader等待其他服务进行预处理回复，如果超时等待，则回到第二步。
+ * 5. 收到所有服务的应答后，进行文件清理。
+ * 6. 清理完文件，发布gc恢复事件
+ * 7. 其他服务接受到恢复事件，恢复发布事件。
  * */
 class GcProcess(
     eventBus: FileEventBus,
