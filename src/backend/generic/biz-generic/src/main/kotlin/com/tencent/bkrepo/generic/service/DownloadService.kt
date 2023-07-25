@@ -35,13 +35,13 @@ import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
 import com.tencent.bkrepo.common.api.constant.DOWNLOAD_SOURCE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -62,7 +62,7 @@ import org.springframework.stereotype.Service
 class DownloadService(
     private val nodeClient: NodeClient,
     private val viewModelService: ViewModelService,
-    private val redirectService: EdgeNodeRedirectService
+    private val redirectManager: DownloadRedirectManager,
 ) : ArtifactService() {
 
     @Value("\${spring.application.name}")
@@ -88,9 +88,7 @@ class DownloadService(
             if (node.folder && !download) {
                 renderListView(node, this)
             } else {
-                if (redirectService.shouldRedirect(context)) {
-                    // 节点来自其他集群，重定向到其他节点。
-                    redirectService.redirect(context)
+                if (redirectManager.redirect(context)) {
                     return
                 }
                 repository.download(context)

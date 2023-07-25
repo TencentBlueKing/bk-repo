@@ -47,12 +47,14 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import javax.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpMethod
 
 /**
  * 边缘节点重定向服务
  * */
 @Service
+@Order(1)
 class EdgeNodeRedirectService(
     private val clusterProperties: ClusterProperties,
     private val clusterNodeClient: ClusterNodeClient,
