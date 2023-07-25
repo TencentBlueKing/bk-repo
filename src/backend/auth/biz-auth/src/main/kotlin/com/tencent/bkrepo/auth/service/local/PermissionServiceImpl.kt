@@ -159,29 +159,30 @@ open class PermissionServiceImpl constructor(
             // update project admin
             if (permissionId == PROJECT_MANAGE_ID) {
                 val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
-                val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
+                val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId)
                 val adminRoleId = createRoleCommon(createAdminRequest)
-                val normalRoleId = createRoleCommon(createUserRequest)
-                val users = getProjectAdminUser(projectId)
-                val addUserList = userId.filter { !users.contains(it) }
-                val removeUserList = users.filter { !userId.contains(it) }
+                val commonRoleId = createRoleCommon(createUserRequest)
+                val adminUsers = getProjectAdminUser(projectId)
+                val addRoleUserList = userId.filter { !adminUsers.contains(it) }
+                val removeRoleUserList = adminUsers.filter { !userId.contains(it) }
 
-                addUserToRoleBatchCommon(addUserList, adminRoleId!!)
-                removeUserFromRoleBatchCommon(removeUserList, adminRoleId)
-                removeUserFromRoleBatchCommon(addUserList, normalRoleId!!)
+                addUserToRoleBatchCommon(addRoleUserList, adminRoleId!!)
+                removeUserFromRoleBatchCommon(removeRoleUserList, adminRoleId)
+                removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
                 return true
-            //  update project user
+            //  update project common user
             } else if (permissionId == PROJECT_VIEWER_ID) {
                 val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
-                val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
+                val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId)
                 val adminRoleId = createRoleCommon(createAdminRequest)
-                val normalRoleId = createRoleCommon(createUserRequest)
-                val nomalUsers = getProjectNomalUser(projectId)
-                val addUserList = userId.filter { !nomalUsers.contains(it) }
-                val removeUserList = nomalUsers.filter { !userId.contains(it) }
-                addUserToRoleBatchCommon(addUserList, normalRoleId!!)
-                removeUserFromRoleBatchCommon(removeUserList, normalRoleId)
-                removeUserFromRoleBatchCommon(addUserList, adminRoleId!!)
+                val commonRoleId = createRoleCommon(createUserRequest)
+                val commonUsers = getProjectCommonUser(projectId)
+                val addRoleUserList = userId.filter { !commonUsers.contains(it) }
+                val removeRoleUserList = commonUsers.filter { !userId.contains(it) }
+
+                addUserToRoleBatchCommon(addRoleUserList, commonRoleId!!)
+                removeUserFromRoleBatchCommon(removeRoleUserList, commonRoleId)
+                removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
                 return true
             } else {
                 checkPermissionExist(permissionId)
@@ -260,14 +261,13 @@ open class PermissionServiceImpl constructor(
     private fun checkProjectUser(request: CheckPermissionRequest, roles: List<String>): Boolean {
         var queryRoles = emptyList<String>()
         if (roles.isNotEmpty() && request.projectId != null) {
-            queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
+            queryRoles = roles.filter { !it.isNullOrEmpty()  }.toList()
         }
-        if (queryRoles.isEmpty()) {
-            return false
-        }
+        if (queryRoles.isEmpty()) return false
+
         if(roleRepository.findByIdIn(queryRoles).
-            any { tRole -> tRole.projectId.equals(request.projectId)&&tRole.roleId.equals(PROJECT_VIEWER_ID) }
-            && request.action.equals(PermissionAction.READ.toString())
+            any { tRole -> tRole.projectId == request.projectId && tRole.roleId == PROJECT_VIEWER_ID }
+            && request.action == READ.toString()
         ) {
             return true
         }
@@ -347,7 +347,7 @@ open class PermissionServiceImpl constructor(
         projectList.addAll(getNoAdminUserProject(userId))
 
         // 取用户关联角色关联的项目
-        if(user.roles.isNotEmpty()) projectList.addAll(getUserRoleProject(user.roles))
+        if(user.roles.isNotEmpty()) projectList.addAll(getUserCommonRoleProject(user.roles))
 
         if (user.roles.isEmpty()) {
             return projectList.distinct()
@@ -418,9 +418,9 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
-    fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
-        return roleRepository.findAllById(roleIds).
-                any { role -> role.projectId.equals(projectId) && role.roleId.equals(PROJECT_VIEWER_ID) }
+    private fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
+        return roleRepository.findAllById(roleIds)
+            .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
@@ -437,10 +437,10 @@ open class PermissionServiceImpl constructor(
         return projectList
     }
 
-    private fun getUserRoleProject(roles: List<String>): List<String> {
+    private fun getUserCommonRoleProject(roles: List<String>): List<String> {
         val projectList = mutableListOf<String>()
         roleRepository.findByIdIn(roles).forEach{
-            if (it.projectId.isNotEmpty() && it.projectId != null && it.roleId.equals(PROJECT_VIEWER_ID )) {
+            if (it.projectId.isNotEmpty() && it.roleId == PROJECT_VIEWER_ID) {
                 projectList.add(it.projectId)
             }
         }
@@ -554,7 +554,7 @@ open class PermissionServiceImpl constructor(
             resourceType = ResourceType.PROJECT.toString(),
             projectId = projectId,
             permName = "project_view_permission",
-            users = getProjectNomalUser(projectId),
+            users = getProjectCommonUser(projectId),
             createBy = SecurityUtils.getUserId(),
             updatedBy = SecurityUtils.getUserId(),
             createAt = LocalDateTime.now(),
