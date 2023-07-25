@@ -76,9 +76,17 @@
 
 - 请求字段说明
 
-| 字段     | 类型     | 是否必须 | 默认值 | 说明   | Description |
-|--------|--------|------|-----|------|-------------|
-| planId | string | 是    | 无   | 方案id | plan id     |
+| 字段                   | 类型      | 是否必须 | 默认值 | 说明            | Description                         |
+|----------------------|---------|------|-----|---------------|-------------------------------------|
+| critical             | number  | 否    | 无   | 严重漏洞数         | critical risk vulnerabilities count |
+| high                 | number  | 否    | 无   | 高危漏洞数         | high risk license count             |
+| medium               | number  | 否    | 无   | 中危漏洞数         | mid risk license count              |
+| low                  | number  | 否    | 无   | 低危漏洞数         | low risk license count              |
+| forbidScanUnFinished | boolean | 否    | 无   | 扫描未完成是否禁用制品   | whether forbid on scan unfinished   |
+| forbidQualityUnPass  | boolean | 否    | 无   | 质量规则未通过是否禁用制品 | whether forbid on quality failed    |
+| recommend            | boolean | 否    | 无   | 许可是否推荐使用      | whether recommend                   |
+| compliance           | boolean | 否    | 无   | 许可是否合规        | whether compliance                  |
+| unknown              | boolean | 否    | 无   | 许可是否未知        | whether compliance                  |
 
 - 响应体
 
