@@ -177,7 +177,7 @@ open class AbstractServiceImpl constructor(
     }
 
     // 获取此项目一般用户
-    fun getProjectNomalUser(projectId: String): List<String> {
+    fun getProjectCommonUser(projectId: String): List<String> {
         val roleIdArray = mutableListOf<String>()
         val role = roleRepository.findFirstByRoleIdAndProjectId(PROJECT_VIEWER_ID, projectId)
         if (role != null) role.id?.let { roleIdArray.add(it) }
