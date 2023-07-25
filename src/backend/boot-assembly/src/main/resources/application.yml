@@ -8,7 +8,16 @@ spring:
     function:
       definition: artifactEventWebhook;scanEventConsumer
     stream:
-      default-binder: memoryMessageChannelBinder
+      default-binder: noOpBinder
+      function:
+        autodetect: false
+      binders:
+        noOpBinder:
+          type: noop
+        fileMessageChannelBinder:
+          type: file
+        memoryMessageChannelBinder:
+          type: memory
       bindings:
         scanEventConsumer-in-0:
           group: scanner

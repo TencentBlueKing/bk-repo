@@ -33,7 +33,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnMissingBean(Binder::class)
 class NoOpBinderAutoConfiguration {
 
     @Bean
