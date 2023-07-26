@@ -59,7 +59,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * http协议
      */
-    val httpProtocol: HttpProtocol = HttpProtocol.HTTP
+    var httpProtocol: HttpProtocol = HttpProtocol.HTTP
 
     /**
      * 分片阈值，大于此值将采用分片上传/下载

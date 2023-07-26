@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
+import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
 import org.slf4j.LoggerFactory
@@ -70,9 +71,9 @@ class CosRedirectService(
             signExpired = Duration.ofSeconds(DEFAULT_SIGN_EXPIRED_SECOND)
             // 重定向请求不使用北极星解析，直接使用域名
             endpointResolver = DefaultEndpointResolver()
+            httpProtocol = HttpProtocol.HTTPS
         }
-        val path = fileLocator.locate(node.sha256!!)
-        val request = GetObjectRequest(path)
+        val request = GetObjectRequest(node.sha256!!)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
         if (request.parameters.isEmpty()) {
             request.url += "?sign=$urlencodedSign"
