@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
+import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -69,11 +70,13 @@ class CosRedirectService(
         val request = GetObjectRequest(path)
         request.sign(credentials, clientConfig)
 
+        logger.info("redirect request of download [${node.fullPath}] to cos")
         // 重定向
         context.response.sendRedirect(request.url)
     }
 
     companion object {
         private const val DEFAULT_SIGN_EXPIRED_SECOND = 3 * 60L
+        private val logger = LoggerFactory.getLogger(CosRedirectService::class.java)
     }
 }
