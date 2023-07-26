@@ -79,7 +79,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * cos访问域名解析器
      */
-    val endpointResolver = createEndpointResolver()
+    var endpointResolver = createEndpointResolver()
 
     /**
      * 记录慢日志的网络速度阈值，即网络速度低于这个速度，则记录慢日志。

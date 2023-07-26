@@ -35,7 +35,9 @@ import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
+import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.urlEncode
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
@@ -64,13 +66,21 @@ class CosRedirectService(
             ?: throw NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
 
         // 创建请求并签名
-        val clientConfig = ClientConfig(credentials)
-        clientConfig.signExpired = Duration.ofSeconds(DEFAULT_SIGN_EXPIRED_SECOND)
+        val clientConfig = ClientConfig(credentials).apply {
+            signExpired = Duration.ofSeconds(DEFAULT_SIGN_EXPIRED_SECOND)
+            // 重定向请求不使用北极星解析，直接使用域名
+            endpointResolver = DefaultEndpointResolver()
+        }
         val path = fileLocator.locate(node.sha256!!)
         val request = GetObjectRequest(path)
-        request.sign(credentials, clientConfig)
+        val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
+        if (request.parameters.isEmpty()) {
+            request.url += "?sign=$urlencodedSign"
+        } else {
+            request.url += "&sign=$urlencodedSign"
+        }
 
-        logger.info("redirect request of download [${node.fullPath}] to cos")
+        logger.info("redirect request of download [${node.fullPath}] to cos[${credentials.key}]")
         // 重定向
         context.response.sendRedirect(request.url)
     }
