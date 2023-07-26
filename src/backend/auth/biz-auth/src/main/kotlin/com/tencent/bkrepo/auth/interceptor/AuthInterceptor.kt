@@ -137,8 +137,6 @@ class AuthInterceptor(
         handler: Any,
         ex: Exception?
     ) {
-
-        val des = getDescription(request, (handler as HandlerMethod).method)
         val operateLog = OperateLog(
             type = handler.toString(),
             projectId = "",
