@@ -61,6 +61,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
+import java.util.regex.Pattern
 
 /**
  * OperateLogService 实现类
@@ -232,12 +233,13 @@ open class OperateLogServiceImpl(
         startTime: String?,
         endTime: String?
     ): Query {
-        val criteria = if (type != null) {
+        val criteria = if (type != null && type != "AUTH_LOG") {
             Criteria.where(TOperateLog::type.name).`in`(getEventList(type))
+        } else if  (type != null && type == "AUTH_LOG") {
+            Criteria.where(TOperateLog::type.name).regex(Pattern.compile("^.*com.tencent.bkrepo.auth.*$"))
         } else {
             Criteria.where(TOperateLog::type.name).nin(nodeEvent)
         }
-
         projectId?.let { criteria.and(TOperateLog::projectId.name).`is`(projectId) }
 
         repoName?.let { criteria.and(TOperateLog::repoName.name).`is`(repoName) }
@@ -249,13 +251,13 @@ open class OperateLogServiceImpl(
             val start = sdf.parse(startTime)
             start.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
-            LocalDateTime.now()
+            LocalDateTime.now().minusMonths(3L)
         }
         val localEnd = if (endTime != null && endTime.isNotBlank()) {
             val end = sdf.parse(endTime)
             end.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
-            LocalDateTime.now().minusMonths(3L)
+            LocalDateTime.now()
         }
         criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
         return Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())

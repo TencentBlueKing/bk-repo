@@ -68,6 +68,9 @@ import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
+import com.tencent.bkrepo.common.operate.service.util.DesensitizedUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
@@ -76,8 +79,12 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.slf4j.LoggerFactory
+import org.springframework.core.DefaultParameterNameDiscoverer
+import org.springframework.core.ParameterNameDiscoverer
+import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
+import java.lang.reflect.Method
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -89,6 +96,10 @@ class AuthInterceptor(
     private val accountService: AccountService by lazy { SpringContextUtils.getBean() }
 
     private val userService: UserService by lazy { SpringContextUtils.getBean() }
+
+    private val operateLogService:OperateLogService by lazy { SpringContextUtils.getBean() }
+
+    private val parameterNameDiscoverer: ParameterNameDiscoverer = DefaultParameterNameDiscoverer()
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
@@ -120,6 +131,58 @@ class AuthInterceptor(
             return false
         }
     }
+
+    override fun afterCompletion(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        handler: Any,
+        ex: Exception?
+    ) {
+
+        val des = getDescription(request, (handler as HandlerMethod).method)
+        val operateLog = OperateLog(
+            type = handler.toString(),
+            projectId = "",
+            repoName = "",
+            resourceKey = "",
+            userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER,
+            clientAddress = request.getRemoteAddr(),
+            description = getDescription(request, (handler as HandlerMethod).method)
+        )
+        operateLogService.save(operateLog)
+    }
+
+    private fun getDescription(request: HttpServletRequest,method: Method):Map<String, Any> {
+        // 获取url中请求参数
+        val urlParams:Map<String, Any?> = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<String, Any?>
+        // 获取方法中的请求参数
+        val methodParams = request.parameterMap
+        // 获取方法中的requestBody
+        val requestBody = StringBuilder()
+        val reader = request.reader
+        var line: String?
+        while (reader.readLine().also { line = it } != null) {
+            requestBody.append(line)
+        }
+        val parameterNames = parameterNameDiscoverer.getParameterNames(method)
+        val parameters = method.parameters
+        val argsMap: MutableMap<String, Any?> = LinkedHashMap()
+        for (i in parameters.indices) {
+            val parameter = parameters[i]
+            val parameterName = parameterNames?.get(i) ?: parameter.name
+            argsMap[parameterName] = if (urlParams.keys.contains(parameterName)) {
+                urlParams.get(parameterName)
+            } else if (methodParams.keys.contains(parameterName)) {
+                methodParams.get(parameterName)
+            } else if (requestBody.isNullOrEmpty()){
+                methodParams
+            } else {
+                requestBody.toString()
+            }
+        }
+        return argsMap as Map<String, Any>
+    }
+
 
     private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
         val projectAccess = userProjectApiSet.any { request.requestURI.contains(it) }
