@@ -27,11 +27,16 @@
 
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
@@ -41,6 +46,7 @@ import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.time.Duration
 
@@ -49,15 +55,13 @@ import java.time.Duration
  */
 @Service
 @Order(2)
-class CosRedirectService(
-    private val storageProperties: StorageProperties,
-    private val fileLocator: FileLocator
-) : DownloadRedirectService {
+class CosRedirectService(private val storageProperties: StorageProperties) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
         val storageCredentials = context.storageCredentials
         val isInnerCosStorageCredentials = storageCredentials is InnerCosCredentials ||
                 storageProperties.type == StorageType.INNERCOS
-        return isInnerCosStorageCredentials && context.redirectTo == RedirectTo.INNERCOS.name
+        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
+        return isInnerCosStorageCredentials && redirectTo == RedirectTo.INNERCOS.name
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
@@ -73,7 +77,8 @@ class CosRedirectService(
             endpointResolver = DefaultEndpointResolver()
             httpProtocol = HttpProtocol.HTTPS
         }
-        val request = GetObjectRequest(node.sha256!!)
+        val range = resolveRange(node.size)
+        val request = GetObjectRequest(node.sha256!!, range?.start, range?.end)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
         if (request.parameters.isEmpty()) {
             request.url += "?sign=$urlencodedSign"
@@ -84,6 +89,23 @@ class CosRedirectService(
         logger.info("redirect request of download [${node.fullPath}] to cos[${credentials.key}]")
         // 重定向
         context.response.sendRedirect(request.url)
+    }
+
+    private fun resolveRange(total: Long): Range? {
+        return try {
+            val request = HttpContextHolder.getRequest()
+            if (request.getHeader(HttpHeaders.RANGE).isNullOrEmpty()) {
+                null
+            } else {
+                HttpRangeUtils.resolveRange(request, total)
+            }
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("Failed to resolve http range: ${exception.message}")
+            throw ErrorCodeException(
+                status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
+            )
+        }
     }
 
     companion object {
