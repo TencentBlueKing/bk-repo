@@ -220,6 +220,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
+                taskAsyncExecutor.execute {
+                    packageClient.updateRecentlyUseDate(it.projectId, it.repoName, it.packageKey, it.packageVersion)
+                }
                 publishPackageDownloadEvent(context, it)
             }
         }

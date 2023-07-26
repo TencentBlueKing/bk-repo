@@ -174,4 +174,14 @@ class NodeController(
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
         return ResponseBuilder.success(nodeService.getDeletedNodeDetail(artifactInfo))
     }
+
+    override fun updateRecentlyUseDate(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String
+    ): Response<Void> {
+        nodeService.updateRecentlyUseDate(projectId, repoName, fullPath, operator)
+        return ResponseBuilder.success()
+    }
 }

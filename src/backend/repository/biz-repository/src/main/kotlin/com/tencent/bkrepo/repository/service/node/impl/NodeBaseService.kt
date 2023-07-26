@@ -67,6 +67,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -321,6 +322,20 @@ abstract class NodeBaseService(
         }
     }
 
+    override fun updateRecentlyUseDate(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String
+    ) {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::fullPath).isEqualTo(fullPath)
+        val query = Query(criteria)
+        val recentlyUseDate = LocalDateTime.now()
+        nodeDao.updateFirst(query, NodeQueryHelper.nodeRecentlyUseDateUpdate(operator, recentlyUseDate))
+    }
+
     open fun doCreate(node: TNode, repository: TRepository? = null): TNode {
         try {
             nodeDao.insert(node)
@@ -415,6 +430,7 @@ abstract class NodeBaseService(
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    recentlyUseDate = it.recentlyUseDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     projectId = it.projectId,
                     repoName = it.repoName,
                     folder = it.folder,

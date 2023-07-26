@@ -256,4 +256,14 @@ interface PackageService {
      * 查询包数量
      */
     fun getPackageCount(projectId: String, repoName: String): Long
+
+    /**
+     * 更新包版本的【最近使用时间】
+     */
+    fun updateRecentlyUseDate(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String
+    )
 }

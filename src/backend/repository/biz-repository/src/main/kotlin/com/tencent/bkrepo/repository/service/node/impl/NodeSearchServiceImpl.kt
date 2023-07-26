@@ -119,6 +119,9 @@ class NodeSearchServiceImpl(
             it[NodeInfo::lastModifiedDate.name]?.let { lastModifiedDate ->
                 it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate)
             }
+            it[NodeInfo::recentlyUseDate.name]?.let { recentlyUseDate ->
+                it[TNode::recentlyUseDate.name] = convertDateTime(recentlyUseDate)
+            }
             it[NodeInfo::deleted.name]?.let { deleted ->
                 it[TNode::deleted.name] = convertDateTime(deleted)
             }

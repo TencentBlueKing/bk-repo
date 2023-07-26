@@ -376,6 +376,7 @@ class PackageServiceImpl(
         // context 复制时会从request map中获取对应的artifactInfo， 而artifactInfo设置到map中是在接口url解析时
         HttpContextHolder.getRequestOrNull()?.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
         ArtifactContextHolder.getRepository().download(context)
+        updateRecentlyUseDate(projectId, repoName, packageKey, versionName)
         publishEvent(
             PackageEventFactory.buildDownloadEvent(
                 projectId = projectId,
@@ -457,6 +458,15 @@ class PackageServiceImpl(
         return packageDao.count(query)
     }
 
+    override fun updateRecentlyUseDate(projectId: String, repoName: String, packageKey: String, versionName: String) {
+        val tPackage = checkPackage(projectId, repoName, packageKey)
+        val packageId = tPackage.id.orEmpty()
+        val tPackageVersion = checkPackageVersion(packageId, versionName)
+        tPackageVersion.recentlyUseDate = LocalDateTime.now()
+        packageVersionDao.save(tPackageVersion)
+        logger.info("update package version [$projectId/$repoName/$packageKey-$versionName] recentlyUseDate success")
+    }
+
     /**
      * 查找包，不存在则抛异常
      */
@@ -507,6 +517,7 @@ class PackageServiceImpl(
                     createdDate = it.createdDate,
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate,
+                    recentlyUseDate = it.recentlyUseDate,
                     name = it.name,
                     size = it.size,
                     downloads = it.downloads,

@@ -89,4 +89,9 @@ interface NodeBaseOperation {
      * 更新节点访问时间
      */
     fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest)
+
+    /**
+     * 更新节点的最近使用时间
+     */
+    fun updateRecentlyUseDate(projectId: String, repoName: String, fullPath: String, operator: String)
 }

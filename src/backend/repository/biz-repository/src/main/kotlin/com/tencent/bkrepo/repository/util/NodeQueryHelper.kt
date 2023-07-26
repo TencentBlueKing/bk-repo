@@ -183,4 +183,8 @@ object NodeQueryHelper {
             .set(TNode::lastModifiedDate.name, LocalDateTime.now())
             .set(TNode::lastModifiedBy.name, operator)
     }
+
+    fun nodeRecentlyUseDateUpdate(operator: String, recentlyUseDate: LocalDateTime = LocalDateTime.now()): Update {
+        return update(operator).set(TNode::recentlyUseDate.name, recentlyUseDate)
+    }
 }

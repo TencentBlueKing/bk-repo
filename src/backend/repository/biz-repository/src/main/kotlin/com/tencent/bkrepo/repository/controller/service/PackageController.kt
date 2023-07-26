@@ -185,4 +185,14 @@ class PackageController(
         packageService.populatePackage(request)
         return ResponseBuilder.success()
     }
+
+    override fun updateRecentlyUseDate(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): Response<Void> {
+        packageService.updateRecentlyUseDate(projectId, repoName, packageKey, version)
+        return ResponseBuilder.success()
+    }
 }

@@ -198,4 +198,13 @@ interface PackageClient {
     fun populatePackage(
         @RequestBody request: PackagePopulateRequest
     ): Response<Void>
+
+    @ApiOperation("更新包版本最近使用时间")
+    @PostMapping("/version/update/recentlyUseDate")
+    fun updateRecentlyUseDate(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam version: String
+    ): Response<Void>
 }

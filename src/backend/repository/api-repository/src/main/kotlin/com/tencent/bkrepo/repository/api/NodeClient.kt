@@ -190,4 +190,13 @@ interface NodeClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String
     ): Response<List<NodeDetail>>
+
+    @ApiOperation("更新最近使用时间")
+    @GetMapping("/update/{projectId}/{repoName}")
+    fun updateRecentlyUseDate(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String,
+        @RequestParam operator:String
+    ): Response<Void>
 }

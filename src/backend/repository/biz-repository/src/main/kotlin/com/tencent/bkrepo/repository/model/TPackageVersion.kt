@@ -54,6 +54,7 @@ data class TPackageVersion(
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
+    var recentlyUseDate: LocalDateTime? = null,
 
     var packageId: String,
     var name: String,
