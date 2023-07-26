@@ -70,7 +70,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.operate.service.util.DesensitizedUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
@@ -154,7 +153,8 @@ class AuthInterceptor(
 
     private fun getDescription(request: HttpServletRequest,method: Method):Map<String, Any> {
         // 获取url中请求参数
-        val urlParams:Map<String, Any?> = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<String, Any?>
+        val urlParams:Map<String, Any?> =
+            request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<String, Any?>
         // 获取方法中的请求参数
         val methodParams = request.parameterMap
         // 获取方法中的requestBody
