@@ -54,7 +54,7 @@ import org.springframework.http.HttpMethod
  * 边缘节点重定向服务
  * */
 @Service
-@Order(1)
+@Order(1) // 优先级最高，属于其他集群的制品优先重定向到其他集群
 class EdgeNodeRedirectService(
     private val clusterProperties: ClusterProperties,
     private val clusterNodeClient: ClusterNodeClient,

@@ -27,17 +27,53 @@
 
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageType
+import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
+import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
+import java.time.Duration
 
+/**
+ * 当使用对象存储作为后端存储时，支持创建对象的预签名下载URL，并将用户的下载请求重定向到该URL
+ */
 @Service
 @Order(2)
-class CosRedirectService: DownloadRedirectService {
+class CosRedirectService(
+    private val storageProperties: StorageProperties,
+    private val fileLocator: FileLocator
+) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
-        return false
+        val storageCredentials = context.storageCredentials
+        val isInnerCosStorageCredentials = storageCredentials is InnerCosCredentials ||
+                storageProperties.type == StorageType.INNERCOS
+        return isInnerCosStorageCredentials && context.redirectTo == RedirectTo.INNERCOS.name
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
+        val credentials = context.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        require(credentials is InnerCosCredentials)
+        val node = ArtifactContextHolder.getNodeDetail()
+            ?: throw NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
+
+        // 创建请求并签名
+        val clientConfig = ClientConfig(credentials)
+        clientConfig.signExpired = Duration.ofSeconds(DEFAULT_SIGN_EXPIRED_SECOND)
+        val path = fileLocator.locate(node.sha256!!)
+        val request = GetObjectRequest(path)
+        request.sign(credentials, clientConfig)
+
+        // 重定向
+        context.response.sendRedirect(request.url)
+    }
+
+    companion object {
+        private const val DEFAULT_SIGN_EXPIRED_SECOND = 3 * 60L
     }
 }

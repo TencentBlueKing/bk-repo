@@ -54,7 +54,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * 签名过期时间
      */
-    val signExpired: Duration = Duration.ofDays(1)
+    var signExpired: Duration = Duration.ofDays(1)
 
     /**
      * http协议
