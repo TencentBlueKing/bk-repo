@@ -173,7 +173,12 @@ class GcProcess(
         val reversedLinesFileReader = ReversedLinesFileReader(logFile, StandardCharsets.UTF_8)
         var line = reversedLinesFileReader.readLine()
         while (line != null) {
-            val event = eventMessageConverter.fromMessage(line)
+            // nfs broken data
+            val msg = String(line.toByteArray().filter { it.toInt() != 0 }.toByteArray())
+            if (msg.isEmpty()) {
+                continue
+            }
+            val event = eventMessageConverter.fromMessage(msg)
             if (event !is GcPrepareAckEvent) {
                 return event
             }
