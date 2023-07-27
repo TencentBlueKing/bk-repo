@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -59,7 +58,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
-import java.io.File
 
 /**
  * blob数据同步接口
@@ -110,9 +108,7 @@ class BlobReplicaController(
             ArtifactFileFactory.build(file, credentials)
         } else {
             val filepath: String = credentials.upload.location + "/" + fileName
-            val artifactFile = File(filepath)
-            file.transferTo(artifactFile)
-            artifactFile.toArtifactFile()
+            ArtifactFileFactory.build(file, filepath)
         }
     }
 
