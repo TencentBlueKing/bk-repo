@@ -67,11 +67,12 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
             return false
         }
 
+        val greaterThanMinSize = node.size > storageProperties.response.minDirectDownloadSize.toBytes()
         val storageCredentials = context.storageCredentials
         val isInnerCosStorageCredentials = storageCredentials is InnerCosCredentials ||
                 storageProperties.type == StorageType.INNERCOS
         val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
-        return isInnerCosStorageCredentials && redirectTo == RedirectTo.INNERCOS.name
+        return isInnerCosStorageCredentials && redirectTo == RedirectTo.INNERCOS.name && greaterThanMinSize
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
