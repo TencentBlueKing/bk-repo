@@ -58,7 +58,7 @@ const routes = [
                 }
             },
             {
-                path: '440',
+                path: '440/:msg',
                 name: '440',
                 component: WebError440
             },
