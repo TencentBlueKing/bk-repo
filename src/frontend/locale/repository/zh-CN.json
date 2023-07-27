@@ -372,8 +372,8 @@
         "LOW": "低危"
     },
     "totalNumVulnerability": "漏洞总数",
-    "recommendLicenseRule": "仅有推荐使用的许可证",
-    "compliantLicenseRule": "仅有合规的许可证",
+    "recommendLicenseRule": "无废弃许可证",
+    "compliantLicenseRule": "无不合规许可证",
     "unknownLicenseRule": "无未知许可证",
     "vulnerability": "漏洞",
     "securityVulnerability": "安全漏洞",
@@ -767,5 +767,7 @@
     "noFilenameErrorInfo":"抱歉，服务器获取文件名称异常，请稍后重试",
     "batchDownloadBackTypeErrorInfo":"批量下载文件失败，请稍后重试",
     "batchDownloadingInfo":"您批量选中的文件正在进行下载中，请稍候...",
-    "errorPlanNameTips":"请输入 2-32 位字符的计划名称"
+    "errorPlanNameTips":"请输入 2-32 位字符的计划名称",
+    "noBusinessTip": "无业务权限",
+    "noBusinessSubTip": "无该应用访问权限"
 }

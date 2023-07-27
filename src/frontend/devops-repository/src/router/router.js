@@ -29,6 +29,8 @@ const commonPackageDetail = () => import('@repository/views/repoCommon/commonPac
 
 const repoSearch = () => import('@repository/views/repoSearch')
 
+const WebError440 = () => import('@repository/components/Exception/440')
+
 const routes = [
     {
         path: '/ui/:projectId/preview',
@@ -54,6 +56,11 @@ const routes = [
                         { to: 'repositories', name: 'browser', label: '仓库列表' }
                     ]
                 }
+            },
+            {
+                path: '440',
+                name: '440',
+                component: WebError440
             },
             {
                 path: 'repoConfig/:repoType',

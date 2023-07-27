@@ -214,9 +214,6 @@ object Converter {
         val defaultName = LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
         return when (triggerType) {
             ScanTriggerType.PIPELINE.name -> name ?: defaultName
-            ScanTriggerType.MANUAL_SINGLE.name -> {
-                LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
-            }
             else -> defaultName
         }
     }
