@@ -142,6 +142,10 @@ class LeaderElectionProcess(
 
     private fun refreshLeader() {
         val services = serviceRegistry.getServices().map { it.id }
+        // leader自身不会与自身失联
+        if (leader == localServiceId) {
+            return
+        }
         if (leader != null && !services.contains(leader)) {
             logger.info("Leader[$leader] disconnected.")
             leader = null
