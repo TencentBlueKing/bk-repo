@@ -88,13 +88,13 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
         }
         val range = resolveRange(node.size)
         val request = GetObjectRequest(node.sha256!!, range?.start, range?.end)
+        addCosResponseHeaders(context, request, node)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
         if (request.parameters.isEmpty()) {
             request.url += "?sign=$urlencodedSign"
         } else {
             request.url += "&sign=$urlencodedSign"
         }
-        addCosResponseHeaders(context, request, node)
 
         logger.info(
             "redirect request of download to cos[${credentials.key}], " +
