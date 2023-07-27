@@ -138,11 +138,16 @@ class FileEventBus(
     inner class EventConsumer : TailerListenerAdapter() {
         override fun handle(line: String) {
             val event: Event
+            // nfs broken data
+            val msg = String(line.toByteArray().filter { it.toInt() != 0 }.toByteArray())
+            if (msg.isEmpty()) {
+                return
+            }
             if (logger.isTraceEnabled) {
-                logger.trace("Receive<< $line")
+                logger.trace("Receive<< $msg")
             }
             try {
-                event = eventMessageConverter.fromMessage(line)!!
+                event = eventMessageConverter.fromMessage(msg)!!
                 // 找到对应的handler
                 val handlers = handlers.filter { it.supportEvent(event) }
                 if (handlers.isEmpty()) {
