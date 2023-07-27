@@ -62,23 +62,28 @@ import java.time.Duration
 class CosRedirectService(private val storageProperties: StorageProperties) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
         // 仅支持重定向本地单文件下载请求
-        val node = ArtifactContextHolder.getNodeDetail()
-        if (node == null || node.folder || context.artifacts?.isNotEmpty() == true) {
+        val node = ArtifactContextHolder.getNodeDetail(
+            context.repositoryDetail.projectId,
+            context.repositoryDetail.name
+        )
+        val artifact = ArtifactContextHolder.getArtifactInfo()
+        if (node == null || node.folder || artifact == null) {
             return false
         }
 
-        val greaterThanMinSize = node.size > storageProperties.response.minDirectDownloadSize.toBytes()
-        val storageCredentials = context.storageCredentials
-        val isInnerCosStorageCredentials = storageCredentials is InnerCosCredentials ||
-                storageProperties.type == StorageType.INNERCOS
+        val isInnerCosStorageCredentials = storageProperties.type == StorageType.INNERCOS
         val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
+        val greaterThanMinSize = node.size > storageProperties.response.minDirectDownloadSize.toBytes()
         return isInnerCosStorageCredentials && redirectTo == RedirectTo.INNERCOS.name && greaterThanMinSize
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
-        val credentials = context.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val credentials = context.repositoryDetail.storageCredentials ?: storageProperties.defaultStorageCredentials()
         require(credentials is InnerCosCredentials)
-        val node = ArtifactContextHolder.getNodeDetail()!!
+        val node = ArtifactContextHolder.getNodeDetail(
+            projectId = context.repositoryDetail.projectId,
+            repoName = context.repositoryDetail.name
+        )!!
 
         // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {
