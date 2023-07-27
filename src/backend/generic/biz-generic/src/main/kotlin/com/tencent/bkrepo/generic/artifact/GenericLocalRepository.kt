@@ -414,6 +414,8 @@ class GenericLocalRepository(
         )
     }
 
+    override fun supportRedirect(context: ArtifactDownloadContext): Boolean = true
+
     /**
      * 判断是否为分块上传
      */

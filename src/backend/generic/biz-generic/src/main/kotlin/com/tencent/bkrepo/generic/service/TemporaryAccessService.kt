@@ -103,9 +103,6 @@ class TemporaryAccessService(
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
-            if (redirectManager.redirect(context)) {
-                return
-            }
             ArtifactContextHolder.getRepository(repo.category).download(context)
         }
     }

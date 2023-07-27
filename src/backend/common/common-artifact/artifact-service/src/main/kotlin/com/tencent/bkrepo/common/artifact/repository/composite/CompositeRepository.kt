@@ -135,6 +135,10 @@ class CompositeRepository(
         }.apply { add(localResult) }.flatten()
     }
 
+    override fun supportRedirect(context: ArtifactDownloadContext): Boolean {
+        return localRepository.supportRedirect(context)
+    }
+
     /**
      * 遍历代理仓库列表，执行[action]操作，当遇到代理仓库[action]操作返回非`null`时，立即返回结果[R]
      */

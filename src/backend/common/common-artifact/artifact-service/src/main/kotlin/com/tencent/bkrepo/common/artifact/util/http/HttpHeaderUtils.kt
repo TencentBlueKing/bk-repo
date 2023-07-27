@@ -25,34 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.repository.redirect
+package com.tencent.bkrepo.common.artifact.util.http
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import org.springframework.boot.web.server.MimeMappings
+import org.springframework.web.util.UriUtils
 
-@Component
-class DownloadRedirectManager(
-    private val redirectServices: List<DownloadRedirectService>
-) {
+object HttpHeaderUtils {
+    private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
+        add("yaml", MediaTypes.APPLICATION_YAML)
+        add("tgz", MediaTypes.APPLICATION_TGZ)
+        add("ico", MediaTypes.APPLICATION_ICO)
+        add("apk", MediaTypes.APPLICATION_APK)
+    }
+
     /**
-     * 重定向下载请求
-     *
-     * @param context 下载请求上下文
-     *
-     * @return true 已重定向请求， false 未重定向请求
+     * 编码Content-Disposition内容
      */
-    fun redirect(context: ArtifactDownloadContext): Boolean {
-        if (!context.request.method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向GET请求
-            return false
-        }
-        redirectServices.forEach {
-            if (it.shouldRedirect(context)) {
-                it.redirect(context)
-                return true
-            }
-        }
-        return false
+    fun encodeDisposition(filename: String): String {
+        val encodeFilename = UriUtils.encode(filename, Charsets.UTF_8)
+        return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
+    }
+
+    /**
+     * 判断MediaType
+     */
+    fun determineMediaType(name: String, mimeMappings: Map<String, String>): String {
+        val extension = PathUtils.resolveExtension(name)
+        return this.mimeMappings.get(extension) ?: mimeMappings[extension] ?: MediaTypes.APPLICATION_OCTET_STREAM
     }
 }

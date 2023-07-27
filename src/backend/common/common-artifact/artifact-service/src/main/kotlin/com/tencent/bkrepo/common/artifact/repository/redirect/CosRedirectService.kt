@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -42,8 +44,10 @@ import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
+import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
@@ -57,6 +61,12 @@ import java.time.Duration
 @Order(2)
 class CosRedirectService(private val storageProperties: StorageProperties) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+        // 仅支持重定向本地单文件下载请求
+        val node = ArtifactContextHolder.getNodeDetail()
+        if (node == null || node.folder || context.artifacts?.isNotEmpty() == true) {
+            return false
+        }
+
         val storageCredentials = context.storageCredentials
         val isInnerCosStorageCredentials = storageCredentials is InnerCosCredentials ||
                 storageProperties.type == StorageType.INNERCOS
@@ -67,8 +77,7 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
     override fun redirect(context: ArtifactDownloadContext) {
         val credentials = context.storageCredentials ?: storageProperties.defaultStorageCredentials()
         require(credentials is InnerCosCredentials)
-        val node = ArtifactContextHolder.getNodeDetail()
-            ?: throw NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
+        val node = ArtifactContextHolder.getNodeDetail()!!
 
         // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {
@@ -85,8 +94,12 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
         } else {
             request.url += "&sign=$urlencodedSign"
         }
+        addCosResponseHeaders(context, request, node)
 
-        logger.info("redirect request of download [${node.fullPath}] to cos[${credentials.key}]")
+        logger.info(
+            "redirect request of download to cos[${credentials.key}], " +
+                    "project[${node.projectId}], repo[${node.repoName}], fullPath[${node.fullPath}]"
+        )
         // 重定向
         context.response.sendRedirect(request.url)
     }
@@ -105,6 +118,20 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
                 status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
+        }
+    }
+
+    private fun addCosResponseHeaders(context: ArtifactDownloadContext, request: CosRequest, node: NodeDetail) {
+        val filename = context.artifactInfo.getResponseName()
+        val cacheControl = node.metadata[HttpHeaders.CACHE_CONTROL]?.toString()
+            ?: node.metadata[HttpHeaders.CACHE_CONTROL.toLowerCase()]?.toString()
+            ?: StringPool.NO_CACHE
+        request.parameters["response-cache-control"] = cacheControl
+        val mime = determineMediaType(filename, storageProperties.response.mimeMappings)
+        request.parameters["response-content-type"] = mime
+
+        if (context.useDisposition) {
+            request.parameters["response-content-disposition"] = encodeDisposition(filename)
         }
     }
 

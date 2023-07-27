@@ -88,9 +88,6 @@ class DownloadService(
             if (node.folder && !download) {
                 renderListView(node, this)
             } else {
-                if (redirectManager.redirect(context)) {
-                    return
-                }
                 repository.download(context)
             }
         }

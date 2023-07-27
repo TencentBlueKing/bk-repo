@@ -39,16 +39,14 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import org.slf4j.LoggerFactory
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 import java.time.Duration
 import javax.servlet.http.HttpServletRequest
-import org.slf4j.LoggerFactory
-import org.springframework.core.annotation.Order
-import org.springframework.http.HttpMethod
 
 /**
  * 边缘节点重定向服务
@@ -87,25 +85,18 @@ class EdgeNodeRedirectService(
     }
 
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
-        val artifactInfo = context.artifactInfo
-        val method = HttpContextHolder.getRequest().method
-        if (!method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向下载请求
-            return false
-        }
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo()
         val node = ArtifactContextHolder.getNodeDetail()
-            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         val selfClusterName = clusterProperties.self.name
         if (logger.isDebugEnabled) {
-            logger.debug("node cluster: ${node.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
+            logger.debug("node cluster: ${node?.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
         }
-        node.clusterNames ?: return false
-        // 自身集群不需要重定向
-        if (node.clusterNames!!.contains(selfClusterName)) {
-            return false
-        }
-        val edgeClusterName = getEdgeClusterName(artifactInfo)
-        return edgeClusterName != null
+
+        return !(artifactInfo == null ||
+                node == null ||
+                node.clusterNames.isNullOrEmpty() ||
+                node.clusterNames!!.contains(selfClusterName) || // 自身集群不需要重定向
+                getEdgeClusterName(artifactInfo) == null)
     }
 
     /**

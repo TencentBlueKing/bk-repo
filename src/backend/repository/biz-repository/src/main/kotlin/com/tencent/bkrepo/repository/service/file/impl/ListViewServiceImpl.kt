@@ -87,9 +87,6 @@ class ListViewServiceImpl(
             viewModelService.render(currentPath, headerList, rowList)
         } else {
             val context = ArtifactDownloadContext()
-            if (redirectManager.redirect(context)) {
-                return
-            }
             ArtifactContextHolder.getRepository().download(context)
         }
     }
