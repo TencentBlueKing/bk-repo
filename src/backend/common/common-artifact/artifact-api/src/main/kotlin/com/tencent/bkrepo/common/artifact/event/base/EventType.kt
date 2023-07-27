@@ -41,6 +41,8 @@ enum class EventType(val msgKey: String) {
     // 主要针对代理仓库需要定时从远程将相关信息同步到本地
     REPO_REFRESHED("artifact.event.repo-refreshed"),
     REPO_VOLUME_SYNC("artifact.event.repo-volume-sync"),
+    // repository clean
+    REPOSITORY_CLEAN("artifact.event.repo-clean"),
 
     // NODE
     NODE_CREATED("artifact.event.node-created"),

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -42,6 +43,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.clean.CleanStatus
+import com.tencent.bkrepo.common.artifact.pojo.configuration.clean.RepositoryCleanStrategy
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
@@ -50,6 +53,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfig
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
@@ -78,6 +82,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
+import com.tencent.bkrepo.repository.util.RuleUtils
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -356,6 +361,75 @@ class RepositoryServiceImpl(
         return result.map { convertToInfo(it) }
     }
 
+    override fun getRepoCleanStrategy(
+        projectId: String,
+        repoName: String
+    ): RepositoryCleanStrategy? {
+        val configuration = getRepoInfo(projectId, repoName)?.configuration
+        requireNotNull(configuration) { "configuration is null at repository: [$repoName] " }
+        if (configuration is LocalConfiguration) {
+            configuration.cleanStrategy?.let {
+                return it
+            }
+        }
+        return null
+    }
+
+    override fun updateCleanStatusRunning(
+        projectId: String,
+        repoName: String
+    ) {
+        val repository = checkRepository(projectId, repoName)
+        val configuration = repository.configuration.readJsonString<RepositoryConfiguration>()
+        if (configuration is LocalConfiguration) {
+            val repoCleanStrategy = getRepoCleanStrategy(projectId, repoName)
+            repoCleanStrategy?.let {
+                require(it.status == CleanStatus.WAITING) {
+                    "projectId:[$projectId] repoName:[$repoName] " +
+                        "update status to running fail original status is [${it.status}]"
+                }
+                it.status = CleanStatus.RUNNING
+                configuration.cleanStrategy = it
+                repository.configuration = configuration.toJsonString()
+                repositoryDao.save(repository)
+                logger.info(
+                    "projectId:[$projectId] repoName:[$repoName] " +
+                        "update clean strategy status to [RUNNING] success"
+                )
+            }
+        }
+    }
+
+    override fun updateCleanStatusWaiting(
+        projectId: String,
+        repoName: String
+    ) {
+        val repository = checkRepository(projectId, repoName)
+        val configuration = repository.configuration.readJsonString<RepositoryConfiguration>()
+        if (configuration is LocalConfiguration) {
+            val repoCleanStrategy = getRepoCleanStrategy(projectId, repoName)
+            repoCleanStrategy?.let {
+                it.status = CleanStatus.WAITING
+                configuration.cleanStrategy = it
+                repository.configuration = configuration.toJsonString()
+                repositoryDao.save(repository)
+                logger.info(
+                    "projectId:[$projectId] repoName:[$repoName] " +
+                        "update clean strategy status to [WAITING] success"
+                )
+            }
+        }
+    }
+
+    override fun allRepoPage(skip: Long): List<TRepository> {
+        val query = Query.query(
+            Criteria.where(TRepository::category.name)
+                .`in`(RepositoryCategory.COMPOSITE, RepositoryCategory.LOCAL)
+                .and(TRepository::deleted).isEqualTo(null)
+        ).skip(skip).limit(DEFAULT_PAGE_SIZE)
+        return repositoryDao.find(query, TRepository::class.java)
+    }
+
     /**
      * 获取仓库下的代理地址信息
      */
@@ -418,6 +492,103 @@ class RepositoryServiceImpl(
         }
         if (new is CompositeConfiguration && old is CompositeConfiguration) {
             updateCompositeConfiguration(new, old, repository, operator)
+        }
+        if (new is LocalConfiguration && old is LocalConfiguration) {
+            updateCleanStrategy(new, old, repository)
+        }
+    }
+
+    private fun updateCleanStrategy(new: LocalConfiguration, old: LocalConfiguration, repository: TRepository) {
+        val newCleanStrategy = new.cleanStrategy
+        val oldCleanStrategy = old.cleanStrategy
+        if (newCleanStrategy != null) {
+            if (oldCleanStrategy != null && oldCleanStrategy.status == CleanStatus.RUNNING) {
+                logger.warn(
+                    "projectId:[${repository.projectId}] repoName:[${repository.name}], clean job:" +
+                        "[${repository.id}] is running, the modification will take effect at the next execution"
+                )
+            }
+            Preconditions.checkArgument(newCleanStrategy.reserveVersions >= 0, "reserveVersions")
+            // 校验元数据保留规则中包含的正则表达式
+            checkMetadataRuleWrapper(newCleanStrategy.rule, repository.projectId, repository.name)
+        } else {
+            logger.warn(
+                "projectId:[${repository.projectId}] repoName:[${repository.name}] new clean strategy is null"
+            )
+            new.cleanStrategy = old.cleanStrategy
+        }
+    }
+
+    private fun checkMetadataRuleWrapper(rule: Rule?, projectId: String, repoName: String) {
+        val paths = mutableListOf<String>()
+        checkMetadataRule(rule, projectId, repoName, paths)
+        if (paths.isNotEmpty()) {
+            val repeatPaths = mutableListOf<String>()
+            paths.forEach {
+                if (paths.count { path -> path == it } > 1) {
+                    repeatPaths.add(it)
+                }
+            }
+            if (repeatPaths.isNotEmpty()) {
+                throw ErrorCodeException(
+                    messageCode = CommonMessageCode.REPO_CLEAN_PATH_EXISTED,
+                    params = arrayOf(repeatPaths.distinct().joinToString(";"))
+                )
+            }
+        }
+    }
+
+    /**
+     * 检查元数据保留规则
+     * 1.检查规则中的正则表达式是否符合语法规则
+     * 2.检查规则中的目录是否存在
+     */
+    private fun checkMetadataRule(rule: Rule?, projectId: String, repoName: String, paths: MutableList<String>) {
+        if (rule is Rule.NestedRule && rule.rules.isNotEmpty()) {
+            rule.rules.forEach {
+                when (it) {
+                    is Rule.NestedRule -> checkMetadataRule(it, projectId, repoName, paths)
+                    is Rule.QueryRule -> {
+                        if (it.field == "path") paths.add(it.value as String)
+                        checkReserveDays(it)
+                        RuleUtils.checkRuleRegex(it)
+                    }
+                    is Rule.FixedRule -> {
+                        checkReserveDays(it.wrapperRule)
+                        RuleUtils.checkRuleRegex(it.wrapperRule)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 检验保留天数是否合法
+     */
+    private fun checkReserveDays(queryRule: Rule.QueryRule) {
+        if (queryRule.field == "reserveDays") {
+            val value = (queryRule.value)
+            if (value is Int) {
+                if (value < 0) {
+                    throw ErrorCodeException(
+                        messageCode = CommonMessageCode.PARAMETER_INVALID,
+                        params = arrayOf("rule", "reserveDays must be greater than or equal to 0")
+                    )
+                }
+            } else if (value is Long) {
+                if (value < 0) {
+                    throw ErrorCodeException(
+                        messageCode = CommonMessageCode.PARAMETER_INVALID,
+                        params = arrayOf("rule", "reserveDays must be greater than or equal to 0")
+                    )
+                }
+            } else {
+                logger.error("reserveDays value is $value")
+                throw ErrorCodeException(
+                    messageCode = CommonMessageCode.PARAMETER_INVALID,
+                    params = arrayOf("rule", "reserveDays must be an integer")
+                )
+            }
         }
     }
 

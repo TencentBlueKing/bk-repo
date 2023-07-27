@@ -30,11 +30,15 @@ package com.tencent.bkrepo.oci.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.oci.api.OciClient
+import com.tencent.bkrepo.oci.api.OciPackageClient
+import com.tencent.bkrepo.oci.artifact.OciRegistryArtifactConfigurer
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
 import com.tencent.bkrepo.oci.model.TOciReplicationRecord
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
+import com.tencent.bkrepo.oci.util.OciUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.web.bind.annotation.RestController
@@ -42,8 +46,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class OciPackageController(
     private val operationService: OciOperationService,
-    private val ociReplicationRecordDao: OciReplicationRecordDao
-): OciClient {
+    private val ociReplicationRecordDao: OciReplicationRecordDao,
+    private val artifactConfigurerSupport: OciRegistryArtifactConfigurer
+) : OciClient, OciPackageClient {
     override fun packageCreate(record: OciReplicationRecordInfo): Response<Void> {
         with(record) {
             val ociArtifactInfo = OciManifestArtifactInfo(
@@ -64,5 +69,24 @@ class OciPackageController(
             }
             return ResponseBuilder.success()
         }
+    }
+
+    override fun deleteVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String,
+        operator: String
+    ): Boolean {
+        val pkgName = OciUtils.getPackageNameFormPackageKey(
+            packageKey,
+            artifactConfigurerSupport.getRepositoryType(),
+            artifactConfigurerSupport.getRepositoryTypes()
+        )
+        operationService.deleteVersion(
+            operator,
+            OciArtifactInfo(projectId, repoName, pkgName, version)
+        )
+        return true
     }
 }

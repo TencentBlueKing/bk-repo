@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -68,6 +69,9 @@ open class AbstractNpmService {
 
 	@Autowired
 	lateinit var npmProperties: NpmProperties
+
+	@Autowired
+	lateinit var storageManager: StorageManager
 
 	/**
 	 * 查询仓库是否存在

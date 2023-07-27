@@ -85,7 +85,7 @@ import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenConfiguration.versionBehaviorConflict
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
-import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
+import com.tencent.bkrepo.maven.util.MavenMetadataUtils.reRender
 import com.tencent.bkrepo.maven.util.MavenStringUtils.fileMimeType
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.maven.util.MavenStringUtils.httpStatusCode
@@ -1191,7 +1191,7 @@ class MavenLocalRepository(
                     )
                     return
                 }
-                mavenMetadata.deleteVersioning()
+                mavenMetadata.reRender()
                 storeMetadataXml(mavenMetadata, node)
             }
         }

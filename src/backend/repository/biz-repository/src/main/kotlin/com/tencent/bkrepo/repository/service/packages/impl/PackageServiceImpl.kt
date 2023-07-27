@@ -69,11 +69,7 @@ import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
+import org.springframework.data.mongodb.core.query.*
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -134,6 +130,19 @@ class PackageServiceImpl(
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val records = packageDao.find(query.with(pageRequest)).map { convert(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    override fun listPackagePage(
+        projectId: String,
+        repoName: String,
+        limit: Int,
+        lastPackageKey: String?
+    ): List<PackageSummary> {
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
+        lastPackageKey?.let { query.addCriteria(Criteria.where(TPackage::key.name).gt(lastPackageKey)) }
+        query.with(Sort.by(Sort.Order(Sort.Direction.ASC, TPackage::key.name)))
+        val countQuery = Query.of(query).limit(limit)
+        return packageDao.find(countQuery).map { convert(it)!! }
     }
 
     override fun listAllPackageName(projectId: String, repoName: String): List<String> {
@@ -467,6 +476,16 @@ class PackageServiceImpl(
         logger.info("update package version [$projectId/$repoName/$packageKey-$versionName] recentlyUseDate success")
     }
 
+    override fun searchVersion(queryModel: QueryModel): Page<PackageVersion> {
+        val context = packageSearchInterpreter.interpret(queryModel)
+        val query = context.mongoQuery
+        val countQuery = Query.of(query).limit(0).skip(0)
+        val totalRecords = packageVersionDao.count(countQuery)
+        val versionList = packageVersionDao.find(query, TPackageVersion::class.java).map { convert(it)!! }
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(pageNumber + 1, query.limit, totalRecords, versionList)
+    }
+
     /**
      * 查找包，不存在则抛异常
      */
@@ -490,6 +509,7 @@ class PackageServiceImpl(
         private fun convert(tPackage: TPackage?): PackageSummary? {
             return tPackage?.let {
                 PackageSummary(
+                    id = it.id,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate,
                     lastModifiedBy = it.lastModifiedBy,

@@ -43,6 +43,7 @@ data class RepositoryProperties(
     var defaultStorageCredentialsKey: String? = null,
     var listCountLimit: Long = 100000L,
     var nodeCreateTimeout: Long = 10_000,
+    var cleanStrategyTime: String = "0 0 3 * * ?",
     @NestedConfigurationProperty
     var job: RepoJobProperties = RepoJobProperties(),
     @NestedConfigurationProperty

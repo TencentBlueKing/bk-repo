@@ -11,7 +11,7 @@ object MavenMetadataUtils {
     private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
     private const val elementVersion = "0okm(IJN"
 
-    fun Metadata.deleteVersioning(): Metadata {
+    fun Metadata.reRender(): Metadata {
         this.versioning.latest?.let {
             this.versioning.latest = this.versioning.versions.last()
         }

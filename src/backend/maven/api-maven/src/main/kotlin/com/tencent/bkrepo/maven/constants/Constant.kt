@@ -50,3 +50,5 @@ const val PACKAGE_SUFFIX_REGEX =
 const val ARTIFACT_FORMAT = "^%s-%s-?(SNAPSHOT|[0-9]{8}\\.[0-9]{6}-[0-9]+)?-?(.+)?.%s\$"
 
 const val TIMESTAMP_FORMAT = "([0-9]{8}\\.[0-9]{6})-([0-9]+)"
+
+const val REPO_TYPE = "MAVEN"

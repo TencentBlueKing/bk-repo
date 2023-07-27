@@ -88,6 +88,7 @@ const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
+const val NPM_SERVICE_NAME = "\${service.prefix:repo-}npm\${service.suffix:}"
 
 /**
  * 认证相关

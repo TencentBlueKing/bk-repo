@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.pojo.configuration.local
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.clean.RepositoryCleanStrategy
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook.WebHookConfiguration
 import io.swagger.annotations.ApiModelProperty
 
@@ -43,7 +44,9 @@ open class LocalConfiguration(
      * webHook配置
      */
     @ApiModelProperty("WebHook配置", required = false)
-    var webHook: WebHookConfiguration = WebHookConfiguration()
+    var webHook: WebHookConfiguration = WebHookConfiguration(),
+    @ApiModelProperty("清理配置", required = false)
+    var cleanStrategy: RepositoryCleanStrategy? = null
 ) : RepositoryConfiguration() {
     companion object {
         const val type = "local"

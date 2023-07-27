@@ -132,6 +132,24 @@ open class MavenMetadataService(
         }
     }
 
+    fun delete(projectId: String, repoName: String, mavenGavc: MavenGAVC) {
+        mavenGavc.let {
+            val groupId = mavenGavc.groupId
+            val artifactId = mavenGavc.artifactId
+            val version = mavenGavc.version
+            logger.info(
+                "Node info: groupId[$groupId], artifactId[$artifactId], version[$version]"
+            )
+            val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(projectId)
+                .and(TMavenMetadataRecord::repoName.name).`is`(repoName)
+                .and(TMavenMetadataRecord::groupId.name).`is`(groupId)
+                .and(TMavenMetadataRecord::artifactId.name).`is`(artifactId)
+                .and(TMavenMetadataRecord::version.name).`is`(version)
+            val query = Query(criteria)
+            mavenMetadataDao.remove(query)
+        }
+    }
+
     fun search(mavenArtifactInfo: ArtifactInfo, mavenGavc: MavenGAVC): List<TMavenMetadataRecord> {
         logger.info(
             "Searching Node info: groupId[${mavenGavc.groupId}], artifactId[${mavenGavc.artifactId}], " +

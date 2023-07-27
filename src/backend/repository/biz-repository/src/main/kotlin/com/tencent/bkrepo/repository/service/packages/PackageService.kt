@@ -113,6 +113,18 @@ interface PackageService {
     ): Page<PackageSummary>
 
     /**
+     * 仓库清理 分页查询package
+     * @param limit 限制返回文档的数量
+     * @param lastPackageKey 上一页最后一个包的key
+     */
+    fun listPackagePage(
+        projectId: String,
+        repoName: String,
+        limit: Int,
+        lastPackageKey: String?
+    ): List<PackageSummary>
+
+    /**
      * 查询所有包名称
      *
      * @param projectId 项目id
@@ -266,4 +278,9 @@ interface PackageService {
         packageKey: String,
         versionName: String
     )
+
+    /**
+     * 根据条件搜索package version
+     */
+    fun searchVersion(queryModel: QueryModel): Page<PackageVersion>
 }
