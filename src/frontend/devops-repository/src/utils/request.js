@@ -34,8 +34,8 @@ request.interceptors.response.use(response => {
         }
     } else if (status === 440) {
         const projectId = localStorage.getItem('projectId')
-        const path = '/ui/' + projectId + '/440'
-        window.repositoryVue.$router.push(path)
+        const path = '/ui/' + projectId + '/440/' + message
+        window.repositoryVue.$router.push({ path: path, replace: true })
     }
     return Promise.reject({ status, message }) // eslint-disable-line
 }, errorHandler)
