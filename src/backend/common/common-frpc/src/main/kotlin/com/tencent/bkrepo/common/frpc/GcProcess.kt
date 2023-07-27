@@ -175,12 +175,11 @@ class GcProcess(
         while (line != null) {
             // nfs broken data
             val msg = String(line.toByteArray().filter { it.toInt() != 0 }.toByteArray())
-            if (msg.isEmpty()) {
-                continue
-            }
-            val event = eventMessageConverter.fromMessage(msg)
-            if (event !is GcPrepareAckEvent) {
-                return event
+            if (msg.isNotEmpty()) {
+                val event = eventMessageConverter.fromMessage(msg)
+                if (event !is GcPrepareAckEvent) {
+                    return event
+                }
             }
             line = reversedLinesFileReader.readLine()
         }
