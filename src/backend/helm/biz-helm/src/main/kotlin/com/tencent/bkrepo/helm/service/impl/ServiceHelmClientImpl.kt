@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
+import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.service.ServiceHelmClientService
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
@@ -36,29 +39,44 @@ class ServiceHelmClientImpl(
             if (provPath.isNotBlank()) {
                 nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, provPath, operator))
             }
-            updatePackageExtension(projectId,repoName,packageKey)
-        }?: logger.warn("[$projectId/$repoName/$packageKey/$version] version not found")
+            updatePackageExtension(projectId, repoName, packageKey)
+            publishEvent(
+                ChartVersionDeleteEvent(
+                    ChartVersionDeleteRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        name = name,
+                        version = version,
+                        operator = operator
+                    )
+                )
+            )
+        } ?: logger.warn("[$projectId/$repoName/$packageKey/$version] version not found")
     }
 
     private fun updatePackageExtension(
         projectId: String,
         repoName: String,
         packageKey: String
-    ){
+    ) {
         val name = PackageKeys.resolveHelm(packageKey)
-        val version = packageClient.findPackageByKey(projectId, repoName, packageKey).data?.latest
-        val chartPath = HelmUtils.getChartFileFullPath(name, version!!)
-        val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
-        val chartInfo = map?.let { it1 -> HelmMetadataUtils.convertToObject(it1) }
-        chartInfo?.appVersion?.let {
-            val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
-                projectId,
-                repoName,
-                name,
-                chartInfo.appVersion!!,
-                chartInfo.description
-            )
-            packageClient.updatePackage(packageUpdateRequest)
+        try {
+            val version = packageClient.findPackageByKey(projectId, repoName, packageKey).data?.latest
+            val chartPath = HelmUtils.getChartFileFullPath(name, version!!)
+            val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
+            val chartInfo = map?.let { it1 -> HelmMetadataUtils.convertToObject(it1) }
+            chartInfo?.appVersion?.let {
+                val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
+                    projectId,
+                    repoName,
+                    name,
+                    chartInfo.appVersion!!,
+                    chartInfo.description
+                )
+                packageClient.updatePackage(packageUpdateRequest)
+            }
+        }catch (e: Exception){
+            HelmOperationService.logger.warn("can not convert meta data")
         }
     }
 
