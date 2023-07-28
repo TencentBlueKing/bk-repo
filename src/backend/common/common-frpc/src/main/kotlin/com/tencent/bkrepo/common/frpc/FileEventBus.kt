@@ -172,7 +172,18 @@ class FileEventBus(
 
         private val lock = ReentrantLock()
         private val condition = lock.newCondition()
+        private var timeoutCount = 0
         fun await(timeout: Long, unit: TimeUnit): Boolean {
+            if (timeoutCount > MAX_GC_WAIT_COUNT) {
+                // 当超时次数过多时，自动释放GC，防止GC挂掉的情况
+                timeoutCount = 0
+                inGc = false
+                lock.withLock {
+                    condition.signalAll()
+                }
+                logger.info("Have waited gc many times,Recover event bus now.")
+                return true
+            }
             lock.withLock {
                 val ret: Boolean
                 measureTimeMillis {
@@ -199,6 +210,9 @@ class FileEventBus(
                     condition.signalAll()
                 }
             }
+        }
+        companion object {
+            private const val MAX_GC_WAIT_COUNT = 5
         }
     }
 
