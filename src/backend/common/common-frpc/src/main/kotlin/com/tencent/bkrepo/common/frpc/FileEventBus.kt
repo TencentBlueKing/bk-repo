@@ -112,6 +112,8 @@ class FileEventBus(
         // write event
         val message = eventMessageConverter.toMessage(event)
         logFile.appendText(message + "\r\n")
+        logFile.appendText(message + "\r\n")
+        logFile.appendText(message + "\r\n")
         if (logger.isTraceEnabled) {
             logger.trace("Publish>> $message")
         }
