@@ -107,4 +107,9 @@ interface MongoDao<E> {
      * 文档聚合操作
      */
     fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): AggregationResults<O>
+
+    /**
+     * 查询并更新操作
+     */
+    fun <T> findAndModify(query: Query, update: Update, clazz: Class<T>): T?
 }

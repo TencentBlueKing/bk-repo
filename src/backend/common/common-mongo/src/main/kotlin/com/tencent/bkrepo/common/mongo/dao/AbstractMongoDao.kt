@@ -172,6 +172,13 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return determineMongoTemplate().aggregate(aggregation, determineCollectionName(aggregation), outputType)
     }
 
+    override fun <T> findAndModify(query: Query, update: Update, clazz: Class<T>): T? {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao findAndModify: [$query], [$update]")
+        }
+        return determineMongoTemplate().findAndModify(query, update, clazz)
+    }
+
     protected open fun determineCollectionName(): String {
         var collectionName: String? = null
         if (classType.isAnnotationPresent(Document::class.java)) {
