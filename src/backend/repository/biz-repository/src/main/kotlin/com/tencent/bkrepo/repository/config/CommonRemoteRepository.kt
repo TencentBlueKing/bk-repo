@@ -90,7 +90,9 @@ class CommonRemoteRepository(
         }
     }
 
-    override fun supportRedirect(context: ArtifactDownloadContext): Boolean = true
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
+    }
 
     /**
      * 如果fullPath已经是完整的url，则直接使用，否则进行拼接

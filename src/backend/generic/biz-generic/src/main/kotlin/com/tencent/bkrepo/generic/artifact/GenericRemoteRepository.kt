@@ -37,5 +37,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class GenericRemoteRepository : RemoteRepository() {
-    override fun supportRedirect(context: ArtifactDownloadContext): Boolean = true
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
+    }
 }

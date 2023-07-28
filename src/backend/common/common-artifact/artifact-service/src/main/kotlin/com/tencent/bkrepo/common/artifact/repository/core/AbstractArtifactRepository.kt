@@ -127,7 +127,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     override fun download(context: ArtifactDownloadContext) {
         try {
             this.onDownloadBefore(context)
-            if (supportRedirect(context) && this.onDownloadRedirect(context)) {
+            if (this.onDownloadRedirect(context)) {
                 return
             }
             val artifactResponse = this.onDownload(context)
@@ -315,7 +315,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * @return true 重定向成功 false 重定向失败
      */
     open fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
-        return redirectManager.redirect(context)
+        return false
     }
 
     private fun publishPackageDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {

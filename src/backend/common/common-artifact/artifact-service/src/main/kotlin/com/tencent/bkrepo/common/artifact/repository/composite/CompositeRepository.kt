@@ -135,8 +135,6 @@ class CompositeRepository(
         }.apply { add(localResult) }.flatten()
     }
 
-    override fun supportRedirect(context: ArtifactDownloadContext): Boolean = true
-
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return if (localRepository.onDownloadRedirect(context)) {
             true
