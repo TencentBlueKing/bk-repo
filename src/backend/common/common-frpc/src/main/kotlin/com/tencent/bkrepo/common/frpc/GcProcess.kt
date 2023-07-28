@@ -89,6 +89,10 @@ class GcProcess(
                     startGc()
                 } catch (e: Exception) {
                     logger.error("File event bus gc error.", e)
+                    clear()
+                } finally {
+                    call(GcRecoverEvent())
+                    phase = null
                 }
             }
         }
