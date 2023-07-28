@@ -27,42 +27,37 @@
 
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 
-@Component
-class DownloadRedirectManager(
-    private val redirectServices: List<DownloadRedirectService>
-) {
+/**
+ * 仓库重定向配置
+ */
+data class DownloadRedirectSettings(
     /**
-     * 重定向下载请求
-     *
-     * @param context 下载请求上下文
-     *
-     * @return true 已重定向请求， false 未重定向请求
+     * 下载请求重定向目标
      */
-    fun redirect(context: ArtifactDownloadContext): Boolean {
-        if (!context.request.method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向GET请求
-            return false
-        }
-        redirectServices.forEach {
-            try {
-                if (it.shouldRedirect(context)) {
-                    it.redirect(context)
-                    return true
-                }
-            } catch (ignore: Exception) {
-                logger.error("Redirect by ${it.javaClass.simpleName} failed")
-                ignore.printStackTrace()
-            }
-        }
-        return false
-    }
+    val redirectTo: String? = null,
+
+    /**
+     * 路径正则匹配规则，符合规则的制品才会被重定向
+     */
+    val fullPathRegex: String? = null,
+) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DownloadRedirectManager::class.java)
+        /**
+         * [RepositoryConfiguration.settings]中的配置键
+         */
+        private const val SETTINGS_KEY_DOWNLOAD_REDIRECT = "downloadRedirect"
+        fun from(configuration: RepositoryConfiguration): DownloadRedirectSettings? {
+            val redirectSettings =
+                configuration.getSetting<Map<String, Any>>(SETTINGS_KEY_DOWNLOAD_REDIRECT) ?: return null
+            val redirectTo = redirectSettings[DownloadRedirectSettings::redirectTo.name] as String?
+            val fullPathRegex = redirectSettings[DownloadRedirectSettings::fullPathRegex.name] as String?
+            return DownloadRedirectSettings(
+                redirectTo = redirectTo,
+                fullPathRegex = fullPathRegex
+            )
+        }
     }
 }

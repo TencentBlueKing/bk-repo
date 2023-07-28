@@ -134,9 +134,6 @@ class ShareServiceImpl(
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = userId)
             HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
-            if (redirectManager.redirect(context)) {
-                return
-            }
             context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
