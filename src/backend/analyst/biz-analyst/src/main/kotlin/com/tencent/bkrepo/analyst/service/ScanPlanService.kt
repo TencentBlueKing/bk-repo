@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.analyst.pojo.request.UpdateScanPlanRequest
-import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelations
 import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 
@@ -144,16 +144,7 @@ interface ScanPlanService {
      *
      * @return 制品关联的扫描方案信息
      */
-    fun artifactPlanList(request: ArtifactPlanRelationRequest): List<ArtifactPlanRelation>
-
-    /**
-     * 获取制品扫描状态
-     *
-     * @param request 制品信息
-     *
-     * @return 制品扫描状态
-     */
-    fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String?
+    fun artifactPlanList(request: ArtifactPlanRelationRequest): ArtifactPlanRelations
 
     /**
      * 获取扫描方案(license)最新一次扫描详情
