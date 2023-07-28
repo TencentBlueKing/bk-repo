@@ -58,7 +58,7 @@ class LeaderElectionProcess(
     val serviceRegistry: ServiceRegistry<StorageServiceInstance>,
 ) : SimpleEventCall<Event>(eventBus), EventHandler {
 
-    private val gcRequestVoteCall = GcRequestVoteCall(eventBus, GC_REQUEST_TIMEOUT)
+    private val requestVoteCall = GcRequestVoteCall(eventBus, REQUEST_TIMEOUT)
     var leader: Long? = null
     private val localService = serviceRegistry.getLocalService()
     val localServiceId = localService.id
@@ -117,9 +117,9 @@ class LeaderElectionProcess(
             try {
                 val services = serviceRegistry.getServices().map { it.id }.toList()
                 // 发起投票请求
-                gcRequestVoteCall.call(services, RequestVoteEvent())
+                requestVoteCall.call(services, RequestVoteEvent())
                 // 投票结果
-                val candidate = gcRequestVoteCall.voteResult.map { it.voteServiceId }.toSet()
+                val candidate = requestVoteCall.voteResult.map { it.voteServiceId }.toSet()
                 // 只有全票通过且唯一的候选者，投票才结束，否则重新发起
                 if (candidate.size == 1) {
                     // 完成
@@ -183,7 +183,7 @@ class LeaderElectionProcess(
             .build()
         private val executor = Executors.newSingleThreadScheduledExecutor(threadFactory)
         private const val MAINTAIN_LEADER_PERIOD = 3000L
-        private const val GC_REQUEST_TIMEOUT = 3000L
+        private const val REQUEST_TIMEOUT = 10_000L
         private const val WAIT_INTERVAL = 1000L
     }
 }
