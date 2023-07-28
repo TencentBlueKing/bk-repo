@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.center
 
-import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -41,11 +40,9 @@ import org.springframework.stereotype.Service
 class CommitEdgeCenterShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
-    mongoTemplate: MongoTemplate,
-    redirectManager: DownloadRedirectManager
+    mongoTemplate: MongoTemplate
 ) : ShareServiceImpl(
     repositoryService,
     nodeService,
-    mongoTemplate,
-    redirectManager
+    mongoTemplate
 )

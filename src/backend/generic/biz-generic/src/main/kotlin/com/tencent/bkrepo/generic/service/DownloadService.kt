@@ -41,7 +41,6 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -62,7 +61,6 @@ import org.springframework.stereotype.Service
 class DownloadService(
     private val nodeClient: NodeClient,
     private val viewModelService: ViewModelService,
-    private val redirectManager: DownloadRedirectManager,
 ) : ArtifactService() {
 
     @Value("\${spring.application.name}")

@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
@@ -56,8 +55,7 @@ class ListViewServiceImpl(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
-    private val viewModelService: ViewModelService,
-    private val redirectManager: DownloadRedirectManager
+    private val viewModelService: ViewModelService
 ) : ListViewService {
 
     @Value("\${spring.application.name}")
