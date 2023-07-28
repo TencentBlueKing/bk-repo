@@ -60,6 +60,7 @@ import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
+import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
@@ -242,6 +243,7 @@ class OciRegistryLocalRepository(
      */
     private fun putUploadBlob(context: ArtifactUploadContext): Pair<OciDigest, String> {
         val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
+        val sha256 = artifactInfo.getDigestHex()
         val fileInfo = try {
             storageService.append(
                 appendId = artifactInfo.uuid!!,
@@ -249,6 +251,8 @@ class OciRegistryLocalRepository(
                 storageCredentials = context.repositoryDetail.storageCredentials
             )
             val fileInfo = storageService.finishAppend(artifactInfo.uuid!!, context.repositoryDetail.storageCredentials)
+            if (fileInfo.sha256 != sha256)
+                throw OciBadRequestException(OciMessageCode.OCI_DIGEST_INVALID, sha256)
             // 当并发情况下文件被删可能导致文件size为0
             if (fileInfo.size == 0L && fileInfo.sha256 != EMPTY_FILE_SHA256)
                 throw StorageErrorException(StorageMessageCode.STORE_ERROR)
@@ -261,7 +265,6 @@ class OciRegistryLocalRepository(
             fileInfo
         } catch (e: StorageErrorException) {
             // 计算sha256和转存文件导致时间较长，会出现请求超时，然后发起重试，导致并发操作该临时文件，文件可能已经被删除
-            val sha256 = artifactInfo.getDigestHex()
             if (storageService.exist(sha256, context.repositoryDetail.storageCredentials)) {
                 val nodeDetail = nodeClient.getNodeDetail(
                     artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
