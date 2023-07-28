@@ -72,7 +72,7 @@ class FileCheckProcess(
             return
         }
         val event = FileCheckEvent(path = path)
-        val context = initRequestContext(hosts.sorted())
+        val context = initRequestContext(hosts)
         checkContextMap[event.id] = context
         try {
             super.call(event)
@@ -104,7 +104,7 @@ class FileCheckProcess(
         val context = checkContextMap[id]
         require(context != null)
         context.ackHosts = ackHosts
-        return context.hosts == ackHosts.sorted()
+        return context.loseAckHosts().isEmpty()
     }
 
     override fun supportEvent(event: Event): Boolean {
