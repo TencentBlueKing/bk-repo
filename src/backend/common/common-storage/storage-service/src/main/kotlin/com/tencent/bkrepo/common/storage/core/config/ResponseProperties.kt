@@ -54,10 +54,5 @@ data class ResponseProperties(
     /**
      * 二进制媒体类型，不指定编码。
      * */
-    var binaryMediaTypes: Set<String> = emptySet(),
-
-    /**
-     * 最小允许直接从后端存储下载文件的限制，只有文件大小超过该值才允许被重定向从实际存储中下载文件
-     */
-    var minDirectDownloadSize: DataSize = DataSize.ofMegabytes(1L),
+    var binaryMediaTypes: Set<String> = emptySet()
 )

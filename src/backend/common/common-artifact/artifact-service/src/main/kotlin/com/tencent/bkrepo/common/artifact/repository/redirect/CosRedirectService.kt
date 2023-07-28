@@ -39,7 +39,9 @@ import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDispos
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
@@ -53,14 +55,23 @@ import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 当使用对象存储作为后端存储时，支持创建对象的预签名下载URL，并将用户的下载请求重定向到该URL
  */
 @Service
 @Order(2)
-class CosRedirectService(private val storageProperties: StorageProperties) : DownloadRedirectService {
+class CosRedirectService(
+    private val storageProperties: StorageProperties,
+    private val storageService: StorageService,
+) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+        if (!storageProperties.redirect.enabled) {
+            return false
+        }
+
         // 仅支持重定向本地单文件下载请求
         val node = ArtifactContextHolder.getNodeDetail(
             context.repositoryDetail.projectId,
@@ -71,9 +82,9 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
             return false
         }
 
+        // 判断存储类型是否支持重定向，文件大小是否达到重定向的限制
         val notInnerCosStorageCredentials = storageProperties.type != StorageType.INNERCOS
-        val lessThanMinSize = node.size < storageProperties.response.minDirectDownloadSize.toBytes()
-
+        val lessThanMinSize = node.size < storageProperties.redirect.minDirectDownloadSize.toBytes()
         if (notInnerCosStorageCredentials || lessThanMinSize) {
             return false
         }
@@ -87,7 +98,12 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
         }
 
         val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
-        return redirectTo == RedirectTo.INNERCOS.name || repoSupportRedirectTo
+        val needToRedirect = repoSupportRedirectTo ||
+                redirectTo == RedirectTo.INNERCOS.name ||
+                storageProperties.redirect.redirectAllDownload
+
+        // 文件存在于COS上时才会被重定向
+        return needToRedirect && exists(node, context.repositoryDetail.storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
@@ -100,7 +116,7 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
 
         // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {
-            signExpired = Duration.ofSeconds(DEFAULT_SIGN_EXPIRED_SECOND)
+            signExpired = storageProperties.redirect.redirectUrlExpireTime
             // 重定向请求不使用北极星解析，直接使用域名
             endpointResolver = DefaultEndpointResolver()
             httpProtocol = HttpProtocol.HTTPS
@@ -115,11 +131,8 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
             request.url += "&sign=$urlencodedSign"
         }
 
-        logger.info(
-            "redirect request of download to cos[${credentials.key}], " +
-                    "project[${node.projectId}], repo[${node.repoName}], fullPath[${node.fullPath}]"
-        )
         // 重定向
+        logger.info("Redirect request of download node[${node.sha256}] to cos[${credentials.key}]")
         context.response.sendRedirect(request.url)
     }
 
@@ -154,8 +167,24 @@ class CosRedirectService(private val storageProperties: StorageProperties) : Dow
         }
     }
 
+    /**
+     * 判断文件是否在COS上存在
+     */
+    private fun exists(node: NodeDetail, storageCredentials: StorageCredentials?): Boolean {
+        // 判断文件存在时间，文件存在时间超过预期的上传耗时则认为文件已上传到COS，避免频繁请求COS判断文件是否存在
+        val createdDateTime = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+        val existsDuration = Duration.between(createdDateTime, LocalDateTime.now())
+        val expectedUploadSeconds = node.size / storageProperties.redirect.uploadSizePerSecond.toBytes()
+        if (existsDuration.seconds > expectedUploadSeconds) {
+            return true
+        }
+
+        // 判断文件是否已经上传到COS
+        logger.info("Checking node[${node.sha256}] exist in cos, createdDateTime[${node.createdDate}]")
+        return storageService.exist(node.sha256!!, storageCredentials)
+    }
+
     companion object {
-        private const val DEFAULT_SIGN_EXPIRED_SECOND = 3 * 60L
         private val logger = LoggerFactory.getLogger(CosRedirectService::class.java)
     }
 }
