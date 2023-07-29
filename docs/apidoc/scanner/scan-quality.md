@@ -4,7 +4,7 @@
 
 ## 获取扫描方案质量规则
 
-- API: GET /analyst/api/scan/quality
+- API: GET /analyst/api/scan/quality/{planId}
 - API 名称: get_scan_quality
 - 功能说明：
     - 中文：获取扫描方案质量规则
@@ -53,7 +53,7 @@
 
 ## 更新扫描方案质量规则
 
-- API: post /analyst/api/scan/quality
+- API: post /analyst/api/scan/quality/{planId}
 - API 名称: update_scan_quality
 - 功能说明：
   - 中文：更新扫描方案质量规则
