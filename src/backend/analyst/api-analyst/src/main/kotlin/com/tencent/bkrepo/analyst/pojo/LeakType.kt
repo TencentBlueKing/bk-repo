@@ -32,7 +32,7 @@ package com.tencent.bkrepo.analyst.pojo
  */
 @Deprecated(message = "用于兼容旧接口")
 enum class LeakType(val value: String) {
-    CRITICAL("危急"),
+    CRITICAL("严重"),
     HIGH("高危"),
     LOW("低危"),
     MEDIUM("中危");

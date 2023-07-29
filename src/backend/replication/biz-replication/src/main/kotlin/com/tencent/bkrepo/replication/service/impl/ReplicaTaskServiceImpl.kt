@@ -115,7 +115,14 @@ class ReplicaTaskServiceImpl(
 
     override fun listTasksPage(projectId: String, param: TaskPageParam): Page<ReplicaTaskInfo> {
         with(param) {
-            val query = buildListQuery(projectId, name, lastExecutionStatus, enabled, sortType)
+            val direction = sortDirection?.let {
+                Preconditions.checkArgument(
+                    it == Sort.Direction.DESC.name || it == Sort.Direction.ASC.name,
+                    TaskPageParam::sortDirection.name
+                )
+                Sort.Direction.valueOf(it)
+            }
+            val query = buildListQuery(projectId, name, lastExecutionStatus, enabled, sortType, direction)
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val totalRecords = replicaTaskDao.count(query)
             val records = replicaTaskDao.find(query.with(pageRequest)).map { convert(it)!! }

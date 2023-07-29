@@ -25,29 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo
+package com.tencent.bkrepo.analyst.pojo.response
 
-/**
- * 扫描触发类型
- */
-enum class ScanTriggerType {
-    /**
-     * 手动触发扫描
-     */
-    MANUAL,
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-    /**
-     * 流水线触发扫描
-     */
-    PIPELINE,
-
-    /**
-     * 新构件上传时触发扫描
-     */
-    ON_NEW_ARTIFACT,
-
-    /**
-     * 系统级新构件上传时自动扫描
-     */
-    ON_NEW_ARTIFACT_SYSTEM;
-}
+@ApiModel("制品关联的扫描方案信息列表")
+data class ArtifactPlanRelations(
+    @ApiModelProperty("制品扫描状态")
+    val scanStatus: String?,
+    @ApiModelProperty("方案信息列表")
+    val scanPlans: List<ArtifactPlanRelation>
+)

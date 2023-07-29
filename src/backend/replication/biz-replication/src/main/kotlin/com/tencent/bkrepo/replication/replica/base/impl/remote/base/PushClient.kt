@@ -158,7 +158,7 @@ abstract class PushClient(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PushClient::class.java)
-        private const val DEFAULT_READ_TIMEOUT_MINUTES = 1L
+        private const val DEFAULT_READ_TIMEOUT_MINUTES = 15L
         private const val DEFAULT_CONNECT_TIMEOUT_MINUTES = 1L
         private const val DEFAULT_WRITE_TIMEOUT_MINUTES = 1L
     }
