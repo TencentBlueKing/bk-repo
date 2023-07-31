@@ -37,6 +37,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils.getPreferredCollectionName
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
@@ -176,7 +177,9 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findAndModify: [$query], [$update]")
         }
-        return determineMongoTemplate().findAndModify(query, update, clazz)
+        val option = FindAndModifyOptions()
+        option.returnNew(true)
+        return determineMongoTemplate().findAndModify(query, update, option, clazz)
     }
 
     protected open fun determineCollectionName(): String {
