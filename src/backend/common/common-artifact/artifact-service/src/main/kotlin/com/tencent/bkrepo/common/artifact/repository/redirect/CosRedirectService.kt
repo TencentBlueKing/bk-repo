@@ -37,6 +37,8 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -49,6 +51,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
@@ -66,6 +69,7 @@ import java.time.format.DateTimeFormatter
 class CosRedirectService(
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
+    private val permissionManager: PermissionManager,
 ) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!storageProperties.redirect.enabled) {
@@ -103,7 +107,7 @@ class CosRedirectService(
                 storageProperties.redirect.redirectAllDownload
 
         // 文件存在于COS上时才会被重定向
-        return needToRedirect && exists(node, context.repositoryDetail.storageCredentials)
+        return needToRedirect && isSystemOrAdmin() && exists(node, context.repositoryDetail.storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
@@ -182,6 +186,11 @@ class CosRedirectService(
         // 判断文件是否已经上传到COS
         logger.info("Checking node[${node.sha256}] exist in cos, createdDateTime[${node.createdDate}]")
         return storageService.exist(node.sha256!!, storageCredentials)
+    }
+
+    private fun isSystemOrAdmin(): Boolean {
+        val userId = SecurityUtils.getUserId()
+        return userId == SYSTEM_USER || permissionManager.isAdminUser(SecurityUtils.getUserId())
     }
 
     companion object {
