@@ -97,6 +97,9 @@
 </script>
 <style lang="scss">
 @import '@repository/scss/index';
+.navigation-message-theme{
+    padding: 0 !important;
+}
 .bkrepo-main {
     height: 100%;
     background-color: var(--bgWeightColor);
