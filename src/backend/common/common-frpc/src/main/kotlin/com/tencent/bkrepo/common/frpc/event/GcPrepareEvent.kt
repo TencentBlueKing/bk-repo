@@ -30,4 +30,4 @@ package com.tencent.bkrepo.common.frpc.event
 /**
  * GC预处理事件
  * */
-class GcPrepareEvent : Event(type = EventType.GC_PREPARE.name)
+class GcPrepareEvent(val filePath: String) : Event(type = EventType.GC_PREPARE.name)

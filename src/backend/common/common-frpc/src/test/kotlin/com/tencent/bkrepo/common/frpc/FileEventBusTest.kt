@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.frpc.event.EventType
 import com.tencent.bkrepo.common.frpc.event.handler.EventHandler
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 class FileEventBusTest : EventBusBaseTest() {
 
@@ -55,5 +56,71 @@ class FileEventBusTest : EventBusBaseTest() {
         // 等待消息传递
         Thread.sleep(1000)
         Assertions.assertEquals(1, countHandler.counter)
+    }
+
+    @Test
+    fun mutiEventBusTest() {
+        val logPath = createTempDir()
+        val messageConverter = MessageConverterFactory.createSupportAllEventMessageConverter()
+        val eventBus1 = FileEventBus(
+            logDirPath = logPath.absolutePath,
+            delayMillis = 200,
+            eventMessageConverter = messageConverter,
+            1000L
+        )
+        val eventBus2 = FileEventBus(
+            logDirPath = logPath.absolutePath,
+            delayMillis = 200,
+            eventMessageConverter = messageConverter,
+            1000L
+        )
+        val eventBus3 = FileEventBus(
+            logDirPath = logPath.absolutePath,
+            delayMillis = 200,
+            eventMessageConverter = messageConverter,
+            1000L
+        )
+        // 等待刷新
+        Thread.sleep(2000)
+        // 确定所有的eventBus监听相同的日志文件
+        Assertions.assertEquals(3, eventBus1.listeners.size)
+        Assertions.assertEquals(3, eventBus2.listeners.size)
+        Assertions.assertEquals(3, eventBus3.listeners.size)
+        Assertions.assertArrayEquals(
+            eventBus1.listeners.keys.sorted().toTypedArray(),
+            eventBus2.listeners.keys.sorted().toTypedArray()
+        )
+        Assertions.assertArrayEquals(
+            eventBus3.listeners.keys.sorted().toTypedArray(),
+            eventBus2.listeners.keys.sorted().toTypedArray()
+        )
+        // 任何一个eventBus发送的事件都能被监听
+        val countHandler = object : EventHandler {
+            val counter = AtomicInteger()
+            override fun supportEvent(event: Event): Boolean {
+                return event.type == EventType.ACK.name
+            }
+
+            override fun handler(event: Event) {
+                require(event is AckEvent)
+                counter.incrementAndGet()
+            }
+        }
+        eventBus2.register(countHandler)
+        eventBus3.register(countHandler)
+        val event = AckEvent(id = "id")
+        eventBus1.publish(event)
+        // 等待消息传递
+        Thread.sleep(1000)
+        Assertions.assertEquals(2, countHandler.counter.get())
+
+        while (!eventBus2.logFile.delete()) {
+            Thread.sleep(200)
+        }
+        // 测试退出
+        Thread.sleep(1000)
+        Assertions.assertEquals(2, eventBus1.listeners.size)
+        Assertions.assertEquals(2, eventBus2.listeners.size)
+        Assertions.assertEquals(2, eventBus3.listeners.size)
     }
 }

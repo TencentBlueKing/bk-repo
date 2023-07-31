@@ -38,6 +38,10 @@ class GcProcessTest : EventBusBaseTest() {
     @Test
     fun gc() {
         val gcProcess = createGcProcesss(10, 1000)
+        // 产生足够的垃圾事件
+        repeat(10) {
+            fileEventBus.publish(AckEvent("id"))
+        }
         val file = gcProcess.getFile()
         val preLogFileSize = file.length()
         gcProcess.gc()
@@ -49,7 +53,7 @@ class GcProcessTest : EventBusBaseTest() {
     fun suspend() {
         val gcProcess = createGcProcesss(Long.MAX_VALUE, 1000)
         // 发布一个gc prepare事件，接受到的服务开始进入gc状态，这个时候停止任何新事件的发布
-        fileEventBus.publish(GcPrepareEvent())
+        fileEventBus.publish(GcPrepareEvent(fileEventBus.logFile.absolutePath))
         // 等待事件被消费
         Thread.sleep(2000)
         Assertions.assertTrue(gcProcess.isInGc())
@@ -76,7 +80,6 @@ class GcProcessTest : EventBusBaseTest() {
         )
         fileEventBus.register(gcProcess)
         fileEventBus.register(serviceRegistrarProcess)
-        gcProcess.leaderElectionProcess.await(60000)
         return gcProcess
     }
 }

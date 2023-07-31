@@ -26,6 +26,7 @@
  */
 package com.tencent.bkrepo.common.frpc
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.frpc.event.Event
 import com.tencent.bkrepo.common.frpc.event.EventBus
 import com.tencent.bkrepo.common.frpc.event.EventType
@@ -36,6 +37,7 @@ import org.apache.commons.io.input.Tailer
 import org.apache.commons.io.input.TailerListenerAdapter
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
@@ -53,11 +55,11 @@ class FileEventBus(
     /**
      * 事件log文件的存放目录路径
      * */
-    logDirPath: String,
+    val logDirPath: String,
     /**
      * 读取文件的延迟，影响事件的消费速度
      * */
-    delayMillis: Long,
+    val delayMillis: Long,
     /**
      * 消息转换器
      * */
@@ -71,18 +73,16 @@ class FileEventBus(
     val logFile: File
 
     /**
-     * 文件跟踪器
-     * */
-    private val tailer: Tailer
-
-    /**
      * 事件处理器
      * */
     private val handlers = mutableListOf<EventHandler>()
-    private val gcHandler = GcHandler()
-
+    private val logFileName = StringPool.randomStringByLongValue(suffix = EVENT_LOG_SUFFIX)
+    val listeners = mutableMapOf<String, Tailer>()
+    private var running = false
+    private var gcHandler = GcHandler()
+    private val closeLock = Any()
     init {
-        val logFilePath = Paths.get(logDirPath, EVENT_LOG_FILE_NAME)
+        val logFilePath = Paths.get(logDirPath, logFileName)
         // 创建父目录
         if (!Files.exists(logFilePath.parent)) {
             Files.createDirectories(logFilePath.parent)
@@ -92,14 +92,20 @@ class FileEventBus(
             Files.createFile(logFilePath)
         }
         logFile = logFilePath.toFile()
-        tailer = Tailer(logFile, EventConsumer(), delayMillis, true, false, DEFAULT_BUFFER_SIZE)
-        thread(start = true, isDaemon = true, name = "file-event-consumer") {
-            tailer.run()
+        running = true
+        thread(isDaemon = true) {
+            while (running) {
+                listen()
+                Thread.sleep(1000)
+            }
         }
         register(gcHandler)
+        val shutdownHook = thread(start = false, name = "file-event-bus-hook") { stop() }
+        Runtime.getRuntime().addShutdownHook(shutdownHook)
     }
 
     override fun publish(event: Event): Boolean {
+        // 只阻塞自己发
         if (isNotGcEvent(event) && gcHandler.inGc) {
             // stop the world ，超时就丢弃掉事件
             logger.info("Await gc.")
@@ -111,8 +117,6 @@ class FileEventBus(
         }
         // write event
         val message = eventMessageConverter.toMessage(event)
-        logFile.appendText(message + "\r\n")
-        logFile.appendText(message + "\r\n")
         logFile.appendText(message + "\r\n")
         if (logger.isTraceEnabled) {
             logger.trace("Publish>> $message")
@@ -126,7 +130,27 @@ class FileEventBus(
     }
 
     fun stop() {
-        tailer.stop()
+        logger.info("Stop file event bus.")
+        if (running == false) {
+            return
+        }
+        synchronized(closeLock) {
+            if (running == false) {
+                return
+            }
+            running = false
+            listeners.values.forEach {
+                it.stop()
+            }
+            var i = 0
+            // 最大删除数控制
+            while (i++ < 3 && !logFile.delete()) {
+                Thread.sleep(200)
+            }
+            if (logFile.exists()) {
+                logger.warn("Failed to delete $logFile.")
+            }
+        }
     }
 
     private fun isNotGcEvent(event: Event): Boolean {
@@ -137,7 +161,27 @@ class FileEventBus(
         ).contains(event.type)
     }
 
+    private fun listen() {
+        val dir = Paths.get(logDirPath)
+        Files.newDirectoryStream(dir, "*$EVENT_LOG_SUFFIX").use {
+            it.filter { !listeners.keys.contains(it.fileName.toString()) }.forEach {
+                logger.info("Add new listener for $it")
+                val tailer = Tailer(it.toFile(), EventConsumer(), delayMillis, true, true, DEFAULT_BUFFER_SIZE)
+                thread(start = true, isDaemon = true, name = "FileEventBus-${nextThreadNum()}") {
+                    tailer.run()
+                }
+                listeners[it.fileName.toString()] = tailer
+            }
+        }
+    }
+
     inner class EventConsumer : TailerListenerAdapter() {
+        var file: File? = null
+
+        override fun init(tailer: Tailer) {
+            file = tailer.file
+        }
+
         override fun handle(line: String) {
             val event: Event
             // nfs broken data
@@ -164,6 +208,18 @@ class FileEventBus(
 
         override fun fileRotated() {
             logger.info("File rotated,current size ${logFile.length()}.")
+        }
+
+        override fun handle(ex: java.lang.Exception) {
+            if (ex is FileNotFoundException) {
+                fileNotFound()
+            }
+        }
+
+        override fun fileNotFound() {
+            // 退出
+            logger.info("File event bus[$file] unreachable,remove it.")
+            listeners.remove(file?.name)
         }
     }
 
@@ -204,6 +260,10 @@ class FileEventBus(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileEventBus::class.java)
-        private const val EVENT_LOG_FILE_NAME = "event.log"
+        private const val EVENT_LOG_SUFFIX = "_event.log"
+        private var threadNumber = 0
+
+        @Synchronized
+        private fun nextThreadNum() = threadNumber++
     }
 }

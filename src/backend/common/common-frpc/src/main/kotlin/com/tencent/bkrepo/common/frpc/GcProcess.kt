@@ -68,11 +68,9 @@ class GcProcess(
     private var phase: GcPhase? = null
     private val gcPrepareCall = GcPrepareCall(eventBus, gcTimeout)
     private val logFile = eventBus.logFile
-    val leaderElectionProcess = LeaderElectionProcess(eventBus, serviceRegistry)
     private val localServiceId = serviceRegistry.getLocalService().id
 
     init {
-        eventBus.register(leaderElectionProcess)
         executor.scheduleAtFixedRate(this::gc, 0, GC_PERIOD, TimeUnit.MILLISECONDS)
     }
 
@@ -81,19 +79,15 @@ class GcProcess(
     }
 
     fun gc() {
-        val leader = leaderElectionProcess.leader
-        // 只有leader才可以发起gc
-        if (leader != null && leader == localServiceId) {
-            if (logFile.length() > maxLogSize) {
-                try {
-                    startGc()
-                } catch (e: Exception) {
-                    logger.error("File event bus gc error.", e)
-                    clear()
-                } finally {
-                    call(GcRecoverEvent())
-                    phase = null
-                }
+        if (logFile.length() > maxLogSize) {
+            try {
+                startGc()
+            } catch (e: Exception) {
+                logger.error("File event bus gc error.", e)
+                clear()
+            } finally {
+                call(GcRecoverEvent())
+                phase = null
             }
         }
     }
@@ -108,7 +102,7 @@ class GcProcess(
             // 返回自己处理的最后一个非gc事件
             // 从尾部开始逐行查看，确认当前事件除gc相关事件的是最后一行
             // 因为消息是读取最尾部的行，所以如果GcPrepareEvent是最后一个事件，且被处理了，那么在它之前的事件都被处理了。
-            val lastEvent = getLastEventExcludeGc()
+            val lastEvent = getLastEventExcludeGc(File(event.filePath))
             require(lastEvent != null)
             if (lastEvent.id != event.id) {
                 // 说明还有内容需要处理，不返回，等待新的GcPrepareEvent
@@ -157,7 +151,7 @@ class GcProcess(
         logger.info("File[$logFile] size[$preLogFileSize] exceed max size[$maxLogSize],Start gc.")
         phase = GcPhase.GC_PREPARE
         val services = serviceRegistry.getServices().map { it.id }.toList()
-        gcPrepareCall.call(services, GcPrepareEvent())
+        gcPrepareCall.call(services, GcPrepareEvent(logFile.canonicalPath))
         phase = GcPhase.GC
         // gc
         clear()
@@ -173,8 +167,8 @@ class GcProcess(
     /**
      * 从尾部开始读取行，即每个事件，返回非GcPrepareOkEvent的第一个事件
      * */
-    private fun getLastEventExcludeGc(): Event? {
-        val reversedLinesFileReader = ReversedLinesFileReader(logFile, StandardCharsets.UTF_8)
+    private fun getLastEventExcludeGc(file: File): Event? {
+        val reversedLinesFileReader = ReversedLinesFileReader(file, StandardCharsets.UTF_8)
         var line = reversedLinesFileReader.readLine()
         while (line != null) {
             // nfs broken data
