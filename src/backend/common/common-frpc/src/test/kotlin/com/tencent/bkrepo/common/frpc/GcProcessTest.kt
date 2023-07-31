@@ -45,6 +45,7 @@ class GcProcessTest : EventBusBaseTest() {
         val file = gcProcess.getFile()
         val preLogFileSize = file.length()
         gcProcess.gc()
+        Thread.sleep(1000)
         val curLogFileSize = file.length()
         Assertions.assertTrue(curLogFileSize < preLogFileSize)
     }
@@ -53,7 +54,7 @@ class GcProcessTest : EventBusBaseTest() {
     fun suspend() {
         val gcProcess = createGcProcesss(Long.MAX_VALUE, 1000)
         // 发布一个gc prepare事件，接受到的服务开始进入gc状态，这个时候停止任何新事件的发布
-        fileEventBus.publish(GcPrepareEvent(fileEventBus.logFile.absolutePath))
+        fileEventBus.publish(GcPrepareEvent(fileEventBus.logFile.canonicalPath))
         // 等待事件被消费
         Thread.sleep(2000)
         Assertions.assertTrue(gcProcess.isInGc())
@@ -63,7 +64,7 @@ class GcProcessTest : EventBusBaseTest() {
         }
         // gc 2s
         Thread.sleep(2000)
-        fileEventBus.publish(GcRecoverEvent())
+        fileEventBus.publish(GcRecoverEvent(fileEventBus.logFile.canonicalPath))
         // 等待事件被消费
         Thread.sleep(2000)
         Assertions.assertTrue(fileEventBus.publish(AckEvent("id")))

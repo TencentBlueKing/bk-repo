@@ -30,4 +30,4 @@ package com.tencent.bkrepo.common.frpc.event
 /**
  * GC恢复事件
  * */
-class GcRecoverEvent : Event(type = EventType.GC_RECOVER.name)
+class GcRecoverEvent(val filePath: String) : Event(type = EventType.GC_RECOVER.name)

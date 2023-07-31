@@ -86,7 +86,7 @@ class GcProcess(
                 logger.error("File event bus gc error.", e)
                 clear()
             } finally {
-                call(GcRecoverEvent())
+                call(GcRecoverEvent(logFile.canonicalPath))
                 phase = null
             }
         }
@@ -158,7 +158,7 @@ class GcProcess(
         val curLogFileSize = logFile.length()
         phase = GcPhase.RECOVER
         // 发布gc recover事件
-        call(GcRecoverEvent())
+        call(GcRecoverEvent(logFile.canonicalPath))
         phase = null
         val elapse = System.currentTimeMillis() - start
         logger.info("Success gc [$preLogFileSize->$curLogFileSize], elapse: $elapse ms.")

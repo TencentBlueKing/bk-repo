@@ -79,7 +79,7 @@ class FileEventBus(
     private val logFileName = StringPool.randomStringByLongValue(suffix = EVENT_LOG_SUFFIX)
     val listeners = mutableMapOf<String, Tailer>()
     private var running = false
-    private var gcHandler = GcHandler()
+    private var gcHandler: GcHandler
     private val closeLock = Any()
     init {
         val logFilePath = Paths.get(logDirPath, logFileName)
@@ -92,6 +92,8 @@ class FileEventBus(
             Files.createFile(logFilePath)
         }
         logFile = logFilePath.toFile()
+        gcHandler = GcHandler(logFile)
+        register(gcHandler)
         running = true
         thread(isDaemon = true) {
             while (running) {
@@ -99,7 +101,6 @@ class FileEventBus(
                 Thread.sleep(1000)
             }
         }
-        register(gcHandler)
         val shutdownHook = thread(start = false, name = "file-event-bus-hook") { stop() }
         Runtime.getRuntime().addShutdownHook(shutdownHook)
     }
@@ -223,7 +224,7 @@ class FileEventBus(
         }
     }
 
-    private class GcHandler : EventHandler {
+    private class GcHandler(val logFile: File) : EventHandler {
         var inGc: Boolean = false
 
         private val lock = ReentrantLock()
@@ -245,10 +246,16 @@ class FileEventBus(
 
         override fun handler(event: Event) {
             if (event is GcPrepareEvent) {
+                if (event.filePath != logFile.canonicalPath) {
+                    return
+                }
                 inGc = true
                 logger.info("Start gc.")
             }
             if (event is GcRecoverEvent) {
+                if (event.filePath != logFile.canonicalPath) {
+                    return
+                }
                 logger.info("Finish gc.")
                 inGc = false
                 lock.withLock {
