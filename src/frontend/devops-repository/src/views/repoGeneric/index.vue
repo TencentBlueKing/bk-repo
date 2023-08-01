@@ -312,6 +312,11 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initTree()
+            if (this.repoName === 'pipeline') {
+                this.$nextTick(() => {
+                    this.$refs.repoTree.openType = this.repoName
+                })
+            }
             this.pathChange()
             window.repositoryVue.$on('upload-refresh', debounce((path) => {
                 if (path.replace(/\/[^/]+$/, '').includes(this.selectedTreeNode.fullPath)) {

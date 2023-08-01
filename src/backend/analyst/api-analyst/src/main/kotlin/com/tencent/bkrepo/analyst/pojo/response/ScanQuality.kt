@@ -27,25 +27,45 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-data class ScanQualityResponse(
+@ApiModel("质量规则")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class ScanQuality(
+    @ApiModelProperty("严重漏洞数")
     val critical: Long?,
+    @ApiModelProperty("高危漏洞数")
     val high: Long?,
+    @ApiModelProperty("中危漏洞数")
     val medium: Long?,
+    @ApiModelProperty("低危漏洞数")
     val low: Long?,
-    val forbidScanUnFinished: Boolean,
-    val forbidQualityUnPass: Boolean
+    @ApiModelProperty("扫描未完成是否禁用制品")
+    val forbidScanUnFinished: Boolean?,
+    @ApiModelProperty("质量规则未通过是否禁用制品")
+    val forbidQualityUnPass: Boolean?,
+    @ApiModelProperty("许可是否推荐使用")
+    val recommend: Boolean?,
+    @ApiModelProperty("许可是否合规")
+    val compliance: Boolean?,
+    @ApiModelProperty("许可是否未知")
+    val unknown: Boolean?
 ) {
 
     companion object {
-        fun create(map: Map<String, Any>) = ScanQualityResponse(
+        fun create(map: Map<String, Any>) = ScanQuality(
             critical = map[Level.CRITICAL.levelName] as? Long,
             high = map[Level.HIGH.levelName] as? Long,
             medium = map[Level.MEDIUM.levelName] as? Long,
             low = map[Level.LOW.levelName] as? Long,
-            forbidScanUnFinished = map[ScanQualityResponse::forbidScanUnFinished.name] as? Boolean ?: false,
-            forbidQualityUnPass = map[ScanQualityResponse::forbidQualityUnPass.name] as? Boolean ?: false
+            forbidScanUnFinished = map[ScanQuality::forbidScanUnFinished.name] as? Boolean,
+            forbidQualityUnPass = map[ScanQuality::forbidQualityUnPass.name] as? Boolean,
+            recommend = map[ScanQuality::recommend.name] as? Boolean,
+            compliance = map[ScanQuality::compliance.name] as? Boolean,
+            unknown = map[ScanQuality::unknown.name] as? Boolean
         )
     }
 }

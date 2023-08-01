@@ -69,7 +69,7 @@ class UserScanController @Autowired constructor(
     private val scanTaskService: ScanTaskService
 ) {
 
-    @ApiOperation("创建扫描任务")
+    @ApiOperation("手动创建扫描任务")
     @PostMapping
     fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
         return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL, SecurityUtils.getUserId()))

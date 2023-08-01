@@ -19,7 +19,7 @@
                     <span class="user-menu-item">{{ $t(name) }}</span>
                 </router-link>
             </li>
-            <li class="bkci-dropdown-item" @click="logout">
+            <li class="bkci-dropdown-item" @click="logout" style="padding: 0px">
                 <span class="user-menu-item">{{ $t('logout') }}</span>
             </li>
         </template>
@@ -56,22 +56,28 @@
     line-height: 32px;
     padding: 0 12px;
     align-items: center;
+    &:hover{
+        cursor: pointer;
+        color: #1848DE;
+    }
+}
+.flex-align-center {
+    width: 100%;
+    text-align: center;
 }
 .bkci-dropdown-item {
     display: flex;
     align-items: center;
     height: 32px;
     line-height: 33px;
-    padding: 0 16px;
+    padding: 0;
+    width: 90px;
     color: #63656e;
     font-size: 12px;
     text-decoration: none;
     white-space: nowrap;
     background-color: #fff;
     cursor: pointer;
-    &:hover {
-        background-color: #f5f7fb;
-    }
     &.disabled {
         color: #dcdee5;
         cursor: not-allowed;
@@ -83,6 +89,12 @@
 .user-menu-item {
     color: #737987;
     cursor: pointer;
+    width: 100%;
+    text-align: center;
+    &:hover {
+        background-color: #EAF3FF;
+        color: #6BA3FF;
+    }
 }
 .bkrepo-user-container {
     justify-content: flex-end;
