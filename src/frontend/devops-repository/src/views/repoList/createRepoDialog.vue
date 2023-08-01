@@ -195,6 +195,7 @@
     import { repoEnum, repoSupportEnum } from '@repository/store/publicEnum'
     import { mapActions } from 'vuex'
     import { isEmpty } from 'lodash'
+    import { checkValueIsNullOrEmpty } from '@repository/utils'
     const getRepoBaseInfo = () => {
         return {
             type: 'generic',
@@ -518,13 +519,26 @@
                     const body = {
                         type: this.repoBaseInfo.type.toUpperCase(),
                         url: this.repoBaseInfo.url,
-                        credentials: this.repoBaseInfo.credentials,
                         network: {
                             proxy: null
                         }
                     }
+                    if (checkValueIsNullOrEmpty(this.repoBaseInfo.credentials.username)
+                        && checkValueIsNullOrEmpty(this.repoBaseInfo.credentials.password)) {
+                        body.credentials = {
+                            username: null,
+                            password: null
+                        }
+                    } else {
+                        body.credentials = this.repoBaseInfo.credentials
+                    }
                     if (this.repoBaseInfo.network.switcher) {
                         body.network.proxy = this.repoBaseInfo.network.proxy
+                        if (checkValueIsNullOrEmpty(this.repoBaseInfo.network.proxy?.username)
+                            && checkValueIsNullOrEmpty(this.repoBaseInfo.network.proxy?.password)) {
+                            body.network.proxy.username = null
+                            body.network.proxy.password = null
+                        }
                     }
                     this.disableTestUrl = true
                     this.testRemoteUrl({ body }).then((res) => {
@@ -604,13 +618,26 @@
                 // 远程仓库，此时需要添加 地址，账号密码和网络代理相关的配置
                 if (this.storeType === 'remote') {
                     body.configuration.url = this.repoBaseInfo.url
-                    body.configuration.credentials = this.repoBaseInfo.credentials
                     body.configuration.network = {
                         proxy: null
+                    }
+                    if (checkValueIsNullOrEmpty(this.repoBaseInfo.credentials.username)
+                        && checkValueIsNullOrEmpty(this.repoBaseInfo.credentials.password)) {
+                        body.configuration.credentials = {
+                            username: null,
+                            password: null
+                        }
+                    } else {
+                        body.configuration.credentials = this.repoBaseInfo.credentials
                     }
                     if (this.repoBaseInfo.network.switcher) {
                         body.configuration.network = {
                             proxy: this.repoBaseInfo.network.proxy
+                        }
+                        if (checkValueIsNullOrEmpty(this.repoBaseInfo.network.proxy?.username)
+                            && checkValueIsNullOrEmpty(this.repoBaseInfo.network.proxy?.password)) {
+                            body.configuration.network.proxy.username = null
+                            body.configuration.network.proxy.password = null
                         }
                     }
                 }

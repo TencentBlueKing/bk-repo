@@ -126,3 +126,11 @@ export function copyToClipboard (text) {
     return result ? Promise.resolve() : Promise.reject(new Error())
     // }
 }
+
+/**
+ * 判断当前输入的值是否为null或空字符串或undefined
+ * @param {value}
+ */
+export function checkValueIsNullOrEmpty (value) {
+    return value === null || value === undefined || value?.length === 0
+}
