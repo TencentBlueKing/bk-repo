@@ -76,8 +76,10 @@ class LfsRemoteRepository : RemoteRepository() {
     private fun downloadFromRemoteGit(context: ArtifactDownloadContext): ArtifactResource? {
         val httpClient = createHttpClient(context.getRemoteConfiguration(), false).newBuilder()
             .addInterceptor {
-                val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT) ?: LFS_USER_AGENT
-                val request = it.request().newBuilder().header(HttpHeaders.USER_AGENT, userAgent).build()
+                val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT)
+                val request = it.request().newBuilder()
+                    .apply { userAgent?.let { header(HttpHeaders.USER_AGENT, userAgent) } }
+                    .build()
                 it.proceed(request)
             }.build()
         val lfsObject = getLfsObject(httpClient, context)
@@ -129,9 +131,5 @@ class LfsRemoteRepository : RemoteRepository() {
                 onDownloadResponse(context, response, lfsObject.size)
             } else null
         }
-    }
-
-    companion object {
-        private const val LFS_USER_AGENT = "git-lfs/3.3.0 (GitHub; windows amd64; go 1.19.3; git 77deabdf)"
     }
 }
