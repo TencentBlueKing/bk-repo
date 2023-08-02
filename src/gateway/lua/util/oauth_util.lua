@@ -160,7 +160,10 @@ function _M:verify_bk_token(auth_url, token)
         --- 判断返回码:Q!
         if result.code ~= 0 then
             if result.code == 1302403 then
-                ngx.exit(440)
+                ngx.log(ngx.ERR, "is_login code is 1302403 , need Authentication")
+                ngx.header["X-DEVOPS-ERROR-RETURN"] = '{"code": 440,"message": "'..result.message..'", "data": 1302403,"traceId":null }'
+                ngx.header["X-DEVOPS-ERROR-STATUS"] = 440
+                ngx.exit(401)
             end
             ngx.log(ngx.INFO, "invalid user token: ", result.message)
             ngx.exit(401)

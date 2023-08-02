@@ -34,9 +34,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
-import com.tencent.bkrepo.analyst.pojo.response.ScanQualityCheckedDetail
-import com.tencent.bkrepo.analyst.pojo.response.ScanQualityCheckedDetail.ScanQualityCheckedStatus
-import com.tencent.bkrepo.analyst.pojo.response.ScanQualityResponse
+import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
 import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
@@ -49,17 +47,19 @@ class ScanQualityServiceImpl(
     private val scannerService: ScannerService,
     private val licenseScanQualityService: LicenseScanQualityService
 ) : ScanQualityService {
-    override fun getScanQuality(planId: String): ScanQualityResponse {
+    override fun getScanQuality(planId: String): ScanQuality {
         val scanPlan = scanPlanDao.get(planId)
         permissionCheckHandler.checkProjectPermission(scanPlan.projectId, PermissionAction.MANAGE)
-        return ScanQualityResponse.create(scanPlan.scanQuality)
+        return ScanQuality.create(scanPlan.scanQuality)
     }
 
     override fun updateScanQuality(planId: String, request: ScanQualityUpdateRequest): Boolean {
         val scanPlan = scanPlanDao.get(planId)
         permissionCheckHandler.checkProjectPermission(scanPlan.projectId, PermissionAction.MANAGE)
-        val qualityMap = request.toMap().ifEmpty { return true }
-        scanPlanDao.updateScanPlanQuality(planId, qualityMap)
+        val updateResult = scanPlanDao.updateQuality(planId, request.toMap())
+        if (updateResult.matchedCount == 0L) {
+            return false
+        }
         return true
     }
 
@@ -86,42 +86,6 @@ class ScanQualityServiceImpl(
             return licenseScanQualityService.checkLicenseScanQualityRedLine(scanQuality, scanResultOverview)
         }
         return true
-    }
-
-    override fun checkScanQualityRedLineDetail(
-        planId: String,
-        scanResultOverview: Map<String, Number>
-    ): ScanQualityCheckedDetail {
-        val scanPlan = scanPlanDao.get(planId)
-        permissionCheckHandler.checkProjectPermission(scanPlan.projectId, PermissionAction.MANAGE)
-        val scanQuality = scanPlan.scanQuality
-        if (scanQuality[ScanQualityResponse::forbidQualityUnPass.name] == false) {
-            return ScanQualityCheckedDetail(qualityStatus = true)
-        }
-
-        val detailsMap = HashMap<String, ScanQualityCheckedStatus>(CveOverviewKey.values().size)
-        var qualityStatus = true
-        CveOverviewKey.values().forEach { overviewKey ->
-            val cveCount = scanResultOverview[overviewKey.key]?.toLong()
-            val redLine = scanQuality[overviewKey.level.levelName] as Long?
-            if (cveCount != null && redLine != null) {
-                val status = ScanQualityCheckedStatus(
-                    status = cveCount <= redLine,
-                    require = redLine,
-                    actual = cveCount
-                )
-                qualityStatus = qualityStatus && status.status
-                detailsMap[overviewKey.key] = status
-            }
-        }
-
-        return ScanQualityCheckedDetail(
-            criticalStatus = detailsMap[CveOverviewKey.CVE_CRITICAL_COUNT.key],
-            highStatus = detailsMap[CveOverviewKey.CVE_HIGH_COUNT.key],
-            mediumStatus = detailsMap[CveOverviewKey.CVE_MEDIUM_COUNT.key],
-            lowStatus = detailsMap[CveOverviewKey.CVE_LOW_COUNT.key],
-            qualityStatus = qualityStatus
-        )
     }
 
     /**

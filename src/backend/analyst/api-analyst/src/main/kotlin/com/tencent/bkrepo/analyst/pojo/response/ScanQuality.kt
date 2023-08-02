@@ -25,54 +25,47 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.pojo.response
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("更新质量规则")
-data class ScanQualityUpdateRequest(
+@ApiModel("质量规则")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class ScanQuality(
     @ApiModelProperty("严重漏洞数")
-    val critical: Long? = null,
+    val critical: Long?,
     @ApiModelProperty("高危漏洞数")
-    val high: Long? = null,
+    val high: Long?,
     @ApiModelProperty("中危漏洞数")
-    val medium: Long? = null,
+    val medium: Long?,
     @ApiModelProperty("低危漏洞数")
-    val low: Long? = null,
+    val low: Long?,
     @ApiModelProperty("扫描未完成是否禁用制品")
-    val forbidScanUnFinished: Boolean? = null,
+    val forbidScanUnFinished: Boolean?,
     @ApiModelProperty("质量规则未通过是否禁用制品")
-    val forbidQualityUnPass: Boolean? = null,
+    val forbidQualityUnPass: Boolean?,
     @ApiModelProperty("许可是否推荐使用")
-    val recommend: Boolean? = null,
+    val recommend: Boolean?,
     @ApiModelProperty("许可是否合规")
-    val compliance: Boolean? = null,
+    val compliance: Boolean?,
     @ApiModelProperty("许可是否未知")
-    val unknown: Boolean? = null
+    val unknown: Boolean?
 ) {
-    fun toMap(): Map<String, Any?> {
-        val map = mutableMapOf<String, Any?>()
-        Level.values().forEach { level ->
-            val methodName = "get${level.levelName.capitalize()}"
-            val method = this::class.java.getDeclaredMethod(methodName)
-            val redLine = method.invoke(this) as Long?
-            redLine?.let {
-                if (it < 0) {
-                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, level.levelName)
-                }
-                map[level.levelName] = it
-            }
-        }
 
-        this.forbidScanUnFinished?.let { map[::forbidScanUnFinished.name] = it }
-        this.forbidQualityUnPass?.let { map[::forbidQualityUnPass.name] = it }
-        this.recommend?.let { map[::recommend.name] = it }
-        this.compliance?.let { map[::compliance.name] = it }
-        this.unknown?.let { map[::unknown.name] = it }
-        return map
+    companion object {
+        fun create(map: Map<String, Any>) = ScanQuality(
+            critical = map[Level.CRITICAL.levelName] as? Long,
+            high = map[Level.HIGH.levelName] as? Long,
+            medium = map[Level.MEDIUM.levelName] as? Long,
+            low = map[Level.LOW.levelName] as? Long,
+            forbidScanUnFinished = map[ScanQuality::forbidScanUnFinished.name] as? Boolean,
+            forbidQualityUnPass = map[ScanQuality::forbidQualityUnPass.name] as? Boolean,
+            recommend = map[ScanQuality::recommend.name] as? Boolean,
+            compliance = map[ScanQuality::compliance.name] as? Boolean,
+            unknown = map[ScanQuality::unknown.name] as? Boolean
+        )
     }
 }
