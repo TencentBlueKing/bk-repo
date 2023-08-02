@@ -35,6 +35,7 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -91,7 +92,9 @@ class PackageDao : SimpleMongoDao<TPackage>() {
     fun decreaseVersions(packageId: String): TPackage? {
         val query = Query(Criteria.where(ID).isEqualTo(packageId))
         val update = Update().inc(TPackage::versions.name, -1)
-        return this.findAndModify(query, update, TPackage::class.java)
+        val options = FindAndModifyOptions()
+        options.returnNew(true)
+        return this.findAndModify(query, update, options, TPackage::class.java)
     }
 
     fun updateLatestVersion(packageId: String, latestVersion: String) {

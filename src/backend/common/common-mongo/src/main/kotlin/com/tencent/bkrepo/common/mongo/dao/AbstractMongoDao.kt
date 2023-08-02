@@ -173,13 +173,11 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return determineMongoTemplate().aggregate(aggregation, determineCollectionName(aggregation), outputType)
     }
 
-    override fun <T> findAndModify(query: Query, update: Update, clazz: Class<T>): T? {
+    override fun <T> findAndModify(query: Query, update: Update, options: FindAndModifyOptions, clazz: Class<T>): T? {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findAndModify: [$query], [$update]")
         }
-        val option = FindAndModifyOptions()
-        option.returnNew(true)
-        return determineMongoTemplate().findAndModify(query, update, option, clazz)
+        return determineMongoTemplate().findAndModify(query, update, options, clazz)
     }
 
     protected open fun determineCollectionName(): String {
