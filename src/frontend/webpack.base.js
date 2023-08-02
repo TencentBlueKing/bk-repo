@@ -40,7 +40,7 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                     ]
                 },
                 {
-                    test: /\.scss$/,
+                    test: /\.(scss|css)$/,
                     use: [
                         MiniCssExtractPlugin.loader,
                         {
