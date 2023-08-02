@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.center
+package com.tencent.bkrepo.common.artifact.repository.redirect
 
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import org.springframework.context.annotation.Conditional
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterShareServiceImpl(
-    repositoryService: RepositoryService,
-    nodeService: NodeService,
-    mongoTemplate: MongoTemplate
-) : ShareServiceImpl(
-    repositoryService,
-    nodeService,
-    mongoTemplate
-)
+@Component
+class DownloadRedirectManager(
+    private val redirectServices: List<DownloadRedirectService>
+) {
+    /**
+     * 重定向下载请求
+     *
+     * @param context 下载请求上下文
+     *
+     * @return true 已重定向请求， false 未重定向请求
+     */
+    fun redirect(context: ArtifactDownloadContext): Boolean {
+        if (!context.request.method.equals(HttpMethod.GET.name, true)) {
+            // 只重定向GET请求
+            return false
+        }
+        redirectServices.forEach {
+            try {
+                if (it.shouldRedirect(context)) {
+                    it.redirect(context)
+                    return true
+                }
+            } catch (ignore: Exception) {
+                logger.error("Redirect by ${it.javaClass.simpleName} failed", ignore)
+            }
+        }
+        return false
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(DownloadRedirectManager::class.java)
+    }
+}

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.center
+package com.tencent.bkrepo.common.artifact.util.http
 
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import org.springframework.context.annotation.Conditional
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import org.springframework.boot.web.server.MimeMappings
+import org.springframework.web.util.UriUtils
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterShareServiceImpl(
-    repositoryService: RepositoryService,
-    nodeService: NodeService,
-    mongoTemplate: MongoTemplate
-) : ShareServiceImpl(
-    repositoryService,
-    nodeService,
-    mongoTemplate
-)
+object HttpHeaderUtils {
+    private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
+        add("yaml", MediaTypes.APPLICATION_YAML)
+        add("tgz", MediaTypes.APPLICATION_TGZ)
+        add("ico", MediaTypes.APPLICATION_ICO)
+        add("apk", MediaTypes.APPLICATION_APK)
+    }
+
+    /**
+     * 编码Content-Disposition内容
+     */
+    fun encodeDisposition(filename: String): String {
+        val encodeFilename = UriUtils.encode(filename, Charsets.UTF_8)
+        return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
+    }
+
+    /**
+     * 判断MediaType
+     */
+    fun determineMediaType(name: String, mimeMappings: Map<String, String>): String {
+        val extension = PathUtils.resolveExtension(name)
+        return this.mimeMappings.get(extension) ?: mimeMappings[extension] ?: MediaTypes.APPLICATION_OCTET_STREAM
+    }
+}
