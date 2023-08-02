@@ -55,8 +55,7 @@ class DownloadRedirectManager(
                     return true
                 }
             } catch (ignore: Exception) {
-                logger.error("Redirect by ${it.javaClass.simpleName} failed")
-                ignore.printStackTrace()
+                logger.error("Redirect by ${it.javaClass.simpleName} failed", ignore)
             }
         }
         return false

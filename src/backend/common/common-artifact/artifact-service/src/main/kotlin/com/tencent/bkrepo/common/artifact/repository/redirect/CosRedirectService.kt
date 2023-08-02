@@ -76,18 +76,21 @@ class CosRedirectService(
             return false
         }
 
-        // 仅支持重定向本地单文件下载请求
         val node = ArtifactContextHolder.getNodeDetail(
             context.repositoryDetail.projectId,
             context.repositoryDetail.name
         )
+        // 从request uri中获取artifact信息，artifact为null时表示非单制品下载请求，此时不支持重定向
         val artifact = ArtifactContextHolder.getArtifactInfo()
+        // node为null时表示制品不存在，或者是Remote仓库的制品尚未被缓存，此时不支持重定向
         if (node == null || node.folder || artifact == null) {
             return false
         }
 
         // 判断存储类型是否支持重定向，文件大小是否达到重定向的限制
-        val notInnerCosStorageCredentials = storageProperties.type != StorageType.INNERCOS
+        val storageCredentials = context.repositoryDetail.storageCredentials
+            ?: storageProperties.defaultStorageCredentials()
+        val notInnerCosStorageCredentials = storageCredentials !is InnerCosCredentials
         val lessThanMinSize = node.size < storageProperties.redirect.minDirectDownloadSize.toBytes()
         if (notInnerCosStorageCredentials || lessThanMinSize) {
             return false
@@ -107,7 +110,7 @@ class CosRedirectService(
                 storageProperties.redirect.redirectAllDownload
 
         // 文件存在于COS上时才会被重定向
-        return needToRedirect && isSystemOrAdmin() && exists(node, context.repositoryDetail.storageCredentials)
+        return needToRedirect && isSystemOrAdmin() && guessFileExists(node, storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
@@ -172,9 +175,9 @@ class CosRedirectService(
     }
 
     /**
-     * 判断文件是否在COS上存在
+     * 推测文件是否在COS上存在
      */
-    private fun exists(node: NodeDetail, storageCredentials: StorageCredentials?): Boolean {
+    private fun guessFileExists(node: NodeDetail, storageCredentials: StorageCredentials): Boolean {
         // 判断文件存在时间，文件存在时间超过预期的上传耗时则认为文件已上传到COS，避免频繁请求COS判断文件是否存在
         val createdDateTime = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val existsDuration = Duration.between(createdDateTime, LocalDateTime.now())
