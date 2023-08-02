@@ -30,11 +30,11 @@ package com.tencent.bkrepo.lfs.artifact
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
 class LfsArtifactInfo(
-    userId: String,
+    projectId: String,
     repo: String,
     fullPath: String
 ) : ArtifactInfo(
-    userId,
+    projectId,
     repo,
     fullPath
 )
