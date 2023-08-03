@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,49 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job
+package com.tencent.bkrepo.job.config.properties
 
-/**
- * 分表数量
- */
-const val SHARDING_COUNT = 256
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 一次处理数据量
- */
-const val BATCH_SIZE = 1000
-
-/**
- * 数据库字段
- */
-const val SHA256 = "sha256"
-const val PROJECT = "projectId"
-const val REPO = "repoName"
-const val FOLDER = "folder"
-const val CREDENTIALS = "credentialsKey"
-const val COUNT = "count"
-const val TYPE = "type"
-const val CATEGORY = "category"
-const val CREATED_DATE = "createdDate"
-const val LAST_MODIFIED_DATE = "lastModifiedDate"
-const val DELETED_DATE = "deleted"
-const val FULLPATH = "fullPath"
-
-/**
- * metrics
- */
-const val TAG_STATUS = "status"
-const val TAG_NAME = "name"
-const val JOB_ASYNC_TASK_ACTIVE_COUNT = "job.async.task.active.count"
-const val JOB_ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"
-
-const val JOB_ASYNC_TASK_QUEUE_SIZE = "job.async.task.queue.size"
-const val JOB_ASYNC_TASK_QUEUE_SIZE_DESC = "异步任务队列大小"
-
-const val JOB_BATCH_JOB_ACTIVE_COUNT = "job.batch-job.active.count"
-const val JOB_BATCH_JOB_ACTIVE_DESC = "运行中的跑批任务数量"
-
-const val JOB_TASK_COUNT = "job.task.count"
-const val JOB_TASK_COUNT_DESC = "任务执行统计"
-const val JOB_TIME_CONSUME = "job.task.time"
-const val JOB_TIME_CONSUME_DESC = "任务执行时长统计"
+@ConfigurationProperties(value = "job.folder-size-stat-cleanup")
+data class FolderSizeStatJobProperties(
+//    override var cron: String = "0 0 0/6 * * ?"
+    override var cron: String = "0 31 18 * * ?"
+): MongodbJobProperties()

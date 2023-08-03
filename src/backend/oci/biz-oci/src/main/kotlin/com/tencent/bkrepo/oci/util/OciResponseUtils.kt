@@ -76,7 +76,8 @@ object OciResponseUtils {
             host = domain
         }
         val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttps))
-        return builder.build()
+//        return builder.build(
+        return URI("http://registry.me:25811/v2/")
     }
 
     /**

@@ -54,7 +54,8 @@ object NodeEventFactory {
                 projectId = projectId,
                 repoName = repoName,
                 resourceKey = fullPath,
-                userId = node.createdBy
+                userId = node.createdBy,
+                size = node.size
             )
         }
     }
