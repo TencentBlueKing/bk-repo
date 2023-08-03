@@ -109,15 +109,7 @@ export default {
                 }
             )
         }
-        return request.then(({ records }) => {
-            commit('UPDATE_TREE', {
-                roadMap,
-                list: records.map((v, index) => ({
-                    ...v,
-                    roadMap: `${roadMap},${index}`
-                }))
-            })
-        })
+        return request
     },
     // 请求文件/文件夹详情
     getNodeDetail (_, { projectId, repoName, fullPath = '' }) {

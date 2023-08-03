@@ -328,7 +328,7 @@
             convertFileSize,
             getIconName,
             formatDate,
-            ...mapMutations(['INIT_TREE']),
+            ...mapMutations(['INIT_TREE', 'UPDATE_TREE']),
             ...mapActions([
                 'getRepoListAll',
                 'getFolderList',
@@ -523,6 +523,16 @@
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
                     isPipeline: this.repoName === 'pipeline'
+                }).then((res) => {
+                    const records = res.records
+                    const roadMap = item.roadMap
+                    this.UPDATE_TREE({
+                        roadMap,
+                        list: records.map((v, index) => ({
+                            ...v,
+                            roadMap: `${roadMap},${index}`
+                        }))
+                    })
                 }).finally(() => {
                     this.$set(item, 'loading', false)
                 })
