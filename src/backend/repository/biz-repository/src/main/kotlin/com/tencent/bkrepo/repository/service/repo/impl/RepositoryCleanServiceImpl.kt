@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.repo.RepositoryCleanEvent
@@ -89,7 +90,7 @@ class RepositoryCleanServiceImpl(
         cleanStrategy: RepositoryCleanStrategy
     ) {
         try {
-            repositoryService.updateCleanStatusRunning(repo.projectId, repo.name)
+            repositoryService.updateCleanStatus(repo.projectId, repo.name, true)
             if (repo.type == RepositoryType.GENERIC) {
                 // 将rule 转为 Map<Regex, Rule>
                 val flattenRule = RepoCleanRuleUtils.flattenRule(cleanStrategy)
@@ -97,16 +98,16 @@ class RepositoryCleanServiceImpl(
                     if (logger.isDebugEnabled) {
                         logger.debug("flattenRule:[${flattenRule.toJsonString()}]")
                     }
-                    executeNodeCleanV2(repo.projectId, repo.name, "/", it)
+                    executeNodeCleanV2(repo.projectId, repo.name, ROOT, it)
                 }
             } else {
                 executeClean(repo.projectId, repo.name, cleanStrategy)
             }
-            repositoryService.updateCleanStatusWaiting(repo.projectId, repo.name)
+            repositoryService.updateCleanStatus(repo.projectId, repo.name, false)
         } catch (ex: IllegalArgumentException) {
             logger.error("repo clean fail exception:[$ex]")
         } catch (ex: Exception) {
-            repositoryService.updateCleanStatusWaiting(repo.projectId, repo.name)
+            repositoryService.updateCleanStatus(repo.projectId, repo.name, false)
             logger.error("projectId:[${repo.projectId}] repoName:[${repo.name}] clean error [$ex]")
         }
     }

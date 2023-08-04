@@ -375,47 +375,31 @@ class RepositoryServiceImpl(
         return null
     }
 
-    override fun updateCleanStatusRunning(
+    override fun updateCleanStatus(
         projectId: String,
-        repoName: String
+        repoName: String,
+        updateRunning: Boolean
     ) {
         val repository = checkRepository(projectId, repoName)
         val configuration = repository.configuration.readJsonString<RepositoryConfiguration>()
         if (configuration is LocalConfiguration) {
             val repoCleanStrategy = getRepoCleanStrategy(projectId, repoName)
             repoCleanStrategy?.let {
-                require(it.status == CleanStatus.WAITING) {
-                    "projectId:[$projectId] repoName:[$repoName] " +
-                        "update status to running fail original status is [${it.status}]"
+                if (updateRunning){
+                    require(it.status == CleanStatus.WAITING) {
+                        "projectId:[$projectId] repoName:[$repoName] " +
+                            "update status to running fail original status is [${it.status}]"
+                    }
+                    it.status = CleanStatus.RUNNING
+                }else{
+                    it.status = CleanStatus.WAITING
                 }
-                it.status = CleanStatus.RUNNING
                 configuration.cleanStrategy = it
                 repository.configuration = configuration.toJsonString()
                 repositoryDao.save(repository)
                 logger.info(
-                    "projectId:[$projectId] repoName:[$repoName] " +
-                        "update clean strategy status to [RUNNING] success"
-                )
-            }
-        }
-    }
-
-    override fun updateCleanStatusWaiting(
-        projectId: String,
-        repoName: String
-    ) {
-        val repository = checkRepository(projectId, repoName)
-        val configuration = repository.configuration.readJsonString<RepositoryConfiguration>()
-        if (configuration is LocalConfiguration) {
-            val repoCleanStrategy = getRepoCleanStrategy(projectId, repoName)
-            repoCleanStrategy?.let {
-                it.status = CleanStatus.WAITING
-                configuration.cleanStrategy = it
-                repository.configuration = configuration.toJsonString()
-                repositoryDao.save(repository)
-                logger.info(
-                    "projectId:[$projectId] repoName:[$repoName] " +
-                        "update clean strategy status to [WAITING] success"
+                    "projectId:[$projectId] repoName:[$repoName] update clean strategy status " +
+                        "to [${if (updateRunning)  "RUNNING" else "WAITING"}] success"
                 )
             }
         }
@@ -553,6 +537,7 @@ class RepositoryServiceImpl(
                         checkReserveDays(it)
                         RuleUtils.checkRuleRegex(it)
                     }
+
                     is Rule.FixedRule -> {
                         checkReserveDays(it.wrapperRule)
                         RuleUtils.checkRuleRegex(it.wrapperRule)

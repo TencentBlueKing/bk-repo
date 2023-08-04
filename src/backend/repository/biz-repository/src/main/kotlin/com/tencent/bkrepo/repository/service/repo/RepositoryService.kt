@@ -168,15 +168,8 @@ interface RepositoryService {
 
     /**
      * 更新仓库清理策略中的清理任务状态
-     * WAITING--->RUNNING
      */
-    fun updateCleanStatusRunning(projectId: String, repoName: String)
-
-    /**
-     * 更新仓库清理策略中的清理任务状态
-     * RUNNING--->WAITING
-     */
-    fun updateCleanStatusWaiting(projectId: String, repoName: String)
+    fun updateCleanStatus(projectId: String, repoName: String, updateRunning: Boolean)
 
     /**
      * 分页查询所有【组合仓库】、【本地仓库】
