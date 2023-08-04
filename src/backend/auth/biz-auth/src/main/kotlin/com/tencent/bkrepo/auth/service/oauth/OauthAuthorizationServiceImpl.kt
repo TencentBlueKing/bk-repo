@@ -32,8 +32,8 @@ import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TOauthToken
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.OauthUtils

@@ -31,39 +31,36 @@
 
 package com.tencent.bkrepo.auth.service.bkiam
 
+import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.ResourceBaseRequest
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.SystemCode
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.PermissionRepository
-import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.auth.repository.UserRepository
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
  * 对接蓝鲸权限中心3.0
  */
 class BkiamPermissionServiceImpl constructor(
-    userRepository: UserRepository,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
-    permissionRepository: PermissionRepository,
-    mongoTemplate: MongoTemplate,
+    permissionDao: PermissionDao,
+    userDao: UserDao,
     private val bkiamService: BkiamService,
     repositoryClient: RepositoryClient,
     projectClient: ProjectClient
 ) : PermissionServiceImpl(
-    userRepository,
     roleRepository,
     accountRepository,
-    permissionRepository,
-    mongoTemplate,
+    permissionDao,
+    userDao,
     repositoryClient,
     projectClient
 ) {

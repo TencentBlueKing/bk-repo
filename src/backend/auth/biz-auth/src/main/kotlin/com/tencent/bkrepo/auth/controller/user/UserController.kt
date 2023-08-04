@@ -370,7 +370,7 @@ class UserController @Autowired constructor(
         @RequestParam userName: String? = null,
         @RequestParam asstUser: String,
     ): Response<List<UserInfo>> {
-        val result = userService.getRelatedUserById(asstUser,userName)
+        val result = userService.getRelatedUserById(asstUser)
         return ResponseBuilder.success(result)
     }
 

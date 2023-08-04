@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.dao
 
 import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
@@ -42,7 +42,7 @@ import org.springframework.stereotype.Repository
  * 临时token数据访问层
  */
 @Repository
-class TemporaryTokenRepository : SimpleMongoDao<TTemporaryToken>() {
+class TemporaryTokenDao : SimpleMongoDao<TTemporaryToken>() {
 
     /**
      * 根据[token]查找临时token信息

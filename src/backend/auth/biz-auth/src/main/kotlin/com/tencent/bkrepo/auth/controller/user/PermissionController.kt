@@ -36,7 +36,6 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
@@ -99,15 +98,6 @@ class PermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.listPermission(projectId, repoName))
     }
 
-    @ApiOperation("获取仓库内置权限列表")
-    @GetMapping("/list/inrepo")
-    fun listRepoBuiltinPermission(
-        @RequestParam projectId: String,
-        @RequestParam repoName: String
-    ): Response<List<Permission>> {
-        return ResponseBuilder.success(permissionService.listBuiltinPermission(projectId, repoName))
-    }
-
     @ApiOperation("删除权限")
     @DeleteMapping("/delete/{id}")
     fun deletePermission(@PathVariable id: String): Response<Boolean> {
@@ -149,11 +139,6 @@ class PermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.updatePermissionRole(request))
     }
 
-    @ApiOperation("更新权限绑定部门")
-    @PutMapping("/department")
-    fun updatePermissionDepartment(@RequestBody request: UpdatePermissionDepartmentRequest): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updatePermissionDepartment(request))
-    }
 
     @ApiOperation("更新权限绑定动作")
     @PutMapping("/action")

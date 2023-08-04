@@ -29,40 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.dao.repository
 
-import com.tencent.bkrepo.auth.model.TRole
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import org.bson.types.ObjectId
+import com.tencent.bkrepo.auth.model.TAccount
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface RoleRepository : MongoRepository<TRole, String> {
-    fun findTRoleById(id: ObjectId): TRole?
-    fun deleteTRolesById(id: ObjectId)
-    fun findFirstById(id: String): TRole?
-    fun findByIdIn(roles: List<String>): List<TRole>
-    fun findByTypeAndProjectId(type: RoleType, projectId: String): List<TRole>
-    fun findByTypeAndProjectIdAndAdmin(type: RoleType, projectId: String, admin: Boolean): List<TRole>
-    fun findByProjectIdAndRepoNameAndType(projectId: String, repoName: String, type: RoleType): List<TRole>
-    fun findFirstByRoleIdAndProjectId(roleId: String, projectId: String): TRole?
-    fun findFirstByProjectIdAndTypeAndName(projectId: String, type: RoleType, name: String): TRole?
-    fun findFirstByRoleIdAndProjectIdAndRepoName(roleId: String, projectId: String, repoName: String): TRole?
-    fun findByProjectIdAndTypeAndAdminAndIdIn(
-        projectId: String,
-        type: RoleType,
-        admin: Boolean,
-        ids: List<String>
-    ): List<TRole>
-
-    fun findByProjectIdAndTypeAndAdminAndRepoNameAndIdIn(
-        projectId: String,
-        type: RoleType,
-        admin: Boolean,
-        repoName: String,
-        ids: List<String>
-    ): List<TRole>
-
-
+interface AccountRepository : MongoRepository<TAccount, String> {
+    fun findOneByAppId(appId: String): TAccount?
+    fun findAllBy(): List<TAccount>
+    fun findByOwner(owner: String): List<TAccount>
+    fun findByIdIn(ids: List<String>): List<TAccount>
 }

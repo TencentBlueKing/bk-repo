@@ -27,4 +27,5 @@ object PermissionQueryHelper {
         }
         return Query(celeriac)
     }
+
 }

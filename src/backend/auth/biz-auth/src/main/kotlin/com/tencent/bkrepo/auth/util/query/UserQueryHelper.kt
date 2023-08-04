@@ -1,11 +1,9 @@
 package com.tencent.bkrepo.auth.util.query
 
 import com.tencent.bkrepo.auth.model.TUser
-import com.tencent.bkrepo.auth.util.DataDigestUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Query.query
-import org.springframework.data.mongodb.core.query.and
 
 
 object UserQueryHelper {
@@ -17,7 +15,7 @@ object UserQueryHelper {
             Criteria.where("tokens.id").`is`(pwd),
             Criteria.where("tokens.id").`is`(hashPwd)
         ).and(TUser::userId.name).`is`(userId)
-        return Query.query(criteria)
+        return query(criteria)
     }
 
     fun filterNotLockedUser(): Query {
@@ -29,11 +27,11 @@ object UserQueryHelper {
         return query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
     }
 
-    fun getUserByIdAndPwd(userId: String, oldPwd: String): Query {
-        return Query.query(
+    fun getUserByIdAndPwd(userId: String, hashPwd: String): Query {
+        return query(
             Criteria().andOperator(
                 Criteria.where(TUser::userId.name).`is`(userId),
-                Criteria.where(TUser::pwd.name).`is`(DataDigestUtils.md5FromStr(oldPwd))
+                Criteria.where(TUser::pwd.name).`is`(hashPwd)
             )
         )
     }
@@ -66,18 +64,10 @@ object UserQueryHelper {
         return Query(criteria)
     }
 
-    fun getUserByAsstUsers(userId: String, userName: String?): Query {
-        val criteria = Criteria()
-        userName?.let {
-            criteria.orOperator(
-                Criteria.where(TUser::userId.name).regex("^$userName"),
-                Criteria.where(TUser::name.name).regex("^$userName")
-            )
-        }
-        userId.let {
-            criteria.and(TUser::asstUsers.name).`in`( *arrayOf(userId))
-            criteria.and(TUser::group.name).`is`(true)
-        }
-        return Query(criteria)
+    fun getUserByAsstUsers(userId: String): Query {
+        val query = Query()
+        return query.addCriteria(
+            Criteria.where(TUser::asstUsers.name).`is`(userId).and(TUser::group.name).`is`(true)
+        )
     }
 }

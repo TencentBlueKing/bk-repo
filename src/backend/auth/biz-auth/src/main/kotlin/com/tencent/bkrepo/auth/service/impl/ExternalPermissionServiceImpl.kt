@@ -33,7 +33,7 @@ import com.tencent.bkrepo.auth.pojo.externalPermission.CreateExtPermissionReques
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.externalPermission.ListExtPermissionOption
 import com.tencent.bkrepo.auth.pojo.externalPermission.UpdateExtPermissionRequest
-import com.tencent.bkrepo.auth.repository.ExternalPermissionRepository
+import com.tencent.bkrepo.auth.dao.repository.ExternalPermissionRepository
 import com.tencent.bkrepo.auth.service.ExternalPermissionService
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Page
