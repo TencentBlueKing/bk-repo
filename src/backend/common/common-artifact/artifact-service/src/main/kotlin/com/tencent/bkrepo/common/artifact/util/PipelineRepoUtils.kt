@@ -48,16 +48,6 @@ object PipelineRepoUtils {
      * 验证仓库不是pipeline仓库
      * @throws ErrorCodeException 如果是流水线仓库则抛异常
      */
-    fun checkPipeline(repoName: String) {
-        if (repoName == PIPELINE) {
-            logger.warn("Pipeline repo query is forbidden")
-            // throw ErrorCodeException(
-            //     status = HttpStatus.FORBIDDEN,
-            //     messageCode = ArtifactMessageCode.PIPELINE_BANNED
-            // )
-        }
-    }
-
     fun forbidPipeline(repoName: String) {
         if (repoName == PIPELINE) {
             logger.warn("Work on pipeline repo is forbidden")
