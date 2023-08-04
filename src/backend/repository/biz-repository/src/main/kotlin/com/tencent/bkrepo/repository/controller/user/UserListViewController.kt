@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.repository.service.file.ListViewService
-import com.tencent.bkrepo.repository.util.PipelineRepoUtils
+import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
