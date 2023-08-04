@@ -54,6 +54,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.system.measureTimeMillis
 
 /**
  * 统计folder下的文件size大小
@@ -87,16 +88,22 @@ class FolderSizeStatJob(
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
-        val folderSizeQuery = buildNodeQuery(row.projectId, row.repoName, row.fullPath)
-        val folderSize = aggregateComputeSize(folderSizeQuery, collectionName)
-        logger.info("stat folder ${row.fullPath} with repo ${row.projectId}|${row.repoName}" +
-                        " in $collectionName, size[$folderSize]")
-        updateFolderSize(
-            projectId = row.projectId,
-            repoName = row.repoName,
-            fullPath = row.fullPath,
-            size = folderSize
-        )
+        val elapsedTime = measureTimeMillis {
+            val folderSizeQuery = buildNodeQuery(row.projectId, row.repoName, row.fullPath)
+            val folderSize = aggregateComputeSize(folderSizeQuery, collectionName)
+            logger.info(
+                "stat folder ${row.fullPath} with repo ${row.projectId}|${row.repoName}" +
+                    " in $collectionName, size[$folderSize]"
+            )
+            updateFolderSize(
+                projectId = row.projectId,
+                repoName = row.repoName,
+                fullPath = row.fullPath,
+                size = folderSize
+            )
+        }
+        logger.info("stat folder ${row.fullPath} size elapsedTime $elapsedTime" +
+                        " in repo ${row.projectId}|${row.repoName}")
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(14)

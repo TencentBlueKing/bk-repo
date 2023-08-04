@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.repository.FolderStatDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -54,7 +55,9 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -70,22 +73,22 @@ class NodeModifyEventListener(
     private val mongoTemplate: MongoTemplate,
     private val nodeService: NodeService,
     private val nodeDao: NodeDao,
-    private val folderStatDao: FolderStatDao
+    private val folderStatDao: FolderStatDao,
+    private val repositoryProperties: RepositoryProperties,
     )  {
 
-    private val executors = run {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("nodeModify-worker-%d").build()
-        ThreadPoolExecutor(
+    private val executors = ThreadPoolExecutor(
             1, 5, 30, TimeUnit.SECONDS,
-            LinkedBlockingQueue(8192), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            LinkedBlockingQueue(8192),
+            ThreadFactoryBuilder().setNameFormat("nodeModify-worker-%d").build(),
+            ThreadPoolExecutor.CallerRunsPolicy()
         )
-    }
-
 
     private val cache: Cache<Triple<String, String, String>, LocalDateTime?> = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterAccess(30, TimeUnit.SECONDS)
         .removalListener<Triple<String, String, String>, LocalDateTime?> {
+            logger.info("remove ${it.key}, cause ${it.cause}")
             executors.execute(
                 Runnable {
                     updateFolderSize(
@@ -182,6 +185,7 @@ class NodeModifyEventListener(
             deleted = deleted,
             originalArtifactInfo = originalArtifactInfo
         )
+        logger.info("cache size ${cache.size()}")
     }
 
     private fun findModifiedFolder(
@@ -220,6 +224,17 @@ class NodeModifyEventListener(
 
 
 
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    fun checkCacheValue() {
+        logger.info("checkCacheValue")
+        cache.asMap().keys.forEach {
+            val writeDate = cache.getIfPresent(it)
+            logger.info("key $it, writeDate $writeDate, isExpired ${writeDate?.let { it1 -> isExpired(it1) }}")
+            if (writeDate != null && isExpired(writeDate)) {
+                cache.invalidate(it)
+            }
+        }
+    }
 
     private fun updateFolderSize(
         projectId: String,
@@ -344,10 +359,18 @@ class NodeModifyEventListener(
         }
     }
 
+    private fun isExpired(writeDate: LocalDateTime, expiration: Long = FIXED_DELAY): Boolean {
+        if (expiration <= 0) {
+            return false
+        }
+        return Duration.between(writeDate, LocalDateTime.now()).toMillis() >= expiration
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
         private const val SHARDING_COUNT = 256
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val LOG_REPO = "log"
+        private const val FIXED_DELAY = 30000L
     }
 }
