@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.repository.FolderStatRepository
+import com.tencent.bkrepo.repository.dao.repository.FolderStatDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -59,6 +59,7 @@ import java.time.LocalDateTime
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 
 /**
@@ -69,7 +70,7 @@ class NodeModifyEventListener(
     private val mongoTemplate: MongoTemplate,
     private val nodeService: NodeService,
     private val nodeDao: NodeDao,
-    private val folderStatRepository: FolderStatRepository
+    private val folderStatDao: FolderStatDao
     )  {
 
     private val executors = run {
@@ -81,11 +82,10 @@ class NodeModifyEventListener(
     }
 
 
-    // 节点下载后将节点信息放入缓存，当缓存失效时更新accessDate
-    private val cache: Cache<Triple<String, String, String>, LocalDateTime> = CacheBuilder.newBuilder()
+    private val cache: Cache<Triple<String, String, String>, LocalDateTime?> = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterAccess(30, TimeUnit.SECONDS)
-        .removalListener<Triple<String, String, String>, LocalDateTime> {
+        .removalListener<Triple<String, String, String>, LocalDateTime?> {
             executors.execute(
                 Runnable {
                     updateFolderSize(
@@ -118,7 +118,11 @@ class NodeModifyEventListener(
         }
         //过滤 report 和log 仓库
         if (event.repoName == REPORT || event.repoName == LOG_REPO) return
-        updateModifiedFolderCache(event)
+        try {
+            updateModifiedFolderCache(event)
+        } catch (ignore: Exception) {
+        }
+
     }
 
 
@@ -126,6 +130,7 @@ class NodeModifyEventListener(
      * 将有变更的目录节点存放在缓存中
      */
     private fun updateModifiedFolderCache(event: ArtifactEvent) {
+        logger.info("event type ${event.type}")
         val (artifactInfo, originalArtifactInfo, deleted) = when (event.type) {
             EventType.NODE_MOVED -> {
                 val movedEvent = event as NodeMovedEvent
@@ -189,8 +194,8 @@ class NodeModifyEventListener(
         } else {
             nodeService.getNodeDetail(artifactInfo)
         } ?: return
-
-
+        logger.info("start to find modified folder with fullPath ${node.fullPath}" +
+                " in repo ${node.projectId}|${node.repoName}")
         if (node.folder) {
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
@@ -221,12 +226,16 @@ class NodeModifyEventListener(
         repoName: String,
         folderPath: String
     ) {
-        val folderRealTimeSize = computeFolderSize(projectId, repoName, folderPath)
-        if (folderRealTimeSize == null) {
-            folderStatRepository.removeFolderStat(projectId, repoName, folderPath)
-        } else {
-            folderStatRepository.updateFolderSize(projectId, repoName, folderPath, folderRealTimeSize)
+        val elapsedTime = measureTimeMillis {
+            val folderRealTimeSize = computeFolderSize(projectId, repoName, folderPath)
+            logger.info("The size of folder $folderPath is $folderRealTimeSize in repo $projectId|$repoName")
+            if (folderRealTimeSize == null) {
+                folderStatDao.removeFolderStat(projectId, repoName, folderPath)
+            } else {
+                folderStatDao.updateFolderSize(projectId, repoName, folderPath, folderRealTimeSize)
+            }
         }
+        logger.info("update folder $folderPath size elapsedTime $elapsedTime")
     }
 
 
@@ -279,7 +288,8 @@ class NodeModifyEventListener(
             }
             parentPath
         }
-        cache.put(Triple(projectId, repoName, folderPath), LocalDateTime.now())
+        cache.getIfPresent(Triple(projectId, repoName, folderPath))
+            ?: cache.put(Triple(projectId, repoName, folderPath), LocalDateTime.now())
     }
 
     private fun findSubFolders(
@@ -321,6 +331,7 @@ class NodeModifyEventListener(
                     fullPath = it.fullPath,
                     folder = true
                 )
+                // 当移动目录时，需要将原节点对应的目录size信息也更新
                 if (originalArtifactInfo != null) {
                     updateCache(
                         projectId = originalArtifactInfo.projectId,

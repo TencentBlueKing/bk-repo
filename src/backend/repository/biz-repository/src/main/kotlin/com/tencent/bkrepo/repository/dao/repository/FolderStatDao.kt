@@ -29,7 +29,6 @@ package com.tencent.bkrepo.repository.dao.repository
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.repository.model.TFolderSizeStat
-import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -38,7 +37,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class FolderStatRepository : HashShardingMongoDao<TFolderSizeStat>() {
+class FolderStatDao : HashShardingMongoDao<TFolderSizeStat>() {
 
 
     fun removeFolderStat(
@@ -51,7 +50,7 @@ class FolderStatRepository : HashShardingMongoDao<TFolderSizeStat>() {
                 .and(TFolderSizeStat::repoName.name).isEqualTo(repoName)
                 .and(TFolderSizeStat::folderPath.name).isEqualTo(fullPath)
         )
-        this.determineMongoTemplate().remove(query)
+        this.remove(query)
     }
 
     fun updateFolderSize(
@@ -69,7 +68,6 @@ class FolderStatRepository : HashShardingMongoDao<TFolderSizeStat>() {
         val update = Update().set(TFolderSizeStat::size.name, size)
             .setOnInsert(TFolderSizeStat::createdDate.name, LocalDateTime.now())
             .set(TFolderSizeStat::lastModifiedDate.name, LocalDateTime.now())
-        val options = FindAndModifyOptions().upsert(true)
-        this.determineMongoTemplate().findAndModify(query, update, options, TFolderSizeStat::class.java)
+        this.upsert(query, update)
     }
 }
