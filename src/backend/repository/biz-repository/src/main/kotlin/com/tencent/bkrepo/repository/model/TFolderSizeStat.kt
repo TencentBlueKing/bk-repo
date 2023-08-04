@@ -46,7 +46,6 @@ data class TFolderSizeStat(
     var repoName: String,
     var folderPath: String,
     var size: Long,
-    val validate: Boolean,
     var createdDate: LocalDateTime,
     var lastModifiedDate: LocalDateTime,
 ) {

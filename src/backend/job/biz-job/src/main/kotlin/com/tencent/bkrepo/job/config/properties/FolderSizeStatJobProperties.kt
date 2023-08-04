@@ -31,6 +31,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(value = "job.folder-size-stat-cleanup")
 data class FolderSizeStatJobProperties(
+    override var enabled: Boolean = true,
 //    override var cron: String = "0 0 0/6 * * ?"
-    override var cron: String = "0 31 18 * * ?"
+    override var fixedDelay: Long = 6000000 * 1000L,
+    override var initialDelay: Long = 60 * 1000L
 ): MongodbJobProperties()

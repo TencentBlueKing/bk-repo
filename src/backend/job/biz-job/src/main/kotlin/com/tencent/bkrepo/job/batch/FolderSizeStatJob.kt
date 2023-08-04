@@ -28,15 +28,18 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
+import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
+import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.FileJobContext
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils.shardingSequence
 import com.tencent.bkrepo.job.config.properties.FolderSizeStatJobProperties
-import com.tencent.bkrepo.job.repository.FolderStatRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
@@ -44,6 +47,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -58,8 +62,7 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(FolderSizeStatJobProperties::class)
 class FolderSizeStatJob(
     properties: FolderSizeStatJobProperties,
-    private val mongoTemplate: MongoTemplate,
-    private val folderStatRepository: FolderStatRepository
+    private val mongoTemplate: MongoTemplate
 ) : DefaultContextMongoDbJob<FolderSizeStatJob.Node>(properties) {
 
     override fun start(): Boolean {
@@ -85,11 +88,10 @@ class FolderSizeStatJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         val folderSizeQuery = buildNodeQuery(row.projectId, row.repoName, row.fullPath)
-        folderStatRepository.initFolderSize(row.projectId, row.repoName, row.fullPath)
         val folderSize = aggregateComputeSize(folderSizeQuery, collectionName)
         logger.info("stat folder ${row.fullPath} with repo ${row.projectId}|${row.repoName}" +
                         " in $collectionName, size[$folderSize]")
-        folderStatRepository.upsertFolderSize(
+        updateFolderSize(
             projectId = row.projectId,
             repoName = row.repoName,
             fullPath = row.fullPath,
@@ -131,6 +133,24 @@ class FolderSizeStatJob(
         return aggregateResult.mappedResults.firstOrNull()?.get(Node::size.name) as? Long ?: 0
     }
 
+    fun updateFolderSize(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long
+    ) {
+        val query = Query(
+            Criteria.where(PROJECT).isEqualTo(projectId)
+                .and(REPO).isEqualTo(repoName)
+                .and(FOLDER_PATH).isEqualTo(fullPath)
+        )
+        val update = Update().set(FOLDER_SIZE, size)
+            .setOnInsert(CREATED_DATE, LocalDateTime.now())
+            .set(LAST_MODIFIED_DATE, LocalDateTime.now())
+        val folderCollectionName = COLLECTION_FOLDER_SIZE_STAT_PREFIX + shardingSequence(projectId, SHARDING_COUNT)
+        mongoTemplate.upsert(query, update, folderCollectionName)
+    }
+
     data class Node(
         val id: String,
         val folder: Boolean,
@@ -144,5 +164,9 @@ class FolderSizeStatJob(
     companion object {
         private val logger = LoggerFactory.getLogger(FolderSizeStatJob::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val COLLECTION_FOLDER_SIZE_STAT_PREFIX = "folder_stat_"
+        private const val FOLDER_PATH = "folderPath"
+        private const val FOLDER_SIZE = "size"
+
     }
 }
