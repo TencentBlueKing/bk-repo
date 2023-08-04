@@ -36,7 +36,8 @@ enum class OciMessageCode(private val key: String) : MessageCode {
     OCI_REPO_NOT_FOUND("oci.repo.not.found"),
     OCI_DELETE_RULES("oci.delete.rules"),
     OCI_VERSION_NOT_FOUND("oci.version.not.found"),
-    OCI_MANIFEST_INVALID("oci.manifest.invalid")
+    OCI_MANIFEST_INVALID("oci.manifest.invalid"),
+    OCI_DIGEST_INVALID("oci.digest.invalid")
     ;
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
