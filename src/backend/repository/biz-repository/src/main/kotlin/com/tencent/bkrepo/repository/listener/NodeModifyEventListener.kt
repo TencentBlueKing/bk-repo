@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.repository.listener
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -59,6 +57,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -84,22 +83,8 @@ class NodeModifyEventListener(
             ThreadPoolExecutor.CallerRunsPolicy()
         )
 
-    private val cache: Cache<Triple<String, String, String>, LocalDateTime?> = CacheBuilder.newBuilder()
-        .maximumSize(10000)
-        .expireAfterAccess(30, TimeUnit.SECONDS)
-        .removalListener<Triple<String, String, String>, LocalDateTime?> {
-            logger.info("remove ${it.key}, cause ${it.cause}")
-            executors.execute(
-                Runnable {
-                    updateFolderSize(
-                        projectId = it.key!!.first,
-                        repoName = it.key!!.second,
-                        folderPath = it.key!!.third,
-                    )
-                }.trace()
-            )
-        }
-        .build()
+    private val cache = ConcurrentHashMap<Triple<String, String, String>, LocalDateTime>()
+
 
     /**
      * 允许接收的事件类型
@@ -185,7 +170,6 @@ class NodeModifyEventListener(
             deleted = deleted,
             originalArtifactInfo = originalArtifactInfo
         )
-        logger.info("cache size ${cache.size()}")
     }
 
     private fun findModifiedFolder(
@@ -226,12 +210,20 @@ class NodeModifyEventListener(
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun checkCacheValue() {
-        logger.info("checkCacheValue")
-        cache.asMap().keys.forEach {
-            val writeDate = cache.getIfPresent(it)
-            logger.info("key $it, writeDate $writeDate, isExpired ${writeDate?.let { it1 -> isExpired(it1) }}")
-            if (writeDate != null && isExpired(writeDate)) {
-                cache.invalidate(it)
+        cache.entries.removeIf {
+            if (isExpired(it.value)) {
+                executors.execute(
+                    Runnable {
+                        updateFolderSize(
+                            projectId = it.key.first,
+                            repoName = it.key.second,
+                            folderPath = it.key.third,
+                        )
+                    }.trace()
+                )
+                true
+            } else {
+                false
             }
         }
     }
@@ -303,8 +295,7 @@ class NodeModifyEventListener(
             }
             parentPath
         }
-        cache.getIfPresent(Triple(projectId, repoName, folderPath))
-            ?: cache.put(Triple(projectId, repoName, folderPath), LocalDateTime.now())
+        cache[Triple(projectId, repoName, folderPath)] = LocalDateTime.now()
     }
 
     private fun findSubFolders(
