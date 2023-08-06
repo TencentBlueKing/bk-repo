@@ -295,7 +295,7 @@ class NodeModifyEventListener(
             }
             parentPath
         }
-        cache[Triple(projectId, repoName, folderPath)] = LocalDateTime.now()
+        cache.putIfAbsent(Triple(projectId, repoName, folderPath), LocalDateTime.now())
     }
 
     private fun findSubFolders(
