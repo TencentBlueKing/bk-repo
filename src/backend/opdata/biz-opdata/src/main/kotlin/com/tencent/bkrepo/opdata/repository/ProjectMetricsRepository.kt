@@ -32,8 +32,13 @@
 package com.tencent.bkrepo.opdata.repository
 
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>
+interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
+    fun findByProjectIdOrderByCreatedDateDesc(projectId:String, pageable: Pageable): Page<TProjectMetrics>
+    fun findAllByOrderByCreatedDateDesc(pageable: Pageable): Page<TProjectMetrics>
+}
