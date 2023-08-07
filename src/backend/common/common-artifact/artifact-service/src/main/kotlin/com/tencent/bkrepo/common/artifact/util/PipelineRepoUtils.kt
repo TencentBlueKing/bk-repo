@@ -29,10 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.artifact.util
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import org.slf4j.LoggerFactory
 
 /**
@@ -46,13 +48,13 @@ object PipelineRepoUtils {
      * 验证仓库不是pipeline仓库
      * @throws ErrorCodeException 如果是流水线仓库则抛异常
      */
-    fun checkPipeline(repoName: String) {
+    fun forbidPipeline(repoName: String) {
         if (repoName == PIPELINE) {
-            logger.warn("Pipeline repo query is forbidden")
-            // throw ErrorCodeException(
-            //     status = HttpStatus.FORBIDDEN,
-            //     messageCode = ArtifactMessageCode.PIPELINE_BANNED
-            // )
+            logger.warn("Work on pipeline repo is forbidden")
+             throw ErrorCodeException(
+                 status = HttpStatus.FORBIDDEN,
+                 messageCode = ArtifactMessageCode.PIPELINE_BANNED
+             )
         }
     }
 }
