@@ -64,7 +64,6 @@ import org.springframework.data.redis.connection.RedisStringCommands.SetOption.U
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -149,8 +148,8 @@ class TemporaryScanTokenServiceImpl(
                 projectId = projectId,
                 repoName = repoName,
                 fullPathSet = fullPaths.keys,
-                expireSeconds = Duration.ofMinutes(30L).seconds,
-                permits = 1,
+                expireSeconds = scannerProperties.tempDownloadUrlExpireDuration.seconds,
+                permits = scannerProperties.tempDownloadUrlPermits,
                 type = TokenType.DOWNLOAD
             )
             val tokens = temporaryTokenClient.createToken(req)

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.mongo.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.query.Query
@@ -107,4 +108,9 @@ interface MongoDao<E> {
      * 文档聚合操作
      */
     fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): AggregationResults<O>
+
+    /**
+     * 查询并更新操作
+     */
+    fun <T> findAndModify(query: Query, update: Update, options: FindAndModifyOptions, clazz: Class<T>): T?
 }

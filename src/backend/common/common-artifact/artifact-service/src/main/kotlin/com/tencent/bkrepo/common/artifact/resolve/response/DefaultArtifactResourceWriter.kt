@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -42,15 +41,15 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpMethod
-import org.springframework.web.util.UriUtils
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -90,7 +89,7 @@ open class DefaultArtifactResourceWriter(
             ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length.toInt())
-        val mediaType = resource.contentType ?: determineMediaType(name)
+        val mediaType = resource.contentType ?: determineMediaType(name, storageProperties.response.mimeMappings)
         response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
         response.contentType = mediaType
         response.status = resource.status?.value ?: resolveStatus(request)
@@ -124,7 +123,7 @@ open class DefaultArtifactResourceWriter(
 
         response.bufferSize = getBufferSize(resource.getTotalSize().toInt())
         response.characterEncoding = resource.characterEncoding
-        response.contentType = determineMediaType(name)
+        response.contentType = determineMediaType(name, storageProperties.response.mimeMappings)
         response.status = HttpStatus.OK.value
         response.setHeader(HttpHeaders.CACHE_CONTROL, StringPool.NO_CACHE)
         if (resource.useDisposition) {
@@ -244,15 +243,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 判断MediaType
-     */
-    private fun determineMediaType(name: String): String {
-        val extension = PathUtils.resolveExtension(name)
-        return mimeMappings.get(extension) ?: storageProperties.response.mimeMappings[extension]
-            ?: MediaTypes.APPLICATION_OCTET_STREAM
-    }
-
-    /**
      * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
      * */
     private fun determineCharset(mediaType: String, defaultCharset: String): String? {
@@ -260,14 +250,6 @@ open class DefaultArtifactResourceWriter(
             storageProperties.response.binaryMediaTypes.contains(mediaType)
         ) null
         else defaultCharset
-    }
-
-    /**
-     * 编码Content-Disposition内容
-     */
-    private fun encodeDisposition(filename: String): String {
-        val encodeFilename = UriUtils.encode(filename, Charsets.UTF_8)
-        return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
     }
 
     /**
@@ -299,12 +281,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     companion object {
-        private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
-            add("yaml", MediaTypes.APPLICATION_YAML)
-            add("tgz", MediaTypes.APPLICATION_TGZ)
-            add("ico", MediaTypes.APPLICATION_ICO)
-            add("apk", MediaTypes.APPLICATION_APK)
-        }
         private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }

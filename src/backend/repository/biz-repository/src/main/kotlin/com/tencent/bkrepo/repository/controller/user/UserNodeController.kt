@@ -67,7 +67,7 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.util.PipelineRepoUtils
+import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -159,6 +159,7 @@ class UserNodeController(
             fullPaths = fullPaths,
             operator = userId
         )
+        PipelineRepoUtils.forbidPipeline(repoName)
         return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
     }
 
@@ -321,8 +322,6 @@ class UserNodeController(
         artifactInfo: ArtifactInfo,
         nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
-        // 禁止查询pipeline仓库
-        PipelineRepoUtils.checkPipeline(artifactInfo.repoName)
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)
     }
