@@ -25,19 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.configuration
+package com.tencent.bkrepo.analyst.pojo.response
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@ConfigurationProperties("scanner.dispatcher.docker")
-data class DockerDispatcherProperties (
-    /**
-     * 是否启用
-     */
-    var enabled: Boolean = false,
-    var host: String = "unix://var/run/docker.sock",
-    var version: String = "1.23",
-    var connectTimeout: Int = 5000,
-    var readTimeout: Int = 0,
-    var maxTaskCount: Int = 1
+@ApiModel("制品关联的扫描方案信息列表")
+data class ArtifactPlanRelations(
+    @ApiModelProperty("制品扫描状态")
+    val scanStatus: String?,
+    @ApiModelProperty("方案信息列表")
+    val scanPlans: List<ArtifactPlanRelation>
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.response
+package com.tencent.bkrepo.lfs.artifact
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import org.springframework.stereotype.Component
 
-data class ScanQualityResponse(
-    val critical: Long?,
-    val high: Long?,
-    val medium: Long?,
-    val low: Long?,
-    val forbidScanUnFinished: Boolean,
-    val forbidQualityUnPass: Boolean
-) {
-
-    companion object {
-        fun create(map: Map<String, Any>) = ScanQualityResponse(
-            critical = map[Level.CRITICAL.levelName] as? Long,
-            high = map[Level.HIGH.levelName] as? Long,
-            medium = map[Level.MEDIUM.levelName] as? Long,
-            low = map[Level.LOW.levelName] as? Long,
-            forbidScanUnFinished = map[ScanQualityResponse::forbidScanUnFinished.name] as? Boolean ?: false,
-            forbidQualityUnPass = map[ScanQualityResponse::forbidQualityUnPass.name] as? Boolean ?: false
-        )
-    }
-}
+@Component
+class LfsVirtualRepository : VirtualRepository()

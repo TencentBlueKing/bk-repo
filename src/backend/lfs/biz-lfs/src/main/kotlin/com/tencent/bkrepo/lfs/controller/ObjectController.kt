@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,46 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.controller.user
+package com.tencent.bkrepo.lfs.controller
 
-import com.tencent.bkrepo.analyst.pojo.request.LicenseScanQualityUpdateRequest
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.analyst.pojo.response.LicenseScanQualityResponse
-import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
+import com.tencent.bkrepo.lfs.pojo.BatchRequest
+import com.tencent.bkrepo.lfs.pojo.BatchResponse
+import com.tencent.bkrepo.lfs.service.ObjectService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/scan/license/quality")
-class UserLicenseQualityController(
-    private val licenseScanQualityService: LicenseScanQualityService
-){
-    @GetMapping("/{planId}")
-    fun getScanQuality(
-        @PathVariable("planId") planId: String
-    ): Response<LicenseScanQualityResponse> {
-        return ResponseBuilder.success(licenseScanQualityService.getScanQuality(planId))
+class ObjectController(
+    private val objectService: ObjectService
+) {
+    @PostMapping("/{projectId}/{repoName}/objects/batch")
+    fun batch(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestBody request: BatchRequest
+    ): BatchResponse {
+        return objectService.batch(projectId, repoName, request)
     }
 
-    @PutMapping("/{planId}")
-    fun createScanQuality(
-        @PathVariable("planId") planId: String,
-        @RequestBody request: LicenseScanQualityUpdateRequest
-    ): Response<Boolean> {
-        return ResponseBuilder.success(licenseScanQualityService.updateScanQuality(planId, request))
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @PutMapping("/{projectId}/{repoName}/**")
+    fun upload(@ArtifactPathVariable lfsArtifactInfo: LfsArtifactInfo, file: ArtifactFile) {
+        objectService.upload(lfsArtifactInfo, file)
     }
 
-    @PostMapping("/{planId}")
-    fun updateScanQuality(
-        @PathVariable("planId") planId: String,
-        @RequestBody request: LicenseScanQualityUpdateRequest
-    ): Response<Boolean> {
-        return ResponseBuilder.success(licenseScanQualityService.updateScanQuality(planId, request))
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @GetMapping("/{projectId}/{repoName}/**")
+    fun download(@ArtifactPathVariable lfsArtifactInfo: LfsArtifactInfo) {
+        objectService.download(lfsArtifactInfo)
     }
 }

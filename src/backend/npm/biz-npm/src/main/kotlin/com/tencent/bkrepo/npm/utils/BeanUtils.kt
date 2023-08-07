@@ -31,8 +31,7 @@
 
 package com.tencent.bkrepo.npm.utils
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.google.common.collect.Maps
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.cglib.beans.BeanMap
 
 object BeanUtils {
@@ -42,19 +41,9 @@ object BeanUtils {
      * @param bean
      * @return
      */
-    fun <T> beanToMap(bean: T?): Map<String, String> {
-        val map = Maps.newHashMap<String, String>()
-        if (bean != null) {
-            val beanMap = BeanMap.create(bean)
-            for (key in beanMap.keys) {
-                var value = beanMap[key] ?: continue
-                if (value is JsonNode) {
-                    value = value.asText()
-                }
-                map[key.toString()] = value as? String
-            }
-        }
-        return map
+    @Suppress("UNCHECKED_CAST")
+    fun <T> beanToMap(bean: T): Map<String, Any?> {
+        return jacksonObjectMapper().convertValue(bean, Map::class.java) as Map<String, Any?>
     }
 
     /**

@@ -66,7 +66,7 @@ class RequestTest {
         val response = Response(CommonMessageCode.SUCCESS.getCode(), null, Pages.buildPage(listOf(node), 0, 1), null)
 
         return mock {
-            on { search(any()) }.doReturn(response)
+            on { queryWithoutCount(any()) }.doReturn(response)
         }
     }
 }

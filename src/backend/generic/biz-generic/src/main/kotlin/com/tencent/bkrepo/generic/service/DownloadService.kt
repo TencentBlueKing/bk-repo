@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
+import com.tencent.bkrepo.common.api.constant.DOWNLOAD_SOURCE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
+import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -59,7 +61,6 @@ import org.springframework.stereotype.Service
 class DownloadService(
     private val nodeClient: NodeClient,
     private val viewModelService: ViewModelService,
-    private val redirectService: EdgeNodeRedirectService
 ) : ArtifactService() {
 
     @Value("\${spring.application.name}")
@@ -85,11 +86,6 @@ class DownloadService(
             if (node.folder && !download) {
                 renderListView(node, this)
             } else {
-                if (redirectService.shouldRedirect(context.artifactInfo)) {
-                    // 节点来自其他集群，重定向到其他节点。
-                    redirectService.redirectToDefaultCluster(context)
-                    return
-                }
                 repository.download(context)
             }
         }
@@ -102,6 +98,23 @@ class DownloadService(
             repo = ArtifactContextHolder.getRepoDetail()
         )
         repository.download(context)
+    }
+
+    fun allowDownload(artifactInfo: GenericArtifactInfo, ip: String, fromApp: Boolean): Boolean {
+        val request = HttpContextHolder.getRequest()
+        request.setAttribute(CLIENT_ADDRESS, ip)
+        request.setAttribute(
+            DOWNLOAD_SOURCE,
+            if (fromApp) DownloadInterceptorType.MOBILE else DownloadInterceptorType.WEB
+        )
+        val context = ArtifactDownloadContext()
+        val nodeDetail = nodeClient.getNodeDetail(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            fullPath = artifactInfo.getArtifactFullPath()
+        ).data ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        context.getInterceptors().forEach { it.intercept(nodeDetail.projectId, nodeDetail) }
+        return true
     }
 
     private fun renderListView(node: NodeDetail, artifactInfo: GenericArtifactInfo) {

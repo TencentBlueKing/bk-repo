@@ -47,5 +47,7 @@ data class TaskPageParam(
     @ApiModelProperty("计划是否开启")
     val enabled: Boolean? = null,
     @ApiModelProperty("排序字段")
-    val sortType: TaskSortType? = TaskSortType.CREATED_TIME
+    val sortType: TaskSortType? = TaskSortType.CREATED_TIME,
+    @ApiModelProperty("排序方向")
+    val sortDirection: String? = "DESC"
 )

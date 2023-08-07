@@ -95,6 +95,9 @@ const val LAST_MODIFIED_DATE = "lastModifiedDate"
 const val DOWNLOADS = "downloads"
 const val MD5 = "md5"
 
+const val EMPTY_FILE_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+
 const val OCI_MANIFEST = "manifest.json"
 const val STAGE_TAG = "stageTag"
 

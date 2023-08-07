@@ -33,6 +33,7 @@ import com.tencent.bkrepo.analyst.pojo.ScanPlan
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -126,11 +127,11 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
     fun page(projectId: String, type: String?, planNameContains: String?, pageLimit: PageLimit): Page<TScanPlan> {
         val criteria = projectCriteria(projectId)
         type?.let { criteria.and(TScanPlan::type.name).isEqualTo(type) }
-        planNameContains?.let { criteria.and(TScanPlan::name.name).regex(".*$planNameContains.*") }
+        planNameContains?.let { criteria.and(TScanPlan::name.name).regex(".*${EscapeUtils.escapeRegex(it)}.*", "i") }
         val pageRequest = Pages.ofRequest(pageLimit.getNormalizedPageNumber(), pageLimit.getNormalizedPageSize())
-        val query = Query(criteria).with(pageRequest).with(Sort.by(TScanPlan::createdDate.name).descending())
+        val query = Query(criteria).with(Sort.by(TScanPlan::createdDate.name).descending())
 
-        return Pages.ofResponse(pageRequest, count(query), find(query))
+        return Pages.ofResponse(pageRequest, count(query), find(query.with(pageRequest)))
     }
 
     fun page(pageLimit: PageLimit? = null): List<TScanPlan> {
@@ -213,10 +214,10 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         updateFirst(Query(criteria), update)
     }
 
-    fun updateScanPlanQuality(scanId: String, quality: Map<String, Any?>) {
-        val query = Query(criteria().and(ID).isEqualTo(scanId))
-        val update = buildQualityUpdate(quality)
-        updateMulti(query, update)
+    fun updateQuality(planId: String, quality: Map<String, Any?>): UpdateResult {
+        val query = Query(Criteria.where(ID).isEqualTo(planId))
+        val update = Update.update(TScanPlan::scanQuality.name, quality)
+        return updateFirst(query, update)
     }
 
     private fun buildOverviewUpdate(overview: Map<String, Any?>, dec: Boolean = false): Update? {
@@ -240,14 +241,6 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         } else {
             null
         }
-    }
-
-    private fun buildQualityUpdate(quality: Map<String, Any?>): Update {
-        val update = Update()
-        quality.forEach { entry ->
-            update.set("${TScanPlan::scanQuality.name}.${entry.key}", entry.value)
-        }
-        return update
     }
 
     private fun projectCriteria(projectId: String, includeDeleted: Boolean = false): Criteria {

@@ -308,16 +308,15 @@ abstract class NodeBaseService(
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val query = Query(
-                NodeQueryHelper.nodeListCriteria(
-                    projectId = projectId,
-                    repoName = repoName,
-                    path = node.fullPath,
-                    option = NodeListOption(includeFolder = false, deep = true)
-                )
-            )
+
+            val criteria = where(TNode::projectId).isEqualTo(projectId)
+                .and(TNode::repoName).isEqualTo(repoName)
+                .and(TNode::deleted).isEqualTo(null)
+                .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(node.fullPath)}")
+                .and(TNode::folder).isEqualTo(false)
+            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
-            nodeDao.updateFirst(query, update)
+            nodeDao.updateMulti(query, update)
             logger.info("Update node access time [$this] success.")
         }
     }

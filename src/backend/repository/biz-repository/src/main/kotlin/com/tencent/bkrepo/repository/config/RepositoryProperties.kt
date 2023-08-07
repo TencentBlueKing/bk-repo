@@ -44,6 +44,7 @@ data class RepositoryProperties(
     var listCountLimit: Long = 100000L,
     var nodeCreateTimeout: Long = 10_000,
     var cleanStrategyTime: String = "0 0 3 * * ?",
+    var slowLogTimeThreshold: Long = 1_000,
     @NestedConfigurationProperty
     var job: RepoJobProperties = RepoJobProperties(),
     @NestedConfigurationProperty

@@ -1,6 +1,6 @@
 <template>
     <div class="bkrepo-view flex-align-center">
-        <div class="nav-submain-list" :class="{ 'hidden-menu': hiddenMenu }">
+        <div class="nav-submain-list" :class="{ 'hidden-menu': hiddenMenu }" v-if="routerStatus">
             <router-link
                 class="nav-submain-item flex-align-center"
                 :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
@@ -31,7 +31,7 @@
                 :size="14" :name="hiddenMenu ? 'dedent' : 'indent'" />
         </div>
         <div class="m10 bkrepo-view-main flex-column flex-1">
-            <breadcrumb class="mb10 repo-breadcrumb">
+            <breadcrumb class="mb10 repo-breadcrumb" v-if="routerStatus">
                 <bk-breadcrumb-item :to="{ name: 'repositories' }">{{$t('repoList')}}</bk-breadcrumb-item>
             </breadcrumb>
             <router-view class="flex-1"></router-view>
@@ -45,12 +45,15 @@
         components: { Breadcrumb },
         data () {
             return {
-                hiddenMenu: false
+                hiddenMenu: false,
+                routerStatus: true
             }
         },
         computed: {
             ...mapState(['userInfo', 'projectList']),
             menuList () {
+                const routerName = this.$route.name
+                if (routerName === '440') this.routerStatus = false
                 if (MODE_CONFIG === 'ci' || this.projectList.length) {
                     const showRepoScan = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                     return {
@@ -59,8 +62,7 @@
                             'repoSearch',
                             MODE_CONFIG === 'ci' && 'repoToken',
                             showRepoScan && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
-                            SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig', // 仅项目管理员
-                            MODE_CONFIG === 'ci' && this.userInfo.manage && 'userCenter'
+                            SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                         ].filter(Boolean),
                         global: [
                             !(MODE_CONFIG === 'ci') && 'projectManage',
@@ -96,7 +98,7 @@
     height: 100%;
     .nav-submain-list {
         position: relative;
-        width: 180px;
+        width: 200px;
         height: 100%;
         overflow-y: auto;
         padding-top: 12px;

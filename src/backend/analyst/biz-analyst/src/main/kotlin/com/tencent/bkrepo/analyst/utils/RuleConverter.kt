@@ -41,24 +41,24 @@ object RuleConverter {
 
     fun convert(sourceRule: Rule?, planType: String?, projectId: String): Rule {
         // 兼容许可证扫描的planType:MAVEN_LICENSE
-        val targetRule = createProjectIdAdnRepoRule(projectId, emptyList(), planType)
+        val targetRule = createProjectIdAndRepoRule(projectId, emptyList(), planType)
         // 将sourceRule中除projectId相关外的rule都合并到targetRule中
         sourceRule?.let { mergeInto(it, targetRule, listOf(NodeInfo::projectId.name)) }
         return targetRule
     }
 
     fun convert(projectId: String, repoNames: List<String>, repoType: String? = null): Rule {
-        return createProjectIdAdnRepoRule(projectId, repoNames, repoType)
+        return createProjectIdAndRepoRule(projectId, repoNames, repoType)
     }
 
     fun convert(projectId: String, repoName: String, fullPath: String): Rule {
-        val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
+        val rule = createProjectIdAndRepoRule(projectId, listOf(repoName))
         rule.rules.add(Rule.QueryRule(NodeDetail::fullPath.name, fullPath, OperationType.EQ))
         return rule
     }
 
     fun convert(projectId: String, repoName: String, packageKey: String, version: String): Rule {
-        val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
+        val rule = createProjectIdAndRepoRule(projectId, listOf(repoName))
         rule.rules.add(Rule.QueryRule(PackageSummary::key.name, packageKey, OperationType.EQ))
         rule.rules.add(Rule.QueryRule(RuleArtifact::version.name, version, OperationType.EQ))
         return rule
@@ -67,7 +67,7 @@ object RuleConverter {
     /**
      * 添加projectId和repoName规则
      */
-    private fun createProjectIdAdnRepoRule(
+    private fun createProjectIdAndRepoRule(
         projectId: String,
         repoNames: List<String>,
         repoType: String? = null

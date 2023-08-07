@@ -33,4 +33,5 @@ dependencies {
     implementation(project(":common:common-api"))
     compileOnly("org.springframework:spring-web")
     implementation(project(":common:common-artifact:artifact-api"))
+    implementation(project(":repository:api-repository"))
 }
