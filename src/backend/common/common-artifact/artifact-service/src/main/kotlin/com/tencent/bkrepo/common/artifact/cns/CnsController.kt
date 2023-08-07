@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,46 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.api
+package com.tencent.bkrepo.common.artifact.cns
 
-import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.replication.constant.BLOB_CHECK_URI
-import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
-import com.tencent.bkrepo.replication.constant.FeignResponse
-import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
-import org.springframework.cloud.openfeign.FeignClient
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 同一集群不同节点之间的blob数据同步接口
- *
- * 注意，不使用feign实现文件推送是因为目前feign对文件上传的实现是基于字节数组，
- * 当推送大文件或者许多文件推送请求时，容易造成内存不足。
- */
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "BlobReplicaClient")
-interface BlobReplicaClient {
+@Principal(type = PrincipalType.ADMIN)
+@RestController
+@RequestMapping("cns")
+class CnsController(
+    private val cnsService: CnsService
+) {
+    @GetMapping("/exist")
+    fun exist(
+        @RequestParam(required = false) key: String?,
+        @RequestParam sha256: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(cnsService.exist(key, sha256))
+    }
 
-    /**
-     * 从远程集群拉取文件数据
-     * @param request 拉取请求
-     */
-    @PostMapping(BLOB_PULL_URI)
-    fun pull(@RequestBody request: BlobPullRequest): FeignResponse
-
-    /**
-     * 检查文件数据在远程集群是否存在
-     * @param sha256 文件sha256，用于校验
-     * @param storageKey 存储实例key，为空表示远程集群默认存储
-     */
-    @GetMapping(BLOB_CHECK_URI)
+    @GetMapping("/check")
     fun check(
+        @RequestParam(required = false) key: String?,
         @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null,
-        @RequestParam(required = false) repoType: RepositoryType? = null
-    ): Response<Boolean>
+        @RequestParam(required = false) repoType: String? = null
+    ): Response<Boolean> {
+        val repositoryType = repoType?.let { RepositoryType.ofValueOrDefault(repoType) }
+        return ResponseBuilder.success(cnsService.check(key, sha256, repositoryType))
+    }
 }
