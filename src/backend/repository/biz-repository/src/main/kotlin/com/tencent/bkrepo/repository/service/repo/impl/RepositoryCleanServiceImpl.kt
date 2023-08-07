@@ -3,7 +3,6 @@ package com.tencent.bkrepo.repository.service.repo.impl
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.repo.RepositoryCleanEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.clean.CleanStatus
@@ -19,20 +18,16 @@ import com.tencent.bkrepo.repository.job.clean.CleanRepoTaskScheduler
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.node.NodeDelete
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
-import com.tencent.bkrepo.repository.service.node.NodeStatsOperation
 import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.service.repo.RepositoryCleanService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.util.RepoCleanRuleUtils
-import com.tencent.bkrepo.repository.util.RuleUtils
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -47,7 +42,6 @@ class RepositoryCleanServiceImpl(
     private val taskScheduler: CleanRepoTaskScheduler,
     private val packageService: PackageService,
     private val nodeDeleteOperation: NodeDeleteOperation,
-    private val nodeStatsOperation: NodeStatsOperation,
     private val nodeClient: NodeClient,
     private val publisher: ApplicationEventPublisher
 ) : RepositoryCleanService {
@@ -202,47 +196,6 @@ class RepositoryCleanServiceImpl(
         }
         return versionList
     }
-
-    /**
-     * 执行 Generic 仓库清理
-     */
-    private fun executeNodeClean(
-        projectId: String,
-        repoName: String,
-        cleanStrategy: RepositoryCleanStrategy
-    ) {
-        val projectIdRule = Rule.QueryRule(NodeInfo::projectId.name, projectId)
-        val repoNameRule = Rule.QueryRule(NodeInfo::repoName.name, repoName)
-        val allNodeQueryRule = Rule.NestedRule(mutableListOf(projectIdRule, repoNameRule))
-        val allNodeList = nodeRuleQuery(allNodeQueryRule)
-        var reserveNodeList = mutableListOf<NodeDelete>()
-        var deleteNodeList: MutableList<NodeDelete>
-        with(cleanStrategy) {
-            rule?.let {
-                reserveNodeList = nodeRuleQuery(it)
-            }
-            if (logger.isDebugEnabled) {
-                logger.debug("project:[$projectId] repoName[$repoName] reverseNodeList:[$reserveNodeList]")
-            }
-            // 取【所有节点集合】 与 【保留规则集合】 的差集
-            allNodeList.removeAll(reserveNodeList)
-            // 保留天数过滤
-            deleteNodeList = nodeReserveDaysFilter(allNodeList, reserveDays)
-        }
-        if (logger.isDebugEnabled) {
-            logger.debug("projectId:[$projectId] repoName:[$repoName] delete list [$deleteNodeList]")
-        }
-        deleteNodeList.forEach {
-            // 判断文件夹下是否有文件
-            if (it.folder) {
-                val countFileNode =
-                    nodeStatsOperation.countFileNode(ArtifactInfo(it.projectId, it.repoName, it.fullPath))
-                if (countFileNode > 0) return@forEach
-            }
-            nodeDeleteOperation.deleteByPath(it.projectId, it.repoName, it.fullPath, SYSTEM_USER)
-        }
-    }
-
     private fun executeNodeCleanV2(
         projectId: String,
         repoName: String,
@@ -286,64 +239,6 @@ class RepositoryCleanServiceImpl(
         } else {
             logger.warn("list node page is null")
         }
-    }
-
-    /**
-     * generic仓库清理：根据规则查询节点
-     * @return MutableList<TNode> 节点集合
-     */
-    private fun nodeRuleQuery(rule: Rule): MutableList<NodeDelete> {
-        val result = mutableListOf<NodeDelete>()
-        if (rule is Rule.NestedRule && rule.rules.isEmpty()) return result
-        val newRule = RuleUtils.rulePathToRegex(rule)
-        var pageNumber = 1
-        val queryModel = QueryModel(
-            page = PageLimit(pageNumber, DEFAULT_PAGE_SIZE),
-            sort = null,
-            select = null,
-            rule = newRule
-        )
-        var nodePage = nodeClient.search(queryModel).data
-        nodePage?.let {
-            while (nodePage!!.records.isNotEmpty()) {
-                nodePage!!.records.map {
-                    val projectId = it[TNode::projectId.name] as String
-                    val repoName = it[TNode::repoName.name] as String
-                    val fullPath = it[TNode::fullPath.name] as String
-                    val folder = it[TNode::folder.name] as Boolean
-                    val createdDate = LocalDateTime.parse(it[TNode::createdDate.name].toString())
-                    val recentlyUseDate = it[TNode::recentlyUseDate.name]?.let { date ->
-                        LocalDateTime.parse(date.toString())
-                    }
-                    val node = NodeDelete(projectId, repoName, folder, fullPath, createdDate, recentlyUseDate)
-                    result.add(node)
-                }
-                pageNumber += 1
-                queryModel.page = PageLimit(pageNumber, DEFAULT_PAGE_SIZE)
-                nodePage = nodeClient.search(queryModel).data
-            }
-        }
-        return result
-    }
-
-    /**
-     * generic仓库清理：根据保留天数过滤节点
-     * @return MutableList<TNode> ,返回大于【保留天数】的节点集合
-     */
-    private fun nodeReserveDaysFilter(nodeList: List<NodeDelete>, reserveDays: Long): MutableList<NodeDelete> {
-        val deleteNodeList: MutableList<NodeDelete> = mutableListOf()
-        val nowDate = LocalDateTime.now()
-        nodeList.forEach {
-            var useDays = Long.MAX_VALUE
-            if (it.recentlyUseDate != null) {
-                useDays = Duration.between(it.recentlyUseDate, nowDate).toDays()
-            }
-            val createdDays = Duration.between(it.createdDate, nowDate).toDays()
-            if (createdDays >= reserveDays && useDays >= reserveDays) {
-                deleteNodeList.add(it)
-            }
-        }
-        return deleteNodeList
     }
 
     /**
