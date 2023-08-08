@@ -78,4 +78,19 @@ class OciPackageController(
         ))
         return ResponseBuilder.success()
     }
+
+    override fun blobPathRefresh(projectId: String, repoName: String, packageName: String, version: String): Response<Boolean> {
+        return ResponseBuilder.success(
+            operationService.refreshBlobNode(
+            projectId = projectId,
+            repoName = repoName,
+            pName = packageName,
+            pVersion = version
+            ))
+    }
+
+    override fun deleteBlobsFolderAfterRefreshed(projectId: String, repoName: String, packageName: String): Response<Void> {
+        operationService.deleteBlobsFolderAfterRefreshed(projectId, repoName, packageName)
+        return ResponseBuilder.success()
+    }
 }

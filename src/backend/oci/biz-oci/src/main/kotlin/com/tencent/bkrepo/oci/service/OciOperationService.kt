@@ -165,9 +165,22 @@ interface OciOperationService {
     /**
      * oci blob 路径调整，由/packageName/blobs/XXX -> /packageName/blobs/version/XXX
      */
-    fun refreshFullPathOfBlob(
-        projectId: String? = null,
-        repoName: String? =null,
+    fun refreshBlobNode(
+        projectId: String,
+        repoName: String,
+        pName: String,
+        pVersion: String,
+        userId: String = SecurityUtils.getUserId()
+    ): Boolean
+
+
+    /**
+     * 当package下所有版本的blob路径都刷新到新的路径下后，删除/packageName/blobs目录
+     */
+    fun deleteBlobsFolderAfterRefreshed(
+        projectId: String,
+        repoName: String,
+        pName: String,
         userId: String = SecurityUtils.getUserId()
     )
 }

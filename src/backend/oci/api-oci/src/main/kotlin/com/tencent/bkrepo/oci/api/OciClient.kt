@@ -34,10 +34,12 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 
 @Api("oci")
@@ -57,5 +59,22 @@ interface OciClient {
     fun getPackagesFromThirdPartyRepo(
         @PathVariable projectId: String,
         @PathVariable repoName: String
+    ): Response<Void>
+
+    @ApiOperation("刷新对应版本镜像的blob节点路径")
+    @PostMapping("/blob/path/refresh/{projectId}/{repoName}")
+    fun blobPathRefresh(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageName: String,
+        @RequestParam version: String,
+    ): Response<Boolean>
+
+    @ApiOperation("当历史数据刷新完成后，删除blobs路径下的公共blob节点")
+    @DeleteMapping("/blobs/delete/{projectId}/{repoName}")
+    fun deleteBlobsFolderAfterRefreshed(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageName: String
     ): Response<Void>
 }

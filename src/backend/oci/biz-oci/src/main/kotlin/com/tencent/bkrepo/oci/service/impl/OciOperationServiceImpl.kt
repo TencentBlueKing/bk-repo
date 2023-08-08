@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -53,6 +52,8 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
+import com.tencent.bkrepo.oci.constant.BLOB_PATH_REFRESHED_KEY
+import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
 import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
@@ -103,10 +104,8 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import com.tencent.devops.plugin.api.PluginManager
@@ -390,9 +389,11 @@ class OciOperationServiceImpl(
         fileInfo: FileInfo?,
         proxyUrl: String?
     ): NodeDetail? {
-        var metadata: List<MetadataModel>? = null
+        val metadata: MutableList<MetadataModel> = mutableListOf(
+            MetadataModel(key = BLOB_PATH_VERSION_KEY, value = BLOB_PATH_VERSION, system = true)
+        )
         proxyUrl?.let {
-            metadata = mutableListOf(MetadataModel(key = PROXY_URL, value = proxyUrl, system = true))
+            metadata.add(MetadataModel(key = PROXY_URL, value = proxyUrl, system = true))
         }
         val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, metadata)
         val nodeDetail = if (fileInfo != null) {
@@ -516,6 +517,21 @@ class OciOperationServiceImpl(
             sourceType = sourceType
         )
 
+        updateNodeMetaData(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            metadata = metadata
+        )
+    }
+
+
+    private fun updateNodeMetaData(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        metadata: Map<String, Any>
+    ) {
         val metadataSaveRequest = ObjectBuildUtils.buildMetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
@@ -672,8 +688,12 @@ class OciOperationServiceImpl(
                 )
                 nodeClient.createNode(nodeCreateRequest)
             }
-            // 删除临时存储路径节点 /packageName/blobs/xxx
-            deleteNode(projectId, repoName, fullPath, userId)
+            val metadataMap = metadataClient.listMetadata(projectId, repoName, fullPath).data
+            if (metadataMap?.get(BLOB_PATH_VERSION_KEY) != null) {
+                // 只有当新建的blob路径节点才去删除，历史的由定时任务去刷新然后删除
+                // 删除临时存储路径节点 /packageName/blobs/xxx
+                deleteNode(projectId, repoName, fullPath, userId)
+            }
             return true
         }
     }
@@ -960,85 +980,67 @@ class OciOperationServiceImpl(
         }
     }
 
-    override fun refreshFullPathOfBlob(projectId: String?, repoName: String?, userId: String) {
-        if (projectId.isNullOrEmpty()) {
-            projectClient.listProject().data.orEmpty().forEach {
-                repositoryClient.listRepo(
-                    projectId = projectId!!, type = RepositoryType.OCI.name
-                ).data.orEmpty().forEach {
-                    refreshPackage(it, userId)
-                }
-                repositoryClient.listRepo(
-                    projectId = projectId, type = RepositoryType.DOCKER.name
-                ).data.orEmpty().forEach {
-                    refreshPackage(it, userId)
-                }
-            }
-            return
-        }
-        if (repoName.isNullOrEmpty()) return
+    override fun deleteBlobsFolderAfterRefreshed(projectId: String, repoName: String, pName: String, userId: String) {
         val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
-        if (repoInfo.type == RepositoryType.OCI || repoInfo.type == RepositoryType.DOCKER){
-            refreshPackage(repoInfo, userId)
-        }
-    }
-
-    private fun refreshPackage(
-        repoInfo: RepositoryInfo,
-        userId: String,
-    ) {
-        with(repoInfo) {
-            val packageList = packageClient.listAllPackageNames(projectId, name).data ?: return
-            packageList.forEach { pName ->
-                packageClient.listAllVersion(projectId, name, pName).data.orEmpty().forEach { pVersion ->
-                    refreshNode(
-                        repoInfo = repoInfo,
-                        pName = pName,
-                        pVersion = pVersion,
-                        userId = userId
-                    )
-                }
-            }
-        }
+        val blobsFolderPath = StringPool.SLASH+pName
+        deleteNode(projectId, repoName, blobsFolderPath, userId)
     }
 
     /**
      * 调整blob目录
      * 从/packageName/blobs/xxx 到/packageName/blobs/version/xxx
      */
-    private fun refreshNode(
-        repoInfo: RepositoryInfo,
+    override fun refreshBlobNode(
+        projectId: String,
+        repoName: String,
         pName: String,
-        pVersion: PackageVersion,
+        pVersion: String,
         userId: String
-    ) {
+    ): Boolean {
+        val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
+            ?: throw RepoNotFoundException("$projectId|$repoName")
         val packageName = PackageKeys.resolveName(repoInfo.type.name.toLowerCase(), pName)
-        val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion.name)
+        val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion)
         logger.info("Manifest $manifestPath will be refreshed")
         val manifestNode = nodeClient.getNodeDetail(
             repoInfo.projectId, repoInfo.name, manifestPath
-        ).data ?: return
+        ).data ?: return false
         val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
         val manifest = loadManifest(
             manifestNode.sha256!!, manifestNode.size, storageCredentials
         ) ?: run {
             logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
-            return
+            return false
         }
         val ociArtifactInfo = OciManifestArtifactInfo(
             projectId = repoInfo.projectId,
             repoName = repoInfo.name,
             packageName = packageName,
-            version = pVersion.name,
-            reference = pVersion.name,
+            version = pVersion,
+            reference = pVersion,
             isValidDigest = false
         )
+        var refreshStatus = true
         OciUtils.manifestIterator(manifest).forEach {
-            doSyncBlob(it, ociArtifactInfo, userId)
+            refreshStatus = refreshStatus && doSyncBlob(it, ociArtifactInfo, userId)
         }
-        logger.info("Manifest $manifestPath has been successfully refreshed")
+
+        if (refreshStatus) {
+            updateNodeMetaData(
+                projectId = repoInfo.projectId,
+                repoName = repoInfo.name,
+                fullPath = manifestPath,
+                metadata = mapOf(BLOB_PATH_REFRESHED_KEY to true)
+            )
+        }
+        logger.info("The status of path $manifestPath refreshed is $refreshStatus")
+        return refreshStatus
     }
+
+
+
+
 
 
     private fun buildImagePackagePullContext(
@@ -1090,5 +1092,6 @@ class OciOperationServiceImpl(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(OciOperationServiceImpl::class.java)
+        private const val BLOB_PATH_VERSION = "v1"
     }
 }

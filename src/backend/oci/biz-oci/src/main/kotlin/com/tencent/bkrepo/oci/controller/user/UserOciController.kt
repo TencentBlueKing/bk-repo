@@ -41,7 +41,6 @@ import com.tencent.bkrepo.oci.constant.PAGE_NUMBER
 import com.tencent.bkrepo.oci.constant.PAGE_SIZE
 import com.tencent.bkrepo.oci.constant.USER_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
-import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_BLOB_NODE_FULLPATH_REFRESH
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_USER_MANIFEST_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_USER_REPO_SUFFIX
@@ -60,7 +59,6 @@ import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -202,18 +200,5 @@ class UserOciController(
                 pageNumber = pageNumber
             )
         )
-    }
-
-    @ApiOperation("刷新oci下的所有blob节点路径")
-    @PostMapping(OCI_BLOB_NODE_FULLPATH_REFRESH)
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun refreshFullPathOfBlob(
-        @RequestParam(required = false)
-        projectId: String? = null,
-        @RequestParam(required = false)
-        repoName: String? = null,
-    ): Response<Void> {
-        operationService.refreshFullPathOfBlob(projectId, repoName)
-        return ResponseBuilder.success()
     }
 }

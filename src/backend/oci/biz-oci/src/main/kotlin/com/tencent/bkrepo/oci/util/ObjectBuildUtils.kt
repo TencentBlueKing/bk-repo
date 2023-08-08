@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.oci.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.oci.constant.DIGEST_LIST
 import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
@@ -100,7 +101,8 @@ object ObjectBuildUtils {
         sourceType: ArtifactChannel? = null
     ): MutableMap<String, Any> {
         return mutableMapOf<String, Any>(
-            MEDIA_TYPE to mediaType
+            MEDIA_TYPE to mediaType,
+            BLOB_PATH_REFRESHED_KEY to true
         ).apply {
             version?.let { this.put(IMAGE_VERSION, version) }
             digestList?.let { this.put(DIGEST_LIST, digestList) }
