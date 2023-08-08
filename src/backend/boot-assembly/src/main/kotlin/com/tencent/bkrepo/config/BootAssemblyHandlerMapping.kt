@@ -64,6 +64,9 @@ class BootAssemblyHandlerMapping : RequestMappingHandlerMapping() {
     @Suppress("SpreadOperator")
     private fun updateMapping(mapping: RequestMappingInfo, method: Method): RequestMappingInfo? {
         val serviceName = ServiceCommonUtils.getServiceName(method.declaringClass)
+        if (serviceName == "common") {
+            return mapping
+        }
         val newPatterns = updatePatterns(mapping.patternsCondition?.patterns.orEmpty(), serviceName)
         if (newPatterns.isEmpty()) {
             return null
