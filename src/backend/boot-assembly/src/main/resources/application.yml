@@ -38,6 +38,9 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+cns:
+  enabled: true
+
 logging:
   config: classpath:logback-config.xml
   path: /data/logs
