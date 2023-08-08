@@ -28,15 +28,20 @@
 package com.tencent.bkrepo.common.artifact.cns.impl
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.cns.CnsProperties
 import com.tencent.bkrepo.common.artifact.cns.CnsService
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
+import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.client.DefaultServiceInstance
@@ -59,7 +64,8 @@ class CnsServiceImpl(
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageProperties: StorageProperties,
-    private val cnsProperties: CnsProperties
+    private val cnsProperties: CnsProperties,
+    private val serviceAuthManager: ServiceAuthManager
 ) : CnsService {
     @Value("\${service.prefix:}")
     private val servicePrefix: String = ""
@@ -67,11 +73,11 @@ class CnsServiceImpl(
     @Value("\${service.suffix:}")
     private val serviceSuffix: String = ""
 
-    private val restTemplate = RestTemplate()
-
     private var services = mutableMapOf<String, Set<ServiceInstance>>()
 
     private var lastUpdatedTime = -1L
+
+    private val restTemplate = RestTemplate()
 
     override fun exist(key: String?, sha256: String): Boolean {
         val storageCredentials = storageCredentialsClient.findByKey(key).data
@@ -96,21 +102,22 @@ class CnsServiceImpl(
             logger.info("Not found any match service.")
             return false
         }
-        val token = HttpContextHolder.getRequest().getHeader(HttpHeaders.AUTHORIZATION)
+        val uid = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.toString() ?: SYSTEM_USER
         val tasks = targetServices.map {
-            Callable { sendExistRequest(key, sha256, it, token) }.trace()
+            Callable { sendExistRequest(key, sha256, it, uid) }.trace()
         }
         val futures = threadPool.invokeAll(tasks)
         return futures.firstOrNull { it.get() == false } == null
     }
 
-    private fun sendExistRequest(key: String?, sha256: String, instance: ServiceInstance, token: String): Boolean {
+    private fun sendExistRequest(key: String?, sha256: String, instance: ServiceInstance, uid: String): Boolean {
         with(instance) {
             val target = instance.uri
-            val url = "$target/cns/exist?key=$key&sha256=$sha256"
+            val url = "$target/service/cns/exist?key=$key&sha256=$sha256"
             try {
                 val headers = HttpHeaders()
-                headers.add(HttpHeaders.AUTHORIZATION, token)
+                headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
+                headers.add(MS_AUTH_HEADER_UID, uid)
                 val httpEntity = HttpEntity<Any>(headers)
                 val response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, Response::class.java).body
                 if (logger.isDebugEnabled) {
@@ -153,6 +160,7 @@ class CnsServiceImpl(
                 serviceIds.add(dockerServiceId)
                 serviceIds.add(ociServiceId)
             }
+
             else -> {
                 serviceIds.add(formatServiceId(type.name.toLowerCase()))
             }
@@ -164,7 +172,7 @@ class CnsServiceImpl(
         return "$servicePrefix$name$serviceSuffix"
     }
 
-    companion object {
+    private companion object {
         private val logger = LoggerFactory.getLogger(CnsServiceImpl::class.java)
         private val threadFactory = ThreadFactoryBuilder().setNameFormat("cns-%d").build()
         private val threadPool =

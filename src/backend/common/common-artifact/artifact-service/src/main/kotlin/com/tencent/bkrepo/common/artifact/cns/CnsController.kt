@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @Principal(type = PrincipalType.ADMIN)
 @RestController
-@RequestMapping("cns")
+@RequestMapping("/service/cns")
 class CnsController(
     private val cnsService: CnsService
 ) {

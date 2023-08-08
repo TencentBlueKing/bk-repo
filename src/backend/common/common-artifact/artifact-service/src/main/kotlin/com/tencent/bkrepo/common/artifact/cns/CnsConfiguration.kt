@@ -28,10 +28,8 @@
 package com.tencent.bkrepo.common.artifact.cns
 
 import com.tencent.bkrepo.common.artifact.cns.impl.CnsServiceImpl
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
@@ -42,10 +40,4 @@ import org.springframework.context.annotation.Import
 )
 @EnableConfigurationProperties(CnsProperties::class)
 @ConditionalOnProperty("cns.enabled")
-class CnsConfiguration {
-
-    @Bean
-    fun httpAuthSecurity() = HttpAuthSecurity().apply {
-        includePattern("/cns/**")
-    }
-}
+class CnsConfiguration
