@@ -262,20 +262,22 @@ class ClusterReplicator(
     }
 
     private fun doubleCheck(context: ReplicaContext, sha256: String) {
-        var count = 0
+        if (!context.task.setting.storageConsistencyCheck) return
+        logger.info("will check the storage consistency for $sha256")
+        var checkResult = false
         val remoteRepositoryType = context.remoteRepoType
-        while (count < FILE_EXIST_CHECK_RETRY_COUNT) {
+        while (!checkResult) {
             if (context.blobReplicaClient!!.check(
                     sha256,
                     context.remoteRepo?.storageCredentials?.key,
                     remoteRepositoryType
                 ).data == true
             ) {
-                break
+                checkResult = true
             } else {
                 TimeUnit.SECONDS.sleep(1)
-                count++
             }
+            logger.info("the result of storage consistency check for $sha256 is $checkResult")
         }
     }
 
