@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.util
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.constant.PIPELINE
-import org.slf4j.LoggerFactory
-
-/**
- * 流水线仓库相关工具类
- */
-object PipelineRepoUtils {
-
-    private val logger = LoggerFactory.getLogger(PipelineRepoUtils::class.java)
-
-    /**
-     * 验证仓库不是pipeline仓库
-     * @throws ErrorCodeException 如果是流水线仓库则抛异常
-     */
-    fun checkPipeline(repoName: String) {
-        if (repoName == PIPELINE) {
-            logger.warn("Pipeline repo query is forbidden")
-            // throw ErrorCodeException(
-            //     status = HttpStatus.FORBIDDEN,
-            //     messageCode = ArtifactMessageCode.PIPELINE_BANNED
-            // )
-        }
-    }
+dependencies {
+    implementation(project(":common:common-api"))
 }

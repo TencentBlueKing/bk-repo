@@ -273,20 +273,20 @@ class PackageServiceImpl(
         versionName: String,
         realIpAddress: String?
     ) {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
-        val tPackageVersion = packageVersionDao.findByName(tPackage.id.orEmpty(), versionName) ?: return
+        var tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
+        val packageId = tPackage.id!!
+        val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
         checkCluster(tPackageVersion)
-        packageVersionDao.deleteByName(tPackageVersion.packageId, tPackageVersion.name)
-        tPackage.versions -= 1
+        packageVersionDao.deleteByName(packageId, tPackageVersion.name)
+        tPackage = packageDao.decreaseVersions(packageId) ?: return
         if (tPackage.versions <= 0L) {
-            packageDao.removeById(tPackage.id.orEmpty())
+            packageDao.removeById(packageId)
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
         } else {
             if (tPackage.latest == tPackageVersion.name) {
-                val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
-                tPackage.latest = latestVersion?.name.orEmpty()
+                val latestVersion = packageVersionDao.findLatest(packageId)
+                packageDao.updateLatestVersion(packageId, latestVersion?.name.orEmpty())
             }
-            packageDao.save(tPackage)
         }
         publishEvent(
             PackageEventFactory.buildDeletedEvent(

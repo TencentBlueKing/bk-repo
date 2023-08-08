@@ -92,24 +92,28 @@ class FileReferenceServiceImpl(
     }
 
     override fun decrement(sha256: String, credentialsKey: String?): Boolean {
-        val query = buildQuery(sha256, credentialsKey)
-        val fileReference = fileReferenceDao.findOne(query) ?: run {
+        val criteria = Criteria.where(TFileReference::sha256.name).`is`(sha256)
+        criteria.and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        criteria.and(TFileReference::count.name).gt(0)
+        val query = Query(criteria)
+        val update = Update().apply { inc(TFileReference::count.name, -1) }
+        val result = fileReferenceDao.updateFirst(query, update)
+
+        if (result.modifiedCount == 1L) {
+            logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
+            return true
+        }
+
+        fileReferenceDao.findOne(buildQuery(sha256, credentialsKey)) ?: run {
             logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]")
             return false
         }
 
-        return if (fileReference.count >= 1) {
-            val update = Update().apply { inc(TFileReference::count.name, -1) }
-            fileReferenceDao.upsert(query, update)
-            logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
-            true
-        } else {
-            logger.error(
-                "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
-                    "reference count is 0."
-            )
-            false
-        }
+        logger.error(
+            "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
+                "reference count is 0."
+        )
+        return false
     }
 
     override fun count(sha256: String, credentialsKey: String?): Long {

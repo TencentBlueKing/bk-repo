@@ -73,7 +73,8 @@ class UserProjectController(
                 name = name,
                 displayName = displayName,
                 description = description,
-                operator = userId
+                operator = userId,
+                createPermission = createPermission
             )
         }
         projectService.createProject(createRequest)
