@@ -330,7 +330,7 @@ class ClusterReplicator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
-        private const val STORAGE_CONSISTENCY_CHECK_TIME_OUT = 3600
+        private const val STORAGE_CONSISTENCY_CHECK_TIME_OUT = 600
 
         fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
             return "$projectId/$repoName/${clusterInfo.hashCode()}"
