@@ -54,5 +54,9 @@ data class ReplicaSetting(
     /**
      * 执行计划
      */
-    val executionPlan: ExecutionPlan = ExecutionPlan()
+    val executionPlan: ExecutionPlan = ExecutionPlan(),
+    /**
+     * 是否校验文件存储一致性
+     */
+    val storageConsistencyCheck: Boolean = false
 )

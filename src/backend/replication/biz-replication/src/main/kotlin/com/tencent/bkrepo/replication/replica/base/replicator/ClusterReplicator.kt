@@ -262,20 +262,25 @@ class ClusterReplicator(
     }
 
     private fun doubleCheck(context: ReplicaContext, sha256: String) {
-        var count = 0
+        if (!context.task.setting.storageConsistencyCheck) return
+        logger.info("will check the storage consistency for $sha256")
+        var checkResult = false
+        var costTime = 0
         val remoteRepositoryType = context.remoteRepoType
-        while (count < FILE_EXIST_CHECK_RETRY_COUNT) {
+        while (!checkResult && costTime < STORAGE_CONSISTENCY_CHECK_TIME_OUT) {
             if (context.blobReplicaClient!!.check(
                     sha256,
                     context.remoteRepo?.storageCredentials?.key,
                     remoteRepositoryType
                 ).data == true
             ) {
-                break
+                checkResult = true
             } else {
                 TimeUnit.SECONDS.sleep(1)
-                count++
+                costTime++
             }
+            logger.info("the result of storage consistency check for $sha256 is $checkResult," +
+                            " costTime: $costTime seconds")
         }
     }
 
@@ -325,7 +330,7 @@ class ClusterReplicator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
-        private const val FILE_EXIST_CHECK_RETRY_COUNT = 10
+        private const val STORAGE_CONSISTENCY_CHECK_TIME_OUT = 600
 
         fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
             return "$projectId/$repoName/${clusterInfo.hashCode()}"
