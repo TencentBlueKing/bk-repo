@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.setting
+package com.tencent.bkrepo.common.storage.config
 
 /**
- * 任务设置
- */
-data class ReplicaSetting(
+ * 加密配置，默认使用国密SM4
+ * */
+data class EncryptProperties(
     /**
-     * 限速（byte per second），<=0代表不限速
-     */
-    val rateLimit: Long = 0,
+     * 是否开启加密
+     * */
+    var enabled: Boolean = false,
     /**
-     * 是否同步元数据
-     */
-    val includeMetadata: Boolean = true,
+     * 加密密钥
+     * */
+    var key: String = "secret@key",
     /**
-     * 冲突解决策略
-     */
-    val conflictStrategy: ConflictStrategy = ConflictStrategy.SKIP,
-    /**
-     * 错误处理策略
-     */
-    val errorStrategy: ErrorStrategy = ErrorStrategy.FAST_FAIL,
-    /**
-     * 执行计划策略
-     */
-    val executionStrategy: ExecutionStrategy = ExecutionStrategy.IMMEDIATELY,
-    /**
-     * 执行计划
-     */
-    val executionPlan: ExecutionPlan = ExecutionPlan(),
-    /**
-     * 是否校验文件存储一致性
-     */
-    val storageConsistencyCheck: Boolean = false
+     * 加密算法
+     * 支持SM4/AES
+     * */
+    var algorithm: String = "SM4"
 )

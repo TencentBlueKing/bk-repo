@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.setting
+package com.tencent.bkrepo.common.storage.core.crypto
+
+import com.tencent.bk.sdk.crypto.util.SM4Util
+import java.io.InputStream
 
 /**
- * 任务设置
- */
-data class ReplicaSetting(
-    /**
-     * 限速（byte per second），<=0代表不限速
-     */
-    val rateLimit: Long = 0,
-    /**
-     * 是否同步元数据
-     */
-    val includeMetadata: Boolean = true,
-    /**
-     * 冲突解决策略
-     */
-    val conflictStrategy: ConflictStrategy = ConflictStrategy.SKIP,
-    /**
-     * 错误处理策略
-     */
-    val errorStrategy: ErrorStrategy = ErrorStrategy.FAST_FAIL,
-    /**
-     * 执行计划策略
-     */
-    val executionStrategy: ExecutionStrategy = ExecutionStrategy.IMMEDIATELY,
-    /**
-     * 执行计划
-     */
-    val executionPlan: ExecutionPlan = ExecutionPlan(),
-    /**
-     * 是否校验文件存储一致性
-     */
-    val storageConsistencyCheck: Boolean = false
+ * SM4加密流，提供将明文输入流，转成成加密输入流
+ * */
+class SM4EncryptInputStream(inputStream: InputStream, key: String) : EncryptInputStream(
+    inputStream,
+    SM4Util.creatEncryptCipher(key),
+    DEFAULT_BUFFER_SIZE
 )

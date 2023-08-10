@@ -337,8 +337,7 @@ class OciRegistryLocalRepository(
         if (context.request.method == HttpMethod.HEAD.name) {
             return null
         }
-        val node = ArtifactContextHolder.getNodeDetail()
-        val version = node!!.metadata[IMAGE_VERSION]?.toString() ?: return null
+        val version = artifactResource.node?.metadata?.get(IMAGE_VERSION)?.toString() ?: return null
         return PackageDownloadRecord(
             projectId = context.projectId,
             repoName = context.repoName,
