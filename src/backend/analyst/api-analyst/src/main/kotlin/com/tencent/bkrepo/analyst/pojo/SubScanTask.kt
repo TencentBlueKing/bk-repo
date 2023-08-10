@@ -30,7 +30,6 @@ package com.tencent.bkrepo.analyst.pojo
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_FILE_NAME
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.constant.StringPool
-import java.io.File
 
 /**
  * 提交给扫描执行服务的子扫描任务
