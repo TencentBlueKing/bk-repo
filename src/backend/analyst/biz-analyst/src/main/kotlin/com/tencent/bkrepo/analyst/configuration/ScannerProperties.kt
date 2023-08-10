@@ -70,7 +70,15 @@ data class ScannerProperties(
     /**
      * 任务最长执行时间，超过后将不再重试而是直接转为超时状态
      */
-    var maxTaskDuration: Duration = Duration.ofSeconds(EXPIRED_SECONDS)
+    var maxTaskDuration: Duration = Duration.ofSeconds(EXPIRED_SECONDS),
+    /**
+     * 生成的制品临时下载链接超时时间
+     */
+    var tempDownloadUrlExpireDuration: Duration = Duration.ofSeconds(30),
+    /**
+     * 生成的制品临时下载链接超时时间允许下载的次数
+     */
+    var tempDownloadUrlPermits: Int? = null,
 ) {
     companion object {
         /**

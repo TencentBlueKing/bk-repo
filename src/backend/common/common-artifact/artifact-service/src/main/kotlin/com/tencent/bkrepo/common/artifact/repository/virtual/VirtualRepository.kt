@@ -76,6 +76,18 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         }
     }
 
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return mapFirstRepo(context) { sub, repository ->
+            require(sub is ArtifactDownloadContext)
+            require(repository is AbstractArtifactRepository)
+            if (repository.onDownloadRedirect(sub)) {
+                true
+            } else {
+                null
+            }
+        } ?: false
+    }
+
     @Suppress("UNCHECKED_CAST")
     protected fun getTraversedList(context: ArtifactContext): MutableList<RepositoryIdentify> {
         return context.getAttribute(TRAVERSED_LIST) as? MutableList<RepositoryIdentify> ?: let {
