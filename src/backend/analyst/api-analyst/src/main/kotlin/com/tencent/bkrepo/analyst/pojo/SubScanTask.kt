@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.pojo
 
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_FILE_NAME
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.api.constant.StringPool
 import java.io.File
 
 /**
@@ -104,5 +105,5 @@ data class SubScanTask(
      */
     val extra: Map<String, Any>? = null,
 ) {
-    fun fileName() = extra?.get(TASK_METADATA_FILE_NAME)?.toString() ?: fullPath.substringAfterLast(File.separatorChar)
+    fun fileName() = extra?.get(TASK_METADATA_FILE_NAME)?.toString() ?: fullPath.substringAfterLast(StringPool.SLASH)
 }
