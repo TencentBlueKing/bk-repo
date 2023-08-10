@@ -32,25 +32,34 @@ import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.model.TFolderSizeStat.Companion.FOLDER_PATH_IDX
 import com.tencent.bkrepo.repository.model.TFolderSizeStat.Companion.FOLDER_PATH_IDX_DEF
+import com.tencent.bkrepo.repository.model.TFolderSizeStat.Companion.PATH_IDX
+import com.tencent.bkrepo.repository.model.TFolderSizeStat.Companion.PATH_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
+/**
+ * 记录当前目录中的文件（不包含子目录中节点）大小总和
+ */
 @ShardingDocument("folder_stat")
 @CompoundIndexes(
-    CompoundIndex(name = FOLDER_PATH_IDX, def = FOLDER_PATH_IDX_DEF, unique = true, background = true)
+    CompoundIndex(name = FOLDER_PATH_IDX, def = FOLDER_PATH_IDX_DEF, unique = true, background = true),
+    CompoundIndex(name = PATH_IDX, def = PATH_IDX_DEF, background = true)
 )
 data class TFolderSizeStat(
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String,
     var folderPath: String,
+    var path: String,
     var size: Long,
     var createdDate: LocalDateTime,
     var lastModifiedDate: LocalDateTime,
 ) {
     companion object {
-        const val FOLDER_PATH_IDX = "projectId_repoName_fullPath_idx"
+        const val FOLDER_PATH_IDX = "projectId_repoName_folderPath_idx"
         const val FOLDER_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'folderPath': 1}"
+        const val PATH_IDX = "projectId_repoName_path_idx"
+        const val PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1}"
     }
 }

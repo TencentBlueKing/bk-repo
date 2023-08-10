@@ -52,6 +52,7 @@ const val CREATED_DATE = "createdDate"
 const val LAST_MODIFIED_DATE = "lastModifiedDate"
 const val DELETED_DATE = "deleted"
 const val FULLPATH = "fullPath"
+const val PATH = "path"
 
 /**
  * metrics

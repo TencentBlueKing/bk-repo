@@ -25,8 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
+package com.tencent.bkrepo.repository.dao
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.repository.model.TFolderSizeStat
 import org.springframework.data.mongodb.core.query.Criteria
@@ -64,9 +65,10 @@ class FolderStatDao : HashShardingMongoDao<TFolderSizeStat>() {
                 .and(TFolderSizeStat::repoName.name).isEqualTo(repoName)
                 .and(TFolderSizeStat::folderPath.name).isEqualTo(fullPath)
         )
-
-        val update = Update().set(TFolderSizeStat::size.name, size)
+        val path = PathUtils.resolveParent(fullPath)
+        val update = Update().inc(TFolderSizeStat::size.name, size)
             .setOnInsert(TFolderSizeStat::createdDate.name, LocalDateTime.now())
+            .setOnInsert(TFolderSizeStat::path.name, path)
             .set(TFolderSizeStat::lastModifiedDate.name, LocalDateTime.now())
         this.upsert(query, update)
     }

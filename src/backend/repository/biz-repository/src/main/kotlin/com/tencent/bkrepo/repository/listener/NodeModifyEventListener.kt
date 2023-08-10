@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.repository.listener
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.RemovalCause
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -36,10 +38,9 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.FolderStatDao
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.repository.FolderStatDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -57,11 +58,9 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import kotlin.system.measureTimeMillis
 
 
 /**
@@ -83,8 +82,20 @@ class NodeModifyEventListener(
             ThreadPoolExecutor.CallerRunsPolicy()
         )
 
-    private val cache = ConcurrentHashMap<Triple<String, String, String>, LocalDateTime>()
-
+    private val cache = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .removalListener<Triple<String, String, String>, Long> {
+            if (it.cause == RemovalCause.REPLACED) return@removalListener
+            logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
+            updateFolderSize(
+                projectId = it.key!!.first,
+                repoName = it.key!!.second,
+                folderPath = it.key!!.third,
+                size = it.value
+            )
+        }
+        .build<Triple<String, String, String>, Long>()
 
     /**
      * 允许接收的事件类型
@@ -119,130 +130,105 @@ class NodeModifyEventListener(
      */
     private fun updateModifiedFolderCache(event: ArtifactEvent) {
         logger.info("event type ${event.type}")
-        val (artifactInfo, originalArtifactInfo, deleted) = when (event.type) {
+        val (createdArtifactInfo, deletedArtifactInfo) = when (event.type) {
             EventType.NODE_MOVED -> {
                 val movedEvent = event as NodeMovedEvent
-                val artifactInfo = ArtifactInfo(
+                val createdArtifactInfo = ArtifactInfo(
                     projectId = movedEvent.dstProjectId,
                     repoName = movedEvent.dstRepoName,
                     artifactUri = movedEvent.dstFullPath
                 )
-                val originalArtifactInfo = ArtifactInfo(
+                val deletedArtifactInfo = ArtifactInfo(
                     projectId = movedEvent.projectId,
                     repoName = movedEvent.repoName,
                     artifactUri = movedEvent.resourceKey
                 )
-                Triple(artifactInfo, originalArtifactInfo, false)
+                Pair(createdArtifactInfo, deletedArtifactInfo)
             }
             EventType.NODE_DELETED -> {
-                val artifactInfo = ArtifactInfo(
+                val deletedArtifactInfo = ArtifactInfo(
                     projectId = event.projectId,
                     repoName = event.repoName,
                     artifactUri = event.resourceKey
                 )
-                findModifiedFolder(
-                    artifactInfo = artifactInfo,
-                    deleted = true
-                )
-                Triple(artifactInfo, null, true)
+                Pair(null, deletedArtifactInfo)
             }
             EventType.NODE_COPIED -> {
                 val copyEvent = event as NodeCopiedEvent
-                val artifactInfo = ArtifactInfo(
+                val createdArtifactInfo = ArtifactInfo(
                     projectId = copyEvent.dstProjectId,
                     repoName = copyEvent.dstRepoName,
                     artifactUri = copyEvent.dstFullPath
                 )
-                Triple(artifactInfo, null, false)
+                Pair(createdArtifactInfo, null)
             }
             EventType.NODE_CREATED -> {
-                val artifactInfo = ArtifactInfo(
+                val createdArtifactInfo = ArtifactInfo(
                     projectId = event.projectId,
                     repoName = event.repoName,
                     artifactUri = event.resourceKey
                 )
-                Triple(artifactInfo, null, false)
+                Pair(createdArtifactInfo, null)
             }
             else -> throw UnsupportedOperationException()
         }
-        findModifiedFolder(
-            artifactInfo = artifactInfo,
-            deleted = deleted,
-            originalArtifactInfo = originalArtifactInfo
+        findModifiedFolders(
+            createdArtifactInfo = createdArtifactInfo,
+            deletedArtifactInfo = deletedArtifactInfo
         )
     }
 
-    private fun findModifiedFolder(
-        artifactInfo: ArtifactInfo,
-        originalArtifactInfo: ArtifactInfo? = null,
-        deleted: Boolean = false
+    private fun findModifiedFolders(
+        createdArtifactInfo: ArtifactInfo? = null,
+        deletedArtifactInfo: ArtifactInfo? = null
     ) {
+        if (createdArtifactInfo != null) {
+            findModifiedFolders(createdArtifactInfo, false)
+        }
+        if (deletedArtifactInfo != null) {
+            findModifiedFolders(deletedArtifactInfo, true)
+        }
+    }
+
+    private fun findModifiedFolders(artifactInfo: ArtifactInfo, deleted: Boolean) {
         val node = if (deleted) {
-            nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull()
+            nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
         } else {
+            // 查询节点信息，当节点新增，然后删除后可能会找不到节点
             nodeService.getNodeDetail(artifactInfo)
-        } ?: return
-        logger.info("start to find modified folder with fullPath ${node.fullPath}" +
-                " in repo ${node.projectId}|${node.repoName}")
+                ?: nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
+        }
+        logger.info("start to stat modified node size with fullPath ${node.fullPath}" +
+                        " in repo ${node.projectId}|${node.repoName}")
         if (node.folder) {
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
-                originalArtifactInfo = originalArtifactInfo,
-                deleted = node.nodeInfo.deleted
+                deleted = node.nodeInfo.deleted,
+                deletedFlag = deleted
             )
         } else {
             updateCache(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
-                fullPath = artifactInfo.getArtifactFullPath()
+                folderPath = artifactInfo.getArtifactFullPath().getFolderPath(),
+                size = node.size,
+                deleted = deleted
             )
-            if (originalArtifactInfo != null) {
-                updateCache(
-                    projectId = originalArtifactInfo.projectId,
-                    repoName = originalArtifactInfo.repoName,
-                    fullPath = originalArtifactInfo.getArtifactFullPath()
-                )
-            }
         }
     }
 
-
-
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun checkCacheValue() {
-        cache.entries.removeIf {
-            if (isExpired(it.value)) {
-                executors.execute(
-                    Runnable {
-                        updateFolderSize(
-                            projectId = it.key.first,
-                            repoName = it.key.second,
-                            folderPath = it.key.third,
-                        )
-                    }.trace()
-                )
-                true
-            } else {
-                false
-            }
-        }
+        cache.invalidateAll()
     }
 
     private fun updateFolderSize(
         projectId: String,
         repoName: String,
-        folderPath: String
+        folderPath: String,
+        size: Long
     ) {
-        val elapsedTime = measureTimeMillis {
-            val folderRealTimeSize = computeFolderSize(projectId, repoName, folderPath)
-            logger.info("The size of folder $folderPath is $folderRealTimeSize in repo $projectId|$repoName")
-            if (folderRealTimeSize == null) {
-                folderStatDao.removeFolderStat(projectId, repoName, folderPath)
-            } else {
-                folderStatDao.updateFolderSize(projectId, repoName, folderPath, folderRealTimeSize)
-            }
-        }
-        logger.info("update folder $folderPath size elapsedTime $elapsedTime")
+        folderStatDao.updateFolderSize(projectId, repoName, folderPath, size)
     }
 
 
@@ -283,22 +269,21 @@ class NodeModifyEventListener(
     private fun updateCache(
         projectId: String,
         repoName: String,
-        fullPath: String,
-        folder: Boolean = false
+        folderPath: String,
+        size: Long,
+        deleted: Boolean = false
     ) {
-        val folderPath = if (folder) {
-            fullPath
+        val key = Triple(projectId, repoName, folderPath)
+        val total = cache.getIfPresent(key) ?: 0
+        val deltaSize = if (deleted) {
+            0-size
         } else {
-            var parentPath = PathUtils.resolveParent(fullPath)
-            if (parentPath != StringPool.SLASH) {
-                parentPath = parentPath.removeSuffix(StringPool.SLASH)
-            }
-            parentPath
+           size
         }
-        cache.putIfAbsent(Triple(projectId, repoName, folderPath), LocalDateTime.now())
+        cache.put(key, total+deltaSize)
     }
 
-    private fun findSubFolders(
+    private fun findAllNodesUnderFolder(
         projectId: String,
         repoName: String,
         fullPath: String,
@@ -309,11 +294,11 @@ class NodeModifyEventListener(
             val criteria = where(TNode::projectId).isEqualTo(projectId)
                 .and(TNode::repoName).isEqualTo(repoName)
                 .and(TNode::deleted).isEqualTo(deleted)
-                .and(TNode::folder).isEqualTo(true)
+                .and(TNode::folder).isEqualTo(false)
                 .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(srcRootNodePath)}")
             Query(criteria)
         } else {
-            val listOption = NodeListOption(includeFolder = true, deep = true, sort = true)
+            val listOption = NodeListOption(includeFolder = false, deep = true)
             NodeQueryHelper.nodeListQuery(projectId, repoName, srcRootNodePath, listOption)
         }
         return nodeDao.find(query)
@@ -321,32 +306,22 @@ class NodeModifyEventListener(
 
     private fun findAndCacheSubFolders(
         artifactInfo: ArtifactInfo,
-        originalArtifactInfo: ArtifactInfo? = null,
-        deleted: String? = null
+        deleted: String? = null,
+        deletedFlag: Boolean = false
     ) {
-        findSubFolders(
+        findAllNodesUnderFolder(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            deleted
+            deleted = deleted
         ).forEach {
-            if (it.folder) {
-                updateCache(
-                    projectId = artifactInfo.projectId,
-                    repoName = artifactInfo.repoName,
-                    fullPath = it.fullPath,
-                    folder = true
-                )
-                // 当移动目录时，需要将原节点对应的目录size信息也更新
-                if (originalArtifactInfo != null) {
-                    updateCache(
-                        projectId = originalArtifactInfo.projectId,
-                        repoName = originalArtifactInfo.repoName,
-                        fullPath = it.fullPath,
-                        folder = true
-                    )
-                }
-            }
+            updateCache(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                folderPath = it.fullPath.getFolderPath(),
+                size = it.size,
+                deleted = deletedFlag
+            )
         }
     }
 
@@ -355,6 +330,15 @@ class NodeModifyEventListener(
             return false
         }
         return Duration.between(writeDate, LocalDateTime.now()).toMillis() >= expiration
+    }
+
+    private fun String.getFolderPath(): String {
+        val path = PathUtils.resolveParent(this)
+        return if (path == PathUtils.ROOT) {
+            PathUtils.ROOT
+        } else {
+            path.removeSuffix(StringPool.SLASH)
+        }
     }
 
     companion object {
