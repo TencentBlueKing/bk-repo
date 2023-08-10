@@ -136,6 +136,12 @@ class SubScanTaskDao(
         return updateResult
     }
 
+    fun heartbeat(subtaskId: String): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(subtaskId).and(TSubScanTask::status.name).`in`(PULLED, EXECUTING)
+        val update = Update.update(TSubScanTask::heartbeatDateTime.name, LocalDateTime.now())
+        return updateFirst(Query(criteria), update)
+    }
+
     fun incExecutedTimes(subTaskId: String): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(subTaskId)
         val update = Update()
@@ -229,18 +235,16 @@ class SubScanTaskDao(
     /**
      * 获取一个执行超时的任务
      *
-     * @param timeoutSeconds 允许执行的最长时间
+     * @param timeoutSeconds 心跳超时时间
      */
     fun firstTimeoutTask(timeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
         val now = LocalDateTime.now()
 
-        val lastModifiedCriteria = Criteria
-            .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
-            .and(TSubScanTask::timeoutDateTime.name).exists(false)
-
+        val heartbeatTimeoutCriteria = Criteria
+            .where(TSubScanTask::heartbeatDateTime.name).lt(now.minusSeconds(timeoutSeconds))
         val timeoutCriteria = Criteria().orOperator(
             TSubScanTask::timeoutDateTime.lt(now),
-            lastModifiedCriteria
+            heartbeatTimeoutCriteria
         )
 
         val criteria = Criteria().andOperator(

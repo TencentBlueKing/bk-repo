@@ -64,6 +64,7 @@ import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
 import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -200,7 +201,7 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun peek(dispatcher: String?): SubScanTask? {
         val subtask = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
-            ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS, dispatcher)
+            ?: subScanTaskDao.firstTimeoutTask(scannerProperties.heartbeatTimeout.seconds, dispatcher)
         return subtask?.let { SubtaskConverter.convert(it, scannerService.get(it.scanner)) }
     }
 
@@ -213,6 +214,12 @@ class ScanServiceImpl @Autowired constructor(
             return targetState.transitState == SubScanTaskStatus.EXECUTING.name
         }
         return false
+    }
+
+    override fun heartbeat(subScanTaskId: String) {
+        if (subScanTaskDao.heartbeat(subScanTaskId).modifiedCount == 0L) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
+        }
     }
 
     override fun get(subtaskId: String): SubScanTask {
@@ -248,7 +255,7 @@ class ScanServiceImpl @Autowired constructor(
         while (true) {
             // 优先返回待执行任务，再返回超时任务
             val task = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
-                ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS, dispatcher)
+                ?: subScanTaskDao.firstTimeoutTask(scannerProperties.heartbeatTimeout.seconds, dispatcher)
                 ?: return null
 
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
