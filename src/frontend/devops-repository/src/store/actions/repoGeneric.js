@@ -71,7 +71,7 @@ export default {
             ).then(records => ({ records }))
         } else {
             request = Vue.prototype.$ajax.post(
-                `${prefix}/node/search`,
+                `${prefix}/node/queryFolder`,
                 {
                     page: {
                         pageNumber: 1,

@@ -73,6 +73,11 @@ class NodeSearchServiceImpl(
         return doQueryWithoutCount(context)
     }
 
+    override fun searchFolder(queryModel: QueryModel): Page<Map<String, Any?>> {
+        val context = nodeQueryInterpreter.interpret(queryModel) as NodeQueryContext
+        return doQueryFolder(context)
+    }
+
     override fun nodeOverview(
         userId: String,
         projectId: String,
@@ -152,6 +157,28 @@ class NodeSearchServiceImpl(
         return nodeList
     }
 
+    private fun queryFolderList(query: Query): List<MutableMap<String, Any?>> {
+        val nodeList: List<MutableMap<String, Any?>>
+        val time = measureTimeMillis {
+            nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
+        }
+        if (time > repositoryProperties.slowLogTimeThreshold) {
+            logger.warn("search node slow log, " +
+                "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
+                "cost ${HumanReadable.time(time)}")
+        }
+        nodeList.forEach {
+            it.remove("_id")
+            it.remove("createdDate")
+            it.remove("lastModifiedDate")
+            it.remove("createdBy")
+            it.remove("lastModifiedBy")
+            it.remove("lastAccessDate")
+            it.remove("metadata")
+        }
+        return nodeList
+    }
+
     private fun doQuery(context: NodeQueryContext): Page<Map<String, Any?>> {
         val query = context.mongoQuery
         val nodeList = queryList(query)
@@ -164,6 +191,13 @@ class NodeSearchServiceImpl(
     private fun doQueryWithoutCount(context: NodeQueryContext): Page<Map<String, Any?>> {
         val query = context.mongoQuery
         val nodeList = queryList(query)
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(pageNumber + 1, query.limit, 0, nodeList)
+    }
+
+    private fun doQueryFolder(context: NodeQueryContext): Page<Map<String, Any?>> {
+        val query = context.mongoQuery
+        val nodeList = queryFolderList(query)
         val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
         return Page(pageNumber + 1, query.limit, 0, nodeList)
     }

@@ -46,6 +46,8 @@ interface NodeSearchService {
 
     fun searchWithoutCount(queryModel: QueryModel): Page<Map<String, Any?>>
 
+    fun searchFolder(queryModel: QueryModel): Page<Map<String, Any?>>
+
     fun nodeOverview(
         userId: String,
         projectId: String,
