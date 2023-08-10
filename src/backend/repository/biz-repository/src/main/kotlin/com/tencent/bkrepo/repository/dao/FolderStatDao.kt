@@ -58,7 +58,8 @@ class FolderStatDao : HashShardingMongoDao<TFolderSizeStat>() {
         projectId: String,
         repoName: String,
         fullPath: String,
-        size: Long
+        size: Long,
+        nodeNum: Long
     ) {
         val query = Query(
             Criteria.where(TFolderSizeStat::projectId.name).isEqualTo(projectId)
@@ -67,6 +68,7 @@ class FolderStatDao : HashShardingMongoDao<TFolderSizeStat>() {
         )
         val path = PathUtils.resolveParent(fullPath)
         val update = Update().inc(TFolderSizeStat::size.name, size)
+            .inc(TFolderSizeStat::nodeNum.name, nodeNum)
             .setOnInsert(TFolderSizeStat::createdDate.name, LocalDateTime.now())
             .setOnInsert(TFolderSizeStat::path.name, path)
             .set(TFolderSizeStat::lastModifiedDate.name, LocalDateTime.now())

@@ -53,6 +53,7 @@ data class TFolderSizeStat(
     var folderPath: String,
     var path: String,
     var size: Long,
+    var nodeNum: Long,
     var createdDate: LocalDateTime,
     var lastModifiedDate: LocalDateTime,
 ) {

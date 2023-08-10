@@ -60,17 +60,18 @@ class FolderSizeStatChildJob(
 
     private val cache = CacheBuilder.newBuilder()
         .maximumSize(10000)
-        .removalListener<Triple<String, String, String>, Long> {
+        .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
-            logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${java.lang.Thread.currentThread().name}")
+            logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}")
             updateFolderSize(
                 projectId = it.key!!.first,
                 repoName = it.key!!.second,
                 fullPath = it.key!!.third,
-                size = it.value
+                size = it.value.first,
+                nodeNum = it.value.second
             )
         }
-        .build<Triple<String, String, String>, Long>()
+        .build<Triple<String, String, String>, Pair<Long, Long>>()
 
     override fun onParentJobStart(context: ChildJobContext) {
         logger.info("start to stat the size of folder ")
@@ -86,8 +87,8 @@ class FolderSizeStatChildJob(
             row.path.removeSuffix(StringPool.SLASH)
         }
         val key = Triple(row.projectId, row.repoName, folderPath)
-        val total = cache.getIfPresent(key) ?: 0
-        cache.put(key, total+row.size)
+        val (folderSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+        cache.put(key, Pair(folderSize+row.size, nodeNum+1))
     }
 
     override fun onParentJobFinished(context: ChildJobContext) {
@@ -96,11 +97,12 @@ class FolderSizeStatChildJob(
     }
 
 
-        private fun updateFolderSize(
+    private fun updateFolderSize(
         projectId: String,
         repoName: String,
         fullPath: String,
-        size: Long
+        size: Long,
+        nodeNum: Long
     ) {
         val query = Query(
             Criteria.where(PROJECT).isEqualTo(projectId)
@@ -109,6 +111,7 @@ class FolderSizeStatChildJob(
         )
         val path = PathUtils.resolveParent(fullPath)
         val update = Update().inc(FOLDER_SIZE, size)
+            .inc(NODE_NUM, nodeNum)
             .setOnInsert(CREATED_DATE, LocalDateTime.now())
             .setOnInsert(PATH, path)
             .set(LAST_MODIFIED_DATE, LocalDateTime.now())
@@ -121,5 +124,6 @@ class FolderSizeStatChildJob(
         private const val COLLECTION_FOLDER_SIZE_STAT_PREFIX = "folder_stat_"
         private const val FOLDER_PATH = "folderPath"
         private const val FOLDER_SIZE = "size"
+        private const val NODE_NUM = "nodeNum"
     }
 }

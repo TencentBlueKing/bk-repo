@@ -85,17 +85,18 @@ class NodeModifyEventListener(
     private val cache = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
-        .removalListener<Triple<String, String, String>, Long> {
+        .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
             logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
             updateFolderSize(
                 projectId = it.key!!.first,
                 repoName = it.key!!.second,
                 folderPath = it.key!!.third,
-                size = it.value
+                size = it.value.first,
+                nodeNum = it.value.second
             )
         }
-        .build<Triple<String, String, String>, Long>()
+        .build<Triple<String, String, String>, Pair<Long, Long>>()
 
     /**
      * 允许接收的事件类型
@@ -226,9 +227,10 @@ class NodeModifyEventListener(
         projectId: String,
         repoName: String,
         folderPath: String,
-        size: Long
+        size: Long,
+        nodeNum: Long
     ) {
-        folderStatDao.updateFolderSize(projectId, repoName, folderPath, size)
+        folderStatDao.updateFolderSize(projectId, repoName, folderPath, size, nodeNum)
     }
 
 
@@ -274,13 +276,15 @@ class NodeModifyEventListener(
         deleted: Boolean = false
     ) {
         val key = Triple(projectId, repoName, folderPath)
-        val total = cache.getIfPresent(key) ?: 0
-        val deltaSize = if (deleted) {
-            0-size
+        var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+        if (deleted) {
+            cachedSize -= size
+            nodeNum -= 1
         } else {
-           size
+            cachedSize += size
+            nodeNum += 1
         }
-        cache.put(key, total+deltaSize)
+        cache.put(key, Pair(cachedSize, nodeNum))
     }
 
     private fun findAllNodesUnderFolder(
