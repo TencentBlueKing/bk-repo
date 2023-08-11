@@ -188,6 +188,7 @@ class DownloadInterceptorTest {
             createdDate = LocalDateTime.now(),
             lastModifiedBy = UT_USER,
             lastModifiedDate = LocalDateTime.now(),
+            recentlyUseDate = LocalDateTime.now(),
             name = "test",
             size = 1L,
             downloads = 1L,
