@@ -103,13 +103,15 @@ class ExecutorScheduler @Autowired constructor(
      * 开始发送任务心跳到制品分析服务
      */
     private fun startHeartbeat(subtaskId: String, executingCount: Int) {
-        val runnable = SubtaskHeartbeatRunnable(
-            this,
-            scannerExecutorProperties.heartbeatInterval,
-            scanClient,
-            subtaskId
-        )
-        Thread(runnable, "subtask-heartbeat-$executingCount").start()
+        if (scannerExecutorProperties.heartbeatInterval.seconds > 0) {
+            val runnable = SubtaskHeartbeatRunnable(
+                this,
+                scannerExecutorProperties.heartbeatInterval,
+                scanClient,
+                subtaskId
+            )
+            Thread(runnable, "subtask-heartbeat-$executingCount").start()
+        }
     }
 
     private fun pullSubtaskAtFixedRate() {

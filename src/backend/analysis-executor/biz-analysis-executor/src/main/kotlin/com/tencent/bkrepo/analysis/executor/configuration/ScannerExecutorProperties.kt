@@ -66,7 +66,7 @@ data class ScannerExecutorProperties(
      */
     var showContainerLogs: Boolean = true,
     /**
-     * 子任务心跳间隔
+     * 子任务心跳间隔，为0时不上报心跳
      */
-    var heartbeatInterval: Duration = Duration.ofSeconds(30)
+    var heartbeatInterval: Duration = Duration.ofSeconds(0)
 )

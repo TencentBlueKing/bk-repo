@@ -68,9 +68,9 @@ data class ScannerProperties(
      */
     var blockTimeout: Duration = Duration.ofSeconds(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS),
     /**
-     * 任务心跳超时时间，当任务超过这个时间未上报状态时将会触发超时
+     * 任务心跳超时时间，当任务超过这个时间未上报状态时将会触发超时, 0表示不检查任务心跳
      */
-    var heartbeatTimeout: Duration = Duration.ofMinutes(1),
+    var heartbeatTimeout: Duration = Duration.ofMinutes(0),
     /**
      * 任务最长执行时间，超过后将不再重试而是直接转为超时状态
      */

@@ -235,20 +235,21 @@ class SubScanTaskDao(
     /**
      * 获取一个执行超时的任务
      *
-     * @param timeoutSeconds 心跳超时时间
+     * @param heartbeatTimeoutSeconds 心跳超时时间
      */
-    fun firstTimeoutTask(timeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
+    fun firstTimeoutTask(heartbeatTimeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
         val now = LocalDateTime.now()
 
-        val heartbeatTimeoutCriteria = Criteria
-            .where(TSubScanTask::heartbeatDateTime.name).lt(now.minusSeconds(timeoutSeconds))
-        val timeoutCriteria = Criteria().orOperator(
-            TSubScanTask::timeoutDateTime.lt(now),
-            heartbeatTimeoutCriteria
-        )
+        val timeoutCriteria = ArrayList<Criteria>()
+        timeoutCriteria.add(TSubScanTask::timeoutDateTime.lt(now))
+        if(heartbeatTimeoutSeconds > 0) {
+            val heartbeatTimeoutCriteria = Criteria
+                .where(TSubScanTask::heartbeatDateTime.name).lt(now.minusSeconds(heartbeatTimeoutSeconds))
+            timeoutCriteria.add(heartbeatTimeoutCriteria)
+        }
 
         val criteria = Criteria().andOperator(
-            timeoutCriteria,
+            Criteria().orOperator(timeoutCriteria),
             TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
             dispatcherCriteria(dispatcher)
         )
