@@ -123,6 +123,9 @@ class SubScanTaskDao(
         } else {
             update.unset(TSubScanTask::timeoutDateTime.name)
         }
+        if (status == EXECUTING || status == PULLED) {
+            update.set(TSubScanTask::heartbeatDateTime.name, now)
+        }
 
         val updateResult = updateFirst(query, update)
         if (updateResult.modifiedCount == 1L) {
