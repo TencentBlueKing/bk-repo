@@ -34,7 +34,6 @@ package com.tencent.bkrepo.repository.search.software.packages
 import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.SelectFieldInterceptor
 import com.tencent.bkrepo.repository.search.packages.PackageQueryContext
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareModelValidateInterceptor
@@ -56,7 +55,6 @@ class SoftwarePackageSearchInterpreter(
         addModelInterceptor(SelectFieldInterceptor())
         addRuleInterceptor(softwareRepoTypeRuleInterceptor)
         addRuleInterceptor(softwareRepoNameRuleInterceptor)
-        addRuleInterceptor(MetadataRuleInterceptor())
     }
 
     override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {

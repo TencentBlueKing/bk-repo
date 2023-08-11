@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -60,6 +61,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.repository.search.packages.PackageQueryContext
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageEventFactory
@@ -401,11 +403,15 @@ class PackageServiceImpl(
     }
 
     override fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>> {
-        val context = packageSearchInterpreter.interpret(queryModel)
+        val context = packageSearchInterpreter.interpret(queryModel) as PackageQueryContext
         val query = context.mongoQuery
         val countQuery = Query.of(query).limit(0).skip(0)
         val totalRecords = packageDao.count(countQuery)
-        val packageList = packageDao.find(query, MutableMap::class.java)
+        val packageList = packageDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
+        packageList.forEach {
+            val packageId = it[ID].toString()
+            context.matchedVersions[packageId]?.apply { it[MATCHED_VERSIONS] = this }
+        }
         val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
         return Page(pageNumber + 1, query.limit, totalRecords, packageList)
     }
@@ -486,6 +492,7 @@ class PackageServiceImpl(
     companion object {
 
         private val logger = LoggerFactory.getLogger(PackageServiceImpl::class.java)
+        private const val MATCHED_VERSIONS = "matchedVersions"
 
         private fun convert(tPackage: TPackage?): PackageSummary? {
             return tPackage?.let {

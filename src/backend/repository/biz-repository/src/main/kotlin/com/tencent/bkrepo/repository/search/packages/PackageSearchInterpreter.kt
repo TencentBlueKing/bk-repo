@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.search.common.CommonQueryInterpreter
 import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.ModelValidateInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
@@ -50,7 +49,10 @@ class PackageSearchInterpreter(
     private val permissionManager: PermissionManager,
     private val repoNameRuleInterceptor: RepoNameRuleInterceptor,
     private val repoTypeRuleInterceptor: RepoTypeRuleInterceptor,
-    private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor
+    private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor,
+    private val versionNameRuleInterceptor: VersionNameRuleInterceptor,
+    private val versionMetadataRuleInterceptor: VersionMetadataRuleInterceptor,
+    private val versionChecksumRuleInterceptor: VersionChecksumRuleInterceptor
 ) : CommonQueryInterpreter(permissionManager) {
 
     @PostConstruct
@@ -59,8 +61,10 @@ class PackageSearchInterpreter(
         addModelInterceptor(SelectFieldInterceptor())
         addRuleInterceptor(repoTypeRuleInterceptor)
         addRuleInterceptor(repoNameRuleInterceptor)
-        addRuleInterceptor(MetadataRuleInterceptor())
+        addRuleInterceptor(versionMetadataRuleInterceptor)
         addRuleInterceptor(localDatetimeRuleInterceptor)
+        addRuleInterceptor(versionNameRuleInterceptor)
+        addRuleInterceptor(versionChecksumRuleInterceptor)
     }
 
     override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {

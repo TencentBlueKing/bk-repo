@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,23 +31,21 @@
 
 package com.tencent.bkrepo.repository.search.packages
 
-import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.search.common.CommonQueryContext
-import org.springframework.data.mongodb.core.query.Query
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
+import org.springframework.stereotype.Component
 
-class PackageQueryContext(
-    override var queryModel: QueryModel,
-    override var permissionChecked: Boolean = false,
-    override val mongoQuery: Query,
-    override val interpreter: MongoQueryInterpreter
-) : CommonQueryContext(queryModel, permissionChecked, mongoQuery, interpreter) {
+/**
+ * 版本元数据规则拦截器
+ */
+@Component
+class VersionMetadataRuleInterceptor(
+    override val packageVersionDao: PackageVersionDao,
+    private val metadataRuleInterceptor: MetadataRuleInterceptor
+) : VersionRuleInterceptor(packageVersionDao) {
 
-    private var repoType: String? = null
-
-    val matchedVersions: MutableMap<String, MutableSet<String>> = mutableMapOf()
-
-    fun findRepoType(): String {
-        return if (repoType != null) repoType!! else find("repoType").apply { repoType = this }
-    }
+    override fun match(rule: Rule) = metadataRuleInterceptor.match(rule)
+    override fun getVersionCriteria(rule: Rule, context: PackageQueryContext) =
+        metadataRuleInterceptor.intercept(rule, context)
 }
