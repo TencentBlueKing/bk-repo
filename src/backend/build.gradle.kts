@@ -76,6 +76,7 @@ allprojects {
                 entry("swagger-models")
             }
             dependency("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter:${Versions.ReactiveFeign}")
+            dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
         }
     }
     ext["netty.version"] = Versions.Netty
