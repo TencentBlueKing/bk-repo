@@ -328,7 +328,7 @@ class UserServiceImpl constructor(
             }
         }
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
-        val sm3HashPwd = DataDigestUtils.md5FromStr(pwd)
+        val sm3HashPwd = DataDigestUtils.sm3FromStr(pwd)
         val query = UserQueryHelper.buildUserPasswordCheck(userId, pwd, hashPwd)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
             return null
