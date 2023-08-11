@@ -530,19 +530,22 @@ class RepositoryServiceImpl(
     private fun checkMetadataRule(rule: Rule?, projectId: String, repoName: String, paths: MutableList<String>) {
         if (rule is Rule.NestedRule && rule.rules.isNotEmpty()) {
             rule.rules.forEach {
-                when (it) {
-                    is Rule.NestedRule -> checkMetadataRule(it, projectId, repoName, paths)
-                    is Rule.QueryRule -> {
-                        if (it.field == "path") paths.add(it.value as String)
-                        checkReserveDays(it)
-                        RuleUtils.checkRuleRegex(it)
-                    }
+                checkMetadataRule(it, projectId, repoName, paths)
+            }
+        }
+    }
 
-                    is Rule.FixedRule -> {
-                        checkReserveDays(it.wrapperRule)
-                        RuleUtils.checkRuleRegex(it.wrapperRule)
-                    }
-                }
+    private fun checkMetadataRule(it: Rule, projectId: String, repoName: String, paths: MutableList<String>) {
+        when (it) {
+            is Rule.NestedRule -> checkMetadataRule(it, projectId, repoName, paths)
+            is Rule.QueryRule -> {
+                if (it.field == "path") paths.add(it.value as String)
+                checkReserveDays(it)
+                RuleUtils.checkRuleRegex(it)
+            }
+            is Rule.FixedRule -> {
+                checkReserveDays(it.wrapperRule)
+                RuleUtils.checkRuleRegex(it.wrapperRule)
             }
         }
     }

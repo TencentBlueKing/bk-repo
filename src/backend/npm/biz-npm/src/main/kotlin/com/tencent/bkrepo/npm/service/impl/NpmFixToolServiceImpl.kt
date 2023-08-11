@@ -20,7 +20,14 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.*
+import com.tencent.bkrepo.npm.constants.DIST
+import com.tencent.bkrepo.npm.constants.LATEST
+import com.tencent.bkrepo.npm.constants.NAME
+import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
+import com.tencent.bkrepo.npm.constants.SIZE
+import com.tencent.bkrepo.npm.constants.TIME
+import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.handler.NpmPackageHandler
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.pojo.fixtool.DateTimeFormatResponse
