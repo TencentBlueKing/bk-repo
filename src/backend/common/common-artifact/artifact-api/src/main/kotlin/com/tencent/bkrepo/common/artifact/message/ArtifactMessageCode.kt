@@ -67,7 +67,8 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     ARTIFACT_TYPE_UNSUPPORTED("artifact.type.unsupported"),
     ARTIFACT_FORBIDDEN("artifact.forbidden"),
     NODE_CREATE_TIMEOUT("artifact.node.create.timeout"),
-    SIZE_CHECK_FAILED("artifact.size.check-failed")
+    SIZE_CHECK_FAILED("artifact.size.check-failed"),
+    EXCEL_EXPORT_FAILED("excel.export.failed")
     ;
 
     override fun getBusinessCode() = ordinal + 1

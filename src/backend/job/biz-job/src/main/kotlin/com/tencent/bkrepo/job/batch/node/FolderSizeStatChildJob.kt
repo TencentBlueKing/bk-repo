@@ -109,7 +109,8 @@ class FolderSizeStatChildJob(
                 .and(REPO).isEqualTo(repoName)
                 .and(FOLDER_PATH).isEqualTo(fullPath)
         )
-        val path = PathUtils.resolveParent(fullPath)
+        var path = PathUtils.normalizeFullPath(PathUtils.resolveParent(fullPath))
+        if (fullPath == PathUtils.ROOT) path = StringPool.EMPTY
         val update = Update().inc(FOLDER_SIZE, size)
             .inc(NODE_NUM, nodeNum)
             .setOnInsert(CREATED_DATE, LocalDateTime.now())

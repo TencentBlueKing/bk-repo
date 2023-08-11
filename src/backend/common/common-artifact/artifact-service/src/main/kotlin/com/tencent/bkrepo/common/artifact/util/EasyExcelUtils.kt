@@ -1,10 +1,11 @@
-package com.tencent.bkrepo.analyst.utils
+package com.tencent.bkrepo.common.artifact.util
 
 import com.alibaba.excel.EasyExcel
 import com.alibaba.excel.write.metadata.style.WriteCellStyle
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy
-import com.tencent.bkrepo.analyst.message.ScannerMessageCode
+import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -21,7 +22,13 @@ object EasyExcelUtils {
 
     private val logger = LoggerFactory.getLogger(EasyExcelUtils::class.java)
 
-    fun download(data: Collection<*>, name: String, dataClass: Class<*>, includeColumns: Set<String>? = null) {
+    fun download(
+        data: Collection<*>,
+        name: String,
+        dataClass: Class<*>,
+        includeColumns: Set<String>? = null,
+        errorMessageCode: MessageCode = ArtifactMessageCode.EXCEL_EXPORT_FAILED
+    ) {
         val response = getDownloadResponse(name)
         try {
             EasyExcel.write(response.outputStream, dataClass).build().use { excelWriter ->
@@ -41,7 +48,7 @@ object EasyExcelUtils {
                 excelWriter.write(data, writerSheetBuilder.build())
             }
         } catch (e: IOException) {
-            resetDownloadResponse(response, e)
+            resetDownloadResponse(response, e, errorMessageCode)
         }
     }
 
@@ -58,13 +65,13 @@ object EasyExcelUtils {
         return response
     }
 
-    private fun resetDownloadResponse(response: HttpServletResponse, e: IOException) {
+    private fun resetDownloadResponse(response: HttpServletResponse, e: IOException, errorMessageCode: MessageCode) {
         response.reset()
         response.contentType = "application/json"
         response.characterEncoding = "utf-8"
         logger.error("download excel fail:${e}")
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.EXPORT_REPORT_FAIL)
-        val fail = ResponseBuilder.fail(ScannerMessageCode.EXPORT_REPORT_FAIL.getCode(), errorMessage)
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(errorMessageCode)
+        val fail = ResponseBuilder.fail(errorMessageCode.getCode(), errorMessage)
         response.writer.println(fail.toJsonString())
     }
 }

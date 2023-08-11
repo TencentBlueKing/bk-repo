@@ -25,44 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-object Release {
-    const val Group = "com.tencent.bk.repo"
-    const val Version = "1.0.0"
-}
+package com.tencent.bkrepo.opdata.model
 
-object Versions {
-    const val DevopsBoot = "0.0.6"
-    const val Netty = "4.1.77.Final"
-    const val SpringCloudCircuitbreaker = "2.1.2"
-    const val Jersey = "2.35"
-    const val Jsoup = "1.15.1"
-    const val Redline = "1.2.10"
-    const val SkyWalkingApmToolkit = "8.10.0"
-    const val Gson = "2.9.0"
-    const val ProtobufJava = "3.19.4"
-    const val Guava = "31.1-jre"
-    const val Shedlock = "4.12.0"
-    const val JGit = "5.11.0.202103091610-r"
-    const val JavaSemver = "0.9.0"
-    const val CommonsCompress = "1.21"
-    const val CommonsIO = "2.11.0"
-    const val OKhttp = "4.9.0"
-    const val Polaris = "1.5.2"
-    const val CommonsText = "1.9"
-    const val EmbeddedRedis = "0.7.3"
-    const val JMH = "0.5.3"
-    const val HutoolCrypto = "5.5.4"
-    const val JSR311API = "1.1.1"
-    const val MAVEN = "3.8.2"
-    const val MavenArtifact = "3.8.3"
-    const val MockitoKotlin = "4.0.0"
-    const val XStream = "1.4.19"
-    const val DockerJava = "3.2.13"
-    const val Mockk = "1.12.2"
-    const val Swagger = "1.6.2"
-    const val SleuthOtel = "1.0.0-M13"
-    const val KubernetesClient = "11.0.2"
-    const val ReactiveFeign = "3.2.6"
-    const val Jasypt = "3.0.5"
-    const val Easyexcel = "3.1.1"
-}
+import com.alibaba.excel.annotation.ExcelIgnore
+import com.alibaba.excel.annotation.ExcelProperty
+import com.tencent.bkrepo.opdata.util.FileSizeConverter
+
+data class StatInfo(
+    @ExcelProperty(value = ["目录名"], order = 0)
+    var folderPath: String,
+    @ExcelIgnore
+    var path: String? = null,
+    @ExcelProperty(value = ["制品个数"], order = 1)
+    var nodeNum: Long,
+    @ExcelProperty(value = ["目录总文件大小(MB)"], order = 2, converter = FileSizeConverter::class)
+    var size: Long
+)

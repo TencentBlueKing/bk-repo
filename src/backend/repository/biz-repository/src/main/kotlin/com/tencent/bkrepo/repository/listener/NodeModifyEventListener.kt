@@ -30,7 +30,6 @@ package com.tencent.bkrepo.repository.listener
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.RemovalCause
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
@@ -48,16 +47,12 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.aggregation.Aggregation
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.Duration
-import java.time.LocalDateTime
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -233,41 +228,6 @@ class NodeModifyEventListener(
         folderStatDao.updateFolderSize(projectId, repoName, folderPath, size, nodeNum)
     }
 
-
-    private fun buildNodeQuery(projectId: String, repoName: String, fullPath: String): Criteria {
-        return where(TNode::projectId).isEqualTo(projectId)
-            .and(TNode::repoName).isEqualTo(repoName)
-            .and(TNode::path).isEqualTo(fullPath+StringPool.SLASH)
-            .and(TNode::deleted).isEqualTo(null)
-    }
-
-    private fun aggregateComputeSize(criteria: Criteria, collectionName: String): Long? {
-        val aggregation = Aggregation.newAggregation(
-            Aggregation.match(criteria),
-            Aggregation.group().sum(TNode::size.name).`as`(TNode::size.name)
-        )
-        val aggregateResult = mongoTemplate.aggregate(aggregation, collectionName, HashMap::class.java)
-        return aggregateResult.mappedResults.firstOrNull()?.get(TNode::size.name) as? Long
-    }
-
-    private fun computeFolderSize(
-        projectId: String,
-        repoName: String,
-        fullPath: String
-    ): Long? {
-        val folderSizeQuery = buildNodeQuery(projectId, repoName, fullPath)
-        val nodeCollectionName = COLLECTION_NODE_PREFIX + shardingSequence(projectId, SHARDING_COUNT)
-        return aggregateComputeSize(folderSizeQuery, nodeCollectionName)
-    }
-
-    /**
-     * 计算所在分表序号
-     */
-    private fun shardingSequence(value: Any, shardingCount: Int): Int {
-        val hashCode = value.hashCode()
-        return hashCode and shardingCount - 1
-    }
-
     private fun updateCache(
         projectId: String,
         repoName: String,
@@ -329,20 +289,9 @@ class NodeModifyEventListener(
         }
     }
 
-    private fun isExpired(writeDate: LocalDateTime, expiration: Long = FIXED_DELAY): Boolean {
-        if (expiration <= 0) {
-            return false
-        }
-        return Duration.between(writeDate, LocalDateTime.now()).toMillis() >= expiration
-    }
-
     private fun String.getFolderPath(): String {
         val path = PathUtils.resolveParent(this)
-        return if (path == PathUtils.ROOT) {
-            PathUtils.ROOT
-        } else {
-            path.removeSuffix(StringPool.SLASH)
-        }
+        return PathUtils.normalizeFullPath(path)
     }
 
     companion object {

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.dao
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.repository.model.TFolderSizeStat
@@ -66,7 +67,8 @@ class FolderStatDao : HashShardingMongoDao<TFolderSizeStat>() {
                 .and(TFolderSizeStat::repoName.name).isEqualTo(repoName)
                 .and(TFolderSizeStat::folderPath.name).isEqualTo(fullPath)
         )
-        val path = PathUtils.resolveParent(fullPath)
+        var path = PathUtils.normalizeFullPath(PathUtils.resolveParent(fullPath))
+        if (fullPath == PathUtils.ROOT) path = StringPool.EMPTY
         val update = Update().inc(TFolderSizeStat::size.name, size)
             .inc(TFolderSizeStat::nodeNum.name, nodeNum)
             .setOnInsert(TFolderSizeStat::createdDate.name, LocalDateTime.now())

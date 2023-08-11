@@ -128,6 +128,10 @@ enum class EventType(val msgKey: String) {
     // FIRST_FOLDER
     FIRST_LEVEL_FOLDER_STATISTICS("artifact.event.first-level-folder-statistics"),
 
+    // FOLDER_STATISTICS
+    FOLDER_STATISTICS("artifact.event.folder-statistics"),
+    DOWNLOAD_FOLDER_STATISTICS("artifact.event.download-folder-statistics"),
+
     // NOTIFY
     NOTIFY_LIST("artifact.event.notify-list"),
     NOTIFY_CREATE("artifact.event.notify-create"),
