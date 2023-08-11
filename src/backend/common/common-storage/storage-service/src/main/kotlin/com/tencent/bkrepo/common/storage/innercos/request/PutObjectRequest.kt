@@ -48,6 +48,6 @@ data class PutObjectRequest(
     }
 
     override fun buildRequestBody(): RequestBody {
-        return InputStreamRequestBody(inputStream)
+        return InputStreamRequestBody(inputStream, length)
     }
 }
