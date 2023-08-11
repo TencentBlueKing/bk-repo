@@ -218,7 +218,7 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun heartbeat(subScanTaskId: String) {
         if (subScanTaskDao.heartbeat(subScanTaskId).modifiedCount == 0L) {
-            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
         }
     }
 
