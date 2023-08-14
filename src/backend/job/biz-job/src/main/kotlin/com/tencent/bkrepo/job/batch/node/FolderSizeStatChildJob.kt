@@ -43,6 +43,7 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.context.FolderSizeChildContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils.shardingSequence
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -50,6 +51,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.DayOfWeek
 import java.time.LocalDateTime
 
 class FolderSizeStatChildJob(
@@ -74,10 +76,14 @@ class FolderSizeStatChildJob(
         .build<Triple<String, String, String>, Pair<Long, Long>>()
 
     override fun onParentJobStart(context: ChildJobContext) {
-        logger.info("start to stat the size of folder ")
+        require(context is FolderSizeChildContext)
+        initCheck(context)
+        logger.info("start to stat the size of folder, init flag is ${context.initFlag}")
     }
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
+        require(context is FolderSizeChildContext)
+        if (context.initFlag) return
         if (row.deleted != null || row.folder || row.repoName in listOf(REPORT, LOG)) {
             return
         }
@@ -92,8 +98,24 @@ class FolderSizeStatChildJob(
     }
 
     override fun onParentJobFinished(context: ChildJobContext) {
+        require(context is FolderSizeChildContext)
         cache.invalidateAll()
         logger.info("stat size of folder done")
+    }
+
+
+    override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
+        return FolderSizeChildContext(parentJobContext)
+    }
+
+    private fun initCheck(context: FolderSizeChildContext) {
+        if (LocalDateTime.now().dayOfWeek != DayOfWeek.SATURDAY) {
+            return
+        }
+        context.initFlag = false
+        for (i in 0 until SHARDING_COUNT) {
+            mongoTemplate.remove(Query(), "$COLLECTION_FOLDER_SIZE_STAT_PREFIX$i")
+        }
     }
 
 
