@@ -30,6 +30,7 @@ package com.tencent.bkrepo.repository.listener
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.RemovalCause
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
@@ -235,6 +236,7 @@ class NodeModifyEventListener(
         size: Long,
         deleted: Boolean = false
     ) {
+        initAncestor(projectId, repoName, folderPath)
         val key = Triple(projectId, repoName, folderPath)
         var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
         if (deleted) {
@@ -245,6 +247,31 @@ class NodeModifyEventListener(
             nodeNum += 1
         }
         cache.put(key, Pair(cachedSize, nodeNum))
+    }
+
+
+    /**
+     * 初始化当前目录的上级目录数据
+     */
+    private fun initAncestor(
+        projectId: String,
+        repoName: String,
+        path: String
+    ) {
+        if (path == PathUtils.ROOT) return
+        val folderList = PathUtils.resolveAncestor(path).map {
+            if (it != PathUtils.ROOT) {
+                it.removeSuffix(StringPool.SLASH)
+            } else {
+                it
+            }
+        }
+        folderList.forEach {
+            val key = Triple(projectId, repoName, it)
+            cache.getIfPresent(key) ?: run {
+                cache.put(key, Pair(0, 0))
+            }
+        }
     }
 
     private fun findAllNodesUnderFolder(
