@@ -281,9 +281,9 @@ class UserServiceImpl constructor(
                 // conv time
                 expiredTime = expiredTime!!.plusHours(8)
             }
-            val hashToken = DataDigestUtils.sm3FromStr(id)
+            val sm3Id = DataDigestUtils.sm3FromStr(id)
             val userToken = Token(name = name, id = id, createdAt = createdTime, expiredAt = expiredTime)
-            val dataToken = Token(name = name, id = hashToken, createdAt = createdTime, expiredAt = expiredTime)
+            val dataToken = Token(name = name, id = sm3Id, createdAt = createdTime, expiredAt = expiredTime)
             update.addToSet(TUser::tokens.name, dataToken)
             mongoTemplate.upsert(query, update, TUser::class.java)
             val userInfo = userRepository.findFirstByUserId(userId)
