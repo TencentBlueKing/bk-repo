@@ -179,7 +179,9 @@ class TemporaryScanTokenServiceImpl(
             val schemeVersion = OciUtils.schemeVersion(manifestContent)
             val fullPaths = LinkedHashMap<String, FileUrl>()
             // 将manifest下载链接加入fullPaths列表，需要保证map第一项是manifest文件
-            fullPaths[fullPath] = convert(subtask)
+            fullPaths[fullPath] = FileUrl(
+                "", subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size
+            )
             // 获取layer对应的nodes
             val nodes = if (schemeVersion.schemaVersion == 1) {
                 val manifest = OciUtils.stringToManifestV1(manifestContent)
@@ -200,13 +202,11 @@ class TemporaryScanTokenServiceImpl(
             }
             fullPaths
         } else {
-            mapOf(subtask.fullPath to convert(subtask))
+            mapOf(subtask.fullPath to FileUrl("", subtask.fileName(), subtask.sha256, subtask.size))
         }
     }
 
     private fun tokenKey(subtaskId: String) = "scanner:token:$subtaskId"
-    private fun convert(subtask: SubScanTask, url: String = "") =
-        FileUrl(url, subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size)
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
         val distinctNodes = HashMap<String, Map<String, Any?>>()
