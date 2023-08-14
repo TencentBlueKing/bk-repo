@@ -87,6 +87,8 @@ class FolderSizeStatChildJob(
         if (row.deleted != null || row.folder || row.repoName in listOf(REPORT, LOG)) {
             return
         }
+
+        initAncestor(row.projectId, row.repoName, row.path)
         val folderPath = if (row.path == PathUtils.ROOT) {
             PathUtils.ROOT
         } else {
@@ -109,7 +111,7 @@ class FolderSizeStatChildJob(
     }
 
     private fun initCheck(context: FolderSizeChildContext) {
-        if (LocalDateTime.now().dayOfWeek != DayOfWeek.SATURDAY) {
+        if (LocalDateTime.now().dayOfWeek != DayOfWeek.MONDAY) {
             return
         }
         context.initFlag = false
@@ -118,6 +120,29 @@ class FolderSizeStatChildJob(
         }
     }
 
+    /**
+     * 初始化当前目录的上级目录数据
+     */
+    private fun initAncestor(
+        projectId: String,
+        repoName: String,
+        path: String
+    ) {
+        if (path == PathUtils.ROOT) return
+        val folderList = PathUtils.resolveAncestor(path).map {
+            if (it != PathUtils.ROOT) {
+                it.removeSuffix(StringPool.SLASH)
+            } else {
+                it
+            }
+        }
+        folderList.forEach {
+            val key = Triple(projectId, repoName, it)
+            cache.getIfPresent(key) ?: run {
+                cache.put(key, Pair(0, 0))
+            }
+        }
+    }
 
     private fun updateFolderSize(
         projectId: String,
