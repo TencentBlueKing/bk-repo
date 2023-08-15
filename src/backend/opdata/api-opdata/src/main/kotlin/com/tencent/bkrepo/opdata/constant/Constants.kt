@@ -59,8 +59,6 @@ const val OPDATA_PROJECT_ID = "projectId"
 const val OPDATA_REPOSITORY = "repository"
 const val OPDATA_REPO_NAME = "repoName"
 const val OPDATA_PATH = "path"
-const val OPDATA_FOLDER_PATH = "folderPath"
-const val OPDATA_SIZE = "size"
 
 
 
