@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.springframework.data.domain.Page
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -68,6 +69,23 @@ class NodeDao : HashShardingMongoDao<TNode>() {
             return true
         }
         return this.exists(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
+    }
+
+    /**
+     * 更新目录大小
+     */
+    fun updateFolderSize(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        nodeNum: Long
+    ) {
+        val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
+        val update = Update().inc(TNode::size.name, size)
+            .inc(TNode::nodeNum.name, nodeNum)
+            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
+        this.updateFirst(query, update)
     }
 
     /**

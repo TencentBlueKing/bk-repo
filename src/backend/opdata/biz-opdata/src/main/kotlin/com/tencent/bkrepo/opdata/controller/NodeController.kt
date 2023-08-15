@@ -90,31 +90,4 @@ class NodeController(
     ): Response<Page<FolderInfo>> {
         return ResponseBuilder.success(nodeService.getFirstLevelFolders(projectId, repoName, option))
     }
-
-    /**
-     * 获取当前目录下各目录节点大小以及节点个数
-     */
-    @GetMapping("/folder/stat/{projectId}/{repoName}")
-    @LogOperate(type = "FOLDER_STATISTICS")
-    fun getFolderStatInfo(
-        @PathVariable("projectId")projectId: String,
-        @PathVariable("repoName")repoName: String,
-        @RequestParam folderPath: String,
-        option: ListOption
-    ): Response<List<FolderInfo>> {
-        return ResponseBuilder.success(nodeService.getFolderStatInfo(projectId, repoName, folderPath, option))
-    }
-
-    /**
-     * 下载仓库下所有目录统计信息
-     */
-    @GetMapping("/folder/stat/download/{projectId}/{repoName}")
-    @LogOperate(type = "DOWNLOAD_FOLDER_STATISTICS")
-    fun downloadFolderStatInfo(
-        @PathVariable("projectId")projectId: String,
-        @PathVariable("repoName")repoName: String
-    ) {
-        nodeService.downloadFolderStatInfo(projectId, repoName)
-    }
-
 }

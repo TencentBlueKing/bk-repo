@@ -1,11 +1,37 @@
-package com.tencent.bkrepo.common.artifact.util
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.bkrepo.analyst.utils
 
 import com.alibaba.excel.EasyExcel
 import com.alibaba.excel.write.metadata.style.WriteCellStyle
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -22,13 +48,7 @@ object EasyExcelUtils {
 
     private val logger = LoggerFactory.getLogger(EasyExcelUtils::class.java)
 
-    fun download(
-        data: Collection<*>,
-        name: String,
-        dataClass: Class<*>,
-        includeColumns: Set<String>? = null,
-        errorMessageCode: MessageCode = ArtifactMessageCode.EXCEL_EXPORT_FAILED
-    ) {
+    fun download(data: Collection<*>, name: String, dataClass: Class<*>, includeColumns: Set<String>? = null) {
         val response = getDownloadResponse(name)
         try {
             EasyExcel.write(response.outputStream, dataClass).build().use { excelWriter ->
@@ -48,7 +68,7 @@ object EasyExcelUtils {
                 excelWriter.write(data, writerSheetBuilder.build())
             }
         } catch (e: IOException) {
-            resetDownloadResponse(response, e, errorMessageCode)
+            resetDownloadResponse(response, e)
         }
     }
 
@@ -65,13 +85,13 @@ object EasyExcelUtils {
         return response
     }
 
-    private fun resetDownloadResponse(response: HttpServletResponse, e: IOException, errorMessageCode: MessageCode) {
+    private fun resetDownloadResponse(response: HttpServletResponse, e: IOException) {
         response.reset()
         response.contentType = "application/json"
         response.characterEncoding = "utf-8"
         logger.error("download excel fail:${e}")
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(errorMessageCode)
-        val fail = ResponseBuilder.fail(errorMessageCode.getCode(), errorMessage)
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.EXPORT_REPORT_FAIL)
+        val fail = ResponseBuilder.fail(ScannerMessageCode.EXPORT_REPORT_FAIL.getCode(), errorMessage)
         response.writer.println(fail.toJsonString())
     }
 }

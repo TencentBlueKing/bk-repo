@@ -29,17 +29,14 @@ package com.tencent.bkrepo.repository.listener
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.RemovalCause
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.LOG
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.FolderStatDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -47,15 +44,12 @@ import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
@@ -64,19 +58,9 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class NodeModifyEventListener(
-    private val mongoTemplate: MongoTemplate,
     private val nodeService: NodeService,
-    private val nodeDao: NodeDao,
-    private val folderStatDao: FolderStatDao,
-    private val repositoryProperties: RepositoryProperties,
+    private val nodeDao: NodeDao
     )  {
-
-    private val executors = ThreadPoolExecutor(
-            1, 5, 30, TimeUnit.SECONDS,
-            LinkedBlockingQueue(8192),
-            ThreadFactoryBuilder().setNameFormat("nodeModify-worker-%d").build(),
-            ThreadPoolExecutor.CallerRunsPolicy()
-        )
 
     private val cache = CacheBuilder.newBuilder()
         .maximumSize(1000)
@@ -84,10 +68,10 @@ class NodeModifyEventListener(
         .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
             logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
-            updateFolderSize(
+            nodeDao.updateFolderSize(
                 projectId = it.key!!.first,
                 repoName = it.key!!.second,
-                folderPath = it.key!!.third,
+                fullPath = it.key!!.third,
                 size = it.value.first,
                 nodeNum = it.value.second
             )
@@ -113,12 +97,11 @@ class NodeModifyEventListener(
             return
         }
         //过滤 report 和log 仓库
-        if (event.repoName == REPORT || event.repoName == LOG_REPO) return
+        if (event.repoName == REPORT || event.repoName == LOG) return
         try {
             updateModifiedFolderCache(event)
         } catch (ignore: Exception) {
         }
-
     }
 
 
@@ -207,7 +190,7 @@ class NodeModifyEventListener(
             updateCache(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
-                folderPath = artifactInfo.getArtifactFullPath().getFolderPath(),
+                fullPath = artifactInfo.getArtifactFullPath(),
                 size = node.size,
                 deleted = deleted
             )
@@ -219,58 +202,26 @@ class NodeModifyEventListener(
         cache.invalidateAll()
     }
 
-    private fun updateFolderSize(
-        projectId: String,
-        repoName: String,
-        folderPath: String,
-        size: Long,
-        nodeNum: Long
-    ) {
-        folderStatDao.updateFolderSize(projectId, repoName, folderPath, size, nodeNum)
-    }
-
     private fun updateCache(
         projectId: String,
         repoName: String,
-        folderPath: String,
+        fullPath: String,
         size: Long,
         deleted: Boolean = false
     ) {
-        initAncestor(projectId, repoName, folderPath)
-        val key = Triple(projectId, repoName, folderPath)
-        var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
-        if (deleted) {
-            cachedSize -= size
-            nodeNum -= 1
-        } else {
-            cachedSize += size
-            nodeNum += 1
-        }
-        cache.put(key, Pair(cachedSize, nodeNum))
-    }
 
-
-    /**
-     * 初始化当前目录的上级目录数据
-     */
-    private fun initAncestor(
-        projectId: String,
-        repoName: String,
-        path: String
-    ) {
-        if (path == PathUtils.ROOT) return
-        val folderList = PathUtils.resolveAncestor(path).map {
-            if (it != PathUtils.ROOT) {
-                it.removeSuffix(StringPool.SLASH)
-            } else {
-                it
-            }
-        }
-        folderList.forEach {
+        // 更新当前节点所有上级目录统计信息
+        PathUtils.resolveAncestorFolder(fullPath).forEach{
             val key = Triple(projectId, repoName, it)
-            cache.getIfPresent(key) ?: run {
-                cache.put(key, Pair(0, 0))
+            var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+            if (deleted) {
+                cachedSize -= size
+                nodeNum -= 1
+            } else {
+                cachedSize += size
+                nodeNum += 1
             }
+            cache.put(key, Pair(cachedSize, nodeNum))
         }
     }
 
@@ -309,7 +260,7 @@ class NodeModifyEventListener(
             updateCache(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
-                folderPath = it.fullPath.getFolderPath(),
+                fullPath = it.fullPath.getFolderPath(),
                 size = it.size,
                 deleted = deletedFlag
             )
@@ -323,9 +274,6 @@ class NodeModifyEventListener(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
-        private const val SHARDING_COUNT = 256
-        private const val COLLECTION_NODE_PREFIX = "node_"
-        private const val LOG_REPO = "log"
         private const val FIXED_DELAY = 30000L
     }
 }

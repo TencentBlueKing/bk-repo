@@ -27,23 +27,20 @@
 
 package com.tencent.bkrepo.job.batch.node
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.RemovalCause
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.constant.LOG
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.CREATED_DATE
+import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.FULLPATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
-import com.tencent.bkrepo.job.PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.context.FolderSizeChildContext
+import com.tencent.bkrepo.job.batch.context.FolderChildContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils.shardingSequence
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -53,95 +50,83 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.util.concurrent.locks.ReentrantLock
 
-class FolderSizeStatChildJob(
+class FolderStatChildJob(
     properties: CompositeJobProperties,
     private val mongoTemplate: MongoTemplate,
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
+    private val lock: ReentrantLock = ReentrantLock()
 
-    private val cache = CacheBuilder.newBuilder()
-        .maximumSize(10000)
-        .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
-            if (it.cause == RemovalCause.REPLACED) return@removalListener
-            logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}")
-            updateFolderSize(
-                projectId = it.key!!.first,
-                repoName = it.key!!.second,
-                fullPath = it.key!!.third,
-                size = it.value.first,
-                nodeNum = it.value.second
-            )
-        }
-        .build<Triple<String, String, String>, Pair<Long, Long>>()
 
     override fun onParentJobStart(context: ChildJobContext) {
-        require(context is FolderSizeChildContext)
+        require(context is FolderChildContext)
         initCheck(context)
         logger.info("start to stat the size of folder, init flag is ${context.initFlag}")
     }
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
-        require(context is FolderSizeChildContext)
+        require(context is FolderChildContext)
         if (context.initFlag) return
         if (row.deleted != null || row.folder || row.repoName in listOf(REPORT, LOG)) {
             return
         }
 
-        initAncestor(row.projectId, row.repoName, row.path)
-        val folderPath = if (row.path == PathUtils.ROOT) {
-            PathUtils.ROOT
-        } else {
-            row.path.removeSuffix(StringPool.SLASH)
+        // 将缓存的信息更新到节点中
+        storeCache(context = context)
+
+        // 更新当前节点所有上级目录统计信息
+        PathUtils.resolveAncestorFolder(row.fullPath).forEach {
+            if (it != PathUtils.ROOT) {
+                val key = FolderChildContext.FolderInfo(row.projectId, row.repoName, it)
+                val folderMetrics = context.folderCache.getOrPut(key) { FolderChildContext.FolderMetrics() }
+                folderMetrics.capSize.add(row.size)
+                folderMetrics.nodeNum.increment()
+            }
         }
-        val key = Triple(row.projectId, row.repoName, folderPath)
-        val (folderSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
-        cache.put(key, Pair(folderSize+row.size, nodeNum+1))
     }
 
     override fun onParentJobFinished(context: ChildJobContext) {
-        require(context is FolderSizeChildContext)
-        cache.invalidateAll()
+        require(context is FolderChildContext)
+        storeCache(context = context, force = true)
         logger.info("stat size of folder done")
     }
 
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
-        return FolderSizeChildContext(parentJobContext)
+        return FolderChildContext(parentJobContext)
     }
 
-    private fun initCheck(context: FolderSizeChildContext) {
+
+    private fun storeCache(force: Boolean = false, context: FolderChildContext) {
+        if (context.folderCache.isEmpty() || !force && context.folderCache.size < CACHE_SIZE) {
+            return
+        }
+        try {
+            lock.lock()
+            context.folderCache.entries.forEach {
+                updateFolderSize(
+                    projectId = it.key.projectId,
+                    repoName = it.key.repoName,
+                    fullPath = it.key.fullPath,
+                    size = it.value.capSize.toLong(),
+                    nodeNum = it.value.nodeNum.toLong()
+                )
+            }
+            context.folderCache.clear()
+        } finally {
+            lock.unlock()
+        }
+
+    }
+
+    private fun initCheck(context: FolderChildContext) {
         if (LocalDateTime.now().dayOfWeek != DayOfWeek.MONDAY) {
             return
         }
         context.initFlag = false
-        for (i in 0 until SHARDING_COUNT) {
-            mongoTemplate.remove(Query(), "$COLLECTION_FOLDER_SIZE_STAT_PREFIX$i")
-        }
-    }
-
-    /**
-     * 初始化当前目录的上级目录数据
-     */
-    private fun initAncestor(
-        projectId: String,
-        repoName: String,
-        path: String
-    ) {
-        if (path == PathUtils.ROOT) return
-        val folderList = PathUtils.resolveAncestor(path).map {
-            if (it != PathUtils.ROOT) {
-                it.removeSuffix(StringPool.SLASH)
-            } else {
-                it
-            }
-        }
-        folderList.forEach {
-            val key = Triple(projectId, repoName, it)
-            cache.getIfPresent(key) ?: run {
-                cache.put(key, Pair(0, 0))
-            }
-        }
+        // TODO 如何重复初始化
     }
 
     private fun updateFolderSize(
@@ -154,24 +139,21 @@ class FolderSizeStatChildJob(
         val query = Query(
             Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(REPO).isEqualTo(repoName)
-                .and(FOLDER_PATH).isEqualTo(fullPath)
+                .and(FULLPATH).isEqualTo(fullPath)
+                .and(DELETED_DATE).isEqualTo(null)
         )
-        var path = PathUtils.normalizeFullPath(PathUtils.resolveParent(fullPath))
-        if (fullPath == PathUtils.ROOT) path = StringPool.EMPTY
-        val update = Update().inc(FOLDER_SIZE, size)
+        val update = Update().inc(SIZE, size)
             .inc(NODE_NUM, nodeNum)
-            .setOnInsert(CREATED_DATE, LocalDateTime.now())
-            .setOnInsert(PATH, path)
             .set(LAST_MODIFIED_DATE, LocalDateTime.now())
-        val folderCollectionName = COLLECTION_FOLDER_SIZE_STAT_PREFIX + shardingSequence(projectId, SHARDING_COUNT)
-        mongoTemplate.upsert(query, update, folderCollectionName)
+        val nodeCollectionName = COLLECTION_NODE_PREFIX + shardingSequence(projectId, SHARDING_COUNT)
+        mongoTemplate.updateFirst(query, update, nodeCollectionName)
     }
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val COLLECTION_FOLDER_SIZE_STAT_PREFIX = "folder_stat_"
-        private const val FOLDER_PATH = "folderPath"
-        private const val FOLDER_SIZE = "size"
+        private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
+        private const val CACHE_SIZE = 1000L
     }
 }

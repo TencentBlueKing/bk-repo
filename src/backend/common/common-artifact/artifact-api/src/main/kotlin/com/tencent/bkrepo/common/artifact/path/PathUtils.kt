@@ -208,6 +208,19 @@ object PathUtils {
     }
 
     /**
+     * 获取当前路径的所有上级目录列表
+     */
+    fun resolveAncestorFolder(fullPath: String): List<String> {
+        return resolveAncestor(fullPath).map {
+            if (it != ROOT) {
+                it.removeSuffix(StringPool.SLASH)
+            } else {
+                it
+            }
+        }
+    }
+
+    /**
      * 根据fullPath解析文件名称，返回格式abc.txt
      *
      * /a/b/c -> c

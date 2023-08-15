@@ -86,6 +86,7 @@ data class TNode(
     var copyIntoCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
     var clusterNames: Set<String>? = null,
+    var nodeNum: Long? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,

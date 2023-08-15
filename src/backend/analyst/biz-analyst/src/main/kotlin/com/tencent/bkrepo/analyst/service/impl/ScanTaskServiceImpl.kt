@@ -38,7 +38,6 @@ import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.exception.ScanTaskNotFoundException
-import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.model.LeakDetailExport
 import com.tencent.bkrepo.analyst.model.ScanPlanExport
 import com.tencent.bkrepo.analyst.pojo.ScanTask
@@ -62,6 +61,7 @@ import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.utils.Converter
+import com.tencent.bkrepo.analyst.utils.EasyExcelUtils
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
@@ -76,7 +76,6 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
-import com.tencent.bkrepo.common.artifact.util.EasyExcelUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -184,13 +183,7 @@ class ScanTaskServiceImpl(
             )
         }
         val dataList = ScanPlanConverter.convertToPlanExport(records)
-        EasyExcelUtils.download(
-            data = dataList,
-            name = scanPlan.name,
-            dataClass = ScanPlanExport::class.java,
-            includeColumns = includeColumns,
-            errorMessageCode = ScannerMessageCode.EXPORT_REPORT_FAIL
-        )
+        EasyExcelUtils.download(dataList, scanPlan.name, ScanPlanExport::class.java, includeColumns)
     }
 
     override fun planArtifactSubtaskOverview(subtaskId: String): SubtaskResultOverview {
@@ -279,12 +272,7 @@ class ScanTaskServiceImpl(
             resultList.forEach {
                 dataList.add(Converter.convertToDetailExport(it))
             }
-            EasyExcelUtils.download(
-                data = dataList,
-                name = subtask.artifactName,
-                dataClass = LeakDetailExport::class.java,
-                errorMessageCode = ScannerMessageCode.EXPORT_REPORT_FAIL
-            )
+            EasyExcelUtils.download(dataList, subtask.artifactName, LeakDetailExport::class.java)
         }
     }
 
