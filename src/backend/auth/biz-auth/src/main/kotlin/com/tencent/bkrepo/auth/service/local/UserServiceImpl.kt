@@ -258,12 +258,14 @@ class UserServiceImpl constructor(
                 // conv time
                 expiredTime = expiredTime!!.plusHours(8)
             }
+            val sm3Id = DataDigestUtils.sm3FromStr(id)
             val userToken = Token(name = name, id = id, createdAt = createdTime, expiredAt = expiredTime)
-            userDao.addUserToken(userId, userToken)
+            val dataToken = Token(name = name, id = sm3Id, createdAt = createdTime, expiredAt = expiredTime)
+            userDao.addUserToken(userId, dataToken)
             val userInfo = userDao.findFirstByUserId(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
-                if (it.name == name) return it
+                if (it.name == name) return userToken
             }
             return null
         } catch (ignored: DateTimeParseException) {
@@ -299,10 +301,10 @@ class UserServiceImpl constructor(
                 return null
             }
         }
+        logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
-        val result = userDao.getUserByPassWordAndHash(userId, pwd, hashPwd) ?: run {
-            return null
-        }
+        val sm3HashPwd = DataDigestUtils.sm3FromStr(pwd)
+        val result = userDao.getUserByPassWordAndHash(userId, pwd, hashPwd, sm3HashPwd) ?: return null
         // password 匹配成功，返回
         if (result.pwd == hashPwd) {
             return UserRequestUtil.convToUser(result)
@@ -311,9 +313,9 @@ class UserServiceImpl constructor(
         // token 匹配成功
         result.tokens.forEach {
             // 永久token，校验通过，临时token校验有效期
-            if (UserRequestUtil.matchToken(pwd, hashPwd, it.id) && it.expiredAt == null) {
+            if (UserRequestUtil.matchToken(pwd, sm3HashPwd, it.id) && it.expiredAt == null) {
                 return UserRequestUtil.convToUser(result)
-            } else if (UserRequestUtil.matchToken(pwd, hashPwd, it.id) &&
+            } else if (UserRequestUtil.matchToken(pwd, sm3HashPwd, it.id) &&
                 it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())
             ) {
                 return UserRequestUtil.convToUser(result)

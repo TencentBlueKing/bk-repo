@@ -7,13 +7,12 @@ import org.springframework.data.mongodb.core.query.Query.query
 
 
 object UserQueryHelper {
-
-    fun buildUserPasswordCheck(userId: String, pwd: String, hashPwd: String): Query {
+    fun buildUserPasswordCheck(userId: String, pwd: String, hashPwd: String, sm3HashPwd: String): Query {
         val criteria = Criteria()
         criteria.orOperator(
             Criteria.where(TUser::pwd.name).`is`(hashPwd),
             Criteria.where("tokens.id").`is`(pwd),
-            Criteria.where("tokens.id").`is`(hashPwd)
+            Criteria.where("tokens.id").`is`(sm3HashPwd)
         ).and(TUser::userId.name).`is`(userId)
         return query(criteria)
     }

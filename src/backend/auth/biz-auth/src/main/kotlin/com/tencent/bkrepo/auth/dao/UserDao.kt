@@ -56,8 +56,8 @@ class UserDao : SimpleMongoDao<TUser>() {
         this.updateFirst(query, update)
     }
 
-    fun getUserByPassWordAndHash(userId: String, pwd: String, hashPwd: String): TUser? {
-        val query = UserQueryHelper.buildUserPasswordCheck(userId, pwd, hashPwd)
+    fun getUserByPassWordAndHash(userId: String, pwd: String, hashPwd: String, sm3HashPwd: String): TUser? {
+        val query = UserQueryHelper.buildUserPasswordCheck(userId, pwd, hashPwd, sm3HashPwd)
         return this.findOne(query)
     }
 

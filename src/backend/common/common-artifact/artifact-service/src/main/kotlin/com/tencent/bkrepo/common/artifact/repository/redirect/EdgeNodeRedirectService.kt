@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
@@ -34,44 +34,58 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import org.slf4j.LoggerFactory
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 import java.time.Duration
 import javax.servlet.http.HttpServletRequest
-import org.slf4j.LoggerFactory
-import org.springframework.http.HttpMethod
 
 /**
  * 边缘节点重定向服务
  * */
 @Service
+@Order(1) // 优先级最高，属于其他集群的制品优先重定向到其他集群
 class EdgeNodeRedirectService(
     private val clusterProperties: ClusterProperties,
     private val clusterNodeClient: ClusterNodeClient,
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
-) {
+) : DownloadRedirectService {
 
     /**
      * 重定向到默认集群节点
      * */
-    fun redirectToDefaultCluster(downloadContext: ArtifactDownloadContext) {
-        getEdgeClusterName(downloadContext.artifactInfo)?.let {
-            redirectToSpecificCluster(downloadContext, it)
+    override fun redirect(context: ArtifactDownloadContext) {
+        getEdgeClusterName(context)?.let {
+            redirectToSpecificCluster(context, it)
         }
+    }
+
+    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+        val node = ArtifactContextHolder.getNodeDetail(
+            context.repositoryDetail.projectId,
+            context.repositoryDetail.name
+        )
+        val selfClusterName = clusterProperties.self.name
+        if (logger.isDebugEnabled) {
+            logger.debug("node cluster: ${node?.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
+        }
+
+        return !(node == null ||
+                node.clusterNames.isNullOrEmpty() ||
+                node.clusterNames!!.contains(selfClusterName) ||
+                getEdgeClusterName(context) == null)
     }
 
     /**
      * 重定向到指定节点
      * */
-    fun redirectToSpecificCluster(downloadContext: ArtifactDownloadContext, clusterName: String) {
+    private fun redirectToSpecificCluster(downloadContext: ArtifactDownloadContext, clusterName: String) {
         // 节点来自其他集群，重定向到其他节点。
         val clusterInfo = clusterNodeClient.getCluster(clusterName).data
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
@@ -84,34 +98,15 @@ class EdgeNodeRedirectService(
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
-    fun shouldRedirect(artifactInfo: ArtifactInfo): Boolean {
-        val method = HttpContextHolder.getRequest().method
-        if (!method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向下载请求
-            return false
-        }
-        val node = ArtifactContextHolder.getNodeDetail()
-            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-        val selfClusterName = clusterProperties.self.name
-        if (logger.isDebugEnabled) {
-            logger.debug("node cluster: ${node.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
-        }
-        node.clusterNames ?: return false
-        // 自身集群不需要重定向
-        if (node.clusterNames!!.contains(selfClusterName)) {
-            return false
-        }
-        val edgeClusterName = getEdgeClusterName(artifactInfo)
-        return edgeClusterName != null
-    }
-
     /**
      * 获取边缘节点名称
      * */
-    private fun getEdgeClusterName(artifactInfo: ArtifactInfo): String? {
-        val node = ArtifactContextHolder.getNodeDetail()
-            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-        return node.clusterNames?.firstOrNull()
+    private fun getEdgeClusterName(context: ArtifactDownloadContext): String? {
+        val node = ArtifactContextHolder.getNodeDetail(
+            context.repositoryDetail.projectId,
+            context.repositoryDetail.name
+        )
+        return node?.clusterNames?.firstOrNull()
     }
 
     /**
@@ -128,8 +123,8 @@ class EdgeNodeRedirectService(
     private fun createTempToken(downloadContext: ArtifactDownloadContext): String {
         with(downloadContext) {
             val createTokenRequest = TemporaryTokenCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
+                projectId = repositoryDetail.projectId,
+                repoName = repositoryDetail.name,
                 fullPathSet = setOf(artifactInfo.getArtifactFullPath()),
                 expireSeconds = Duration.ofMinutes(5).seconds,
                 type = TokenType.DOWNLOAD,

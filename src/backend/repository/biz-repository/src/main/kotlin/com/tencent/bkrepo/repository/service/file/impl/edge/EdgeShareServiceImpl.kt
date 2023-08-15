@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.repository.service.file.impl.edge
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -48,13 +47,11 @@ class EdgeShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
     mongoTemplate: MongoTemplate,
-    clusterProperties: ClusterProperties,
-    redirectService: EdgeNodeRedirectService
+    clusterProperties: ClusterProperties
 ) : ShareServiceImpl(
     repositoryService,
     nodeService,
-    mongoTemplate,
-    redirectService
+    mongoTemplate
 ) {
 
     private val centerShareClient: NodeShareClient by lazy {

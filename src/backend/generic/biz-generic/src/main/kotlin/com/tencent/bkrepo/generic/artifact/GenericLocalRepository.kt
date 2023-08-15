@@ -414,6 +414,10 @@ class GenericLocalRepository(
         )
     }
 
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
+    }
+
     /**
      * 判断是否为分块上传
      */

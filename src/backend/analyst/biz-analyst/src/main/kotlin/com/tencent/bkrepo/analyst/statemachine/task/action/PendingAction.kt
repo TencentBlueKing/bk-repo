@@ -98,7 +98,9 @@ class PendingAction(
         require(context is CreateTaskContext)
         with(context) {
             val task = createTask(scanRequest, triggerType, userId)
-            weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it, chatIds) }
+            if (!weworkBotUrl.isNullOrEmpty() || !chatIds.isNullOrEmpty()) {
+                scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, weworkBotUrl, chatIds)
+            }
             // 开始调度扫描任务
             executor.execute {
                 val submitEvent = Event(ScanTaskEvent.SUBMIT.name, SubmitTaskContext(task))

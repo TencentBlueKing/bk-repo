@@ -183,7 +183,13 @@ class EdgePullReplicaExecutor(
         localProjectId: String,
         localRepoName: String,
     ): RepositoryDetail {
-        val projectCreateRequest = ProjectCreateRequest(localProjectId, localProjectId, null, centerRepo.createdBy)
+        val projectCreateRequest = ProjectCreateRequest(
+            name = localProjectId,
+            displayName = localProjectId,
+            description = null,
+            createPermission = true,
+            operator = centerRepo.createdBy
+        )
         try {
             projectClient.createProject(projectCreateRequest)
         } catch (e: RemoteErrorCodeException) {
