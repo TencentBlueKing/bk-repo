@@ -63,6 +63,15 @@ object NodeQueryHelper {
         return Query(criteria)
     }
 
+    fun nodeFolderQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(null)
+            .apply { fullPath?.run { and(TNode::fullPath).isEqualTo(fullPath) } }
+            .and(TNode::folder).isEqualTo(true)
+        return Query(criteria)
+    }
+
     fun nodeListCriteria(projectId: String, repoName: String, path: String, option: NodeListOption): Criteria {
         val nodePath = toPath(path)
         val criteria = where(TNode::projectId).isEqualTo(projectId)

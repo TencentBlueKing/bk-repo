@@ -81,7 +81,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         size: Long,
         nodeNum: Long
     ) {
-        val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
+        val query = NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath)
         val update = Update().inc(TNode::size.name, size)
             .inc(TNode::nodeNum.name, nodeNum)
             .set(TNode::lastModifiedDate.name, LocalDateTime.now())

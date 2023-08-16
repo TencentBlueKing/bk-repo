@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULLPATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.PROJECT
@@ -48,7 +49,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.util.concurrent.locks.ReentrantLock
 
@@ -122,11 +122,26 @@ class FolderStatChildJob(
     }
 
     private fun initCheck(context: FolderChildContext) {
-        if (LocalDateTime.now().dayOfWeek != DayOfWeek.MONDAY) {
-            return
-        }
+//        if (LocalDateTime.now().dayOfWeek != DayOfWeek.MONDAY) {
+//            return
+//        }
         context.initFlag = false
         // TODO 如何重复初始化
+        for (i in 0 until SHARDING_COUNT) {
+            restoreFolderStat("${COLLECTION_NODE_PREFIX}$i")
+        }
+    }
+
+
+    private fun restoreFolderStat(nodeCollectionName: String) {
+        val query = Query(
+            Criteria.where(FOLDER).isEqualTo(true)
+                .and(DELETED_DATE).isEqualTo(null)
+        )
+        val update = Update().set(SIZE, 0)
+            .unset(NODE_NUM)
+            .set(LAST_MODIFIED_DATE, LocalDateTime.now())
+        mongoTemplate.updateMulti(query, update, nodeCollectionName)
     }
 
     private fun updateFolderSize(
@@ -141,6 +156,7 @@ class FolderStatChildJob(
                 .and(REPO).isEqualTo(repoName)
                 .and(FULLPATH).isEqualTo(fullPath)
                 .and(DELETED_DATE).isEqualTo(null)
+                .and(FOLDER).isEqualTo(true)
         )
         val update = Update().inc(SIZE, size)
             .inc(NODE_NUM, nodeNum)
@@ -154,6 +170,6 @@ class FolderStatChildJob(
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private const val CACHE_SIZE = 1000L
+        private const val CACHE_SIZE = 2000L
     }
 }
