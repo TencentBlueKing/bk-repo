@@ -48,7 +48,7 @@
                     <template #icon><span></span></template>
                     <template #text="{ item: { name } }">
                         <div class="flex-1 flex-between-center">
-                            <span class="text-overflow">{{ name }}</span>
+                            <span class="text-overflow" :title="name.length > 19 ? name : ''">{{ name }}</span>
                         </div>
                     </template>
                 </repo-tree>
