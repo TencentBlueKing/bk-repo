@@ -25,6 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.ddc.utils
+
+import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
+import com.tencent.bkrepo.ddc.utils.BlakeUtils.toBlake3InputStream
+import org.junit.jupiter.api.Test
+
+import org.junit.jupiter.api.Assertions.*
+import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
+
+class BlakeUtilsTest {
+
+    @Test
+    fun hash() {
+        val content = "Hello world"
+        assertEquals("e7e6fb7d2869d109b62cdb1227208d4016cdaa0a", BlakeUtils.hash(content).hex())
+    }
+
+    @Test
+    fun hashBuffer() {
+        val buffer = ByteBuffer.allocate(11)
+        buffer.put("Hello ".toByteArray())
+        val buffer2 = buffer.slice()
+        buffer2.put("world".toByteArray())
+        val buffers = listOf(
+            buffer.flip() as ByteBuffer,
+            buffer2.flip() as ByteBuffer
+        )
+        assertEquals("e7e6fb7d2869d109b62cdb1227208d4016cdaa0a", BlakeUtils.hash(buffers).hex())
+    }
+
+    @Test
+    fun hashInputStream() {
+        val blake3InputStream = ByteArrayInputStream("Hello world".toByteArray()).toBlake3InputStream()
+        blake3InputStream.reader().readText()
+        assertEquals("e7e6fb7d2869d109b62cdb1227208d4016cdaa0a", blake3InputStream.hash().hex())
+    }
 }

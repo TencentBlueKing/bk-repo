@@ -25,6 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
-}
+package com.tencent.bkrepo.ddc.exception
+
+class NotImplementedException(msg: String = "") : RuntimeException(msg)

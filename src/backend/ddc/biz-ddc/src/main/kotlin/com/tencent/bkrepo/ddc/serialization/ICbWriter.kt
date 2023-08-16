@@ -25,6 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.ddc.serialization
+
+import java.nio.ByteBuffer
+
+interface ICbWriter {
+    fun beginObject(name: String? = null)
+
+    fun endObject()
+
+    fun beginArray(name: String? = null, elementType: CbFieldType = CbFieldType.None)
+
+    fun endArray()
+
+    fun writeField(type: CbFieldType, name: String? = null, length: Int): ByteBuffer
+
+    fun writeReference(data: ByteBuffer)
 }

@@ -25,6 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.ddc.serialization
+
+import java.nio.ByteBuffer
+
+class CbWriter : CbWriterBase() {
+    override fun allocateChunk(minSize: Int): ByteBuffer {
+        return ByteBuffer.allocate(maxOf(minSize, DEFAULT_CHUNK_SIZE))
+    }
+
+    companion object {
+        const val DEFAULT_CHUNK_SIZE: Int = 1024
+    }
 }

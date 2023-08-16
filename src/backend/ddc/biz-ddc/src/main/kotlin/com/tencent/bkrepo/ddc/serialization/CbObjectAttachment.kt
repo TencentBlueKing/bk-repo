@@ -25,6 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.ddc.serialization
+
+/**
+ *  An object attachment, referenced by [hash]
+ */
+class CbObjectAttachment(val hash: IoHash) {
+    override fun toString(): String = hash.toString()
+    override fun equals(other: Any?) = other is CbObjectAttachment && other.hash == hash
+    override fun hashCode() = hash.a.toInt()
+
+    companion object {
+        val ZERO: CbObjectAttachment = CbObjectAttachment(IoHash.ZERO)
+        fun fromHash(hash: IoHash): CbObjectAttachment = CbObjectAttachment(hash)
+    }
 }

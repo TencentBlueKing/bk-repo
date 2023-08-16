@@ -25,6 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
-}
+package com.tencent.bkrepo.ddc.utils
+
+import com.tencent.bkrepo.ddc.serialization.CbField
+import com.tencent.bkrepo.ddc.serialization.CbFieldUtils
+
+fun CbField.hasName() = CbFieldUtils.hasFieldName(typeWithFlags)
+
+fun CbField.isNull() = CbFieldUtils.isNull(typeWithFlags)
+
+fun CbField.isObject() = CbFieldUtils.isObject(typeWithFlags)
+
+fun CbField.isArray() = CbFieldUtils.isArray(typeWithFlags)
+
+fun CbField.isString() = CbFieldUtils.isString(typeWithFlags)
+
+fun CbField.isBinary() = CbFieldUtils.isBinary(typeWithFlags)
+
+fun CbField.isInteger() = CbFieldUtils.isInteger(typeWithFlags)
+
+fun CbField.isFloat() = CbFieldUtils.isFloat(typeWithFlags)
+
+fun CbField.isBool() = CbFieldUtils.isBool(typeWithFlags)
+
+fun CbField.isObjectAttachment() = CbFieldUtils.isObjectAttachment(typeWithFlags)
+fun CbField.isBinaryAttachment() = CbFieldUtils.isBinaryAttachment(typeWithFlags)
+
+fun CbField.isHash() = CbFieldUtils.isHash(typeWithFlags)
+fun CbField.isUuid() = CbFieldUtils.isUuid(typeWithFlags)

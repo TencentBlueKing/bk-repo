@@ -25,6 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.ddc.utils
+
+import java.nio.ByteBuffer
+
+object ByteBufferUtils {
+    val EMPTY = ByteBuffer.allocate(0)
+
+    fun byteBufferOf(vararg elements: Byte) = ByteBuffer.wrap(elements)
 }
