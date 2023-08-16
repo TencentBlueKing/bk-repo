@@ -140,7 +140,6 @@ class FolderStatChildJob(
         )
         val update = Update().set(SIZE, 0)
             .unset(NODE_NUM)
-            .set(LAST_MODIFIED_DATE, LocalDateTime.now())
         mongoTemplate.updateMulti(query, update, nodeCollectionName)
     }
 
