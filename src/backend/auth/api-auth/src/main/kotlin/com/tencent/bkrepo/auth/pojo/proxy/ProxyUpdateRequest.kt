@@ -29,6 +29,7 @@ package com.tencent.bkrepo.auth.pojo.proxy
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import org.springframework.util.unit.DataSize
 
 @ApiModel("proxy更新请求")
 data class ProxyUpdateRequest(
@@ -39,5 +40,9 @@ data class ProxyUpdateRequest(
     @ApiModelProperty("展示名")
     val displayName: String? = null,
     @ApiModelProperty("IP")
-    val ip: String? = null
+    val ip: String? = null,
+    @ApiModelProperty("同步限速")
+    val syncRateLimit: DataSize? = null,
+    @ApiModelProperty("同步时间段")
+    val syncTimeRange: String? = null
 )

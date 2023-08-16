@@ -62,6 +62,7 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 /**
  * 集群数据同步类
@@ -200,6 +201,7 @@ class ClusterReplicator(
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             var type: String = replicationProperties.pushType
+            var downGrade = false
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 return buildNodeCreateRequest(this, node)?.let {
                     if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
@@ -217,7 +219,8 @@ class ClusterReplicator(
                                     size = it.size,
                                     sha256 = it.sha256
                                 ),
-                                pushType = type
+                                pushType = type,
+                                downGrade = downGrade
                             )
                         } catch (throwable: Throwable) {
                             logger.warn(
@@ -232,10 +235,13 @@ class ClusterReplicator(
                                     throwable.code == HttpStatus.UNAUTHORIZED.value )
                             ) {
                                 type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                                downGrade = true
                             }
                             throw throwable
                         }
                     }
+                    // 再次确认下文件是否已经可见(cfs可见性问题)
+                    doubleCheck(context, it.sha256!!)
                     logger.info(
                         "The node [${node.fullPath}] will be pushed to the remote server!"
                     )
@@ -243,6 +249,18 @@ class ClusterReplicator(
                     artifactReplicaClient!!.replicaNodeCreateRequest(it)
                     true
                 } ?: false
+            }
+        }
+    }
+
+    private fun doubleCheck(context: ReplicaContext, sha256: String) {
+        var count = 0
+        while (count < FILE_EXIST_CHECK_RETRY_COUNT) {
+            if (context.blobReplicaClient!!.check(sha256, context.remoteRepo?.storageCredentials?.key).data == true){
+                break
+            } else {
+                TimeUnit.SECONDS.sleep(1)
+                count++
             }
         }
     }
@@ -293,7 +311,7 @@ class ClusterReplicator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
-
+        private const val FILE_EXIST_CHECK_RETRY_COUNT = 10
 
         fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
             return "$projectId/$repoName/${clusterInfo.hashCode()}"

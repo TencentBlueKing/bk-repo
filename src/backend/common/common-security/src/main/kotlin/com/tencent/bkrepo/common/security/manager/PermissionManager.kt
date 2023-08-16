@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -80,7 +81,8 @@ open class PermissionManager(
     private val permissionResource: ServicePermissionClient,
     private val externalPermissionResource: ServiceExternalPermissionClient,
     private val userResource: ServiceUserClient,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val httpAuthProperties: HttpAuthProperties
 ) {
 
     private val httpClient =
@@ -259,7 +261,7 @@ open class PermissionManager(
     /**
      * 查询仓库信息
      */
-    private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
+    open fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
         return repositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
     }
 
@@ -275,6 +277,10 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
+        // 判断是否开启认证
+        if (!httpAuthProperties.enabled) {
+            return
+        }
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
@@ -329,7 +335,7 @@ open class PermissionManager(
     /**
      * 获取当前项目、仓库的自定义外部权限
      */
-    private fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
+    open fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
         val externalPermissionList = externalPermissionCache.get(SYSTEM_USER)
         val platformId = SecurityUtils.getPlatformId()
         val ext = externalPermissionList.firstOrNull { p ->

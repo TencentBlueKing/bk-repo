@@ -52,7 +52,7 @@ const routes = [
                 component: repoList,
                 meta: {
                     breadcrumb: [
-                        { name: 'repositories', label: '仓库列表' }
+                        { to: 'repositories', name: 'browser', label: '仓库列表' }
                     ]
                 }
             },
@@ -62,7 +62,7 @@ const routes = [
                 component: repoConfig,
                 meta: {
                     breadcrumb: [
-                        { name: 'repositories', label: '仓库列表' },
+                        { to: 'repositories', name: 'browser', label: '仓库列表' },
                         { name: 'repoConfig', label: '仓库配置' }
                     ]
                 }
@@ -236,13 +236,13 @@ const routes = [
                         ]
                     } else if (repoType === 'generic') {
                         to.meta.breadcrumb = [
-                            { name: 'repositories', label: '仓库列表' },
+                            { to: 'repositories', name: 'browser', label: '仓库列表' },
                             { name: 'repoGeneric', label: '{repoName}', template: 'repoGeneric' },
                             { name: 'artiReport', label: '制品扫描结果' }
                         ]
                     } else if (repoType) {
                         to.meta.breadcrumb = [
-                            { name: 'repositories', label: '仓库列表' },
+                            { to: 'repositories', name: 'browser', label: '仓库列表' },
                             { name: 'commonList', label: '{repoName}', template: 'commonList' },
                             { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' },
                             { name: 'artiReport', label: '制品扫描结果' }
@@ -290,7 +290,7 @@ const routes = [
                 component: repoGeneric,
                 meta: {
                     breadcrumb: [
-                        { name: 'repositories', label: '仓库列表' },
+                        { to: 'repositories', name: 'browser', label: '仓库列表' },
                         { name: 'repoGeneric', label: '{repoName}', template: 'repoGeneric' }
                     ]
                 }
@@ -301,7 +301,7 @@ const routes = [
                 component: commonPackageList,
                 meta: {
                     breadcrumb: [
-                        { name: 'repositories', label: '仓库列表' },
+                        { to: 'repositories', name: 'browser', label: '仓库列表' },
                         { name: 'commonList', label: '{repoName}', template: 'commonList' }
                     ]
                 }
@@ -312,7 +312,7 @@ const routes = [
                 component: commonPackageDetail,
                 meta: {
                     breadcrumb: [
-                        { name: 'repositories', label: '仓库列表' },
+                        { to: 'repositories', name: 'browser', label: '仓库列表' },
                         { name: 'commonList', label: '{repoName}', template: 'commonList' },
                         { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' }
                     ]

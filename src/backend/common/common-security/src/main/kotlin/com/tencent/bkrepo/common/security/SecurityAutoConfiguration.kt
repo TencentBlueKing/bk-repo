@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
 import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
@@ -56,11 +57,11 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
+@Suppress("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
 @ConditionalOnWebApplication
 @Import(
     SecurityExceptionHandler::class,
-    AuthenticationManager::class,
     PermissionConfiguration::class,
     HttpAuthConfiguration::class,
     ServiceAuthConfiguration::class,
@@ -71,13 +72,15 @@ import org.springframework.context.annotation.Import
 class SecurityAutoConfiguration {
 
     @Bean
+    @Suppress("LongParameterList")
     fun permissionManager(
         repositoryClient: RepositoryClient,
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
         userResource: ServiceUserClient,
         nodeClient: NodeClient,
-        clusterProperties: ClusterProperties
+        clusterProperties: ClusterProperties,
+        httpAuthProperties: HttpAuthProperties
     ): PermissionManager {
         return if (clusterProperties.role == ClusterNodeType.EDGE
             && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
@@ -88,7 +91,8 @@ class SecurityAutoConfiguration {
                 externalPermissionResource = externalPermissionResource,
                 userResource = userResource,
                 nodeClient = nodeClient,
-                clusterProperties = clusterProperties
+                clusterProperties = clusterProperties,
+                httpAuthProperties = httpAuthProperties
             )
         } else {
             PermissionManager(
@@ -96,7 +100,8 @@ class SecurityAutoConfiguration {
                 permissionResource = permissionResource,
                 externalPermissionResource = externalPermissionResource,
                 userResource = userResource,
-                nodeClient = nodeClient
+                nodeClient = nodeClient,
+                httpAuthProperties = httpAuthProperties
             )
         }
     }
@@ -108,14 +113,22 @@ class SecurityAutoConfiguration {
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
         userResource: ServiceUserClient,
-        nodeClient: NodeClient
+        nodeClient: NodeClient,
+        httpAuthProperties: HttpAuthProperties
     ): ProxyPermissionManager {
         return ProxyPermissionManager(
             repositoryClient = repositoryClient,
             permissionResource = permissionResource,
             externalPermissionResource = externalPermissionResource,
             userResource = userResource,
-            nodeClient = nodeClient
+            nodeClient = nodeClient,
+            httpAuthProperties = httpAuthProperties
         )
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun defaultAuthenticationManager(): AuthenticationManager {
+        return AuthenticationManager()
     }
 }

@@ -55,7 +55,6 @@
 .bkrepo-user-container {
     justify-content: flex-end;
     position: relative;
-    width: 130px;
     height: 100%;
     padding: 0 10px;
     cursor: pointer;

@@ -43,5 +43,6 @@ data class GenericProperties(
     @NestedConfigurationProperty
     var delta: DeltaProperties = DeltaProperties(),
     @NestedConfigurationProperty
-    var bkBase: BkBaseProperties = BkBaseProperties()
+    var bkBase: BkBaseProperties = BkBaseProperties(),
+    var proxyPath: String = "/data/bkrepo/proxy/proxy.jar"
 )

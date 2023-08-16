@@ -4,7 +4,7 @@
         <bk-breadcrumb-item
             v-for="item in list"
             :key="item.name"
-            :to="{ name: item.name, params: { ...$route.query, ...$route.params }, query: $route.query }">
+            :to="{ name: item.to || item.name, params: { ...$route.query, ...$route.params }, query: $route.query }">
             {{ transformLabel(item.label,item.name) || $t(item.template) }}
         </bk-breadcrumb-item>
     </bk-breadcrumb>

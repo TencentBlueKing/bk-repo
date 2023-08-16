@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -63,7 +64,8 @@ class NodeServiceImpl(
     override val storageService: StorageService,
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
-    override val messageSupplier: MessageSupplier
+    override val messageSupplier: MessageSupplier,
+    override val routerControllerClient: RouterControllerClient
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -72,7 +74,8 @@ class NodeServiceImpl(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier
+    messageSupplier,
+    routerControllerClient
 ) {
 
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {

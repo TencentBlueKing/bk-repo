@@ -29,6 +29,7 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
@@ -53,6 +54,11 @@ interface ProxyService {
      * 分页查询Proxy信息
      */
     fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo>
+
+    /**
+     * 查询Proxy加密存储的密钥
+     */
+    fun getEncryptedKey(projectId: String, name: String): ProxyKey
 
     /**
      * 更新Proxy

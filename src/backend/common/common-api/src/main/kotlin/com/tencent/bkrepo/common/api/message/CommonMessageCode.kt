@@ -54,6 +54,7 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     REQUEST_RANGE_INVALID("system.request-range.invalid"),
     MODIFY_PASSWORD_FAILED("modify.password.failed"),
     OPERATION_CROSS_CLUSTER_NOT_ALLOWED("operation.cross-cluster.not-allowed"),
+    MEDIA_TYPE_UNACCEPTABLE("system.media-type.unacceptable"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

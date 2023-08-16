@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.nuget.common
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.constant.PACKAGE_BASE_ADDRESS
 import com.tencent.bkrepo.nuget.constant.PACKAGE_DISPLAY_METADATA_URI_TEMPLATE
 import com.tencent.bkrepo.nuget.constant.PACKAGE_PUBLISH

@@ -30,15 +30,18 @@ package com.tencent.bkrepo.proxy.job
 import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.proxy.util.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.proxy.constant.PID_FILE_PATH
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.File
 import javax.annotation.PreDestroy
 
 @Component
-class ProxyShutdownRunner(
-    private val proxyAuthClient: ProxyAuthClient
-) {
+class ProxyShutdownRunner {
+
+    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
 
     @PreDestroy
     fun shutdown() {
@@ -52,7 +55,13 @@ class ProxyShutdownRunner(
             message = AESUtils.encrypt("$name:shutdown:$ticket", secretKey)
         )
         proxyAuthClient.shutdown(shutdownRequest)
+        deletePidFile()
         logger.info("shutdown")
+    }
+
+    private fun deletePidFile() {
+        val file = File(PID_FILE_PATH)
+        file.deleteOnExit()
     }
 
     companion object {

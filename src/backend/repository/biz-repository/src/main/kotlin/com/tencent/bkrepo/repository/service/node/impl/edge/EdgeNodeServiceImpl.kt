@@ -54,6 +54,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -71,7 +72,8 @@ class EdgeNodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
-    override val clusterProperties: ClusterProperties
+    override val clusterProperties: ClusterProperties,
+    override val routerControllerClient: RouterControllerClient
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -81,6 +83,7 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
+    routerControllerClient,
     clusterProperties
 ) {
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {

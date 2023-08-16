@@ -20,7 +20,7 @@
             <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="tokenFormData.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('expire')" property="expiredAt">
+            <bk-form-item :label="$t('expireOn')" property="expiredAt">
                 <bk-date-picker
                     style="width:100%"
                     v-model="tokenFormData.expiredAt"
@@ -49,6 +49,7 @@
             return {
                 show: false,
                 loading: false,
+                userName: '',
                 tokenFormData: {
                     name: '',
                     expiredAt: ''
@@ -84,7 +85,7 @@
                 this.loading = true
                 this.addToken({
                     projectId: this.$route.params.projectId,
-                    username: this.userInfo.username,
+                    username: this.userName,
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
                 }).then(({ id }) => {

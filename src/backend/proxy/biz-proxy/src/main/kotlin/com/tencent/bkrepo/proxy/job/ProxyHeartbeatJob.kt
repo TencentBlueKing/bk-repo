@@ -28,21 +28,23 @@
 package com.tencent.bkrepo.proxy.job
 
 import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
-import com.tencent.bkrepo.proxy.util.ProxyEnv
-import com.tencent.bkrepo.proxy.util.SessionKeyHolder
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class ProxyHeartbeatJob(
-    private val proxyAuthClient: ProxyAuthClient
-) {
+class ProxyHeartbeatJob {
 
-    @Scheduled(fixedRate = 100000)
+    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
+
+    @Scheduled(fixedRate = 10000)
     fun heartbeat() {
         try {
             SessionKeyHolder.getSessionKey()
-        } catch (_: RuntimeException) {
+        } catch (_: ErrorCodeException) {
             return
         }
         val projectId = ProxyEnv.getProjectId()

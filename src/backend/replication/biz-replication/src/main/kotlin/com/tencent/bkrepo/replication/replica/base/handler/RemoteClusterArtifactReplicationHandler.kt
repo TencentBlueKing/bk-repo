@@ -60,10 +60,11 @@ class RemoteClusterArtifactReplicationHandler(
     }
 
     override fun handleChunkUploadException(e: Exception): DefaultHandlerResult {
-        // 针对mirrors不支持将blob分成多块上传，返回404 BLOB_UPLOAD_INVALID
-        // 针对csighub不支持将blob分成多块上传，报java.net.SocketException: Broken pipe (Write failed)
-        // 针对部分tencentyun.com分块上传报okhttp3.internal.http2.StreamResetException: stream was reset: NO_ERROR
-        // 抛出异常后，都进行降级，直接使用单个文件上传进行降级重试
+        // 针对部分镜像源不支持将blob分成多块上传，返回以下几种异常：
+        // 1 404 BLOB_UPLOAD_INVALID
+        // 2 java.net.SocketException: Broken pipe (Write failed)
+        // 3 okhttp3.internal.http2.StreamResetException: stream was reset: NO_ERROR
+        // 针对这几类情况都进行降级，直接使用单个文件上传进行降级重试
         return DefaultHandlerResult(isFailure = true)
     }
 

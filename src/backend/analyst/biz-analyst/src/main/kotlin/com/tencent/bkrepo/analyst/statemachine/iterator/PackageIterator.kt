@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
 import com.tencent.bkrepo.analyst.utils.Request
 import org.slf4j.LoggerFactory
 import kotlin.math.min
@@ -108,7 +109,7 @@ class PackageIterator(
                     .ifEmpty { listOf(pkg.latestVersion) }
                     .asSequence()
                     .filter { version ->
-                        val valuesToMatch = mapOf(
+                        val valuesToMatch = mutableMapOf<String, Any>(
                             Package::projectId.name to pkg.projectId,
                             Package::repoName.name to pkg.repoName,
                             PackageSummary::type.name to pkg.type,
@@ -116,6 +117,7 @@ class PackageIterator(
                             RuleArtifact::name.name to pkg.artifactName,
                             RuleArtifact::version.name to version
                         )
+                        valuesToMatch[RULE_FIELD_LATEST_VERSION] = (version == pkg.latestVersion)
                         RuleMatcher.match(position.rule, valuesToMatch)
                     }
                     .map { version -> pkg.copy(packageVersion = version) }
@@ -147,7 +149,7 @@ class PackageIterator(
      */
     private fun packageSummaryRule(rule: Rule): Rule {
         require(rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND)
-        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name))
+        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name, RULE_FIELD_LATEST_VERSION))
     }
 
     /**

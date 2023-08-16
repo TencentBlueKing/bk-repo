@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
@@ -47,9 +48,13 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import net.bytebuddy.utility.RandomString
+import com.tencent.bkrepo.router.api.RouterControllerClient
+import com.tencent.bkrepo.router.enum.RouterNodeType
+import com.tencent.bkrepo.router.pojo.AddRouterNodeRequest
+import com.tencent.bkrepo.router.pojo.RemoveRouterNodeRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.security.SecureRandom
 import java.time.Instant
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -57,16 +62,17 @@ import kotlin.random.Random
 @Service
 class ProxyServiceImpl(
     private val proxyRepository: ProxyRepository,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val routerControllerClient: RouterControllerClient
 ) : ProxyService {
     override fun create(request: ProxyCreateRequest): ProxyInfo {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, request.projectId)
         val userId = SecurityUtils.getUserId()
-        var name = RandomString.make(6)
+        var name = randomString(PROXY_NAME_LEN)
         while (checkExist(request.projectId, name)) {
-            name = RandomString.make(6)
+            name = randomString(PROXY_NAME_LEN)
         }
-        val secretKey = AESUtils.encrypt(RandomString.make(32))
+        val secretKey = AESUtils.encrypt(randomString(PROXY_KEY_LEN))
         val tProxy = TProxy(
             name = name,
             displayName = request.displayName,
@@ -75,8 +81,10 @@ class ProxyServiceImpl(
             ip = StringPool.UNKNOWN,
             secretKey = secretKey,
             sessionKey = StringPool.EMPTY,
-            ticket = Random.nextInt(),
+            ticket = secureRandom.nextInt(),
             ticketCreateInstant = Instant.now(),
+            syncRateLimit = request.syncRateLimit.toBytes(),
+            syncTimeRange = request.syncTimeRange,
             createdBy = userId,
             createdDate = LocalDateTime.now(),
             lastModifiedBy = userId,
@@ -100,6 +108,13 @@ class ProxyServiceImpl(
         return Pages.ofResponse(pageRequest, page.totalElements, page.content.map { it.convert() })
     }
 
+    override fun getEncryptedKey(projectId: String, name: String): ProxyKey {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
+        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+            ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
+        return ProxyKey(tProxy.secretKey, tProxy.sessionKey)
+    }
+
     override fun update(request: ProxyUpdateRequest): ProxyInfo {
         val userId = SecurityUtils.getUserId()
         val tProxy = proxyRepository.findByProjectIdAndName(request.projectId, request.name)
@@ -117,6 +132,7 @@ class ProxyServiceImpl(
         proxyRepository.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
         proxyRepository.deleteByProjectIdAndName(projectId, name)
+        routerControllerClient.removeRouterNode(RemoveRouterNodeRequest(name, SecurityUtils.getUserId()))
     }
 
     override fun ticket(projectId: String, name: String): Int {
@@ -147,11 +163,21 @@ class ProxyServiceImpl(
                 expression = AESUtils.encrypt("$name:$STARTUP_OPERATION:${tProxy.ticket}", secretKey) == message,
                 name = message
             )
-            val sessionKey = AESUtils.encrypt(RandomString.make(32), secretKey)
+            val sessionKey = AESUtils.encrypt(randomString(PROXY_KEY_LEN), secretKey)
             tProxy.status = ProxyStatus.ONLINE
             tProxy.sessionKey = sessionKey
             tProxy.ip = HttpContextHolder.getClientAddress()
             proxyRepository.save(tProxy)
+            routerControllerClient.addRouterNode(
+                AddRouterNodeRequest(
+                    id = tProxy.name,
+                    name = tProxy.displayName,
+                    description = StringPool.EMPTY,
+                    type = RouterNodeType.PROXY,
+                    location = "${StringPool.HTTP}${tProxy.ip}",
+                    operator = tProxy.createdBy
+                )
+            )
             return sessionKey
         }
     }
@@ -186,19 +212,32 @@ class ProxyServiceImpl(
         return proxyRepository.findByProjectIdAndName(projectId, name) != null
     }
 
-    fun TProxy.convert() = ProxyInfo(
+    private fun TProxy.convert() = ProxyInfo(
         name = name,
         displayName = displayName,
         projectId = projectId,
         clusterName = clusterName,
         ip = ip,
-        status = status
+        status = status,
+        syncRateLimit = syncRateLimit,
+        syncTimeRange = syncTimeRange
     )
+
+    private fun randomString(length: Int): String {
+        val buffer = ByteArray(length / 2)
+        SecureRandom().nextBytes(buffer)
+        return buffer.joinToString("") { String.format("%02x", it) }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProxyServiceImpl::class.java)
         private const val N_EXPIRED_SEC = 30L
         private const val STARTUP_OPERATION = "startup"
         private const val SHUTDOWN_OPERATION = "shutdown"
+
+        private const val PROXY_NAME_LEN = 10
+        private const val PROXY_KEY_LEN = 32
+
+        private val secureRandom = SecureRandom()
     }
 }

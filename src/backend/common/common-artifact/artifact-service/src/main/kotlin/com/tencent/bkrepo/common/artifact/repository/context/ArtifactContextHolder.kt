@@ -48,29 +48,33 @@ import com.tencent.bkrepo.common.artifact.repository.composite.CompositeReposito
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.first
+import kotlin.collections.forEach
+import kotlin.collections.get
+import kotlin.collections.isNotEmpty
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
 
-@Suppress("LateinitUsage") // 静态成员通过init构造函数初始化
+@Suppress("LateinitUsage", "LongParameterList", "TooManyFunctions") // 静态成员通过init构造函数初始化
 class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
-    repositoryClient: RepositoryClient,
-    nodeClient: NodeClient,
+    artifactClient: ArtifactClient,
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 ) {
 
     init {
         Companion.artifactConfigurers = artifactConfigurers
         Companion.compositeRepository = compositeRepository
-        Companion.repositoryClient = repositoryClient
-        Companion.nodeClient = nodeClient
+        Companion.artifactClient = artifactClient
         Companion.httpAuthSecurity = httpAuthSecurity
         require(artifactConfigurers.isNotEmpty()) { "No ArtifactConfigurer found!" }
         artifactConfigurers.forEach {
@@ -81,8 +85,7 @@ class ArtifactContextHolder(
     companion object {
         private lateinit var artifactConfigurers: List<ArtifactConfigurer>
         private lateinit var compositeRepository: CompositeRepository
-        private lateinit var repositoryClient: RepositoryClient
-        private lateinit var nodeClient: NodeClient
+        private lateinit var artifactClient: ArtifactClient
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 
         private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
@@ -233,8 +236,8 @@ class ArtifactContextHolder(
         private fun queryRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
                 val repoType = getCurrentArtifactConfigurer().getRepositoryType().name
-                val response = repositoryClient.getRepoDetail(projectId, repoName, repoType)
-                return response.data ?: queryRepoDetailFormExtraRepoType(projectId, repoName)
+                return artifactClient.getRepositoryDetailOrNull(projectId, repoName, repoType)
+                    ?: queryRepoDetailFormExtraRepoType(projectId, repoName)
             }
         }
 
@@ -246,7 +249,7 @@ class ArtifactContextHolder(
             val repoTypeList = getCurrentArtifactConfigurer().getRepositoryTypes()
             var otherRepo: RepositoryDetail? = null
             repoTypeList.forEach {
-                val repo = repositoryClient.getRepoDetail(projectId, repoName, it.name).data
+                val repo = artifactClient.getRepositoryDetailOrNull(projectId, repoName, it.name)
                 if (repo != null) {
                     otherRepo = repo
                     return@forEach
@@ -264,11 +267,11 @@ class ArtifactContextHolder(
             }
 
             val artifactInfo = getArtifactInfo(request) ?: return null
-            val nodeDetail = nodeClient.getNodeDetail(
+            val nodeDetail = artifactClient.getNodeDetailOrNull(
                 projectId = projectId ?: artifactInfo.projectId,
                 repoName = repoName ?: artifactInfo.repoName,
                 fullPath = fullPath ?: artifactInfo.getArtifactFullPath()
-            ).data
+            )
             nodeDetail?.let { request.setAttribute(NODE_DETAIL_KEY, nodeDetail) }
             return nodeDetail
         }

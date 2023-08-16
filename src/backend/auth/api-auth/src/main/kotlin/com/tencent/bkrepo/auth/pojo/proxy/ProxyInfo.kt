@@ -43,5 +43,9 @@ data class ProxyInfo(
     @ApiModelProperty("IP")
     val ip: String,
     @ApiModelProperty("状态")
-    val status: ProxyStatus
+    val status: ProxyStatus,
+    @ApiModelProperty("同步限速，单位Byte/s")
+    val syncRateLimit: Long,
+    @ApiModelProperty("同步时间段")
+    val syncTimeRange: String
 )

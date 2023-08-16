@@ -29,6 +29,7 @@ package com.tencent.bkrepo.auth.repository
 
 import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.springframework.data.domain.Page
@@ -62,6 +63,13 @@ class ProxyRepository: SimpleMongoDao<TProxy>() {
             val data = find(query.with(pageable))
             return PageImpl(data, pageable, total)
         }
+    }
+
+    fun findStatusNotOffline(): List<TProxy> {
+        val query = Query(
+            Criteria.where(TProxy::status.name).ne(ProxyStatus.OFFLINE)
+        )
+        return find(query)
     }
 
     fun deleteByProjectIdAndName(projectId: String, name: String) {

@@ -30,9 +30,12 @@ package com.tencent.bkrepo.repository.api.proxy
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -57,4 +60,26 @@ interface ProxyNodeClient {
     @ApiOperation("创建节点")
     @PostMapping("/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Response<NodeDetail>
+
+    @ApiOperation("列表查询指定目录下所有节点")
+    @GetMapping("/list/{projectId}/{repoName}")
+    fun listNode(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "所属目录", required = true)
+        @RequestParam path: String,
+        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
+        @RequestParam includeFolder: Boolean = true,
+        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
+        @RequestParam deep: Boolean = false,
+        @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
+        @RequestParam includeMetadata: Boolean = false
+    ): Response<List<NodeInfo>>
+
+    @ApiOperation("更新节点访问时间")
+    @PostMapping("/update/access/")
+    fun updateNodeAccessDate(@RequestBody nodeUpdateAccessDateRequest: NodeUpdateAccessDateRequest): Response<Void>
+
 }

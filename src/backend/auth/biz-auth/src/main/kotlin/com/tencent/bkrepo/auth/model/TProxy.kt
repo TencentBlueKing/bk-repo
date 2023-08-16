@@ -45,6 +45,8 @@ data class TProxy(
     var ticket: Int,
     var ticketCreateInstant: Instant,
     var status: ProxyStatus,
+    var syncRateLimit: Long,
+    val syncTimeRange: String,
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,

@@ -31,26 +31,77 @@
 
 package com.tencent.bkrepo.common.security.proxy
 
+import cn.hutool.crypto.CryptoException
+import com.google.common.hash.Hashing
+import com.tencent.bkrepo.auth.api.ServiceProxyClient
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.service.ServiceAuthManager
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.util.AESUtils
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.util.HttpSigner
+import com.tencent.bkrepo.common.service.util.HttpSigner.PROJECT_ID
+import com.tencent.bkrepo.common.service.util.HttpSigner.PROXY_NAME
+import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import org.apache.commons.codec.digest.HmacAlgorithms
+import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.AsyncHandlerInterceptor
+import org.springframework.web.servlet.HandlerMapping
+import java.io.ByteArrayOutputStream
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class ProxyAuthInterceptor(
-    private val serviceAuthManager: ServiceAuthManager,
     private val proxyAuthProperties: ProxyAuthProperties
 ) : AsyncHandlerInterceptor {
 
+    private val serviceProxyClient: ServiceProxyClient by lazy { SpringContextUtils.getBean() }
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         if (proxyAuthProperties.enabled) {
-            println("proxy auth")
+            val projectId = request.getParameter(PROJECT_ID)
+            val name = request.getParameter(PROXY_NAME)
+            if (projectId.isNullOrBlank()) {
+                throw AuthenticationException("miss projectId")
+            }
+            if (name.isNullOrBlank()) {
+                throw AuthenticationException("miss name")
+            }
+            try {
+                val proxyKey = serviceProxyClient.getEncryptedKey(projectId, name).data!!
+                val secretKey = AESUtils.decrypt(proxyKey.encSecretKey)
+                val sessionKey = AESUtils.decrypt(proxyKey.encSessionKey, secretKey)
+                val body = ByteArrayOutputStream()
+                request.inputStream.copyTo(body)
+                val uri = getUrlPath(request)
+                val bodyHash = Hashing.sha256().hashBytes(body.toByteArray()).toString()
+                val sig = HttpSigner.sign(request, uri, bodyHash, sessionKey, HmacAlgorithms.HMAC_SHA_1.getName())
+                if (sig != request.getParameter(SIGN)) {
+                    val signatureStr = HttpSigner.getSignatureStr(request, uri, bodyHash)
+                    throw AuthenticationException("Invalid signature, server signature string: $signatureStr")
+                }
+            } catch (e: RemoteErrorCodeException) {
+                logger.error("proxy auth error: ", e)
+                throw AuthenticationException(e.localizedMessage)
+            } catch (e: CryptoException) {
+                logger.error("proxy auth crypto error: ", e)
+                throw AuthenticationException(e.localizedMessage)
+            }
         }
         // 设置uid
         request.getHeader(MS_AUTH_HEADER_UID)?.let {
             request.setAttribute(USER_KEY, it)
         }
         return true
+    }
+
+    private fun getUrlPath(request: HttpServletRequest): String {
+        return request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString().ensurePrefix("/")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProxyAuthInterceptor::class.java)
     }
 }

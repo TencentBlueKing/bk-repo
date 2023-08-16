@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
@@ -116,5 +117,18 @@ object SecurityUtils {
      */
     fun getClusterName(): String? {
         return HeaderUtils.getHeader(MS_REQUEST_SRC_CLUSTER)
+    }
+
+    /**
+     * 临时以系统用户身份执行
+     */
+    fun <R> sudo(action: () -> R?): R? {
+        val userId = getUserId()
+        HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, SYSTEM_USER)
+        try {
+            return action()
+        } finally {
+            HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, userId)
+        }
     }
 }

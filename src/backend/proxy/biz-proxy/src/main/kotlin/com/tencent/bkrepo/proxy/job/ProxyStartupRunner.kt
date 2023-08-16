@@ -30,23 +30,43 @@ package com.tencent.bkrepo.proxy.job
 import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.common.security.util.AESUtils
-import com.tencent.bkrepo.proxy.util.ProxyEnv
-import com.tencent.bkrepo.proxy.util.SessionKeyHolder
+import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
+import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.proxy.constant.PID_FILE_PATH
+import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
-import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
+import java.io.File
+import java.lang.management.ManagementFactory
+import kotlin.system.exitProcess
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class ProxyStartupRunner(
-    private val proxyAuthClient: ProxyAuthClient
-) : ApplicationRunner {
-    @Retryable(Exception::class, maxAttempts = 3, backoff = Backoff(delay = 5 * 1000, multiplier = 1.0))
+class ProxyStartupRunner : ApplicationRunner {
+
+    private val proxyAuthClient: ProxyAuthClient by lazy { ProxyFeignClientFactory.create("auth") }
+
     override fun run(args: ApplicationArguments?) {
+        try {
+            retry(RETRY_TIME, block = {
+                startup()
+                writePidFile()
+            })
+        } catch (e: Exception) {
+            logger.error("startup failed: ", e)
+            exitProcess(1)
+        }
+    }
+
+    @Retryable(Exception::class)
+    private fun startup() {
+        logger.info("startup")
         val projectId = ProxyEnv.getProjectId()
         val name = ProxyEnv.getName()
         val secretKey = ProxyEnv.getSecretKey()
@@ -54,10 +74,32 @@ class ProxyStartupRunner(
         val startupRequest = ProxyStatusRequest(
             projectId = projectId,
             name = name,
-            message = AESUtils.encrypt("$name:startup:$ticket", secretKey)
+            message = AESUtils.encrypt("$name:$STARTUP_OPERATION:$ticket", secretKey)
         )
         val encSessionKey = proxyAuthClient.startup(startupRequest).data!!
         val sessionKey = AESUtils.decrypt(encSessionKey, secretKey)
         SessionKeyHolder.setSessionKey(sessionKey)
+        logger.info("startup success")
+    }
+
+    private fun writePidFile() {
+        val file = File(PID_FILE_PATH)
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
+        }
+        val pid = getProcessId()
+        file.writeText(pid.toString())
+    }
+
+    private fun getProcessId(): Long {
+        val runtimeMXBean = ManagementFactory.getRuntimeMXBean()
+        val name = runtimeMXBean.name
+        return name.split("@")[0].toLong()
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProxyStartupRunner::class.java)
+        private const val RETRY_TIME = 3
+        private const val STARTUP_OPERATION = "startup"
     }
 }

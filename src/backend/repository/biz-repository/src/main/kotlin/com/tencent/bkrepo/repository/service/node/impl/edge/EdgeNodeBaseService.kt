@@ -44,6 +44,7 @@ import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 
 abstract class EdgeNodeBaseService(
     override val nodeDao: NodeDao,
@@ -54,6 +55,7 @@ abstract class EdgeNodeBaseService(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val routerControllerClient: RouterControllerClient,
     open val clusterProperties: ClusterProperties
 ) : NodeBaseService(
     nodeDao,
@@ -63,7 +65,8 @@ abstract class EdgeNodeBaseService(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier
+    messageSupplier,
+    routerControllerClient
 ) {
 
     val centerNodeClient: ClusterNodeClient by lazy {

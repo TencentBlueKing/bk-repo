@@ -3,7 +3,7 @@ package com.tencent.bkrepo.job.batch.node
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
-import com.tencent.bkrepo.job.config.properties.StatAllNodeJobProperties
+import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component
 import java.util.Date
 
 @Component
-@EnableConfigurationProperties(StatAllNodeJobProperties::class)
+@EnableConfigurationProperties(NodeStatCompositeMongoDbBatchJobProperties::class)
 class NodeStatCompositeMongoDbBatchJob(
-    private val properties: StatAllNodeJobProperties,
+    private val properties: NodeStatCompositeMongoDbBatchJobProperties,
     private val mongoTemplate: MongoTemplate,
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 

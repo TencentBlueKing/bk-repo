@@ -58,6 +58,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeServiceImpl
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -76,6 +77,7 @@ class CommitEdgeCenterNodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val routerControllerClient: RouterControllerClient,
     val clusterProperties: ClusterProperties
 ) : NodeServiceImpl(
     nodeDao,
@@ -85,7 +87,8 @@ class CommitEdgeCenterNodeServiceImpl(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier
+    messageSupplier,
+    routerControllerClient
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {

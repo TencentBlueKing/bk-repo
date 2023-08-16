@@ -31,9 +31,12 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.replication.config.ReplicationProperties
+import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
@@ -43,7 +46,6 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.util.HttpUtils
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -60,7 +62,8 @@ abstract class ArtifactReplicationHandler(
 
     open fun blobPush(
         filePushContext: FilePushContext,
-        pushType: String = WayOfPushArtifact.PUSH_WITH_CHUNKED.value
+        pushType: String = WayOfPushArtifact.PUSH_WITH_CHUNKED.value,
+        downGrade: Boolean = false
     ) : Boolean {
         return pushFileInChunks(filePushContext)
     }
@@ -141,11 +144,15 @@ abstract class ArtifactReplicationHandler(
             val postBody: RequestBody = RequestBody.create(
                 "application/json".toMediaTypeOrNull(), StringPool.EMPTY
             )
+            val headers = Headers.Builder()
+                .add(CHUNKED_UPLOAD, CHUNKED_UPLOAD)
+                .build()
             val property = RequestProperty(
                 requestBody = postBody,
                 authorizationCode = token,
                 requestMethod = RequestMethod.POST,
                 requestUrl = buildRequestUrl(filePushContext.context.cluster.url, postUrl),
+                headers = headers,
                 params = params
             )
             return DefaultHandler.process(
@@ -196,11 +203,13 @@ abstract class ArtifactReplicationHandler(
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
                 .add(HttpHeaders.CONTENT_RANGE, contentRange)
                 .add(HttpHeaders.CONTENT_LENGTH, "$byteCount")
+                .add(CHUNKED_UPLOAD, CHUNKED_UPLOAD)
                 .add(
                     REPOSITORY_INFO,
                     "${filePushContext.context.localProjectId}|${filePushContext.context.localRepoName}"
                 )
                 .add(SHA256, sha256)
+                .add(SIZE, size.toString())
                 .build()
             val property = RequestProperty(
                 requestBody = patchBody,
@@ -250,6 +259,7 @@ abstract class ArtifactReplicationHandler(
         val putHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
             .add(HttpHeaders.CONTENT_LENGTH, "0")
+            .add(CHUNKED_UPLOAD, CHUNKED_UPLOAD)
             .build()
         val property = RequestProperty(
             requestBody = putBody,
@@ -297,6 +307,7 @@ abstract class ArtifactReplicationHandler(
                 .add(REPOSITORY_INFO, "${context.localProjectId}|${context.localRepoName}")
                 .add(SHA256, sha256)
                 .add(HttpHeaders.CONTENT_LENGTH, "$size")
+                .add(CHUNKED_UPLOAD, CHUNKED_UPLOAD)
                 .build()
             val property = RequestProperty(
                 requestBody = patchBody,

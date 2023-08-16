@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.operate.api.OperateLogService
@@ -52,6 +53,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 class ArtifactDownloadListener(
+    private val artifactClient: ArtifactClient,
     private val nodeClient: NodeClient,
     private val operateLogService: OperateLogService,
     private val artifactEventProperties: ArtifactEventProperties
@@ -127,7 +129,7 @@ class ArtifactDownloadListener(
             operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
         } else if (node.folder) {
             val nodeList =
-                nodeClient.listNode(projectId, repoName, node.fullPath, includeFolder = false, deep = true).data!!
+                artifactClient.listNode(projectId, repoName, node.fullPath, includeFolder = false, deep = true)!!
             addToCache(projectId, repoName, node.fullPath)
             val eventList = nodeList.map { buildDownloadEvent(event.context, NodeDetail(it)) }
             operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
@@ -164,7 +166,7 @@ class ArtifactDownloadListener(
         }
         val updateRequest = NodeUpdateAccessDateRequest(projectId, repoName, fullPath, SYSTEM_USER, accessDate)
         try {
-            nodeClient.updateNodeAccessDate(updateRequest)
+            artifactClient.updateAccessDate(updateRequest)
         } catch (ignore: Exception) {
             logger.warn("update node access time [$updateRequest] error, ${ignore.message}")
         }
