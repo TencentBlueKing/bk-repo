@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -102,7 +104,15 @@ class NodeModifyEventListener(
         try {
             updateModifiedFolderCache(event)
         } catch (ignore: Exception) {
+            logger.warn("update folder size error: ${ignore.message}")
         }
+    }
+
+
+
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    fun checkCacheValue() {
+        cache.invalidateAll()
     }
 
 
@@ -111,68 +121,68 @@ class NodeModifyEventListener(
      */
     private fun updateModifiedFolderCache(event: ArtifactEvent) {
         logger.info("event type ${event.type}")
-        val (createdArtifactInfo, deletedArtifactInfo) = when (event.type) {
+        val nodeList = mutableListOf<ModifiedNodeInfo>()
+        when (event.type) {
             EventType.NODE_MOVED -> {
-                val movedEvent = event as NodeMovedEvent
-                val createdArtifactInfo = ArtifactInfo(
-                    projectId = movedEvent.dstProjectId,
-                    repoName = movedEvent.dstRepoName,
-                    artifactUri = movedEvent.dstFullPath
+                require(event is NodeMovedEvent)
+                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
+                val createdNode = ModifiedNodeInfo(
+                    projectId = event.dstProjectId,
+                    repoName = event.dstRepoName,
+                    fullPath = dstFullPath
                 )
-                val deletedArtifactInfo = ArtifactInfo(
-                    projectId = movedEvent.projectId,
-                    repoName = movedEvent.repoName,
-                    artifactUri = movedEvent.resourceKey
+                val deletedNode = ModifiedNodeInfo(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    fullPath = event.resourceKey,
+                    deleted = true
                 )
-                Pair(createdArtifactInfo, deletedArtifactInfo)
+                nodeList.add(createdNode)
+                nodeList.add(deletedNode)
             }
             EventType.NODE_DELETED -> {
-                val deletedArtifactInfo = ArtifactInfo(
+                require(event is NodeDeletedEvent)
+                val deletedNode = ModifiedNodeInfo(
                     projectId = event.projectId,
                     repoName = event.repoName,
-                    artifactUri = event.resourceKey
+                    fullPath = event.resourceKey,
+                    deleted = true
                 )
-                Pair(null, deletedArtifactInfo)
+                nodeList.add(deletedNode)
             }
             EventType.NODE_COPIED -> {
-                val copyEvent = event as NodeCopiedEvent
-                val createdArtifactInfo = ArtifactInfo(
-                    projectId = copyEvent.dstProjectId,
-                    repoName = copyEvent.dstRepoName,
-                    artifactUri = copyEvent.dstFullPath
+                require(event is NodeCopiedEvent)
+                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
+                val createdNode = ModifiedNodeInfo(
+                    projectId = event.dstProjectId,
+                    repoName = event.dstRepoName,
+                    fullPath = dstFullPath
                 )
-                Pair(createdArtifactInfo, null)
+                nodeList.add(createdNode)
             }
             EventType.NODE_CREATED -> {
-                val createdArtifactInfo = ArtifactInfo(
+                require(event is NodeCreatedEvent)
+                val createdNode = ModifiedNodeInfo(
                     projectId = event.projectId,
                     repoName = event.repoName,
-                    artifactUri = event.resourceKey
+                    fullPath = event.resourceKey
                 )
-                Pair(createdArtifactInfo, null)
+                nodeList.add(createdNode)
             }
             else -> throw UnsupportedOperationException()
         }
-        findModifiedFolders(
-            createdArtifactInfo = createdArtifactInfo,
-            deletedArtifactInfo = deletedArtifactInfo
+        nodeList.forEach {
+            findModifiedFolders(it)
+        }
+    }
+
+    private fun findModifiedFolders(modifiedNode: ModifiedNodeInfo) {
+        val artifactInfo = ArtifactInfo(
+            projectId = modifiedNode.projectId,
+            repoName = modifiedNode.repoName,
+            artifactUri = modifiedNode.fullPath
         )
-    }
-
-    private fun findModifiedFolders(
-        createdArtifactInfo: ArtifactInfo? = null,
-        deletedArtifactInfo: ArtifactInfo? = null
-    ) {
-        if (createdArtifactInfo != null) {
-            findModifiedFolders(createdArtifactInfo, false)
-        }
-        if (deletedArtifactInfo != null) {
-            findModifiedFolders(deletedArtifactInfo, true)
-        }
-    }
-
-    private fun findModifiedFolders(artifactInfo: ArtifactInfo, deleted: Boolean) {
-        val node = if (deleted) {
+        val node = if (modifiedNode.deleted) {
             nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
         } else {
             // 查询节点信息，当节点新增，然后删除后可能会找不到节点
@@ -185,7 +195,7 @@ class NodeModifyEventListener(
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
                 deleted = node.nodeInfo.deleted,
-                deletedFlag = deleted
+                deletedFlag = modifiedNode.deleted
             )
         } else {
             updateCache(
@@ -193,14 +203,9 @@ class NodeModifyEventListener(
                 repoName = artifactInfo.repoName,
                 fullPath = artifactInfo.getArtifactFullPath(),
                 size = node.size,
-                deleted = deleted
+                deleted = modifiedNode.deleted
             )
         }
-    }
-
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
-    fun checkCacheValue() {
-        cache.invalidateAll()
     }
 
     private fun updateCache(
@@ -227,6 +232,28 @@ class NodeModifyEventListener(
             }
         }
     }
+
+    private fun findAndCacheSubFolders(
+        artifactInfo: ArtifactInfo,
+        deleted: String? = null,
+        deletedFlag: Boolean = false
+    ) {
+        findAllNodesUnderFolder(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactInfo.getArtifactFullPath(),
+            deleted = deleted
+        ).forEach {
+            updateCache(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = it.fullPath.getFolderPath(),
+                size = it.size,
+                deleted = deletedFlag
+            )
+        }
+    }
+
 
     private fun findAllNodesUnderFolder(
         projectId: String,
@@ -256,31 +283,25 @@ class NodeModifyEventListener(
         return nodeDao.find(query)
     }
 
-    private fun findAndCacheSubFolders(
-        artifactInfo: ArtifactInfo,
-        deleted: String? = null,
-        deletedFlag: Boolean = false
-    ) {
-        findAllNodesUnderFolder(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath(),
-            deleted = deleted
-        ).forEach {
-            updateCache(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                fullPath = it.fullPath.getFolderPath(),
-                size = it.size,
-                deleted = deletedFlag
-            )
-        }
+
+
+    private fun buildDstFullPath(dstFullPath: String, srcFullPath: String): String {
+        val path = PathUtils.toPath(dstFullPath)
+        val name = PathUtils.resolveName(srcFullPath)
+        return PathUtils.combineFullPath(path, name)
     }
 
     private fun String.getFolderPath(): String {
         val path = PathUtils.resolveParent(this)
         return PathUtils.normalizeFullPath(path)
     }
+
+    private data class ModifiedNodeInfo(
+        var projectId: String,
+        var repoName: String,
+        var fullPath: String,
+        var deleted: Boolean = false
+    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
