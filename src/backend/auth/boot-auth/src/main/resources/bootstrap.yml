@@ -1,7 +1,11 @@
 server:
   port: 25902
 
-spring.application.name: auth
+spring:
+  application.name: auth
+  freemarker:
+    template-loader-path: classpath:/templates/
+    suffix: .ftl
 
 auth:
   realm: local

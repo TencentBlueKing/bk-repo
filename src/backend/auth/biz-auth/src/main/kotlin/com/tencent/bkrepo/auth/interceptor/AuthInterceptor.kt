@@ -43,8 +43,8 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_PROJECT_ADMIN_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_SYS_LIST_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_TOKEN_LIST_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_TOKEN_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_USER_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_ASSET_USER_GROUP_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_USER_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_INFO_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_LIST_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_UPDATE_PREFIX
@@ -63,6 +63,7 @@ import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
@@ -71,6 +72,7 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -90,6 +92,8 @@ class AuthInterceptor(
 
     private val userService: UserService by lazy { SpringContextUtils.getBean() }
 
+    private val authenticationManager: AuthenticationManager by lazy { SpringContextUtils.getBean() }
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
@@ -102,6 +106,11 @@ class AuthInterceptor(
             // platform认证
             if (authHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
                 return checkUserFromPlatform(request, authHeader)
+            }
+
+            // oauth认证
+            if (authHeader.startsWith(BEARER_AUTH_PREFIX)) {
+                return checkOauthToken(request, authHeader)
             }
 
             // sign认证
@@ -219,6 +228,19 @@ class AuthInterceptor(
             path = realPath.removePrefix(httpAuthSecurity.prefix)
         }
         return path
+    }
+
+    private fun checkOauthToken(request: HttpServletRequest, authHeader: String): Boolean {
+        return try {
+            val userId = authenticationManager.checkOauthToken(authHeader.removePrefix(BEARER_AUTH_PREFIX))
+            request.setAttribute(USER_KEY, userId)
+            true
+        } catch (e: AuthenticationException) {
+            false
+        } catch (e: Exception) {
+            logger.error("check oauth token error: ", e)
+            false
+        }
     }
 
     companion object {

@@ -25,23 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.oauth
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.oauth.IdToken
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    var accessToken: String,
-    var refreshToken: String?,
-    val expireSeconds: Long?,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scope: Set<ResourceType>?,
-    var issuedAt: Instant,
-    var idToken: IdToken?
+// https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
+data class OidcConfiguration(
+    val issuer: String,
+    @JsonProperty("authorization_endpoint")
+    val authorizationEndpoint: String,
+    @JsonProperty("token_endpoint")
+    val tokenEndpoint: String,
+    @JsonProperty("jwks_uri")
+    val jwksUri: String,
+    @JsonProperty("response_types_supported")
+    val responseTypesSupported: List<String>,
+    @JsonProperty("subject_types_supported")
+    val subjectTypesSupported: List<String>,
+    @JsonProperty("userinfo_endpoint")
+    val userinfoEndpoint: String,
+    @JsonProperty("scopes_supported")
+    val scopesSupported: List<String>,
+    @JsonProperty("token_endpoint_auth_methods_supported")
+    val tokenEndpointAuthMethodsSupported: List<String> = listOf("client_secret_basic")
 )
