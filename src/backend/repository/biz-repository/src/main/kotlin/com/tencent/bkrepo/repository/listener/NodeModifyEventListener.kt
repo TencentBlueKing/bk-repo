@@ -50,6 +50,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 
@@ -212,16 +213,18 @@ class NodeModifyEventListener(
 
         // 更新当前节点所有上级目录统计信息
         PathUtils.resolveAncestorFolder(fullPath).forEach{
-            val key = Triple(projectId, repoName, it)
-            var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
-            if (deleted) {
-                cachedSize -= size
-                nodeNum -= 1
-            } else {
-                cachedSize += size
-                nodeNum += 1
+            if (it != PathUtils.ROOT) {
+                val key = Triple(projectId, repoName, it)
+                var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+                if (deleted) {
+                    cachedSize -= size
+                    nodeNum -= 1
+                } else {
+                    cachedSize += size
+                    nodeNum += 1
+                }
+                cache.put(key, Pair(cachedSize, nodeNum))
             }
-            cache.put(key, Pair(cachedSize, nodeNum))
         }
     }
 
@@ -232,10 +235,17 @@ class NodeModifyEventListener(
         deleted: String? = null
     ): List<TNode> {
         val srcRootNodePath = PathUtils.toPath(fullPath)
+        // 节点删除时其下所有节点的deleted值是一致的，但是节点move时其下所有节点的deleted是不一致的
         val query = if (!deleted.isNullOrEmpty()) {
             val criteria = where(TNode::projectId).isEqualTo(projectId)
                 .and(TNode::repoName).isEqualTo(repoName)
-                .and(TNode::deleted).isEqualTo(deleted)
+                .apply {
+                    if (deleted.isNullOrEmpty()) {
+                        this.and(TNode::deleted).isEqualTo(null)
+                    } else {
+                        this.and(TNode::deleted).gte(LocalDateTime.parse(deleted))
+                    }
+                }
                 .and(TNode::folder).isEqualTo(false)
                 .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(srcRootNodePath)}")
             Query(criteria)
