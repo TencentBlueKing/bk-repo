@@ -13,7 +13,7 @@ import java.util.Date
 @Component
 @EnableConfigurationProperties(NodeStatCompositeMongoDbBatchJobProperties::class)
 class NodeStatCompositeMongoDbBatchJob(
-    private val properties: NodeStatCompositeMongoDbBatchJobProperties,
+    val properties: NodeStatCompositeMongoDbBatchJobProperties,
     private val mongoTemplate: MongoTemplate,
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
