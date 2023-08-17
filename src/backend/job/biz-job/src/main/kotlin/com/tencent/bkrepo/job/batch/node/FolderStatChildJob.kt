@@ -178,12 +178,3 @@ class FolderStatChildJob(
         private const val CACHE_SIZE = 2000L
     }
 }
-
-fun main() {
-    val path = "E:\\bkrepo-udt.dll"
-    val p1 ="E:\\libstdc++_64-6.dll"
-    val p2 ="E:\\libgcc_s_sjlj_64-1.dll"
-    System.load(p2)
-    System.load(p1)
-    System.load(path)
-}
