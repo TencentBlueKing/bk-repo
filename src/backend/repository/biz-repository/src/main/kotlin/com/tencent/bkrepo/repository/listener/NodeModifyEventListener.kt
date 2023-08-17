@@ -41,9 +41,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.data.mongodb.core.query.Query
@@ -57,7 +55,7 @@ import java.util.concurrent.TimeUnit
 
 
 /**
- * 节点事件监听，用于folder size统计
+ * 节点事件监听，用户统计目录size以及目录下文件个数
  */
 @Component
 class NodeModifyEventListener(
@@ -71,7 +69,7 @@ class NodeModifyEventListener(
         .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
             logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
-            nodeDao.updateFolderSize(
+            nodeDao.incSizeAndNodeNumOfFolder(
                 projectId = it.key!!.first,
                 repoName = it.key!!.second,
                 fullPath = it.key!!.third,
@@ -91,9 +89,7 @@ class NodeModifyEventListener(
         EventType.NODE_MOVED
     )
 
-    /**
-     * 统计generic仓库目录节点大小
-     */
+
     @EventListener(ArtifactEvent::class)
     fun handle(event: ArtifactEvent) {
         if (!acceptTypes.contains(event.type)) {
@@ -102,26 +98,28 @@ class NodeModifyEventListener(
         //过滤 report 和log 仓库
         if (event.repoName == REPORT || event.repoName == LOG) return
         try {
-            updateModifiedFolderCache(event)
+            updateCacheOfModifiedFolder(event)
         } catch (ignore: Exception) {
-            logger.warn("update folder size error: ${ignore.message}")
+            logger.warn("update folder cache error: ${ignore.message}")
         }
     }
 
 
-
+    /**
+     * 定时将缓存中的数据更新到db中
+     */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
-    fun checkCacheValue() {
+    fun storeFolderData() {
         cache.invalidateAll()
     }
 
 
     /**
-     * 将有变更的目录节点存放在缓存中
+     * 将变更的目录节点数据存放在缓存中
      */
-    private fun updateModifiedFolderCache(event: ArtifactEvent) {
+    private fun updateCacheOfModifiedFolder(event: ArtifactEvent) {
         logger.info("event type ${event.type}")
-        val nodeList = mutableListOf<ModifiedNodeInfo>()
+        val modifiedNodeList = mutableListOf<ModifiedNodeInfo>()
         when (event.type) {
             EventType.NODE_MOVED -> {
                 require(event is NodeMovedEvent)
@@ -137,8 +135,8 @@ class NodeModifyEventListener(
                     fullPath = event.resourceKey,
                     deleted = true
                 )
-                nodeList.add(createdNode)
-                nodeList.add(deletedNode)
+                modifiedNodeList.add(createdNode)
+                modifiedNodeList.add(deletedNode)
             }
             EventType.NODE_DELETED -> {
                 require(event is NodeDeletedEvent)
@@ -148,7 +146,7 @@ class NodeModifyEventListener(
                     fullPath = event.resourceKey,
                     deleted = true
                 )
-                nodeList.add(deletedNode)
+                modifiedNodeList.add(deletedNode)
             }
             EventType.NODE_COPIED -> {
                 require(event is NodeCopiedEvent)
@@ -158,7 +156,7 @@ class NodeModifyEventListener(
                     repoName = event.dstRepoName,
                     fullPath = dstFullPath
                 )
-                nodeList.add(createdNode)
+                modifiedNodeList.add(createdNode)
             }
             EventType.NODE_CREATED -> {
                 require(event is NodeCreatedEvent)
@@ -167,16 +165,16 @@ class NodeModifyEventListener(
                     repoName = event.repoName,
                     fullPath = event.resourceKey
                 )
-                nodeList.add(createdNode)
+                modifiedNodeList.add(createdNode)
             }
             else -> throw UnsupportedOperationException()
         }
-        nodeList.forEach {
-            findModifiedFolders(it)
+        modifiedNodeList.forEach {
+            findFoldersAndUpdateCache(it)
         }
     }
 
-    private fun findModifiedFolders(modifiedNode: ModifiedNodeInfo) {
+    private fun findFoldersAndUpdateCache(modifiedNode: ModifiedNodeInfo) {
         val artifactInfo = ArtifactInfo(
             projectId = modifiedNode.projectId,
             repoName = modifiedNode.repoName,
@@ -189,6 +187,7 @@ class NodeModifyEventListener(
             nodeService.getNodeDetail(artifactInfo)
                 ?: nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
         }
+
         logger.info("start to stat modified node size with fullPath ${node.fullPath}" +
                         " in repo ${node.projectId}|${node.repoName}")
         if (node.folder) {
@@ -262,27 +261,35 @@ class NodeModifyEventListener(
         deleted: String? = null
     ): List<TNode> {
         val srcRootNodePath = PathUtils.toPath(fullPath)
-        // 节点删除时其下所有节点的deleted值是一致的，但是节点move时其下所有节点的deleted是不一致的
-        val query = if (!deleted.isNullOrEmpty()) {
-            val criteria = where(TNode::projectId).isEqualTo(projectId)
-                .and(TNode::repoName).isEqualTo(repoName)
-                .apply {
-                    if (deleted.isNullOrEmpty()) {
-                        this.and(TNode::deleted).isEqualTo(null)
-                    } else {
-                        this.and(TNode::deleted).gte(LocalDateTime.parse(deleted))
-                    }
-                }
-                .and(TNode::folder).isEqualTo(false)
-                .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(srcRootNodePath)}")
-            Query(criteria)
-        } else {
-            val listOption = NodeListOption(includeFolder = false, deep = true)
-            NodeQueryHelper.nodeListQuery(projectId, repoName, srcRootNodePath, listOption)
-        }
+        val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
         return nodeDao.find(query)
     }
 
+
+    /**
+     * 查询目录下的节点，排除path为"/"的节点
+     */
+    private fun buildNodeQuery(
+        projectId: String,
+        repoName: String,
+        srcRootNodePath: String,
+        deleted: String? = null
+    ): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+        .and(TNode::repoName).isEqualTo(repoName)
+            .apply {
+                if (deleted.isNullOrEmpty()) {
+                    this.and(TNode::deleted).isEqualTo(null)
+                } else {
+                    // 节点删除时其下所有节点的deleted值是一致的，但是节点move时其下所有节点的deleted是不一致的
+                    this.and(TNode::deleted).gte(LocalDateTime.parse(deleted))
+                }
+            }
+        .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(srcRootNodePath)}")
+        .and(TNode::folder).isEqualTo(false)
+        .and(TNode::path).ne(PathUtils.ROOT)
+        return Query(criteria).withHint(TNode.FULL_PATH_IDX)
+    }
 
 
     private fun buildDstFullPath(dstFullPath: String, srcFullPath: String): String {

@@ -72,9 +72,9 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     }
 
     /**
-     * 更新目录大小
+     * 更新目录下变更的文件数量以及涉及的文件大小
      */
-    fun updateFolderSize(
+    fun incSizeAndNodeNumOfFolder(
         projectId: String,
         repoName: String,
         fullPath: String,

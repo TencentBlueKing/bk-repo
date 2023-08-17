@@ -69,13 +69,13 @@ class FolderStatChildJob(
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is FolderChildContext)
         if (context.initFlag) return
-        if (row.deleted != null || row.folder || row.repoName in listOf(REPORT, LOG)) {
+        // 统计仓库名不是report/log下的目录大小；没有根目录这个节点，所以也不需要统计
+        if (row.deleted != null || row.folder || row.repoName in listOf(REPORT, LOG) || row.path == PathUtils.ROOT) {
             return
         }
 
         // 将缓存的信息更新到节点中
         storeCache(context = context)
-
         // 更新当前节点所有上级目录统计信息
         PathUtils.resolveAncestorFolder(row.fullPath).forEach {
             if (it != PathUtils.ROOT) {
