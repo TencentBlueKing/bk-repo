@@ -67,10 +67,17 @@ open class NodeStatsSupport(
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
         }
-        val listOption = NodeListOption(includeFolder = true, deep = true)
+        val listOption = NodeListOption(includeFolder = false, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
         val count = nodeDao.count(Query(criteria))
         val size = aggregateComputeSize(criteria)
+        nodeDao.setSizeAndNodeNumOfFolder(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            size = size,
+            nodeNum = count
+        )
         return NodeSizeInfo(subNodeCount = count, size = size)
     }
 

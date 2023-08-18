@@ -89,6 +89,23 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     }
 
     /**
+     * 设置目录下的文件数量以及文件大小
+     */
+    fun setSizeAndNodeNumOfFolder(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        nodeNum: Long
+    ) {
+        val query = NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath)
+        val update = Update().set(TNode::size.name, size)
+            .set(TNode::nodeNum.name, nodeNum)
+        this.updateFirst(query, update)
+    }
+
+
+    /**
      * 根据[sha256]分页查询节点，需要遍历所有分表
      *
      * @param includeDeleted 是否包含被删除的节点
