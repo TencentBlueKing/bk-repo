@@ -50,9 +50,12 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
     token = bk_token
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
-    if not bk_ticket then
-        ngx.exit(401)
-        return
+    if bk_ticket == nil then
+        bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+        if bk_ticket == nil then
+            ngx.exit(401)
+            return
+        end
     end
     username = oauthUtil:verify_ticket(bk_ticket, "ticket")
     token = bk_ticket
