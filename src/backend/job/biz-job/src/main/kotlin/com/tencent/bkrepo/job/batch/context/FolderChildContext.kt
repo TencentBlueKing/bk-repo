@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.context
 
+import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.JobContext
 import java.util.concurrent.ConcurrentHashMap
@@ -35,14 +36,9 @@ import java.util.concurrent.atomic.LongAdder
 class FolderChildContext(
     parentContent: JobContext,
     var initFlag: Boolean = true,
-    var folderCache: ConcurrentHashMap<FolderInfo, FolderMetrics> = ConcurrentHashMap()
+    var cacheType: String = MEMORY_CACHE_TYPE,
+    var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap()
 ) : ChildJobContext(parentContent) {
-
-    data class FolderInfo(
-        var projectId: String,
-        var repoName: String,
-        var fullPath: String
-    )
 
     data class FolderMetrics(
         var nodeNum: LongAdder = LongAdder(),

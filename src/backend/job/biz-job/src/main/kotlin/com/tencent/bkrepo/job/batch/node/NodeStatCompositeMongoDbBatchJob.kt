@@ -7,6 +7,7 @@ import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJob
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.util.Date
 
@@ -15,6 +16,7 @@ import java.util.Date
 class NodeStatCompositeMongoDbBatchJob(
     val properties: NodeStatCompositeMongoDbBatchJobProperties,
     private val mongoTemplate: MongoTemplate,
+    private val redisTemplate: RedisTemplate<String, String>? = null
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {

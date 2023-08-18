@@ -55,6 +55,12 @@ const val FULLPATH = "fullPath"
 const val PATH = "path"
 
 /**
+ * 缓存类型
+ */
+const val REDIS_CACHE_TYPE = "redis"
+const val MEMORY_CACHE_TYPE = "memory"
+
+/**
  * metrics
  */
 const val TAG_STATUS = "status"

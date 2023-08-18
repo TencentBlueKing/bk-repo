@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.node
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.constant.LOG
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -34,7 +35,9 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULLPATH
+import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
+import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
@@ -49,6 +52,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.RedisTemplate
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.util.concurrent.locks.ReentrantLock
@@ -59,6 +63,7 @@ import java.util.concurrent.locks.ReentrantLock
 class FolderStatChildJob(
     val properties: CompositeJobProperties,
     private val mongoTemplate: MongoTemplate,
+    private val redisTemplate: RedisTemplate<String, String>? = null
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     private val lock: ReentrantLock = ReentrantLock()
@@ -74,56 +79,124 @@ class FolderStatChildJob(
         require(context is FolderChildContext)
         if (context.initFlag) return
         if (row.deleted != null) return
-        // 统计仓库名不是report/log下的目录大小；没有根目录这个节点，所以也不需要统计
-        if (row.folder || row.path == PathUtils.ROOT || row.repoName in listOf(REPORT, LOG)) {
+        // 判断是否在不统计项目或者仓库列表中
+        if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
+        //只统计非目录类节点；没有根目录这个节点，不需要统计
+        if (row.folder || row.path == PathUtils.ROOT) {
             return
         }
 
-        // 将缓存的信息更新到节点中
-        storeCacheToDB(context = context)
-        // 更新当前节点所有上级目录统计信息
+        // 更新当前节点所有上级目录（排除根目录）统计信息
         PathUtils.resolveAncestorFolder(row.fullPath).forEach {
             if (it != PathUtils.ROOT) {
-                val key = FolderChildContext.FolderInfo(row.projectId, row.repoName, it)
-                val folderMetrics = context.folderCache.getOrPut(key) { FolderChildContext.FolderMetrics() }
-                folderMetrics.capSize.add(row.size)
-                folderMetrics.nodeNum.increment()
+                updateCache(
+                    collectionName = collectionName,
+                    projectId = row.projectId,
+                    repoName = row.repoName,
+                    fullPath = it,
+                    size = row.size,
+                    context = context
+                )
             }
         }
     }
 
     override fun onParentJobFinished(context: ChildJobContext) {
         require(context is FolderChildContext)
-        storeCacheToDB(context = context, force = true)
         logger.info("stat size of folder done")
     }
 
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
-        return FolderChildContext(parentJobContext)
+        val cacheType = if (redisTemplate == null) {
+            MEMORY_CACHE_TYPE
+        } else {
+            REDIS_CACHE_TYPE
+        }
+        return FolderChildContext(parentJobContext, cacheType = cacheType)
     }
 
+    override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
+        super.onRunCollectionFinished(collectionName, context)
+        require(context is FolderChildContext)
+        // 当表执行完成后，将属于该表的所有记录写入数据库
+        storeCacheToDB(collectionName, context)
+    }
 
-    private fun storeCacheToDB(force: Boolean = false, context: FolderChildContext) {
-        if (context.folderCache.isEmpty() || !force && context.folderCache.size < CACHE_SIZE) {
-            return
-        }
-        try {
-            lock.lock()
-            context.folderCache.entries.forEach {
-                incSizeAndNodeNumOfFolder(
-                    projectId = it.key.projectId,
-                    repoName = it.key.repoName,
-                    fullPath = it.key.fullPath,
-                    size = it.value.capSize.toLong(),
-                    nodeNum = it.value.nodeNum.toLong()
-                )
+    /**
+     * 判断项目或者仓库是否不需要进行目录统计
+     */
+    private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
+        IGNORE_PROJECT_PREFIX_LIST.forEach {
+            if (projectId.startsWith(it)){
+                return true
             }
-            context.folderCache.clear()
-        } finally {
-            lock.unlock()
         }
+        return IGNORE_REPO_LIST.contains(repoName)
+    }
 
+    /**
+     * 更新缓存中的size和nodeNum
+     */
+    private fun updateCache(
+        collectionName: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        context: FolderChildContext
+    ) {
+        if (context.cacheType == REDIS_CACHE_TYPE) {
+            updateRedisCache(
+                collectionName = collectionName,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                size = size
+            )
+        } else {
+            updateMemoryCache(
+                collectionName = collectionName,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                size = size,
+                context = context
+            )
+        }
+    }
+
+    /**
+     * 更新redis缓存中对应key下将新增的size和nodeNum
+     */
+    private fun updateRedisCache(
+        collectionName: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long
+    ) {
+        val key = buildCacheKey(collectionName, projectId, repoName, fullPath)
+        val hashOps = redisTemplate!!.opsForHash<String, Long>()
+        hashOps.increment(key, SIZE, size)
+        hashOps.increment(key, NODE_NUM, 1)
+    }
+
+    /**
+     * 更新内存缓存中对应key下将新增的size和nodeNum
+     */
+    private fun updateMemoryCache(
+        collectionName: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        context: FolderChildContext
+    ) {
+        val key = buildCacheKey(collectionName, projectId, repoName, fullPath)
+        val folderMetrics = context.folderCache.getOrPut(key) { FolderChildContext.FolderMetrics() }
+        folderMetrics.capSize.add(size)
+        folderMetrics.nodeNum.increment()
     }
 
     private fun initCheck(context: FolderChildContext) {
@@ -132,25 +205,64 @@ class FolderStatChildJob(
             return
         }
         context.initFlag = false
-        for (i in 0 until SHARDING_COUNT) {
-            restoreSizeAndNodeNumOfFolder("${COLLECTION_NODE_PREFIX}$i")
+    }
+
+    /**
+     * 将缓存中的数据更新到DB中
+     */
+    private fun storeCacheToDB(collectionName: String, context: FolderChildContext) {
+        if (context.cacheType == REDIS_CACHE_TYPE) {
+            storeRedisCacheToDB(collectionName, context)
+        } else {
+            storeMemoryCacheToDB(collectionName, context)
+        }
+    }
+
+
+    /**
+     * 将redis缓存中属于collectionName下的记录写入DB中
+     */
+    private fun storeRedisCacheToDB(collectionName: String, context: FolderChildContext) {
+        val prefix = buildCacheKeyPrefix(collectionName)
+        val hashOps = redisTemplate!!.opsForHash<String, Long>()
+        redisTemplate.keys("$prefix${StringPool.POUND}").forEach { key ->
+            extractFolderInfo(key)?.let {
+                setSizeAndNodeNumOfFolder(
+                    projectId = it.projectId,
+                    repoName = it.repoName,
+                    fullPath = it.fullPath,
+                    size = hashOps.get(key, SIZE) ?: 0,
+                    nodeNum = hashOps.get(key, NODE_NUM) ?: 0
+                )
+            }
         }
     }
 
     /**
-     * 重置目录的size和nodeNum
+     * 将memory缓存中属于collectionName下的记录写入DB中
      */
-    private fun restoreSizeAndNodeNumOfFolder(nodeCollectionName: String) {
-        val query = Query(
-            Criteria.where(FOLDER).isEqualTo(true)
-                .and(DELETED_DATE).isEqualTo(null)
-        )
-        val update = Update().set(SIZE, 0)
-            .unset(NODE_NUM)
-        mongoTemplate.updateMulti(query, update, nodeCollectionName)
+    private fun storeMemoryCacheToDB(collectionName: String, context: FolderChildContext) {
+        if (context.folderCache.isEmpty()) {
+            return
+        }
+        val prefix = buildCacheKeyPrefix(collectionName)
+        context.folderCache.filterKeys { it.startsWith(prefix) }.forEach {  entry ->
+            extractFolderInfo(entry.key)?.let {
+                setSizeAndNodeNumOfFolder(
+                    projectId = it.projectId,
+                    repoName = it.repoName,
+                    fullPath = it.fullPath,
+                    size = entry.value.capSize.toLong(),
+                    nodeNum = entry.value.nodeNum.toLong()
+                )
+            }
+        }
     }
 
-    private fun incSizeAndNodeNumOfFolder(
+    /**
+     * 更新目录对应size和nodeNum
+     */
+    private fun setSizeAndNodeNumOfFolder(
         projectId: String,
         repoName: String,
         fullPath: String,
@@ -164,17 +276,62 @@ class FolderStatChildJob(
                 .and(DELETED_DATE).isEqualTo(null)
                 .and(FOLDER).isEqualTo(true)
         )
-        val update = Update().inc(SIZE, size)
-            .inc(NODE_NUM, nodeNum)
+        val update = Update().set(SIZE, size)
+            .set(NODE_NUM, nodeNum)
         val nodeCollectionName = COLLECTION_NODE_PREFIX + shardingSequence(projectId, SHARDING_COUNT)
         mongoTemplate.updateFirst(query, update, nodeCollectionName)
     }
+
+
+    /**
+     * 生成缓存key
+     */
+    private fun buildCacheKey(
+        collectionName: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): String {
+        return StringBuilder().append(buildCacheKeyPrefix(collectionName))
+            .append(projectId).append(StringPool.SLASH).append(repoName)
+            .append(StringPool.SLASH).append(fullPath).toString()
+    }
+
+    /**
+     * 生成缓存key前缀
+     */
+    private fun buildCacheKeyPrefix(collectionName: String): String {
+        return StringBuilder().append(collectionName).append(StringPool.SLASH).toString()
+    }
+
+    private fun extractFolderInfo(key: String): FolderInfo? {
+        val values = key.split(StringPool.SLASH)
+        return try {
+            FolderInfo(
+                projectId = values[1],
+                repoName = values[2],
+                fullPath = values[3]
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+
+
+    data class FolderInfo(
+        var projectId: String,
+        var repoName: String,
+        var fullPath: String
+    )
+
 
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private const val CACHE_SIZE = 2000L
+        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
+        private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
     }
 }
