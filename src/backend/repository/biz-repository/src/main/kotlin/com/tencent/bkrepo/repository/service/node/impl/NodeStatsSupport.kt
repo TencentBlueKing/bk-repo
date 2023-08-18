@@ -45,8 +45,6 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.isEqualTo
 
 /**
  * 节点统计接口
@@ -96,7 +94,7 @@ open class NodeStatsSupport(
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
         val aggregation = newAggregation(
-            match(criteria.and(TNode::folder).isEqualTo(false)),
+            match(criteria),
             group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
