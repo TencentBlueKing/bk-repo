@@ -324,7 +324,7 @@ class NodeServiceTest @Autowired constructor(
 
         val pathSizeInfo = nodeService.computeSize(node("/a/b"))
 
-        assertEquals(42, pathSizeInfo.subNodeCount)
+        assertEquals(40, pathSizeInfo.subNodeCount)
         assertEquals(40, pathSizeInfo.size)
     }
 
@@ -347,7 +347,7 @@ class NodeServiceTest @Autowired constructor(
 
         val pathSizeInfo = nodeService.computeSize(node("/"))
 
-        assertEquals(42, pathSizeInfo.subNodeCount)
+        assertEquals(40, pathSizeInfo.subNodeCount)
         assertEquals(40, pathSizeInfo.size)
     }
 
