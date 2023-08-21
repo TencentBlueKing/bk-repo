@@ -53,6 +53,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ScanOptions
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.util.concurrent.locks.ReentrantLock
@@ -227,18 +228,23 @@ class FolderStatChildJob(
      */
     private fun storeRedisCacheToDB(collectionName: String, context: FolderChildContext) {
         val prefix = buildCacheKeyPrefix(collectionName)
+
         val hashOps = redisTemplate.opsForHash<String, String>()
-        redisTemplate.keys("$prefix${StringPool.POUND}").forEach { key ->
-            extractFolderInfo(key)?.let {
-                setSizeAndNodeNumOfFolder(
-                    projectId = it.projectId,
-                    repoName = it.repoName,
-                    fullPath = it.fullPath,
-                    size = hashOps.get(key, SIZE)?.toLongOrNull1() ?: 0,
-                    nodeNum = hashOps.get(key, NODE_NUM)?.toLongOrNull1() ?: 0
-                )
+        redisTemplate.execute { connection ->
+            val cursor = connection.scan(ScanOptions.scanOptions().match("$prefix${StringPool.POUND}").build())
+            while (cursor.hasNext()) {
+                val key = cursor.next().decodeToString()
+                extractFolderInfo(key)?.let {
+                    setSizeAndNodeNumOfFolder(
+                        projectId = it.projectId,
+                        repoName = it.repoName,
+                        fullPath = it.fullPath,
+                        size = hashOps.get(key, SIZE)?.toLongOrNull1() ?: 0,
+                        nodeNum = hashOps.get(key, NODE_NUM)?.toLongOrNull1() ?: 0
+                    )
+                }
+                redisTemplate.delete(key)
             }
-            redisTemplate.delete(key)
         }
     }
 
