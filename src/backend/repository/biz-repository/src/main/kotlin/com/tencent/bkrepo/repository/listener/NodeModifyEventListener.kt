@@ -95,8 +95,7 @@ class NodeModifyEventListener(
         if (!acceptTypes.contains(event.type)) {
             return
         }
-        //过滤 report 和log 仓库
-        if (event.repoName == REPORT || event.repoName == LOG) return
+        if (ignoreProjectOrRepoCheck(event.projectId, event.repoName)) return
         try {
             updateCacheOfModifiedFolder(event)
         } catch (ignore: Exception) {
@@ -112,6 +111,19 @@ class NodeModifyEventListener(
     fun storeFolderData() {
         cache.invalidateAll()
     }
+
+    /**
+     * 判断项目或者仓库是否不需要进行目录统计
+     */
+    private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
+        IGNORE_PROJECT_PREFIX_LIST.forEach {
+            if (projectId.startsWith(it)){
+                return true
+            }
+        }
+        return IGNORE_REPO_LIST.contains(repoName)
+    }
+
 
 
     /**
@@ -313,5 +325,7 @@ class NodeModifyEventListener(
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
         private const val FIXED_DELAY = 30000L
+        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
+        private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
     }
 }

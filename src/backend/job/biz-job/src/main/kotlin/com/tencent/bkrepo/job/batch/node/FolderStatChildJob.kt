@@ -56,6 +56,8 @@ import org.springframework.data.redis.core.RedisTemplate
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.text.toLongOrNull as toLongOrNull1
+
 
 /**
  * 目录大小以及文件个数统计
@@ -63,7 +65,7 @@ import java.util.concurrent.locks.ReentrantLock
 class FolderStatChildJob(
     val properties: CompositeJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val redisTemplate: RedisTemplate<String, String>? = null
+    private val redisTemplate: RedisTemplate<String, String>
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     private val lock: ReentrantLock = ReentrantLock()
@@ -108,10 +110,11 @@ class FolderStatChildJob(
 
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
-        val cacheType = if (redisTemplate == null) {
-            MEMORY_CACHE_TYPE
-        } else {
+        val cacheType = try {
+            redisTemplate.execute { null }
             REDIS_CACHE_TYPE
+        } catch (e: Exception) {
+            MEMORY_CACHE_TYPE
         }
         return FolderChildContext(parentJobContext, cacheType = cacheType)
     }
@@ -177,7 +180,7 @@ class FolderStatChildJob(
         size: Long
     ) {
         val key = buildCacheKey(collectionName, projectId, repoName, fullPath)
-        val hashOps = redisTemplate!!.opsForHash<String, Long>()
+        val hashOps = redisTemplate.opsForHash<String, Long>()
         hashOps.increment(key, SIZE, size)
         hashOps.increment(key, NODE_NUM, 1)
     }
@@ -224,17 +227,18 @@ class FolderStatChildJob(
      */
     private fun storeRedisCacheToDB(collectionName: String, context: FolderChildContext) {
         val prefix = buildCacheKeyPrefix(collectionName)
-        val hashOps = redisTemplate!!.opsForHash<String, Long>()
+        val hashOps = redisTemplate.opsForHash<String, String>()
         redisTemplate.keys("$prefix${StringPool.POUND}").forEach { key ->
             extractFolderInfo(key)?.let {
                 setSizeAndNodeNumOfFolder(
                     projectId = it.projectId,
                     repoName = it.repoName,
                     fullPath = it.fullPath,
-                    size = hashOps.get(key, SIZE) ?: 0,
-                    nodeNum = hashOps.get(key, NODE_NUM) ?: 0
+                    size = hashOps.get(key, SIZE)?.toLongOrNull1() ?: 0,
+                    nodeNum = hashOps.get(key, NODE_NUM)?.toLongOrNull1() ?: 0
                 )
             }
+            redisTemplate.delete(key)
         }
     }
 
@@ -294,7 +298,7 @@ class FolderStatChildJob(
     ): String {
         return StringBuilder().append(buildCacheKeyPrefix(collectionName))
             .append(projectId).append(StringPool.SLASH).append(repoName)
-            .append(StringPool.SLASH).append(fullPath).toString()
+            .append(fullPath).toString()
     }
 
     /**

@@ -16,7 +16,7 @@ import java.util.Date
 class NodeStatCompositeMongoDbBatchJob(
     val properties: NodeStatCompositeMongoDbBatchJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val redisTemplate: RedisTemplate<String, String>? = null
+    private val redisTemplate: RedisTemplate<String, String>
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {
@@ -32,7 +32,7 @@ class NodeStatCompositeMongoDbBatchJob(
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
             ProjectRepoStatChildJob(properties, mongoTemplate),
-            FolderStatChildJob(properties, mongoTemplate)
+            FolderStatChildJob(properties, mongoTemplate, redisTemplate)
         )
     }
 
