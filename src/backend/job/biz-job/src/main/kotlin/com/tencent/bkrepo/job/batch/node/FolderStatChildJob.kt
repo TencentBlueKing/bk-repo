@@ -53,7 +53,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.ScanOptions
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.util.concurrent.locks.ReentrantLock
@@ -180,10 +179,12 @@ class FolderStatChildJob(
         fullPath: String,
         size: Long
     ) {
-        val key = buildCacheKey(collectionName, projectId, repoName, fullPath)
+        val sizeKey = buildRedisCacheKey(projectId, repoName, fullPath, SIZE)
+        val nodeNumKey = buildRedisCacheKey(projectId, repoName, fullPath, NODE_NUM)
+
         val hashOps = redisTemplate.opsForHash<String, Long>()
-        hashOps.increment(key, SIZE, size)
-        hashOps.increment(key, NODE_NUM, 1)
+        hashOps.increment(collectionName, sizeKey, size)
+        hashOps.increment(collectionName, nodeNumKey, 1)
     }
 
     /**
@@ -227,25 +228,43 @@ class FolderStatChildJob(
      * 将redis缓存中属于collectionName下的记录写入DB中
      */
     private fun storeRedisCacheToDB(collectionName: String, context: FolderChildContext) {
-        val prefix = buildCacheKeyPrefix(collectionName)
-
         val hashOps = redisTemplate.opsForHash<String, String>()
-        redisTemplate.execute { connection ->
-            val cursor = connection.scan(ScanOptions.scanOptions().match("$prefix${StringPool.POUND}").build())
-            while (cursor.hasNext()) {
-                val key = cursor.next().decodeToString()
-                extractFolderInfo(key)?.let {
+        val storedFolderKey = buildRedisStoredKey(collectionName)
+        hashOps.entries(collectionName).entries.forEach {
+            val folderInfo = extractFolderInfoFromRedisKey(it.key)
+            if (folderInfo != null) {
+                val storedFolderHkey = buildRedisCacheKey(
+                    folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath
+                )
+                if (redisTemplate.opsForHash<String,String>().get(storedFolderKey, storedFolderHkey) == null) {
+                    var size: Long = 0
+                    var nodeNum: Long = 0
+                    if (it.key.endsWith(SIZE)) {
+                        val nodeNumKey = buildRedisCacheKey(
+                            folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, NODE_NUM
+                        )
+                        size = it.value.toLongOrNull1() ?: 0
+                        nodeNum = hashOps.get(collectionName, nodeNumKey)?.toLongOrNull1() ?: 0
+                    } else {
+                        val sizeKey = buildRedisCacheKey(
+                            folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, SIZE
+                        )
+                        nodeNum = it.value.toLongOrNull1() ?: 0
+                        size = hashOps.get(collectionName, sizeKey)?.toLongOrNull1() ?: 0
+                    }
                     setSizeAndNodeNumOfFolder(
-                        projectId = it.projectId,
-                        repoName = it.repoName,
-                        fullPath = it.fullPath,
-                        size = hashOps.get(key, SIZE)?.toLongOrNull1() ?: 0,
-                        nodeNum = hashOps.get(key, NODE_NUM)?.toLongOrNull1() ?: 0
+                        projectId = folderInfo.projectId,
+                        repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath,
+                        size = size,
+                        nodeNum = nodeNum
                     )
+                    redisTemplate.opsForHash<String, String>().put(storedFolderKey, storedFolderHkey, STORED)
                 }
-                redisTemplate.delete(key)
             }
         }
+        redisTemplate.delete(collectionName)
+        redisTemplate.delete(storedFolderKey)
     }
 
     /**
@@ -257,7 +276,7 @@ class FolderStatChildJob(
         }
         val prefix = buildCacheKeyPrefix(collectionName)
         context.folderCache.filterKeys { it.startsWith(prefix) }.forEach {  entry ->
-            extractFolderInfo(entry.key)?.let {
+            extractFolderInfoFromCacheKey(entry.key)?.let {
                 setSizeAndNodeNumOfFolder(
                     projectId = it.projectId,
                     repoName = it.repoName,
@@ -293,6 +312,57 @@ class FolderStatChildJob(
     }
 
 
+
+
+
+    /**
+     * 生成redis缓存key
+     */
+    private fun buildRedisCacheKey(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        hKey: String? = null,
+    ): String {
+        return StringBuilder().append(projectId).append(StringPool.COLON).append(repoName).append(StringPool.COLON)
+            .append(fullPath).append(StringPool.COLON).apply {
+                hKey?.let { this.append(hKey) }
+            }.toString()
+    }
+
+    /**
+     * 用于记录哪些folder记录已经被存入db
+     */
+    private fun buildRedisStoredKey(
+        collectionName: String
+    ): String {
+        return StringBuilder().append(collectionName).append(StringPool.COLON)
+            .append(STORED).toString()
+    }
+
+
+    private fun extractFolderInfoFromRedisKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            FolderInfo(
+                projectId = values[0],
+                repoName = values[1],
+                fullPath = values[2]
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+
+
+    /**
+     * 生成缓存key前缀
+     */
+    private fun buildCacheKeyPrefix(collectionName: String): String {
+        return StringBuilder().append(collectionName).append(StringPool.COLON).toString()
+    }
+
     /**
      * 生成缓存key
      */
@@ -303,19 +373,16 @@ class FolderStatChildJob(
         fullPath: String
     ): String {
         return StringBuilder().append(buildCacheKeyPrefix(collectionName))
-            .append(projectId).append(StringPool.SLASH).append(repoName)
+            .append(projectId).append(StringPool.COLON).append(repoName)
             .append(fullPath).toString()
     }
 
-    /**
-     * 生成缓存key前缀
-     */
-    private fun buildCacheKeyPrefix(collectionName: String): String {
-        return StringBuilder().append(collectionName).append(StringPool.SLASH).toString()
-    }
 
-    private fun extractFolderInfo(key: String): FolderInfo? {
-        val values = key.split(StringPool.SLASH)
+    /**
+     * 从缓存key中解析出目录信息
+     */
+    private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
         return try {
             FolderInfo(
                 projectId = values[1],
@@ -343,5 +410,6 @@ class FolderStatChildJob(
         private const val NODE_NUM = "nodeNum"
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
+        private const val STORED = "stored"
     }
 }
