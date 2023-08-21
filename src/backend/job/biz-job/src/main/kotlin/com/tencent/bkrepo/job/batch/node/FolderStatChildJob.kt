@@ -52,6 +52,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
 import java.time.DayOfWeek
 import java.time.LocalDateTime
@@ -233,31 +234,22 @@ class FolderStatChildJob(
         hashOps.entries(collectionName).entries.forEach {
             val folderInfo = extractFolderInfoFromRedisKey(it.key)
             if (folderInfo != null) {
+               // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
+                // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
+                // 为了避免遍历时删除，用一个额外的key去记录当前collectionName下已经存储到db的目录记录
                 val storedFolderHkey = buildRedisCacheKey(
                     folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath
                 )
                 if (redisTemplate.opsForHash<String,String>().get(storedFolderKey, storedFolderHkey) == null) {
-                    var size: Long = 0
-                    var nodeNum: Long = 0
-                    if (it.key.endsWith(SIZE)) {
-                        val nodeNumKey = buildRedisCacheKey(
-                            folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, NODE_NUM
-                        )
-                        size = it.value.toLongOrNull1() ?: 0
-                        nodeNum = hashOps.get(collectionName, nodeNumKey)?.toLongOrNull1() ?: 0
-                    } else {
-                        val sizeKey = buildRedisCacheKey(
-                            folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, SIZE
-                        )
-                        nodeNum = it.value.toLongOrNull1() ?: 0
-                        size = hashOps.get(collectionName, sizeKey)?.toLongOrNull1() ?: 0
-                    }
+                    val statInfo = getFolderStatInfo(
+                        collectionName, it, folderInfo, hashOps
+                    )
                     setSizeAndNodeNumOfFolder(
                         projectId = folderInfo.projectId,
                         repoName = folderInfo.repoName,
                         fullPath = folderInfo.fullPath,
-                        size = size,
-                        nodeNum = nodeNum
+                        size = statInfo.size,
+                        nodeNum = statInfo.nodeNum
                     )
                     redisTemplate.opsForHash<String, String>().put(storedFolderKey, storedFolderHkey, STORED)
                 }
@@ -265,6 +257,34 @@ class FolderStatChildJob(
         }
         redisTemplate.delete(collectionName)
         redisTemplate.delete(storedFolderKey)
+    }
+
+
+    /**
+     * 从redis中获取对应目录的统计信息
+     */
+    private fun getFolderStatInfo(
+        collectionName: String,
+        entry: MutableMap.MutableEntry<String, String>,
+        folderInfo: FolderInfo,
+        hashOps: HashOperations<String, String, String>
+    ): StatInfo {
+        var size: Long = 0
+        var nodeNum: Long = 0
+        if (entry.key.endsWith(SIZE)) {
+            val nodeNumKey = buildRedisCacheKey(
+                folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, NODE_NUM
+            )
+            size = entry.value.toLongOrNull1() ?: 0
+            nodeNum = hashOps.get(collectionName, nodeNumKey)?.toLongOrNull1() ?: 0
+        } else {
+            val sizeKey = buildRedisCacheKey(
+                folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, SIZE
+            )
+            nodeNum = entry.value.toLongOrNull1() ?: 0
+            size = hashOps.get(collectionName, sizeKey)?.toLongOrNull1() ?: 0
+        }
+        return StatInfo(size, nodeNum)
     }
 
     /**
@@ -400,6 +420,11 @@ class FolderStatChildJob(
         var projectId: String,
         var repoName: String,
         var fullPath: String
+    )
+
+    data class StatInfo(
+        var size: Long,
+        var nodeNum: Long
     )
 
 
