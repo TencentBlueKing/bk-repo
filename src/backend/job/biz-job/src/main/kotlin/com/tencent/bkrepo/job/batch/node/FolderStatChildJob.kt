@@ -39,12 +39,10 @@ import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.FolderChildContext
-import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils.shardingSequence
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
@@ -57,7 +55,6 @@ import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
 import java.time.DayOfWeek
 import java.time.LocalDateTime
-import java.util.concurrent.locks.ReentrantLock
 import kotlin.text.toLongOrNull as toLongOrNull1
 
 
@@ -69,8 +66,6 @@ class FolderStatChildJob(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
-
-    private val lock: ReentrantLock = ReentrantLock()
 
 
     override fun onParentJobStart(context: ChildJobContext) {
@@ -126,18 +121,15 @@ class FolderStatChildJob(
         require(context is FolderChildContext)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeCacheToDB(collectionName, context)
+        context.projectMap[collectionName] = mutableSetOf()
     }
 
     /**
      * 判断项目或者仓库是否不需要进行目录统计
      */
     private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
-        IGNORE_PROJECT_PREFIX_LIST.forEach {
-            if (projectId.startsWith(it)){
-                return true
-            }
-        }
-        return IGNORE_REPO_LIST.contains(repoName)
+        return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
+            || IGNORE_REPO_LIST.contains(repoName)
     }
 
     /**
@@ -169,6 +161,8 @@ class FolderStatChildJob(
                 context = context
             )
         }
+        context.projectMap.putIfAbsent(collectionName, mutableSetOf())
+        context.projectMap[collectionName]!!.add(projectId)
     }
 
     /**
@@ -181,12 +175,12 @@ class FolderStatChildJob(
         fullPath: String,
         size: Long
     ) {
-        val sizeKey = buildRedisCacheKey(projectId, repoName, fullPath, SIZE)
-        val nodeNumKey = buildRedisCacheKey(projectId, repoName, fullPath, NODE_NUM)
-
+        val sizeHKey = buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath, tag = SIZE)
+        val nodeNumHKey = buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath, tag = NODE_NUM)
+        val key = buildCacheKey(collectionName = collectionName, projectId = projectId)
         val hashOps = redisTemplate.opsForHash<String, Long>()
-        hashOps.increment(collectionName, sizeKey, size)
-        hashOps.increment(collectionName, nodeNumKey, 1)
+        hashOps.increment(key, sizeHKey, size)
+        hashOps.increment(key, nodeNumHKey, 1)
     }
 
     /**
@@ -200,7 +194,9 @@ class FolderStatChildJob(
         size: Long,
         context: FolderChildContext
     ) {
-        val key = buildCacheKey(collectionName, projectId, repoName, fullPath)
+        val key = buildCacheKey(
+            collectionName = collectionName, projectId = projectId, repoName = repoName, fullPath = fullPath
+        )
         val folderMetrics = context.folderCache.getOrPut(key) { FolderChildContext.FolderMetrics() }
         folderMetrics.capSize.add(size)
         folderMetrics.nodeNum.increment()
@@ -219,7 +215,7 @@ class FolderStatChildJob(
      */
     private fun storeCacheToDB(collectionName: String, context: FolderChildContext) {
         if (context.cacheType == REDIS_CACHE_TYPE) {
-            storeRedisCacheToDB(collectionName)
+            storeRedisCacheToDB(collectionName, context)
         } else {
             storeMemoryCacheToDB(collectionName, context)
         }
@@ -229,46 +225,50 @@ class FolderStatChildJob(
     /**
      * 将redis缓存中属于collectionName下的记录写入DB中
      */
-    private fun storeRedisCacheToDB(collectionName: String) {
+    private fun storeRedisCacheToDB(collectionName: String, context: FolderChildContext) {
         val hashOps = redisTemplate.opsForHash<String, String>()
-        val storedFolderKey = buildRedisStoredKey(collectionName)
+        context.projectMap[collectionName]?.forEach {
 
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+            val projectKey = buildCacheKey(collectionName = collectionName, projectId = it)
+            val storedProjectIdKey = buildCacheKey(collectionName = collectionName, projectId = it, tag = STORED)
 
-        for (entry in hashOps.entries(collectionName).entries) {
-            val folderInfo = extractFolderInfoFromRedisKey(entry.key) ?: continue
-            // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
-            // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
-            // 为了避免遍历时删除，用一个额外的key去记录当前collectionName下已经存储到db的目录记录
-            val storedFolderHkey = buildRedisCacheKey(
-                folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath
-            )
-            if (redisTemplate.opsForHash<String,String>().get(storedFolderKey, storedFolderHkey) == null) {
-                val statInfo = getFolderStatInfo(
-                    collectionName, entry, folderInfo, hashOps
+            val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+
+            for (entry in hashOps.entries(projectKey).entries) {
+                val folderInfo = extractFolderInfoFromRedisKey(entry.key) ?: continue
+                // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
+                // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
+                // 为了避免遍历时删除，用一个额外的key去记录当前collectionName下已经存储到db的目录记录
+                val storedFolderHkey = buildCacheKey(
+                    projectId = folderInfo.projectId, repoName = folderInfo.repoName, fullPath = folderInfo.fullPath
                 )
-                updateList.add(buildUpdateClausesForFolder(
-                    projectId = folderInfo.projectId,
-                    repoName = folderInfo.repoName,
-                    fullPath = folderInfo.fullPath,
-                    size = statInfo.size,
-                    nodeNum = statInfo.nodeNum
-                ))
-                if (updateList.size >= BATCH_LIMIT) {
-                    mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                        .updateOne(updateList)
-                        .execute()
-                    updateList.clear()
-                    try {
-                        Thread.sleep(500)
-                    } catch (_: Exception) {
+                if (redisTemplate.opsForHash<String,String>().get(storedProjectIdKey, storedFolderHkey) == null) {
+                    val statInfo = getFolderStatInfo(
+                        collectionName, entry, folderInfo, hashOps
+                    )
+                    updateList.add(buildUpdateClausesForFolder(
+                        projectId = folderInfo.projectId,
+                        repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath,
+                        size = statInfo.size,
+                        nodeNum = statInfo.nodeNum
+                    ))
+                    if (updateList.size >= BATCH_LIMIT) {
+                        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                            .updateOne(updateList)
+                            .execute()
+                        updateList.clear()
+                        try {
+                            Thread.sleep(500)
+                        } catch (_: Exception) {
+                        }
                     }
+                    redisTemplate.opsForHash<String, String>().put(storedProjectIdKey, storedFolderHkey, STORED)
                 }
-                redisTemplate.opsForHash<String, String>().put(storedFolderKey, storedFolderHkey, STORED)
             }
+            redisTemplate.delete(projectKey)
+            redisTemplate.delete(storedProjectIdKey)
         }
-        redisTemplate.delete(collectionName)
-        redisTemplate.delete(storedFolderKey)
     }
 
 
@@ -283,18 +283,21 @@ class FolderStatChildJob(
     ): StatInfo {
         val size: Long
         val nodeNum: Long
+        val key = buildCacheKey(collectionName = collectionName, projectId = folderInfo.projectId)
         if (entry.key.endsWith(SIZE)) {
-            val nodeNumKey = buildRedisCacheKey(
-                folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, NODE_NUM
+            val nodeNumKey = buildCacheKey(
+                projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                fullPath = folderInfo.fullPath, tag = NODE_NUM
             )
             size = entry.value.toLongOrNull1() ?: 0
-            nodeNum = hashOps.get(collectionName, nodeNumKey)?.toLongOrNull1() ?: 0
+            nodeNum = hashOps.get(key, nodeNumKey)?.toLongOrNull1() ?: 0
         } else {
-            val sizeKey = buildRedisCacheKey(
-                folderInfo.projectId, folderInfo.repoName, folderInfo.fullPath, SIZE
+            val sizeKey = buildCacheKey(
+                projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                fullPath = folderInfo.fullPath, tag = SIZE
             )
             nodeNum = entry.value.toLongOrNull1() ?: 0
-            size = hashOps.get(collectionName, sizeKey)?.toLongOrNull1() ?: 0
+            size = hashOps.get(key, sizeKey)?.toLongOrNull1() ?: 0
         }
         return StatInfo(size, nodeNum)
     }
@@ -308,7 +311,7 @@ class FolderStatChildJob(
         }
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
 
-        val prefix = buildCacheKeyPrefix(collectionName)
+        val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
         context.folderCache.filterKeys { it.startsWith(prefix) }.forEach {  entry ->
             extractFolderInfoFromCacheKey(entry.key)?.let {
                 updateList.add(buildUpdateClausesForFolder(
@@ -356,30 +359,31 @@ class FolderStatChildJob(
 
 
     /**
-     * 生成redis缓存key
+     * 生成缓存key
      */
-    private fun buildRedisCacheKey(
+    private fun buildCacheKey(
         projectId: String,
-        repoName: String,
-        fullPath: String,
-        hKey: String? = null,
+        repoName: String? = null,
+        fullPath: String? = null,
+        collectionName: String? = null,
+        tag: String? = null,
     ): String {
-        return StringBuilder().append(projectId).append(StringPool.COLON).append(repoName).append(StringPool.COLON)
-            .append(fullPath).append(StringPool.COLON).apply {
-                hKey?.let { this.append(hKey) }
-            }.toString()
+        return StringBuilder().apply {
+            collectionName?.let {
+                this.append(it).append(StringPool.COLON)
+            }
+            this.append(projectId)
+            repoName?.let {
+                this.append(StringPool.COLON).append(repoName)
+            }
+            fullPath?.let {
+                this.append(StringPool.COLON).append(fullPath)
+            }
+            tag?.let {
+                this.append(StringPool.COLON).append(tag)
+            }
+        }.toString()
     }
-
-    /**
-     * 用于记录哪些folder记录已经被存入db
-     */
-    private fun buildRedisStoredKey(
-        collectionName: String
-    ): String {
-        return StringBuilder().append(collectionName).append(StringPool.COLON)
-            .append(STORED).toString()
-    }
-
 
     private fun extractFolderInfoFromRedisKey(key: String): FolderInfo? {
         val values = key.split(StringPool.COLON)
@@ -394,28 +398,6 @@ class FolderStatChildJob(
         }
     }
 
-
-
-    /**
-     * 生成缓存key前缀
-     */
-    private fun buildCacheKeyPrefix(collectionName: String): String {
-        return StringBuilder().append(collectionName).append(StringPool.COLON).toString()
-    }
-
-    /**
-     * 生成缓存key
-     */
-    private fun buildCacheKey(
-        collectionName: String,
-        projectId: String,
-        repoName: String,
-        fullPath: String
-    ): String {
-        return StringBuilder().append(buildCacheKeyPrefix(collectionName))
-            .append(projectId).append(StringPool.COLON).append(repoName)
-            .append(fullPath).toString()
-    }
 
 
     /**
@@ -450,7 +432,6 @@ class FolderStatChildJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val COLLECTION_NODE_PREFIX = "node_"
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")

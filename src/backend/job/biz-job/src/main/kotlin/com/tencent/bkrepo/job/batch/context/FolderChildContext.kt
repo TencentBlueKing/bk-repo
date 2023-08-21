@@ -37,6 +37,7 @@ class FolderChildContext(
     parentContent: JobContext,
     var initFlag: Boolean = true,
     var cacheType: String = MEMORY_CACHE_TYPE,
+    var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
     var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap()
 ) : ChildJobContext(parentContent) {
 
