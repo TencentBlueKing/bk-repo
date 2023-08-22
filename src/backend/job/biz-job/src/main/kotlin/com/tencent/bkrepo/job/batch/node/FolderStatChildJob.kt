@@ -219,7 +219,7 @@ class FolderStatChildJob(
                 val key = buildCacheKey(collectionName = cName, projectId = folderInfo.projectId)
                 val hashOps = redisTemplate.opsForHash<String, Long>()
                 hashOps.increment(key, sizeHKey, entry.value.capSize.toLong())
-                hashOps.increment(key, nodeNumHKey, 1)
+                hashOps.increment(key, nodeNumHKey, entry.value.nodeNum.toLong())
             }
         }
         context.folderCache.clear()
