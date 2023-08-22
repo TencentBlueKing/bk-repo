@@ -205,12 +205,8 @@ class FolderStatChildJob(
 
     private fun runTaskCheck(context: FolderChildContext) {
         require(properties is NodeStatCompositeMongoDbBatchJobProperties)
-        try {
-            // 用于控制任务不执行
-            DayOfWeek.of(properties.dayOfWeek)
-        } catch (e: Exception) {
-            return
-        }
+        // 当值小于 1 时，任务不执行
+        if (properties.runPolicy <= 0) return
         context.runFlag = true
     }
 
@@ -224,10 +220,12 @@ class FolderStatChildJob(
         }
         val collectionNum = collectionName.removePrefix(COLLECTION_NAME_PREFIX).toIntOrNull() ?: return false
         val remainder = collectionNum % 7 + 1
-        if (DayOfWeek.of(remainder) == LocalDateTime.now().dayOfWeek) {
-            return true
+
+        // 当值为1 - 7时，优先执行node_num%7 +1 == runPolicy对应的node表
+        if (properties.runPolicy in 1..7) {
+            return properties.runPolicy == remainder
         }
-        return false
+        return DayOfWeek.of(remainder) == LocalDateTime.now().dayOfWeek
     }
 
     /**
@@ -249,49 +247,58 @@ class FolderStatChildJob(
         logger.info("store redis cache to db withe table $collectionName")
         val hashOps = redisTemplate.opsForHash<String, String>()
         context.projectMap[collectionName]?.forEach {
-
-            val projectKey = buildCacheKey(collectionName = collectionName, projectId = it)
-            val storedProjectIdKey = buildCacheKey(collectionName = collectionName, projectId = it, tag = STORED)
-
-            val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-            for (entry in hashOps.entries(projectKey).entries) {
-                val folderInfo = extractFolderInfoFromRedisKey(entry.key) ?: continue
-                // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
-                // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
-                // 为了避免遍历时删除，用一个额外的key去记录当前collectionName下已经存储到db的目录记录
-                val storedFolderHkey = buildCacheKey(
-                    projectId = folderInfo.projectId, repoName = folderInfo.repoName, fullPath = folderInfo.fullPath
-                )
-                if (redisTemplate.opsForHash<String,String>().get(storedProjectIdKey, storedFolderHkey) == null) {
-                    val statInfo = getFolderStatInfo(
-                        collectionName, entry, folderInfo, hashOps
-                    )
-                    updateList.add(buildUpdateClausesForFolder(
-                        projectId = folderInfo.projectId,
-                        repoName = folderInfo.repoName,
-                        fullPath = folderInfo.fullPath,
-                        size = statInfo.size,
-                        nodeNum = statInfo.nodeNum
-                    ))
-                    if (updateList.size >= BATCH_LIMIT) {
-                        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                            .updateOne(updateList)
-                            .execute()
-                        updateList.clear()
-                        try {
-                            Thread.sleep(500)
-                        } catch (_: Exception) {
-                        }
-                    }
-                    redisTemplate.opsForHash<String, String>().put(storedProjectIdKey, storedFolderHkey, STORED)
-                }
-            }
-            mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                .updateOne(updateList)
-                .execute()
-            redisTemplate.delete(projectKey)
-            redisTemplate.delete(storedProjectIdKey)
+            storeFolderOfProject(collectionName, it, hashOps)
         }
+    }
+
+
+    /**
+     * 存储对应项目下缓存在redis下的folder记录
+     */
+    private fun storeFolderOfProject(
+        collectionName: String,
+        projectId: String,
+        hashOps: HashOperations<String, String, String>
+    ) {
+        val projectKey = buildCacheKey(collectionName = collectionName, projectId = projectId)
+        val storedProjectIdKey = buildCacheKey(collectionName = collectionName, projectId = projectId, tag = STORED)
+
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+        for (entry in hashOps.entries(projectKey).entries) {
+            val folderInfo = extractFolderInfoFromRedisKey(entry.key) ?: continue
+            // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
+            // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
+            // 为了避免遍历时删除，用一个额外的key去记录当前collectionName+project下已经存储到db的目录记录
+            val storedFolderHkey = buildCacheKey(
+                projectId = folderInfo.projectId, repoName = folderInfo.repoName, fullPath = folderInfo.fullPath
+            )
+            if (!hashOps.hasKey(storedProjectIdKey, storedFolderHkey)) {
+                val statInfo = getFolderStatInfo(
+                    collectionName, entry, folderInfo, hashOps
+                )
+                updateList.add(buildUpdateClausesForFolder(
+                    projectId = folderInfo.projectId,
+                    repoName = folderInfo.repoName,
+                    fullPath = folderInfo.fullPath,
+                    size = statInfo.size,
+                    nodeNum = statInfo.nodeNum
+                ))
+                if (updateList.size >= BATCH_LIMIT) {
+                    mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                        .updateOne(updateList)
+                        .execute()
+                    updateList.clear()
+                    Thread.sleep(200)
+                }
+                redisTemplate.opsForHash<String, String>().put(storedProjectIdKey, storedFolderHkey, STORED)
+            }
+        }
+        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+            .updateOne(updateList)
+            .execute()
+        updateList.clear()
+        redisTemplate.delete(projectKey)
+        redisTemplate.delete(storedProjectIdKey)
     }
 
 
@@ -360,6 +367,7 @@ class FolderStatChildJob(
         mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
             .updateOne(updateList)
             .execute()
+        updateList.clear()
     }
 
     /**
@@ -464,7 +472,7 @@ class FolderStatChildJob(
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
         private const val STORED = "stored"
-        private const val BATCH_LIMIT = 500
+        private const val BATCH_LIMIT = 250
         private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }

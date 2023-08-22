@@ -6,11 +6,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class NodeStatCompositeMongoDbBatchJobProperties (
     override var cron: String = "0 0 15 * * ?",
     /**
-     * 当组合job的cron生效后，子job可以指定在在周几执行，默认周一
+     * 可用用于控制任务不执行或者执行执行哪些表数据
+     * 当值小于 1 时，任务不执行
+     * 当值大于 7 时，不特定指定执行哪些表
+     * 当值为1 - 7时，优先执行node_num%7 +1 == runPolicy对应的node表
      */
-    var dayOfWeek: Int = 1,
+    var runPolicy: Int = 8,
     /**
-     * 一次性将所有表执行完 / 分7天去执行所有表，每次执行256/7张表
+     * 是否分多次执行
+     * false: 一次性将所有表执行完
+     * true: 分7天去执行所有表，每天执行 node_num%7 +1 == 当天的node表
      */
-    var multipleExecutions: Boolean = true
+    var multipleExecutions: Boolean = false
 ): CompositeJobProperties()
