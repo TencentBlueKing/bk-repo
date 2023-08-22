@@ -39,7 +39,7 @@ data class FavoriteRequest(
     @ApiModelProperty("项目id")
     val projectId: String,
     @ApiModelProperty("仓库id")
-    val repoId: String,
+    val repoName: String,
     @ApiModelProperty("文件夹路径")
     val path: String
 )

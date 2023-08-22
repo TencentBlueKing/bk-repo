@@ -31,8 +31,11 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.model.TFavorites
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
@@ -54,7 +57,8 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/api/favorite")
 class FavoriteController(
-    private val folderService: FolderService
+    private val folderService: FolderService,
+    private val permissionManager: PermissionManager
 ) {
 
     @ApiOperation("创建收藏文件夹")
@@ -64,9 +68,10 @@ class FavoriteController(
         @RequestBody favoriteRequest: FavoriteRequest
     ): Response<Void> {
         with(favoriteRequest) {
+            permissionManager.checkNodePermission(PermissionAction.VIEW, projectId, repoName, path)
             val createRequest = FavoriteCreateRequset(
                 projectId = projectId,
-                repoId = repoId,
+                repoName = repoName,
                 path = path,
                 createdDate = LocalDateTime.now(),
                 userId = userId
@@ -82,8 +87,12 @@ class FavoriteController(
         @RequestAttribute userId: String,
         @PathVariable id:String
     ): Response<Void> {
-        folderService.removeFavorite(id)
-        return ResponseBuilder.success()
+        folderService.getFavoriteById(id)?.let {
+            permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName, it.path)
+            folderService.removeFavorite(id)
+            return ResponseBuilder.success()
+        }
+        return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
     }
 
     @ApiOperation("收藏文件夹分页查询")

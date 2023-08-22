@@ -52,7 +52,7 @@ class FolderServiceImpl(
     override fun createFavorite(favoriteRequest: FavoriteCreateRequset) {
         val favorite = TFavorites(
             path = favoriteRequest.path,
-            repoId = favoriteRequest.repoId,
+            repoName = favoriteRequest.repoName,
             projectId = favoriteRequest.projectId,
             userId = favoriteRequest.userId,
             createdDate = favoriteRequest.createdDate
@@ -60,23 +60,11 @@ class FolderServiceImpl(
         favoriteDao.insert(favorite)
     }
 
-    override fun modifyFavorite(before: FavoriteRequest, after: FavoriteRequest) {
-        favoriteDao.updateFirst(
-            Query.query(
-                Criteria.where("path").`is`(before.path).
-                and("projectId").`is`(before.projectId).
-                and("repoId").`is`(before.repoId)),
-            Update.update("repoId", after.repoId).
-                set("projectId", after.projectId).
-                set("path", after.path)
-        )
-    }
-
     override fun pageFavorite(favoritePageRequest: FavoritePageRequest): Page<TFavorites> {
        with(favoritePageRequest) {
            val query = Query()
            projectId?.let { query.addCriteria(Criteria.where("prokectId").`is`(projectId)) }
-           repoId?.let { query.addCriteria(Criteria.where("repoId").`is`(repoId)) }
+           repoName?.let { query.addCriteria(Criteria.where("repoId").`is`(repoName)) }
            val records = favoriteDao.find(query)
            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
            val totalRecords = favoriteDao.count(query)
@@ -86,5 +74,9 @@ class FolderServiceImpl(
 
     override fun removeFavorite(id: String) {
        favoriteDao.remove(Query.query(Criteria.where("_id").`is`(id)))
+    }
+
+    override fun getFavoriteById(id: String): TFavorites? {
+        return favoriteDao.findById(id)
     }
 }

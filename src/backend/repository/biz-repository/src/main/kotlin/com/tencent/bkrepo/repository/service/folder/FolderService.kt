@@ -40,10 +40,10 @@ import com.tencent.bkrepo.repository.pojo.favorite.FavoriteRequest
 interface FolderService {
     // 创建收藏文件夹
     fun createFavorite(favoriteRequest: FavoriteCreateRequset)
-    // 收藏文件夹变更（路径变更）
-    fun modifyFavorite(before: FavoriteRequest, after: FavoriteRequest)
     // 删除收藏文件夹
     fun removeFavorite(id: String)
     // 获取列表
-    fun pageFavorite( favoritePageRequest: FavoritePageRequest): Page<TFavorites>
+    fun pageFavorite(favoritePageRequest: FavoritePageRequest): Page<TFavorites>
+    // 获取特定的收藏数据
+    fun getFavoriteById(id: String): TFavorites?
 }
