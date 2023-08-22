@@ -293,10 +293,12 @@ class FolderStatChildJob(
                 redisTemplate.opsForHash<String, String>().put(storedProjectIdKey, storedFolderHkey, STORED)
             }
         }
-        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-            .updateOne(updateList)
-            .execute()
-        updateList.clear()
+        if (updateList.isNotEmpty()) {
+            mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                .updateOne(updateList)
+                .execute()
+            updateList.clear()
+        }
         redisTemplate.delete(projectKey)
         redisTemplate.delete(storedProjectIdKey)
     }
@@ -364,6 +366,7 @@ class FolderStatChildJob(
                 }
             }
         }
+        if (updateList.isEmpty()) return
         mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
             .updateOne(updateList)
             .execute()
