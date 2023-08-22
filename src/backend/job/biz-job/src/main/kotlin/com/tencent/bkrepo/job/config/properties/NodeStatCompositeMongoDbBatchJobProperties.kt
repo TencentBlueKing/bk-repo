@@ -8,5 +8,9 @@ class NodeStatCompositeMongoDbBatchJobProperties (
     /**
      * 当组合job的cron生效后，子job可以指定在在周几执行，默认周一
      */
-    var dayOfWeek: Int = 1
+    var dayOfWeek: Int = 1,
+    /**
+     * 一次性将所有表执行完 / 分7天去执行所有表，每次执行256/7张表
+     */
+    var multipleExecutions: Boolean = true
 ): CompositeJobProperties()

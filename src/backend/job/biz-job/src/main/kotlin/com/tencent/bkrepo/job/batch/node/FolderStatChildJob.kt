@@ -70,13 +70,14 @@ class FolderStatChildJob(
 
     override fun onParentJobStart(context: ChildJobContext) {
         require(context is FolderChildContext)
-        initCheck(context)
-        logger.info("start to stat the size of folder, init flag is ${context.initFlag}")
+        runTaskCheck(context)
+        logger.info("start to stat the size of folder, run flag is ${context.runFlag}")
     }
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is FolderChildContext)
-        if (context.initFlag) return
+        if (!context.runFlag) return
+        if (!collectionRunCheck(collectionName)) return
         if (row.deleted != null) return
         // 判断是否在不统计项目或者仓库列表中
         if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
@@ -121,7 +122,7 @@ class FolderStatChildJob(
         require(context is FolderChildContext)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeCacheToDB(collectionName, context)
-        context.projectMap[collectionName] = mutableSetOf()
+        context.projectMap.remove(collectionName)
     }
 
     /**
@@ -202,12 +203,31 @@ class FolderStatChildJob(
         folderMetrics.nodeNum.increment()
     }
 
-    private fun initCheck(context: FolderChildContext) {
+    private fun runTaskCheck(context: FolderChildContext) {
         require(properties is NodeStatCompositeMongoDbBatchJobProperties)
-        if (LocalDateTime.now().dayOfWeek != DayOfWeek.of(properties.dayOfWeek)) {
+        try {
+            // 用于控制任务不执行
+            DayOfWeek.of(properties.dayOfWeek)
+        } catch (e: Exception) {
             return
         }
-        context.initFlag = false
+        context.runFlag = true
+    }
+
+    /**
+     * 判断该collectionName是否允许执行
+     */
+    private fun collectionRunCheck(collectionName: String): Boolean {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
+        if (!properties.multipleExecutions) {
+            return true
+        }
+        val collectionNum = collectionName.removePrefix(COLLECTION_NAME_PREFIX).toIntOrNull() ?: return false
+        val remainder = collectionNum % 7 + 1
+        if (DayOfWeek.of(remainder) == LocalDateTime.now().dayOfWeek) {
+            return true
+        }
+        return false
     }
 
     /**
@@ -226,6 +246,7 @@ class FolderStatChildJob(
      * 将redis缓存中属于collectionName下的记录写入DB中
      */
     private fun storeRedisCacheToDB(collectionName: String, context: FolderChildContext) {
+        logger.info("store redis cache to db withe table $collectionName")
         val hashOps = redisTemplate.opsForHash<String, String>()
         context.projectMap[collectionName]?.forEach {
 
@@ -233,7 +254,6 @@ class FolderStatChildJob(
             val storedProjectIdKey = buildCacheKey(collectionName = collectionName, projectId = it, tag = STORED)
 
             val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-
             for (entry in hashOps.entries(projectKey).entries) {
                 val folderInfo = extractFolderInfoFromRedisKey(entry.key) ?: continue
                 // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
@@ -266,6 +286,9 @@ class FolderStatChildJob(
                     redisTemplate.opsForHash<String, String>().put(storedProjectIdKey, storedFolderHkey, STORED)
                 }
             }
+            mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                .updateOne(updateList)
+                .execute()
             redisTemplate.delete(projectKey)
             redisTemplate.delete(storedProjectIdKey)
         }
@@ -306,13 +329,14 @@ class FolderStatChildJob(
      * 将memory缓存中属于collectionName下的记录写入DB中
      */
     private fun storeMemoryCacheToDB(collectionName: String, context: FolderChildContext) {
+        logger.info("store memory cache to db withe table $collectionName")
         if (context.folderCache.isEmpty()) {
             return
         }
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-
         val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
-        context.folderCache.filterKeys { it.startsWith(prefix) }.forEach {  entry ->
+        for(entry in context.folderCache) {
+            if (!entry.key.startsWith(prefix)) continue
             extractFolderInfoFromCacheKey(entry.key)?.let {
                 updateList.add(buildUpdateClausesForFolder(
                     projectId = it.projectId,
@@ -321,18 +345,21 @@ class FolderStatChildJob(
                     size = entry.value.capSize.toLong(),
                     nodeNum = entry.value.nodeNum.toLong()
                 ))
-                if (updateList.size >= BATCH_LIMIT) {
-                    mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                        .updateOne(updateList)
-                        .execute()
-                    updateList.clear()
-                    try {
-                        Thread.sleep(500)
-                    } catch (_: Exception) {
-                    }
+            }
+            if (updateList.size >= BATCH_LIMIT) {
+                mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                    .updateOne(updateList)
+                    .execute()
+                updateList.clear()
+                try {
+                    Thread.sleep(500)
+                } catch (_: Exception) {
                 }
             }
         }
+        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+            .updateOne(updateList)
+            .execute()
     }
 
     /**
@@ -438,5 +465,6 @@ class FolderStatChildJob(
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
         private const val STORED = "stored"
         private const val BATCH_LIMIT = 500
+        private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }
