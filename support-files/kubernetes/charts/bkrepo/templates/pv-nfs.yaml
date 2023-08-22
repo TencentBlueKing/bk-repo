@@ -4,6 +4,8 @@ kind: PersistentVolume
 metadata:
   name: bkrepo-nfs-pv
 spec:
+  capacity:
+    storage: ""
   accessModes:
     - ReadWriteMany
   mountOptions:

@@ -4,8 +4,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: bkrepo-nfs-pvc
 spec:
-  capacity:
-    storage: ""
   accessModes:
     - ReadWriteMany
   volumeName: bkrepo-nfs-pv
