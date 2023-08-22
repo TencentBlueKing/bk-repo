@@ -67,8 +67,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient", primary = false)
-@RequestMapping("/service/node")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient", primary = false, path = "/service/node")
 interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")

@@ -54,6 +54,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -61,6 +62,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Primary
 @RestController
+@RequestMapping("/service/node")
 class NodeController(
     private val nodeService: NodeService,
     private val nodeSearchService: NodeSearchService

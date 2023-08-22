@@ -28,13 +28,16 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_EXT_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.service.ExternalPermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_SERVICE_EXT_PERMISSION_PREFIX)
 class ServiceExternalPermissionController(
     private val externalPermissionService: ExternalPermissionService
 ): ServiceExternalPermissionClient {

@@ -36,11 +36,9 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(description = "项目集群接口")
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterProjectClient")
-@RequestMapping("/cluster/project")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterProjectClient", path = "/cluster/project")
 interface ClusterProjectClient {
 
     @ApiOperation("创建项目")

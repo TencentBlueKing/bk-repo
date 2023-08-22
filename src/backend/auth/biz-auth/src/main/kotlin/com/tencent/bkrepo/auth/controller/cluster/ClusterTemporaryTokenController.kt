@@ -35,9 +35,11 @@ import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/cluster/temporary/token")
 class ClusterTemporaryTokenController(
     private val temporaryTokenService: TemporaryTokenService,
     permissionService: PermissionService

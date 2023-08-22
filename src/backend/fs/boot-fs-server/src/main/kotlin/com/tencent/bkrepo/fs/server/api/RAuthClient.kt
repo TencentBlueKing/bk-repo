@@ -35,13 +35,11 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import reactivefeign.spring.config.ReactiveFeignClient
 import reactor.core.publisher.Mono
 
-@ReactiveFeignClient(AUTH_SERVICE_NAME)
-@RequestMapping("/service")
+@ReactiveFeignClient(AUTH_SERVICE_NAME, path = "/service")
 interface RAuthClient {
 
     @PostMapping("/user/token")

@@ -28,14 +28,17 @@
 package com.tencent.bkrepo.auth.controller.cluster
 
 import com.tencent.bkrepo.auth.api.cluster.ClusterPermissionClient
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
 class ClusterPermissionController(
     private val permissionService: PermissionService
 ) : ClusterPermissionClient, OpenResource(permissionService) {

@@ -37,9 +37,11 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/cluster/repo")
 class ClusterRepositoryController(
     private val permissionManager: PermissionManager,
     private val repositoryService: RepositoryService

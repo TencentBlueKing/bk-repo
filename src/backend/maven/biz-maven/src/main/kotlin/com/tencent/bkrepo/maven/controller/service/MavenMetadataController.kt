@@ -32,9 +32,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.api.MavenMetadataClient
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
 import com.tencent.bkrepo.maven.service.MavenMetadataService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/metadata")
 class MavenMetadataController(private val mavenMetadataService: MavenMetadataService) : MavenMetadataClient{
     override fun update(request: MavenMetadataRequest): Response<Void> {
         mavenMetadataService.update(request)

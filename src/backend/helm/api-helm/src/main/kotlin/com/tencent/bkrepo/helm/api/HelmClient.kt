@@ -39,15 +39,13 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * helm代理仓库刷新接口
  */
 @Api("helm代理仓库刷新接口")
 @Primary
-@FeignClient(HELM_SERVICE_NAME, contextId = "HelmClient")
-@RequestMapping("/service/index")
+@FeignClient(HELM_SERVICE_NAME, contextId = "HelmClient", path = "/service/index")
 interface HelmClient {
 
     @ApiOperation("刷新对应代理仓库的index文件以及package信息")

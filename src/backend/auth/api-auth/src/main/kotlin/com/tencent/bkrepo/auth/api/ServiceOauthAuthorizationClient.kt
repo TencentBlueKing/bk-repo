@@ -36,13 +36,11 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_OAUTHAUTHORIZATION"], description = "服务-Oauth授权接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource")
-@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource", path = AUTH_SERVICE_OAUTH_PREFIX)
 interface ServiceOauthAuthorizationClient {
 
     @ApiOperation("获取oauth token信息")

@@ -32,19 +32,18 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
-import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.*
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_SERVICE_ROLE_PREFIX)
 class ServiceRoleController @Autowired constructor(
     private val roleService: RoleService
 ) : ServiceRoleClient {

@@ -33,9 +33,11 @@ import com.tencent.bkrepo.repository.api.cluster.ClusterProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.service.repo.ProjectService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/cluster/project")
 class ClusterProjectController(
     private val projectService: ProjectService
 ) : ClusterProjectClient {

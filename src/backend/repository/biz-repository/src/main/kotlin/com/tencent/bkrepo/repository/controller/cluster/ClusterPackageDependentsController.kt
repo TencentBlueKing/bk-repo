@@ -38,9 +38,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterPackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.repository.service.packages.PackageDependentsService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/cluster/package/dependents/")
 class ClusterPackageDependentsController(
     private val packageDependentsService: PackageDependentsService,
     private val permissionManager: PermissionManager

@@ -42,13 +42,11 @@ import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceAccountResource")
-@RequestMapping(AUTH_SERVICE_ACCOUNT_PREFIX)
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceAccountResource", path = AUTH_SERVICE_ACCOUNT_PREFIX)
 interface ServiceAccountClient {
 
     @ApiOperation("校验ak/sk")

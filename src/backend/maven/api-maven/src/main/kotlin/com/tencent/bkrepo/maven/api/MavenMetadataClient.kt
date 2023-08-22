@@ -34,10 +34,8 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
-@FeignClient(MAVEN_SERVICE_NAME, contextId = "MavenMetadataClient")
-@RequestMapping("/service/metadata")
+@FeignClient(MAVEN_SERVICE_NAME, contextId = "MavenMetadataClient", path = "/service/metadata")
 interface MavenMetadataClient {
     @ApiOperation("更新maven版本元数据")
     @PostMapping("/update")

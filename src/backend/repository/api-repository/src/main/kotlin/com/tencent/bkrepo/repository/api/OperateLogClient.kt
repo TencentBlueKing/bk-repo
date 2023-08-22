@@ -39,12 +39,10 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("操作日志服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeDownloadsClient")
-@RequestMapping("/service/log")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeDownloadsClient", path = "/service/log")
 interface OperateLogClient {
 
     @ApiOperation("记录操作日志")
@@ -66,5 +64,4 @@ interface OperateLogClient {
     @ApiOperation("操作日志列表")
     @PostMapping("/list")
     fun list(@RequestBody option: OpLogListOption): Response<Page<OperateLog>>
-
 }

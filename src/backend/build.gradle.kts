@@ -31,17 +31,13 @@
 
 plugins {
     id("com.tencent.devops.boot") version Versions.DevopsBoot
-    id("com.tencent.devops.publish") version Versions.DevopsBoot apply false
+    id("com.tencent.devops.publish") version "0.0.6" apply false
 }
 
 allprojects {
     group = Release.Group
     version = (System.getProperty("repo_version") ?: Release.Version) +
-            if (System.getProperty("snapshot") == "true") "-SNAPSHOT" else "-RELEASE"
-
-    repositories {
-        maven(url = "https://repo.spring.io/milestone")
-    }
+        if (System.getProperty("snapshot") == "true") "-SNAPSHOT" else "-RELEASE"
 
     apply(plugin = "com.tencent.devops.boot")
     apply(plugin = "jacoco")
@@ -51,6 +47,8 @@ allprojects {
 
         imports {
             mavenBom("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
+            // 升级devops boot版本后，stream启动报错。参考https://github.com/spring-cloud/spring-cloud-function/issues/940
+            mavenBom("org.springframework.cloud:spring-cloud-function-dependencies:${Versions.SpringCloudFunction}")
         }
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
@@ -79,13 +77,8 @@ allprojects {
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
         }
     }
-    ext["netty.version"] = Versions.Netty
-    // 2.1.2才支持配置使用信号量隔离
-    ext["spring-cloud-circuitbreaker.version"] = Versions.SpringCloudCircuitbreaker
 
     configurations.all {
-        // io.netty:netty已替换成io.netty:netty-all
-        exclude(group = "io.netty", module = "netty")
         exclude(group = "log4j", module = "log4j")
         exclude(group = "org.slf4j", module = "slf4j-log4j12")
         exclude(group = "commons-logging", module = "commons-logging")

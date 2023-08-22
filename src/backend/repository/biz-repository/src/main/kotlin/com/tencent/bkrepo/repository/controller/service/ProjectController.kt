@@ -39,12 +39,14 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 项目服务接口实现类
  */
 @RestController
+@RequestMapping("/service/project")
 class ProjectController(
     private val projectService: ProjectService
 ) : ProjectClient {

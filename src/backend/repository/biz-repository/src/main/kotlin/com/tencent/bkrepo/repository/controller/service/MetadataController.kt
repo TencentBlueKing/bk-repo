@@ -37,12 +37,14 @@ import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.metadata.MetadataService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 元数据服务接口实现类
  */
 @RestController
+@RequestMapping("/service/metadata")
 class MetadataController(
     private val metadataService: MetadataService
 ) : MetadataClient {

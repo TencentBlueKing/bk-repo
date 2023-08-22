@@ -34,10 +34,12 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaRecordClient
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @Principal(PrincipalType.ADMIN)
+@RequestMapping("/cluster/record")
 class ClusterReplicaRecordController(
     private val replicaRecordService: ReplicaRecordService
 ) : ClusterReplicaRecordClient {

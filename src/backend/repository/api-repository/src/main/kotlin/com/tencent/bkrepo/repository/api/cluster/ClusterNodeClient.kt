@@ -48,12 +48,10 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api("节点集群接口")
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterNodeClient")
-@RequestMapping("/cluster/node")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterNodeClient", path = "/cluster/node")
 interface ClusterNodeClient {
 
     @ApiOperation("根据路径查看节点详情")

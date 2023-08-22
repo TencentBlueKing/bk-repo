@@ -32,11 +32,9 @@ import com.tencent.bkrepo.common.api.constant.ANALYSIS_EXECUTOR_SERVICE_NAME
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@FeignClient(ANALYSIS_EXECUTOR_SERVICE_NAME, contextId = "ExecutorClient")
-@RequestMapping("/service/executor")
+@FeignClient(ANALYSIS_EXECUTOR_SERVICE_NAME, contextId = "ExecutorClient", path = "/service/executor")
 interface ExecutorClient {
     /**
      * 执行扫描任务

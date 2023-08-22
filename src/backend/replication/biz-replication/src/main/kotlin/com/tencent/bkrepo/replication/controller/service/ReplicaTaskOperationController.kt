@@ -32,14 +32,18 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 import com.tencent.bkrepo.replication.service.RemoteNodeService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/replica")
 class ReplicaTaskOperationController(
     private val remoteNodeService: RemoteNodeService
-    ) : ReplicaTaskOperationClient {
+) : ReplicaTaskOperationClient {
     override fun createRunOnceTask(
-        projectId: String, repoName: String, requests: RemoteRunOnceTaskCreateRequest
+        projectId: String,
+        repoName: String,
+        requests: RemoteRunOnceTaskCreateRequest
     ): Response<Void> {
         remoteNodeService.createRunOnceTask(projectId, repoName, requests, false)
         return ResponseBuilder.success()

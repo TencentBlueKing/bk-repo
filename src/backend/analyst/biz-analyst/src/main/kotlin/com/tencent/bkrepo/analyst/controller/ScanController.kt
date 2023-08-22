@@ -40,9 +40,11 @@ import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/scan")
 class ScanController @Autowired constructor(
     private val scanService: ScanService,
     private val licenseService: SpdxLicenseService

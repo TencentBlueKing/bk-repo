@@ -44,12 +44,10 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("临时token服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "TemporaryTokenClient")
-@RequestMapping("/service/temporary/token")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "TemporaryTokenClient", path = "/service/temporary/token")
 @Deprecated(message = "replace with ServiceTemporaryTokenResource")
 interface TemporaryTokenClient {
 

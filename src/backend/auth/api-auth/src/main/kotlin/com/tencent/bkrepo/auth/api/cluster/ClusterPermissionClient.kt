@@ -38,12 +38,10 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("集群间权限服务接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterPermissionResource")
-@RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterPermissionResource", path = AUTH_CLUSTER_PERMISSION_PREFIX)
 interface ClusterPermissionClient {
 
     @ApiOperation("校验权限")

@@ -33,11 +33,9 @@ import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@FeignClient(FS_SERVER_SERVICE_NAME, contextId = "BlockClient", primary = false)
-@RequestMapping("/service/block")
+@FeignClient(FS_SERVER_SERVICE_NAME, contextId = "BlockClient", primary = false, path = "/service/block")
 interface FsNodeClient {
 
     @GetMapping("/list/{projectId}/{repoName}")

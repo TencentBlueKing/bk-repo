@@ -36,9 +36,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.PackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.repository.service.packages.PackageDependentsService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/package/dependents/")
 class PackageDependentsController(
     private val packageDependentsService: PackageDependentsService
 ) : PackageDependentsClient {

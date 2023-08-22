@@ -39,11 +39,13 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.base.replicator.commitedge.EdgeReplicaContextHolder
 import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.context.request.async.DeferredResult
 
 @RestController
 @Principal(PrincipalType.ADMIN)
+@RequestMapping("/cluster/task")
 class ClusterReplicaTaskController(
     private val replicaTaskService: ReplicaTaskService,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService

@@ -46,9 +46,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateReque
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/cluster/node")
 class ClusterNodeController(
     private val permissionManager: PermissionManager,
     private val nodeService: NodeService

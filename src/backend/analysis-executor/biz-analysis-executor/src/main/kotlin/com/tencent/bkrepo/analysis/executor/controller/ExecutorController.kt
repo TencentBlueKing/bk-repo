@@ -30,9 +30,11 @@ package com.tencent.bkrepo.analysis.executor.controller
 import com.tencent.bkrepo.analysis.executor.ExecutorScheduler
 import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/executor")
 class ExecutorController(private val executorScheduler: ExecutorScheduler): ExecutorClient {
     override fun execute(subtask: SubScanTask): Boolean {
         return executorScheduler.scan(subtask)

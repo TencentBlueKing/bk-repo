@@ -40,12 +40,14 @@ import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
 import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 同步制品到远端集群
  */
 @RestController
+@RequestMapping("/service/push")
 class ArtifactPushController(
     private val replicaTaskService: ReplicaTaskService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor

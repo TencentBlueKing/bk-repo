@@ -62,6 +62,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -69,6 +70,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Principal(type = PrincipalType.ADMIN)
 @RestController
+@RequestMapping("/replica")
 class ArtifactReplicaController(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,

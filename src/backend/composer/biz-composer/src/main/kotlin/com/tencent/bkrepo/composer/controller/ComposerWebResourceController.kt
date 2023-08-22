@@ -32,9 +32,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.composer.api.ComposerWebResource
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
 import com.tencent.bkrepo.composer.service.ComposerWebService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/ext")
 class ComposerWebResourceController(
     private val composerWebService: ComposerWebService
 ) : ComposerWebResource {

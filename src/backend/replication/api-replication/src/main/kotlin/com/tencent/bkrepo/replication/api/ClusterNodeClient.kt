@@ -35,12 +35,10 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("分发服务操作接口")
 @Primary
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ServiceClusterNodeClient")
-@RequestMapping("/service/cluster")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ServiceClusterNodeClient", path = "/service/cluster")
 interface ClusterNodeClient {
 
     @GetMapping("/{name}")

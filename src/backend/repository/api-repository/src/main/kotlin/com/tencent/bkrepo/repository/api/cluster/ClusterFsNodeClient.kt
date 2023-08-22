@@ -36,10 +36,8 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterFsNodeClient", primary = false)
-@RequestMapping("/cluster/node/fs")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterFsNodeClient", primary = false, path = "/cluster/node/fs")
 interface ClusterFsNodeClient {
 
     @PutMapping("/length")

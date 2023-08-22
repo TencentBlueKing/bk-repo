@@ -37,11 +37,9 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("节点元数据集群接口")
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterMetadataClient")
-@RequestMapping("/cluster/metadata")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterMetadataClient", path = "/cluster/metadata")
 interface ClusterMetadataClient {
 
     @ApiOperation("创建/更新元数据列表")

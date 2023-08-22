@@ -38,12 +38,10 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("集群间用户服务接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterUserResource")
-@RequestMapping(AUTH_CLUSTER_USER_PREFIX)
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterUserResource", path = AUTH_CLUSTER_USER_PREFIX)
 interface ClusterUserClient {
 
     @ApiOperation("用户信息")

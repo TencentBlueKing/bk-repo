@@ -31,9 +31,11 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterArtifactReplicaClient
 import com.tencent.bkrepo.replication.service.ClusterNodeService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/cluster/replica")
 class ClusterArtifactReplicaController(
     private val clusterNodeService: ClusterNodeService
 ) : ClusterArtifactReplicaClient {

@@ -40,11 +40,9 @@ import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api("Rpm 产品-web接口")
-@RequestMapping("/ext")
 interface RpmWebResource {
 
     @ApiOperation("rpm 包删除接口")

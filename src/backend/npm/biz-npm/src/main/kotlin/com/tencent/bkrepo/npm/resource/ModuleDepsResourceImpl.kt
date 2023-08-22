@@ -40,9 +40,11 @@ import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import com.tencent.bkrepo.npm.service.ModuleDepsService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/module/deps")
 class ModuleDepsResourceImpl @Autowired constructor(
     private val moduleDepsService: ModuleDepsService
 ) : ModuleDepsResource {

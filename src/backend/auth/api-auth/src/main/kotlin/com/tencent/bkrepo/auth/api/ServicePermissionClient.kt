@@ -43,13 +43,11 @@ import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_PERMISSION"], description = "服务-权限接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServicePermissionResource")
-@RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX)
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServicePermissionResource", path = AUTH_SERVICE_PERMISSION_PREFIX)
 interface ServicePermissionClient {
 
     @ApiOperation("list有权限仓库仓库")
@@ -76,5 +74,4 @@ interface ServicePermissionClient {
         @ApiParam(value = "校验权限信息")
         @RequestBody request: CheckPermissionRequest
     ): Response<Boolean>
-
 }

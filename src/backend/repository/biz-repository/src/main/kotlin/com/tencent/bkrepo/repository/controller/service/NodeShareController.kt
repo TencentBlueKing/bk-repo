@@ -34,9 +34,11 @@ import com.tencent.bkrepo.repository.api.NodeShareClient
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.file.ShareService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/service/node/share")
 class NodeShareController(
     private val shareService: ShareService
 ): NodeShareClient {

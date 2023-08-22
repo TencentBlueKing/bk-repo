@@ -44,12 +44,10 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("临时token服务接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceTemporaryTokenResource")
-@RequestMapping("/service/temporary/token")
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceTemporaryTokenResource", path = "/service/temporary/token")
 interface ServiceTemporaryTokenClient {
 
     @ApiOperation("创建临时token")

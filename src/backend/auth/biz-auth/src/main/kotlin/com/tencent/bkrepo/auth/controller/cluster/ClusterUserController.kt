@@ -28,15 +28,18 @@
 package com.tencent.bkrepo.auth.controller.cluster
 
 import com.tencent.bkrepo.auth.api.cluster.ClusterUserClient
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping(AUTH_CLUSTER_USER_PREFIX)
 class ClusterUserController(
     private val userService: UserService,
     permissionService: PermissionService

@@ -33,5 +33,6 @@ dependencies {
     implementation(project(":common:common-api"))
     implementation(project(":common:common-operate:operate-annotation"))
     compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
+    api("commons-io:commons-io")
     testImplementation(project(":common:common-operate:operate-service"))
 }

@@ -33,10 +33,8 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
-@RequestMapping("/cluster/record")
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaRecordClient")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaRecordClient", path = "/cluster/record")
 interface ClusterReplicaRecordClient {
 
     @PutMapping("/write-back")

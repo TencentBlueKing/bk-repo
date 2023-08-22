@@ -37,12 +37,14 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.rpm.api.RpmWebResource
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.servcie.RpmWebService
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * rpm 仓库 非标准接口
  */
 @RestController
+@RequestMapping("/ext")
 class RpmResourceWebController(
     private val rpmWebService: RpmWebService
 ) : RpmWebResource {

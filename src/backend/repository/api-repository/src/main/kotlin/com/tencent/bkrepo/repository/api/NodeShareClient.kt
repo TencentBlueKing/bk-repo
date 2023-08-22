@@ -37,16 +37,13 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-
 
 /**
  * 节点分享服务接口
  */
 @Api("节点分享服务接口")
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeShareClient", primary = false)
-@RequestMapping("/service/node/share")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeShareClient", primary = false, path = "/service/node/share")
 interface NodeShareClient {
     @ApiOperation("创建分享链接")
     @PostMapping("/create")

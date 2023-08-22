@@ -31,11 +31,9 @@ import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@RequestMapping("/cluster/replica")
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterArtifactReplicaClient")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterArtifactReplicaClient", path = "/cluster/replica")
 interface ClusterArtifactReplicaClient {
 
     @GetMapping("/heartbeat")

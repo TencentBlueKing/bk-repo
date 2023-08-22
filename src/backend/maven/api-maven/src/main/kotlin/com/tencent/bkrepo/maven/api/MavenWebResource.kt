@@ -42,11 +42,9 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api("Maven 产品接口")
-@RequestMapping("/ext")
 interface MavenWebResource {
     @ApiOperation("maven jar 包删除接口")
     @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_PACKAGE_DELETE)

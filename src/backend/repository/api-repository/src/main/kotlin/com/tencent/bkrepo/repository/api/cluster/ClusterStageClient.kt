@@ -39,11 +39,9 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterStageClient")
-@RequestMapping("/cluster/stage")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterStageClient", path = "/cluster/stage")
 interface ClusterStageClient {
 
     @ApiOperation("制品晋级")

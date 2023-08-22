@@ -38,9 +38,11 @@ import com.tencent.bkrepo.pypi.api.PypiWebResource
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiWebService
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/ext")
 class PypiWebResourceController(
     private val pypiWebService: PypiWebService
 ) : PypiWebResource {

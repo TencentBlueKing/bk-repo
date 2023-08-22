@@ -41,12 +41,10 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
 @Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource")
-@RequestMapping(AUTH_SERVICE_ROLE_PREFIX)
+@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource", path = AUTH_SERVICE_ROLE_PREFIX)
 interface ServiceRoleClient {
 
     @ApiOperation("创建项目管理员")

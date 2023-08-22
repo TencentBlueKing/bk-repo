@@ -43,12 +43,10 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterPackageClient")
-@RequestMapping("/cluster")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterPackageClient", path = "/cluster")
 interface ClusterPackageClient {
 
     @ApiOperation("创建包版本")
