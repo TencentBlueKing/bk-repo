@@ -204,23 +204,26 @@ class FolderStatChildJob(
     ) {
         if (context.cacheType != REDIS_CACHE_TYPE) return
         if (!force && context.folderCache.size < 10000) return
-        for (entry in context.folderCache) {
-            val folderInfo = extractFolderInfoFromCacheKey(entry.key) ?: continue
-            val cName = extractCollectionNameFromCacheKey(entry.key)
-            if (!cName.isNullOrEmpty()) {
-                val sizeHKey = buildCacheKey(
-                    projectId = folderInfo.projectId, repoName = folderInfo.repoName,
-                    fullPath = folderInfo.fullPath, tag = SIZE
-                )
-                val nodeNumHKey = buildCacheKey(
-                    projectId = folderInfo.projectId, repoName = folderInfo.repoName,
-                    fullPath = folderInfo.fullPath, tag = NODE_NUM
-                )
-                val key = buildCacheKey(collectionName = cName, projectId = folderInfo.projectId)
-                val hashOps = redisTemplate.opsForHash<String, Long>()
-                hashOps.increment(key, sizeHKey, entry.value.capSize.toLong())
-                hashOps.increment(key, nodeNumHKey, entry.value.nodeNum.toLong())
+        redisTemplate.execute { connection ->
+            val hashCommands = connection.hashCommands()
+            for (entry in context.folderCache) {
+                val folderInfo = extractFolderInfoFromCacheKey(entry.key) ?: continue
+                val cName = extractCollectionNameFromCacheKey(entry.key)
+                if (!cName.isNullOrEmpty()) {
+                    val sizeHKey = buildCacheKey(
+                        projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath, tag = SIZE
+                    )
+                    val nodeNumHKey = buildCacheKey(
+                        projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath, tag = NODE_NUM
+                    )
+                    val key = buildCacheKey(collectionName = cName, projectId = folderInfo.projectId)
+                    hashCommands.hIncrBy(key.toByteArray(), sizeHKey.toByteArray(), entry.value.capSize.toLong())
+                    hashCommands.hIncrBy(key.toByteArray(), nodeNumHKey.toByteArray(), entry.value.nodeNum.toLong())
+                }
             }
+            null
         }
         context.folderCache.clear()
     }
