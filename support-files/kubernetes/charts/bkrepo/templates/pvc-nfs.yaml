@@ -4,6 +4,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: bkrepo-nfs-pvc
 spec:
+  storageClassName: bkrepo-nfs
   resources:
     requests:
       storage: 2Ti

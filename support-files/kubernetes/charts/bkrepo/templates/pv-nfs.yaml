@@ -4,6 +4,7 @@ kind: PersistentVolume
 metadata:
   name: bkrepo-nfs-pv
 spec:
+  storageClassName: bkrepo-nfs
   capacity:
     storage: 2Ti
   accessModes:
