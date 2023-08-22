@@ -37,11 +37,9 @@ import com.tencent.bkrepo.repository.dao.FavoriteDao
 import com.tencent.bkrepo.repository.model.TFavorites
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
 import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteRequest
 import com.tencent.bkrepo.repository.service.folder.FolderService
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
 @Service

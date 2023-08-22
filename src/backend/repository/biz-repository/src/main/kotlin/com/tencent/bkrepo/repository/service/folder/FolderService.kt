@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TFavorites
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
 import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteRequest
 
 interface FolderService {
     // 创建收藏文件夹

@@ -36,6 +36,4 @@ import com.tencent.bkrepo.repository.model.TFavorites
 import org.springframework.stereotype.Repository
 
 @Repository
-class FavoriteDao : SimpleMongoDao<TFavorites>(){
-
-}
+class FavoriteDao : SimpleMongoDao<TFavorites>()
