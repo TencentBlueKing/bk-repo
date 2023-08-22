@@ -5,11 +5,11 @@ metadata:
   name: bkrepo-nfs-pv
 spec:
   capacity:
-    storage: ""
+    storage: 2Ti
   accessModes:
     - ReadWriteMany
   mountOptions:
-    - "lookupcache=pos"
+    - lookupcache=pos
   nfs:
     server: {{ .Values.common.config.storage.nfs.server }}
     path: {{ .Values.common.config.storage.nfs.path }}
