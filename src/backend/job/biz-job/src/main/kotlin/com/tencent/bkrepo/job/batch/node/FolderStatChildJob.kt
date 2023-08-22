@@ -55,6 +55,7 @@ import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import kotlin.system.measureTimeMillis
 import kotlin.text.toLongOrNull as toLongOrNull1
 
 
@@ -66,7 +67,6 @@ class FolderStatChildJob(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
-
 
     override fun onParentJobStart(context: ChildJobContext) {
         require(context is FolderChildContext)
@@ -120,6 +120,8 @@ class FolderStatChildJob(
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
         super.onRunCollectionFinished(collectionName, context)
         require(context is FolderChildContext)
+        // 如果使用的是redis作为缓存，将内存中的临时记录写入redis
+        updateRedisCache(context, force = true)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeCacheToDB(collectionName, context)
         context.projectMap.remove(collectionName)
@@ -144,26 +146,30 @@ class FolderStatChildJob(
         size: Long,
         context: FolderChildContext
     ) {
-        if (context.cacheType == REDIS_CACHE_TYPE) {
-            updateRedisCache(
-                collectionName = collectionName,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                size = size
-            )
-        } else {
-            updateMemoryCache(
-                collectionName = collectionName,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                size = size,
-                context = context
-            )
+        val elapsedTime = measureTimeMillis {
+            if (context.cacheType == REDIS_CACHE_TYPE) {
+                updateRedisCache(
+                    collectionName = collectionName,
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    size = size,
+                    context = context
+                )
+            } else {
+                updateMemoryCache(
+                    collectionName = collectionName,
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    size = size,
+                    context = context
+                )
+            }
+            context.projectMap.putIfAbsent(collectionName, mutableSetOf())
+            context.projectMap[collectionName]!!.add(projectId)
         }
-        context.projectMap.putIfAbsent(collectionName, mutableSetOf())
-        context.projectMap[collectionName]!!.add(projectId)
+        logger.debug("updateCache, elapse: $elapsedTime")
     }
 
     /**
@@ -174,14 +180,49 @@ class FolderStatChildJob(
         projectId: String,
         repoName: String,
         fullPath: String,
-        size: Long
+        size: Long,
+        context: FolderChildContext
     ) {
-        val sizeHKey = buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath, tag = SIZE)
-        val nodeNumHKey = buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath, tag = NODE_NUM)
-        val key = buildCacheKey(collectionName = collectionName, projectId = projectId)
-        val hashOps = redisTemplate.opsForHash<String, Long>()
-        hashOps.increment(key, sizeHKey, size)
-        hashOps.increment(key, nodeNumHKey, 1)
+        // 避免每次请求都去请求redis， 先将数据缓存在本地cache中，到达上限后更新到redis
+        updateMemoryCache(
+            collectionName = collectionName,
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            size = size,
+            context = context
+        )
+        updateRedisCache(context)
+    }
+
+    /**
+     * 将存储在内存中的临时记录更新到redis
+     */
+    private fun updateRedisCache(
+        context: FolderChildContext,
+        force: Boolean = false
+    ) {
+        if (context.cacheType != REDIS_CACHE_TYPE) return
+        if (!force && context.folderCache.size < 10000) return
+        for (entry in context.folderCache) {
+            val folderInfo = extractFolderInfoFromCacheKey(entry.key) ?: continue
+            val cName = extractCollectionNameFromCacheKey(entry.key)
+            if (!cName.isNullOrEmpty()) {
+                val sizeHKey = buildCacheKey(
+                    projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                    fullPath = folderInfo.fullPath, tag = SIZE
+                )
+                val nodeNumHKey = buildCacheKey(
+                    projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                    fullPath = folderInfo.fullPath, tag = NODE_NUM
+                )
+                val key = buildCacheKey(collectionName = cName, projectId = folderInfo.projectId)
+                val hashOps = redisTemplate.opsForHash<String, Long>()
+                hashOps.increment(key, sizeHKey, entry.value.capSize.toLong())
+                hashOps.increment(key, nodeNumHKey, 1)
+            }
+        }
+        context.folderCache.clear()
     }
 
     /**
@@ -454,6 +495,17 @@ class FolderStatChildJob(
         }
     }
 
+    /**
+     * 从缓存key中解析出collectionName
+     */
+    private fun extractCollectionNameFromCacheKey(key: String): String? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            values.firstOrNull()
+        } catch (e: Exception) {
+            null
+        }
+    }
 
 
     data class FolderInfo(
