@@ -123,6 +123,9 @@ class SubScanTaskDao(
         } else {
             update.unset(TSubScanTask::timeoutDateTime.name)
         }
+        if (status == EXECUTING || status == PULLED) {
+            update.set(TSubScanTask::heartbeatDateTime.name, now)
+        }
 
         val updateResult = updateFirst(query, update)
         if (updateResult.modifiedCount == 1L) {
@@ -134,6 +137,12 @@ class SubScanTaskDao(
         }
 
         return updateResult
+    }
+
+    fun heartbeat(subtaskId: String): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(subtaskId).and(TSubScanTask::status.name).`in`(PULLED, EXECUTING)
+        val update = Update.update(TSubScanTask::heartbeatDateTime.name, LocalDateTime.now())
+        return updateFirst(Query(criteria), update)
     }
 
     fun incExecutedTimes(subTaskId: String): UpdateResult {
@@ -229,22 +238,21 @@ class SubScanTaskDao(
     /**
      * 获取一个执行超时的任务
      *
-     * @param timeoutSeconds 允许执行的最长时间
+     * @param heartbeatTimeoutSeconds 心跳超时时间
      */
-    fun firstTimeoutTask(timeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
+    fun firstTimeoutTask(heartbeatTimeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
         val now = LocalDateTime.now()
 
-        val lastModifiedCriteria = Criteria
-            .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
-            .and(TSubScanTask::timeoutDateTime.name).exists(false)
-
-        val timeoutCriteria = Criteria().orOperator(
-            TSubScanTask::timeoutDateTime.lt(now),
-            lastModifiedCriteria
-        )
+        val timeoutCriteria = ArrayList<Criteria>()
+        timeoutCriteria.add(TSubScanTask::timeoutDateTime.lt(now))
+        if(heartbeatTimeoutSeconds > 0) {
+            val heartbeatTimeoutCriteria = Criteria
+                .where(TSubScanTask::heartbeatDateTime.name).lt(now.minusSeconds(heartbeatTimeoutSeconds))
+            timeoutCriteria.add(heartbeatTimeoutCriteria)
+        }
 
         val criteria = Criteria().andOperator(
-            timeoutCriteria,
+            Criteria().orOperator(timeoutCriteria),
             TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
             dispatcherCriteria(dispatcher)
         )
