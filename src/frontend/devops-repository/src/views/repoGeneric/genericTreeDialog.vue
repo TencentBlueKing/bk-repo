@@ -18,8 +18,8 @@
                 :tree="genericTree"
                 :important-search="importantSearch"
                 :open-list="genericTreeData.openList"
-                :selected-node="genericTreeData.selectedNode"
                 :open-type="genericTreeData.type"
+                :selected-node="genericTreeData.selectedNode"
                 @icon-click="iconClickHandler"
                 @item-click="itemClickHandler">
             </repo-tree>

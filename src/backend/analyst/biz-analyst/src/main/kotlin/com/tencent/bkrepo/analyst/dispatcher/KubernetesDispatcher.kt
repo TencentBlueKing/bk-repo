@@ -138,7 +138,13 @@ class KubernetesDispatcher(
         require(scanner is StandardScanner)
         val jobName = jobName(subtask)
         val containerImage = scanner.image
-        val cmd = buildCommand(scanner.cmd, scannerProperties.baseUrl, subtask.taskId, subtask.token!!)
+        val cmd = buildCommand(
+            cmd = scanner.cmd,
+            baseUrl = scannerProperties.baseUrl,
+            subtaskId = subtask.taskId,
+            token = subtask.token!!,
+            heartbeatTimeout = scannerProperties.heartbeatTimeout
+        )
         val requestStorageSize = maxStorageSize(subtask.packageSize)
         val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
         val k8sProps = executionCluster.kubernetesProperties
