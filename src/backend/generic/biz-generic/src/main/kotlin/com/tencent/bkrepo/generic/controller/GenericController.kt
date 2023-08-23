@@ -34,8 +34,10 @@ package com.tencent.bkrepo.generic.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -59,6 +61,8 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -133,12 +137,14 @@ class GenericController(
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
 
-    @GetMapping(BATCH_MAPPING_URI)
+    @RequestMapping(BATCH_MAPPING_URI, method = [RequestMethod.GET, RequestMethod.POST])
     fun batchDownload(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestBody batchDownloadPaths: BatchDownloadPaths,
     ) {
+        PipelineRepoUtils.forbidPipeline(repoName)
+        Preconditions.checkNotBlank(batchDownloadPaths.paths, BatchDownloadPaths::paths.name)
         val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
             .distinctBy { it.getArtifactFullPath() }
         permissionManager.checkNodePermission(

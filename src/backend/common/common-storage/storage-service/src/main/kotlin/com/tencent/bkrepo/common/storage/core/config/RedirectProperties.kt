@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,18 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.response
+package com.tencent.bkrepo.common.storage.core.config
 
-data class ScanQualityCheckedDetail(
-    val criticalStatus: ScanQualityCheckedStatus? = null,
-    val highStatus: ScanQualityCheckedStatus? = null,
-    val mediumStatus: ScanQualityCheckedStatus? = null,
-    val lowStatus: ScanQualityCheckedStatus? = null,
-    val qualityStatus: Boolean
-) {
-    data class ScanQualityCheckedStatus(
-        val status: Boolean,
-        val require: Long,
-        val actual: Long
-    )
-}
+import org.springframework.util.unit.DataSize
+import java.time.Duration
+
+/**
+ * 重定向请求配置
+ */
+data class RedirectProperties(
+    /**
+     * 是否启用重定向
+     */
+    var enabled: Boolean = true,
+
+    /**
+     * 最小允许直接从后端存储下载文件的限制，只有文件大小超过该值才允许被重定向从实际存储中下载文件
+     */
+    var minDirectDownloadSize: DataSize = DataSize.ofMegabytes(1L),
+
+    /**
+     * 每秒上传到后端实际存储的速度
+     */
+    var uploadSizePerSecond: DataSize = DataSize.ofMegabytes(10L),
+
+    /**
+     * 是否重定向所有下载请求
+     */
+    var redirectAllDownload: Boolean = false,
+
+    /**
+     * 重定向URL的过期时间
+     */
+    var redirectUrlExpireTime: Duration = Duration.ofMinutes(3L)
+)

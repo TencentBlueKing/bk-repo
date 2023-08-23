@@ -39,4 +39,5 @@ dependencies {
     implementation(project(":common:common-operate:operate-service"))
     api(project(":common:common-redis"))
     implementation("org.apache.httpcomponents:httpclient")
+    implementation("com.tencent.bk.sdk:crypto-java-sdk")
 }

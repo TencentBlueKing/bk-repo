@@ -46,7 +46,7 @@ data class ScanPlanInfo(
     val status: String,
     @ApiModelProperty("累计扫描制品数")
     val artifactCount: Long = 0,
-    @ApiModelProperty("危急漏洞数")
+    @ApiModelProperty("严重漏洞数")
     val critical: Long = 0,
     @ApiModelProperty("高危漏洞数")
     val high: Long = 0,

@@ -13,12 +13,12 @@
                         <span>{{ currentProject.description }}</span>
                     </bk-form-item>
                     <bk-form-item>
-                        <bk-button theme="primary" @click="showProjectDialog">{{ $t('modify') }}</bk-button>
+                        <bk-button theme="primary" @click="showProjectDialog">{{ $t('edit') }}</bk-button>
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
             <!-- <bk-tab-panel v-for="tab in [manage, user, role]" :key="tab.name" :name="tab.name" :label="tab.name"> -->
-            <bk-tab-panel v-for="tab in [manage]" :key="tab.name" :name="tab.name" :label="tab.name">
+            <bk-tab-panel v-for="tab in [manage, user]" :key="tab.name" :name="tab.name" :label="tab.name">
                 <div class="flex-align-center">
                     <bk-select class="w250 select-user"
                         v-model="tab.add"
@@ -52,7 +52,7 @@
                     }">
                     <template #empty><empty-data style="margin-top:100px;"></empty-data></template>
                     <bk-table-column type="selection" width="60"></bk-table-column>
-                    <bk-table-column :label="tab.name"><template #default="{ row }">
+                    <bk-table-column :label="tab.name" width="1600"><template #default="{ row }">
                         {{ (userList[row] && userList[row].name) || (roleList[row] && roleList[row].name) || row }}
                     </template></bk-table-column>
                 </bk-table>
@@ -97,7 +97,9 @@
                     add: [],
                     delete: []
                 },
-                roleList: {}
+                roleList: {},
+                admins: [],
+                users: []
             }
         },
         computed: {
@@ -143,6 +145,8 @@
                 this.getProjectPermission({ projectId: this.currentProject.id }).then(data => {
                     const manage = data.find(p => p.permName === 'project_manage_permission') || {}
                     const view = data.find(p => p.permName === 'project_view_permission') || {}
+                    this.admins = manage.users
+                    this.users = view.users
                     this.manage = {
                         ...this.manage,
                         id: manage.id,
@@ -161,9 +165,22 @@
                 })
             },
             selectList (tab) {
-                return Object.values(tab.type === 'role' ? this.roleList : this.userList)
-                    .filter(v => v.id !== 'anonymous')
-                    .filter(v => !~tab.items.findIndex(w => w === v.id))
+                const usersWithoutAnonymous = Object.values(this.userList).filter(v => v.id !== 'anonymous')
+                let final = usersWithoutAnonymous
+                if ((tab.items instanceof Array) && tab.items.length !== 0) {
+                    final = usersWithoutAnonymous.filter(v => !~tab.items.findIndex(w => w === v.id))
+                }
+                if (tab.name === this.$t('projectUser')) {
+                    if (this.admins.length !== 0 && final.length !== 0) {
+                        final = final.filter(v => !~this.admins.findIndex(w => w === v.id))
+                    }
+                }
+                if (tab.name === this.$t('projectManager')) {
+                    if (this.users.length !== 0 && final.length !== 0) {
+                        final = final.filter(v => !~this.users.findIndex(w => w === v.id))
+                    }
+                }
+                return final
             },
             confirmHandler (tab, type) {
                 if (tab.loading || !tab[type].length) return

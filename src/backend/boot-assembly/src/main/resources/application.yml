@@ -8,19 +8,28 @@ spring:
     function:
       definition: artifactEventWebhook;scanEventConsumer
     stream:
-      default-binder: memoryMessageChannelBinder
-      bindings:
-        scanEventConsumer-in-0:
-          group: scanner
-          destination: artifactEvent
-          binder: memoryMessageChannelBinder
-        artifactEvent-out-0:
-          destination: artifactEvent
-          binder: memoryMessageChannelBinder
-        artifactEventWebhook-in-0:
-          group: webhook
-          destination: artifactEvent
-          binder: memoryMessageChannelBinder
+      default-binder: noOpBinder
+      function:
+        autodetect: false
+      binders:
+        noOpBinder:
+          type: noop
+        fileMessageChannelBinder:
+          type: file
+        memoryMessageChannelBinder:
+          type: memory
+#      bindings:
+#        scanEventConsumer-in-0:
+#          group: scanner
+#          destination: artifactEvent
+#          binder: memoryMessageChannelBinder
+#        artifactEvent-out-0:
+#          destination: artifactEvent
+#          binder: memoryMessageChannelBinder
+#        artifactEventWebhook-in-0:
+#          group: webhook
+#          destination: artifactEvent
+#          binder: memoryMessageChannelBinder
   data:
     mongodb:
       uri: mongodb://127.0.0.1:27017/bkrepo
@@ -28,6 +37,9 @@ spring:
         enabled: false
   main:
     allow-bean-definition-overriding: true
+
+cns:
+  enabled: true
 
 logging:
   config: classpath:logback-config.xml
@@ -52,10 +64,6 @@ auth:
 
 scanner:
   defaultDispatcher: docker
-  dispatcher:
-    docker:
-      enabled: ${BK_REPO_ANALYST_DISPATCHER_DOCKER_ENABLED:false}
-      host: unix:///var/run/docker.sock
   baseUrl: ${BK_REPO_SCHEME:http}://${BK_REPO_HOST:bkrepo.example.com}:${BK_REPO_PORT:80}
   detailReportUrl: ${baseUrl}/ui
   frontEndBaseUrl: ${baseUrl}/ui

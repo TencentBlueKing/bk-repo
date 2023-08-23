@@ -16,7 +16,7 @@
             <bk-table-column label="制品名称" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
-                    <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
+                    <span class="hover-btn" :class="{ 'disabled': !['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(row.status) }" @click="showArtiReport(row)">{{ row.name }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column label="制品版本/存储路径" show-overflow-tooltip>
@@ -50,6 +50,11 @@
             </bk-table-column>
             <bk-table-column label="扫描完成时间" width="150">
                 <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
+            </bk-table-column>
+            <bk-table-column label="操作" width="100">
+                <template #default="{ row }">
+                    <bk-button text title="primary" :disabled="!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(row.status)" @click="showArtiReport(row)">查看</bk-button>
+                </template>
             </bk-table-column>
         </bk-table>
         <bk-pagination
@@ -106,6 +111,9 @@
                 return this.$route.params.taskId
             },
             isfiltering () {
+                if (this.filter.flag === 'initFlag') {
+                    delete this.filter.flag
+                }
                 return Boolean(Object.values(this.filter).join(''))
             }
         },
@@ -156,7 +164,7 @@
                 this.handlerPaginationChange()
             },
             showArtiReport ({ recordId, name, status }) {
-                if (status !== 'SUCCESS') return
+                if (!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(status)) return
                 this.$router.push({
                     name: 'artiReport',
                     params: {

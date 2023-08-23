@@ -42,13 +42,20 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
         ngx.exit(401)
         return
     end
-    username = oauthUtil:verify_ticket(bk_token, "token")
+    if config.oauth.apigw_url == "" then
+        username = oauthUtil:verify_ticket(bk_token, "token")
+    else
+        username = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token)
+    end
     token = bk_token
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
-    if not bk_ticket then
-        ngx.exit(401)
-        return
+    if bk_ticket == nil then
+        bk_ticket = ngx.var.http_x_devops_bk_ticket
+        if bk_ticket == nil then
+            ngx.exit(401)
+            return
+        end
     end
     username = oauthUtil:verify_ticket(bk_ticket, "ticket")
     token = bk_ticket

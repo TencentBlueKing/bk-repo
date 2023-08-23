@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.config
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -87,6 +88,10 @@ class CommonRemoteRepository(
                 overwrite = true
             )
         }
+    }
+
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
     }
 
     /**

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
@@ -57,6 +58,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
+import java.time.Duration
 
 /**
  * 节点操作相关的处理器
@@ -147,13 +149,20 @@ class NodeOperationsHandler(
     }
     suspend fun getStat(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
-            val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
-            val res = StatResponse(
-                subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,
-                size = nodeStat?.size ?: UNKNOWN,
-                capacity = cap ?: UNKNOWN
-            )
+            val cacheKey = "$projectId-$repoName-$fullPath"
+            var res = statCache.getIfPresent(cacheKey)
+            if (res == null) {
+                val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
+                val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
+
+                res = StatResponse(
+                    subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,
+                    size = nodeStat?.size ?: UNKNOWN,
+                    capacity = cap ?: UNKNOWN
+                )
+                statCache.put(cacheKey, res)
+            }
+
             return ReactiveResponseBuilder.success(res)
         }
     }
@@ -265,6 +274,9 @@ class NodeOperationsHandler(
             return ReactiveResponseBuilder.success()
         }
     }
+
+    private val statCache = Caffeine.newBuilder()
+        .maximumSize(1000).expireAfterWrite(Duration.ofDays(1)).build<String, StatResponse>()
 
     companion object {
         private const val UNKNOWN = -1L

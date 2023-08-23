@@ -48,7 +48,7 @@ import java.time.Duration
 class CleanupFileVisitor(
     private val rootPath: Path,
     private val tempPath: Path,
-    private val stagingPath: Path,
+    private val stagingPath: Path? = null,
     private val fileStorage: FileStorage,
     private val fileLocator: FileLocator,
     private val credentials: StorageCredentials,

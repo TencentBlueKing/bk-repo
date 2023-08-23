@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,46 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.controller.user
+package com.tencent.bkrepo.common.artifact.cns
 
-import com.tencent.bkrepo.analyst.pojo.request.LicenseScanQualityUpdateRequest
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.analyst.pojo.response.LicenseScanQualityResponse
-import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+@Principal(type = PrincipalType.ADMIN)
 @RestController
-@RequestMapping("/api/scan/license/quality")
-class UserLicenseQualityController(
-    private val licenseScanQualityService: LicenseScanQualityService
-){
-    @GetMapping("/{planId}")
-    fun getScanQuality(
-        @PathVariable("planId") planId: String
-    ): Response<LicenseScanQualityResponse> {
-        return ResponseBuilder.success(licenseScanQualityService.getScanQuality(planId))
+@RequestMapping("/service/cns")
+class CnsController(
+    private val cnsService: CnsService
+) {
+    @GetMapping("/exist")
+    fun exist(
+        @RequestParam(required = false) key: String?,
+        @RequestParam sha256: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(cnsService.exist(key, sha256))
     }
 
-    @PutMapping("/{planId}")
-    fun createScanQuality(
-        @PathVariable("planId") planId: String,
-        @RequestBody request: LicenseScanQualityUpdateRequest
+    @GetMapping("/check")
+    fun check(
+        @RequestParam(required = false) key: String?,
+        @RequestParam sha256: String,
+        @RequestParam(required = false) repoType: String? = null
     ): Response<Boolean> {
-        return ResponseBuilder.success(licenseScanQualityService.updateScanQuality(planId, request))
-    }
-
-    @PostMapping("/{planId}")
-    fun updateScanQuality(
-        @PathVariable("planId") planId: String,
-        @RequestBody request: LicenseScanQualityUpdateRequest
-    ): Response<Boolean> {
-        return ResponseBuilder.success(licenseScanQualityService.updateScanQuality(planId, request))
+        val repositoryType = repoType?.let { RepositoryType.ofValueOrDefault(repoType) }
+        return ResponseBuilder.success(cnsService.check(key, sha256, repositoryType))
     }
 }
