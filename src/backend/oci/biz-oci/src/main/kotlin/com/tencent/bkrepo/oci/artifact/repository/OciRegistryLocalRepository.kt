@@ -236,36 +236,36 @@ class OciRegistryLocalRepository(
                 artifactFile = context.getArtifactFile(),
                 storageCredentials = context.repositoryDetail.storageCredentials
             )
-        val fileInfo = storageService.finishAppend(artifactInfo.uuid!!, context.repositoryDetail.storageCredentials)
-        if (fileInfo.sha256 != sha256)
-            throw OciBadRequestException(OciMessageCode.OCI_DIGEST_INVALID, sha256)
-        // 当并发情况下文件被删可能导致文件size为0
-        if (fileInfo.size == 0L && fileInfo.sha256 != EMPTY_FILE_SHA256)
-            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
-        ociOperationService.storeArtifact(
-            ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
-            artifactFile = context.getArtifactFile(),
-            storageCredentials = context.storageCredentials,
-            fileInfo = fileInfo
-        )
-        fileInfo
-    } catch (e: StorageErrorException) {
-        // 计算sha256和转存文件导致时间较长，会出现请求超时，然后发起重试，导致并发操作该临时文件，文件可能已经被删除
-        if (storageService.exist(sha256, context.repositoryDetail.storageCredentials)) {
-            val nodeDetail = nodeClient.getNodeDetail(
-                artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
-            ).data
-            if (nodeDetail == null || nodeDetail.sha256 != sha256) {
-                throw e
+            val fileInfo = storageService.finishAppend(artifactInfo.uuid!!, context.repositoryDetail.storageCredentials)
+            if (fileInfo.sha256 != sha256)
+                throw OciBadRequestException(OciMessageCode.OCI_DIGEST_INVALID, sha256)
+            // 当并发情况下文件被删可能导致文件size为0
+            if (fileInfo.size == 0L && fileInfo.sha256 != EMPTY_FILE_SHA256)
+                throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+            ociOperationService.storeArtifact(
+                ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
+                artifactFile = context.getArtifactFile(),
+                storageCredentials = context.storageCredentials,
+                fileInfo = fileInfo
+            )
+            fileInfo
+        } catch (e: StorageErrorException) {
+            // 计算sha256和转存文件导致时间较长，会出现请求超时，然后发起重试，导致并发操作该临时文件，文件可能已经被删除
+            if (storageService.exist(sha256, context.repositoryDetail.storageCredentials)) {
+                val nodeDetail = nodeClient.getNodeDetail(
+                    artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
+                ).data
+                if (nodeDetail == null || nodeDetail.sha256 != sha256) {
+                    throw e
+                } else {
+                    FileInfo(nodeDetail.sha256!!, nodeDetail.md5!!, nodeDetail.size)
+                }
             } else {
-                FileInfo(nodeDetail.sha256!!, nodeDetail.md5!!, nodeDetail.size)
+                throw e
             }
-        } else {
-            throw e
         }
-    }
-    val digest = OciDigest.fromSha256(fileInfo.sha256)
-    val blobLocation = OciLocationUtils.blobLocation(digest, artifactInfo)
+        val digest = OciDigest.fromSha256(fileInfo.sha256)
+        val blobLocation = OciLocationUtils.blobLocation(digest, artifactInfo)
         logger.info(
             "Artifact ${context.artifactInfo.getArtifactFullPath()} " +
                 "has been uploaded to ${context.artifactInfo.getArtifactFullPath()}" +
