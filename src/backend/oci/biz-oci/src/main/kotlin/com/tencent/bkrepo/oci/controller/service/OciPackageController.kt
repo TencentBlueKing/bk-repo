@@ -79,7 +79,9 @@ class OciPackageController(
         return ResponseBuilder.success()
     }
 
-    override fun blobPathRefresh(projectId: String, repoName: String, packageName: String, version: String): Response<Boolean> {
+    override fun blobPathRefresh(
+        projectId: String, repoName: String, packageName: String, version: String
+    ): Response<Boolean> {
         return ResponseBuilder.success(
             operationService.refreshBlobNode(
             projectId = projectId,

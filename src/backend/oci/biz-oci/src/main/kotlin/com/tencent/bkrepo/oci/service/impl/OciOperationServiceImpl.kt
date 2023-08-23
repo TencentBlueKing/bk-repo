@@ -980,7 +980,9 @@ class OciOperationServiceImpl(
         }
     }
 
-    override fun deleteBlobsFolderAfterRefreshed(projectId: String, repoName: String, pName: String, userId: String) {
+    override fun deleteBlobsFolderAfterRefreshed(
+        projectId: String, repoName: String, pName: String, userId: String
+    ) {
         val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
         val blobsFolderPath = StringPool.SLASH+pName
