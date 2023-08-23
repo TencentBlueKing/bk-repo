@@ -10,5 +10,5 @@ spec:
       storage: 2Ti
   accessModes:
     - ReadWriteMany
-  volumeName: bkrepo-nfs-pv
+  volumeName: {{ include "common.names.fullname" . }}-nfs-pv
 {{- end -}}
