@@ -258,6 +258,8 @@
             }
         },
         created () {
+            // 需要获取最新的节点列表
+            this.getClusterList()
             this.getRepoListAll({ projectId: this.projectId })
             this.routeName !== 'createPlan' && this.handlePlanDetail()
         },
@@ -266,7 +268,8 @@
                 'getRepoListAll',
                 'createPlan',
                 'getPlanDetail',
-                'updatePlan'
+                'updatePlan',
+                'getClusterList'
             ]),
             formatDate,
             handlePlanDetail () {
@@ -306,7 +309,7 @@
                             }
                             : {}),
                         conflictStrategy,
-                        remoteClusterIds: remoteClusters.map(v => v.id),
+                        remoteClusterIds: this.checkClusterExist(remoteClusters.map(v => v.id)),
                         description,
                         createdBy,
                         createdDate
@@ -315,6 +318,12 @@
                 }).finally(() => {
                     this.isLoading = false
                 })
+            },
+            // 判断当前选择的节点是否存在于节点列表中
+            checkClusterExist (arr) {
+                return arr.map(v => {
+                    return this.clusterList.map(v => v.id).includes(v) && v
+                }).filter(Boolean)
             },
             changeReplicaObjectType () {
                 this.replicaTaskObjects = []
@@ -325,6 +334,8 @@
                 this.$refs.planForm.clearError()
             },
             async save () {
+                // 保存时也需要校验
+                this.planForm.remoteClusterIds = this.checkClusterExist(this.planForm.remoteClusterIds)
                 await this.$refs.planForm.validate()
 
                 if (this.planForm.loading) return
