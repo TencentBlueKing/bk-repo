@@ -53,6 +53,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ScanOptions
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import kotlin.system.measureTimeMillis
@@ -204,6 +205,7 @@ class FolderStatChildJob(
     ) {
         if (context.cacheType != REDIS_CACHE_TYPE) return
         if (!force && context.folderCache.size < 10000) return
+        // 避免每次设置值都创建一个 Redis 连接
         redisTemplate.execute { connection ->
             val hashCommands = connection.hashCommands()
             for (entry in context.folderCache) {
@@ -306,35 +308,46 @@ class FolderStatChildJob(
     ) {
         val projectKey = buildCacheKey(collectionName = collectionName, projectId = projectId)
         val storedProjectIdKey = buildCacheKey(collectionName = collectionName, projectId = projectId, tag = STORED)
-
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-        for (entry in hashOps.entries(projectKey).entries) {
-            val folderInfo = extractFolderInfoFromRedisKey(entry.key) ?: continue
-            // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
-            // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
-            // 为了避免遍历时删除，用一个额外的key去记录当前collectionName+project下已经存储到db的目录记录
-            val storedFolderHkey = buildCacheKey(
-                projectId = folderInfo.projectId, repoName = folderInfo.repoName, fullPath = folderInfo.fullPath
-            )
-            if (!hashOps.hasKey(storedProjectIdKey, storedFolderHkey)) {
-                val statInfo = getFolderStatInfo(
-                    collectionName, entry, folderInfo, hashOps
+
+        val options = ScanOptions.scanOptions().build()
+        redisTemplate.execute { connection ->
+            val hashCommands = connection.hashCommands()
+            val cursor = hashCommands.hScan(projectKey.toByteArray(), options)
+            while (cursor.hasNext()) {
+                val entry: Map.Entry<ByteArray, ByteArray> = cursor.next()
+                val folderInfo = extractFolderInfoFromRedisKey(String(entry.key)) ?: continue
+                // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
+                // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
+                // 为了避免遍历时删除，用一个额外的key去记录当前collectionName+project下已经存储到db的目录记录
+                val storedFolderHkey = buildCacheKey(
+                    projectId = folderInfo.projectId, repoName = folderInfo.repoName, fullPath = folderInfo.fullPath
                 )
-                updateList.add(buildUpdateClausesForFolder(
-                    projectId = folderInfo.projectId,
-                    repoName = folderInfo.repoName,
-                    fullPath = folderInfo.fullPath,
-                    size = statInfo.size,
-                    nodeNum = statInfo.nodeNum
-                ))
-                if (updateList.size >= BATCH_LIMIT) {
-                    mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                        .updateOne(updateList)
-                        .execute()
-                    updateList.clear()
-                    Thread.sleep(200)
+                val storedHkeyExist = hashCommands.hExists(
+                    storedProjectIdKey.toByteArray(), storedFolderHkey.toByteArray()
+                )
+                if (storedHkeyExist == null || !storedHkeyExist) {
+                    val statInfo = getFolderStatInfo(
+                        collectionName, entry, folderInfo, hashOps
+                    )
+                    updateList.add(buildUpdateClausesForFolder(
+                        projectId = folderInfo.projectId,
+                        repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath,
+                        size = statInfo.size,
+                        nodeNum = statInfo.nodeNum
+                    ))
+                    if (updateList.size >= BATCH_LIMIT) {
+                        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                            .updateOne(updateList)
+                            .execute()
+                        updateList.clear()
+                        Thread.sleep(200)
+                    }
+                    hashCommands.hSet(
+                        storedProjectIdKey.toByteArray(), storedFolderHkey.toByteArray(), STORED.toByteArray()
+                    )
                 }
-                redisTemplate.opsForHash<String, String>().put(storedProjectIdKey, storedFolderHkey, STORED)
             }
         }
         if (updateList.isNotEmpty()) {
@@ -353,26 +366,26 @@ class FolderStatChildJob(
      */
     private fun getFolderStatInfo(
         collectionName: String,
-        entry: MutableMap.MutableEntry<String, String>,
+        entry: Map.Entry<ByteArray, ByteArray>,
         folderInfo: FolderInfo,
         hashOps: HashOperations<String, String, String>
     ): StatInfo {
         val size: Long
         val nodeNum: Long
         val key = buildCacheKey(collectionName = collectionName, projectId = folderInfo.projectId)
-        if (entry.key.endsWith(SIZE)) {
+        if (String(entry.key).endsWith(SIZE)) {
             val nodeNumKey = buildCacheKey(
                 projectId = folderInfo.projectId, repoName = folderInfo.repoName,
                 fullPath = folderInfo.fullPath, tag = NODE_NUM
             )
-            size = entry.value.toLongOrNull1() ?: 0
+            size = String(entry.value).toLongOrNull1() ?: 0
             nodeNum = hashOps.get(key, nodeNumKey)?.toLongOrNull1() ?: 0
         } else {
             val sizeKey = buildCacheKey(
                 projectId = folderInfo.projectId, repoName = folderInfo.repoName,
                 fullPath = folderInfo.fullPath, tag = SIZE
             )
-            nodeNum = entry.value.toLongOrNull1() ?: 0
+            nodeNum = String(entry.value).toLongOrNull1() ?: 0
             size = hashOps.get(key, sizeKey)?.toLongOrNull1() ?: 0
         }
         return StatInfo(size, nodeNum)
