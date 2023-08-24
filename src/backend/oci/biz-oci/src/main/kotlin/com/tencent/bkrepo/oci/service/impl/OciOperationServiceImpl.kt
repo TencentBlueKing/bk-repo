@@ -90,13 +90,13 @@ import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
+import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -104,6 +104,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
@@ -134,7 +135,6 @@ class OciOperationServiceImpl(
     private val storageService: StorageService,
     private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient,
-    private val projectClient: ProjectClient,
     private val ociProperties: OciProperties,
     private val ociReplicationRecordDao: OciReplicationRecordDao,
     private val storageCredentialsClient: StorageCredentialsClient,
@@ -666,12 +666,10 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
-            var nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest)
-            if (nodeProperty == null) {
-                nodeProperty = nodeClient.getDeletedNodeDetail(
-                    projectId, repoName, fullPath
-                ).data?.firstOrNull{ it.sha256 == descriptor.sha256 }?.let {
-                    NodeProperty(it.fullPath, it.md5, it.size)
+            var nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest) ?: run {
+                nodeClient.getDeletedNodeDetailBySha256(
+                    projectId, repoName, descriptor.sha256).data?.let {
+                    NodeProperty(StringPool.EMPTY, it.md5, it.size)
                 } ?: return false
             }
             val newPath = OciLocationUtils.blobVersionPathLocation(reference, packageName, descriptor.filename)
@@ -985,8 +983,19 @@ class OciOperationServiceImpl(
     ) {
         val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
-        val blobsFolderPath = StringPool.SLASH+pName
-        deleteNode(projectId, repoName, blobsFolderPath, userId)
+        val blobsFolderPath = buildBlobsFolderPath(pName)
+        val fullPaths = nodeClient.listNode(projectId, repoName, blobsFolderPath, includeFolder = false, deep = false).data?.map {
+            it.fullPath
+        }
+        if (fullPaths.isNullOrEmpty()) return
+        logger.info("Blobs of package $pName in folder $blobsFolderPath will be deleted in $projectId|$repoName")
+        val request = NodesDeleteRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPaths = fullPaths,
+            operator = userId
+        )
+        nodeClient.deleteNodes(request)
     }
 
     /**
@@ -1005,16 +1014,6 @@ class OciOperationServiceImpl(
         val packageName = PackageKeys.resolveName(repoInfo.type.name.toLowerCase(), pName)
         val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion)
         logger.info("Manifest $manifestPath will be refreshed")
-        val manifestNode = nodeClient.getNodeDetail(
-            repoInfo.projectId, repoInfo.name, manifestPath
-        ).data ?: return false
-        val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
-        val manifest = loadManifest(
-            manifestNode.sha256!!, manifestNode.size, storageCredentials
-        ) ?: run {
-            logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
-            return false
-        }
         val ociArtifactInfo = OciManifestArtifactInfo(
             projectId = repoInfo.projectId,
             repoName = repoInfo.name,
@@ -1023,6 +1022,21 @@ class OciOperationServiceImpl(
             reference = pVersion,
             isValidDigest = false
         )
+        val manifestNode = nodeClient.getNodeDetail(
+            repoInfo.projectId, repoInfo.name, manifestPath
+        ).data ?: run {
+            val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return false
+            nodeClient.getNodeDetail(
+                repoInfo.projectId, repoInfo.name, oldDockerFullPath
+            ).data ?: return false
+        }
+        val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
+        val manifest = loadManifest(
+            manifestNode.sha256!!, manifestNode.size, storageCredentials
+        ) ?: run {
+            logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
+            return false
+        }
         var refreshStatus = true
         OciUtils.manifestIterator(manifest).forEach {
             refreshStatus = refreshStatus && doSyncBlob(it, ociArtifactInfo, userId)

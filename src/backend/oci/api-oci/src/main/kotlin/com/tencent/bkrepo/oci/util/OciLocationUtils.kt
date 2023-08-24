@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.oci.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.oci.constant.OCI_MANIFEST
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
@@ -57,12 +58,16 @@ object OciLocationUtils {
         return buildPath(packageName, ref, "blobs")
     }
 
+    fun buildBlobsFolderPath(packageName: String): String {
+        return buildPath(packageName, null, "blobs")
+    }
+
     fun buildDigestBlobsUploadPath(packageName: String, ref: OciDigest): String {
         return buildPath(packageName, ref, "_uploads")
     }
 
-    private fun buildPath(packageName: String, ref: OciDigest, type: String): String {
-        return "/$packageName/$type/" + ref.fileName()
+    private fun buildPath(packageName: String, ref: OciDigest? = null, type: String): String {
+        return "/$packageName/$type/"+ (ref?.fileName() ?: StringPool.EMPTY)
     }
 
     fun manifestLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo): String {

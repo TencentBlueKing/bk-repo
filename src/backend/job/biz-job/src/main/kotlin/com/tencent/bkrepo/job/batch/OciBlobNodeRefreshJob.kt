@@ -83,8 +83,8 @@ class OciBlobNodeRefreshJob(
                 )
                 if (result.isEmpty()) return
                 var refreshStatus = true
-                result.forEach {
-                    val version = it[NAME] as String? ?: return@with
+                for (map in result) {
+                    val version = map[NAME] as String? ?: continue
                     logger.info(
                         "Preparing to send blob refresh request for package ${row.name}|${version}" +
                             " in repo ${row.projectId}|${row.repoName}."
@@ -97,6 +97,7 @@ class OciBlobNodeRefreshJob(
                     ).data ?: false
                 }
                 if (refreshStatus) {
+                    // 当包下版本对应镜像的 blob节点都刷新完成后，删除旧路径下的 blob文件
                     logger.info(
                         "Will delete blobs folder of package ${row.name}" +
                             " in repo ${row.projectId}|${row.repoName}."
