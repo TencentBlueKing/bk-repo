@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
-import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
 import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
 import io.swagger.annotations.ApiModel
@@ -42,6 +42,10 @@ class StandardScanner(
     override val name: String,
     @ApiModelProperty("扫描器镜像")
     val image: String,
+    @ApiModelProperty("docker仓库用户")
+    val dockerRegistryUsername: String?,
+    @ApiModelProperty("docker仓库密码")
+    val dockerRegistryPassword: String?,
     @ApiModelProperty("扫描器容器启动CMD")
     val cmd: String,
     override val version: String = image.substring(image.lastIndexOf(COLON) + 1, image.length),

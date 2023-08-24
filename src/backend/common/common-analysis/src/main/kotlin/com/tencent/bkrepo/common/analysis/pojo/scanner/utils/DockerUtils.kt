@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.utils
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
+import com.github.dockerjava.api.model.AuthConfig
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Ulimit
@@ -52,10 +53,16 @@ object DockerUtils {
      */
     private const val CONTAINER_CPU_SHARES = 512
 
+    const val DEFAULT_DOCKER_SERVER = "https://index.docker.io/v1/"
+
     /**
      * 拉取镜像
      */
-    fun DockerClient.pullImage(tag: String) {
+    fun DockerClient.pullImage(
+        tag: String,
+        userName: String?,
+        password: String?,
+    ) {
         val images = listImagesCmd().exec()
         val exists = images.any { image ->
             image.repoTags.any { it == tag }
@@ -66,6 +73,11 @@ object DockerUtils {
         logger.info("pulling image: $tag")
         val elapsedTime = measureTimeMillis {
             val result = pullImageCmd(tag)
+                .withAuthConfig(
+                    AuthConfig()
+                        .withUsername(userName)
+                        .withPassword(password)
+                )
                 .exec(PullImageResultCallback())
                 .awaitCompletion(DEFAULT_PULL_IMAGE_DURATION, TimeUnit.MILLISECONDS)
             if (!result) {
@@ -77,11 +89,13 @@ object DockerUtils {
 
     fun DockerClient.createContainer(
         image: String,
+        userName: String?,
+        password: String?,
         hostConfig: HostConfig? = null,
         cmd: List<String>? = null
     ): String {
         // 拉取镜像
-        pullImage(image)
+        pullImage(image, userName, password)
         // 创建容器
         val createCmd = createContainerCmd(image)
         hostConfig?.let { createCmd.withHostConfig(it) }
@@ -125,5 +139,14 @@ object DockerUtils {
             }
         }
     }
-}
 
+    fun determineDockerServer(image: String): String {
+        image.split("/").apply {
+            return if (size > 2) {
+                first()
+            } else {
+                DEFAULT_DOCKER_SERVER
+            }
+        }
+    }
+}

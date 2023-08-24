@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner
+package com.tencent.bkrepo.common.analysis.pojo.scanner.utils
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.DEFAULT_DOCKER_SERVER
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-@ApiModel("scancode_toolkit(licenses扫描)扫描器配置")
-class ScancodeToolkitScanner(
-    override val name: String,
-    @ApiModelProperty("扫描器版本")
-    override val version: String,
-    @ApiModelProperty("使用的容器镜像")
-    val container: ScancodeToolkitDockerImage
-) : Scanner(name, TYPE, version) {
-    companion object {
-        const val TYPE = "scancodeToolkit"
+class DockerUtilsTest {
+    @Test
+    fun determineDockerServer() {
+        Assertions.assertEquals(
+            "ghcr.io",
+            DockerUtils.determineDockerServer("ghcr.io/xxx/xxx/xxx")
+        )
+        Assertions.assertEquals("ghcr.io", DockerUtils.determineDockerServer("ghcr.io/xxx/xxx"))
+        Assertions.assertEquals(DEFAULT_DOCKER_SERVER, DockerUtils.determineDockerServer("grpc/xxx"))
+        Assertions.assertEquals(DEFAULT_DOCKER_SERVER, DockerUtils.determineDockerServer("debian"))
     }
-
-    @ApiModel("容器镜像配置")
-    data class ScancodeToolkitDockerImage(
-        @ApiModelProperty("使用的镜像名和版本")
-        val image: String,
-        @ApiModelProperty("docker仓库用户")
-        val dockerRegistryUsername: String?,
-        @ApiModelProperty("docker仓库密码")
-        val dockerRegistryPassword: String?,
-        @ApiModelProperty("容器内的工作目录")
-        val workDir: String = "/data",
-        @ApiModelProperty("输入目录，相对于workDir的路径")
-        val inputDir: String = "/package",
-        @ApiModelProperty("输出目录，相对于workDir的路径")
-        val outputDir: String = "/output"
-    )
 }

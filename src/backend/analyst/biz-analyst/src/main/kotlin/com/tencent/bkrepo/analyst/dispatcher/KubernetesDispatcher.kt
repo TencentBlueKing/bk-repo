@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.dispatcher
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dispatcher.dsl.addContainerItem
+import com.tencent.bkrepo.analyst.dispatcher.dsl.addImagePullSecretsItemIfNeed
 import com.tencent.bkrepo.analyst.dispatcher.dsl.limits
 import com.tencent.bkrepo.analyst.dispatcher.dsl.metadata
 import com.tencent.bkrepo.analyst.dispatcher.dsl.requests
@@ -59,7 +60,11 @@ class KubernetesDispatcher(
     subtaskStateMachine: StateMachine,
     temporaryScanTokenService: TemporaryScanTokenService,
 ) : SubtaskPushDispatcher<KubernetesJobExecutionCluster>(
-    executionCluster, scannerProperties, scanService, subtaskStateMachine, temporaryScanTokenService
+    executionCluster,
+    scannerProperties,
+    scanService,
+    subtaskStateMachine,
+    temporaryScanTokenService
 ) {
 
     private val client by lazy { createClient(executionCluster.kubernetesProperties) }
@@ -163,6 +168,7 @@ class KubernetesDispatcher(
                             name = jobName
                             image = containerImage
                             command = cmd
+                            addImagePullSecretsItemIfNeed(scanner, k8sProps)
                             resources {
                                 requests(
                                     cpu = k8sProps.requestCpu,
@@ -219,7 +225,14 @@ class KubernetesDispatcher(
         return ignoreApiException {
             val namespace = executionCluster.kubernetesProperties.namespace
             batchV1Api.deleteNamespacedJob(
-                jobName, namespace, null, null, null, null, "Foreground", null
+                jobName,
+                namespace,
+                null,
+                null,
+                null,
+                null,
+                "Foreground",
+                null
             )
             logger.info("job[$jobName] clean success")
             true
