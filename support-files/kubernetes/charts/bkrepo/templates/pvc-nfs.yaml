@@ -7,7 +7,7 @@ spec:
   storageClassName: bkrepo-nfs
   resources:
     requests:
-      storage: ""
+      storage: 100Ti
   accessModes:
     - ReadWriteMany
   volumeName: {{ include "common.names.fullname" . }}-nfs-pv

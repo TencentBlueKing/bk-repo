@@ -5,6 +5,8 @@ metadata:
   name: {{ include "common.names.fullname" . }}-nfs-pv
 spec:
   storageClassName: bkrepo-nfs
+  capacity:
+    storage: 100Ti
   accessModes:
     - ReadWriteMany
   mountOptions:
@@ -13,3 +15,4 @@ spec:
     server: {{ .Values.common.config.storage.nfs.server }}
     path: {{ .Values.common.config.storage.nfs.path }}
 {{- end -}}
+
