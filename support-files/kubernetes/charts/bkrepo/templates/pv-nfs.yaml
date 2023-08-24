@@ -6,7 +6,7 @@ metadata:
 spec:
   storageClassName: bkrepo-nfs
   capacity:
-    storage: 100Ti
+    storage: {{ .Values.common.config.storage.nfs.capacity }}
   accessModes:
     - ReadWriteMany
   mountOptions:
