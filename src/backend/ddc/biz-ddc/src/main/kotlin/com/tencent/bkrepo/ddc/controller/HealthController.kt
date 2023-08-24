@@ -25,8 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.controller
+
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class HealthController {
+    @GetMapping("/{projectId}/health/ready")
+    fun ready() {
+        HttpContextHolder.getResponse().apply {
+            status = HttpStatus.OK.value
+            contentType = "text/plain"
+            writer.write("Healthy")
+        }
+    }
 }

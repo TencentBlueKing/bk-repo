@@ -119,7 +119,7 @@ data class Scope(
     /**
      * 获取字段序列化后类型与字段名信息的长度
      */
-    fun headerWithoutPayloadLength(): Int {
+    fun typeAndNameLength(): Int {
         var length = 0
         if (writeFieldType) {
             length++
@@ -130,7 +130,7 @@ data class Scope(
         return length
     }
 
-    fun payloadWithoutChildrenLength(): Int {
+    fun payloadTypeAndItemCountLength(): Int {
         var length = 0
         if (CbFieldUtils.isArray(fieldType.value)) {
             length += VarULong.measureUnsigned(itemCount.toLong())

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.ddc.utils
 
 import com.tencent.bkrepo.ddc.serialization.CbField
 import com.tencent.bkrepo.ddc.serialization.CbFieldUtils
+import com.tencent.bkrepo.ddc.serialization.CbObject
 
 fun CbField.hasName() = CbFieldUtils.hasFieldName(typeWithFlags)
 
@@ -50,6 +51,18 @@ fun CbField.isBool() = CbFieldUtils.isBool(typeWithFlags)
 
 fun CbField.isObjectAttachment() = CbFieldUtils.isObjectAttachment(typeWithFlags)
 fun CbField.isBinaryAttachment() = CbFieldUtils.isBinaryAttachment(typeWithFlags)
-
+fun CbField.isAttachment() = CbFieldUtils.isAttachment(typeWithFlags)
 fun CbField.isHash() = CbFieldUtils.isHash(typeWithFlags)
 fun CbField.isUuid() = CbFieldUtils.isUuid(typeWithFlags)
+
+fun CbField.hasAttachments(): Boolean {
+    return if (isAttachment()) {
+        true
+    } else {
+        any { it.isAttachment() || it.isObject() && it.hasAttachments() || it.isArray() && it.hasAttachments() }
+    }
+}
+
+fun CbObject.hasAttachments(): Boolean {
+    return any { it.hasAttachments() }
+}

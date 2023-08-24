@@ -25,8 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.artifact.resolver
+
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
+import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
+import com.tencent.bkrepo.ddc.pojo.RefId
+import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(ReferenceArtifactInfo::class)
+class ReferenceArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): ReferenceArtifactInfo {
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        return ReferenceArtifactInfo(
+            projectId = projectId,
+            repoName = repoName,
+            bucket = attributes[PATH_VARIABLE_BUCKET].toString(),
+            refId = RefId.create(attributes[PATH_VARIABLE_REF_ID].toString())
+        )
+    }
 }

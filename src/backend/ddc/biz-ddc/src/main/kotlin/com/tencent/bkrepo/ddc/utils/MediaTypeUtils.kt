@@ -25,8 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
-}
+package com.tencent.bkrepo.ddc.utils
+
+/**
+ *  compact binary
+ */
+const val MEDIA_TYPE_UNREAL_COMPACT_BINARY = "application/x-ue-cb";
+
+/**
+ * compressed buffers
+ */
+const val MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER = "application/x-ue-comp";
+
+const val MEDIA_TYPE_JUPITER_INLINED_PAYLOAD = "application/x-jupiter-inline"
+
+/**
+ * compact binary packages
+ */
+const val MEDIA_TYPE_UNREAL_COMPACT_BINARY_PACKAGE = "application/x-ue-cbpkg"

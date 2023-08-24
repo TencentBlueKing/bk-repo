@@ -25,8 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
-}
+package com.tencent.bkrepo.ddc.pojo
+
+data class UploadCompressedBlobResponse(
+    val identifier: String
+)

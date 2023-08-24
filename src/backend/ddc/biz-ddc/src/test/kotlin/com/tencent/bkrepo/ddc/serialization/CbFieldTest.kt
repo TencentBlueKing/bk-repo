@@ -1,5 +1,9 @@
 package com.tencent.bkrepo.ddc.serialization
 
+import com.tencent.bkrepo.ddc.serialization.CbField.CbFieldError.None
+import com.tencent.bkrepo.ddc.serialization.CbField.CbFieldError.RangeError
+import com.tencent.bkrepo.ddc.serialization.CbField.CbFieldError.TypeError
+import com.tencent.bkrepo.ddc.utils.BlakeUtils
 import com.tencent.bkrepo.ddc.utils.ByteBufferUtils
 import com.tencent.bkrepo.ddc.utils.ByteBufferUtils.byteBufferOf
 import com.tencent.bkrepo.ddc.utils.hasName
@@ -15,10 +19,15 @@ import com.tencent.bkrepo.ddc.utils.isObject
 import com.tencent.bkrepo.ddc.utils.isObjectAttachment
 import com.tencent.bkrepo.ddc.utils.isString
 import com.tencent.bkrepo.ddc.utils.isUuid
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import com.tencent.bkrepo.ddc.utils.writeBinaryAttachment
+import com.tencent.bkrepo.ddc.utils.writeBinaryAttachmentValue
+import com.tencent.bkrepo.ddc.utils.writeObjectAttachment
+import com.tencent.bkrepo.ddc.utils.writeString
+import com.tencent.bkrepo.ddc.utils.writeStringValue
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -33,13 +42,13 @@ class CbFieldTest {
         assertFalse(CbFieldUtils.hasFieldName(defaultField.typeWithFlags))
         assertFalse(defaultField.hasValue())
         assertFalse(defaultField.hasError())
-        assertTrue(defaultField.error == CbField.CbFieldError.None)
+        assertTrue(defaultField.error == None)
         assertEquals(defaultField.getSize(), 1)
         assertEquals(defaultField.name.length, 0)
         assertFalse(defaultField.hasName())
         assertFalse(defaultField.hasValue())
         assertFalse(defaultField.hasError())
-        assertEquals(defaultField.error, CbField.CbFieldError.None)
+        assertEquals(defaultField.error, None)
         assertEquals(
             defaultField.getHash(),
             Blake3Hash.compute(ByteBuffer.wrap(ByteArray(1) { CbFieldType.None.value }))
@@ -53,7 +62,7 @@ class CbFieldTest {
         assertFalse(noneField.hasName())
         assertFalse(noneField.hasValue())
         assertFalse(noneField.hasError())
-        assertEquals(noneField.error, CbField.CbFieldError.None)
+        assertEquals(noneField.error, None)
         assertEquals(noneField.getHash(), CbField().getHash())
         assertFalse(noneField.tryGetView().first)
 
@@ -131,11 +140,11 @@ class CbFieldTest {
     fun nullTest() {
         // Test CbField(Null)
         val nullField = CbField(ByteBufferUtils.EMPTY, CbFieldType.Null)
-        assertEquals(nullField.getSize(), 1);
+        assertEquals(nullField.getSize(), 1)
         assertTrue(nullField.isNull())
         assertTrue(nullField.hasValue())
         assertFalse(nullField.hasError())
-        assertEquals(nullField.error, CbField.CbFieldError.None);
+        assertEquals(nullField.error, None)
         assertEquals(nullField.getHash(), Blake3Hash.compute(byteBufferOf(CbFieldType.Null.value)))
 
         // Test CbField(None) as Null
@@ -229,7 +238,7 @@ class CbFieldTest {
 
         // Test CbField(None) as Object
         field = CbField.EMPTY
-        testField(fieldType = CbFieldType.Object, field = field, expectedError = CbField.CbFieldError.TypeError)
+        testField(fieldType = CbFieldType.Object, field = field, expectedError = TypeError)
 
         // Test FCbObjectView(ObjectWithName) and CreateIterator
         val objectType = (CbFieldType.Object.value or CbFieldType.HasFieldName.value)
@@ -318,7 +327,7 @@ class CbFieldTest {
 
         // Test CbField(None) as Array
         field = CbField()
-        testField(fieldType = CbFieldType.Array, field = field, expectedError = CbField.CbFieldError.TypeError)
+        testField(fieldType = CbFieldType.Array, field = field, expectedError = TypeError)
 
 
         // Test CbArray(ArrayWithName) and CreateIterator
@@ -365,7 +374,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Binary,
                 field = fieldView,
-                expectedError = CbField.CbFieldError.TypeError,
+                expectedError = TypeError,
                 expectedValue = default,
                 defaultValue = default,
             )
@@ -391,7 +400,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.String,
                 payload = payload,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 defaultValue = "ABC",
                 expectedValue = "ABC",
             )
@@ -403,7 +412,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.String,
                 field = field,
-                expectedError = CbField.CbFieldError.TypeError,
+                expectedError = TypeError,
                 defaultValue = "ABC",
                 expectedValue = "ABC",
             )
@@ -447,14 +456,14 @@ class CbFieldTest {
         testField(
             fieldType = CbFieldType.IntegerPositive,
             field = field,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = 8L,
             defaultValue = 8L
         )
         testField(
             fieldType = CbFieldType.IntegerNegative,
             field = field,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = 8L,
             defaultValue = 8L
         )
@@ -488,7 +497,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f,
             )
@@ -511,7 +520,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
@@ -526,7 +535,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
@@ -541,14 +550,14 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
             testField(
                 fieldType = CbFieldType.Float64,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0,
                 defaultValue = 8.0
             )
@@ -562,14 +571,14 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
             testField(
                 fieldType = CbFieldType.Float64,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0,
                 defaultValue = 8.0
             )
@@ -592,7 +601,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
@@ -607,7 +616,7 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
@@ -622,14 +631,14 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
             testField(
                 fieldType = CbFieldType.Float64,
                 field = field,
-                expectedError = CbField.CbFieldError.RangeError,
+                expectedError = RangeError,
                 expectedValue = 8.0,
                 defaultValue = 8.0
             )
@@ -641,14 +650,14 @@ class CbFieldTest {
             testField(
                 fieldType = CbFieldType.Float32,
                 field = field,
-                expectedError = CbField.CbFieldError.TypeError,
+                expectedError = TypeError,
                 expectedValue = 8.0f,
                 defaultValue = 8.0f
             )
             testField(
                 fieldType = CbFieldType.Float64,
                 field = field,
-                expectedError = CbField.CbFieldError.TypeError,
+                expectedError = TypeError,
                 expectedValue = 8.0,
                 defaultValue = 8.0
             )
@@ -668,14 +677,14 @@ class CbFieldTest {
         testField(
             fieldType = CbFieldType.BoolFalse,
             field = defaultField,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = false,
             defaultValue = false
         )
         testField(
             fieldType = CbFieldType.BoolTrue,
             field = defaultField,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = true,
             defaultValue = true
         )
@@ -684,7 +693,9 @@ class CbFieldTest {
     @Test
     fun objectAttachmentTest() {
         val zeroBytes = ByteBuffer.allocate(20)
-        val sequentialBytes = byteBufferOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+        val sequentialBytes = byteBufferOf(
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+        )
 
         // Test CbField(ObjectAttachment, Zero)
         testField(fieldType = CbFieldType.ObjectAttachment, payload = zeroBytes)
@@ -704,7 +715,7 @@ class CbFieldTest {
             field,
             CbObjectAttachment(IoHash(sequentialBytes.asReadOnlyBuffer())),
             CbObjectAttachment(IoHash.ZERO),
-            CbField.CbFieldError.None
+            None
         )
 
         // Test CbField(None) as ObjectAttachment
@@ -712,7 +723,7 @@ class CbFieldTest {
         testField(
             fieldType = CbFieldType.ObjectAttachment,
             field = defaultField,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             defaultValue = CbObjectAttachment(IoHash(sequentialBytes.asReadOnlyBuffer())),
             expectedValue = CbObjectAttachment(IoHash(sequentialBytes.asReadOnlyBuffer()))
         )
@@ -721,7 +732,9 @@ class CbFieldTest {
     @Test
     fun binaryAttachmentTest() {
         val zeroBytes = ByteBuffer.allocate(20)
-        val sequentialBytes = byteBufferOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+        val sequentialBytes = byteBufferOf(
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+        )
 
         // Test CbField(BinaryAttachment, Zero)
         testField(CbFieldType.BinaryAttachment, zeroBytes)
@@ -740,7 +753,7 @@ class CbFieldTest {
             field,
             CbBinaryAttachment(IoHash(sequentialBytes.asReadOnlyBuffer())),
             CbBinaryAttachment(IoHash.ZERO),
-            CbField.CbFieldError.None
+            None
         )
 
         // Test CbField(None) as BinaryAttachment
@@ -748,16 +761,57 @@ class CbFieldTest {
         testField(
             fieldType = CbFieldType.BinaryAttachment,
             field = defaultField,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = CbBinaryAttachment(IoHash(sequentialBytes.asReadOnlyBuffer())),
             defaultValue = CbBinaryAttachment(IoHash(sequentialBytes.asReadOnlyBuffer())),
         )
     }
 
     @Test
+    fun iterateAttachmentTest() {
+        val hash = BlakeUtils.hash("hello world")
+
+        val writer = CbWriter().apply {
+            beginObject()
+            writeString("TestString", "test")
+            writeBinaryAttachment("TestBinary", hash)
+            writeObjectAttachment("TestObject", hash)
+
+            // inner object
+            beginObject("InnerObject")
+            writeString("TestString", "test")
+            writeBinaryAttachment("TestBinary", hash)
+            writeObjectAttachment("TestObject", hash)
+            endObject()
+
+            // inner uniform array
+            beginArray("InnerArray", CbFieldType.BinaryAttachment)
+            writeBinaryAttachmentValue(hash)
+            writeBinaryAttachmentValue(hash)
+            endArray()
+
+            // inner array
+            beginArray("InnerArray2")
+            writeStringValue("test")
+            writeBinaryAttachmentValue(hash)
+            endArray()
+
+            endObject()
+        }
+
+        val field = CbField(ByteBuffer.wrap(writer.toByteArray()))
+
+        var count = 0
+        field.asObject().iterateAttachments { count++ }
+        assertEquals(7, count)
+    }
+
+    @Test
     fun hashTest() {
         val zeroBytes = ByteBuffer.allocate(20)
-        val sequentialBytes = byteBufferOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+        val sequentialBytes = byteBufferOf(
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+        )
 
         // Test CbField(Hash, Zero)
         testField(CbFieldType.Hash, zeroBytes)
@@ -770,7 +824,7 @@ class CbFieldTest {
         testField(
             fieldType = CbFieldType.Hash,
             field = defaultField,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = IoHash(sequentialBytes.asReadOnlyBuffer()),
             defaultValue = IoHash(sequentialBytes.asReadOnlyBuffer()),
         )
@@ -803,7 +857,7 @@ class CbFieldTest {
         testField(
             fieldType = CbFieldType.Uuid,
             field = defaultField,
-            expectedError = CbField.CbFieldError.TypeError,
+            expectedError = TypeError,
             expectedValue = expectedValue,
             defaultValue = expectedValue
         )
@@ -838,82 +892,113 @@ class CbFieldTest {
         Neg7(Neg15.value or Int8.value)
     }
 
-    fun testIntegerField(fieldType: CbFieldType, expectedMask: EIntType, magnitude: Long) {
+    private fun testIntegerField(fieldType: CbFieldType, expectedMask: EIntType, magnitude: Long) {
         val payload = ByteBuffer.allocate(9)
         val negative = (fieldType.value and 1.toByte())
         VarULong.writeUnsigned(payload, magnitude - negative)
         val defaultValue = 8L
         val expectedValue = if (negative != 0.toByte()) -magnitude else magnitude
         val field = CbField(payload, fieldType)
+
+        var finalExpectedValue: Any? = if ((expectedMask.value and EIntType.Int8.value) != 0.toByte()) {
+            expectedValue.toByte()
+        } else {
+            defaultValue.toByte()
+        }
         testField(
             CbFieldType.IntegerNegative,
             field,
-            (if ((expectedMask.value and EIntType.Int8.value) != 0.toByte()) expectedValue.toByte() else defaultValue.toByte()),
+            finalExpectedValue,
             defaultValue.toByte(),
-            if ((expectedMask.value and EIntType.Int8.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.Int8.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Byte>(
                 defaultValue = 0,
                 isType = { x -> x.isInteger() },
                 asTypeWithDefault = { x, y -> x.asInt8(y) })
         )
 
+        finalExpectedValue = (if ((expectedMask.value and EIntType.Int16.value) != 0.toByte()) {
+            expectedValue.toShort()
+        } else {
+            defaultValue.toShort()
+        })
         testField(
             CbFieldType.IntegerNegative,
             field,
-            ((if ((expectedMask.value and EIntType.Int16.value) != 0.toByte()) expectedValue.toShort() else defaultValue.toShort())),
+            finalExpectedValue,
             defaultValue.toShort(),
-            if ((expectedMask.value and EIntType.Int16.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.Int16.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Short>(
                 defaultValue = 0,
                 isType = { x -> x.isInteger() },
                 asTypeWithDefault = { x, y -> x.asInt16(y) })
         )
 
+        finalExpectedValue = if ((expectedMask.value and EIntType.Int32.value) != 0.toByte()) {
+            expectedValue.toInt()
+        } else {
+            defaultValue.toInt()
+        }
         testField(
             CbFieldType.IntegerNegative,
             field,
-            ((if ((expectedMask.value and EIntType.Int32.value) != 0.toByte()) expectedValue.toInt() else defaultValue.toInt())),
+            finalExpectedValue,
             defaultValue.toInt(),
-            if ((expectedMask.value and EIntType.Int32.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.Int32.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Int>(0, { x -> x.isInteger() }, { x, y -> x.asInt32(y) })
         )
 
         testField(
             CbFieldType.IntegerNegative,
             field,
-            ((if ((expectedMask.value and EIntType.Int64.value) != 0.toByte()) expectedValue.toLong() else defaultValue.toLong())),
-            defaultValue.toLong(),
-            if ((expectedMask.value and EIntType.Int64.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            ((if ((expectedMask.value and EIntType.Int64.value) != 0.toByte()) expectedValue else defaultValue)),
+            defaultValue,
+            if ((expectedMask.value and EIntType.Int64.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Long>(
                 0L,
                 isType = { x -> x.isInteger() },
                 asTypeWithDefault = { x, y -> x.asInt64(y) })
         )
 
+        finalExpectedValue = if ((expectedMask.value and EIntType.UInt8.value) != 0.toByte()) {
+            expectedValue.toByte()
+        } else {
+            defaultValue.toByte()
+        }
         testField(
             CbFieldType.IntegerPositive,
             field,
-            ((if ((expectedMask.value and EIntType.UInt8.value) != 0.toByte()) expectedValue.toByte() else defaultValue.toByte())),
+            finalExpectedValue,
             defaultValue.toByte(),
-            if ((expectedMask.value and EIntType.UInt8.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.UInt8.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Byte>(0, { x -> x.isInteger() }, { x, y -> x.asUInt8(y) })
         )
 
+        finalExpectedValue = if ((expectedMask.value and EIntType.UInt16.value) != 0.toByte()) {
+            expectedValue.toShort()
+        } else {
+            defaultValue.toShort()
+        }
         testField(
             CbFieldType.IntegerPositive,
             field,
-            ((if ((expectedMask.value and EIntType.UInt16.value) != 0.toByte()) expectedValue.toShort() else defaultValue.toShort())),
+            finalExpectedValue,
             defaultValue.toShort(),
-            if ((expectedMask.value and EIntType.UInt16.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.UInt16.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Short>(0, { x -> x.isInteger() }, { x, y -> x.asUInt16(y) })
         )
 
+        finalExpectedValue = if ((expectedMask.value and EIntType.UInt32.value) != 0.toByte()) {
+            expectedValue.toInt()
+        } else {
+            defaultValue.toInt()
+        }
         testField(
             CbFieldType.IntegerPositive,
             field,
-            ((if ((expectedMask.value and EIntType.UInt32.value) != 0.toByte()) expectedValue.toInt() else defaultValue.toInt())),
+            finalExpectedValue,
             defaultValue.toInt(),
-            if ((expectedMask.value and EIntType.UInt32.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.UInt32.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Int>(0, { x -> x.isInteger() }, { x, y -> x.asUInt32(y) })
         )
 
@@ -922,12 +1007,12 @@ class CbFieldTest {
             field,
             ((if ((expectedMask.value and EIntType.UInt64.value) != 0.toByte()) expectedValue else defaultValue)),
             defaultValue,
-            if ((expectedMask.value and EIntType.UInt64.value) != 0.toByte()) CbField.CbFieldError.None else CbField.CbFieldError.RangeError,
+            if ((expectedMask.value and EIntType.UInt64.value) != 0.toByte()) None else RangeError,
             CbFieldAccessors.fromStruct<Long>(0L, { x -> x.isInteger() }, { x, y -> x.asUInt64(y) })
         )
     }
 
-    fun testIntArray(array: CbArray, expectedNum: Int, expectedPayloadSize: Int) {
+    private fun testIntArray(array: CbArray, expectedNum: Int, expectedPayloadSize: Int) {
         assertEquals(array.getSize(), expectedPayloadSize + CbFieldType.SIZE_OF_CB_FIELD_TYPE)
         assertEquals(array.count, expectedNum)
 
@@ -958,12 +1043,12 @@ class CbFieldTest {
         assertEquals(expectedNum, actualNum)
     }
 
-    fun testField(
+    private fun testField(
         fieldType: CbFieldType,
         payload: ByteBuffer,
         expectedValue: Any? = null,
         defaultValue: Any? = null,
-        expectedError: CbField.CbFieldError = CbField.CbFieldError.None,
+        expectedError: CbField.CbFieldError = None,
         accessors: CbFieldAccessors? = null,
     ) {
         val field = CbField(payload, fieldType)
@@ -973,31 +1058,31 @@ class CbFieldTest {
         )
         assertTrue(field.hasValue())
         assertFalse(field.hasError())
-        assertEquals(CbField.CbFieldError.None, field.error)
+        assertEquals(None, field.error)
         testField(fieldType, field, expectedValue, defaultValue, expectedError, accessors)
     }
 
-    fun testField(
+    private fun testField(
         fieldType: CbFieldType,
         field: CbField,
         expectedValue: Any? = null,
         defaultValue: Any? = null,
-        expectedError: CbField.CbFieldError = CbField.CbFieldError.None,
+        expectedError: CbField.CbFieldError = None,
         accessors: CbFieldAccessors? = null
     ) {
         val actualAccessors = accessors ?: typeAccessors[fieldType]!!
         val actualExpectedValue = expectedValue ?: actualAccessors.defaultValue
         val actualDefaultValue = defaultValue ?: actualAccessors.defaultValue
 
-        assertEquals(actualAccessors.isType(field), expectedError != CbField.CbFieldError.TypeError)
-        if (expectedError == CbField.CbFieldError.None && !field.isBool()) {
+        assertEquals(actualAccessors.isType(field), expectedError != TypeError)
+        if (expectedError == None && !field.isBool()) {
             assertFalse(field.asBool())
             assertTrue(field.hasError())
-            assertEquals(field.error, CbField.CbFieldError.TypeError)
+            assertEquals(field.error, TypeError)
         }
 
         assertTrue(actualAccessors.asTypeWithDefault(field, actualDefaultValue) == actualExpectedValue)
-        assertEquals(field.hasError(), expectedError != CbField.CbFieldError.None)
+        assertEquals(field.hasError(), expectedError != None)
         assertEquals(field.error, expectedError)
     }
 

@@ -25,8 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.artifact
+
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository
+import com.tencent.bkrepo.ddc.artifact.repository.DdcRemoteRepository
+import com.tencent.bkrepo.ddc.artifact.repository.DdcVirtualRepository
+import org.springframework.stereotype.Component
+
+@Component
+class DdcArtifactConfigurer : ArtifactConfigurerSupport() {
+
+    override fun getRepositoryType() = RepositoryType.DDC
+    override fun getLocalRepository() = SpringContextUtils.getBean<DdcLocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<DdcRemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<DdcVirtualRepository>()
+
+    override fun getAuthSecurityCustomizer() =
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/ddc") }
 }

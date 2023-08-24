@@ -25,8 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.artifact.resolver
+
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
+import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(CompressedBlobArtifactInfo::class)
+class CompressedBlobArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): ArtifactInfo {
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        return CompressedBlobArtifactInfo(
+            projectId = projectId,
+            repoName = repoName,
+            contentId = attributes[CompressedBlobArtifactInfo.PATH_VARIABLE_CONTENT_ID]!!.toString(),
+        )
+    }
 }

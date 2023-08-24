@@ -25,8 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.extension
+
+interface BlobDecompressExtension {
+    /**
+     * 解压数据
+     *
+     * @param compressedPayload 压缩后的数据
+     * @param offset 数据在[compressedPayload]中的起始位置，inclusive
+     * @param length 数据长度
+     * @param result 解压后的数据
+     *
+     * @return 写入[result]的数据长度
+     */
+    fun decompress(compressedPayload: ByteArray, offset: Int, length: Int, result: ByteArray): Int
 }

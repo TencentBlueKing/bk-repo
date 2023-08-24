@@ -25,8 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.artifact
+
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.ddc.pojo.RefId
+
+class ReferenceArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val bucket: String,
+    val refId: RefId,
+    var inlineBlobHash: String? = null,
+) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    override fun getArtifactName() = "/$bucket/$refId"
+
+    override fun getArtifactFullPath() = "/$bucket/$refId"
+
+    companion object {
+        const val PATH_VARIABLE_BUCKET = "bucket"
+        const val PATH_VARIABLE_REF_ID = "key"
+    }
 }

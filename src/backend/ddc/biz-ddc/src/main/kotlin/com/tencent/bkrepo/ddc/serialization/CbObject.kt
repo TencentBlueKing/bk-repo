@@ -131,9 +131,11 @@ class CbObject : Iterable<CbField> {
         val factory = mapper.factory
         val sw = SegmentedStringWriter(factory._getBufferRecycler())
         mapper.factory.createGenerator(sw).use { g ->
+            g.writeStartObject()
             for (field in innerField) {
                 writeField(field, g)
             }
+            g.writeEndObject()
         }
 
         return sw.getAndClear()

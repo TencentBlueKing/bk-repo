@@ -25,8 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.exception
+
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+/**
+ * ddc服务的响应content-type可能被改为非json，需要单独处理错误响应
+ */
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+@RestControllerAdvice("com.tencent.bkrepo.ddc")
+class DdcExceptionHandler(private val exceptionHandler: GlobalExceptionHandler) {
+    @ExceptionHandler(Exception::class)
+    fun exception(exception: Exception) {
+        if (exception is ErrorCodeException) {
+            exceptionHandler.handleException(exception)
+        } else {
+            try {
+                HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON
+                val m = GlobalExceptionHandler::class.java.getDeclaredMethod("handleException", exception.javaClass)
+                m.invoke(exceptionHandler, exception)
+            } catch (e: NoSuchMethodException) {
+                exceptionHandler.handleException(exception)
+            }
+        }
+    }
 }

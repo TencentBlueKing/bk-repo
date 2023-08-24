@@ -123,12 +123,12 @@ abstract class CbWriterBase : ICbWriter {
         val childrenLength = scope.childrenLength()
 
         if (scope.fieldType != CbFieldType.None) {
-            val headerWithoutPayloadLength = scope.headerWithoutPayloadLength()
-            val payloadWithoutChildrenLength = scope.payloadWithoutChildrenLength()
-            val payloadLength = payloadWithoutChildrenLength.toLong() + childrenLength.toLong()
+            val typeAndNameLength = scope.typeAndNameLength()
+            val payloadTypeAndItemCountLength = scope.payloadTypeAndItemCountLength()
+            val payloadLength = payloadTypeAndItemCountLength.toLong() + childrenLength.toLong()
             val payloadLengthBytes = VarULong.measureUnsigned(payloadLength)
 
-            val header = allocate(headerWithoutPayloadLength + payloadLengthBytes + payloadWithoutChildrenLength)
+            val header = allocate(typeAndNameLength + payloadLengthBytes + payloadTypeAndItemCountLength)
             scope.data = header.asReadOnlyBuffer()
             bufferPos = bufferEnd
 
@@ -152,7 +152,6 @@ abstract class CbWriterBase : ICbWriter {
             }
         }
 
-        scope.data!!.flip()
         scope.length = childrenLength + scope.data!!.remaining()
         openScopes.pop()
     }

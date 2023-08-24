@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.ddc.utils
 
+import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.ddc.serialization.IoHash.Companion.NUM_BYTES
 import org.bouncycastle.crypto.digests.Blake3Digest
 import org.bouncycastle.util.encoders.Hex
@@ -34,7 +35,6 @@ import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.ByteBuffer
-
 
 object BlakeUtils {
     const val OUT_LEN = NUM_BYTES
@@ -63,9 +63,28 @@ object BlakeUtils {
 
     fun ByteArray.hex(): String = Hex.toHexString(this)
 
-    fun ByteBuffer.hex(): String = Hex.toHexString(array(), position() + arrayOffset(), remaining())
+    fun ByteBuffer.hex(): String {
+        val arr = ByteBuffer.allocate(remaining()).put(duplicate()).array()
+        return Hex.toHexString(arr, 0, arr.size)
+    }
 
     fun InputStream.toBlake3InputStream() = Blake3InputStream(this)
+
+    // TODO 改为在读文件时就计算哈希，避免重复读流
+    fun StreamArtifactFile.blake3(): ByteArray {
+        val digest = Blake3Digest(OUT_LEN)
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        getInputStream().use {
+            var size = it.read(buffer)
+            while (size != -1) {
+                digest.update(buffer, 0, size)
+                size = it.read(buffer)
+            }
+        }
+        val hashCode = ByteArray(digest.digestSize)
+        digest.doFinal(hashCode, 0)
+        return hashCode
+    }
 
     class Blake3InputStream(inputStream: InputStream) : FilterInputStream(inputStream) {
 
@@ -89,7 +108,6 @@ object BlakeUtils {
             return numOfBytesRead
         }
 
-
         override fun markSupported(): Boolean {
             return false
         }
@@ -106,6 +124,5 @@ object BlakeUtils {
             digest.doFinal(hashCode, 0)
             return hashCode
         }
-
     }
 }

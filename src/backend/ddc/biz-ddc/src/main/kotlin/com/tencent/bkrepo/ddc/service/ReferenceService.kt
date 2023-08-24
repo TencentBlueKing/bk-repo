@@ -25,8 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.service
+
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository
+import org.springframework.stereotype.Service
+
+@Service
+class ReferenceService : ArtifactService() {
+    fun downloadRef(artifactInfo: ReferenceArtifactInfo) {
+        repository.download(ArtifactDownloadContext())
+    }
+
+    fun createRef(artifactInfo: ReferenceArtifactInfo, file: ArtifactFile) {
+        repository.upload(ArtifactUploadContext(file))
+    }
+
+    fun finalize(artifactInfo: ReferenceArtifactInfo) {
+        (ArtifactContextHolder.getRepository() as DdcLocalRepository).finalizeRef(artifactInfo)
+    }
 }

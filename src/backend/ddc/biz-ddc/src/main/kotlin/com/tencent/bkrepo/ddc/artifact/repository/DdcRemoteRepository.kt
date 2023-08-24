@@ -25,8 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
-}
+package com.tencent.bkrepo.ddc.artifact.repository
+
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import org.springframework.stereotype.Component
+
+@Component
+class DdcRemoteRepository : RemoteRepository()

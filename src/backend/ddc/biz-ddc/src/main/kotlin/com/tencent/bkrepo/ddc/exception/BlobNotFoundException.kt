@@ -25,8 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
-}
+package com.tencent.bkrepo.ddc.exception
+
+class BlobNotFoundException(projectId: String, repoName: String, blobId: String) :
+    RuntimeException("No Blob in Namespace $projectId/$repoName with id $blobId")

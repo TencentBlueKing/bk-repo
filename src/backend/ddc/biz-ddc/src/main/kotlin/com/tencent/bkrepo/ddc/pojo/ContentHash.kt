@@ -25,8 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.pojo
+
+import com.tencent.bkrepo.ddc.utils.BlakeUtils
+import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
+import org.bouncycastle.util.encoders.Hex
+
+data class ContentHash(val identifier: ByteArray) {
+    override fun toString(): String = identifier.hex()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ContentHash
+
+        return identifier.contentEquals(other.identifier)
+    }
+
+    override fun hashCode(): Int {
+        return identifier.contentHashCode()
+    }
+
+    companion object {
+        fun fromBlob(blob: ByteArray): ContentHash {
+            return ContentHash(BlakeUtils.hash(blob))
+        }
+
+        fun fromHex(hex: String): ContentHash {
+            return ContentHash(Hex.decode(hex))
+        }
+    }
 }

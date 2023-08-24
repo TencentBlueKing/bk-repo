@@ -53,7 +53,6 @@ object CbFieldUtils {
 
     fun getType(typeWithFlags: Byte): CbFieldType {
         return CbFieldType.getByValue(typeWithFlags and TYPE_MASK)!!
-
     }
 
     fun getSerializedType(typeWithFlags: Byte): Byte {

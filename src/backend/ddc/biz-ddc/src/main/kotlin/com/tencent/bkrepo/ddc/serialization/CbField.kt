@@ -114,10 +114,12 @@ class CbField : Iterable<CbField> {
         payloadOffset = offset
 
         data.position(payloadOffset)
+        val payloadSize = getPayloadSize(data.slice())
+        val limit = minOf(data.limit().toLong(), payloadOffset.toLong() + payloadSize).toInt()
+        data.limit(limit)
         payload = data.slice().asReadOnlyBuffer()
 
         data.position(0)
-        data.limit(minOf(data.limit().toLong(), payloadOffset.toLong() + getPayloadSize()).toInt())
         fieldData = data.slice().asReadOnlyBuffer()
     }
 
@@ -453,13 +455,13 @@ class CbField : Iterable<CbField> {
         }
     }
 
-    public fun hasValue() = !CbFieldUtils.isNone(typeWithFlags);
-    public fun hasError() = error != CbFieldError.None;
+    fun hasValue() = !CbFieldUtils.isNone(typeWithFlags);
+    fun hasError() = error != CbFieldError.None;
 
     /**
      * type + name + payload
      */
-    public fun getSize() = SIZE_OF_CB_FIELD_TYPE + getViewNoType().remaining()
+    fun getSize() = SIZE_OF_CB_FIELD_TYPE + getViewNoType().remaining()
 
     /**
      * 获取field hash， 32 bytes
@@ -555,7 +557,7 @@ class CbField : Iterable<CbField> {
 
     fun getType(): CbFieldType = getType(typeWithFlags)
 
-    fun getPayloadSize(): Long {
+    fun getPayloadSize(payload: ByteBuffer = this.payload): Long {
         return when (getType()) {
             CbFieldType.None, CbFieldType.Null -> 0L
             CbFieldType.Object,

@@ -25,8 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+package com.tencent.bkrepo.ddc.artifact
+
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+
+class CompressedBlobArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val contentId: String,
+    var compressedContentId: String? = null
+) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    override fun getArtifactName() = "/$DIR_BLOBS/$contentId/$compressedContentId"
+
+    override fun getArtifactFullPath() = "/$DIR_BLOBS/$contentId/$compressedContentId"
+
+    companion object {
+        const val DIR_BLOBS = "blobs"
+        const val PATH_VARIABLE_CONTENT_ID = "id"
+    }
 }

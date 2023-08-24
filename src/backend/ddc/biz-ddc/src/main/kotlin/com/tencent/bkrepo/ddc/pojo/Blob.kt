@@ -25,8 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
-}
+package com.tencent.bkrepo.ddc.pojo
+
+data class Blob(
+    val projectId: String,
+    val repoName: String,
+    val sha256: String,
+    val fullPath: String,
+    val size: Long,
+    val blobId: ContentHash,
+    val references: Set<ReferencedBy>? = null,
+    val contentId: ContentHash? = null,
+)
+
+data class ReferencedBy(
+    val key: RefId,
+    val bucket: String
+)

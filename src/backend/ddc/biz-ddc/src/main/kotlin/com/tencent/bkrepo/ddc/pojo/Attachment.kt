@@ -25,8 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
-}
+package com.tencent.bkrepo.ddc.pojo
+
+abstract class Attachment(open val hash: ContentHash)
+
+data class BlobAttachment(override val hash: ContentHash): Attachment(hash)
+
+data class ObjectAttachment(override val hash: ContentHash): Attachment(hash)
+
+class ContentIdAttachment(
+    override val hash: ContentHash,
+    val blobs: List<Blob>
+) : Attachment(hash)
