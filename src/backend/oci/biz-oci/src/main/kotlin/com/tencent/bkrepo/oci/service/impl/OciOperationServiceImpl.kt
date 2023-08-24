@@ -620,7 +620,7 @@ class OciOperationServiceImpl(
             existFlag = existFlag && doSyncBlob(it, ociArtifactInfo, userId)
             if (!existFlag) {
                 // 第三方同步场景下，如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
-                return Pair(existFlag, 0)
+                return Pair(false, 0)
             }
         }
         return Pair(existFlag, size)
@@ -666,7 +666,7 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
-            var nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest) ?: run {
+            val nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest) ?: run {
                 nodeClient.getDeletedNodeDetailBySha256(
                     projectId, repoName, descriptor.sha256).data?.let {
                     NodeProperty(StringPool.EMPTY, it.md5, it.size)
@@ -981,12 +981,12 @@ class OciOperationServiceImpl(
     override fun deleteBlobsFolderAfterRefreshed(
         projectId: String, repoName: String, pName: String, userId: String
     ) {
-        val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
+        repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
         val blobsFolderPath = buildBlobsFolderPath(pName)
-        val fullPaths = nodeClient.listNode(projectId, repoName, blobsFolderPath, includeFolder = false, deep = false).data?.map {
-            it.fullPath
-        }
+        val fullPaths = nodeClient.listNode(
+            projectId, repoName, blobsFolderPath, includeFolder = false, deep = false
+        ).data?.map { it.fullPath }
         if (fullPaths.isNullOrEmpty()) return
         logger.info("Blobs of package $pName in folder $blobsFolderPath will be deleted in $projectId|$repoName")
         val request = NodesDeleteRequest(

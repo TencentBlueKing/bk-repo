@@ -91,7 +91,9 @@ class OciPackageController(
             ))
     }
 
-    override fun deleteBlobsFolderAfterRefreshed(projectId: String, repoName: String, packageName: String): Response<Void> {
+    override fun deleteBlobsFolderAfterRefreshed(
+        projectId: String, repoName: String, packageName: String
+    ): Response<Void> {
         operationService.deleteBlobsFolderAfterRefreshed(projectId, repoName, packageName)
         return ResponseBuilder.success()
     }
