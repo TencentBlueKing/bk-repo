@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.multipart.MultipartFile
@@ -89,13 +90,17 @@ class ArtifactFileFactory(
          * 构造分块接收数据的artifact file
          */
         fun buildChunked(): ChunkedArtifactFile {
-            return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
+            return ChunkedArtifactFile(
+                getMonitor(), storagePropertiesWrapper(properties), getStorageCredentials()
+            ).apply {
                 track(this)
             }
         }
 
         fun buildDfsArtifactFile(): RandomAccessArtifactFile {
-            return RandomAccessArtifactFile(getMonitor(), getStorageCredentials(), properties).apply {
+            return RandomAccessArtifactFile(
+                getMonitor(), getStorageCredentials(), storagePropertiesWrapper(properties)
+            ).apply {
                 track(this)
             }
         }
@@ -106,7 +111,7 @@ class ArtifactFileFactory(
          */
         fun build(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
             return StreamArtifactFile(
-                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength
+                inputStream, getMonitor(), storagePropertiesWrapper(properties), getStorageCredentials(), contentLength
             ).apply {
                 track(this)
             }
@@ -127,7 +132,7 @@ class ArtifactFileFactory(
          */
         fun build(multipartFile: MultipartFile, storageCredentials: StorageCredentials): ArtifactFile {
             return MultipartArtifactFile(
-                multipartFile, getMonitor(storageCredentials), properties, storageCredentials
+                multipartFile, getMonitor(storageCredentials), storagePropertiesWrapper(properties), storageCredentials
             ).apply {
                 track(this)
             }
@@ -152,6 +157,23 @@ class ArtifactFileFactory(
         private fun getStorageCredentials(): StorageCredentials {
             return ArtifactContextHolder.getRepoDetail()?.storageCredentials ?: properties.defaultStorageCredentials()
         }
+
+
+        /**
+         * 将仓库级别的限速配置导入
+         * 当同时存在全局限速配置以及仓库级别限速配置时，以仓库级别配置优先
+         */
+        private fun storagePropertiesWrapper(properties: StorageProperties): StorageProperties {
+            val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
+            if (rateLimitOfRepo.receiveRateLimit != DataSize.ofBytes(-1)) {
+                properties.receive.rateLimit = rateLimitOfRepo.receiveRateLimit
+            }
+            if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1)) {
+                properties.response.rateLimit = rateLimitOfRepo.responseRateLimit
+            }
+            return properties
+        }
+
 
         /**
          * 记录文件到request session中，用于请求结束时清理文件

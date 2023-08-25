@@ -48,11 +48,13 @@ import com.tencent.bkrepo.common.artifact.repository.composite.CompositeReposito
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.core.config.RateLimitProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
@@ -84,6 +86,10 @@ class ArtifactContextHolder(
         private lateinit var repositoryClient: RepositoryClient
         private lateinit var nodeClient: NodeClient
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
+
+
+        private const val RECEIVE_RATE_LIMIT_OF_REPO = "receiveRateLimit"
+        private const val RESPONSE_RATE_LIMIT_OF_REPO = "responseRateLimit"
 
         private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
         private val repositoryDetailCache = CacheBuilder.newBuilder()
@@ -276,6 +282,18 @@ class ArtifactContextHolder(
             ).data
             nodeDetail?.let { request.setAttribute(attrKey, nodeDetail) }
             return nodeDetail
+        }
+
+        /**
+         * 获取仓库级别的限速配置
+         */
+        fun getRateLimitOfRepo(): RateLimitProperties {
+            val repo = getRepoDetail() ?: return RateLimitProperties()
+            val receiveRateLimit = repo.configuration.getSetting<DataSize>(RECEIVE_RATE_LIMIT_OF_REPO)
+                ?: DataSize.ofBytes(-1)
+            val responseRateLimit = repo.configuration.getSetting<DataSize>(RESPONSE_RATE_LIMIT_OF_REPO)
+                ?: DataSize.ofBytes(-1)
+            return RateLimitProperties(receiveRateLimit, responseRateLimit)
         }
     }
 
