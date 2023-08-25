@@ -123,7 +123,8 @@ class StandardScanExecutor(
             task.repoType,
             scannerInputFile.length(),
             task.packageKey,
-            task.packageVersion
+            task.packageVersion,
+            task.extra
         )
         val toolInput = ToolInput.create(
             task.taskId, convertToContainerPath(scannerInputFile.absolutePath, workDir), sha256, args

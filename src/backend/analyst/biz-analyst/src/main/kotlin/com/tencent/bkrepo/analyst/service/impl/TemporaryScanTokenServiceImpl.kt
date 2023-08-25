@@ -166,7 +166,7 @@ class TemporaryScanTokenServiceImpl(
                 value.copy(url = url)
             }
 
-            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version)
+            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version, extra)
             return ToolInput.create(taskId, fileUrls, args)
         }
     }

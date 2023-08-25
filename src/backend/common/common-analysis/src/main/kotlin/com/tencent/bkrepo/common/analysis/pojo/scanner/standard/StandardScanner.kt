@@ -71,7 +71,17 @@ class StandardScanner(
         val value: String? = null,
         @ApiModelProperty("描述")
         val des: String = ""
-    )
+    ) {
+        companion object {
+            fun string(key: String, value: String = "", desc: String? = ""): Argument {
+                return Argument(ArgumentType.STRING.name, key, value, desc.orEmpty())
+            }
+
+            fun number(key: String, value: Number, desc: String? = ""): Argument {
+                return Argument(ArgumentType.NUMBER.name, key, value.toString(), desc.orEmpty())
+            }
+        }
+    }
 
     /**
      * 参数类型
