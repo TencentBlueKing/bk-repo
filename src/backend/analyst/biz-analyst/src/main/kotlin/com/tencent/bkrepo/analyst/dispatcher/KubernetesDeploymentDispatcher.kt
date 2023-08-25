@@ -202,6 +202,9 @@ class KubernetesDeploymentDispatcher(
         command.add(executionCluster.name)
         command.add("--pull-retry")
         command.add(executionCluster.pullRetry.toString())
+        command.add("--keep-running")
+        command.add("--heartbeat")
+        command.add((scannerProperties.heartbeatTimeout.seconds / 2L).toString())
         return command
     }
 

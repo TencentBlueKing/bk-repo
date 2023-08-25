@@ -296,7 +296,8 @@
                     appId: null,
                     accessKey: null,
                     secretKey: null,
-                    certificate: null
+                    certificate: null,
+                    udpPort: null
                 }
             },
             showEditNode (row) {

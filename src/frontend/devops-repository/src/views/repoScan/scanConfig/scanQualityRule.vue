@@ -1,11 +1,14 @@
 <template>
-    <bk-form style="max-width: 1080px;" :label-width="120" :model="rule" :rules="rules" ref="ruleForm">
+    <bk-form style="max-width: 1080px;" :label-width="120" :model="rule" :rules="rules" ref="ruleForm" v-bkloading="{ isLoading }">
+        <bk-form-item :label="$t('qualityRules')">
+            <bk-switcher v-model="editable" size="small" theme="primary" @change="$refs.ruleForm.clearError()"></bk-switcher>
+        </bk-form-item>
         <template>
-            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_LICENSE)" :label="$t('licenseRules')">
+            <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_LICENSE)" :label="$t('licenseRules')" property="recommend" error-display-type="normal">
                 <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualityLicenceRule') }}</div>
-                <div class="mt10"><bk-checkbox v-model="rule.recommend">{{ $t('recommendLicenseRule') }}</bk-checkbox></div>
-                <div class="mt10"><bk-checkbox v-model="rule.compliance">{{ $t('compliantLicenseRule') }}</bk-checkbox></div>
-                <div class="mt10"><bk-checkbox v-model="rule.unknown">{{ $t('unknownLicenseRule') }}</bk-checkbox></div>
+                <div class="mt10"><bk-checkbox :disabled="!editable" v-model="rule.recommend">{{ $t('recommendLicenseRule') }}</bk-checkbox></div>
+                <div class="mt10"><bk-checkbox :disabled="!editable" v-model="rule.compliance">{{ $t('compliantLicenseRule') }}</bk-checkbox></div>
+                <div class="mt10"><bk-checkbox :disabled="!editable" v-model="rule.unknown">{{ $t('unknownLicenseRule') }}</bk-checkbox></div>
             </bk-form-item>
             <bk-form-item v-if="ruleTypes.includes(SCAN_TYPE_SECURITY)" :label="$t('safetyRules')">
                 <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualitySafetyRule') }}</div>
@@ -15,7 +18,9 @@
                     :property="id.toLowerCase()" error-display-type="normal">
                     <div class="flex-align-center">
                         <div :class="`status-sign ${id}`" :data-name="$t(`leakLevelEnum.${id}`) + $t('space') + $t('vulnerability') + `≦`"></div>
-                        <bk-input class="ml10 mr10" style="width: 80px;" v-model.trim="rule[id.toLowerCase()]"></bk-input>
+                        <bk-input class="ml10 mr10" style="width: 80px;" :disabled="!editable" v-model.trim="rule[id.toLowerCase()]"
+                            @focus="$refs.ruleForm.clearError()"
+                            @blur="$refs.ruleForm.validate()"></bk-input>
                         <span>{{ $t('per') }}</span>
                     </div>
                 </bk-form-item>
@@ -24,17 +29,16 @@
         <bk-form-item :label="$t('triggerEvent')">
             <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualityCheckBtnPre') }}</div>
             <!-- <div class="mt10"><bk-checkbox v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div> -->
-            <div class="mt10"><bk-checkbox v-model="rule.forbidQualityUnPass">{{ $t('scanQualityCheckBtn') }}</bk-checkbox></div>
+            <div class="mt10"><bk-checkbox :disabled="!editable" v-model="rule.forbidQualityUnPass">{{ $t('scanQualityCheckBtn') }}</bk-checkbox></div>
         </bk-form-item>
         <bk-form-item>
-            <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
+            <bk-button :loading="isLoading" theme="primary" @click="save()">{{$t('save')}}</bk-button>
         </bk-form-item>
     </bk-form>
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import { leakLevelEnum } from '@repository/store/publicEnum'
-    import { SCAN_TYPE_LICENSE, SCAN_TYPE_SECURITY } from '../../../store/publicEnum'
+    import { leakLevelEnum, SCAN_TYPE_LICENSE, SCAN_TYPE_SECURITY } from '@repository/store/publicEnum'
     export default {
         name: 'scanQualityRule',
         props: {
@@ -43,17 +47,17 @@
             scanTypes: Array
         },
         data () {
-            const validate = [
-                {
-                    regex: /^[0-9]*$/,
-                    message: this.$t('nonNegativeIntegerTip'),
-                    trigger: 'blur'
-                }
-            ]
+            const validate = {
+                validator: this.securityNumberValidate,
+                message: this.$t('scanQualityNonNegativeIntegerTip'),
+                trigger: 'blur'
+            }
             return {
                 SCAN_TYPE_SECURITY: SCAN_TYPE_SECURITY,
                 SCAN_TYPE_LICENSE: SCAN_TYPE_LICENSE,
                 leakLevelEnum,
+                editable: false,
+                isLoading: false,
                 rule: {
                     recommend: false,
                     compliance: false,
@@ -66,10 +70,24 @@
                     forbidQualityUnPass: false
                 },
                 rules: {
-                    critical: validate,
-                    high: validate,
-                    medium: validate,
-                    low: validate
+                    critical: [validate],
+                    high: [validate],
+                    medium: [validate],
+                    low: [
+                        validate,
+                        {
+                            validator: () => this.editable ? this.computedEditable() : true,
+                            message: this.$t('scanQualityErrorTips'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    recommend: [
+                        {
+                            validator: () => this.editable ? this.computedEditable() : true,
+                            message: this.$t('scanQualityErrorTips'),
+                            trigger: 'blur'
+                        }
+                    ]
                 }
             }
         },
@@ -79,48 +97,94 @@
             }
         },
         created () {
+            this.initData()
             this.getRules()
         },
         methods: {
             ...mapActions(['getQualityRule', 'saveQualityRule']),
+            securityNumberValidate (value) {
+                return (/^[0-9]*$/).test(value) && value <= 10000
+            },
+            initData () {
+                this.rule = this.scanTypes.includes('LICENSE')
+                    && {
+                        ...this.rule,
+                        recommend: false,
+                        compliance: false,
+                        unknown: false,
+                        forbidScanUnFinished: false,
+                        forbidQualityUnPass: false
+                    }
+                this.rule = this.scanTypes.includes('SECURITY')
+                    && {
+                        ...this.rule,
+                        critical: '',
+                        high: '',
+                        medium: '',
+                        low: '',
+                        forbidScanUnFinished: false,
+                        forbidQualityUnPass: false
+                    }
+            },
             async save () {
                 await this.$refs.ruleForm.validate()
-                Promise
-                    .all(this.ruleTypes.map(type => this.doSave(type)))
-                    .then(() => {
-                        this.$bkMessage({
-                            theme: 'success',
-                            message: this.$t('save') + this.$t('success')
-                        })
-                        this.getRules()
-                    })
-            },
-            doSave (ruleType) {
-                return this.saveQualityRule({
-                    type: ruleType,
+                this.isLoading = true
+                //  当质量规则关闭时，调用后台接口传参为空对象，不然会导致质量规则一直无法关闭(开关是否开启由下方方法计算得到)
+                this.saveQualityRule({
                     id: this.planId,
-                    body: Object.keys(this.rule).reduce((target, key) => {
-                        const value = this.rule[key]
-                        if (typeof value === 'string' && value.length > 0) {
-                            target[key] = Number(value)
-                        }
-                        if (typeof value === 'boolean' || typeof value === 'number') {
-                            target[key] = value
-                        }
-                        return target
-                    }, {})
+                    body: !this.editable
+                        ? {}
+                        : Object.keys(this.rule).reduce((target, key) => {
+                            const value = this.rule[key]
+                            if (typeof value === 'string' && value.length > 0) {
+                                target[key] = Number(value)
+                            }
+                            if (typeof value === 'boolean' || typeof value === 'number') {
+                                target[key] = value
+                            }
+                            return target
+                        }, {})
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('save') + this.$t('success')
+                    })
+                    this.initData()
+                    this.getRules()
+                }).finally(() => {
+                    this.isLoading = false
                 })
             },
             getRules () {
-                Promise.all(
-                    this.ruleTypes.map(type => this.getQualityRule({ type: type, id: this.planId }))
-                ).then(qualityRules => {
-                    qualityRules.forEach(qualityRule => {
-                        Object.keys(qualityRule).forEach(k => {
-                            qualityRule[k] !== null && (this.rule[k] = qualityRule[k])
-                        })
+                this.getQualityRule({ id: this.planId }).then((res) => {
+                    Object.keys(res).forEach(k => {
+                        res[k] !== null && (this.rule[k] = res[k])
                     })
+                    this.editable = this.computedEditable()
                 })
+            },
+            // 计算质量规则开关是否开启，当下方任何一个值存在时(数值不为空或其他值不为false)开关都需要设置为开启状态
+            computedEditable () {
+                const { critical, high, medium, low, recommend, compliance, unknown } = this.rule
+                let licenseFlag = false
+                let securityFlag = false
+                licenseFlag = Boolean(
+                    recommend
+                        || compliance
+                        || unknown
+                )
+                securityFlag = Boolean(
+                    critical !== ''
+                        || high !== ''
+                        || medium !== ''
+                        || low !== ''
+                )
+                // docker仓库现在同时支持扫描许可和漏洞，两个规则只要其中任何一个有值就可以保存
+                if (this.scanTypes.includes('LICENSE') && this.scanTypes.includes('SECURITY')) {
+                    return licenseFlag || securityFlag
+                } else {
+                    return this.scanTypes.includes('LICENSE') ? licenseFlag : securityFlag
+                }
             }
         }
     }

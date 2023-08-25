@@ -95,4 +95,15 @@ class UserTemporaryScanController(
         temporaryScanTokenService.checkToken(subtaskId, token)
         return ResponseBuilder.success(scanService.updateSubScanTaskStatus(subtaskId, status))
     }
+
+    @ApiOperation("维持任务心跳")
+    @PostMapping("/scan/subtask/{subtaskId}/heartbeat")
+    fun heartbeat(
+        @PathVariable subtaskId: String,
+        @RequestParam token: String
+    ): Response<Void> {
+        temporaryScanTokenService.checkToken(subtaskId, token)
+        scanService.heartbeat(subtaskId)
+        return ResponseBuilder.success()
+    }
 }

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -142,6 +143,7 @@ class GenericController(
         @PathVariable repoName: String,
         @RequestBody batchDownloadPaths: BatchDownloadPaths,
     ) {
+        PipelineRepoUtils.forbidPipeline(repoName)
         Preconditions.checkNotBlank(batchDownloadPaths.paths, BatchDownloadPaths::paths.name)
         val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
             .distinctBy { it.getArtifactFullPath() }
