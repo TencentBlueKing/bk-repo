@@ -51,6 +51,8 @@ const val DOCKER_LINK = "Link"
 
 const val PROXY_URL = "proxyUrl"
 const val BLOB_PATH_VERSION_KEY = "blobPathVersion"
+const val BLOB_PATH_VERSION_VALUE = "v1"
+
 const val BLOB_PATH_REFRESHED_KEY = "blobPathRefreshed"
 
 const val MANIFEST = "manifest.json"

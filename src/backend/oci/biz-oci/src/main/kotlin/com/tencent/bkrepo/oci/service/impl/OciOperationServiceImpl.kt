@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
+import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_VALUE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
 import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
@@ -389,8 +390,9 @@ class OciOperationServiceImpl(
         fileInfo: FileInfo?,
         proxyUrl: String?
     ): NodeDetail? {
+        // 用于新版本 blobs 路径区分， blob存储路径由 /{package}/blobs/转为/{package}/blobs/{version}/
         val metadata: MutableList<MetadataModel> = mutableListOf(
-            MetadataModel(key = BLOB_PATH_VERSION_KEY, value = BLOB_PATH_VERSION, system = true)
+            MetadataModel(key = BLOB_PATH_VERSION_KEY, value = BLOB_PATH_VERSION_VALUE, system = true)
         )
         proxyUrl?.let {
             metadata.add(MetadataModel(key = PROXY_URL, value = proxyUrl, system = true))
@@ -1108,6 +1110,5 @@ class OciOperationServiceImpl(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(OciOperationServiceImpl::class.java)
-        private const val BLOB_PATH_VERSION = "v1"
     }
 }

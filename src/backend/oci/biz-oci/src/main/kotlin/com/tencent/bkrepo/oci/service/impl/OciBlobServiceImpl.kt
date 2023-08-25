@@ -43,6 +43,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
+import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_VALUE
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
@@ -56,6 +58,7 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -139,13 +142,18 @@ class OciBlobServiceImpl(
                 buildSessionIdLocationForUpload(this, domain)
                 return
             }
+            // 用于新版本 blobs 路径区分
+            val metadata: MutableList<MetadataModel> = mutableListOf(
+                MetadataModel(key = BLOB_PATH_VERSION_KEY, value = BLOB_PATH_VERSION_VALUE, system = true)
+            )
             val nodeCreateRequest = ObjectBuildUtils.buildNodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 size = nodeProperty.size!!,
                 sha256 = ociDigest.hex,
                 fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest),
-                md5 = nodeProperty.md5!!
+                md5 = nodeProperty.md5!!,
+                metadata = metadata
             )
             nodeClient.createNode(nodeCreateRequest)
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
