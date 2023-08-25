@@ -125,7 +125,7 @@ spec:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
           persistentVolumeClaim:
-            claimName: bkrepo-nfs-pvc
+            claimName: {{ include "common.names.fullname" . }}-nfs-pvc
           {{- else if .Values.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ template "common.names.fullname" . }}-storage{{- end }}
