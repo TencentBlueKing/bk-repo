@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.NODE_DETAIL_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.artifact.constant.REPO_RATE_LIMIT_KEY
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -288,12 +289,28 @@ class ArtifactContextHolder(
          * 获取仓库级别的限速配置
          */
         fun getRateLimitOfRepo(): RateLimitProperties {
+            val request = HttpContextHolder.getRequestOrNull() ?: return RateLimitProperties()
+            val repoRateLimitAttribute = request.getAttribute(REPO_RATE_LIMIT_KEY)
+            if (repoRateLimitAttribute != null) {
+                require(repoRateLimitAttribute is RateLimitProperties)
+                return repoRateLimitAttribute
+            }
             val repo = getRepoDetail() ?: return RateLimitProperties()
-            val receiveRateLimit = repo.configuration.getSetting<DataSize>(RECEIVE_RATE_LIMIT_OF_REPO)
-                ?: DataSize.ofBytes(-1)
-            val responseRateLimit = repo.configuration.getSetting<DataSize>(RESPONSE_RATE_LIMIT_OF_REPO)
-                ?: DataSize.ofBytes(-1)
-            return RateLimitProperties(receiveRateLimit, responseRateLimit)
+            val receiveRateLimit = convertToDataSize(repo.configuration.getStringSetting(RECEIVE_RATE_LIMIT_OF_REPO))
+            val responseRateLimit = convertToDataSize(repo.configuration.getStringSetting(RESPONSE_RATE_LIMIT_OF_REPO))
+            val rateLimitProperties = RateLimitProperties(receiveRateLimit, responseRateLimit)
+            request.setAttribute(REPO_RATE_LIMIT_KEY, rateLimitProperties)
+            return rateLimitProperties
+
+        }
+
+        private fun convertToDataSize(dataSize: String?): DataSize {
+            if (dataSize.isNullOrEmpty()) return DataSize.ofBytes(-1)
+            return try {
+                DataSize.parse(dataSize)
+            } catch (e: Exception) {
+                DataSize.ofBytes(-1)
+            }
         }
     }
 
