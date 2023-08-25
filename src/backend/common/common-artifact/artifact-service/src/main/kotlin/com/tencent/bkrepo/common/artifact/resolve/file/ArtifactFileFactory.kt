@@ -89,17 +89,13 @@ class ArtifactFileFactory(
          * 构造分块接收数据的artifact file
          */
         fun buildChunked(): ChunkedArtifactFile {
-            return ChunkedArtifactFile(
-                getMonitor(), properties, getStorageCredentials()
-            ).apply {
+            return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
                 track(this)
             }
         }
 
         fun buildDfsArtifactFile(): RandomAccessArtifactFile {
-            return RandomAccessArtifactFile(
-                getMonitor(), getStorageCredentials(), properties
-            ).apply {
+            return RandomAccessArtifactFile(getMonitor(), getStorageCredentials(), properties).apply {
                 track(this)
             }
         }
