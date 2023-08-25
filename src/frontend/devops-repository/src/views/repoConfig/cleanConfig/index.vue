@@ -333,8 +333,8 @@
                                     name: item.name,
                                     folder: item.folder,
                                     fullPath: item.fullPath,
-                                    projectId: item.projectId,
-                                    repoName: item.repoName,
+                                    projectId: data?.projectId || this.projectId,
+                                    repoName: data?.repoName || this.repoName,
                                     children: []
                                 }
                                 if (node.folder) {

@@ -73,7 +73,7 @@ export default {
             request = Vue.prototype.$ajax.post(
                 `${prefix}/node/search`,
                 {
-                    select: ['name', 'fullPath', 'metadata'],
+                    select: ['name', 'fullPath', 'metadata', 'folder'],
                     page: {
                         pageNumber: 1,
                         pageSize: 10000
