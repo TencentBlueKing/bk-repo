@@ -1032,6 +1032,11 @@ class OciOperationServiceImpl(
                 repoInfo.projectId, repoInfo.name, oldDockerFullPath
             ).data ?: return false
         }
+        val refreshedMetadat = manifestNode.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY}
+        if (refreshedMetadat != null) {
+            logger.info("$manifestPath has been refreshed, ignore it")
+            return true
+        }
         val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
         val manifest = loadManifest(
             manifestNode.sha256!!, manifestNode.size, storageCredentials
