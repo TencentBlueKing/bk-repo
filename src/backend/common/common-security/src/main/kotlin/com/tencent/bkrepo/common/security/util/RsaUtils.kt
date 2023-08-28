@@ -30,6 +30,13 @@ package com.tencent.bkrepo.common.security.util
 import cn.hutool.crypto.asymmetric.KeyType
 import cn.hutool.crypto.asymmetric.RSA
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
+import java.security.KeyFactory
+import java.security.interfaces.RSAPrivateKey
+import java.security.interfaces.RSAPublicKey
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
+
 
 /**
  * RSA 非对称加密工具类
@@ -65,6 +72,20 @@ class RsaUtils(
          */
         fun decrypt(password: String): String {
             return rsa.decryptStr(password, KeyType.PrivateKey)
+        }
+
+        fun stringToPrivateKey(privateStr: String): RSAPrivateKey {
+            val data: ByteArray = Base64.getDecoder().decode(privateStr)
+            val spec = PKCS8EncodedKeySpec(data)
+            val fact = KeyFactory.getInstance("RSA")
+            return fact.generatePrivate(spec) as RSAPrivateKey
+        }
+
+        fun stringToPublicKey(publStr: String?): RSAPublicKey {
+            val data: ByteArray = Base64.getDecoder().decode(publStr)
+            val spec = X509EncodedKeySpec(data)
+            val fact = KeyFactory.getInstance("RSA")
+            return fact.generatePublic(spec) as RSAPublicKey
         }
     }
 }

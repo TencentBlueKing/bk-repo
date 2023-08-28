@@ -25,23 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.oauth
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.oauth.IdToken
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+data class JsonWebKeySet(
+    val keys: List<JsonWebKey>
+)
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    var accessToken: String,
-    var refreshToken: String?,
-    val expireSeconds: Long?,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scope: Set<ResourceType>?,
-    var issuedAt: Instant,
-    var idToken: IdToken?
+data class JsonWebKey(
+    val kty: String,
+    val use: String,
+    val n: String,
+    val e: String,
+    val kid: String,
+    val x5t: String? = null,
+    val x5c: List<String>? = null,
+    val alg: String
 )

@@ -25,23 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.oauth
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.oauth.IdToken
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import org.springframework.web.servlet.ModelAndView
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    var accessToken: String,
-    var refreshToken: String?,
-    val expireSeconds: Long?,
-    val type: String,
-    val accountId: String,
+data class AuthorizedResult(
+    val redirectUrl: String,
     val userId: String,
-    var scope: Set<ResourceType>?,
-    var issuedAt: Instant,
-    var idToken: IdToken?
-)
+    val appId: String,
+) {
+    fun createModelAndView(): ModelAndView {
+        val modelAndView = ModelAndView()
+        modelAndView.viewName = "authorize"
+        modelAndView.addObject(this::redirectUrl.name, redirectUrl)
+        modelAndView.addObject(this::userId.name, userId)
+        modelAndView.addObject(this::appId.name, appId)
+        return modelAndView
+    }
+}

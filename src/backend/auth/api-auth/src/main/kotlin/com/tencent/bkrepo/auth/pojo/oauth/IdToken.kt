@@ -25,23 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo.oauth
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.oauth.IdToken
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.Instant
+import com.fasterxml.jackson.annotation.JsonProperty
+import io.swagger.annotations.ApiModel
 
-@Document("oauth_token")
-data class TOauthToken(
-    val id: String? = null,
-    var accessToken: String,
-    var refreshToken: String?,
-    val expireSeconds: Long?,
-    val type: String,
-    val accountId: String,
-    val userId: String,
-    var scope: Set<ResourceType>?,
-    var issuedAt: Instant,
-    var idToken: IdToken?
+// https://openid.net/specs/openid-connect-core-1_0.html#IDToken
+@ApiModel("OpenId Connect id token")
+data class IdToken(
+    val iss: String,
+    val sub: String,
+    val aud: List<String>,
+    val exp: Long,
+    val iat: Long,
+    @JsonProperty("auth_time")
+    val authTime: Long? = null,
+    val nonce: String? = null,
+    val acr: String? = null,
+    val amr: List<String>? = null,
+    val azp: String? = null
 )

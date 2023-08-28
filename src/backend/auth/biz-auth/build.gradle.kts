@@ -40,4 +40,5 @@ dependencies {
     api(project(":common:common-redis"))
     implementation("org.apache.httpcomponents:httpclient")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
+    implementation("org.springframework.boot:spring-boot-starter-freemarker")
 }
