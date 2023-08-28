@@ -67,6 +67,8 @@ data class NodeDetail(
     val fullPath: String = nodeInfo.fullPath,
     @ApiModelProperty("文件大小，单位byte")
     val size: Long = nodeInfo.size,
+    @ApiModelProperty("文件节点个数")
+    val nodeNum: Long? = nodeInfo.nodeNum,
     @ApiModelProperty("文件sha256")
     val sha256: String? = nodeInfo.sha256,
     @ApiModelProperty("文件md5")
