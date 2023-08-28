@@ -171,7 +171,7 @@ class ScannerMetrics(
     ) {
         val fileExtensionName = fullPath.substringAfterLast('.', UNKNOWN_EXTENSION)
         val summary = taskSpeedSummary(fileExtensionName, scanner)
-        val elapsedSeconds = duration.seconds.toDouble()
+        val elapsedSeconds = maxOf(duration.seconds.toDouble(), 1.0)
         summary.record(fileSize / elapsedSeconds)
     }
 

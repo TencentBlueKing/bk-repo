@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,48 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analysis.executor.configuration
+package com.tencent.bkrepo.analysis.executor
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
+import com.tencent.bkrepo.analyst.api.ScanClient
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
-@ConfigurationProperties("scanner.executor")
-data class ScannerExecutorProperties(
-    /**
-     * 扫描执行器工作目录
-     */
-    var workDir: String = "/bkrepo-data/analysis-executor",
-    /**
-     * 单机最大允许执行的任务数量
-     */
-    var maxTaskCount: Int = 20,
-    /**
-     * 最大支持扫描的文件大小
-     */
-    var fileSizeLimit: DataSize = DataSize.ofGigabytes(10),
-    /**
-     * 机器当前空闲内存占比，小于这个值后不再认领任务
-     */
-    var atLeastFreeMemPercent: Double = 0.0,
-    /**
-     * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
-     */
-    var atLeastUsableDiskSpacePercent: Double = 0.1,
-    /**
-     * 扫描器日志最大行数
-     */
-    var maxScannerLogLines: Int = 200,
-    /**
-     * 是否主动轮询拉取任务
-     */
-    var pull: Boolean = true,
-    /**
-     * 是否输出分析工具容器执行日志
-     */
-    var showContainerLogs: Boolean = true,
-    /**
-     * 子任务心跳间隔，为0时不上报心跳
-     */
-    var heartbeatInterval: Duration = Duration.ofSeconds(0)
-)
+class SubtaskHeartbeatRunnable(
+    private val executorScheduler: ExecutorScheduler,
+    private val heartbeatInterval: Duration,
+    private val scanClient: ScanClient,
+    private val subtaskId: String
+): Runnable {
+    override fun run() {
+        while (executorScheduler.scanning(subtaskId)) {
+            try {
+                scanClient.heartbeat(subtaskId)
+                Thread.sleep(heartbeatInterval.toMillis())
+            } catch (ignore: Exception) {
+                logger.warn("subtask[$subtaskId] heartbeat failed", ignore)
+            }
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SubtaskHeartbeatRunnable::class.java)
+    }
+}

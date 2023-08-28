@@ -81,6 +81,14 @@ interface ScanClient {
     ): Response<Boolean>
 
     /**
+     * 维持任务心跳
+     */
+    @PostMapping("/subtask/{subtaskId}/heartbeat")
+    fun heartbeat(
+        @PathVariable("subtaskId") subtaskId: String,
+    ): Response<Boolean>
+
+    /**
      * 根据许可id列表查询许可详细信息
      *
      * @return 许可id:许可详细信息

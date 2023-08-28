@@ -67,6 +67,11 @@ class ScanController @Autowired constructor(
         return ResponseBuilder.success(scanService.updateSubScanTaskStatus(subScanTaskId, status))
     }
 
+    override fun heartbeat(subtaskId: String): Response<Boolean> {
+        scanService.heartbeat(subtaskId)
+        return ResponseBuilder.success()
+    }
+
     override fun licenseInfoByIds(licenseIds: List<String>): Response<Map<String, SpdxLicenseInfo>> {
         return ResponseBuilder.success(licenseService.listLicenseByIds(licenseIds))
     }

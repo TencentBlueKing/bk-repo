@@ -46,13 +46,12 @@ export default {
             }
         )
     },
-    getUserRelatedList (_, { current, limit, asstUser, userName }) {
+    getUserRelatedList (_, { asstUser }) {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/group`,
             {
                 params: {
-                    asstUser,
-                    userName
+                    asstUser
                 }
             }
         )

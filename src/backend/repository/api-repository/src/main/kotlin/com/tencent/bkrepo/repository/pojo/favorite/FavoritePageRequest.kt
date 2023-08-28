@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,15 +29,14 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-mongo"))
-    api(project(":auth:api-auth"))
-    api(project(":common:common-job"))
-    api(project(":common:common-security"))
-    api(project(":repository:api-repository"))
-    implementation("com.google.guava:guava")
-    implementation(project(":common:common-operate:operate-service"))
-    api(project(":common:common-redis"))
-    implementation("org.apache.httpcomponents:httpclient")
-    implementation("com.tencent.bk.sdk:crypto-java-sdk")
-}
+package com.tencent.bkrepo.repository.pojo.favorite
+
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+
+data class FavoritePageRequest(
+    var projectId: String?,
+    var repoName: String?,
+    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    var pageSize: Int = DEFAULT_PAGE_SIZE
+)
