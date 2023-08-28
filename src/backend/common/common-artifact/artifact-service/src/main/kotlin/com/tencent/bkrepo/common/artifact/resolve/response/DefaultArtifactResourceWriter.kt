@@ -266,8 +266,10 @@ open class DefaultArtifactResourceWriter(
     private fun responseRateLimitCheck() {
         val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
         if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
-            rateLimitOfRepo.responseRateLimit <= storageProperties.response.minRateLimit) {
-            throw TooManyRequestsException()
+            rateLimitOfRepo.responseRateLimit <= storageProperties.response.circuitBreakerThreshold) {
+            throw TooManyRequestsException(
+                "The circuit breaker is activated when too many download requests are made to the service!"
+            )
         }
     }
 

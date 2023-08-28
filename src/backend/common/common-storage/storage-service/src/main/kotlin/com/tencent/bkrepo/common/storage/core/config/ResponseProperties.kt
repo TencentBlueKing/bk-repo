@@ -56,7 +56,7 @@ data class ResponseProperties(
      * */
     var binaryMediaTypes: Set<String> = emptySet(),
     /**
-     * 最低每秒传输数据量，当仓库配置的rateLimit小于等于最低限速时则直接将请求断开, 避免占用过多连接
+     * 限速熔断阈值，当仓库配置的rateLimit小于等于限速熔断阈值时则直接将请求断开
      */
-    var minRateLimit: DataSize = DataSize.ofKilobytes(1),
+    var circuitBreakerThreshold: DataSize = DataSize.ofKilobytes(1),
 )
