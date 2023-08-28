@@ -763,5 +763,12 @@
     "exportLeakReportInfo":"Security vulnerability information is being reported, please wait...",
     "errorPlanNameTips":"Please enter a plan name of 2-32 characters",
     "noBusinessTip": "No Business Authorization",
-    "noBusinessSubTip": "No Access To This App"
+    "noBusinessSubTip": "No Access To This App",
+    "fileNum": "File Number",
+    "realSize": "Real Size",
+    "loadingMsg": "Please wait, processing...",
+    "calculateMsg": "Please wait while calculating the {0} size.",
+    "calculateTitle": "Calculate folder size in real time",
+    "calculateCompleteMsg": "The total file size of {0} is {1}",
+    "repoUsage": "usage"
 }
