@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -70,6 +71,7 @@ open class DefaultArtifactResourceWriter(
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
+        responseRateLimitCheck()
         return if (resource.containsMultiArtifact()) {
             writeMultiArtifact(resource)
         } else {
@@ -259,6 +261,17 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
+     * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
+     */
+    private fun responseRateLimitCheck() {
+        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
+        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
+            rateLimitOfRepo.responseRateLimit <= (MINIMUM_RESPONSE_RATE_LIMIT)) {
+            throw TooManyRequestsException()
+        }
+    }
+
+    /**
      * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
      * */
     private fun determineCharset(mediaType: String, defaultCharset: String): String? {
@@ -298,5 +311,6 @@ open class DefaultArtifactResourceWriter(
 
     companion object {
         private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
+        private val MINIMUM_RESPONSE_RATE_LIMIT = DataSize.ofKilobytes(10)
     }
 }
