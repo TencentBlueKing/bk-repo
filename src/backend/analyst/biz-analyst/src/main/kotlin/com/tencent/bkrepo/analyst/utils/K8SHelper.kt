@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.dispatcher.dsl.V1Secret
 import com.tencent.bkrepo.analyst.dispatcher.dsl.metadata
 import com.tencent.bkrepo.analyst.pojo.execution.KubernetesExecutionClusterProperties
 import com.tencent.bkrepo.common.api.util.jsonCompress
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1Secret
 import org.slf4j.LoggerFactory
@@ -76,6 +77,11 @@ class K8SHelper(k8sProp: KubernetesExecutionClusterProperties) {
     }
 
     fun getSecret(secretName: String): V1Secret? {
-        return coreV1Api.readNamespacedSecret(secretName, namespace, null, null, null)
+        return try {
+            coreV1Api.readNamespacedSecret(secretName, namespace, null, null, null)
+        } catch (e: ApiException) {
+            logger.info("Can't get secret[$secretName],cause ${e.message}")
+            null
+        }
     }
 }
