@@ -266,7 +266,7 @@ open class DefaultArtifactResourceWriter(
     private fun responseRateLimitCheck() {
         val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
         if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
-            rateLimitOfRepo.responseRateLimit <= (MINIMUM_RESPONSE_RATE_LIMIT)) {
+            rateLimitOfRepo.responseRateLimit <= storageProperties.response.minRateLimit) {
             throw TooManyRequestsException()
         }
     }
@@ -311,6 +311,5 @@ open class DefaultArtifactResourceWriter(
 
     companion object {
         private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
-        private val MINIMUM_RESPONSE_RATE_LIMIT = DataSize.ofKilobytes(10)
     }
 }

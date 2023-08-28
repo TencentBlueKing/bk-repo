@@ -54,5 +54,9 @@ data class ResponseProperties(
     /**
      * 二进制媒体类型，不指定编码。
      * */
-    var binaryMediaTypes: Set<String> = emptySet()
+    var binaryMediaTypes: Set<String> = emptySet(),
+    /**
+     * 最低每秒传输数据量，当仓库配置的rateLimit小于等于最低限速时则直接将请求断开, 避免占用过多连接
+     */
+    var minRateLimit: DataSize = DataSize.ofKilobytes(1),
 )
