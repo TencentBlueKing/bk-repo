@@ -110,6 +110,11 @@ interface ScanService {
     fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean
 
     /**
+     * 记录任务心跳
+     */
+    fun heartbeat(subScanTaskId: String)
+
+    /**
      * 拉取子任务
      * @param dispatcher 指定子任务分发器
      *

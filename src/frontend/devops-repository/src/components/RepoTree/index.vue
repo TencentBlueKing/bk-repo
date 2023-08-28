@@ -13,7 +13,7 @@
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="mr10 node-text" v-html="importantTransform(item.displayName)" v-bk-tooltips="{ content: item.name, placements: ['top'], disabled: item.name.toString().length < 19 || openType !== '' }"></div>
+                        <div class="mr10 node-text" v-html="importantTransform(item.displayName)" :title="item.displayName.toString().length > 19 && openType === '' ? item.displayName : ''"></div>
                     </slot>
                     <div class="mr10 node-operation flex-align-center">
                         <slot name="operation" :item="item"></slot>

@@ -86,7 +86,13 @@ class DockerDispatcher(
         val scanner = subtask.scanner
         require(scanner is StandardScanner)
         try {
-            val command = buildCommand(scanner.cmd, scannerProperties.baseUrl, subtask.taskId, subtask.token!!)
+            val command = buildCommand(
+                cmd = scanner.cmd,
+                baseUrl = scannerProperties.baseUrl,
+                subtaskId = subtask.taskId,
+                token = subtask.token!!,
+                heartbeatTimeout = scannerProperties.heartbeatTimeout
+            )
             val containerId = dockerClient.createContainer(
                 image = scanner.image, hostConfig = hostConfig(), cmd = command
             )

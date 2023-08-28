@@ -112,6 +112,12 @@ const val PIPELINE = "pipeline"
  */
 const val REPORT = "report"
 
+
+/**
+ * 日志仓库
+ */
+const val LOG = "log"
+
 /**
  * 文件访问请求是否为直接下载
  */

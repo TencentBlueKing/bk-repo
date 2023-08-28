@@ -25,48 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analysis.executor.configuration
+package com.tencent.bkrepo.job.batch.context
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
+import com.tencent.bkrepo.job.batch.base.ChildJobContext
+import com.tencent.bkrepo.job.batch.base.JobContext
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.LongAdder
 
-@ConfigurationProperties("scanner.executor")
-data class ScannerExecutorProperties(
-    /**
-     * 扫描执行器工作目录
-     */
-    var workDir: String = "/bkrepo-data/analysis-executor",
-    /**
-     * 单机最大允许执行的任务数量
-     */
-    var maxTaskCount: Int = 20,
-    /**
-     * 最大支持扫描的文件大小
-     */
-    var fileSizeLimit: DataSize = DataSize.ofGigabytes(10),
-    /**
-     * 机器当前空闲内存占比，小于这个值后不再认领任务
-     */
-    var atLeastFreeMemPercent: Double = 0.0,
-    /**
-     * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
-     */
-    var atLeastUsableDiskSpacePercent: Double = 0.1,
-    /**
-     * 扫描器日志最大行数
-     */
-    var maxScannerLogLines: Int = 200,
-    /**
-     * 是否主动轮询拉取任务
-     */
-    var pull: Boolean = true,
-    /**
-     * 是否输出分析工具容器执行日志
-     */
-    var showContainerLogs: Boolean = true,
-    /**
-     * 子任务心跳间隔，为0时不上报心跳
-     */
-    var heartbeatInterval: Duration = Duration.ofSeconds(0)
-)
+class FolderChildContext(
+    parentContent: JobContext,
+    // 是否执行任务
+    var runFlag: Boolean = false,
+    // 缓存类型redis和内存：数据量级大的建议使用redis
+    var cacheType: String = MEMORY_CACHE_TYPE,
+    // 表对应项目记录： 主要用于redis缓存生成key使用
+    var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
+    // 用于内存缓存下存储目录统计信息
+    var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap()
+) : ChildJobContext(parentContent) {
+
+    data class FolderMetrics(
+        var nodeNum: LongAdder = LongAdder(),
+        var capSize: LongAdder = LongAdder()
+    )
+}
