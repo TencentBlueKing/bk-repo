@@ -315,5 +315,17 @@ export default {
         return Vue.prototype.$ajax.get(
             `generic/compressed/preview/${projectId}/${repoName}${path}?filePath=${filePath}`
         )
+    },
+    getProjectMetrics (_, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            '/opdata/api/project/metrics/list',
+            {
+                params: {
+                    pageNumber: 1,
+                    pageSize: 1,
+                    projectId: projectId
+                }
+            }
+        )
     }
 }

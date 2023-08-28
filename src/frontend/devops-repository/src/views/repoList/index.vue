@@ -46,6 +46,12 @@
                     <span v-if="row.public" class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                 </template>
             </bk-table-column>
+            <bk-table-column :label="$t('repoUsage')" width="150" prop="fileSize" sortable>
+                <template #default="{ row }">{{ convertFileSize(row.fileSize, 'GB') }}</template>
+            </bk-table-column>
+            <bk-table-column :label="$t('fileNum')" width="150" prop="fileNum" sortable>
+                <template #default="{ row }">{{ row.fileNum }}</template>
+            </bk-table-column>
             <bk-table-column :label="$t('repoQuota')" width="250">
                 <template #default="{ row }">
                     <bk-popover class="repo-quota" placement="top" :disabled="!row.quota">
@@ -163,7 +169,8 @@
             ...mapActions([
                 'getRepoList',
                 'deleteRepoList',
-                'getRepoListWithoutPage'
+                'getRepoListWithoutPage',
+                'getProjectMetrics'
             ]),
             initData () {
                 // 切换项目或者点击菜单时需要将筛选条件清空，并将页码相关参数重置，否则会导致点击菜单的时候筛选条件还在，不符合产品要求(点击菜单清空筛选条件，重新请求最新数据)
@@ -190,6 +197,7 @@
                         allRepo = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
                     }
                     this.repoList = allRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= records.length ? records.length : this.pagination.current * this.pagination.limit)
+                    this.getMetrics()
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -263,6 +271,29 @@
                                 message: this.$t('delete') + this.$t('success')
                             })
                         })
+                    }
+                })
+            },
+            getMetrics () {
+                this.getProjectMetrics({ projectId: this.projectId }).then(res => {
+                    if (res.records !== null && res.records[0].repoMetrics !== null && res.records[0].repoMetrics.length > 0) {
+                        for (let i = 0; i < this.repoList.length; i++) {
+                            const metrics = res.records[0].repoMetrics.find((item) => {
+                                return item.repoName === this.repoList[i].name
+                            })
+                            if (metrics) {
+                                this.$set(this.repoList[i], 'fileSize', metrics.size)
+                                this.$set(this.repoList[i], 'fileNum', metrics.num)
+                            } else {
+                                this.$set(this.repoList[i], 'fileSize', 0)
+                                this.$set(this.repoList[i], 'fileNum', 0)
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < this.repoList.length; i++) {
+                            this.$set(this.repoList[i], 'fileSize', 0)
+                            this.$set(this.repoList[i], 'fileNum', 0)
+                        }
                     }
                 })
             }

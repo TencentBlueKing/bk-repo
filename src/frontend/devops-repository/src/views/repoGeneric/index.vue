@@ -101,6 +101,16 @@
                             </scan-tag>
                         </template>
                     </bk-table-column>
+                    <bk-table-column :label="$t('size')" prop="size" width="90" sortable show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ convertFileSize(row.size) }}
+                        </template>
+                    </bk-table-column>
+                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" sortable show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ row.nodeNum ? row.nodeNum : row.folder ? 0 : '--'}}
+                        </template>
+                    </bk-table-column>
 
                     <bk-table-column :label="$t('metadata')">
                         <template #default="{ row }">
@@ -123,22 +133,12 @@
                             {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('size')" width="90" show-overflow-tooltip>
-                        <template #default="{ row }">
-                            <bk-button text
-                                v-if="row.folder && !('folderSize' in row)"
-                                :disabled="row.sizeLoading"
-                                @click="calculateFolderSize(row)">{{ $t('calculate') }}</bk-button>
-                            <span v-else>
-                                {{ convertFileSize(row.size || row.folderSize || 0) }}
-                            </span>
-                        </template>
-                    </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
+                                    row.folder && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
                                     !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
                                     !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     ...(!row.metadata.forbidStatus ? [
@@ -180,6 +180,7 @@
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
+        <loading ref="loading"></loading>
     </div>
 </template>
 <script>
@@ -199,10 +200,12 @@
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
+    import Loading from '@repository/components/Loading/loading'
 
     export default {
         name: 'repoGeneric',
         components: {
+            Loading,
             OperationList,
             Breadcrumb,
             MoveSplitBar,
@@ -712,12 +715,19 @@
             },
             calculateFolderSize (row) {
                 this.$set(row, 'sizeLoading', true)
+                this.$refs.loading.isShow = true
+                this.$refs.loading.complete = false
+                this.$refs.loading.title = this.$t('calculateTitle')
+                this.$refs.loading.message = this.$t('calculateMsg', { 0: row.fullPath })
                 this.getFolderSize({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: row.fullPath
-                }).then(({ size }) => {
-                    this.$set(row, 'folderSize', size)
+                }).then(({ size, subNodeWithoutFolderCount }) => {
+                    this.$set(row, 'size', size)
+                    this.$set(row, 'nodeNum', subNodeWithoutFolderCount)
+                    this.$refs.loading.message = this.$t('calculateCompleteMsg', { 0: row.fullPath, 1: convertFileSize(size) })
+                    this.$refs.loading.complete = true
                 }).finally(() => {
                     this.$set(row, 'sizeLoading', false)
                 })
