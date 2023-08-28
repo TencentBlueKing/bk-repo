@@ -42,6 +42,7 @@ import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
+import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
@@ -74,6 +75,7 @@ import java.time.LocalDateTime
 @Action
 @Suppress("LongParameterList")
 class PendingAction(
+    private val executionClusterService: ExecutionClusterService,
     private val scannerProperties: ScannerProperties,
     private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val scanPlanDao: ScanPlanDao,
@@ -96,7 +98,9 @@ class PendingAction(
         require(context is CreateTaskContext)
         with(context) {
             val task = createTask(scanRequest, triggerType, userId)
-            weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it, chatIds) }
+            if (!weworkBotUrl.isNullOrEmpty() || !chatIds.isNullOrEmpty()) {
+                scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, weworkBotUrl, chatIds)
+            }
             // 开始调度扫描任务
             executor.execute {
                 val submitEvent = Event(ScanTaskEvent.SUBMIT.name, SubmitTaskContext(task))
@@ -166,7 +170,8 @@ class PendingAction(
             ?.dispatcherConfiguration
             ?.firstOrNull { it.scanner == scanner.name }
             ?.dispatcher ?: scannerProperties.defaultDispatcher
-        return if (dispatcher.isEmpty() || dispatcher !in scanner.supportDispatchers) {
+        val dispatcherExists = dispatcher.isNotBlank() && executionClusterService.exists(dispatcher)
+        return if (!dispatcherExists || dispatcher !in scanner.supportDispatchers) {
             customMetadata
         } else {
             customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, dispatcher)
@@ -182,8 +187,6 @@ class PendingAction(
                 val pluginName = metadataMap[TaskMetadata.TASK_METADATA_PLUGIN_NAME]?.value ?: ""
                 "$pipelineName-$buildNo-$pluginName"
             }
-
-            ScanTriggerType.MANUAL_SINGLE -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
             else -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
         }
     }

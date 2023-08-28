@@ -59,6 +59,11 @@ import java.time.LocalDateTime
         background = true
     ),
     CompoundIndex(
+        name = "status_metadata_idx",
+        def = "{'status': 1, 'metadata.key': 1, 'metadata.value': 1}",
+        background = true
+    ),
+    CompoundIndex(
         name = "parentScanTaskId_idx",
         def = "{'parentScanTaskId': 1}",
         background = true
@@ -76,7 +81,10 @@ class TSubScanTask(
      * 执行超时时间点
      */
     val timeoutDateTime: LocalDateTime? = null,
-
+    /**
+     * 任务上次心跳时间
+     */
+    val heartbeatDateTime: LocalDateTime? = null,
     triggerType: String? = null,
     parentScanTaskId: String,
     planId: String?,

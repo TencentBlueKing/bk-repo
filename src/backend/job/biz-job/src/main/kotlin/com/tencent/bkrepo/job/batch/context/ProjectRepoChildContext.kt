@@ -41,7 +41,9 @@ class ProjectRepoChildContext(
                 .storageCredentials
                 ?.key ?: "default"
             val repo = repoMetrics.getOrPut(row.repoName) { RepoMetrics(row.repoName, credentialsKey) }
-            repo.size.add(row.size)
+            if (!row.folder) {
+                repo.size.add(row.size)
+            }
             repo.num.increment()
             repo.addFolderMetrics(row)
             repo.addExtensionMetrics(row)
@@ -94,7 +96,9 @@ class ProjectRepoChildContext(
             }
             val metric = folderMetrics.getOrPut(firstLevelPath) { FolderMetric(firstLevelPath) }
             metric.nodeNum.increment()
-            metric.capSize.add(row.size)
+            if (!row.folder) {
+                metric.capSize.add(row.size)
+            }
         }
 
         fun addExtensionMetrics(row: NodeStatCompositeMongoDbBatchJob.Node) {

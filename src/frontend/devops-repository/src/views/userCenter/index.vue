@@ -5,7 +5,7 @@
                 <bk-form class="mt50" :label-width="180">
                     <bk-form-item v-for="item in formItem" :key="item.key" :label="item.label">
                         <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
-                            <span>{{userInfo[item.key] || '/'}}</span>
+                            <span>{{ transPrivacy(userInfo[item.key], item.label)}}</span>
                             <bk-button class="ml20 flex-align-center"
                                 v-if="!editItem.key"
                                 text
@@ -21,7 +21,7 @@
                     </bk-form-item>
                     <bk-form-item :label="$t('password') + '：'">
                         <div class="flex-align-center">
-                            <span>********</span>
+                            <span>******</span>
                             <bk-button class="ml20 flex-align-center"
                                 v-if="!editItem.key"
                                 text
@@ -43,6 +43,7 @@
     import { mapState, mapActions } from 'vuex'
     import userRelated from './userRelated'
     import modifyPasswordDialog from '@repository/views/userCenter/modifyPasswordDialog'
+    import { transformEmail, transformPhone } from '@repository/utils/privacy'
     export default {
         name: 'userInfo',
         components: { userRelated, modifyPasswordDialog },
@@ -109,6 +110,16 @@
             showModifyPwd () {
                 this.$refs.modifyPassword.userId = this.userInfo.username
                 this.$refs.modifyPassword.showDialogHandler()
+            },
+            transPrivacy (key, label) {
+                if (key === null || key === '') return '/'
+                if (label.toString() === this.$t('email')) {
+                    return transformEmail(key)
+                } else if (label.toString() === this.$t('telephone')) {
+                    return transformPhone(key)
+                } else {
+                    return key
+                }
             }
         }
     }

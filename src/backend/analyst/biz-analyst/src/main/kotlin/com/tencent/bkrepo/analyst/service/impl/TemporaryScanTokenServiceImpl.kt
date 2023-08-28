@@ -64,7 +64,6 @@ import org.springframework.data.redis.connection.RedisStringCommands.SetOption.U
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -84,6 +83,21 @@ class TemporaryScanTokenServiceImpl(
         val token = uniqueId()
         redisTemplate.opsForValue().set(tokenKey(subtaskId), token, EXPIRED_SECONDS, TimeUnit.SECONDS)
         return token
+    }
+
+    override fun setToken(subtaskId: String, token: String) {
+        redisTemplate.opsForValue().set(tokenKey(subtaskId), token, EXPIRED_SECONDS, TimeUnit.SECONDS)
+    }
+
+    override fun createExecutionClusterToken(executionClusterName: String): String {
+        val token = uniqueId()
+        val tokenKey = tokenKey(executionClusterName)
+        val ops = redisTemplate.opsForValue()
+        return if (ops.setIfAbsent(tokenKey, token) == true) {
+            token
+        } else {
+            ops.get(tokenKey)!!
+        }
     }
 
     override fun createToken(subtaskIds: List<String>): Map<String, String> {
@@ -111,8 +125,18 @@ class TemporaryScanTokenServiceImpl(
     }
 
     override fun getToolInput(subtaskId: String): ToolInput {
-        val subtask = scanService.get(subtaskId)
+        return getToolInput(scanService.get(subtaskId))
+    }
 
+    override fun pullToolInput(executionCluster: String): ToolInput? {
+        val subtask = scanService.pull(executionCluster)
+        return subtask?.let {
+            logger.info("executionCluster[$executionCluster] pull subtask[${it.taskId}]")
+            getToolInput(it)
+        }
+    }
+
+    private fun getToolInput(subtask: SubScanTask): ToolInput {
         // 设置后续操作使用的用户的身份为任务触发者
         HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, subtask.createdBy)
 
@@ -124,8 +148,8 @@ class TemporaryScanTokenServiceImpl(
                 projectId = projectId,
                 repoName = repoName,
                 fullPathSet = fullPaths.keys,
-                expireSeconds = Duration.ofMinutes(30L).seconds,
-                permits = 1,
+                expireSeconds = scannerProperties.tempDownloadUrlExpireDuration.seconds,
+                permits = scannerProperties.tempDownloadUrlPermits,
                 type = TokenType.DOWNLOAD
             )
             val tokens = temporaryTokenClient.createToken(req)
@@ -155,7 +179,9 @@ class TemporaryScanTokenServiceImpl(
             val schemeVersion = OciUtils.schemeVersion(manifestContent)
             val fullPaths = LinkedHashMap<String, FileUrl>()
             // 将manifest下载链接加入fullPaths列表，需要保证map第一项是manifest文件
-            fullPaths[fullPath] = convert(subtask)
+            fullPaths[fullPath] = FileUrl(
+                "", subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size
+            )
             // 获取layer对应的nodes
             val nodes = if (schemeVersion.schemaVersion == 1) {
                 val manifest = OciUtils.stringToManifestV1(manifestContent)
@@ -176,13 +202,11 @@ class TemporaryScanTokenServiceImpl(
             }
             fullPaths
         } else {
-            mapOf(subtask.fullPath to convert(subtask))
+            mapOf(subtask.fullPath to FileUrl("", subtask.fileName(), subtask.sha256, subtask.size))
         }
     }
 
     private fun tokenKey(subtaskId: String) = "scanner:token:$subtaskId"
-    private fun convert(subtask: SubScanTask, url: String = "") =
-        FileUrl(url, subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size)
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
         val distinctNodes = HashMap<String, Map<String, Any?>>()

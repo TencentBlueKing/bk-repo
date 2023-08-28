@@ -86,7 +86,7 @@ class ScanTaskStatusChangedEventListener(
         }
     }
 
-    fun setWeworkBotUrl(scanTaskId: String, url: String, chatIds: String? = null) {
+    fun setWeworkBotUrl(scanTaskId: String, url: String? = null, chatIds: String? = null) {
         val key = weworkBotKey(scanTaskId)
         val bot = WeworkBot(webhookUrl = url, chatIds = chatIds)
         redisTemplate.opsForValue().set(key, bot.toJsonString(), DEFAULT_EXPIRED_DAY, TimeUnit.DAYS)
@@ -127,20 +127,24 @@ class ScanTaskStatusChangedEventListener(
 
     private fun weworkBotNotify(scanTask: ScanTask, message: String) {
         val weworkBot = getWeworkBot(scanTask.taskId)
-        if (weworkBot != null) {
-            val webhookKey = weworkBot.webhookUrl.toHttpUrlOrNull()?.queryParameter("key")
+        val botWebhookUrl = weworkBot?.webhookUrl
+        var chatIds = weworkBot?.chatIds?.split("|")?.toSet()
+        if (botWebhookUrl != null) {
+            val webhookKey = botWebhookUrl.toHttpUrlOrNull()?.queryParameter("key")
             if (webhookKey.isNullOrEmpty()) {
                 logger.warn("get webhook key failed[${weworkBot.webhookUrl}]")
                 return
             }
             val credential = WeworkBotChannelCredential(key = webhookKey)
-            val chatIds = weworkBot.chatIds?.split("|")?.toSet()
             notifyService.send(
                 WeworkBotMessage(TextMessage(message), chatIds),
                 credential
             )
         } else {
-            notifyService.send(WeworkBotMessage(TextMessage(message), setOf(scanTask.createdBy)))
+            if (chatIds.isNullOrEmpty()) {
+                chatIds = setOf(scanTask.createdBy)
+            }
+            notifyService.send(WeworkBotMessage(TextMessage(message), chatIds))
         }
         logger.info("notify by wework bot taskId[{${scanTask.taskId}}]")
     }
@@ -243,7 +247,7 @@ class ScanTaskStatusChangedEventListener(
         /**
          * 用于发消息的webhook地址
          */
-        val webhookUrl: String,
+        val webhookUrl: String?,
         /**
          * 需要发消息的会话id，多个id用|分隔
          */

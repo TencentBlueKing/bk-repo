@@ -157,7 +157,13 @@ open class ServiceBaseTest {
         credentialsKey: String? = null
     ) {
         if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+            val projectCreateRequest = ProjectCreateRequest(
+                name = UT_PROJECT_ID,
+                displayName = UT_REPO_NAME,
+                description = UT_REPO_DISPLAY,
+                createPermission = true,
+                operator = UT_USER
+            )
             projectService.createProject(projectCreateRequest)
         }
         if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
@@ -180,7 +186,7 @@ open class ServiceBaseTest {
         projectService: ProjectService,
         projectId: String = UT_PROJECT_ID
     ): ProjectInfo {
-        val projectCreateRequest = ProjectCreateRequest(projectId, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+        val projectCreateRequest = ProjectCreateRequest(projectId, UT_REPO_NAME, UT_REPO_DISPLAY, true, UT_USER)
         return projectService.createProject(projectCreateRequest)
     }
 

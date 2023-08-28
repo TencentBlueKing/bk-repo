@@ -175,11 +175,12 @@ class FinishSubtaskAction(
 
         // 质量规则检查结果
         val planId = subTask.planId
-        val qualityPass = if (planId != null) {
-            scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
-        } else {
+        val qualityPass = if (subTask.scanQuality.isNullOrEmpty() || planId == null) {
             null
+        } else {
+            overview.isEmpty() || scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
         }
+        logger.info("subTask[$subTaskId], qualityPass[$qualityPass]")
         archiveSubScanTaskDao.save(
             SubtaskConverter.convertToArchiveSubtask(
                 subTask, resultSubTaskStatus, overview, qualityPass = qualityPass, modifiedBy = modifiedBy

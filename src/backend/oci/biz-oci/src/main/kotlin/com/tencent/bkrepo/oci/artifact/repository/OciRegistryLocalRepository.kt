@@ -45,7 +45,11 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
+import com.tencent.bkrepo.common.storage.message.StorageMessageCode
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.artifact.OciRegistryArtifactConfigurer
+import com.tencent.bkrepo.oci.constant.EMPTY_FILE_SHA256
 import com.tencent.bkrepo.oci.constant.FORCE
 import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
 import com.tencent.bkrepo.oci.constant.LAST_TAG
@@ -56,6 +60,7 @@ import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
+import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
@@ -238,19 +243,42 @@ class OciRegistryLocalRepository(
      */
     private fun putUploadBlob(context: ArtifactUploadContext): Pair<OciDigest, String> {
         val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
-        storageService.append(
-            appendId = artifactInfo.uuid!!,
-            artifactFile = context.getArtifactFile(),
-            storageCredentials = context.repositoryDetail.storageCredentials
-        )
-        val fileInfo = storageService.finishAppend(artifactInfo.uuid!!, context.repositoryDetail.storageCredentials)
+        val sha256 = artifactInfo.getDigestHex()
+        val fileInfo = try {
+            storageService.append(
+                appendId = artifactInfo.uuid!!,
+                artifactFile = context.getArtifactFile(),
+                storageCredentials = context.repositoryDetail.storageCredentials
+            )
+            val fileInfo = storageService.finishAppend(artifactInfo.uuid!!, context.repositoryDetail.storageCredentials)
+            if (fileInfo.sha256 != sha256)
+                throw OciBadRequestException(OciMessageCode.OCI_DIGEST_INVALID, sha256)
+            // 当并发情况下文件被删可能导致文件size为0
+            if (fileInfo.size == 0L && fileInfo.sha256 != EMPTY_FILE_SHA256)
+                throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+            ociOperationService.storeArtifact(
+                ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
+                artifactFile = context.getArtifactFile(),
+                storageCredentials = context.storageCredentials,
+                fileInfo = fileInfo
+            )
+            fileInfo
+        } catch (e: StorageErrorException) {
+            // 计算sha256和转存文件导致时间较长，会出现请求超时，然后发起重试，导致并发操作该临时文件，文件可能已经被删除
+            if (storageService.exist(sha256, context.repositoryDetail.storageCredentials)) {
+                val nodeDetail = nodeClient.getNodeDetail(
+                    artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
+                ).data
+                if (nodeDetail == null || nodeDetail.sha256 != sha256) {
+                    throw e
+                } else {
+                    FileInfo(nodeDetail.sha256!!, nodeDetail.md5!!, nodeDetail.size)
+                }
+            } else {
+                throw e
+            }
+        }
         val digest = OciDigest.fromSha256(fileInfo.sha256)
-        ociOperationService.storeArtifact(
-            ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
-            artifactFile = context.getArtifactFile(),
-            storageCredentials = context.storageCredentials,
-            fileInfo = fileInfo
-        )
         logger.info(
             "Artifact ${context.artifactInfo.getArtifactFullPath()} " +
                 "has been uploaded to ${context.artifactInfo.getArtifactFullPath()}" +
@@ -309,8 +337,7 @@ class OciRegistryLocalRepository(
         if (context.request.method == HttpMethod.HEAD.name) {
             return null
         }
-        val node = ArtifactContextHolder.getNodeDetail()
-        val version = node!!.metadata[IMAGE_VERSION]?.toString() ?: return null
+        val version = artifactResource.node?.metadata?.get(IMAGE_VERSION)?.toString() ?: return null
         return PackageDownloadRecord(
             projectId = context.projectId,
             repoName = context.repoName,
