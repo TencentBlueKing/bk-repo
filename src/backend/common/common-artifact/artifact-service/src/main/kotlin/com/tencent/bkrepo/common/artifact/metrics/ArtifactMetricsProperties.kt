@@ -48,5 +48,5 @@ data class ArtifactMetricsProperties(
     /**
      * 直方图le的最大值
      */
-    var maxLe: Double = DataSize.ofGigabytes(1).toBytes().toDouble()
+    var maxLe: Double = DataSize.ofMegabytes(100).toBytes().toDouble()
 )
