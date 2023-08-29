@@ -104,7 +104,6 @@ class DdcLocalRepository(
         } else {
             onUploadBlob(context)
         }
-        super.onUpload(context)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
