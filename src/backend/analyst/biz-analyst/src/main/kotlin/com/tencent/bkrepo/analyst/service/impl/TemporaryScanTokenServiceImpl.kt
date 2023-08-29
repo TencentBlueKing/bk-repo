@@ -64,7 +64,10 @@ import org.springframework.data.redis.connection.RedisStringCommands.SetOption.U
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashMap
+import kotlin.collections.LinkedHashMap
 
 @Service
 class TemporaryScanTokenServiceImpl(
@@ -157,12 +160,12 @@ class TemporaryScanTokenServiceImpl(
                 throw SystemErrorException(SYSTEM_ERROR, "create token failed, subtask[$subtask], res[$tokens]")
             }
 
-            val ssid = subtask.token
+            val ssid = Base64.getEncoder().encodeToString("$taskId:$token".toByteArray())
             val tokenMap = tokens.data!!.associateBy { it.fullPath }
             val fileUrls = fullPaths.map { (key, value) ->
                 val url = tokenMap[key]!!.let {
                     "$baseUrl/api/generic/temporary/download" +
-                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}&ssid=$ssid&sub-task-id=$taskId"
+                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}&ssid=$ssid"
                 }
                 value.copy(url = url)
             }
