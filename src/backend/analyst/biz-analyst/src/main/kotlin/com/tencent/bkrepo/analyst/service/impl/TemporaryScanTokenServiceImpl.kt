@@ -157,11 +157,12 @@ class TemporaryScanTokenServiceImpl(
                 throw SystemErrorException(SYSTEM_ERROR, "create token failed, subtask[$subtask], res[$tokens]")
             }
 
+            val ssid = subtask.token
             val tokenMap = tokens.data!!.associateBy { it.fullPath }
             val fileUrls = fullPaths.map { (key, value) ->
                 val url = tokenMap[key]!!.let {
                     "$baseUrl/api/generic/temporary/download" +
-                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}"
+                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}&ssid=$ssid&sub-task-id=$taskId"
                 }
                 value.copy(url = url)
             }
