@@ -30,9 +30,12 @@ package com.tencent.bkrepo.replication.replica.type.manual
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
-import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.stereotype.Component
 import java.util.concurrent.Callable
@@ -50,40 +53,71 @@ class ManualBasedReplicaService(
 ) : AbstractReplicaService(replicaRecordService, localDataManager) {
     private val executor = ManualThreadPoolExecutor.instance
     override fun replica(context: ReplicaContext) {
-        val semaphore = Semaphore(replicationProperties.manualConcurrencyNum)
-        with(context) {
+        replicaTaskObjects(context)
+    }
+
+    /**
+     * 是否包含所有仓库数据
+     */
+    override fun includeAllData(context: ReplicaContext): Boolean {
+        return context.taskObject.packageConstraints.isNullOrEmpty() &&
+            context.taskObject.pathConstraints.isNullOrEmpty() &&
+            context.task.replicaObjectType == ReplicaObjectType.REPOSITORY
+    }
+
+    /**
+     * 同步task object 中的包列表或者paths
+     */
+    override fun replicaTaskObjectConstraints(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val semaphore = Semaphore(replicationProperties.manualConcurrencyNum)
+
             // 按包同步
             val futureList = mutableListOf<Future<*>>()
-            taskObject.packageConstraints.orEmpty().forEach {
-                semaphore.acquire()
-                futureList.add(
-                    executor.submit(
-                        Callable{
-                            try {
-                                replicaByPackageConstraint(this, it)
-                            } finally {
-                                semaphore.release()
-                            }
-                        }.trace()
-                )
-                )
-            }
+            // 按包同步
+            mapEachTaskObject(semaphore, futureList, taskObject.packageConstraints.orEmpty(), replicaContext)
             // 按路径同步
-            taskObject.pathConstraints.orEmpty().forEach {
-                semaphore.acquire()
-                futureList.add(
-                    executor.submit(
-                        Callable {
-                            try {
-                                replicaByPathConstraint(this, it)
-                            } finally {
-                                semaphore.release()
-                            }
-                        }.trace()
-                    )
-                )
-            }
+            mapEachTaskObject(semaphore, futureList, taskObject.pathConstraints.orEmpty(), replicaContext)
+
             futureList.forEach { it.get() }
         }
     }
+
+
+    /**
+     * 遍历执行所有分发任务
+     */
+    private fun mapEachTaskObject(
+        semaphore: Semaphore, futureList: MutableList<Future<*>>,
+        taskObjects: List<Any>, context: ReplicaContext
+    ) {
+        for (taskObject in taskObjects) {
+            semaphore.acquire()
+            futureList.add(
+                executor.submit(
+                    Callable{
+                        try {
+                            replicaTaskObject(context, taskObject)
+                        } finally {
+                            semaphore.release()
+                        }
+                    }.trace()
+                )
+            )
+        }
+    }
+
+    /**
+     * 分发具体内容
+     */
+    private fun replicaTaskObject(replicaContext: ReplicaContext, constraint: Any) {
+        when(constraint) {
+            constraint is PathConstraint ->
+                replicaByPathConstraint(replicaContext, constraint as PathConstraint)
+            constraint is PackageConstraint ->
+                replicaByPackageConstraint(replicaContext, constraint as PackageConstraint)
+            else -> return
+        }
+    }
+
 }

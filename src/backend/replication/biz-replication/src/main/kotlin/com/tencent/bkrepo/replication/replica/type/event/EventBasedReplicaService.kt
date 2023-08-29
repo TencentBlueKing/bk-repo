@@ -53,7 +53,9 @@ class EventBasedReplicaService(
         with(context) {
             // 同步仓库
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                replicator.replicaRepo(this)
+                if (task.setting.automaticCreateRemoteRepo) {
+                    replicator.replicaRepo(this)
+                }
             }
             when (event.type) {
                 EventType.NODE_CREATED -> {

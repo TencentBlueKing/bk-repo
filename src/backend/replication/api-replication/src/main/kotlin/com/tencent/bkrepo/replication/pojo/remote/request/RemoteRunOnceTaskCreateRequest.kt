@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.pojo.remote.request
 
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
@@ -57,6 +58,10 @@ data class RemoteRunOnceTaskCreateRequest(
     val remoteProjectId: String? = null,
     @ApiModelProperty("远程仓库")
     val remoteRepoName: String? = null,
+    @ApiModelProperty("当远程项目或者仓库不存在时是否进行创建, 只支持clusterId存在的情况", required = false)
+    val createProjectOrRepo: Boolean = false,
+    @ApiModelProperty("同步对象类型, 只支持clusterId存在的情况", required = true)
+    val replicaObjectType: ReplicaObjectType? = null,
     @ApiModelProperty("包名", required = false)
     val packageName: String? = null,
     @ApiModelProperty("包版本", required = false)

@@ -43,33 +43,13 @@ class ScheduledReplicaService(
 ) : AbstractReplicaService(replicaRecordService, localDataManager) {
 
     override fun replica(context: ReplicaContext) {
-        with(context) {
-            // 检查版本
-            replicator.checkVersion(this)
-            // 同步项目
-            replicator.replicaProject(this)
-            // 同步仓库
-            replicator.replicaRepo(this)
-            // 按仓库同步
-            if (includeAllData(this)) {
-                replicaByRepo(this)
-                return
-            }
-            // 按包同步
-            taskObject.packageConstraints.orEmpty().forEach {
-                replicaByPackageConstraint(this, it)
-            }
-            // 按路径同步
-            taskObject.pathConstraints.orEmpty().forEach {
-                replicaByPathConstraint(this, it)
-            }
-        }
+        replicaTaskObjects(context)
     }
 
     /**
      * 是否包含所有仓库数据
      */
-    private fun includeAllData(context: ReplicaContext): Boolean {
+    override fun includeAllData(context: ReplicaContext): Boolean {
         return context.taskObject.packageConstraints.isNullOrEmpty() &&
             context.taskObject.pathConstraints.isNullOrEmpty()
     }

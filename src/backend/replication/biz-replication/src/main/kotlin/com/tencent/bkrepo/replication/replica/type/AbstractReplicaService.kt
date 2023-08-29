@@ -64,6 +64,53 @@ abstract class AbstractReplicaService(
 ) : ReplicaService {
 
     /**
+     * 同步 task Object
+     */
+    protected fun replicaTaskObjects(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            // 检查版本
+            replicator.checkVersion(this)
+            if (task.setting.automaticCreateRemoteRepo) {
+                // 同步项目信息
+                replicator.replicaProject(replicaContext)
+                // 同步仓库信息
+                replicator.replicaRepo(replicaContext)
+            }
+            // 按仓库同步
+            if (includeAllData(this)) {
+                replicaByRepo(this)
+                return
+            }
+            replicaTaskObjectConstraints(this)
+        }
+    }
+
+
+    /**
+     * 判断是否包含所有仓库数据，进行仓库同步
+     */
+    open fun includeAllData(context: ReplicaContext): Boolean {
+        return false
+    }
+
+    /**
+     * 同步task object 中的包列表或者paths
+     */
+    open fun replicaTaskObjectConstraints(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            // 按包同步
+            taskObject.packageConstraints.orEmpty().forEach {
+                replicaByPackageConstraint(this, it)
+            }
+            // 按路径同步
+            taskObject.pathConstraints.orEmpty().forEach {
+                replicaByPathConstraint(this, it)
+            }
+        }
+    }
+
+
+    /**
      * 同步整个仓库数据
      */
     protected fun replicaByRepo(replicaContext: ReplicaContext) {
