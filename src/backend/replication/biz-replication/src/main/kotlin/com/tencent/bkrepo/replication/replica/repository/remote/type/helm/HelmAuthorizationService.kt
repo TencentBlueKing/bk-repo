@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.replica.repository.remote.type.helm
 
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import java.time.temporal.TemporalUnit
+import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
+import com.tencent.bkrepo.replication.replica.repository.remote.base.AuthorizationService
+import okhttp3.OkHttpClient
+import org.springframework.stereotype.Component
 
-interface EdgeReplicaTaskRecordService {
+/**
+ * 针对helm的Authorization code获取实现
+ */
+@Component
+class HelmAuthorizationService : AuthorizationService {
 
-    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
-
-    fun createPackageVersionReplicaTaskRecord(
-        context: ReplicaContext,
-        packageSummary: PackageSummary,
-        packageVersion: PackageVersion
-    ): EdgeReplicaTaskRecord
-
-    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
-
-    fun delete(id: String)
-
-    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
+    override fun obtainAuthorizationCode(property: RequestProperty?, httpClient: OkHttpClient): String? {
+        return property?.authorizationCode
+    }
 }

@@ -60,9 +60,9 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
-import com.tencent.bkrepo.replication.replica.base.executor.RunOnceThreadPoolExecutor
-import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
-import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.executor.RunOnceThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.type.event.EventBasedReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.type.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodePermissionService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService

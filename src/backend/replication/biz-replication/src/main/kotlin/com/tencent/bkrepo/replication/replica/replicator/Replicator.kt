@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,57 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.replica.replicator
 
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import java.time.temporal.TemporalUnit
 
-interface EdgeReplicaTaskRecordService {
+/**
+ * 同步器
+ */
+interface Replicator {
 
-    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
+    /**
+     * 检查版本
+     */
+    fun checkVersion(context: ReplicaContext)
 
-    fun createPackageVersionReplicaTaskRecord(
+    /**
+     * 同步项目
+     */
+    fun replicaProject(context: ReplicaContext)
+
+    /**
+     * 同步仓库
+     */
+    fun replicaRepo(context: ReplicaContext)
+
+    /**
+     * 同步包
+     */
+    fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary)
+
+    /**
+     * 同步包版本具体逻辑
+     * @return 是否执行了同步，如果远程存在相同版本，则返回false
+     */
+    fun replicaPackageVersion(
         context: ReplicaContext,
         packageSummary: PackageSummary,
         packageVersion: PackageVersion
-    ): EdgeReplicaTaskRecord
+    ): Boolean
 
-    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
+    /**
+     * 同步文件
+     * @return 是否执行了同步，如果远程存在相同文件，则返回false
+     */
+    fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean
 
-    fun delete(id: String)
-
-    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
+    /**
+     * 同步目录节点
+     * @return 是否执行了同步，如果远程存在相同目录，则返回false
+     */
+    fun replicaDir(context: ReplicaContext, node: NodeInfo)
 }

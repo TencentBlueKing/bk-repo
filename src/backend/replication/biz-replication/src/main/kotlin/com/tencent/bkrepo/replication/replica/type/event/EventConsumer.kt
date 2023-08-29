@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.replica.type.event
 
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import java.time.temporal.TemporalUnit
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import java.util.function.Consumer
+/**
+ * 构件事件消费者，用于实时同步
+ * 对应binding name为artifactEvent-in-0
+ */
+abstract class EventConsumer : Consumer<ArtifactEvent> {
 
-interface EdgeReplicaTaskRecordService {
+    /**
+     * 允许接收的事件类型
+     */
+    open fun getAcceptTypes(): Set<EventType> = emptySet()
 
-    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
+    override fun accept(message: ArtifactEvent) {
+        if (!getAcceptTypes().contains(message.type)) {
+            return
+        }
+        action(message)
+    }
 
-    fun createPackageVersionReplicaTaskRecord(
-        context: ReplicaContext,
-        packageSummary: PackageSummary,
-        packageVersion: PackageVersion
-    ): EdgeReplicaTaskRecord
-
-    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
-
-    fun delete(id: String)
-
-    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
+    /**
+     * 执行具体的业务
+     */
+    open fun action(event: ArtifactEvent) {}
 }

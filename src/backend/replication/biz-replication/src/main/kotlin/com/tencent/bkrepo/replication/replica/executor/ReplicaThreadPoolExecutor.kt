@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.replica.executor
 
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import java.time.temporal.TemporalUnit
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
-interface EdgeReplicaTaskRecordService {
+/**
+ * 用于同步任务的线程池
+ */
+object ReplicaThreadPoolExecutor {
 
-    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
+    /**
+     * 线程池实例
+     */
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
 
-    fun createPackageVersionReplicaTaskRecord(
-        context: ReplicaContext,
-        packageSummary: PackageSummary,
-        packageVersion: PackageVersion
-    ): EdgeReplicaTaskRecord
-
-    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
-
-    fun delete(id: String)
-
-    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
+        return ThreadPoolExecutor(
+            corePoolSize, corePoolSize * 2, 30, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
+    }
 }

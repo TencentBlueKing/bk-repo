@@ -25,48 +25,51 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.interceptor.progress
+package com.tencent.bkrepo.replication.replica.type.schedule
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.pojo.blob.RequestTag
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
-import okhttp3.Interceptor
-import okhttp3.Request
-import okhttp3.Response
-import java.io.IOException
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockingTaskExecutor
+import org.quartz.InterruptableJob
+import org.quartz.JobExecutionContext
+import java.time.Duration
 
-class ProgressInterceptor : Interceptor {
+/**
+ * 调度类型同步任务job
+ */
+class ScheduledReplicaJob : InterruptableJob {
 
-    private val listener by lazy { SpringContextUtils.getBean<ProgressListener>() }
+    private var currentThread: Thread? = null
+    private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
+    private val scheduledReplicaJobExecutor = SpringContextUtils.getBean(ScheduledReplicaJobExecutor::class.java)
 
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        val tag = request.tag(RequestTag::class.java)
-        if (tag != null) {
-            val task = tag.task
-            val key = tag.key
-            listener.onStart(task, key,request.body!!.contentLength() - tag.size)
-            try {
-                val response = chain.proceed(wrapRequest(request, task, key))
-                if (response.isSuccessful) {
-                    listener.onSuccess(task)
-                } else {
-                    listener.onFailed(task, key)
-                }
-                return response
-            } catch (e: IOException) {
-                listener.onFailed(task, key)
-                throw e
-            }
-        }
-
-        return chain.proceed(request)
+    override fun execute(context: JobExecutionContext) {
+        currentThread = Thread.currentThread()
+        val taskId = context.jobDetail.key.name
+        val lockName = buildLockName(taskId)
+        val lockConfiguration = LockConfiguration(lockName, lockAtMostFor, lockAtLeastFor)
+        lockingTaskExecutor.executeWithLock(Runnable { scheduledReplicaJobExecutor.execute(taskId) }, lockConfiguration)
     }
 
-    private fun wrapRequest(request: Request, task: ReplicaTaskInfo, key: String): Request {
-        return request.newBuilder()
-            .method(request.method, ProgressRequestBody(request.body!!, listener, task, key))
-            .build()
+    override fun interrupt() {
+        currentThread?.interrupt()
+    }
+
+    private fun buildLockName(taskId: String): String {
+        return REPLICA_LOCK_NAME_PREFIX + taskId
+    }
+
+    companion object {
+        /**
+         * 任务最短加锁时间
+         */
+        private val lockAtLeastFor = Duration.ofSeconds(1)
+
+        /**
+         * 任务最长加锁时间
+         */
+        private val lockAtMostFor = Duration.ofDays(1)
+
+        private const val REPLICA_LOCK_NAME_PREFIX = "REPLICA_JOB_"
     }
 }

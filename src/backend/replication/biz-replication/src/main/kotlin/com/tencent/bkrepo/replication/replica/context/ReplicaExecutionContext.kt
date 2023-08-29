@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,60 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.replica.context
 
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import java.time.temporal.TemporalUnit
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 
-interface EdgeReplicaTaskRecordService {
+class ReplicaExecutionContext(
+    val replicaContext: ReplicaContext,
+    val detail: ReplicaRecordDetail
+) {
+    /**
+     * 同步器
+     */
+    val replicator = replicaContext.replicator
 
-    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
+    /**
+     * 执行状态
+     */
+    var status = ExecutionStatus.SUCCESS
 
-    fun createPackageVersionReplicaTaskRecord(
-        context: ReplicaContext,
-        packageSummary: PackageSummary,
-        packageVersion: PackageVersion
-    ): EdgeReplicaTaskRecord
+    /**
+     * 同步进度
+     */
 
-    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
+    val progress = ReplicaProgress()
 
-    fun delete(id: String)
+    /**
+     * 错误原因
+     */
+    private var errorReason = StringBuilder()
 
-    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
+    /**
+     * 添加错误原因
+     */
+    fun appendErrorReason(reason: String) {
+        errorReason.appendln(reason)
+    }
+
+    /**
+     * 构造错误原因
+     */
+    fun buildErrorReason(): String {
+        return errorReason.toString()
+    }
+
+    /**
+     * 更新进度
+     * @param executed 是否执行了同步
+     */
+    fun updateProgress(executed: Boolean) {
+        if (executed) {
+            progress.success += 1
+        } else {
+            progress.skip += 1
+        }
+    }
 }

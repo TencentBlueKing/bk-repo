@@ -25,39 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.interceptor.progress
+package com.tencent.bkrepo.replication.replica.type.event
 
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
-import okhttp3.MediaType
-import okhttp3.RequestBody
-import okio.Buffer
-import okio.BufferedSink
-import okio.ForwardingSink
-import okio.Sink
-import okio.buffer
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.replication.replica.executor.EventConsumerThreadPoolExecutor
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.stereotype.Component
 
-internal class ProgressRequestBody(
-    private val delegate: RequestBody,
-    private val listener: ProgressListener,
-    private val task: ReplicaTaskInfo,
-    private val sha256: String
-) : RequestBody() {
+/**
+ * 构件事件消费者，用于实时同步
+ * 对应binding name为artifactEvent-in-0
+ */
+@Component("artifactEventReplication")
+class ArtifactEventConsumer(
+    private val replicaTaskService: ReplicaTaskService,
+    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
+) : EventConsumer() {
 
-    override fun contentType(): MediaType? = delegate.contentType()
-    override fun contentLength(): Long = delegate.contentLength()
-
-    override fun writeTo(sink: BufferedSink) {
-        val countingSink = CountingSink(sink)
-        val bufferedSink: BufferedSink = countingSink.buffer()
-        delegate.writeTo(bufferedSink)
-        bufferedSink.flush()
+    private val executors = EventConsumerThreadPoolExecutor.instance
+    /**
+     * 允许接收的事件类型
+     */
+    override fun getAcceptTypes(): Set<EventType> {
+        return setOf(
+            EventType.NODE_CREATED,
+            EventType.VERSION_CREATED,
+            EventType.VERSION_UPDATED
+        )
     }
 
-    inner class CountingSink(delegate: Sink) : ForwardingSink(delegate) {
-        override fun write(source: Buffer, byteCount: Long) {
-            super.write(source, byteCount)
-            listener.onProgress(task, sha256, byteCount)
-        }
+    override fun action(event: ArtifactEvent) {
+        executors.execute( Runnable {
+            replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
+                eventBasedReplicaJobExecutor.execute(it, event)
+            }
+        }.trace()
+        )
     }
 }

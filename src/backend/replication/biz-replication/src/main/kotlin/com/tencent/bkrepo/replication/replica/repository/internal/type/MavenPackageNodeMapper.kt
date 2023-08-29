@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.replica.repository.internal.type
 
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import java.time.temporal.TemporalUnit
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
-interface EdgeReplicaTaskRecordService {
+@Component
+class MavenPackageNodeMapper(
+    private val nodeClient: NodeClient
+) : PackageNodeMapper {
 
-    fun createNodeReplicaTaskRecord(context: ReplicaContext, nodeDetail: NodeDetail): EdgeReplicaTaskRecord
+    override fun type() = RepositoryType.MAVEN
+    override fun extraType(): RepositoryType? {
+        return null
+    }
 
-    fun createPackageVersionReplicaTaskRecord(
-        context: ReplicaContext,
+    override fun map(
         packageSummary: PackageSummary,
-        packageVersion: PackageVersion
-    ): EdgeReplicaTaskRecord
+        packageVersion: PackageVersion,
+        type: RepositoryType
+    ): List<String> {
+        with(packageSummary) {
+            val artifactPath = packageVersion.contentPath
+            require(artifactPath != null) { "artifactPath for $key is null in [$projectId/$repoName]" }
+            val path = artifactPath.substringBeforeLast('/')
+            val listNodePage = nodeClient.listNode(projectId, repoName, path).data!!
+            val fullPathList = listNodePage.map { it.fullPath }
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "artifact key [$key] corresponding to node fullPath $fullPathList, size: [${fullPathList.size}]."
+                )
+            }
+            return fullPathList
+        }
+    }
 
-    fun updateStatus(id: String, status: ExecutionStatus, errorReason: String? = null)
-
-    fun delete(id: String)
-
-    fun waitTaskFinish(id: String, timeout: Long, timeUnit: TemporalUnit)
+    companion object {
+        private val logger = LoggerFactory.getLogger(MavenPackageNodeMapper::class.java)
+    }
 }
