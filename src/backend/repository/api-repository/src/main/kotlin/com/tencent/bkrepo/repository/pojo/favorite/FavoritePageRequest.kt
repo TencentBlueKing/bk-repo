@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,20 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node
+package com.tencent.bkrepo.repository.pojo.favorite
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 
-/**
- * 节点大小信息
- */
-@ApiModel("节点大小信息")
-data class NodeSizeInfo(
-    @ApiModelProperty("子节点数量, 包含文件夹")
-    val subNodeCount: Long = 0,
-    @ApiModelProperty("子节点数量, 不包含文件夹")
-    val subNodeWithoutFolderCount: Long = 0,
-    @ApiModelProperty("文件大小总和")
-    val size: Long
+data class FavoritePageRequest(
+    var projectId: String?,
+    var repoName: String?,
+    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    var pageSize: Int = DEFAULT_PAGE_SIZE
 )

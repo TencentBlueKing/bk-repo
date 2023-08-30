@@ -76,6 +76,12 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
 
     abstract fun entityClass(): Class<Entity>
 
+
+    /**
+     * 表执行结束回调
+     * */
+    open fun onRunCollectionFinished(collectionName: String, context: Context) {}
+
     private val batchSize: Int
         get() = properties.batchSize
 
@@ -162,6 +168,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
             } while (querySize == pageSize && isRunning())
         }.apply {
             val elapsedTime = HumanReadable.time(this)
+            onRunCollectionFinished(collectionName, context)
             logger.info("Job[${getJobName()}]: collection $collectionName run completed,sum [$sum] elapse $elapsedTime")
         }
     }

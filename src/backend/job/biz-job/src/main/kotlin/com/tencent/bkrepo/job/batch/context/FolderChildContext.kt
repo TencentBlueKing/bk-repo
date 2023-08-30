@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -24,23 +24,29 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":job:api-job"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-redis"))
-    implementation(project(":repository:api-repository"))
-    implementation(project(":helm:api-helm"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":replication:api-replication"))
-    implementation(project(":common:common-operate:operate-service"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+
+package com.tencent.bkrepo.job.batch.context
+
+import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
+import com.tencent.bkrepo.job.batch.base.ChildJobContext
+import com.tencent.bkrepo.job.batch.base.JobContext
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.LongAdder
+
+class FolderChildContext(
+    parentContent: JobContext,
+    // 是否执行任务
+    var runFlag: Boolean = false,
+    // 缓存类型redis和内存：数据量级大的建议使用redis
+    var cacheType: String = MEMORY_CACHE_TYPE,
+    // 表对应项目记录： 主要用于redis缓存生成key使用
+    var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
+    // 用于内存缓存下存储目录统计信息
+    var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap()
+) : ChildJobContext(parentContent) {
+
+    data class FolderMetrics(
+        var nodeNum: LongAdder = LongAdder(),
+        var capSize: LongAdder = LongAdder()
+    )
 }
