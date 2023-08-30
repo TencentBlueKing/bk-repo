@@ -175,7 +175,6 @@ class OauthAuthorizationServiceImpl(
                 nonce = OauthUtils.generateRandomString(10)
             )
             token.accessToken = idToken.toJwtToken()
-            token.refreshToken = OauthUtils.generateRefreshToken()
             token.issuedAt = Instant.now(Clock.systemDefaultZone())
             token.idToken?.let { token.idToken = idToken }
             oauthTokenRepository.save(token)
