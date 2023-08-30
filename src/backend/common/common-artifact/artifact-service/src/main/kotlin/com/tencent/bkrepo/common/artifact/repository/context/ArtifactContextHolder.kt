@@ -295,7 +295,8 @@ class ArtifactContextHolder(
                 require(repoRateLimitAttribute is RateLimitProperties)
                 return repoRateLimitAttribute
             }
-            val repo = getRepoDetail() ?: return RateLimitProperties()
+            // 临时下载链接可能会使用 generic 下载其他业务类型的制品，此处先避免仓库找不到异常
+            val repo = getRepoDetailOrNull() ?: return RateLimitProperties()
             val receiveRateLimit = convertToDataSize(repo.configuration.getStringSetting(RECEIVE_RATE_LIMIT_OF_REPO))
             val responseRateLimit = convertToDataSize(repo.configuration.getStringSetting(RESPONSE_RATE_LIMIT_OF_REPO))
             val rateLimitProperties = RateLimitProperties(receiveRateLimit, responseRateLimit)
