@@ -35,6 +35,7 @@ import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseInfo
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -48,7 +49,8 @@ import org.springframework.web.bind.annotation.RestController
 class ScanController @Autowired constructor(
     private val scanService: ScanService,
     private val licenseService: SpdxLicenseService,
-    private val tokenService: TemporaryScanTokenService
+    private val tokenService: TemporaryScanTokenService,
+    private val scanTaskService: ScanTaskService,
 ) : ScanClient {
 
     override fun scan(scanRequest: ScanRequest): Response<ScanTask> {
@@ -87,5 +89,9 @@ class ScanController @Autowired constructor(
             false
         }
         return ResponseBuilder.success(ret)
+    }
+
+    override fun getTask(taskId: String): Response<ScanTask> {
+        return ResponseBuilder.success(scanTaskService.task(taskId))
     }
 }

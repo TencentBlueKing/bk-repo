@@ -106,4 +106,10 @@ interface ScanClient {
      * */
     @GetMapping("/token/verify")
     fun verifyToken(@RequestParam subtaskId: String, @RequestParam token: String): Response<Boolean>
+
+    /**
+     * 查询task状态
+     * */
+    @GetMapping("/task/{taskId}")
+    fun getTask(@PathVariable taskId: String): Response<ScanTask>
 }
