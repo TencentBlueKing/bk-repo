@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.ddc.pojo
 
+import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
+import com.tencent.bkrepo.ddc.model.TDdcBlob
+import com.tencent.bkrepo.ddc.utils.DdcUtils.fullPath
+
 data class Blob(
     val projectId: String,
     val repoName: String,
@@ -34,11 +38,53 @@ data class Blob(
     val fullPath: String,
     val size: Long,
     val blobId: ContentHash,
-    val references: Set<ReferencedBy>? = null,
-    val contentId: ContentHash? = null,
-)
+    val contentId: ContentHash,
+    val references: Set<ReferenceKey>? = null,
+) {
+    companion object {
+        fun from(blob: TDdcBlob) = with(blob) {
+            Blob(
+                projectId = projectId,
+                repoName = repoName,
+                sha256 = sha256,
+                fullPath = fullPath(),
+                size = size,
+                blobId = ContentHash.fromHex(blobId),
+                contentId = ContentHash.fromHex(contentId),
+                references = references,
+            )
+        }
 
-data class ReferencedBy(
-    val key: RefId,
-    val bucket: String
+        fun from(artifactInfo: CompressedBlobArtifactInfo, sha256: String, size: Long) = with(artifactInfo) {
+            Blob(
+                projectId = projectId,
+                repoName = repoName,
+                sha256 = sha256,
+                fullPath = getArtifactFullPath(),
+                size = size,
+                blobId = ContentHash.fromHex(compressedContentId!!),
+                contentId = ContentHash.fromHex(contentId)
+            )
+        }
+    }
+}
+
+/**
+ * blob被其他ref或blob引用情况
+ *
+ * bucket和key不为null时候表示被ref引用，blobId不为null时表示被其他blob引用
+ */
+data class ReferenceKey(
+    /**
+     * ref bucket
+     */
+    val bucket: String? = null,
+    /**
+     * ref key
+     */
+    val key: String? = null,
+    /**
+     * blob id
+     */
+    val blobId: String? = null,
 )

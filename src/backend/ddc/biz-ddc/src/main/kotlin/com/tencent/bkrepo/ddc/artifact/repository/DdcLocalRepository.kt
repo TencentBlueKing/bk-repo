@@ -172,6 +172,7 @@ class DdcLocalRepository(
             artifactInfo.compressedContentId = getStreamArtifactFile().blake3().hex()
 
             storageManager.storeArtifactFile(buildBlobNodeCreateRequest(context), getArtifactFile(), storageCredentials)
+            blobService.create(Blob.from(artifactInfo, getArtifactSha256(), getArtifactFile().getSize()))
             HttpContextHolder
                 .getResponse()
                 .writer
@@ -260,7 +261,7 @@ class DdcLocalRepository(
                 )
             }
 
-            val blobInputStream = blobService.loadBlob(projectId, repoName, blobId)
+            val blobInputStream = blobService.loadBlob(blob)
             val resource = ArtifactResource(blobInputStream, artifactInfo.getResponseName())
             resource.contentType = responseType
             // TODO 支持分片存储的Blob

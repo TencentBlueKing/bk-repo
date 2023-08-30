@@ -41,7 +41,7 @@ import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.repository.RefRepository
 import com.tencent.bkrepo.ddc.serialization.CbObject
-import com.tencent.bkrepo.ddc.utils.DdcRefUtils.fullPath
+import com.tencent.bkrepo.ddc.utils.DdcUtils.fullPath
 import com.tencent.bkrepo.ddc.utils.hasAttachments
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.bson.types.Binary

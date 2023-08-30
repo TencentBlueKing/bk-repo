@@ -25,10 +25,54 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.utils
+package com.tencent.bkrepo.ddc.model
 
-import com.tencent.bkrepo.ddc.model.TDdcRef
+import com.tencent.bkrepo.ddc.pojo.ReferenceKey
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-object DdcRefUtils {
-    fun TDdcRef.fullPath() = "/$bucket/$key"
-}
+@Document("ddc_blob")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "projectId_repoName_blobId_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'blobId': 1}",
+        unique = true
+    ),
+    CompoundIndex(
+        name = "projectId_repoName_contentId_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'contentId': 1}",
+        unique = true
+    )
+)
+data class TDdcBlob(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+
+    var projectId: String,
+    var repoName: String,
+    /**
+     * blob blake3 hash
+     */
+    var blobId: String,
+    /**
+     * 压缩前的blob blake3 hash，如果blob未压缩则contentId与blobId相等
+     */
+    var contentId: String,
+    /**
+     * blob sha256
+     */
+    var sha256: String,
+    /**
+     * blob size
+     */
+    var size: Long,
+    /**
+     * 引用了该blob的ref，ref的inline blob和inline blob中引用的blob都会关联到ref
+     */
+    var references: Set<ReferenceKey>? = null
+)

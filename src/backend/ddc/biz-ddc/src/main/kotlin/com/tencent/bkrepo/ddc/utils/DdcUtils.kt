@@ -27,7 +27,13 @@
 
 package com.tencent.bkrepo.ddc.utils
 
-const val NODE_METADATA_KEY_PREFIX = "ddc_"
+import com.tencent.bkrepo.ddc.model.TDdcBlob
+import com.tencent.bkrepo.ddc.model.TDdcRef
 
-const val NODE_METADATA_KEY_BLOB_ID = "${NODE_METADATA_KEY_PREFIX}blob_id"
-const val NODE_METADATA_KEY_CONTENT_ID = "${NODE_METADATA_KEY_PREFIX}content_id"
+object DdcUtils {
+    const val DIR_BLOBS = "blobs"
+
+    fun TDdcRef.fullPath() = "/$bucket/$key"
+
+    fun TDdcBlob.fullPath() = "/blobs/$blobId"
+}

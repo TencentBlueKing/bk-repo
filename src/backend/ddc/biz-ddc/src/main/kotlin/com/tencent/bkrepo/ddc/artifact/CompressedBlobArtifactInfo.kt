@@ -29,6 +29,7 @@ package com.tencent.bkrepo.ddc.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
 
 class CompressedBlobArtifactInfo(
     projectId: String,
@@ -37,12 +38,11 @@ class CompressedBlobArtifactInfo(
     var compressedContentId: String? = null
 ) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
 
-    override fun getArtifactName() = "/$DIR_BLOBS/$contentId/$compressedContentId"
+    override fun getArtifactName() = "/$DIR_BLOBS/$compressedContentId"
 
-    override fun getArtifactFullPath() = "/$DIR_BLOBS/$contentId/$compressedContentId"
+    override fun getArtifactFullPath() = "/$DIR_BLOBS/$compressedContentId"
 
     companion object {
-        const val DIR_BLOBS = "blobs"
         const val PATH_VARIABLE_CONTENT_ID = "id"
     }
 }

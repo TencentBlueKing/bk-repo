@@ -27,100 +27,73 @@
 
 package com.tencent.bkrepo.ddc.service
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
+import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.Reference
-import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_BLOB_ID
-import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_CONTENT_ID
-import com.tencent.bkrepo.ddc.utils.NODE_TO_BLOB_SELECT
-import com.tencent.bkrepo.ddc.utils.toBlob
-import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.ddc.repository.BlobRepository
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class BlobService(
+    private val blobRepository: BlobRepository,
     private val nodeClient: NodeClient,
-    private val metadataClient: MetadataClient,
-    private val storageService: StorageService
+    private val storageManager: StorageManager
 ) {
-    fun loadBlob(projectId: String, repoName: String, blobId: String): ArtifactInputStream {
-        val queryModel = NodeQueryBuilder()
-            .projectId(projectId)
-            .repoName(repoName)
-            .metadata(NODE_METADATA_KEY_BLOB_ID, blobId)
-            .select(*NODE_TO_BLOB_SELECT)
-            .page(DEFAULT_PAGE_NUMBER, 1)
-            .build()
-        val res = nodeClient.search(queryModel)
-        val records = res.data?.records
-        if (records.isNullOrEmpty()) {
-            throw BlobNotFoundException(projectId, repoName, blobId)
+    fun create(blob: Blob): Blob {
+        with(blob) {
+            val userId = SecurityUtils.getUserId()
+            val now = LocalDateTime.now()
+            val tBlob = TDdcBlob(
+                id = null,
+                createdBy = userId,
+                createdDate = now,
+                lastModifiedBy = userId,
+                lastModifiedDate = now,
+                projectId = projectId,
+                repoName = repoName,
+                blobId = blobId.toString(),
+                contentId = contentId.toString(),
+                sha256 = sha256,
+                size = size
+            )
+            blobRepository.replace(tBlob)
+
+            return Blob.from(tBlob)
         }
-        val blob = records[0].toBlob()
-        val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-        return storageService.load(blob.sha256, Range.full(blob.size), repo.storageCredentials)
+
+    }
+
+    fun loadBlob(projectId: String, repoName: String, blobId: String): ArtifactInputStream {
+        val blob = blobRepository.findByBlobId(projectId, repoName, blobId)
             ?: throw BlobNotFoundException(projectId, repoName, blobId)
+        return loadBlob(Blob.from(blob))
+    }
+
+    fun loadBlob(blob: Blob): ArtifactInputStream {
+        val repo =
+            ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(blob.projectId, blob.repoName))
+        val node = nodeClient.getNodeDetail(blob.projectId, blob.repoName, blob.fullPath).data
+            ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
+        return storageManager.loadArtifactInputStream(node, repo.storageCredentials)
+            ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
     }
 
     fun getBlobsByContentId(projectId: String, repoName: String, contentId: String): List<Blob> {
-        val queryModel = NodeQueryBuilder()
-            .projectId(projectId)
-            .repoName(repoName)
-            .metadata(NODE_METADATA_KEY_CONTENT_ID, contentId)
-            .select(*NODE_TO_BLOB_SELECT)
-            .build()
-        return search(queryModel).map { it.toBlob() }
+        return blobRepository.findByContentId(projectId, repoName, contentId).map { Blob.from(it) }
     }
 
     fun getBlobByBlobIds(projectId: String, repoName: String, blobIds: Collection<String>): List<Blob> {
-        val queryModel = NodeQueryBuilder()
-            .projectId(projectId)
-            .repoName(repoName)
-            .metadata(NODE_METADATA_KEY_BLOB_ID, blobIds, OperationType.IN)
-            .select(*NODE_TO_BLOB_SELECT)
-            .build()
-        return search(queryModel).map { it.toBlob() }
+        return blobRepository.findByBlobIds(projectId, repoName, blobIds.toSet()).map { Blob.from(it) }
     }
 
-    fun addRefToBlobs(ref: Reference, blobs: Set<String>) {
-        // TODO
-    }
-
-    private fun search(queryModel: QueryModel): List<Map<String, Any?>> {
-        var res: Response<Page<Map<String, Any?>>>
-        var model = queryModel
-        val result = ArrayList<Map<String, Any?>>()
-        do {
-            res = nodeClient.search(queryModel)
-            if (res.isNotOk()) {
-                throw ErrorCodeException(
-                    status = HttpStatus.INTERNAL_SERVER_ERROR,
-                    messageCode = CommonMessageCode.SYSTEM_ERROR,
-                    params = arrayOf(res.message.toString())
-                )
-            }
-
-            val records = res.data?.records
-            if (records?.isNotEmpty() == true) {
-                result.addAll((records))
-            }
-            model = model.copy(page = PageLimit(pageNumber = model.page.pageNumber + 1))
-        } while (model.page.pageSize == res.data?.records?.size)
-        return result
+    fun addRefToBlobs(ref: Reference, blobIds: Set<String>) {
+        blobRepository.addRefToBlob(ref.projectId, ref.repoName, ref.bucket, ref.key.toString(), blobIds)
     }
 }
