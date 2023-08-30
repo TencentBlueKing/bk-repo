@@ -4,13 +4,16 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.replication.constant.DOCKER_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH
+import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH_V1
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component
@@ -61,15 +64,40 @@ class DockerPackageNodeMapper(
                 throw ArtifactNotFoundException("Could not read manifest.json, $e")
             }
             manifestInfo!!.descriptors?.forEach {
-                val replace = it.replace(":", "__")
-                if (isOci) {
-                    result.add(OCI_LAYER_FULL_PATH.format(name, replace))
-                } else {
-                    result.add(DOCKER_LAYER_FULL_PATH.format(name, version, replace))
-                }
+                result.add(buildBlobPath(
+                    descriptor = it,
+                    packageName = name,
+                    version = version,
+                    isOci = isOci,
+                    nodeDetail = nodeDetail
+                ))
             }
             result.add(manifestFullPath)
             return result
+        }
+    }
+
+    /**
+     * 通过包名、版本、sha256拼接出blob路径
+     */
+    private fun buildBlobPath(
+        descriptor: String,
+        packageName: String,
+        version: String,
+        isOci: Boolean,
+        nodeDetail: NodeDetail
+    ): String {
+        val replace = descriptor.replace(":", "__")
+        return if (isOci) {
+            // 镜像blob路径格式有调整，从/package/blobs/下调至//package/blobs/version/
+            val refreshedMetadata = nodeDetail.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY}
+            if (refreshedMetadata != null) {
+                OCI_LAYER_FULL_PATH_V1.format(packageName, version, replace)
+            } else {
+                OCI_LAYER_FULL_PATH.format(packageName, replace)
+            }
+        } else {
+            DOCKER_LAYER_FULL_PATH.format(packageName, version, replace)
         }
     }
 }
