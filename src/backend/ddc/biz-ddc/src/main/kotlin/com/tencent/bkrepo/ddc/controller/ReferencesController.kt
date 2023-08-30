@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository.Companion.HEADER_NAME_HASH
-import com.tencent.bkrepo.ddc.service.ReferenceService
+import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY_PACKAGE
@@ -55,7 +55,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/{projectId}/api/v1/refs")
 @RestController
 class ReferencesController(
-    private val referenceService: ReferenceService
+    private val referenceArtifactService: ReferenceArtifactService
 ) {
 
     @ApiOperation("获取ref")
@@ -76,7 +76,7 @@ class ReferencesController(
         artifactInfo: ReferenceArtifactInfo,
     ) {
         HttpContextHolder.getResponse().contentType = getResponseType(null, MEDIA_TYPE_UNREAL_COMPACT_BINARY)
-        referenceService.downloadRef(artifactInfo)
+        referenceArtifactService.downloadRef(artifactInfo)
     }
 
     @ApiOperation("开始创建ref")
@@ -92,7 +92,7 @@ class ReferencesController(
     ) {
         artifactInfo.inlineBlobHash = HttpContextHolder.getRequest().getHeader(HEADER_NAME_HASH)
             ?: throw BadRequestException(PARAMETER_INVALID, "Missing expected header $HEADER_NAME_HASH")
-        referenceService.createRef(artifactInfo, file)
+        referenceArtifactService.createRef(artifactInfo, file)
     }
 
     @ApiOperation("结束ref创建")
@@ -108,7 +108,7 @@ class ReferencesController(
         @PathVariable hash: String,
     ) {
         artifactInfo.inlineBlobHash = hash
-        referenceService.finalize(artifactInfo)
+        referenceArtifactService.finalize(artifactInfo)
     }
 
     private fun getResponseType(format: String?, default: String): String {

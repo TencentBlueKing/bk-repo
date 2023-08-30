@@ -50,16 +50,17 @@ fun NodeDetail.inlineBlobId() = metadata[NODE_METADATA_KEY_BLOB_ID] as String?
 fun NodeDetail.finalized() = metadata[NODE_METADATA_KEY_FINALIZED] as Boolean? ?: false
 
 fun NodeDetail.toReference() = Reference(
-    namespace = repoName,
+    projectId = projectId,
+    repoName = repoName,
     bucket = path.trim(SLASH),
-    name = RefId.create(name),
-    lastAccess = LocalDateTime.parse(lastAccessDate, DateTimeFormatter.ISO_DATE_TIME),
-    blobIdentifier = inlineBlobId()?.let { ContentHash.fromHex(it) },
-    isFinalized = finalized(),
+    key = RefId.create(name),
+    lastAccessDate = LocalDateTime.parse(lastAccessDate, DateTimeFormatter.ISO_DATE_TIME),
+    blobId = inlineBlobId()?.let { ContentHash.fromHex(it) },
+    finalized = finalized(),
 //    inlineBlob = inlineBlob()
 )
 
-fun Reference.fullPath() = "/$bucket/$name"
+fun Reference.fullPath() = "/$bucket/$key"
 
 // ---blob---
 

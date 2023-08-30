@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -49,13 +48,12 @@ import com.tencent.bkrepo.ddc.exception.NotImplementedException
 import com.tencent.bkrepo.ddc.exception.PartialReferenceResolveException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.pojo.Blob
-import com.tencent.bkrepo.ddc.pojo.ContentHash
-import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.pojo.UploadCompressedBlobResponse
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.service.BlobService
 import com.tencent.bkrepo.ddc.service.ReferenceResolver
+import com.tencent.bkrepo.ddc.service.ReferenceService
 import com.tencent.bkrepo.ddc.utils.BlakeUtils.blake3
 import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
@@ -63,15 +61,10 @@ import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER
 import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_BLOB_ID
 import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_CONTENT_ID
-import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_FINALIZED
-import com.tencent.bkrepo.ddc.utils.finalized
 import com.tencent.bkrepo.ddc.utils.hasAttachments
 import com.tencent.bkrepo.ddc.utils.isAttachment
 import com.tencent.bkrepo.ddc.utils.isBinaryAttachment
-import com.tencent.bkrepo.ddc.utils.toReference
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -81,9 +74,9 @@ import java.time.format.DateTimeFormatter
 
 @Component
 class DdcLocalRepository(
+    private val referenceService: ReferenceService,
     private val refResolver: ReferenceResolver,
     private val blobService: BlobService,
-    private val metadataClient: MetadataClient,
 ) : LocalRepository() {
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -116,14 +109,16 @@ class DdcLocalRepository(
     }
 
     fun finalizeRef(artifactInfo: ReferenceArtifactInfo) {
-        val (ref, inlineBlobArtifactInputStream) = getReferenceInlineBlob(artifactInfo)
-            ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
-        val cbObject = inlineBlobArtifactInputStream.use { CbObject(ByteBuffer.wrap(it.readBytes())) }
-        if (ref.blobIdentifier!!.toString() != artifactInfo.inlineBlobHash) {
-            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
+        with(artifactInfo) {
+            val ref = referenceService.getReference(projectId, repoName, bucket, refId.toString())
+                ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
+            val cbObject = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
+            if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
+                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
+            }
+            val res = referenceService.finalize(ref, cbObject)
+            HttpContextHolder.getResponse().writer.println(res.toJsonString())
         }
-
-        finalizeRef(artifactInfo, ref, cbObject)
     }
 
     private fun onUploadReference(context: ArtifactUploadContext) {
@@ -131,12 +126,19 @@ class DdcLocalRepository(
         val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
         when (contentType) {
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
-                val cbObject = CbObject(ByteBuffer.wrap(context.getArtifactFile().getInputStream().readBytes()))
-                val nodeCreateRequest = buildRefNodeCreateRequest(context, cbObject.hasAttachments())
-                val node = storageManager.storeArtifactFile(
-                    nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
-                )
-                finalizeRef(artifactInfo, node.toReference(), cbObject)
+                val payload = context.getArtifactFile().getInputStream().readBytes()
+                val cbObject = CbObject(ByteBuffer.wrap(payload))
+                val finalized = !cbObject.hasAttachments()
+                val ref = referenceService.create(Reference.from(artifactInfo, payload, finalized))
+                ref.inlineBlob?.let {
+                    // inlineBlob为null时表示inlineBlob过大，需要存到文件中
+                    val nodeCreateRequest = buildRefNodeCreateRequest(context)
+                    storageManager.storeArtifactFile(
+                        nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
+                    )
+                }
+                val res = referenceService.finalize(ref, cbObject)
+                HttpContextHolder.getResponse().writer.println(res.toJsonString())
             }
 
             else -> throw BadRequestException(
@@ -145,7 +147,7 @@ class DdcLocalRepository(
         }
     }
 
-    private fun buildRefNodeCreateRequest(context: ArtifactUploadContext, finalized: Boolean): NodeCreateRequest {
+    private fun buildRefNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
         // TODO 后续鉴权调整后此处需要改为系统级元数据
         val metadata = ArrayList<MetadataModel>()
@@ -155,21 +157,6 @@ class DdcLocalRepository(
                 value = artifactInfo.inlineBlobHash!!,
             )
         )
-        metadata.add(
-            MetadataModel(
-                key = NODE_METADATA_KEY_FINALIZED,
-                value = finalized
-            )
-        )
-        // TODO inlineBlob
-//        if (context.getArtifactFile().getSize() <= DEFAULT_INLINE_BLOB_MAX_SIZE) {
-//            metadata.add(
-//                MetadataModel(
-//                    key = NODE_METADATA_KEY_INLINE_BLOB,
-//                    value = context.getArtifactFile().getInputStream().readBytes(),
-//                )
-//            )
-//        }
 
         return buildNodeCreateRequest(context).copy(
             overwrite = true,
@@ -215,67 +202,29 @@ class DdcLocalRepository(
         )
     }
 
-    private fun finalizeRef(
-        artifactInfo: ReferenceArtifactInfo,
-        ref: Reference,
-        payload: CbObject
-    ) {
-        blobService.addRefToBlobs(ref, setOf(artifactInfo.inlineBlobHash!!))
-        var missingRefs = emptyList<ContentHash>()
-        var missingBlobs = emptyList<ContentHash>()
-        if (payload.hasAttachments()) {
-            try {
-                val blobs = refResolver.getReferencedBlobs(artifactInfo.projectId, artifactInfo.repoName, payload)
-                blobService.addRefToBlobs(ref, blobs.mapTo(HashSet()) { it.toString() })
-            } catch (e: PartialReferenceResolveException) {
-                missingRefs = e.unresolvedReferences
-            } catch (e: ReferenceIsMissingBlobsException) {
-                missingBlobs = e.missingBlobs
-            }
-        }
-
-        if (missingRefs.isEmpty() && missingBlobs.isEmpty()) {
-            updateNodeFinalizeMetadata(artifactInfo)
-        }
-
-        val res = CreateRefResponse((missingRefs + missingBlobs).mapTo(HashSet()) { it.toString() })
-        HttpContextHolder.getResponse().writer.println(res.toJsonString())
-    }
-
-    private fun updateNodeFinalizeMetadata(artifactInfo: ReferenceArtifactInfo) {
-        with(artifactInfo) {
-            val nodeMetadata = listOf(
-                MetadataModel(
-                    key = NODE_METADATA_KEY_FINALIZED,
-                    value = true,
-                    system = true
-                )
-            )
-            metadataClient.saveMetadata(
-                MetadataSaveRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = getArtifactFullPath(),
-                    nodeMetadata = nodeMetadata
-                )
-            )
-        }
-    }
-
     private fun onDownloadReference(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-            val (ref, blob) = getReferenceInlineBlob(artifactInfo) ?: return null
-            response.addHeader(HEADER_NAME_HASH, ref.blobIdentifier.toString())
-            response.addHeader(HEADER_NAME_LAST_ACCESS, ref.lastAccess.format(DATE_TIME_FORMATTER))
+            val ref = referenceService.getReference(
+                projectId,
+                repoName,
+                artifactInfo.bucket,
+                artifactInfo.refId.toString()
+            ) ?: return null
+            response.addHeader(HEADER_NAME_HASH, ref.blobId.toString())
+            response.addHeader(HEADER_NAME_LAST_ACCESS, ref.lastAccessDate!!.format(DATE_TIME_FORMATTER))
 
             return when (val responseType = response.contentType) {
                 MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
-                    ArtifactResource(blob, artifactInfo.getResponseName()).apply { contentType = responseType }
+                    val ais = ArtifactInputStream(
+                        ByteArrayInputStream(ref.inlineBlob),
+                        Range.full(ref.inlineBlob!!.size.toLong())
+                    )
+                    ArtifactResource(ais, artifactInfo.getResponseName()).apply { contentType = responseType }
                 }
 
                 MEDIA_TYPE_JUPITER_INLINED_PAYLOAD -> {
-                    val cb = blob.use { CbObject(ByteBuffer.wrap(it.readBytes())) }
+                    val cb = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
                     onInlineDownload(context, cb, responseType)
                 }
 
@@ -400,36 +349,9 @@ class DdcLocalRepository(
         return Pair(countOfBinaryAttachmentFields, countOfAttachmentFields)
     }
 
-    private fun getReferenceInlineBlob(artifactInfo: ReferenceArtifactInfo): Pair<Reference, ArtifactInputStream>? {
-        with(artifactInfo) {
-            val repo = ArtifactContextHolder.getRepoDetail()!!
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return null
-            val ref = node.toReference()
-            if (!node.finalized()) {
-                throw BadRequestException(
-                    CommonMessageCode.PARAMETER_INVALID, "Object ${ref.bucket} ${ref.name} is not finalized."
-                )
-            }
-
-            val refBlobInputStream = if (ref.inlineBlob?.isNotEmpty() == true) {
-                ArtifactInputStream(ByteArrayInputStream(ref.inlineBlob), Range.full(ref.inlineBlob!!.size.toLong()))
-            } else {
-                storageManager.loadArtifactInputStream(node, repo.storageCredentials)
-            }
-
-            if (refBlobInputStream == null) {
-                logger.warn("Blob was null when attempting to fetch ${ref.namespace} ${ref.bucket} ${ref.name}")
-                return null
-            }
-
-            return Pair(ref, refBlobInputStream)
-        }
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(DdcLocalRepository::class.java)
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss")
-        private const val DEFAULT_INLINE_BLOB_MAX_SIZE = 1 * 1024
         const val HEADER_NAME_HASH = "X-Jupiter-IoHash"
         private const val HEADER_NAME_LAST_ACCESS = "X-Jupiter-LastAccess"
         private const val HEADER_NAME_INLINE_PAYLOAD_HASH = "X-Jupiter-InlinePayloadHash"

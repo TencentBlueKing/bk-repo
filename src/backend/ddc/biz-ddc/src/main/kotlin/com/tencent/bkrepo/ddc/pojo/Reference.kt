@@ -27,15 +27,18 @@
 
 package com.tencent.bkrepo.ddc.pojo
 
+import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.model.TDdcRef
 import java.time.LocalDateTime
 
 data class Reference(
-    val namespace: String,
+    val projectId: String,
+    val repoName: String,
     val bucket: String,
-    val name: RefId,
-    val lastAccess: LocalDateTime,
-    var blobIdentifier: ContentHash? = null,
-    val isFinalized: Boolean,
+    val key: RefId,
+    val finalized: Boolean? = null,
+    val lastAccessDate: LocalDateTime? = null,
+    var blobId: ContentHash? = null,
     var inlineBlob: ByteArray? = null,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -44,12 +47,12 @@ data class Reference(
 
         other as Reference
 
-        if (namespace != other.namespace) return false
+        if (repoName != other.repoName) return false
         if (bucket != other.bucket) return false
-        if (name != other.name) return false
-        if (lastAccess != other.lastAccess) return false
-        if (blobIdentifier != other.blobIdentifier) return false
-        if (isFinalized != other.isFinalized) return false
+        if (key != other.key) return false
+        if (lastAccessDate != other.lastAccessDate) return false
+        if (blobId != other.blobId) return false
+        if (finalized != other.finalized) return false
         if (inlineBlob != null) {
             if (other.inlineBlob == null) return false
             if (!inlineBlob.contentEquals(other.inlineBlob)) return false
@@ -59,13 +62,40 @@ data class Reference(
     }
 
     override fun hashCode(): Int {
-        var result = namespace.hashCode()
+        var result = repoName.hashCode()
         result = 31 * result + bucket.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + lastAccess.hashCode()
-        result = 31 * result + blobIdentifier.hashCode()
-        result = 31 * result + isFinalized.hashCode()
+        result = 31 * result + key.hashCode()
+        result = 31 * result + lastAccessDate.hashCode()
+        result = 31 * result + blobId.hashCode()
+        result = 31 * result + finalized.hashCode()
         result = 31 * result + (inlineBlob?.contentHashCode() ?: 0)
         return result
+    }
+
+    companion object {
+        fun from(ref: TDdcRef) = Reference(
+            projectId = ref.projectId,
+            repoName = ref.repoName,
+            bucket = ref.bucket,
+            key = RefId.create(ref.key),
+            lastAccessDate = ref.lastAccessDate,
+            blobId = ContentHash.fromHex(ref.blobId),
+            finalized = ref.finalized,
+            inlineBlob = ref.inlineBlob?.data
+        )
+
+        fun from(
+            artifactInfo: ReferenceArtifactInfo, payload: ByteArray, finalized: Boolean
+        ) = with(artifactInfo) {
+            Reference(
+                projectId = projectId,
+                repoName = repoName,
+                bucket = bucket,
+                key = refId,
+                finalized = finalized,
+                blobId = ContentHash.fromHex(inlineBlobHash!!),
+                inlineBlob = payload,
+            )
+        }
     }
 }
