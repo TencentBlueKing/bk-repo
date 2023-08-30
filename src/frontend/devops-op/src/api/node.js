@@ -102,6 +102,7 @@ export function queryEmptyFolder(projectId, repoName, parentPath) {
   return request({
     url: `${PREFIX_NODE_OPERATION}/emptyFolders/${projectId}/${repoName}`,
     method: 'get',
+    timeout: 600000,
     params: {
       parentFolder: parentPath
     }
@@ -111,6 +112,7 @@ export function queryEmptyFolder(projectId, repoName, parentPath) {
 export function deleteEmptyFolder(projectId, repoName, parentPath) {
   return request({
     url: `${PREFIX_NODE_OPERATION}/emptyFolders/${projectId}/${repoName}`,
+    timeout: 600000,
     method: 'delete',
     params: {
       parentFolder: parentPath
@@ -121,6 +123,7 @@ export function deleteEmptyFolder(projectId, repoName, parentPath) {
 export function statisticalFirstLevelFolder(projectId, repoName, pageNumber) {
   return request({
     url: `${PREFIX_NODE_OPERATION}/firstLevelFolder/${projectId}/${repoName}`,
+    timeout: 600000,
     method: 'get',
     params: {
       pageNumber: pageNumber,
