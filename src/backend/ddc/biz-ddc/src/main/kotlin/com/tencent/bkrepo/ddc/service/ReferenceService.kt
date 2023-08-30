@@ -90,16 +90,16 @@ class ReferenceService(
     fun getReference(
         projectId: String, repoName: String, bucket: String, key: String, includePayload: Boolean = true
     ): Reference? {
-        val tRef = refRepository.find(projectId, repoName, bucket, key, includePayload)
-        if (tRef?.finalized == false) {
+        val tRef = refRepository.find(projectId, repoName, bucket, key, includePayload) ?: return null
+        if (!tRef.finalized) {
             throw BadRequestException(
                 CommonMessageCode.PARAMETER_INVALID, "Object ${tRef.bucket} ${tRef.key} is not finalized."
             )
         }
 
-        val payload = if (tRef?.inlineBlob == null) {
+        val payload = if (tRef.inlineBlob == null) {
             val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-            nodeClient.getNodeDetail(projectId, repoName, tRef!!.fullPath()).data?.let {
+            nodeClient.getNodeDetail(projectId, repoName, tRef.fullPath()).data?.let {
                 storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
             }
         } else {
