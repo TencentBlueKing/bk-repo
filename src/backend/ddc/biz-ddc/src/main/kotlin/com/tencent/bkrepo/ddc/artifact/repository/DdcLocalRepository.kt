@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -61,7 +62,6 @@ import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER
 import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_BLOB_ID
 import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_CONTENT_ID
-import com.tencent.bkrepo.ddc.utils.hasAttachments
 import com.tencent.bkrepo.ddc.utils.isAttachment
 import com.tencent.bkrepo.ddc.utils.isBinaryAttachment
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -110,16 +110,13 @@ class DdcLocalRepository(
 
     fun finalizeRef(artifactInfo: ReferenceArtifactInfo) {
         with(artifactInfo) {
-            val ref = referenceService.getReference(
-                projectId, repoName, bucket, refId.toString(),
-                includePayload = true,
-                checkFinalized = false
+            val ref = getReference(
+                projectId, repoName, bucket, refId.toString(), checkFinalized = false
             ) ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
-            val cbObject = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
             if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
                 throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
             }
-            val res = referenceService.finalize(ref, cbObject)
+            val res = referenceService.finalize(ref, ref.inlineBlob!!)
             HttpContextHolder.getResponse().writer.println(res.toJsonString())
         }
     }
@@ -130,9 +127,7 @@ class DdcLocalRepository(
         when (contentType) {
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
                 val payload = context.getArtifactFile().getInputStream().readBytes()
-                val cbObject = CbObject(ByteBuffer.wrap(payload))
-                val finalized = !cbObject.hasAttachments()
-                val ref = referenceService.create(Reference.from(artifactInfo, payload, finalized))
+                val ref = referenceService.create(Reference.from(artifactInfo, payload))
                 ref.inlineBlob?.let {
                     // inlineBlob为null时表示inlineBlob过大，需要存到文件中
                     val nodeCreateRequest = buildRefNodeCreateRequest(context)
@@ -140,7 +135,7 @@ class DdcLocalRepository(
                         nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
                     )
                 }
-                val res = referenceService.finalize(ref, cbObject)
+                val res = referenceService.finalize(ref, payload)
                 HttpContextHolder.getResponse().writer.println(res.toJsonString())
             }
 
@@ -209,11 +204,8 @@ class DdcLocalRepository(
     private fun onDownloadReference(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-            val ref = referenceService.getReference(
-                projectId,
-                repoName,
-                artifactInfo.bucket,
-                artifactInfo.refId.toString()
+            val ref = getReference(
+                projectId, repoName, artifactInfo.bucket, artifactInfo.refId.toString(), true
             ) ?: return null
             response.addHeader(HEADER_NAME_HASH, ref.blobId.toString())
             response.addHeader(HEADER_NAME_LAST_ACCESS, ref.lastAccessDate!!.format(DATE_TIME_FORMATTER))
@@ -335,6 +327,30 @@ class DdcLocalRepository(
             }?.let {
                 ArtifactResource(it, artifactInfo.getResponseName()).apply { contentType = responseType }
             }
+        }
+    }
+
+    private fun getReference(
+        projectId: String, repoName: String, bucket: String, key: String, checkFinalized: Boolean
+    ): Reference? {
+        val ref = referenceService.getReference(
+            projectId, repoName, bucket, key,
+            includePayload = true,
+            checkFinalized = checkFinalized
+        ) ?: return null
+
+        if (ref.inlineBlob == null) {
+            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
+            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let {
+                storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
+            }
+        }
+
+        return if (ref.inlineBlob == null) {
+            logger.warn("Blob was null when attempting to fetch ${ref.repoName} ${ref.bucket} ${ref.key}")
+            null
+        } else {
+            ref
         }
     }
 

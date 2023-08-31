@@ -30,7 +30,6 @@ package com.tencent.bkrepo.ddc.service
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
 import com.tencent.bkrepo.ddc.exception.PartialReferenceResolveException
@@ -41,12 +40,12 @@ import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.repository.RefRepository
 import com.tencent.bkrepo.ddc.serialization.CbObject
-import com.tencent.bkrepo.ddc.utils.DdcUtils.fullPath
 import com.tencent.bkrepo.ddc.utils.hasAttachments
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.bson.types.Binary
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.nio.ByteBuffer
 import java.time.LocalDateTime
 
 @Service
@@ -102,27 +101,11 @@ class ReferenceService(
             )
         }
 
-        val payload = if (tRef.inlineBlob == null) {
-            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-            nodeClient.getNodeDetail(projectId, repoName, tRef.fullPath()).data?.let {
-                storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
-            }
-        } else {
-            tRef.inlineBlob!!.data
-        }
-
-        if (payload == null) {
-            logger.warn("Blob was null when attempting to fetch ${tRef.repoName} ${tRef.bucket} ${tRef.key}")
-            return null
-        }
-
-        val ref = Reference.from(tRef)
-        ref.inlineBlob = payload
-        return ref
+        return Reference.from(tRef)
     }
 
-    fun finalize(ref: Reference, cbObject: CbObject): CreateRefResponse {
-        blobService.addRefToBlobs(ref, setOf(ref.blobId!!.toString()))
+    fun finalize(ref: Reference, payload: ByteArray): CreateRefResponse {
+        val cbObject = CbObject(ByteBuffer.wrap(payload))
         var missingRefs = emptyList<ContentHash>()
         var missingBlobs = emptyList<ContentHash>()
         if (cbObject.hasAttachments()) {

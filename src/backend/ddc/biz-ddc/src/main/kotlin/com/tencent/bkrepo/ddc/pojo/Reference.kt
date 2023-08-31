@@ -41,6 +41,8 @@ data class Reference(
     var blobId: ContentHash? = null,
     var inlineBlob: ByteArray? = null,
 ) {
+    fun fullPath() = "/$bucket/$key"
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -84,15 +86,13 @@ data class Reference(
             inlineBlob = ref.inlineBlob?.data
         )
 
-        fun from(
-            artifactInfo: ReferenceArtifactInfo, payload: ByteArray, finalized: Boolean
-        ) = with(artifactInfo) {
+        fun from(artifactInfo: ReferenceArtifactInfo, payload: ByteArray) = with(artifactInfo) {
             Reference(
                 projectId = projectId,
                 repoName = repoName,
                 bucket = bucket,
                 key = refId,
-                finalized = finalized,
+                finalized = false,
                 blobId = ContentHash.fromHex(inlineBlobHash!!),
                 inlineBlob = payload,
             )
