@@ -54,7 +54,7 @@ class OauthAuthorizationController @Autowired constructor(
 ) {
 
     @ApiOperation("用户确认Oauth授权")
-    @GetMapping("/{projectId}/authorize")
+    @GetMapping("/authorize")
     fun authorize(
         @RequestParam("client_id") clientId: String,
         state: String,
