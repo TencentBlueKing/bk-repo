@@ -110,8 +110,11 @@ class DdcLocalRepository(
 
     fun finalizeRef(artifactInfo: ReferenceArtifactInfo) {
         with(artifactInfo) {
-            val ref = referenceService.getReference(projectId, repoName, bucket, refId.toString())
-                ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
+            val ref = referenceService.getReference(
+                projectId, repoName, bucket, refId.toString(),
+                includePayload = true,
+                checkFinalized = false
+            ) ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
             val cbObject = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
             if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
                 throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")

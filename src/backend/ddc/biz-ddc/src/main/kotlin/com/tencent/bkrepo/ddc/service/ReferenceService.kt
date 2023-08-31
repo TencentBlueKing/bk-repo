@@ -88,10 +88,15 @@ class ReferenceService(
     }
 
     fun getReference(
-        projectId: String, repoName: String, bucket: String, key: String, includePayload: Boolean = true
+        projectId: String,
+        repoName: String,
+        bucket: String,
+        key: String,
+        includePayload: Boolean = true,
+        checkFinalized: Boolean = true,
     ): Reference? {
         val tRef = refRepository.find(projectId, repoName, bucket, key, includePayload) ?: return null
-        if (!tRef.finalized) {
+        if (checkFinalized && !tRef.finalized) {
             throw BadRequestException(
                 CommonMessageCode.PARAMETER_INVALID, "Object ${tRef.bucket} ${tRef.key} is not finalized."
             )
