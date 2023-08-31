@@ -25,13 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.remote
+package com.tencent.bkrepo.oci.pojo.response
 
-/**
- * 返回头中的WWW_AUTHENTICATE字段包含的属性
- */
-data class AuthenticationProperty(
-    val service: String,
-    val scope: String? = null,
-    val authUrl: String
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+
+data class ResponseProperty(
+    val digest: OciDigest? = null,
+    val location: String? = null,
+    val uuid: String? = null,
+    val range: Long? = null,
+    val status: HttpStatus? = null,
+    val contentLength: Int? = null
 )

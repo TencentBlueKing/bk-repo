@@ -28,13 +28,13 @@
 package com.tencent.bkrepo.replication.replica.base.handler
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.OCI_BLOBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
-import com.tencent.bkrepo.replication.util.HttpUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URL
@@ -105,7 +105,7 @@ class RemoteClusterArtifactReplicationHandler(
     ): String {
         val baseUrl = URL(url)
         val suffixUrl = URL(baseUrl, "/v2" + baseUrl.path).toString()
-        return HttpUtils.buildUrl(suffixUrl, path, params)
+        return UrlFormatter.buildUrl(suffixUrl, path, params)
     }
     companion object {
         private val logger = LoggerFactory.getLogger(RemoteClusterArtifactReplicationHandler::class.java)

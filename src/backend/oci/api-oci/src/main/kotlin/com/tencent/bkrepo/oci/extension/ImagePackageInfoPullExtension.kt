@@ -25,16 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.oci.extension
 
-open class RepoJobProperties(
-    override var enabled: Boolean = true,
+import com.tencent.devops.plugin.api.ExtensionPoint
+
+/**
+ * 拉取并存储第三方仓库下的镜像对应package信息扩展点
+ */
+interface ImagePackageInfoPullExtension: ExtensionPoint {
+
     /**
-     * 需要特殊处理的仓库类别
-     * */
-    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要特殊处理的仓库类型
-     * */
-    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
-) : MongodbJobProperties()
+     * 拉取第三方镜像仓库package信息,并存储到对应仓库中
+     */
+    fun queryAndCreateDockerPackageInfo(
+        context: ImagePackagePullContext
+    )
+}

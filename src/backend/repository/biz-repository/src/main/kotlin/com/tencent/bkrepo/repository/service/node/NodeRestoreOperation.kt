@@ -49,6 +49,10 @@ interface NodeRestoreOperation {
     fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail>
 
     /**
+     * 根据 sha256 查询被删除的节点详情
+     */
+    fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail?
+    /**
      * 恢复被删除的节点
      * @return 恢复节点数量
      */

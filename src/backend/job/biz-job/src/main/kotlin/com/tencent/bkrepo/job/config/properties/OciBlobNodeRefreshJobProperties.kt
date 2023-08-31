@@ -27,14 +27,14 @@
 
 package com.tencent.bkrepo.job.config.properties
 
-open class RepoJobProperties(
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("job.oci-blob-node-refresh")
+class OciBlobNodeRefreshJobProperties(
+    /**
+     * 需要进行远端分发集群推送的仓库类型
+     * */
+    var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
     override var enabled: Boolean = true,
-    /**
-     * 需要特殊处理的仓库类别
-     * */
-    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要特殊处理的仓库类型
-     * */
-    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
-) : MongodbJobProperties()
+    override var cron: String = "0 0 4/24 * * ?"
+    ) : MongodbJobProperties()

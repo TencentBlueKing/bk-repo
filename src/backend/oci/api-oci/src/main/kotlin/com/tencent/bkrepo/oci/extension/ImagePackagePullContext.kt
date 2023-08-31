@@ -25,16 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.oci.extension
 
-open class RepoJobProperties(
-    override var enabled: Boolean = true,
-    /**
-     * 需要特殊处理的仓库类别
-     * */
-    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要特殊处理的仓库类型
-     * */
-    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
-) : MongodbJobProperties()
+import java.net.URL
+
+data class ImagePackagePullContext(
+    val projectId: String,
+    val repoName:String,
+    val remoteUrl: URL,
+    val userName: String? = null,
+    val password: String? = null
+)

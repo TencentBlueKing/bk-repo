@@ -25,16 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.api.pojo.authentication
 
-open class RepoJobProperties(
-    override var enabled: Boolean = true,
-    /**
-     * 需要特殊处理的仓库类别
-     * */
-    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要特殊处理的仓库类型
-     * */
-    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
-) : MongodbJobProperties()
+/**
+ * 返回头中的WWW_AUTHENTICATE字段包含的属性
+ */
+data class AuthenticationProperty(
+    val service: String,
+    val scope: String? = null,
+    val authUrl: String
+)

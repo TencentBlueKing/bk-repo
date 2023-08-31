@@ -25,16 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.oci.listener.consumer
 
-open class RepoJobProperties(
-    override var enabled: Boolean = true,
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.oci.listener.base.EventExecutor
+import org.slf4j.LoggerFactory
+import org.springframework.messaging.Message
+import org.springframework.stereotype.Component
+import java.util.function.Consumer
+
+/**
+ * 构件事件消费者，用于实时同步
+ * 对应destination为对应ArtifactEvent.topic
+ */
+@Component("remoteOciRepo")
+class RemoteImageRepoEventConsumer(
+    private val eventExecutor: EventExecutor
+) : Consumer<Message<ArtifactEvent>>{
+
     /**
-     * 需要特殊处理的仓库类别
-     * */
-    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要特殊处理的仓库类型
-     * */
-    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
-) : MongodbJobProperties()
+     * 允许接收的事件类型
+     */
+    private val acceptTypes = setOf(
+        EventType.REPO_CREATED,
+        EventType.REPO_UPDATED,
+        EventType.REPO_REFRESHED
+    )
+
+    override fun accept(message: Message<ArtifactEvent>) {
+        if (!acceptTypes.contains(message.payload.type)) {
+            return
+        }
+        logger.info("current repo operation message header is ${message.headers}")
+        eventExecutor.submit(message.payload)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(RemoteImageRepoEventConsumer::class.java)
+    }
+}

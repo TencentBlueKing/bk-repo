@@ -133,7 +133,7 @@ interface NodeClient {
 
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")
-    fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+    fun deleteNodes(@RequestBody nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
     @PostMapping("/restore")
@@ -194,4 +194,14 @@ interface NodeClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String
     ): Response<List<NodeDetail>>
+
+    @ApiOperation("通过sha256查询已删除节点")
+    @GetMapping("/deletedBySha256/detail/{projectId}/{repoName}")
+    fun getDeletedNodeDetailBySha256(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam sha256: String
+    ): Response<NodeDetail?>
+
+
 }

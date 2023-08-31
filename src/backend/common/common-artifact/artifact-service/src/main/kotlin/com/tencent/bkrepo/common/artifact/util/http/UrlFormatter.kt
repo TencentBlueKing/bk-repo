@@ -31,10 +31,16 @@
 
 package com.tencent.bkrepo.common.artifact.util.http
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.CharPool.QUESTION
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTP
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTPS
+import com.tencent.bkrepo.common.storage.innercos.retry
+import java.net.HttpURLConnection
+import java.net.MalformedURLException
+import java.net.URL
 
 /**
  * Http URL 格式化工具类
@@ -81,5 +87,88 @@ object UrlFormatter {
             url = HTTP + url
         }
         return url
+    }
+
+
+    /**
+     * 拼接url
+     */
+    fun buildUrl(
+        url: String,
+        path: String = StringPool.EMPTY,
+        params: String = StringPool.EMPTY,
+    ): String {
+        if (url.isBlank())
+            throw IllegalArgumentException("Url should not be blank")
+        val newUrl = addProtocol(url.trim().trimEnd(SLASH))
+        val baseUrl = URL(newUrl, newUrl.path)
+        val builder = StringBuilder(baseUrl.toString().trimEnd(SLASH))
+        if (path.isNotBlank()) {
+            builder.append(SLASH).append(path.trimStart(SLASH))
+        }
+        if (!newUrl.query.isNullOrEmpty()) {
+            builder.append(QUESTION).append(newUrl.query)
+        }
+        return addParams(builder.toString(), params)
+    }
+
+    fun addParams(url: String, params: String): String {
+        val baseUrl = URL(url)
+        val builder = StringBuilder(baseUrl.toString())
+
+        if (params.isNotEmpty()) {
+            if (builder.contains(QUESTION)) {
+                builder.append(CharPool.AND).append(params)
+            } else {
+                builder.append(QUESTION).append(params)
+            }
+        }
+        return builder.toString()
+    }
+
+    /**
+     * 当没有protocol时进行添加
+     */
+    fun addProtocol(registry: String): URL {
+        try {
+            return URL(registry)
+        } catch (ignore: MalformedURLException) {
+        }
+        return addProtocolToHost(registry)
+    }
+
+    /**
+     * 针对url如果没传protocol， 则默认以https请求发送；
+     * 如果http请求无法访问，则以http发送
+     */
+    private fun addProtocolToHost(registry: String): URL {
+        val url = try {
+            URL("$HTTPS$registry")
+        } catch (ignore: MalformedURLException) {
+            throw IllegalArgumentException("Check your input url!")
+        }
+        return try {
+            retry(times = 3, delayInSeconds = 1) {
+                validateHttpsProtocol(url)
+                url
+            }
+        } catch (ignore: Exception) {
+            URL(url.toString().replaceFirst("^https".toRegex(), "http"))
+        }
+    }
+
+    /**
+     * 验证registry是否支持https
+     */
+    private fun validateHttpsProtocol(url: URL): Boolean {
+        return try {
+            val http: HttpURLConnection = url.openConnection() as HttpURLConnection
+            http.instanceFollowRedirects = false
+            http.responseCode
+            http.disconnect()
+            true
+        } catch (e: Exception) {
+            throw e
+        }
     }
 }

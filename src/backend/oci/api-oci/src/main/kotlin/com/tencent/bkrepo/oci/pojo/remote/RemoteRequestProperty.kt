@@ -25,16 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.oci.pojo.remote
 
-open class RepoJobProperties(
-    override var enabled: Boolean = true,
-    /**
-     * 需要特殊处理的仓库类别
-     * */
-    var repositoryCategories: List<String> = listOf("REMOTE", "COMPOSITE"),
-    /**
-     * 需要特殊处理的仓库类型
-     * */
-    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
-) : MongodbJobProperties()
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.oci.constant.REQUEST_IMAGE
+
+data class RemoteRequestProperty(
+    var url: String,
+    var imageName: String,
+    var fullPath: String = StringPool.EMPTY,
+    var params: String = StringPool.EMPTY,
+    var type: String = REQUEST_IMAGE
+)
