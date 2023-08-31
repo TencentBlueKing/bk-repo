@@ -8,6 +8,7 @@ import permission from './permission'
 import nodeManage from './nodeManage'
 import project from './project'
 import scan from './scan'
+import oauth from './oauth'
 
 const prefix = 'repository/api'
 
@@ -19,6 +20,7 @@ export default {
     ...nodeManage,
     ...project,
     ...scan,
+    ...oauth,
     /*
         创建仓库
         body: {

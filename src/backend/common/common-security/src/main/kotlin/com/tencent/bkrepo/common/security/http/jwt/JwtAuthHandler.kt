@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.security.http.jwt
 
+import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import io.jsonwebtoken.ExpiredJwtException
@@ -46,7 +48,8 @@ import javax.servlet.http.HttpServletRequest
 
 open class JwtAuthHandler(
     jwtAuthProperties: JwtAuthProperties,
-    private val cryptoProperties: CryptoProperties
+    private val cryptoProperties: CryptoProperties,
+    private val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
 
     private val signingKey = JwtUtils.createSigningKey(jwtAuthProperties.secretKey)
@@ -71,7 +74,11 @@ open class JwtAuthHandler(
 
         return validateToken {
             val key = RsaUtils.stringToPublicKey(cryptoProperties.publicKeyStr2048PKCS8)
-            JwtUtils.validateToken(key, token).body.subject
+            val userId = JwtUtils.validateToken(key, token).body.subject
+            val scope = authenticationManager.findOauthToken(token)?.scope
+                ?: throw AuthenticationException("Invalid token")
+            request.setAttribute(AUTHORITIES_KEY, scope)
+            userId
         }
     }
 

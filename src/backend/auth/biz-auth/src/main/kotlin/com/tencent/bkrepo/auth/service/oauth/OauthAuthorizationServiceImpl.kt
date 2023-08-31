@@ -53,15 +53,12 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
-import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -82,14 +79,11 @@ class OauthAuthorizationServiceImpl(
     private val userService: UserService,
     private val redisOperation: RedisOperation,
     private val cryptoProperties: CryptoProperties,
-    private val oauthProperties: OauthProperties,
-    private val authenticationManager: AuthenticationManager
+    private val oauthProperties: OauthProperties
 ) : OauthAuthorizationService {
 
     override fun authorized(clientId: String, state: String, scope: String?, nonce: String?): AuthorizedResult {
-        val auth = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION) ?: throw AuthenticationException()
-        val (userId, password) = BasicAuthUtils.decode(auth)
-        authenticationManager.checkUserAccount(userId, password)
+        val userId = SecurityUtils.getUserId()
         val client = accountRepository.findById(clientId)
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
         val code = OauthUtils.generateCode()
@@ -108,7 +102,8 @@ class OauthAuthorizationServiceImpl(
         return AuthorizedResult(
             redirectUrl = "${client.redirectUri!!.removeSuffix(StringPool.SLASH)}?code=$code&state=$state",
             userId = userId,
-            appId = client.appId
+            appId = client.appId,
+            scope = client.scope?.toList() ?: emptyList()
         )
     }
 
@@ -241,15 +236,15 @@ class OauthAuthorizationServiceImpl(
         return UserInfo(userId, userId)
     }
 
-    override fun getOidcConfiguration(): OidcConfiguration {
+    override fun getOidcConfiguration(projectId: String): OidcConfiguration {
         return OidcConfiguration(
-            issuer = "${oauthProperties.domain}/auth/api/oauth",
-            authorizationEndpoint = "${oauthProperties.domain}/auth/api/oauth/authorize",
-            tokenEndpoint = "${oauthProperties.domain}/auth/api/oauth/token",
-            jwksUri = "${oauthProperties.domain}/auth/api/oauth/.well-known/jwks.json",
+            issuer = "${oauthProperties.domain}/auth/api/oauth/${projectId}",
+            authorizationEndpoint = "${oauthProperties.domain}/ui/${projectId}/oauth/authorize",
+            tokenEndpoint = "${oauthProperties.domain}/auth/api/oauth/${projectId}/token",
+            jwksUri = "${oauthProperties.domain}/auth/api/oauth/${projectId}/.well-known/jwks.json",
             responseTypesSupported = listOf("code"),
             subjectTypesSupported = listOf("public"),
-            userinfoEndpoint = "${oauthProperties.domain}/auth/api/oauth/userInfo",
+            userinfoEndpoint = "${oauthProperties.domain}/auth/api/oauth/${projectId}/userInfo",
             scopesSupported = listOf("openid", "offline_access")
         )
     }

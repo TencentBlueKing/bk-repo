@@ -101,7 +101,13 @@ class HttpAuthSecurityConfiguration(
             httpAuthSecurity.addHttpAuthHandler(PlatformAuthHandler(authenticationManager))
         }
         if (httpAuthSecurity.jwtAuthEnabled) {
-            httpAuthSecurity.addHttpAuthHandler(JwtAuthHandler(jwtAuthProperties, cryptoProperties))
+            httpAuthSecurity.addHttpAuthHandler(
+                JwtAuthHandler(
+                    jwtAuthProperties = jwtAuthProperties,
+                    cryptoProperties = cryptoProperties,
+                    authenticationManager = authenticationManager
+                )
+            )
         }
         if (httpAuthSecurity.oauthEnabled) {
             httpAuthSecurity.addHttpAuthHandler(OauthAuthHandler(authenticationManager))
