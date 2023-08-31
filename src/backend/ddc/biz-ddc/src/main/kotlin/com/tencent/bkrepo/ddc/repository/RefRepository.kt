@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.ddc.repository
 
+import com.mongodb.DuplicateKeyException
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcRef
@@ -44,7 +45,7 @@ class RefRepository : SimpleMongoDao<TDdcRef>() {
             .and(TDdcRef::bucket.name).isEqualTo(bucket)
             .and(TDdcRef::key.name).isEqualTo(key)
         val query = Query(criteria)
-        if(!includePayload) {
+        if (!includePayload) {
             query.fields().exclude(TDdcRef::inlineBlob.name)
         }
         return findOne(query)
@@ -57,7 +58,11 @@ class RefRepository : SimpleMongoDao<TDdcRef>() {
             .and(TDdcRef::key.name).isEqualTo(ref.key)
         val query = Query(criteria)
         val options = FindAndReplaceOptions().upsert()
-        return determineMongoTemplate().findAndReplace(query, ref, options)
+        return try {
+            determineMongoTemplate().findAndReplace(query, ref, options)
+        } catch (e: DuplicateKeyException) {
+            findOne(query)
+        }
     }
 
     fun finalize(projectId: String, repoName: String, bucket: String, key: String): UpdateResult {
