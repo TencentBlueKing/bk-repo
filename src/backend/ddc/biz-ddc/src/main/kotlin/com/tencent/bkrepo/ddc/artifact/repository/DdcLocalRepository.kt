@@ -220,8 +220,7 @@ class DdcLocalRepository(
                 }
 
                 MEDIA_TYPE_JUPITER_INLINED_PAYLOAD -> {
-                    val cb = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
-                    onInlineDownload(context, cb, responseType)
+                    onInlineDownload(context, ref.inlineBlob!!, responseType)
                 }
 
                 else -> throw NotImplementedException("Unknown expected response type $responseType")
@@ -269,10 +268,11 @@ class DdcLocalRepository(
      */
     private fun onInlineDownload(
         context: ArtifactDownloadContext,
-        cb: CbObject,
+        refInlineBlob: ByteArray,
         responseType: String,
     ): ArtifactResource? {
         with(context) {
+            val cb = CbObject(ByteBuffer.wrap(refInlineBlob))
             val (binaryAttachmentCount, attachmentCount) = countAttachment(cb)
             val artifactInfo = artifactInfo as ReferenceArtifactInfo
 
@@ -306,10 +306,10 @@ class DdcLocalRepository(
                     null
                 }
             } else {
-                val cbByteBuffer = cb.innerField.fieldData.asReadOnlyBuffer()
-                val byteArray = ByteArray(cbByteBuffer.remaining())
-                ByteBuffer.wrap(byteArray).put(cbByteBuffer)
-                val ais = ArtifactInputStream(ByteArrayInputStream(byteArray), Range.full(byteArray.size.toLong()))
+                val ais = ArtifactInputStream(
+                    ByteArrayInputStream(refInlineBlob),
+                    Range.full(refInlineBlob.size.toLong())
+                )
                 ArtifactResource(ais, artifactInfo.getResponseName()).apply { contentType = responseType }
             }
         }
