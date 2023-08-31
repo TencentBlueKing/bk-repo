@@ -40,12 +40,12 @@ import org.springframework.stereotype.Repository
 
 @Repository
 class BlobRepository : SimpleMongoDao<TDdcBlob>() {
-    fun findByContentId(projectId: String, repoName: String, contentId: String): List<TDdcBlob> {
+    fun findSmallestByContentId(projectId: String, repoName: String, contentId: String): TDdcBlob? {
         val criteria = TDdcBlob::projectId.isEqualTo(projectId)
             .and(TDdcBlob::repoName.name).isEqualTo(repoName)
             .and(TDdcBlob::contentId.name).isEqualTo(contentId)
         val query = Query(criteria).with(Sort.by(Sort.Direction.ASC, TDdcBlob::size.name))
-        return find(query)
+        return findOne(query)
     }
 
     fun findByBlobId(projectId: String, repoName: String, blobId: String): TDdcBlob? {

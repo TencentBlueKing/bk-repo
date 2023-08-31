@@ -70,6 +70,14 @@ class BlobService(
 
     }
 
+    fun getBlob(projectId: String, repoName: String, blobId: String): Blob {
+        return blobRepository.findByBlobId(projectId, repoName, blobId)?.let { Blob.from(it) }
+            ?: throw BlobNotFoundException(projectId, repoName, blobId)
+    }
+
+    fun findBlob(projectId: String, repoName: String, blobId: String): Blob? {
+        return blobRepository.findByBlobId(projectId, repoName, blobId)?.let { Blob.from(it) }
+    }
     fun loadBlob(projectId: String, repoName: String, blobId: String): ArtifactInputStream {
         val blob = blobRepository.findByBlobId(projectId, repoName, blobId)
             ?: throw BlobNotFoundException(projectId, repoName, blobId)
@@ -85,8 +93,11 @@ class BlobService(
             ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
     }
 
-    fun getBlobsByContentId(projectId: String, repoName: String, contentId: String): List<Blob> {
-        return blobRepository.findByContentId(projectId, repoName, contentId).map { Blob.from(it) }
+    /**
+     * 根据blob大小排序，返回最小的blob
+     */
+    fun getSmallestBlobByContentId(projectId: String, repoName: String, contentId: String): Blob? {
+        return blobRepository.findSmallestByContentId(projectId, repoName, contentId)?.let { Blob.from(it) }
     }
 
     fun getBlobByBlobIds(projectId: String, repoName: String, blobIds: Collection<String>): List<Blob> {

@@ -29,16 +29,10 @@ package com.tencent.bkrepo.ddc.service
 
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.exception.NotImplementedException
-import com.tencent.bkrepo.ddc.exception.PartialReferenceResolveException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
-import com.tencent.bkrepo.ddc.pojo.Attachment
 import com.tencent.bkrepo.ddc.pojo.Blob
-import com.tencent.bkrepo.ddc.pojo.BlobAttachment
 import com.tencent.bkrepo.ddc.pojo.ContentHash
-import com.tencent.bkrepo.ddc.pojo.ContentIdAttachment
-import com.tencent.bkrepo.ddc.pojo.ObjectAttachment
 import com.tencent.bkrepo.ddc.serialization.CbObject
-import com.tencent.bkrepo.ddc.serialization.IoHash
 import com.tencent.bkrepo.ddc.utils.isBinaryAttachment
 import com.tencent.bkrepo.ddc.utils.isObjectAttachment
 import org.springframework.stereotype.Service
@@ -52,48 +46,11 @@ class ReferenceResolver(
 
     /**
      * 获取[cb]直接与间接引用的所有blob，保证blob存在
-     * blob不存在时抛出[PartialReferenceResolveException]或[ReferenceIsMissingBlobsException]
+     * blob不存在时抛出[ReferenceIsMissingBlobsException]
      */
     fun getReferencedBlobs(projectId: String, repoName: String, cb: CbObject): List<Blob> {
-        val blobIdsOfContentAttachment = ArrayList<ContentHash>()
-        val blobIdToContentIdMap = HashMap<ContentHash, ContentHash>()
-        val blobIds = ArrayList<ContentHash>()
-
-        for (attachment in getAttachments(projectId, repoName, cb)) {
-            if (attachment is ContentIdAttachment) {
-                blobIdsOfContentAttachment.addAll(attachment.blobs.map { it.blobId })
-                attachment.blobs.forEach { blobIdToContentIdMap[it.blobId] = attachment.hash }
-            } else {
-                blobIds.add(attachment.hash)
-            }
-        }
-
-        val blobsOfContentAttachment = blobService
-            .getBlobByBlobIds(projectId, repoName, blobIdsOfContentAttachment.map { it.toString() })
-        val existsBlobIdsOfContentAttachment = blobsOfContentAttachment.map { it.blobId }
-
-        val unresolvedContentIds = blobIdsOfContentAttachment
-            .filter { it !in existsBlobIdsOfContentAttachment }
-            .map { blobIdToContentIdMap[it]!! }
-        if (unresolvedContentIds.isNotEmpty()) {
-            throw PartialReferenceResolveException(unresolvedContentIds)
-        }
-
-        val blobs = blobService.getBlobByBlobIds(projectId, repoName, blobIds.map { it.toString() })
-        val existsBlobIds = blobs.map { it.blobId }
-        val unresolvedBlobIds = blobIds.filter { it !in existsBlobIds }
-        if (unresolvedBlobIds.isNotEmpty()) {
-            throw ReferenceIsMissingBlobsException(unresolvedBlobIds)
-        }
-        return blobs + blobsOfContentAttachment
-    }
-
-    /**
-     * 获取[cb]直接与渐渐引用的所有attachment
-     */
-    fun getAttachments(projectId: String, repoName: String, cb: CbObject): List<Attachment> {
         val objectsToVisit = ArrayDeque<CbObject>()
-        val attachments = ArrayList<Attachment>()
+        val blobs = ArrayList<Blob>()
         val unresolvedBlobs = ArrayList<ContentHash>()
         objectsToVisit.offer(cb)
 
@@ -101,12 +58,17 @@ class ReferenceResolver(
             objectsToVisit.poll().iterateAttachments { field ->
                 val fieldAttachment = field.asAttachment()
                 if (field.isBinaryAttachment()) {
-                    attachments.add(resolveBinaryAttachment(projectId, repoName, fieldAttachment))
+                    val contentId = fieldAttachment.toString()
+                    blobService
+                        .getSmallestBlobByContentId(projectId, repoName, contentId)
+                        ?.let { blobs.add(it) }
+                        ?: unresolvedBlobs.add(ContentHash(fieldAttachment.toByteArray()))
                 } else if (field.isObjectAttachment()) {
                     val contentHash = ContentHash(fieldAttachment.toByteArray())
-                    attachments.add(ObjectAttachment(contentHash))
-                    val cbObject = resolveObjectAttachment(projectId, repoName, contentHash)
-                    cbObject?.let { objectsToVisit.offer(it) } ?: unresolvedBlobs.add(contentHash)
+                    resolveObject(projectId, repoName, contentHash)?.let {
+                        blobs.add(it.first)
+                        objectsToVisit.offer(it.second)
+                    } ?: unresolvedBlobs.add(contentHash)
                 } else {
                     throw NotImplementedException("Unknown attachment type for field $field")
                 }
@@ -116,37 +78,23 @@ class ReferenceResolver(
         if (unresolvedBlobs.isNotEmpty()) {
             throw ReferenceIsMissingBlobsException(unresolvedBlobs)
         }
-        return attachments
+
+        return blobs
     }
 
     /**
-     * 获取[fieldAttachment]关联的所有二进制缓存blob引用
-     */
-    private fun resolveBinaryAttachment(projectId: String, repoName: String, fieldAttachment: IoHash): Attachment {
-        val contentIdByteArray = fieldAttachment.toByteArray()
-        val contentId = fieldAttachment.toString()
-        val blobs = blobService.getBlobsByContentId(projectId, repoName, contentId)
-        // blobs中是否只包含了未压缩的缓存
-        val onlyContainUncompressed = blobs.size == 1 && blobs[0].blobId.toString() == contentId
-
-        return if (!onlyContainUncompressed && blobs.isNotEmpty()) {
-            ContentIdAttachment(ContentHash(contentIdByteArray), blobs)
-        } else {
-            BlobAttachment(ContentHash(contentIdByteArray))
-        }
-    }
-
-    /**
-     * 根据[blobId]获取其关联的数据，并转化未CbObject
+     * 根据[blobId]获取其关联的数据，并转化为CbObject
      *
      * @return 找不到[blobId]关联的数据时返回null
      */
-    private fun resolveObjectAttachment(projectId: String, repoName: String, blobId: ContentHash): CbObject? {
-        try {
-            val bytes = blobService.loadBlob(projectId, repoName, blobId.toString()).readBytes()
-            return CbObject(ByteBuffer.wrap(bytes))
+    private fun resolveObject(projectId: String, repoName: String, blobId: ContentHash): Pair<Blob, CbObject>? {
+        return try {
+            val blob = blobService.getBlob(projectId, repoName, blobId.toString())
+            val blobBytes = blobService.loadBlob(blob).readBytes()
+            val cb = CbObject(ByteBuffer.wrap(blobBytes))
+            Pair(blob, cb)
         } catch (_: BlobNotFoundException) {
+            null
         }
-        return null
     }
 }

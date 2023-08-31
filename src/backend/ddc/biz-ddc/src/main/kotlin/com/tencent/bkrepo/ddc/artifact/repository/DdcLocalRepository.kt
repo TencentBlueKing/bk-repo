@@ -45,8 +45,8 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.exception.NotImplementedException
-import com.tencent.bkrepo.ddc.exception.PartialReferenceResolveException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.Reference
@@ -228,14 +228,12 @@ class DdcLocalRepository(
         }
     }
 
-    private fun onDownloadBlob(context: ArtifactDownloadContext): ArtifactResource {
+    private fun onDownloadBlob(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactInfo = context.artifactInfo as CompressedBlobArtifactInfo
             val acceptContentType = request.getHeaders("Accept").toList()
-            val blob = blobService
-                .getBlobsByContentId(projectId, repoName, artifactInfo.contentId)
-                .minByOrNull { it.size }
-                ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, artifactInfo.contentId)
+            val blob = blobService.getSmallestBlobByContentId(projectId, repoName, artifactInfo.contentId)
+                ?: return null
             val blobId = blob.blobId.toString()
             artifactInfo.compressedContentId = blobId
 
@@ -258,7 +256,6 @@ class DdcLocalRepository(
             val blobInputStream = blobService.loadBlob(blob)
             val resource = ArtifactResource(blobInputStream, artifactInfo.getResponseName())
             resource.contentType = responseType
-            // TODO 支持分片存储的Blob
             return resource
         }
     }
@@ -286,32 +283,35 @@ class DdcLocalRepository(
             }
 
             return if (binaryAttachmentCount == 1) {
-                try {
-                    val blobs = refResolver.getReferencedBlobs(projectId, repoName, cb)
-                    if (blobs.size == 1) {
-                        blobToArtifactResource(context, blobs[0], responseType)
-                    } else if (blobs.isEmpty()) {
-                        null
-                    } else {
-                        throw BadRequestException(
-                            CommonMessageCode.PARAMETER_INVALID,
-                            "Object ${artifactInfo.bucket} ${artifactInfo.refId} contained a content id " +
-                                    "which resolved to more then 1 blob, unable to inline this object. " +
-                                    "Use compact object response instead."
-                        )
-                    }
-                } catch (e: PartialReferenceResolveException) {
-                    null
-                } catch (e: ReferenceIsMissingBlobsException) {
-                    null
-                }
+                loadReferencedBlob(context, cb, responseType)
             } else {
-                val ais = ArtifactInputStream(
-                    ByteArrayInputStream(refInlineBlob),
-                    Range.full(refInlineBlob.size.toLong())
-                )
+                val range = Range.full(refInlineBlob.size.toLong())
+                val ais = ArtifactInputStream(ByteArrayInputStream(refInlineBlob), range)
                 ArtifactResource(ais, artifactInfo.getResponseName()).apply { contentType = responseType }
             }
+        }
+    }
+
+    private fun loadReferencedBlob(
+        context: ArtifactDownloadContext, cb: CbObject, responseType: String
+    ): ArtifactResource? {
+        return try {
+            val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
+            val blobs = refResolver.getReferencedBlobs(context.projectId, context.repoName, cb)
+            if (blobs.size == 1) {
+                blobToArtifactResource(context, blobs[0], responseType)
+            } else if (blobs.isEmpty()) {
+                null
+            } else {
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    "Object ${artifactInfo.bucket} ${artifactInfo.refId} contained a content id " +
+                            "which resolved to more then 1 blob, unable to inline this object. " +
+                            "Use compact object response instead."
+                )
+            }
+        } catch (e: ReferenceIsMissingBlobsException) {
+            null
         }
     }
 
@@ -322,10 +322,11 @@ class DdcLocalRepository(
     ): ArtifactResource? {
         with(context) {
             response.addHeader(HEADER_NAME_INLINE_PAYLOAD_HASH, blob.toString())
-            return nodeClient.getNodeDetail(projectId, repoName, blob.fullPath).data?.let {
-                storageManager.loadArtifactInputStream(it, storageCredentials)
-            }?.let {
-                ArtifactResource(it, artifactInfo.getResponseName()).apply { contentType = responseType }
+            return try {
+                val blobInputStream = blobService.loadBlob(blob)
+                ArtifactResource(blobInputStream, artifactInfo.getResponseName()).apply { contentType = responseType }
+            } catch (e: BlobNotFoundException) {
+                null
             }
         }
     }

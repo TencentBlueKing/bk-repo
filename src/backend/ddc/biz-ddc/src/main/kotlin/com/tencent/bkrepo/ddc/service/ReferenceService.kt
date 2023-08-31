@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
-import com.tencent.bkrepo.ddc.exception.PartialReferenceResolveException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.model.TDdcRef
 import com.tencent.bkrepo.ddc.pojo.ContentHash
@@ -106,24 +105,21 @@ class ReferenceService(
 
     fun finalize(ref: Reference, payload: ByteArray): CreateRefResponse {
         val cbObject = CbObject(ByteBuffer.wrap(payload))
-        var missingRefs = emptyList<ContentHash>()
         var missingBlobs = emptyList<ContentHash>()
         if (cbObject.hasAttachments()) {
             try {
                 val blobs = refResolver.getReferencedBlobs(ref.projectId, ref.repoName, cbObject)
                 blobService.addRefToBlobs(ref, blobs.mapTo(HashSet()) { it.toString() })
-            } catch (e: PartialReferenceResolveException) {
-                missingRefs = e.unresolvedReferences
             } catch (e: ReferenceIsMissingBlobsException) {
                 missingBlobs = e.missingBlobs
             }
         }
 
-        if (missingRefs.isEmpty() && missingBlobs.isEmpty()) {
+        if (missingBlobs.isEmpty()) {
             refRepository.finalize(ref.projectId, ref.repoName, ref.bucket, ref.key.toString())
         }
 
-        return CreateRefResponse((missingRefs + missingBlobs).mapTo(HashSet()) { it.toString() })
+        return CreateRefResponse((missingBlobs).mapTo(HashSet()) { it.toString() })
     }
 
     companion object {
