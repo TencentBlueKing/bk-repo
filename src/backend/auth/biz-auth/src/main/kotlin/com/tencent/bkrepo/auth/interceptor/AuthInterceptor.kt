@@ -57,6 +57,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
@@ -158,7 +159,7 @@ class AuthInterceptor(
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
         require(parts.size == 2)
-        val appId = accountService.checkCredential(parts[0], parts[1]) ?: run {
+        val appId = accountService.checkCredential(parts[0], parts[1], AuthorizationGrantType.PLATFORM) ?: run {
             logger.warn("find no account [$parts[0]]")
             throw IllegalArgumentException("check auth credential fail")
         }

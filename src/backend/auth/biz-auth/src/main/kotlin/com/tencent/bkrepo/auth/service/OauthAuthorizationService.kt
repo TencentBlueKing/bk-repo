@@ -74,7 +74,7 @@ interface OauthAuthorizationService {
     /**
      * 获取Oidc配置
      */
-    fun getOidcConfiguration(): OidcConfiguration
+    fun getOidcConfiguration(projectId: String): OidcConfiguration
 
     /**
      * 获取Json web key set

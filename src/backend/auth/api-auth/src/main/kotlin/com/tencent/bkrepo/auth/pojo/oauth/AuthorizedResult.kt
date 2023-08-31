@@ -27,19 +27,11 @@
 
 package com.tencent.bkrepo.auth.pojo.oauth
 
-import org.springframework.web.servlet.ModelAndView
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 
 data class AuthorizedResult(
     val redirectUrl: String,
     val userId: String,
     val appId: String,
-) {
-    fun createModelAndView(): ModelAndView {
-        val modelAndView = ModelAndView()
-        modelAndView.viewName = "authorize"
-        modelAndView.addObject(this::redirectUrl.name, redirectUrl)
-        modelAndView.addObject(this::userId.name, userId)
-        modelAndView.addObject(this::appId.name, appId)
-        return modelAndView
-    }
-}
+    val scope: List<ResourceType>
+)
