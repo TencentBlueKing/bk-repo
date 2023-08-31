@@ -892,6 +892,7 @@ class CbFieldTest {
         Neg7(Neg15.value or Int8.value)
     }
 
+    @Suppress("ComplexMethod")
     private fun testIntegerField(fieldType: CbFieldType, expectedMask: EIntType, magnitude: Long) {
         val payload = ByteBuffer.allocate(9)
         val negative = (fieldType.value and 1.toByte())
