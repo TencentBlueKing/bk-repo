@@ -354,8 +354,12 @@ class RemoteNodeServiceImpl(
         clusterInfo: ClusterNodeInfo
     ) {
         with(request) {
-            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty() &&
-                (clusterInfo.type == ClusterNodeType.REMOTE || replicaObjectType != ReplicaObjectType.REPOSITORY)) {
+            // 兼容历史数据，replicaObjectType为空的情况
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty() && clusterInfo.type == ClusterNodeType.REMOTE) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
+            }
+
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty() && replicaObjectType != ReplicaObjectType.REPOSITORY) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
             }
         }
