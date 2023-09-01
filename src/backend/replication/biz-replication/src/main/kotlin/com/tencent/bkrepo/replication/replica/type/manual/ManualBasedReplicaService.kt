@@ -33,9 +33,9 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
-import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.stereotype.Component
 import java.util.concurrent.Callable
@@ -111,12 +111,11 @@ class ManualBasedReplicaService(
      * 分发具体内容
      */
     private fun replicaTaskObject(replicaContext: ReplicaContext, constraint: Any) {
-        when(constraint) {
-            constraint is PathConstraint ->
-                replicaByPathConstraint(replicaContext, constraint as PathConstraint)
-            constraint is PackageConstraint ->
-                replicaByPackageConstraint(replicaContext, constraint as PackageConstraint)
-            else -> return
+        if (constraint is PathConstraint) {
+            replicaByPathConstraint(replicaContext, constraint)
+        }
+        if (constraint is PackageConstraint) {
+            replicaByPackageConstraint(replicaContext, constraint)
         }
     }
 
