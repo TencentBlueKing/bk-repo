@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.base.handler
+package com.tencent.bkrepo.replication.replica.replicator.base.remote
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
@@ -33,8 +33,9 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.OCI_BLOBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
-import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.context.FilePushContext
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.replicator.base.ArtifactReplicationHandler
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URL
