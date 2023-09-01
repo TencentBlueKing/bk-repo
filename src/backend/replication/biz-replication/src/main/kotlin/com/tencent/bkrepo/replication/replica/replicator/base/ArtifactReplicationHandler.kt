@@ -25,12 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.replicator.base
+package com.tencent.bkrepo.replication.replica.base.handler
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
@@ -42,10 +43,8 @@ import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.replica.context.FilePushContext
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.replication.util.DefaultHandler
-import com.tencent.bkrepo.replication.util.HttpUtils
+import com.tencent.bkrepo.replication.replica.base.context.FilePushContext
+import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -353,7 +352,7 @@ abstract class ArtifactReplicationHandler(
             } catch (e: Exception) {
                 val baseUrl = URL(url)
                 val host = URL(baseUrl.protocol, baseUrl.host, StringPool.EMPTY).toString()
-                HttpUtils.buildUrl(host, location.removePrefix("/"))
+                UrlFormatter.buildUrl(host, location.removePrefix("/"))
             }
         }
     }
@@ -369,7 +368,7 @@ abstract class ArtifactReplicationHandler(
     ): String {
         val baseUrl = URL(url)
         val suffixUrl = URL(baseUrl, baseUrl.path).toString()
-        return HttpUtils.buildUrl(suffixUrl, path, params)
+        return UrlFormatter.buildUrl(suffixUrl, path, params)
     }
 
     open fun buildRequestTag(
