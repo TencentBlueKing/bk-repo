@@ -58,8 +58,6 @@ data class RemoteRunOnceTaskCreateRequest(
     val remoteProjectId: String? = null,
     @ApiModelProperty("远程仓库")
     val remoteRepoName: String? = null,
-    @ApiModelProperty("当远程项目或者仓库不存在时是否进行创建, 只支持clusterId存在的情况", required = false)
-    val createProjectOrRepo: Boolean = false,
     @ApiModelProperty("同步对象类型, 只支持clusterId存在的情况", required = true)
     val replicaObjectType: ReplicaObjectType? = null,
     @ApiModelProperty("包名", required = false)
