@@ -157,7 +157,7 @@ class AccountController @Autowired constructor(
 
     @ApiOperation("更新ak/sk对状态")
     @PutMapping("/credential/{appId}/{accesskey}/{status}")
-    @LogOperate(type = "KEYS_STATUS_UPDATE")
+    @LogOperate(type = "KEYS_UPDATE")
     fun updateCredential(
         @PathVariable appId: String,
         @PathVariable accesskey: String,

@@ -31,7 +31,6 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
 import com.tencent.bkrepo.auth.pojo.Key
 import com.tencent.bkrepo.auth.service.KeyService
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.RestController
@@ -46,7 +45,6 @@ class KeyController(private val keyService: KeyService) {
 
     @ApiOperation("新增密钥")
     @PostMapping("/create")
-    @LogOperate(type = "USER_KEY_CREATE")
     fun createKey(name: String, key: String): Response<Void> {
         keyService.createKey(name, key)
         return ResponseBuilder.success()
@@ -60,7 +58,6 @@ class KeyController(private val keyService: KeyService) {
 
     @ApiOperation("删除公钥")
     @DeleteMapping("/delete/{id}")
-    @LogOperate(type = "USER_KEY_DELETE")
     fun deleteKey(id: String): Response<Void> {
         keyService.deleteKey(id)
         return ResponseBuilder.success()

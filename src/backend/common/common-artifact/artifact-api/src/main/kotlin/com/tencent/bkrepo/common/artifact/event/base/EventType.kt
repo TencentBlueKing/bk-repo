@@ -65,34 +65,6 @@ enum class EventType(val msgKey: String) {
     // ADMIN
     ADMIN_ADD("artifact.event.admin-add"),
     ADMIN_DELETE("artifact.event.admin-delete"),
-    SERVICE_PROJECT_ADMIN_CREATE("project.event.service-admin-add"),
-    SERVICE_REPO_ADMIN_CREATE("repository.event.service-admin-add"),
-    SERVICE_TEMP_TOKEN_CREATE("user.event.service-token-add"),
-    SERVICE_TEMP_TOKEN_DELETE("user.event.service-token-delete"),
-    SERVICE_USER_CREATE("user.event.service-user-add"),
-    SERVICE_USER_ROLE_CREATE("user.event.service-role-add"),
-    USER_KEY_CREATE("user.event.key-add"),
-    USER_KEY_DELETE("user.event.key-delete"),
-    USER_OAUTH_TOKEN_ADD("user.event.oauth-token-add"),
-    USER_OAUTH_TOKEN_DELETE("user.event.oauth-token-delete"),
-    USER_PERMISSION_DELETE("user.event.user-permission-delete"),
-    USER_ROLE_CREATE("user.event.user-role-create"),
-    PROJECT_ADMIN_CREATE("project.event.admin-add"),
-    REPO_ADMIN_CREATE("repository.event.admin-add"),
-    USER_ROLE_DELETE("user.event.user-role-delete"),
-    USERS_INFO_UPDATE("user.event.users-info-update"),
-    USER_CREATE("user.event.user-create"),
-    PROJECT_USER_CREATE("user.event.project-user-add"),
-    REPO_USER_CREATE("user.event.repo-user-add"),
-    USER_DELETE("user.event.user-delete"),
-    USER_INFO_UPDATE("user.event.user-info-update"),
-    USER_ROLE_ADD("user.event.user-role-add"),
-    USER_ROLE_REMOVE("user.event.user-role-remove"),
-    BATCH_ROLE_ADD("user.event.batch-role-add"),
-    BATCH_ROLE_REMOVE("user.event.batch-role-remove"),
-    USER_TOKEN_ADD("user.event.user-token-add"),
-    USER_TOKEN_REMOVE("user.event.user-token-remove"),
-    USER_PASSWORD_UPDATE("user.event.user-password-update"),
 
     // WebHook
     WEBHOOK_TEST("artifact.event.webhook-test"),
@@ -185,5 +157,4 @@ enum class EventType(val msgKey: String) {
 
     // 第三方同步
     REPLICATION_THIRD_PARTY("artifact.event.replication-third-party");
-
 }

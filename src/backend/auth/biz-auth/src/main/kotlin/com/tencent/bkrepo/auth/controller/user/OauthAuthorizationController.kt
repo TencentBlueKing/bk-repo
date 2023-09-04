@@ -31,7 +31,6 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -61,14 +60,12 @@ class OauthAuthorizationController @Autowired constructor(
 
     @ApiOperation("创建oauth token")
     @PostMapping("/token")
-    @LogOperate(type = "USER_OAUTH_TOKEN_ADD")
     fun createToken(clientId: String, clientSecret: String, code: String) {
         oauthAuthorizationService.createToken(clientId, clientSecret, code)
     }
 
     @ApiOperation("删除oauth token")
     @DeleteMapping("/token")
-    @LogOperate(type = "USER_OAUTH_TOKEN_DELETE")
     fun deleteToken(clientId: String, clientSecret: String, accessToken: String): Response<Void> {
         oauthAuthorizationService.deleteToken(clientId, clientSecret, accessToken)
         return ResponseBuilder.success()

@@ -37,7 +37,6 @@ import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -58,7 +57,6 @@ interface ServiceUserClient {
 
     @ApiOperation("创建用户")
     @PostMapping("/create")
-    @LogOperate(type = "SERVICE_USER_CREATE")
     fun createUser(
         @RequestBody request: CreateUserRequest
     ): Response<Boolean>
@@ -73,7 +71,6 @@ interface ServiceUserClient {
 
     @ApiOperation("新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
-    @LogOperate(type = "SERVICE_USER_ROLE_CREATE")
     fun addUserRole(
         @ApiParam(value = "用户id")
         @PathVariable uid: String,
