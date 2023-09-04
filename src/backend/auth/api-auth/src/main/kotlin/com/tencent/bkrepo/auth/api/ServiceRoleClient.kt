@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -51,6 +52,7 @@ interface ServiceRoleClient {
 
     @ApiOperation("创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")
+    @LogOperate(type = "SERVICE_PROJECT_ADMIN_CREATE")
     fun createProjectManage(
         @ApiParam(value = "仓库名称")
         @PathVariable projectId: String
@@ -58,6 +60,7 @@ interface ServiceRoleClient {
 
     @ApiOperation("创建仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
+    @LogOperate(type = "SERVICE_REPO_ADMIN_CREATE")
     fun createRepoManage(
         @ApiParam(value = "仓库ID")
         @PathVariable projectId: String,

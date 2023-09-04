@@ -53,6 +53,7 @@ import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -91,6 +92,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("创建用户")
     @PostMapping("/create")
+    @LogOperate(type = "USER_CREATE")
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
@@ -100,6 +102,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("创建项目用户")
     @PostMapping("/create/project")
+    @LogOperate(type = "PROJECT_USER_CREATE")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
@@ -113,6 +116,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("创建仓库用户")
     @PostMapping("/create/repo")
+    @LogOperate(type = "REPO_USER_CREATE")
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
@@ -135,6 +139,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("删除用户")
     @DeleteMapping("/delete/{uid}")
+    @LogOperate(type = "USER_DELETE")
     fun deleteById(@PathVariable uid: String): Response<Boolean> {
         preCheckUserOrAssetUser(uid, userService.getRelatedUserById(SecurityUtils.getUserId()))
         userService.deleteById(uid)
@@ -150,6 +155,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("更新用户信息")
     @PutMapping("/{uid}")
+    @LogOperate(type = "USER_INFO_UPDATE")
     @Deprecated("更换url", ReplaceWith("updateUserInfoById"))
     fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
@@ -162,6 +168,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("更新用户信息")
     @PutMapping("/update/info/{uid}")
+    @LogOperate(type = "USER_INFO_UPDATE")
     fun updateUserInfoById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
         if (request.admin != null && request.admin) {
@@ -173,6 +180,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
+    @LogOperate(type = "USER_ROLE_ADD")
     fun addUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
         val result = userService.addUserToRole(uid, rid)
         return ResponseBuilder.success(result)
@@ -180,6 +188,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("删除用户所属角色")
     @DeleteMapping("/role/{uid}/{rid}")
+    @LogOperate(type = "USER_ROLE_REMOVE")
     fun removeUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
         val result = userService.removeUserFromRole(uid, rid)
         return ResponseBuilder.success(result)
@@ -187,6 +196,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("批量新增用户所属角色")
     @PatchMapping("/role/add/{rid}")
+    @LogOperate(type = "BATCH_ROLE_ADD")
     fun addUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
         userService.addUserToRoleBatch(request, rid)
         return ResponseBuilder.success(true)
@@ -194,6 +204,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("批量删除用户所属角色")
     @PatchMapping("/role/delete/{rid}")
+    @LogOperate(type = "BATCH_ROLE_REMOVE")
     fun deleteUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
@@ -201,6 +212,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("新加用户token")
     @PostMapping("/token/{uid}/{name}")
+    @LogOperate(type = "USER_TOKEN_ADD")
     fun addUserToken(
         @PathVariable("uid") uid: String,
         @PathVariable("name") name: String,
@@ -223,6 +235,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("删除用户token")
     @DeleteMapping("/token/{uid}/{name}")
+    @LogOperate(type = "USER_TOKEN_REMOVE")
     fun deleteToken(@PathVariable uid: String, @PathVariable name: String): Response<Boolean> {
         preCheckContextUser(uid)
         val result = userService.removeToken(uid, name)
@@ -326,6 +339,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("修改用户密码")
     @PutMapping("/update/password/{uid}")
+    @LogOperate(type = "USER_PASSWORD_UPDATE")
     fun updatePassword(
         @PathVariable uid: String,
         @RequestParam oldPwd: String,
