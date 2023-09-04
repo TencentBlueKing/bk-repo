@@ -162,7 +162,7 @@
     "superAdmin": "管理员",
     "modify": "修改",
     "chineseName": "中文名",
-    "userIdPlaceHolder": "英文字母、数字、_、-，以字母开头",
+    "userIdPlaceHolder": "英文字母、数字、_、-,@，以字母开头",
     "email": "邮箱",
     "deleteUserTitle": "确认删除用户 {0} ?",
     "pwdPlacehodler": "长度8-32位，必须包含大小写字母、数字、特殊字符（除空格）",

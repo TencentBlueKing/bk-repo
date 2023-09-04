@@ -34,11 +34,11 @@ package com.tencent.bkrepo.oci.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
-import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
+import com.tencent.bkrepo.oci.constant.OCI_PROJECT_ID
+import com.tencent.bkrepo.oci.constant.OCI_REPO_NAME
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.service.OciCatalogService
@@ -47,29 +47,25 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping(OCI_FILTER_ENDPOINT)
-class CatalogController(
-    private val catalogService: OciCatalogService,
-    private val ociProperties: OciProperties
-) {
+class CatalogController(private val catalogService: OciCatalogService) {
 
     /**
      * 返回仓库下所有image名列表
      */
-    @GetMapping(DOCKER_CATALOG_SUFFIX)
+    @GetMapping("/{projectId}/{repoName}$DOCKER_CATALOG_SUFFIX")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun list(
         artifactInfo: OciTagArtifactInfo,
-        @RequestParam(required = true)
-        @ApiParam(required = true)
+        @PathVariable
+        @ApiParam(value = OCI_PROJECT_ID, required = true)
         projectId: String,
-        @RequestParam(required = true)
-        @ApiParam(required = true)
+        @PathVariable
+        @ApiParam(value = OCI_REPO_NAME, required = true)
         repoName: String,
         @RequestParam(required = false)
         @ApiParam(value = "n", required = false)

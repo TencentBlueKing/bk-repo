@@ -162,7 +162,7 @@
     "superAdmin": "Super admin",
     "modify": "Modify",
     "chineseName": "Cn name",
-    "userIdPlaceHolder": "English letters, numbers, _, -, starting with a letter",
+    "userIdPlaceHolder": "English letters, numbers, _, -,@, starting with a letter",
     "email": "Email",
     "loadingTips": "Loading",
     "cron": {

@@ -115,9 +115,8 @@ spec:
       volumes:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
-          nfs:
-            path: {{ .Values.common.config.storage.nfs.path }}
-            server: {{ .Values.common.config.storage.nfs.server }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.names.fullname" . }}-nfs-pvc
           {{- else if .Values.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ template "common.names.fullname" . }}-storage{{- end }}

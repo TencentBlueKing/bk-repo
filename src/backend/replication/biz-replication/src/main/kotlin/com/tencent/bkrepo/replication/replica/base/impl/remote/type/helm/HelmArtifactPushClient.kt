@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -40,7 +41,6 @@ import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.base.handler.DefaultHandler
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.PushClient
-import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -258,7 +258,7 @@ class HelmArtifactPushClient(
     ): String {
         val baseUrl = URL(url)
         val v2Url = URL(baseUrl, baseUrl.path)
-        return HttpUtils.buildUrl(v2Url.toString(), path, params)
+        return UrlFormatter.buildUrl(v2Url.toString(), path, params)
     }
 
     private fun buildAuthRequestProperties(clusterInfo: ClusterInfo): RequestProperty {

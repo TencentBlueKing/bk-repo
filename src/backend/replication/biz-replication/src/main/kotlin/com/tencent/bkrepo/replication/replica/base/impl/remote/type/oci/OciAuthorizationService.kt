@@ -31,14 +31,11 @@ import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.StringPool.QUESTION
+import com.tencent.bkrepo.common.api.util.AuthenticationUtil.buildAuthenticationUrl
+import com.tencent.bkrepo.common.api.util.AuthenticationUtil.parseWWWAuthenticateHeader
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.replication.constant.BEARER_REALM
-import com.tencent.bkrepo.replication.constant.SCOPE
-import com.tencent.bkrepo.replication.constant.SERVICE
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
-import com.tencent.bkrepo.replication.pojo.remote.AuthenticationProperty
 import com.tencent.bkrepo.replication.pojo.remote.BearerToken
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.base.impl.remote.base.AuthorizationService
@@ -106,10 +103,14 @@ class OciAuthorizationService : AuthorizationService {
         val httpRequest = HttpUtils.wrapperRequest(property)
         httpClient.newCall(httpRequest).execute().use {
             if (!it.isSuccessful) {
-                val error = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), OciResponse::class.java)
+                val error = try {
+                    JsonUtils.objectMapper.readValue(it.body!!.byteStream(), OciResponse::class.java).toJsonString()
+                } catch (ignore: Exception) {
+                    StringPool.EMPTY
+                }
                 throw ArtifactPushException(
                     "Could not get token from auth service," +
-                        " code is ${it.code} and response is ${error.toJsonString()}"
+                        " code is ${it.code} and response is $error"
                 )
             }
             try {
@@ -121,44 +122,6 @@ class OciAuthorizationService : AuthorizationService {
                 )
             }
         }
-    }
-
-    /**
-     * 解析返回头中的WWW_AUTHENTICATE字段， 只针对为Bearer realm
-     */
-    private fun parseWWWAuthenticateHeader(wwwAuthenticate: String, scope: String?): AuthenticationProperty? {
-        val map: MutableMap<String, String> = mutableMapOf()
-        return try {
-            val params = wwwAuthenticate.split("\",")
-            params.forEach {
-                val param = it.split(Regex("="),2)
-                val name = param.first()
-                val value = param.last().replace("\"", "")
-                map[name] = value
-            }
-            AuthenticationProperty(
-                authUrl = map[BEARER_REALM]!!,
-                service = map[SERVICE]!!,
-                scope = scope
-            )
-        } catch (e: Exception) {
-            logger.warn("Parsing wwwAuthenticate header error: ${e.message}")
-            null
-        }
-    }
-
-    private fun buildAuthenticationUrl(property: AuthenticationProperty, userName: String?): String? {
-        if (property.authUrl.isBlank()) return null
-        var result = if (property.authUrl.contains(QUESTION)) {
-            "${property.authUrl}&$SERVICE=${property.service}"
-        } else {
-            "${property.authUrl}?$SERVICE=${property.service}"
-        }
-        property.scope?.let {
-            result += "&$SCOPE=${property.scope}"
-        }
-        userName?.let { result += "&account=$userName" }
-        return result
     }
 
     companion object {

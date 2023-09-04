@@ -36,5 +36,5 @@ open class RepoJobProperties(
     /**
      * 需要特殊处理的仓库类型
      * */
-    var repositorytypes: List<String> = listOf("HELM")
+    var repositorytypes: List<String> = listOf("HELM", "OCI", "DOCKER")
 ) : MongodbJobProperties()

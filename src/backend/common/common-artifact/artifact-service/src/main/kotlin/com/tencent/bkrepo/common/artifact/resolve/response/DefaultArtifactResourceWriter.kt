@@ -31,11 +31,13 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
@@ -50,6 +52,7 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.http.HttpMethod
+import org.springframework.util.unit.DataSize
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -68,6 +71,7 @@ open class DefaultArtifactResourceWriter(
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
+        responseRateLimitCheck()
         return if (resource.containsMultiArtifact()) {
             writeMultiArtifact(resource)
         } else {
@@ -185,7 +189,7 @@ open class DefaultArtifactResourceWriter(
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
-                recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit)).use {
                     it.copyTo(
                         out = response.outputStream,
                         bufferSize = getBufferSize(inputStream.range.length.toInt())
@@ -222,7 +226,9 @@ open class DefaultArtifactResourceWriter(
                     resource.artifactMap.forEach { (name, inputStream) ->
                         val recordAbleInputStream = RecordAbleInputStream(inputStream)
                         zipOutput.putNextEntry(generateZipEntry(name, inputStream))
-                        recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                        recordAbleInputStream.rateLimit(
+                            responseRateLimitWrapper(storageProperties.response.rateLimit)
+                        ).use {
                             it.copyTo(
                                 out = zipOutput,
                                 bufferSize = getBufferSize(inputStream.range.length.toInt())
@@ -239,6 +245,31 @@ open class DefaultArtifactResourceWriter(
             throw ArtifactResponseException(message, status)
         } finally {
             resource.artifactMap.values.forEach { it.closeQuietly() }
+        }
+    }
+
+    /**
+     * 将仓库级别的限速配置导入
+     * 当同时存在全局限速配置以及仓库级别限速配置时，以仓库级别配置优先
+     */
+    private fun responseRateLimitWrapper(rateLimit: DataSize): Long {
+        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
+        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1)) {
+            return rateLimitOfRepo.responseRateLimit.toBytes()
+        }
+        return rateLimit.toBytes()
+    }
+
+    /**
+     * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
+     */
+    private fun responseRateLimitCheck() {
+        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
+        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
+            rateLimitOfRepo.responseRateLimit <= storageProperties.response.circuitBreakerThreshold) {
+            throw TooManyRequestsException(
+                "The circuit breaker is activated when too many download requests are made to the service!"
+            )
         }
     }
 

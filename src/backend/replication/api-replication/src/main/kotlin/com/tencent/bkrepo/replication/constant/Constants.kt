@@ -29,9 +29,6 @@ package com.tencent.bkrepo.replication.constant
 
 const val DEFAULT_VERSION = "1.0.0"
 
-const val BEARER_REALM = "Bearer realm"
-const val SERVICE = "service"
-const val SCOPE = "scope"
 const val REPOSITORY = "repository"
 const val URL = "url"
 
@@ -43,6 +40,8 @@ const val DOCKER_MANIFEST_JSON_FULL_PATH = "/%s/%s/manifest.json"
 const val DOCKER_LAYER_FULL_PATH = "/%s/%s/%s"
 const val OCI_MANIFEST_JSON_FULL_PATH = "/%s/manifest/%s/manifest.json"
 const val OCI_LAYER_FULL_PATH = "/%s/blobs/%s"
+const val OCI_LAYER_FULL_PATH_V1 = "/%s/blobs/%s/%s"
+const val BLOB_PATH_REFRESHED_KEY = "blobPathRefreshed"
 const val NODE_FULL_PATH = "fullPath"
 const val SIZE = "size"
 const val REPOSITORY_INFO = "repo"

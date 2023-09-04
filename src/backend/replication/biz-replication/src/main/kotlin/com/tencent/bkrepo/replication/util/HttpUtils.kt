@@ -27,19 +27,14 @@
 
 package com.tencent.bkrepo.replication.util
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.storage.innercos.retry
-import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
-import com.tencent.bkrepo.replication.constant.RETRY_COUNT
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter.addParams
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
 import org.springframework.web.bind.annotation.RequestMethod
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.net.MalformedURLException
 import java.net.URL
 
 object HttpUtils {
@@ -51,7 +46,7 @@ object HttpUtils {
     ): Request {
         with(requestProperty) {
             val url = params?.let {
-                buildUrl(url = requestUrl!!, params = params!!)
+                addParams(url = requestUrl!!, params = params!!)
             } ?: requestUrl!!
             var builder = Request.Builder()
                 .url(url)
@@ -73,46 +68,6 @@ object HttpUtils {
         }
     }
 
-    /**
-     * 拼接url
-     */
-    fun buildUrl(
-        url: String,
-        path: String = StringPool.EMPTY,
-        params: String = StringPool.EMPTY,
-    ): String {
-        val builder = StringBuilder(url)
-        if (path.isNotBlank()) {
-            builder.append(CharPool.SLASH).append(path.trimStart(CharPool.SLASH))
-        }
-        if (params.isNotBlank()) {
-            if (builder.contains(CharPool.QUESTION)) {
-                builder.append(CharPool.AND).append(params)
-            } else {
-                builder.append(CharPool.QUESTION).append(params)
-            }
-        }
-        return builder.toString()
-    }
-
-    /**
-     * 针对url如果没传protocol， 则默认以https请求发送
-     */
-    fun addProtocol(registry: String): URL {
-        try {
-            return URL(registry)
-        } catch (ignore: MalformedURLException) {
-        }
-        val url = URL("${StringPool.HTTPS}$registry")
-        return try {
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                validateHttpsProtocol(url)
-                url
-            }
-        } catch (ignore: Exception) {
-            URL(url.toString().replaceFirst("^https".toRegex(), "http"))
-        }
-    }
 
     /**
      * Pings a HTTP URL. This effectively sends a HEAD request and returns `true` if the response code is in
@@ -136,21 +91,6 @@ object HttpUtils {
             result
         } catch (exception: IOException) {
             throw exception
-        }
-    }
-
-    /**
-     * 验证registry是否支持https
-     */
-    private fun validateHttpsProtocol(url: URL): Boolean {
-        return try {
-            val http: HttpURLConnection = url.openConnection() as HttpURLConnection
-            http.instanceFollowRedirects = false
-            http.responseCode
-            http.disconnect()
-            true
-        } catch (e: Exception) {
-            throw e
         }
     }
 
