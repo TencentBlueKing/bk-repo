@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,44 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.user
+package com.tencent.bkrepo.opdata.controller
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
-import com.tencent.bkrepo.auth.pojo.Key
-import com.tencent.bkrepo.auth.service.KeyService
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.PostMapping
+import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
+@Api("auth模块日志接口")
 @RestController
-@RequestMapping(AUTH_API_KEY_PREFIX)
-class KeyController(private val keyService: KeyService) {
+@RequestMapping("/api/log")
+class AuthOperateLogController(
+    private val operateLogService: OperateLogService
+) {
 
-    @ApiOperation("新增密钥")
-    @PostMapping("/create")
-    @LogOperate(type = "USER_KEY_CREATE")
-    fun createKey(name: String, key: String): Response<Void> {
-        keyService.createKey(name, key)
-        return ResponseBuilder.success()
-    }
-
-    @ApiOperation("查询公钥列表")
-    @GetMapping("/list")
-    fun listKey(): Response<List<Key>> {
-        return ResponseBuilder.success(keyService.listKey())
-    }
-
-    @ApiOperation("删除公钥")
-    @DeleteMapping("/delete/{id}")
-    @LogOperate(type = "USER_KEY_DELETE")
-    fun deleteKey(id: String): Response<Void> {
-        keyService.deleteKey(id)
-        return ResponseBuilder.success()
+    @ApiOperation("auth日志查询接口")
+    @GetMapping("/page")
+    fun page(
+        @ApiParam("操作人", required = false)
+        @RequestParam operator: String?,
+        @ApiParam("开始时间", required = false)
+        @RequestParam startTime: String?,
+        @ApiParam("结束时间", required = false)
+        @RequestParam endTime: String?,
+        @ApiParam("页数", required = false, defaultValue = "1")
+        @RequestParam pageNumber: Int?,
+        @ApiParam("每页数量", required = false, defaultValue = "20")
+        @RequestParam pageSize: Int?
+    ): Response<Page<OperateLogResponse?>> {
+        val page = operateLogService.page(
+            "ADMIN", null, null,
+            operator, startTime, endTime, pageNumber ?: 1, pageSize ?: 20
+        )
+        return ResponseBuilder.success(page)
     }
 }

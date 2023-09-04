@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
@@ -54,6 +55,7 @@ interface ServiceTemporaryTokenClient {
 
     @ApiOperation("创建临时token")
     @PostMapping("/create")
+    @LogOperate(type = "SERVICE_TEMP_TOKEN_CREATE")
     fun createToken(
         @RequestBody request: TemporaryTokenCreateRequest
     ): Response<List<TemporaryTokenInfo>>
@@ -66,6 +68,7 @@ interface ServiceTemporaryTokenClient {
 
     @ApiOperation("删除临时token信息")
     @DeleteMapping("/delete/{token}")
+    @LogOperate(type = "SERVICE_TEMP_TOKEN_DELETE")
     fun deleteToken(
         @PathVariable token: String
     ): Response<Void>

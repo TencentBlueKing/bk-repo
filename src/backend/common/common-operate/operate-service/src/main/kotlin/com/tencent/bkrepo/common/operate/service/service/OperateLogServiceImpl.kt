@@ -249,13 +249,13 @@ open class OperateLogServiceImpl(
             val start = sdf.parse(startTime)
             start.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
-            LocalDateTime.now()
+            LocalDateTime.now().minusMonths(3L)
         }
         val localEnd = if (endTime != null && endTime.isNotBlank()) {
             val end = sdf.parse(endTime)
             end.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
-            LocalDateTime.now().minusMonths(3L)
+            LocalDateTime.now()
         }
         criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
         return Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())
@@ -288,9 +288,10 @@ open class OperateLogServiceImpl(
                 resKey = tOperateLog.repoName!!
             )
         } else if (adminEvent.contains(tOperateLog.type)) {
-            val list = tOperateLog.resourceKey.readJsonString<List<String>>()
             OperateLogResponse.Content(
-                resKey = list.joinToString("::")
+                projectId = tOperateLog.projectId,
+                resKey = tOperateLog.resourceKey,
+                des = tOperateLog.description.toJsonString()
             )
         } else if (projectEvent.contains(tOperateLog.type)) {
             OperateLogResponse.Content(
@@ -374,7 +375,20 @@ open class OperateLogServiceImpl(
             EventType.NODE_CREATED.name, EventType.NODE_DELETED.name, EventType.NODE_MOVED.name,
             EventType.NODE_RENAMED.name, EventType.NODE_COPIED.name
         )
-        private val adminEvent = listOf(EventType.ADMIN_ADD.name, EventType.ADMIN_DELETE.name)
+        private val adminEvent = listOf(
+            EventType.ADMIN_ADD.name, EventType.ADMIN_DELETE.name,EventType.SERVICE_PROJECT_ADMIN_CREATE.name,
+            EventType.SERVICE_REPO_ADMIN_CREATE.name,EventType.SERVICE_TEMP_TOKEN_CREATE.name,EventType.SERVICE_TEMP_TOKEN_DELETE.name,
+            EventType.SERVICE_USER_CREATE.name,EventType.SERVICE_USER_ROLE_CREATE.name,EventType.USER_KEY_CREATE.name,
+            EventType.USER_KEY_DELETE.name,EventType.USER_OAUTH_TOKEN_ADD.name,EventType.USER_OAUTH_TOKEN_DELETE.name,
+            EventType.USER_PERMISSION_DELETE.name,EventType.USER_ROLE_CREATE.name,EventType.PROJECT_ADMIN_CREATE.name,
+            EventType.REPO_ADMIN_CREATE.name,EventType.USER_ROLE_DELETE.name,EventType.USERS_INFO_UPDATE.name,
+            EventType.USER_CREATE.name,EventType.PROJECT_USER_CREATE.name,EventType.REPO_USER_CREATE.name,EventType.USER_DELETE.name,
+            EventType.USER_INFO_UPDATE.name,EventType.USER_ROLE_ADD.name,EventType.USER_ROLE_REMOVE.name,EventType.BATCH_ROLE_ADD.name,
+            EventType.BATCH_ROLE_REMOVE.name,EventType.USER_TOKEN_ADD.name,EventType.USER_TOKEN_REMOVE.name,EventType.USER_PASSWORD_UPDATE.name,
+            EventType.ACCOUNT_CREATE.name,EventType.ACCOUNT_UPDATE.name,EventType.ACCOUNT_DELETE.name,EventType.KEYS_CREATE.name,
+            EventType.KEYS_DELETE.name,EventType.KEYS_STATUS_UPDATE.name,EventType.EXT_PERMISSION_CREAT.name,
+            EventType.EXT_PERMISSION_UPDATE.name,EventType.EXT_PERMISSION_DELETE.name
+        )
         private val projectEvent = listOf(EventType.PROJECT_CREATED.name)
         private val metadataEvent = listOf(EventType.METADATA_SAVED.name, EventType.METADATA_DELETED.name)
         private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSz")

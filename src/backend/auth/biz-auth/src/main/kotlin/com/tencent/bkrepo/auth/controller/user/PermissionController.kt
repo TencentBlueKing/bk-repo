@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -110,6 +111,7 @@ class PermissionController @Autowired constructor(
 
     @ApiOperation("删除权限")
     @DeleteMapping("/delete/{id}")
+    @LogOperate(type = "USER_PERMISSION_DELETE")
     fun deletePermission(@PathVariable id: String): Response<Boolean> {
         return ResponseBuilder.success(permissionService.deletePermission(id))
     }
