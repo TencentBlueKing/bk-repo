@@ -57,7 +57,9 @@ object JwtUtils {
         signingKey: Key,
         expireDuration: Duration,
         subject: String? = null,
-        claims: Map<String, Any>? = null
+        claims: Map<String, Any>? = null,
+        header: Map<String, Any>? = null,
+        algorithm: SignatureAlgorithm = SIGNATURE_ALGORITHM
     ): String {
         val now = Date()
         val expiration = expireDuration.toMillis().takeIf { it > 0 }?.let { Date(now.time + it) }
@@ -66,7 +68,8 @@ object JwtUtils {
             .setSubject(subject)
             .setExpiration(expiration)
             .addClaims(claims)
-            .signWith(signingKey, SIGNATURE_ALGORITHM)
+            .apply { header?.let { setHeader(header) } }
+            .signWith(signingKey, algorithm)
             .compact()
     }
 

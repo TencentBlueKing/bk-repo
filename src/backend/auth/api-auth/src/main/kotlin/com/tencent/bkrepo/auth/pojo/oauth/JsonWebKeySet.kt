@@ -25,59 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.auth.pojo.oauth
 
-import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
-import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
-import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
-import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
-import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
+data class JsonWebKeySet(
+    val keys: List<JsonWebKey>
+)
 
-/**
- * Oauth授权服务
- */
-interface OauthAuthorizationService {
-
-    /**
-     * 确认授权
-     */
-    fun authorized(clientId: String, state: String, scope: String?, nonce: String?): AuthorizedResult
-
-    /**
-     * 创建token
-     */
-    fun createToken(generateTokenRequest: GenerateTokenRequest)
-
-    fun refreshToken(generateTokenRequest: GenerateTokenRequest)
-
-    /**
-     * 获取token信息
-     */
-    fun getToken(accessToken: String): OauthToken?
-
-    /**
-     * 验证token，验证通过返回userId
-     */
-    fun validateToken(accessToken: String): String?
-
-    /**
-     * 删除token
-     */
-    fun deleteToken(clientId: String, clientSecret: String, accessToken: String)
-
-    /**
-     * 获取用户信息
-     */
-    fun getUserInfo(): UserInfo
-
-    /**
-     * 获取Oidc配置
-     */
-    fun getOidcConfiguration(projectId: String): OidcConfiguration
-
-    /**
-     * 获取Json web key set
-     */
-    fun getJwks(): JsonWebKeySet
-}
+data class JsonWebKey(
+    val kty: String,
+    val use: String,
+    val n: String,
+    val e: String,
+    val kid: String,
+    val x5t: String? = null,
+    val x5c: List<String>? = null,
+    val alg: String
+)
