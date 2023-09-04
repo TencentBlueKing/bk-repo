@@ -31,20 +31,28 @@
 
 package com.tencent.bkrepo.common.security.http.jwt
 
+import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
+import com.tencent.bkrepo.common.security.util.RsaUtils
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import javax.servlet.http.HttpServletRequest
 
-open class JwtAuthHandler(properties: JwtAuthProperties) : HttpAuthHandler {
+open class JwtAuthHandler(
+    jwtAuthProperties: JwtAuthProperties,
+    private val cryptoProperties: CryptoProperties,
+    private val authenticationManager: AuthenticationManager
+) : HttpAuthHandler {
 
-    private val signingKey = JwtUtils.createSigningKey(properties.secretKey)
+    private val signingKey = JwtUtils.createSigningKey(jwtAuthProperties.secretKey)
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
@@ -56,13 +64,32 @@ open class JwtAuthHandler(properties: JwtAuthProperties) : HttpAuthHandler {
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is JwtAuthCredentials)
+
+        val token = authCredentials.token
         try {
-            return JwtUtils.validateToken(signingKey, authCredentials.token).body.subject
+            return validateToken { JwtUtils.validateToken(signingKey, token).body.subject }
+        } catch (ignore: AuthenticationException) {
+            // do nothing
+        }
+
+        return validateToken {
+            val key = RsaUtils.stringToPublicKey(cryptoProperties.publicKeyStr2048PKCS8)
+            val userId = JwtUtils.validateToken(key, token).body.subject
+            val scope = authenticationManager.findOauthToken(token)?.scope
+                ?: throw AuthenticationException("Invalid token")
+            request.setAttribute(AUTHORITIES_KEY, scope)
+            userId
+        }
+    }
+
+    private fun validateToken(action: () -> String): String {
+        try {
+            return action()
         } catch (exception: ExpiredJwtException) {
             throw AuthenticationException("Expired token")
         } catch (exception: JwtException) {
             throw AuthenticationException("Invalid token")
-        } catch (exception: IllegalArgumentException) {
+        } catch (exception: JwtException) {
             throw AuthenticationException("Empty token")
         }
     }

@@ -25,59 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.auth.pojo.oauth
 
-import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
-import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
-import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
-import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
-import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
+import com.fasterxml.jackson.annotation.JsonProperty
 
-/**
- * Oauth授权服务
- */
-interface OauthAuthorizationService {
-
-    /**
-     * 确认授权
-     */
-    fun authorized(clientId: String, state: String, scope: String?, nonce: String?): AuthorizedResult
-
-    /**
-     * 创建token
-     */
-    fun createToken(generateTokenRequest: GenerateTokenRequest)
-
-    fun refreshToken(generateTokenRequest: GenerateTokenRequest)
-
-    /**
-     * 获取token信息
-     */
-    fun getToken(accessToken: String): OauthToken?
-
-    /**
-     * 验证token，验证通过返回userId
-     */
-    fun validateToken(accessToken: String): String?
-
-    /**
-     * 删除token
-     */
-    fun deleteToken(clientId: String, clientSecret: String, accessToken: String)
-
-    /**
-     * 获取用户信息
-     */
-    fun getUserInfo(): UserInfo
-
-    /**
-     * 获取Oidc配置
-     */
-    fun getOidcConfiguration(projectId: String): OidcConfiguration
-
-    /**
-     * 获取Json web key set
-     */
-    fun getJwks(): JsonWebKeySet
-}
+// https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
+data class OidcConfiguration(
+    val issuer: String,
+    @JsonProperty("authorization_endpoint")
+    val authorizationEndpoint: String,
+    @JsonProperty("token_endpoint")
+    val tokenEndpoint: String,
+    @JsonProperty("jwks_uri")
+    val jwksUri: String,
+    @JsonProperty("response_types_supported")
+    val responseTypesSupported: List<String>,
+    @JsonProperty("subject_types_supported")
+    val subjectTypesSupported: List<String>,
+    @JsonProperty("userinfo_endpoint")
+    val userinfoEndpoint: String,
+    @JsonProperty("scopes_supported")
+    val scopesSupported: List<String>,
+    @JsonProperty("token_endpoint_auth_methods_supported")
+    val tokenEndpointAuthMethodsSupported: List<String> = listOf("client_secret_basic")
+)
