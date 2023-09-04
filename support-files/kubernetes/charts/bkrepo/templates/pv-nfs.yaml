@@ -1,0 +1,18 @@
+{{- if .Values.common.config.storage.nfs.enabled -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "common.names.fullname" . }}-nfs-pv
+spec:
+  storageClassName: bkrepo-nfs
+  capacity:
+    storage: {{ .Values.common.config.storage.nfs.capacity }}
+  accessModes:
+    - ReadWriteMany
+  mountOptions:
+    - lookupcache=pos
+  nfs:
+    server: {{ .Values.common.config.storage.nfs.server }}
+    path: {{ .Values.common.config.storage.nfs.path }}
+{{- end -}}
+

@@ -129,6 +129,17 @@ object NodeQueryHelper {
     }
 
     /**
+     * 通过sha256查询被删除节点详情
+     */
+    fun nodeDeletedPointListQueryBySha256(projectId: String, repoName: String, sha256: String): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::sha256).isEqualTo(sha256)
+            .and(TNode::deleted).ne(null)
+        return Query(criteria).with(Sort.by(Sort.Direction.DESC, TNode::deleted.name))
+    }
+
+    /**
      * 查询单个被删除节点
      */
     fun nodeDeletedPointQuery(projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime): Query {

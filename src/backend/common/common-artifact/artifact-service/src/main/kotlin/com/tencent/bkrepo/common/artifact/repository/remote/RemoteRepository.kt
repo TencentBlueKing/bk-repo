@@ -233,6 +233,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         if (addInterceptor) {
             createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
         }
+        builder.retryOnConnectionFailure(true)
         return builder.build()
     }
 

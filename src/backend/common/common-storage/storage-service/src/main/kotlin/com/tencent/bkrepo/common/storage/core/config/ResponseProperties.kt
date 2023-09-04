@@ -54,5 +54,9 @@ data class ResponseProperties(
     /**
      * 二进制媒体类型，不指定编码。
      * */
-    var binaryMediaTypes: Set<String> = emptySet()
+    var binaryMediaTypes: Set<String> = emptySet(),
+    /**
+     * 限速熔断阈值，当仓库配置的rateLimit小于等于限速熔断阈值时则直接将请求断开
+     */
+    var circuitBreakerThreshold: DataSize = DataSize.ofKilobytes(1),
 )

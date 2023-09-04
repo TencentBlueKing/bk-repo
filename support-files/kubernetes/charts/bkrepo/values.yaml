@@ -212,6 +212,7 @@ common:
       # 是否启用nfs挂载
       nfs:
         enabled: false
+        capacity: 100Ti
         path: /
         server:
 
