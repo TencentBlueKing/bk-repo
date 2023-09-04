@@ -146,12 +146,12 @@ class DdcLocalRepository(
 
     private fun buildRefNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-        // TODO 后续鉴权调整后此处需要改为系统级元数据
         val metadata = ArrayList<MetadataModel>()
         metadata.add(
             MetadataModel(
                 key = NODE_METADATA_KEY_BLOB_ID,
                 value = artifactInfo.inlineBlobHash!!,
+                system = true
             )
         )
 
@@ -179,12 +179,12 @@ class DdcLocalRepository(
 
     private fun buildBlobNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo as CompressedBlobArtifactInfo
-        // TODO 后续鉴权调整后此处需要改为系统级元数据
         val metadata = ArrayList<MetadataModel>()
         metadata.add(
             MetadataModel(
                 key = NODE_METADATA_KEY_BLOB_ID,
                 value = artifactInfo.compressedContentId!!,
+                system = true
             )
         )
         metadata.add(
