@@ -30,7 +30,6 @@ package com.tencent.bkrepo.common.operate.service.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.EscapeUtils
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
@@ -377,17 +376,21 @@ open class OperateLogServiceImpl(
         )
         private val adminEvent = listOf(
             EventType.ADMIN_ADD.name, EventType.ADMIN_DELETE.name,EventType.SERVICE_PROJECT_ADMIN_CREATE.name,
-            EventType.SERVICE_REPO_ADMIN_CREATE.name,EventType.SERVICE_TEMP_TOKEN_CREATE.name,EventType.SERVICE_TEMP_TOKEN_DELETE.name,
-            EventType.SERVICE_USER_CREATE.name,EventType.SERVICE_USER_ROLE_CREATE.name,EventType.USER_KEY_CREATE.name,
-            EventType.USER_KEY_DELETE.name,EventType.USER_OAUTH_TOKEN_ADD_OR_REFRESH.name,EventType.USER_OAUTH_TOKEN_DELETE.name,
-            EventType.USER_PERMISSION_DELETE.name,EventType.USER_ROLE_CREATE.name,EventType.PROJECT_ADMIN_CREATE.name,
+            EventType.SERVICE_REPO_ADMIN_CREATE.name,EventType.SERVICE_TEMP_TOKEN_CREATE.name,
+            EventType.SERVICE_TEMP_TOKEN_DELETE.name, EventType.SERVICE_USER_CREATE.name,
+            EventType.SERVICE_USER_ROLE_CREATE.name,EventType.USER_KEY_CREATE.name,
+            EventType.USER_KEY_DELETE.name,EventType.USER_OAUTH_TOKEN_ADD_OR_REFRESH.name,
+            EventType.USER_OAUTH_TOKEN_DELETE.name, EventType.USER_PERMISSION_DELETE.name,
+            EventType.USER_ROLE_CREATE.name,EventType.PROJECT_ADMIN_CREATE.name,
             EventType.REPO_ADMIN_CREATE.name,EventType.USER_ROLE_DELETE.name,EventType.USERS_INFO_UPDATE.name,
-            EventType.USER_CREATE.name,EventType.PROJECT_USER_CREATE.name,EventType.REPO_USER_CREATE.name,EventType.USER_DELETE.name,
-            EventType.USER_INFO_UPDATE.name,EventType.USER_ROLE_ADD.name,EventType.USER_ROLE_REMOVE.name,EventType.BATCH_ROLE_ADD.name,
-            EventType.BATCH_ROLE_REMOVE.name,EventType.USER_TOKEN_ADD.name,EventType.USER_TOKEN_REMOVE.name,EventType.USER_PASSWORD_UPDATE.name,
-            EventType.ACCOUNT_CREATE.name,EventType.ACCOUNT_UPDATE.name,EventType.ACCOUNT_DELETE.name,EventType.KEYS_CREATE.name,
-            EventType.KEYS_DELETE.name,EventType.KEYS_STATUS_UPDATE.name,EventType.EXT_PERMISSION_CREAT.name,
-            EventType.EXT_PERMISSION_UPDATE.name,EventType.EXT_PERMISSION_DELETE.name
+            EventType.USER_CREATE.name,EventType.PROJECT_USER_CREATE.name,EventType.REPO_USER_CREATE.name,
+            EventType.USER_DELETE.name, EventType.USER_INFO_UPDATE.name,EventType.USER_ROLE_ADD.name,
+            EventType.USER_ROLE_REMOVE.name, EventType.BATCH_ROLE_ADD.name, EventType.BATCH_ROLE_REMOVE.name,
+            EventType.USER_TOKEN_ADD.name,EventType.USER_TOKEN_REMOVE.name, EventType.USER_PASSWORD_UPDATE.name,
+            EventType.ACCOUNT_CREATE.name,EventType.ACCOUNT_UPDATE.name,EventType.ACCOUNT_DELETE.name,
+            EventType.KEYS_CREATE.name, EventType.KEYS_DELETE.name,EventType.KEYS_STATUS_UPDATE.name,
+            EventType.EXT_PERMISSION_CREAT.name, EventType.EXT_PERMISSION_UPDATE.name,
+            EventType.EXT_PERMISSION_DELETE.name
         )
         private val projectEvent = listOf(EventType.PROJECT_CREATED.name)
         private val metadataEvent = listOf(EventType.METADATA_SAVED.name, EventType.METADATA_DELETED.name)
