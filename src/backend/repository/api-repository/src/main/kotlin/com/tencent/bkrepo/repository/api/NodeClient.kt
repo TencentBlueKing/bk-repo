@@ -133,7 +133,7 @@ interface NodeClient {
 
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")
-    fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+    fun deleteNodes(@RequestBody nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
     @PostMapping("/restore")
@@ -165,6 +165,10 @@ interface NodeClient {
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/queryWithoutCount")
+    fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
+
     @Deprecated("replace with listNodePage")
     @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")
@@ -190,4 +194,14 @@ interface NodeClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String
     ): Response<List<NodeDetail>>
+
+    @ApiOperation("通过sha256查询已删除节点")
+    @GetMapping("/deletedBySha256/detail/{projectId}/{repoName}")
+    fun getDeletedNodeDetailBySha256(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam sha256: String
+    ): Response<NodeDetail?>
+
+
 }

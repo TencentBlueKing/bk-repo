@@ -140,6 +140,12 @@ enum class EventType(val msgKey: String) {
     SCANNER_DELETE("artifact.event.scanner-delete"),
     SCANNER_LIST("artifact.event.scanner-list"),
 
+    // SCAN EXECUTION CLUSTER
+    EXECUTION_CLUSTER_CREATE("artifact.event.execution-cluster-create"),
+    EXECUTION_CLUSTER_UPDATE("artifact.event.execution-cluster-update"),
+    EXECUTION_CLUSTER_DELETE("artifact.event.execution-cluster-delete"),
+    EXECUTION_CLUSTER_LIST("artifact.event.execution-cluster-list"),
+
     // SCAN CONFIG
     PROJECT_SCAN_CONFIG_CREATE("artifact.event.project-scan-config-create"),
     PROJECT_SCAN_CONFIG_UPDATE("artifact.event.project-scan-config-update"),

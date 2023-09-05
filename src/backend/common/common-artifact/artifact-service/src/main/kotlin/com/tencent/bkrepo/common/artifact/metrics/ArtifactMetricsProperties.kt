@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
 
 @ConfigurationProperties("management.metrics")
 data class ArtifactMetricsProperties(
@@ -43,5 +44,9 @@ data class ArtifactMetricsProperties(
     /**
      * 是否通过日志清洗获取传输指标数据
      */
-    var collectByLog: Boolean = false
+    var collectByLog: Boolean = false,
+    /**
+     * 直方图le的最大值
+     */
+    var maxLe: Double = DataSize.ofMegabytes(100).toBytes().toDouble()
 )

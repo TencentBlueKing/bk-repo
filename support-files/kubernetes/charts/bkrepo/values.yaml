@@ -220,6 +220,7 @@ common:
       # 是否启用nfs挂载
       nfs:
         enabled: false
+        capacity: 100Ti
         path: /
         server:
 
@@ -270,6 +271,8 @@ gateway:
   ssmTokenUrl:
   ## ci模式必填，ssm env
   ssmEnv:
+  ## 蓝鲸apigw地址
+  bkApigwUrl:
   ## ci模式必填，app code
   appCode:
   ## ci模式必填，app token

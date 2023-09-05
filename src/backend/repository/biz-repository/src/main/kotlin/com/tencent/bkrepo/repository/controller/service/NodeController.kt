@@ -151,6 +151,10 @@ class NodeController(
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
+    override fun queryWithoutCount(queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
+        return ResponseBuilder.success(nodeSearchService.searchWithoutCount(queryModel))
+    }
+
     override fun listNode(
         projectId: String,
         repoName: String,
@@ -173,5 +177,11 @@ class NodeController(
     ): Response<List<NodeDetail>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
         return ResponseBuilder.success(nodeService.getDeletedNodeDetail(artifactInfo))
+    }
+
+    override fun getDeletedNodeDetailBySha256(
+        projectId: String, repoName: String, sha256: String
+    ): Response<NodeDetail?> {
+        return ResponseBuilder.success(nodeService.getDeletedNodeDetailBySha256(projectId, repoName, sha256))
     }
 }

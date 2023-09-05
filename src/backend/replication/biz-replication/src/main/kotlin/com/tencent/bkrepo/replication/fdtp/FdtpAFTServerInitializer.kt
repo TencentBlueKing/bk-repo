@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.replication.fdtp
 
 import com.tencent.bkrepo.fdtp.codec.FdtpServerCodec
+import com.tencent.bkrepo.udt.netty.transport.UdtChannel
 import io.netty.channel.ChannelInitializer
-import io.netty.channel.udt.UdtChannel
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.timeout.IdleStateHandler
 

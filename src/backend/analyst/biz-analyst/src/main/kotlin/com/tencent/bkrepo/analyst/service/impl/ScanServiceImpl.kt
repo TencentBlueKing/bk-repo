@@ -198,6 +198,12 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
+    override fun peek(dispatcher: String?): SubScanTask? {
+        val subtask = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
+            ?: subScanTaskDao.firstTimeoutTask(scannerProperties.heartbeatTimeout.seconds, dispatcher)
+        return subtask?.let { SubtaskConverter.convert(it, scannerService.get(it.scanner)) }
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
         val subtask = subScanTaskDao.findById(subScanTaskId)
@@ -207,6 +213,12 @@ class ScanServiceImpl @Autowired constructor(
             return targetState.transitState == SubScanTaskStatus.EXECUTING.name
         }
         return false
+    }
+
+    override fun heartbeat(subScanTaskId: String) {
+        if (subScanTaskDao.heartbeat(subScanTaskId).modifiedCount == 0L) {
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId)
+        }
     }
 
     override fun get(subtaskId: String): SubScanTask {
@@ -242,7 +254,7 @@ class ScanServiceImpl @Autowired constructor(
         while (true) {
             // 优先返回待执行任务，再返回超时任务
             val task = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
-                ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS, dispatcher)
+                ?: subScanTaskDao.firstTimeoutTask(scannerProperties.heartbeatTimeout.seconds, dispatcher)
                 ?: return null
 
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败

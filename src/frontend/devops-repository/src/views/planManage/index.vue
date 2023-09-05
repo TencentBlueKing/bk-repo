@@ -36,7 +36,8 @@
             :outer-border="false"
             :row-border="false"
             row-key="userId"
-            size="small">
+            size="small"
+            @sort-change="handleSortChange">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(planInput || lastExecutionStatus || showEnabled)"></empty-data>
             </template>
@@ -56,7 +57,7 @@
             <bk-table-column :label="$t('synchronizationPolicy')" width="110" show-overflow-tooltip>
                 <template #default="{ row }">{{ getExecutionStrategy(row) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('lastExecutionTime')" prop="LAST_EXECUTION_TIME" width="150" :render-header="renderHeader">
+            <bk-table-column :label="$t('lastExecutionTime')" prop="LAST_EXECUTION_TIME" width="150" sortable="custom">
                 <template #default="{ row }">{{formatDate(row.lastExecutionTime)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('lastExecutionStatus')" width="100">
@@ -136,6 +137,7 @@
                 lastExecutionStatus: '',
                 planInput: '',
                 sortType: 'CREATED_TIME',
+                sortDirection: 'DESC',
                 planList: [],
                 pagination: {
                     count: 0,
@@ -181,25 +183,6 @@
                         CRON_EXPRESSION: this.$t('timedExecution')
                     }[executionStrategy]
             },
-            renderHeader (h, { column }) {
-                return h('div', {
-                    class: {
-                        'flex-align-center hover-btn': true,
-                        'selected-header': this.sortType === column.property
-                    },
-                    on: {
-                        click: () => {
-                            this.sortType = column.property
-                            this.handlerPaginationChange()
-                        }
-                    }
-                }, [
-                    h('span', column.label),
-                    h('i', {
-                        class: 'ml5 devops-icon icon-down-shape'
-                    })
-                ])
-            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
@@ -213,6 +196,7 @@
                     enabled: this.showEnabled || undefined,
                     lastExecutionStatus: this.lastExecutionStatus || undefined,
                     sortType: this.sortType,
+                    sortDirection: this.sortDirection,
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
@@ -239,6 +223,11 @@
                         })
                     }
                 })
+            },
+            handleSortChange ({ prop, order }) {
+                this.sortType = order ? prop : 'CREATED_TIME'
+                this.sortDirection = order === 'ascending' ? 'ASC' : 'DESC'
+                this.handlerPaginationChange()
             },
             handleClickCloseDrawer () {
                 this.drawerSlider.isShow = false

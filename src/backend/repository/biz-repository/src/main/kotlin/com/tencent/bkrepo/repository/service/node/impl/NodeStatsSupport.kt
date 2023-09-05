@@ -63,13 +63,25 @@ open class NodeStatsSupport(
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         // 节点为文件直接返回
         if (!node.folder) {
-            return NodeSizeInfo(subNodeCount = 0, size = node.size)
+            return NodeSizeInfo(subNodeCount = 0, subNodeWithoutFolderCount = 0, size = node.size)
         }
         val listOption = NodeListOption(includeFolder = true, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
         val count = nodeDao.count(Query(criteria))
-        val size = aggregateComputeSize(criteria)
-        return NodeSizeInfo(subNodeCount = count, size = size)
+        val listOptionWithOutFolder = NodeListOption(includeFolder = false, deep = true)
+        val criteriaWithOutFolder = NodeQueryHelper.nodeListCriteria(
+            projectId, repoName, node.fullPath, listOptionWithOutFolder
+        )
+        val countWithOutFolder = nodeDao.count(Query(criteriaWithOutFolder))
+        val size = aggregateComputeSize(criteriaWithOutFolder)
+        nodeDao.setSizeAndNodeNumOfFolder(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            size = size,
+            nodeNum = countWithOutFolder
+        )
+        return NodeSizeInfo(subNodeCount = count, subNodeWithoutFolderCount = countWithOutFolder, size = size)
     }
 
     override fun countFileNode(artifact: ArtifactInfo): Long {

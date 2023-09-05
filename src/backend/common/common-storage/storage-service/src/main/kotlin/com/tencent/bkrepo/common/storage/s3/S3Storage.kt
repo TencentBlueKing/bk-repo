@@ -44,7 +44,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest
 import com.amazonaws.services.s3.transfer.TransferManager
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
@@ -52,7 +52,7 @@ import java.io.InputStream
 
 class S3Storage(
     private val executor: ThreadPoolTaskExecutor
-) : AbstractFileStorage<S3Credentials, S3Client>() {
+) : AbstractEncryptorFileStorage<S3Credentials, S3Client>() {
 
     private var defaultTransferManager: TransferManager? = null
 

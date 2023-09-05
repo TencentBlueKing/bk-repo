@@ -62,6 +62,18 @@ class UserTemporaryScanController(
         return ResponseBuilder.success(temporaryScanTokenService.getToolInput(subtaskId))
     }
 
+    @ApiOperation("拉取扫描子任务")
+    @GetMapping("/scan/subtask/input")
+    fun pullSubtask(
+        @RequestParam executionCluster: String,
+        @RequestParam token: String
+    ): Response<ToolInput?> {
+        temporaryScanTokenService.checkToken(executionCluster, token)
+        val toolInput = temporaryScanTokenService.pullToolInput(executionCluster)
+        toolInput?.let { temporaryScanTokenService.setToken(it.taskId, token) }
+        return ResponseBuilder.success(toolInput)
+    }
+
     @ApiOperation("扫描结果上报")
     @PostMapping("/scan/report")
     fun report(@RequestBody reportResultRequest: ReportResultRequest): Response<Void> {
@@ -82,5 +94,16 @@ class UserTemporaryScanController(
     ): Response<Boolean> {
         temporaryScanTokenService.checkToken(subtaskId, token)
         return ResponseBuilder.success(scanService.updateSubScanTaskStatus(subtaskId, status))
+    }
+
+    @ApiOperation("维持任务心跳")
+    @PostMapping("/scan/subtask/{subtaskId}/heartbeat")
+    fun heartbeat(
+        @PathVariable subtaskId: String,
+        @RequestParam token: String
+    ): Response<Void> {
+        temporaryScanTokenService.checkToken(subtaskId, token)
+        scanService.heartbeat(subtaskId)
+        return ResponseBuilder.success()
     }
 }

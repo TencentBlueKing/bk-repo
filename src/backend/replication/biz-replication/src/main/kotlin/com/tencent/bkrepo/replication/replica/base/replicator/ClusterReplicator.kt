@@ -202,9 +202,14 @@ class ClusterReplicator(
         with(context) {
             var type: String = replicationProperties.pushType
             var downGrade = false
+            val remoteRepositoryType = context.remoteRepoType
             retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 return buildNodeCreateRequest(this, node)?.let {
-                    if (blobReplicaClient!!.check(it.sha256!!, remoteRepo?.storageCredentials?.key).data != true
+                    if (blobReplicaClient!!.check(
+                            it.sha256!!,
+                            remoteRepo?.storageCredentials?.key,
+                            remoteRepositoryType
+                        ).data != true
                     ) {
                         // 1. 同步文件数据
                         logger.info(
@@ -231,17 +236,20 @@ class ClusterReplicator(
                             // 兼容接口不存在时，会返回401
                             if (
                                 throwable is ArtifactPushException &&
-                                (throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value ||
-                                    throwable.code == HttpStatus.UNAUTHORIZED.value )
+                                (
+                                    throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value ||
+                                        throwable.code == HttpStatus.UNAUTHORIZED.value
+                                    )
                             ) {
                                 type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
                                 downGrade = true
                             }
                             throw throwable
                         }
+                        // 再次确认下文件是否已经可见(cfs可见性问题)
+                        doubleCheck(context, it.sha256!!)
                     }
-                    // 再次确认下文件是否已经可见(cfs可见性问题)
-                    doubleCheck(context, it.sha256!!)
+
                     logger.info(
                         "The node [${node.fullPath}] will be pushed to the remote server!"
                     )
@@ -254,14 +262,25 @@ class ClusterReplicator(
     }
 
     private fun doubleCheck(context: ReplicaContext, sha256: String) {
-        var count = 0
-        while (count < FILE_EXIST_CHECK_RETRY_COUNT) {
-            if (context.blobReplicaClient!!.check(sha256, context.remoteRepo?.storageCredentials?.key).data == true){
-                break
+        if (!context.task.setting.storageConsistencyCheck) return
+        logger.info("will check the storage consistency for $sha256")
+        var checkResult = false
+        var costTime = 0
+        val remoteRepositoryType = context.remoteRepoType
+        while (!checkResult && costTime < STORAGE_CONSISTENCY_CHECK_TIME_OUT) {
+            if (context.blobReplicaClient!!.check(
+                    sha256,
+                    context.remoteRepo?.storageCredentials?.key,
+                    remoteRepositoryType
+                ).data == true
+            ) {
+                checkResult = true
             } else {
                 TimeUnit.SECONDS.sleep(1)
-                count++
+                costTime++
             }
+            logger.info("the result of storage consistency check for $sha256 is $checkResult," +
+                            " costTime: $costTime seconds")
         }
     }
 
@@ -311,7 +330,7 @@ class ClusterReplicator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)
-        private const val FILE_EXIST_CHECK_RETRY_COUNT = 10
+        private const val STORAGE_CONSISTENCY_CHECK_TIME_OUT = 600
 
         fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
             return "$projectId/$repoName/${clusterInfo.hashCode()}"

@@ -54,12 +54,12 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * 签名过期时间
      */
-    val signExpired: Duration = Duration.ofDays(1)
+    var signExpired: Duration = Duration.ofDays(1)
 
     /**
      * http协议
      */
-    val httpProtocol: HttpProtocol = HttpProtocol.HTTP
+    var httpProtocol: HttpProtocol = HttpProtocol.HTTP
 
     /**
      * 分片阈值，大于此值将采用分片上传/下载
@@ -79,7 +79,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * cos访问域名解析器
      */
-    val endpointResolver = createEndpointResolver()
+    var endpointResolver = createEndpointResolver()
 
     /**
      * 记录慢日志的网络速度阈值，即网络速度低于这个速度，则记录慢日志。

@@ -211,6 +211,27 @@ db.repository.updateOne(
     { upsert: true }
 );
 
+db.execution_cluster.updateOne(
+    {
+        "name": "docker"
+    },
+    {
+        $setOnInsert: {
+            name: "docker",
+            type: "docker",
+            description: "docker executor",
+            config: '{"name" : "docker", "host" : "unix:///var/run/docker.sock", "version" : "1.23", "connectTimeout" : 5000, "readTimeout" : 0, "maxTaskCount" : 1, "type" : "docker", "description" : "docker executor"}',
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    {
+        upsert: true
+    }
+);
+
 db.scanner.updateOne(
     {
         name: "bkrepo-trivy"

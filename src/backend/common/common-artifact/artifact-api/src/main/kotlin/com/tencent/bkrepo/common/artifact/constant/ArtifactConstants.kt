@@ -52,6 +52,11 @@ const val ARTIFACT_CONFIGURER = "artifact-configurer"
 const val NODE_DETAIL_KEY = "node-detail"
 
 /**
+ * 查询仓库上传下载限速配置后后将其写入request attributes的key
+ */
+const val REPO_RATE_LIMIT_KEY = "repo-rate-limit"
+
+/**
  * 项目id字段
  */
 const val PROJECT_ID = "projectId"
@@ -111,6 +116,12 @@ const val PIPELINE = "pipeline"
  * 报告仓库
  */
 const val REPORT = "report"
+
+
+/**
+ * 日志仓库
+ */
+const val LOG = "log"
 
 /**
  * 文件访问请求是否为直接下载

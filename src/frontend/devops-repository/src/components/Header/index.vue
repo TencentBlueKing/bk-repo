@@ -56,6 +56,7 @@
                 :arrow="false"
                 trigger="click"
                 ref="popoverRef"
+                class="popover"
             >
                 <div class="flag-box">
                     <Icon :name="curLang.icon" size="20" />
@@ -64,7 +65,7 @@
                     <li
                         v-for="(item, index) in icons"
                         :key="index"
-                        :class="['bkci-dropdown-item', { active: curLang.id === item.id }]"
+                        :class="['bkci-dropdown-item']"
                         @click="changeLanguage(item.id)">
                         <Icon class="mr5" :name="item.icon" style="vertical-align: top;margin-bottom: 2px;" size="20" />
                         {{item.name}}
@@ -188,7 +189,7 @@
     height: 50px;
     padding: 0 20px;
     justify-content: space-between;
-    background-color:  var(--fontPrimaryColor);
+    background-color:  #191929;
     color: white;
     .bkre-project-select {
         width: 300px;
@@ -230,6 +231,15 @@
 }
 .flag-box{
     margin-top: 7px;
+    border-radius:15px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+        background-color: #253146;
+    }
 }
 .bkci-dropdown-item {
     display: flex;
@@ -244,7 +254,8 @@
     background-color: #fff;
     cursor: pointer;
     &:hover {
-        background-color: #f5f7fb;
+        background-color: #EAF3FF;
+        color: #6BA3FF;
     }
     &.disabled {
         color: #dcdee5;

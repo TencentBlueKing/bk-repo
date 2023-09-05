@@ -162,6 +162,10 @@ class EdgeNodeServiceImpl(
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
     }
 
+    override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetailBySha256(projectId, repoName, sha256)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
         centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))

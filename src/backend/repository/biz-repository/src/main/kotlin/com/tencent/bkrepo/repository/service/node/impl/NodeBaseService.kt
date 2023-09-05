@@ -67,6 +67,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -175,6 +176,7 @@ abstract class NodeBaseService(
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
+                nodeNum = null,
                 metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
@@ -307,16 +309,15 @@ abstract class NodeBaseService(
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val query = Query(
-                NodeQueryHelper.nodeListCriteria(
-                    projectId = projectId,
-                    repoName = repoName,
-                    path = node.fullPath,
-                    option = NodeListOption(includeFolder = false, deep = true)
-                )
-            )
+
+            val criteria = where(TNode::projectId).isEqualTo(projectId)
+                .and(TNode::repoName).isEqualTo(repoName)
+                .and(TNode::deleted).isEqualTo(null)
+                .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(node.fullPath)}")
+                .and(TNode::folder).isEqualTo(false)
+            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
-            nodeDao.updateFirst(query, update)
+            nodeDao.updateMulti(query, update)
             logger.info("Update node access time [$this] success.")
         }
     }
@@ -423,6 +424,7 @@ abstract class NodeBaseService(
                     name = it.name,
                     fullPath = it.fullPath,
                     size = it.size,
+                    nodeNum = it.nodeNum,
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
