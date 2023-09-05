@@ -131,7 +131,7 @@ class CommitEdgeCenterPackageServiceImpl(
     }
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
+        val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val srcCluster = srcCluster()
 
         if (ClusterUtils.isUniqueSrcCluster(tPackage.clusterNames)) {
