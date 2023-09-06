@@ -200,6 +200,7 @@
                 })
             },
             deletePackageHandler ({ key }) {
+                console.log(key)
                 this.$confirm({
                     theme: 'danger',
                     message: this.$t('deletePackageTitle', { name: '' }),
@@ -214,8 +215,30 @@
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })
