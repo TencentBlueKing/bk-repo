@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.ddc.repository
 
+import com.mongodb.DuplicateKeyException
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.pojo.ReferenceKey
@@ -69,7 +70,12 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
             .and(TDdcBlob::repoName.name).isEqualTo(blob.repoName)
             .and(TDdcBlob::blobId.name).isEqualTo(blob.blobId)
         val options = FindAndReplaceOptions().upsert()
-        return determineMongoTemplate().findAndReplace(Query(criteria), blob, options)
+        val query = Query(criteria)
+        return try {
+            determineMongoTemplate().findAndReplace(query, blob, options)
+        } catch (e: DuplicateKeyException) {
+            findOne(query)
+        }
     }
 
     fun addRefToBlob(projectId: String, repoName: String, bucket: String, refKey: String, blobIds: Set<String>) {
