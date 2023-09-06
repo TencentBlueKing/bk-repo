@@ -25,33 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.artifact.resolver
+package com.tencent.bkrepo.ddc.pojo
 
-import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
-import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
-import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
-import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
-import com.tencent.bkrepo.ddc.pojo.RefKey
-import org.springframework.stereotype.Component
-import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
-@Component
-@Resolver(ReferenceArtifactInfo::class)
-class ReferenceArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(
-        projectId: String,
-        repoName: String,
-        artifactUri: String,
-        request: HttpServletRequest
-    ): ReferenceArtifactInfo {
-        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
-        return ReferenceArtifactInfo(
-            projectId = projectId,
-            repoName = repoName,
-            bucket = attributes[PATH_VARIABLE_BUCKET].toString(),
-            refKey = RefKey.create(attributes[PATH_VARIABLE_REF_ID].toString())
-        )
+data class RefKey(private var text: String) {
+    init {
+        text = text.toLowerCase()
+        if (text.length != 40) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "IoHashKeys must be exactly 40 bytes.")
+        }
+        if (text.any { !isValidCharacter(it) }) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "${this.text} contains invalid character.")
+        }
+    }
+
+    override fun toString(): String = text
+
+    private fun isValidCharacter(c: Char): Boolean = c in 'a'..'z' || c in '0'..'9'
+
+    companion object {
+        fun create(s: String): RefKey = RefKey(s.toLowerCase())
     }
 }

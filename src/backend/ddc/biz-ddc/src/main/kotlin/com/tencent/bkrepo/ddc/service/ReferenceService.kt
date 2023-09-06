@@ -29,18 +29,17 @@ package com.tencent.bkrepo.ddc.service
 
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.model.TDdcRef
 import com.tencent.bkrepo.ddc.pojo.ContentHash
 import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
+import com.tencent.bkrepo.ddc.pojo.RefId
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.repository.RefRepository
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.utils.hasAttachments
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.bson.types.Binary
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -53,8 +52,6 @@ class ReferenceService(
     private val blobService: BlobService,
     private val refResolver: ReferenceResolver,
     private val refRepository: RefRepository,
-    private val nodeClient: NodeClient,
-    private val storageManager: StorageManager,
 ) {
     fun create(ref: Reference): Reference {
         val inlineBlob = if (ref.inlineBlob!!.size > ddcProperties.inlineBlobMaxSize.toBytes()) {
@@ -86,21 +83,20 @@ class ReferenceService(
     }
 
     fun getReference(
-        projectId: String,
-        repoName: String,
-        bucket: String,
-        key: String,
+        refId: RefId,
         includePayload: Boolean = true,
         checkFinalized: Boolean = true,
     ): Reference? {
-        val tRef = refRepository.find(projectId, repoName, bucket, key, includePayload) ?: return null
-        if (checkFinalized && !tRef.finalized) {
-            throw BadRequestException(
-                CommonMessageCode.PARAMETER_INVALID, "Object ${tRef.bucket} ${tRef.key} is not finalized."
-            )
-        }
+        with(refId) {
+            val tRef = refRepository.find(projectId, repoName, bucket, key, includePayload) ?: return null
+            if (checkFinalized && !tRef.finalized) {
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID, "Object ${tRef.bucket} ${tRef.key} is not finalized."
+                )
+            }
 
-        return Reference.from(tRef)
+            return Reference.from(tRef)
+        }
     }
 
     fun finalize(ref: Reference, payload: ByteArray): CreateRefResponse {
@@ -120,6 +116,10 @@ class ReferenceService(
         }
 
         return CreateRefResponse((missingBlobs).mapTo(HashSet()) { it.toString() })
+    }
+
+    fun updateLastAccess(refId: RefId, lastAccessDate: LocalDateTime) {
+        refRepository.updateLastAccess(refId, lastAccessDate)
     }
 
     companion object {

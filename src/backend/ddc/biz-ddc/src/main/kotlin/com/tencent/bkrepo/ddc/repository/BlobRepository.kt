@@ -72,11 +72,11 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
         return determineMongoTemplate().findAndReplace(Query(criteria), blob, options)
     }
 
-    fun addRefToBlob(projectId: String, repoName: String, bucket: String, refId: String, blobIds: Set<String>) {
+    fun addRefToBlob(projectId: String, repoName: String, bucket: String, refKey: String, blobIds: Set<String>) {
         val criteria = TDdcBlob::projectId.isEqualTo(projectId)
             .and(TDdcBlob::repoName.name).isEqualTo(repoName)
             .and(TDdcBlob::blobId.name).inValues(blobIds)
-        val update = Update().addToSet(TDdcBlob::references.name, ReferenceKey(bucket = bucket, key = refId))
+        val update = Update().addToSet(TDdcBlob::references.name, ReferenceKey(bucket = bucket, key = refKey))
         updateMulti(Query(criteria), update)
     }
 }
