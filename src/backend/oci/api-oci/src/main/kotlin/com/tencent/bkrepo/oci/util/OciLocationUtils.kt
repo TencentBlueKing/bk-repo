@@ -27,45 +27,47 @@
 
 package com.tencent.bkrepo.oci.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.oci.constant.OCI_MANIFEST
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import org.slf4j.LoggerFactory
 
 object OciLocationUtils {
 
-    private val logger = LoggerFactory.getLogger(OciLocationUtils::class.java)
-
     fun buildManifestPath(packageName: String, tag: String): String {
-        return "/$packageName/manifest/$tag/$OCI_MANIFEST"
+        return buildManifestVersionFolderPath(packageName, tag) + OCI_MANIFEST
+    }
+
+    fun buildManifestVersionFolderPath(packageName: String, tag: String): String {
+        return buildManifestFolderPath(packageName) +"$tag/"
+    }
+
+    fun buildManifestFolderPath(packageName: String): String {
+        return "/$packageName/manifest/"
     }
 
     fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {
         return buildDigestManifestPath(packageName, OciDigest(reference))
     }
 
-    fun buildDigestManifestPathWithSha256(packageName: String, sha256: String): String {
-        return buildDigestManifestPath(packageName, OciDigest.fromSha256(sha256))
-    }
-
     private fun buildDigestManifestPath(packageName: String, ref: OciDigest): String {
         return buildPath(packageName, ref, "manifest")
-    }
-
-    fun buildDigestBlobsPath(packageName: String, digestStr: String): String {
-        return buildPath(packageName, OciDigest(digestStr), "blobs")
     }
 
     fun buildDigestBlobsPath(packageName: String, ref: OciDigest): String {
         return buildPath(packageName, ref, "blobs")
     }
 
+    fun buildBlobsFolderPath(packageName: String): String {
+        return buildPath(packageName, null, "blobs")
+    }
+
     fun buildDigestBlobsUploadPath(packageName: String, ref: OciDigest): String {
         return buildPath(packageName, ref, "_uploads")
     }
 
-    private fun buildPath(packageName: String, ref: OciDigest, type: String): String {
-        return "/$packageName/$type/" + ref.fileName()
+    private fun buildPath(packageName: String, ref: OciDigest? = null, type: String): String {
+        return "/$packageName/$type/"+ (ref?.fileName() ?: StringPool.EMPTY)
     }
 
     fun manifestLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo): String {
@@ -84,6 +86,14 @@ object OciLocationUtils {
         with(ociArtifactInfo) {
             return "/$packageName/manifests/$reference"
         }
+    }
+
+    fun blobVersionPathLocation(reference: String, packageName: String, fileName: String): String {
+            return blobVersionFolderLocation(reference, packageName)+ fileName
+    }
+
+    fun blobVersionFolderLocation(reference: String, packageName: String): String {
+        return "/$packageName/blobs/$reference/"
     }
 
     private fun returnPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {

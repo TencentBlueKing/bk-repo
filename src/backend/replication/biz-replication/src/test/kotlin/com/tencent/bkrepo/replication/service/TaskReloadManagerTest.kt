@@ -42,9 +42,9 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
-import com.tencent.bkrepo.replication.replica.schedule.ScheduledReplicaJobExecutor
-import com.tencent.bkrepo.replication.replica.schedule.TaskReloadManager
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.replica.type.schedule.ScheduledReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.type.schedule.TaskReloadManager
 import com.tencent.bkrepo.replication.service.impl.ReplicaTaskServiceImpl
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll

@@ -169,7 +169,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-zA-Z][a-zA-Z0-9_-]{1,31}$/,
+                            regex: /^[a-zA-Z][a-zA-Z0-9_-|@]{1,31}$/,
                             message: this.$t('account') + this.$t('space') + this.$t('include') + this.$t('space') + this.$t('userIdPlaceHolder'),
                             trigger: 'blur'
                         },

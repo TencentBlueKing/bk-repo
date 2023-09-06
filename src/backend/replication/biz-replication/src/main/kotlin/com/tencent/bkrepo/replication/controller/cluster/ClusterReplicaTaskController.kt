@@ -36,7 +36,7 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import com.tencent.bkrepo.replication.replica.base.replicator.commitedge.EdgeReplicaContextHolder
+import com.tencent.bkrepo.replication.replica.replicator.commitedge.EdgeReplicaContextHolder
 import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.web.bind.annotation.RestController

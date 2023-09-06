@@ -248,9 +248,13 @@ class AccountServiceImpl constructor(
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): String? {
+    override fun checkCredential(
+        accessKey: String,
+        secretKey: String,
+        authorizationGrantType: AuthorizationGrantType?
+    ): String? {
         logger.debug("check  credential  accessKey : [$accessKey] , secretKey: []")
-        val query = AccountQueryHelper.checkCredential(accessKey, secretKey)
+        val query = AccountQueryHelper.checkCredential(accessKey, secretKey, authorizationGrantType)
         val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
         return result.appId
     }

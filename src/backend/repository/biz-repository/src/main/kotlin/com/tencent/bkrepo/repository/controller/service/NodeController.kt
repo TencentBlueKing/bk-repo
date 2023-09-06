@@ -178,4 +178,10 @@ class NodeController(
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
         return ResponseBuilder.success(nodeService.getDeletedNodeDetail(artifactInfo))
     }
+
+    override fun getDeletedNodeDetailBySha256(
+        projectId: String, repoName: String, sha256: String
+    ): Response<NodeDetail?> {
+        return ResponseBuilder.success(nodeService.getDeletedNodeDetailBySha256(projectId, repoName, sha256))
+    }
 }
