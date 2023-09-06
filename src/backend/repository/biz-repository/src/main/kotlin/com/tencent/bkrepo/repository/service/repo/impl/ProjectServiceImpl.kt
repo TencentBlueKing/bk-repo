@@ -267,7 +267,7 @@ class ProjectServiceImpl(
             }
         }
 
-        private fun convert(tProjectMetrics: TProjectMetrics): ProjectMetricsInfo? {
+        private fun convert(tProjectMetrics: TProjectMetrics?): ProjectMetricsInfo? {
             return tProjectMetrics?.let {
                 ProjectMetricsInfo(
                     projectId = it.projectId,

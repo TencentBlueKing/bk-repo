@@ -37,5 +37,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
-    fun findByProjectId(projectId:String): TProjectMetrics
+    fun findByProjectId(projectId:String): TProjectMetrics?
 }
