@@ -315,14 +315,7 @@ export default {
     },
     getProjectMetrics (_, { projectId }) {
         return Vue.prototype.$ajax.get(
-            '/opdata/api/project/metrics/list',
-            {
-                params: {
-                    pageNumber: 1,
-                    pageSize: 1,
-                    projectId: projectId
-                }
-            }
+            `${prefix}/project/metrics/${projectId}`
         )
     }
 }
