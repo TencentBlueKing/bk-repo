@@ -48,7 +48,7 @@
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('repoUsage')" width="150" prop="fileSize" sortable="custom">
-                <template #default="{ row }">{{ row.fileSize ? convertFileSize(row.fileSize, 'GB') : '0GB' }}</template>
+                <template #default="{ row }">{{ row.fileSize ? convertFileSize(row.fileSize) : '0B' }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('fileNum')" width="150" prop="fileNum" sortable="custom">
                 <template #default="{ row }">{{ row.fileNum ? row.fileNum : 0 }}</template>
