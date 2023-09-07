@@ -100,7 +100,7 @@ class OauthAuthorizationServiceImpl(
                 redisOperation.set(nonceKey, nonce!!, expiredInSecond)
             }
             if (!codeChallenge.isNullOrBlank() && !codeChallengeMethod.isNullOrBlank()) {
-                val challengeKey = "$clientId:challenge"
+                val challengeKey = "$clientId:$code:challenge"
                 redisOperation.set(challengeKey, "${codeChallengeMethod}:${codeChallenge}", expiredInSecond)
             }
             if (scope.orEmpty().contains("openid")) {
@@ -314,21 +314,20 @@ class OauthAuthorizationServiceImpl(
             throw ErrorCodeException(AuthMessageCode.AUTH_SECRET_CHECK_FAILED)
         }
 
-        if (!code.isNullOrBlank() && !codeVerifier.isNullOrBlank()) {
+        if (!code.isNullOrBlank()) {
             checkCodeVerifier(clientId, code, codeVerifier)
         }
         return client
     }
 
-    private fun checkCodeVerifier(clientId: String, code: String, codeVerifier: String) {
+    private fun checkCodeVerifier(clientId: String, code: String, codeVerifier: String?) {
         val challengeKey = "$clientId:$code:challenge"
-        val value = redisOperation.get(challengeKey)
-            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "code_verifier")
+        val value = redisOperation.get(challengeKey) ?: return
         val (method, challenge) = value.split(StringPool.COLON)
         val pass = when (method) {
             "plain" -> challenge == codeVerifier
             "S256" -> Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(HashAlgorithm.SHA256().digest(codeVerifier.byteInputStream())) == challenge
+                .encodeToString(HashAlgorithm.SHA256().digest(codeVerifier.orEmpty().byteInputStream())) == challenge
             else -> false
         }
         if (!pass) {
