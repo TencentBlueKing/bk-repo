@@ -58,7 +58,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.api.util.toXmlString
-import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.artifact.hash.HashAlgorithm
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -327,7 +327,8 @@ class OauthAuthorizationServiceImpl(
         val (method, challenge) = value.split(StringPool.COLON)
         val pass = when (method) {
             "plain" -> challenge == codeVerifier
-            "S256" -> Base64.getUrlEncoder().encodeToString(codeVerifier.sha256().toByteArray()) == challenge
+            "S256" -> Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(HashAlgorithm.SHA256().digest(codeVerifier.byteInputStream())) == challenge
             else -> false
         }
         if (!pass) {
