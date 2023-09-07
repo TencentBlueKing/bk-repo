@@ -41,7 +41,11 @@ class ReferenceArtifactInfo(
 
     override fun getArtifactName() = "/$bucket/$refId"
 
-    override fun getArtifactFullPath() = "/$bucket/$refId"
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            "/$bucket/$refId"
+        } else getArtifactMappingUri()!!
+    }
 
     companion object {
         const val PATH_VARIABLE_BUCKET = "bucket"

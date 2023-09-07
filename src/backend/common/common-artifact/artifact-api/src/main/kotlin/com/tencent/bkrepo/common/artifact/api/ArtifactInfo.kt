@@ -72,6 +72,8 @@ open class ArtifactInfo(
         this.artifactMappingUri = PathUtils.normalizeFullPath(artifactMappingUri)
     }
 
+    fun getArtifactMappingUri(): String? = artifactMappingUri
+
     /**
      * 构件名称，不同依赖源解析规则不一样，可以override
      *
