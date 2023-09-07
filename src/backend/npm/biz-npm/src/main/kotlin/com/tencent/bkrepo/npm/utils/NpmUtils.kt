@@ -104,6 +104,23 @@ object NpmUtils {
         return Pair(name, version)
     }
 
+    private fun isScopeName(name: String): Boolean {
+        return name.startsWith('@') && name.indexOf('/') != -1
+    }
+
+    /**
+     * name with scope tarball like this: http://domain/@scope/demo/-/demo-1.0.0.tgz
+     * name without scope tarball like this: http://domain/demo/-/demo-1.0.0.tgz
+     */
+    private fun getTgzSuffix(oldTarball: String, name: String): String {
+        return if (isScopeName(name)) {
+            name + oldTarball.substringAfter(name)
+        } else {
+            val list = oldTarball.split(name).map { it.trim() }
+            name + list[list.lastIndex - 1] + name + list.last()
+        }
+    }
+
     /**
      * 如果[tarballPrefix]不为空则采用tarballPrefix,否则采用自定义上传上来的tarball
      */
@@ -114,8 +131,7 @@ object NpmUtils {
         name: String,
         artifactInfo: ArtifactInfo
     ): String {
-        val list = oldTarball.split(name).map { it.trim() }
-        val tgzSuffix = name + list[list.lastIndex - 1] + name + list.last()
+        val tgzSuffix = getTgzSuffix(oldTarball, name)
         val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)
         val newTarball = StringBuilder()
         npmPrefixHeader?.let {
@@ -131,7 +147,7 @@ object NpmUtils {
         } else {
             val formatUrl = UrlFormatter.formatUrl(tarballPrefix)
             newTarball.append(formatUrl.trimEnd(SLASH))
-                // .append(SLASH).append(artifactInfo.getRepoIdentify())
+                .append(artifactInfo.getRepoIdentify())
                 .append(SLASH).append(tgzSuffix.trimStart(SLASH))
         }
         return newTarball.toString()
