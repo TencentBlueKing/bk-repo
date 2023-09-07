@@ -34,6 +34,7 @@ import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TOauthToken
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
 import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
 import com.tencent.bkrepo.auth.pojo.oauth.IdToken
@@ -57,6 +58,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.api.util.toXmlString
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -82,29 +84,36 @@ class OauthAuthorizationServiceImpl(
     private val oauthProperties: OauthProperties
 ) : OauthAuthorizationService {
 
-    override fun authorized(clientId: String, state: String, scope: String?, nonce: String?): AuthorizedResult {
-        val userId = SecurityUtils.getUserId()
-        val client = accountRepository.findById(clientId)
-            .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
-        val code = OauthUtils.generateCode()
+    override fun authorized(authorizeRequest: AuthorizeRequest): AuthorizedResult {
+        with(authorizeRequest) {
+            val userId = SecurityUtils.getUserId()
+            val client = accountRepository.findById(clientId)
+                .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
+            val code = OauthUtils.generateCode()
 
-        val userIdKey = "$clientId:$code:userId"
-        val openIdKey = "$clientId:$code:openId"
-        redisOperation.set(userIdKey, userId, TimeUnit.MINUTES.toSeconds(10L))
-        if (!nonce.isNullOrBlank()) {
-            val nonceKey = "$clientId:$code:nonce"
-            redisOperation.set(nonceKey, nonce, TimeUnit.MINUTES.toSeconds(10L))
-        }
-        if (scope.orEmpty().contains("openid")) {
-            redisOperation.set(openIdKey, true.toString(), TimeUnit.MINUTES.toSeconds(10L))
-        }
+            val userIdKey = "$clientId:$code:userId"
+            val openIdKey = "$clientId:$code:openId"
+            val expiredInSecond = TimeUnit.MINUTES.toSeconds(10L)
+            redisOperation.set(userIdKey, userId, expiredInSecond)
+            if (!nonce.isNullOrBlank()) {
+                val nonceKey = "$clientId:$code:nonce"
+                redisOperation.set(nonceKey, nonce!!, expiredInSecond)
+            }
+            if (!codeChallenge.isNullOrBlank() && !codeChallengeMethod.isNullOrBlank()) {
+                val challengeKey = "$clientId:challenge"
+                redisOperation.set(challengeKey, "${codeChallengeMethod}:${codeChallenge}", expiredInSecond)
+            }
+            if (scope.orEmpty().contains("openid")) {
+                redisOperation.set(openIdKey, true.toString(), expiredInSecond)
+            }
 
-        return AuthorizedResult(
-            redirectUrl = "${client.redirectUri!!.removeSuffix(StringPool.SLASH)}?code=$code&state=$state",
-            userId = userId,
-            appId = client.appId,
-            scope = client.scope?.toList() ?: emptyList()
-        )
+            return AuthorizedResult(
+                redirectUrl = "${client.redirectUri!!.removeSuffix(StringPool.SLASH)}?code=$code&state=$state",
+                userId = userId,
+                appId = client.appId,
+                scope = client.scope?.toList() ?: emptyList()
+            )
+        }
     }
 
     override fun createToken(generateTokenRequest: GenerateTokenRequest) {
@@ -121,14 +130,14 @@ class OauthAuthorizationServiceImpl(
             clientId = data.first()
             clientSecret = data.last()
         }
-        val code = generateTokenRequest.code
+        val code = generateTokenRequest.code!!
         val userIdKey = "$clientId:$code:userId"
         val openIdKey = "$clientId:$code:openId"
         val nonceKey = "$clientId:$code:nonce"
         val userId = redisOperation.get(userIdKey) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CODE_CHECK_FAILED)
         val openId = redisOperation.get(openIdKey).toBoolean()
         val nonce = redisOperation.get(nonceKey)
-        val client = checkClientSecret(clientId, clientSecret)
+        val client = checkClientSecret(clientId, clientSecret, code, generateTokenRequest.codeVerifier)
         var tOauthToken = oauthTokenRepository.findFirstByAccountIdAndUserId(clientId, userId)
         val idToken = generateOpenIdToken(clientId, userId, nonce)
         if (tOauthToken == null) {
@@ -161,7 +170,7 @@ class OauthAuthorizationServiceImpl(
         with(generateTokenRequest) {
             Preconditions.checkNotNull(clientId, this::clientId.name)
             Preconditions.checkNotNull(refreshToken, this::refreshToken.name)
-            checkClientSecret(clientId!!, clientSecret)
+            checkClientSecret(clientId!!, clientSecret, null, null)
             val token = oauthTokenRepository.findFirstByAccountIdAndRefreshToken(clientId!!, refreshToken!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, refreshToken!!)
             val idToken = generateOpenIdToken(
@@ -227,7 +236,7 @@ class OauthAuthorizationServiceImpl(
     }
 
     override fun deleteToken(clientId: String, clientSecret: String, accessToken: String) {
-        checkClientSecret(clientId, clientSecret)
+        checkClientSecret(clientId, clientSecret, null, null)
         oauthTokenRepository.deleteByAccessToken(accessToken)
     }
 
@@ -289,7 +298,7 @@ class OauthAuthorizationServiceImpl(
         )
     }
 
-    private fun checkClientSecret(clientId: String, clientSecret: String?): TAccount {
+    private fun checkClientSecret(clientId: String, clientSecret: String?, code: String?, codeVerifier: String?): TAccount {
         val client = accountRepository.findById(clientId)
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
 
@@ -304,7 +313,26 @@ class OauthAuthorizationServiceImpl(
         if (credential == null) {
             throw ErrorCodeException(AuthMessageCode.AUTH_SECRET_CHECK_FAILED)
         }
+
+        if (!code.isNullOrBlank() && !codeVerifier.isNullOrBlank()) {
+            checkCodeVerifier(clientId, code, codeVerifier)
+        }
         return client
+    }
+
+    private fun checkCodeVerifier(clientId: String, code: String, codeVerifier: String) {
+        val challengeKey = "$clientId:$code:challenge"
+        val value = redisOperation.get(challengeKey)
+            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "code_verifier")
+        val (method, challenge) = value.split(StringPool.COLON)
+        val pass = when (method) {
+            "plain" -> challenge == codeVerifier
+            "S256" -> Base64.getUrlEncoder().encodeToString(codeVerifier.sha256().toByteArray()) == challenge
+            else -> false
+        }
+        if (!pass) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "code_verifier")
+        }
     }
 
     companion object {

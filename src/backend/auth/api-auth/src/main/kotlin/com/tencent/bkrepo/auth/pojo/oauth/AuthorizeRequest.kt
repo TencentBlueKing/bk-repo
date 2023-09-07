@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.auth.pojo.oauth
 
-data class CreateTokenRequest(
+data class AuthorizeRequest(
     val clientId: String,
-    val clientSecret: String,
-    val code: String
+    val state: String,
+    val scope: String?,
+    val nonce: String?,
+    val codeChallenge: String?,
+    val codeChallengeMethod: String?,
 )
