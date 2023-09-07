@@ -298,7 +298,12 @@ class OauthAuthorizationServiceImpl(
         )
     }
 
-    private fun checkClientSecret(clientId: String, clientSecret: String?, code: String?, codeVerifier: String?): TAccount {
+    private fun checkClientSecret(
+        clientId: String,
+        clientSecret: String?,
+        code: String?,
+        codeVerifier: String?
+    ): TAccount {
         val client = accountRepository.findById(clientId)
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
 
