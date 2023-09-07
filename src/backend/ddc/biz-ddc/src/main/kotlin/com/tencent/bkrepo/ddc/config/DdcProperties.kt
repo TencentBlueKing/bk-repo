@@ -30,11 +30,9 @@ package com.tencent.bkrepo.ddc.config
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
 import org.springframework.util.unit.DataUnit
-import java.time.Duration
 
 @ConfigurationProperties("ddc")
 data class DdcProperties(
     var inlineBlobMaxSize: DataSize = DataSize.of(64L, DataUnit.KILOBYTES),
     var updateRefLastAccessTime: Boolean = true,
-    var refExpired: Duration = Duration.ofDays(14L),
 )

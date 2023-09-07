@@ -105,7 +105,7 @@ class ReferenceService(
         if (cbObject.hasAttachments()) {
             try {
                 val blobs = refResolver.getReferencedBlobs(ref.projectId, ref.repoName, cbObject)
-                blobService.addRefToBlobs(ref, blobs.mapTo(HashSet()) { it.toString() })
+                blobService.addRefToBlobs(ref, blobs.mapTo(HashSet()) { it.blobId.toString() })
             } catch (e: ReferenceIsMissingBlobsException) {
                 missingBlobs = e.missingBlobs
             }

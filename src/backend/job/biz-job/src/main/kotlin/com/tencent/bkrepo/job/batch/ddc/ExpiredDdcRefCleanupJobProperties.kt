@@ -25,46 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.pojo
+package com.tencent.bkrepo.job.batch.ddc
 
-import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
-import com.tencent.bkrepo.ddc.model.TDdcBlob
-import com.tencent.bkrepo.ddc.utils.DdcUtils.fullPath
+import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
-data class Blob(
-    val projectId: String,
-    val repoName: String,
-    val sha256: String,
-    val fullPath: String,
-    val size: Long,
-    val blobId: ContentHash,
-    val contentId: ContentHash,
-    val references: Set<String> = emptySet(),
-) {
-    companion object {
-        fun from(blob: TDdcBlob) = with(blob) {
-            Blob(
-                projectId = projectId,
-                repoName = repoName,
-                sha256 = sha256,
-                fullPath = fullPath(),
-                size = size,
-                blobId = ContentHash.fromHex(blobId),
-                contentId = ContentHash.fromHex(contentId),
-                references = references,
-            )
-        }
-
-        fun from(artifactInfo: CompressedBlobArtifactInfo, sha256: String, size: Long) = with(artifactInfo) {
-            Blob(
-                projectId = projectId,
-                repoName = repoName,
-                sha256 = sha256,
-                fullPath = getArtifactFullPath(),
-                size = size,
-                blobId = ContentHash.fromHex(compressedContentId!!),
-                contentId = ContentHash.fromHex(contentId)
-            )
-        }
-    }
-}
+@ConfigurationProperties(value = "job.expired-ddc-ref-cleanup")
+class ExpiredDdcRefCleanupJobProperties(
+    override var cron: String = "0 0 0 * * ?",
+    var expired: Duration = Duration.ofDays(14),
+) : MongodbJobProperties()
