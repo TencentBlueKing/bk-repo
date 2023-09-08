@@ -281,13 +281,13 @@
             },
             getMetrics () {
                 this.getProjectMetrics({ projectId: this.projectId }).then(res => {
-                    if (res.data !== null && res.data.repoMetrics !== null && res.data.repoMetrics.length > 0) {
-                        this.projectMetrics = res.data.repoMetrics
+                    if (res.repoMetrics !== null && res.repoMetrics.length > 0) {
+                        this.projectMetrics = res.repoMetrics
                         if (this.sortType.length > 0) {
                             this.orderByMetricsDetail()
                         } else {
                             for (let i = 0; i < this.repoList.length; i++) {
-                                const metrics = res.data.repoMetrics.find((item) => {
+                                const metrics = res.repoMetrics.find((item) => {
                                     return item.repoName === this.repoList[i].name
                                 })
                                 if (metrics) {
