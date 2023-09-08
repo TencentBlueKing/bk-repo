@@ -130,7 +130,7 @@
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
-                                action: 'MANAGE',
+                                action: 'UPDATE',
                                 resourceType: 'NODE',
                                 uid: this.userInfo.name,
                                 repoName: this.repoName,
@@ -142,7 +142,7 @@
                                 this.showData = {
                                     projectId: this.projectId,
                                     repoName: this.repoName,
-                                    action: 'MANAGE',
+                                    action: 'UPDATE',
                                     url: res,
                                     path: this.formDialog.path
                                 }

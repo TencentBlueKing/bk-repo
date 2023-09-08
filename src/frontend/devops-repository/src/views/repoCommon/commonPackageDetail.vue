@@ -99,7 +99,7 @@
                     tag: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + this.$t('tag'),
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('tag'),
                             trigger: 'blur'
                         }
                     ]
@@ -282,7 +282,7 @@
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
-                                action: 'MANAGE',
+                                action: 'UPDATE',
                                 resourceType: 'NODE',
                                 uid: this.userInfo.name,
                                 repoName: this.repoName,
@@ -294,9 +294,9 @@
                                 this.showData = {
                                     projectId: this.projectId,
                                     repoName: this.repoName,
-                                    action: 'MANAGE',
+                                    action: 'UPDATE',
                                     url: res,
-                                    path: this.currentVersion.contentPathh
+                                    path: this.currentVersion.contentPath
                                 }
                             }
                         })
@@ -356,7 +356,8 @@
                                             repoName: this.repoName,
                                             action: 'DELETE',
                                             url: res,
-                                            path: this.currentVersion.contentPathh
+                                            packageName: this.currentVersion.metadata.name,
+                                            packageVersion: this.currentVersion.metadata.version
                                         }
                                     }
                                 })

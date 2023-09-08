@@ -199,18 +199,17 @@
                     this.isLoading = false
                 })
             },
-            deletePackageHandler ({ key }) {
-                console.log(key)
+            deletePackageHandler (pkg) {
                 this.$confirm({
                     theme: 'danger',
                     message: this.$t('deletePackageTitle', { name: '' }),
-                    subMessage: key,
+                    subMessage: pkg.key,
                     confirmFn: () => {
                         return this.deletePackage({
                             projectId: this.projectId,
                             repoType: this.repoType,
                             repoName: this.repoName,
-                            packageKey: key
+                            packageKey: pkg.key
                         }).then(() => {
                             this.handlerPaginationChange()
                             this.$bkMessage({
@@ -234,6 +233,7 @@
                                             projectId: this.projectId,
                                             repoName: this.repoName,
                                             action: 'DELETE',
+                                            packageName: pkg.name,
                                             url: res
                                         }
                                     }
