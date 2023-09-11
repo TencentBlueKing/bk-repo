@@ -64,7 +64,7 @@ import org.springframework.data.redis.connection.RedisStringCommands.SetOption.U
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
-import java.util.*
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 import kotlin.collections.LinkedHashMap

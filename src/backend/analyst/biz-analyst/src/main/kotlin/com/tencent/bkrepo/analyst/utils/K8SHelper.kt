@@ -36,7 +36,7 @@ import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1Secret
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Base64
 
 class K8SHelper(k8sProp: KubernetesExecutionClusterProperties) {
 
@@ -48,7 +48,7 @@ class K8SHelper(k8sProp: KubernetesExecutionClusterProperties) {
         secretName: String,
         dockerServer: String,
         dockerUserName: String,
-        dockerPassword: String
+        dockerPassword: String,
     ): V1Secret {
         val dockerAuthBytes = "$dockerUserName:$dockerPassword".toByteArray()
         val dockerAuth = Base64.getEncoder().encodeToString(dockerAuthBytes)

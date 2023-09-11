@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.utils
 
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.command.PullImageCmd
 import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.AuthConfig
@@ -73,11 +74,7 @@ object DockerUtils {
         logger.info("pulling image: $tag")
         val elapsedTime = measureTimeMillis {
             val result = pullImageCmd(tag)
-                .withAuthConfig(
-                    AuthConfig()
-                        .withUsername(userName)
-                        .withPassword(password)
-                )
+                .withAuthConfigIfNeed(userName, password)
                 .exec(PullImageResultCallback())
                 .awaitCompletion(DEFAULT_PULL_IMAGE_DURATION, TimeUnit.MILLISECONDS)
             if (!result) {
@@ -92,7 +89,7 @@ object DockerUtils {
         userName: String?,
         password: String?,
         hostConfig: HostConfig? = null,
-        cmd: List<String>? = null
+        cmd: List<String>? = null,
     ): String {
         // 拉取镜像
         pullImage(image, userName, password)
@@ -122,7 +119,7 @@ object DockerUtils {
         binds: Binds,
         maxSize: Long,
         mem: Long,
-        withPrivileged: Boolean = false
+        withPrivileged: Boolean = false,
     ): HostConfig {
         return HostConfig().apply {
             withBinds(binds)
@@ -148,5 +145,16 @@ object DockerUtils {
                 DEFAULT_DOCKER_SERVER
             }
         }
+    }
+
+    private fun PullImageCmd.withAuthConfigIfNeed(userName: String?, password: String?): PullImageCmd {
+        if (userName != null && password != null) {
+            withAuthConfig(
+                AuthConfig()
+                    .withUsername(userName)
+                    .withPassword(password),
+            )
+        }
+        return this
     }
 }
