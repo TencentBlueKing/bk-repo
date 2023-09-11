@@ -304,6 +304,10 @@ class OauthAuthorizationServiceImpl(
         code: String?,
         codeVerifier: String?
     ): TAccount {
+        if (clientSecret.isNullOrBlank() && code.isNullOrBlank() && codeVerifier.isNullOrBlank()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "clientSecret or codeVerifier")
+        }
+
         val client = accountRepository.findById(clientId)
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
 
