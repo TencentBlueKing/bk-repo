@@ -30,6 +30,10 @@ package com.tencent.bkrepo.job.batch.ddc
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.bson.types.Binary
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -46,6 +50,7 @@ import java.time.LocalDateTime
 class ExpiredDdcRefCleanupJob(
     private val properties: ExpiredDdcRefCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
+    private val nodeClient: NodeClient,
 ) : DefaultContextMongoDbJob<ExpiredDdcRefCleanupJob.Ref>(properties) {
     override fun collectionNames(): List<String> = listOf(COLLECTION_NAME)
 
@@ -64,7 +69,8 @@ class ExpiredDdcRefCleanupJob(
             row[Ref::projectId.name]!!.toString(),
             row[Ref::repoName.name]!!.toString(),
             row[Ref::bucket.name]!!.toString(),
-            row[Ref::key.name]!!.toString()
+            row[Ref::key.name]!!.toString(),
+            row[Ref::inlineBlob.name] as Binary?,
         )
     }
 
@@ -73,6 +79,12 @@ class ExpiredDdcRefCleanupJob(
     override fun run(row: Ref, collectionName: String, context: JobContext) {
         // 清理过期ref
         mongoTemplate.remove(Query(Criteria.where(ID).isEqualTo(row.id)), collectionName)
+        if (row.inlineBlob == null) {
+            // inlineBlob为null时表示inlineBlob不存在数据库中而是单独存放于后端存储中，需要一并清理
+            nodeClient.deleteNode(
+                NodeDeleteRequest(row.projectId, row.repoName, "/${row.bucket}/${row.key}", SYSTEM_USER)
+            )
+        }
 
         // 从blob ref列表中移除ref
         val refKey = "ref/${row.bucket}/${row.key}"
@@ -89,7 +101,8 @@ class ExpiredDdcRefCleanupJob(
         val projectId: String,
         val repoName: String,
         val bucket: String,
-        val key: String
+        val key: String,
+        val inlineBlob: Binary? = null
     )
 
     companion object {

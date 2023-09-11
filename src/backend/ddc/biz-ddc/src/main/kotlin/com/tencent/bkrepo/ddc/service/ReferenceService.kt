@@ -68,14 +68,14 @@ class ReferenceService(
             createdDate = now,
             lastModifiedBy = userId,
             lastModifiedDate = now,
-            lastAccessDate = now, // TODO 更新lastAccessDate
+            lastAccessDate = now,
             projectId = ref.projectId,
             repoName = ref.repoName,
             bucket = ref.bucket,
             key = ref.key.toString(),
             finalized = ref.finalized!!,
             blobId = ref.blobId!!.toString(),
-            inlineBlob = Binary(inlineBlob),
+            inlineBlob = inlineBlob?.let { Binary(it) },
             expireDate = null // TODO 设置expireDate
         )
         refRepository.replace(tRef)

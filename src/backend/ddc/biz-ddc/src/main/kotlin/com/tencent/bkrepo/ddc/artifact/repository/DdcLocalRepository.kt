@@ -132,7 +132,7 @@ class DdcLocalRepository(
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
                 val payload = context.getArtifactFile().getInputStream().readBytes()
                 val ref = referenceService.create(Reference.from(artifactInfo, payload))
-                ref.inlineBlob?.let {
+                if (ref.inlineBlob == null) {
                     // inlineBlob为null时表示inlineBlob过大，需要存到文件中
                     val nodeCreateRequest = buildRefNodeCreateRequest(context)
                     storageManager.storeArtifactFile(
