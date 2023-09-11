@@ -17,6 +17,10 @@
                     <p v-if="row.path && row.path !== ''">
                         {{ $t('nodePath') + ':' + row.path }}
                     </p>
+                    <p v-else-if="row.packageName && row.packageName !== ''">
+                        {{ $t('packageName') + ':' + row.packageName }}
+                        {{ row.packageVersion ? ',' + $t('version') + ':' + row.packageVersion : '' }}
+                    </p>
                     <p v-else-if="row.repoName === ''">
                         {{ $t('projectName') + ':' + row.projectId }}
                     </p>

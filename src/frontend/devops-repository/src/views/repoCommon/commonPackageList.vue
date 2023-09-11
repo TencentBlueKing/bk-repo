@@ -199,23 +199,46 @@
                     this.isLoading = false
                 })
             },
-            deletePackageHandler ({ key }) {
+            deletePackageHandler (pkg) {
                 this.$confirm({
                     theme: 'danger',
                     message: this.$t('deletePackageTitle', { name: '' }),
-                    subMessage: key,
+                    subMessage: pkg.key,
                     confirmFn: () => {
                         return this.deletePackage({
                             projectId: this.projectId,
                             repoType: this.repoType,
                             repoName: this.repoName,
-                            packageKey: key
+                            packageKey: pkg.key
                         }).then(() => {
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            packageName: pkg.name,
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })
