@@ -32,6 +32,7 @@
             height="calc(100% - 100px)"
             :outer-border="false"
             :row-border="false"
+            @sort-change="orderByMetrics"
             size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
@@ -45,6 +46,12 @@
                     <span v-if="row.configuration.settings.system" class="mr5 repo-tag" :data-name="$t('system')"></span>
                     <span v-if="row.public" class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                 </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('repoUsage')" width="150" prop="fileSize" sortable="custom">
+                <template #default="{ row }">{{ row.fileSize ? convertFileSize(row.fileSize) : '0B' }}</template>
+            </bk-table-column>
+            <bk-table-column :label="$t('fileNum')" width="150" prop="fileNum" sortable="custom">
+                <template #default="{ row }">{{ row.fileNum ? row.fileNum : 0 }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('repoQuota')" width="250">
                 <template #default="{ row }">
@@ -128,7 +135,10 @@
                 },
                 value: 20,
                 pagination: cloneDeep(paginationParams),
-                debounceGetListData: null
+                debounceGetListData: null,
+                projectMetrics: [],
+                fullRepoList: [],
+                sortType: []
             }
         },
         computed: {
@@ -163,7 +173,8 @@
             ...mapActions([
                 'getRepoList',
                 'deleteRepoList',
-                'getRepoListWithoutPage'
+                'getRepoListWithoutPage',
+                'getProjectMetrics'
             ]),
             initData () {
                 // 切换项目或者点击菜单时需要将筛选条件清空，并将页码相关参数重置，否则会导致点击菜单的时候筛选条件还在，不符合产品要求(点击菜单清空筛选条件，重新请求最新数据)
@@ -189,7 +200,9 @@
                     } else {
                         allRepo = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
                     }
+                    this.fullRepoList = allRepo
                     this.repoList = allRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= records.length ? records.length : this.pagination.current * this.pagination.limit)
+                    this.getMetrics()
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -265,6 +278,91 @@
                         })
                     }
                 })
+            },
+            getMetrics () {
+                this.getProjectMetrics({ projectId: this.projectId }).then(res => {
+                    if (res.repoMetrics !== null && res.repoMetrics.length > 0) {
+                        this.projectMetrics = res.repoMetrics
+                        if (this.sortType.length > 0) {
+                            this.orderByMetricsDetail()
+                        } else {
+                            for (let i = 0; i < this.repoList.length; i++) {
+                                const metrics = res.repoMetrics.find((item) => {
+                                    return item.repoName === this.repoList[i].name
+                                })
+                                if (metrics) {
+                                    this.$set(this.repoList[i], 'fileSize', metrics.size)
+                                    this.$set(this.repoList[i], 'fileNum', metrics.num)
+                                } else {
+                                    this.$set(this.repoList[i], 'fileSize', 0)
+                                    this.$set(this.repoList[i], 'fileNum', 0)
+                                }
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < this.repoList.length; i++) {
+                            this.$set(this.repoList[i], 'fileSize', 0)
+                            this.$set(this.repoList[i], 'fileNum', 0)
+                        }
+                    }
+                })
+            },
+            orderByMetrics (sort) {
+                this.sortType = []
+                if (sort.prop && this.projectMetrics.length > 0) {
+                    const sortParam = {
+                        properties: sort.prop,
+                        direction: sort.order === 'ascending' ? 'ASC' : 'DESC'
+                    }
+                    this.sortType.push(sortParam)
+                    this.orderByMetricsDetail()
+                } else {
+                    this.repoList = this.fullRepoList.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= this.fullRepoList.length ? this.fullRepoList.length : this.pagination.current * this.pagination.limit)
+                }
+            },
+            orderByMetricsDetail () {
+                const name = this.sortType[0].properties
+                const direction = this.sortType[0].direction
+                this.projectMetrics.sort(function (a, b) {
+                    if (name === 'fileSize' && direction === 'ASC') {
+                        return a.size - b.size
+                    } else if (name === 'fileSize' && direction === 'DESC') {
+                        return b.size - a.size
+                    } else if (name === 'fileNum' && direction === 'ASC') {
+                        return a.num - b.num
+                    } else {
+                        return b.num - a.num
+                    }
+                })
+                const existMetricsRepo = []
+                const notExistMetricsRepo = []
+                this.fullRepoList.forEach(repo => {
+                    if (this.projectMetrics.some(repoMetrics => {
+                        return repoMetrics.repoName === repo.name
+                    })) {
+                        existMetricsRepo.push(repo)
+                    } else {
+                        notExistMetricsRepo.push(repo)
+                    }
+                })
+                const existMetricsRepoOrder = []
+                this.projectMetrics.forEach(repoMetric => {
+                    const repo = existMetricsRepo.find(temp => {
+                        return temp.name === repoMetric.repoName
+                    })
+                    if (repo) {
+                        repo.fileSize = repoMetric.size
+                        repo.fileNum = repoMetric.num
+                        existMetricsRepoOrder.push(repo)
+                    }
+                })
+                let resRepo = []
+                if (this.sortType[0].direction === 'ASC') {
+                    resRepo = [...notExistMetricsRepo, ...existMetricsRepoOrder]
+                } else {
+                    resRepo = [...existMetricsRepoOrder, ...notExistMetricsRepo]
+                }
+                this.repoList = resRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= this.fullRepoList.length ? this.fullRepoList.length : this.pagination.current * this.pagination.limit)
             }
         }
     }
