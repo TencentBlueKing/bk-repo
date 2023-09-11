@@ -10,6 +10,7 @@ import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
@@ -26,7 +27,8 @@ class SubtaskDispatcherFactory(
     @Qualifier(TaskStateMachineConfiguration.STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
     private val temporaryScanTokenService: TemporaryScanTokenService,
-    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
+    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>,
+    private val lockOperation: LockOperation,
 ) {
     fun create(executionClusterName: String): SubtaskDispatcher {
         val executionCluster = executionClusterService.get(executionClusterName)
@@ -48,6 +50,7 @@ class SubtaskDispatcherFactory(
                     temporaryScanTokenService,
                     subScanTaskDao,
                     scannerService,
+                    lockOperation
                 )
             }
 

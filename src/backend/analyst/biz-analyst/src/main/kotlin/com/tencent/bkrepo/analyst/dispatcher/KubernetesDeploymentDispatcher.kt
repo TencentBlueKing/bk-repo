@@ -20,6 +20,7 @@ import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.Companion.RUNNING_STATUS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.AppsV1Api
@@ -38,6 +39,7 @@ class KubernetesDeploymentDispatcher(
     private val tokenService: TemporaryScanTokenService,
     private val subScanTaskDao: SubScanTaskDao,
     private val scannerService: ScannerService,
+    private val lockOperation: LockOperation,
 ) : SubtaskPullDispatcher<KubernetesDeploymentExecutionCluster>(executionCluster) {
 
     private val client by lazy { createClient(executionCluster.kubernetesProperties) }
@@ -55,50 +57,52 @@ class KubernetesDeploymentDispatcher(
         val runningTaskCount = subScanTaskDao.countTaskByStatusIn(RUNNING_STATUS, executionCluster.name).toInt()
         if (runningTaskCount > 0) {
             // 尝试减少deployment的副本数量
-            getDeployment()?.let { scale(it, targetReplicas(runningTaskCount)) }
+            scale(targetReplicas(runningTaskCount))
         }
 
-        // 不存在属于该分发器的任务时直接删除对应的Deployment
-        if (subScanTaskDao.countTaskByStatusIn(null, executionCluster.name) == 0L) {
-            val deploymentName = deploymentName()
-            api!!.deleteNamespacedDeployment(
-                deploymentName, executionCluster.kubernetesProperties.namespace,
-                null, null, null, null, "Foreground", null
-            )
-            tokenService.deleteToken(deploymentName)
-            logger.info("delete deployment[$deploymentName] success")
-        }
-
+        deleteDeploymentIfNoTask()
         return true
     }
 
-    private fun createOrScaleDeployment(runningTaskCount: Int): V1Deployment {
-        var deployment = getDeployment()
-        val targetReplicas = targetReplicas(runningTaskCount)
-
-        // 创建deployment
-        if (deployment == null) {
-            val scanner = scannerService.get(executionCluster.scanner)
-            require(scanner is StandardScanner)
-            try {
-                return createDeployment(executionCluster.kubernetesProperties, scanner, targetReplicas)
-            } catch (e: ApiException) {
-                // 创建
-                if (e.code == HttpStatus.CONFLICT.value()) {
-                    // deployment已存在，无需重复创建
-                    deployment = getDeployment()
-                } else {
-                    logger.error(e.string())
-                    throw e
+    private fun deleteDeploymentIfNoTask() {
+        // 不存在属于该分发器的任务时直接删除对应的Deployment
+        if (subScanTaskDao.countTaskByStatusIn(null, executionCluster.name) == 0L) {
+            lockOperation.doWithLock(lockKey()) {
+                if (subScanTaskDao.countTaskByStatusIn(null, executionCluster.name) == 0L) {
+                    val deploymentName = deploymentName()
+                    api!!.deleteNamespacedDeployment(
+                        deploymentName, executionCluster.kubernetesProperties.namespace,
+                        null, null, null, null, "Foreground", null
+                    )
+                    tokenService.deleteToken(deploymentName)
+                    logger.info("delete deployment[$deploymentName] success")
                 }
             }
         }
+    }
 
-        scale(deployment!!, targetReplicas)
+    private fun createOrScaleDeployment(runningTaskCount: Int): V1Deployment {
+        val targetReplicas = targetReplicas(runningTaskCount)
+
+        // 创建deployment
+        val scanner = scannerService.get(executionCluster.scanner)
+        require(scanner is StandardScanner)
+        val deployment = try {
+            createOrScaleDeploymentIfNotExists(executionCluster.kubernetesProperties, scanner, targetReplicas)
+        } catch (e: ApiException) {
+            logger.error(e.string())
+            throw e
+        }
         return deployment
     }
 
-    private fun scale(deployment: V1Deployment, targetReplicas: Int) {
+    private fun scale(targetReplicas: Int) {
+        lockOperation.doWithLock(lockKey()) {
+            getDeployment()?.let { doScale(it, targetReplicas) }
+        }
+    }
+
+    private fun doScale(deployment: V1Deployment, targetReplicas: Int) {
         // 对deployment扩缩容
         if (abs(deployment.spec!!.replicas!! - targetReplicas) > executionCluster.scaleThreshold) {
             logger.info(
@@ -131,6 +135,22 @@ class KubernetesDeploymentDispatcher(
                 return null
             }
             throw e
+        }
+    }
+
+    private fun createOrScaleDeploymentIfNotExists(
+        k8sProps: KubernetesExecutionClusterProperties,
+        scanner: StandardScanner,
+        targetReplicas: Int
+    ): V1Deployment {
+        return lockOperation.doWithLock(lockKey()) {
+            var deployment = getDeployment()
+            if (deployment == null) {
+                deployment = createDeployment(k8sProps, scanner, targetReplicas)
+            } else {
+                doScale(deployment, targetReplicas)
+            }
+            deployment
         }
     }
 
@@ -215,6 +235,8 @@ class KubernetesDeploymentDispatcher(
         maxOf(minOf(runningTaskCount, executionCluster.maxReplicas), executionCluster.minReplicas)
 
     private fun deploymentName() = "bkrepo-analyst-${executionCluster.name}-${executionCluster.scanner}"
+
+    private fun lockKey() = "lock:${executionCluster.name}:${executionCluster.scanner}"
 
     companion object {
         private val logger = LoggerFactory.getLogger(KubernetesDeploymentDispatcher::class.java)
