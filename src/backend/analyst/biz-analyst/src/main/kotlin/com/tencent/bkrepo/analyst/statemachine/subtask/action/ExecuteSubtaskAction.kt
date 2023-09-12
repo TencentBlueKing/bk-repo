@@ -32,7 +32,6 @@ import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
-import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.ExecuteSubtaskContext
 import com.tencent.bkrepo.analyst.utils.SubtaskConverter
@@ -42,14 +41,12 @@ import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 @Action
 class ExecuteSubtaskAction(
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
-    private val scannerService: ScannerService,
     private val scannerMetrics: ScannerMetrics,
     private val publisher: ApplicationEventPublisher
 ) : SubtaskAction {
@@ -60,12 +57,8 @@ class ExecuteSubtaskAction(
         require(context is ExecuteSubtaskContext)
         val subtask = context.subtask
         val oldStatus = SubScanTaskStatus.valueOf(subtask.status)
-        val scanner = scannerService.get(subtask.scanner)
-        val maxScanDuration = scanner.maxScanDuration(subtask.packageSize)
-        // 多加1分钟，避免执行器超时后正在上报结果又被重新触发
-        val timeoutDateTime = LocalDateTime.now().plus(maxScanDuration, ChronoUnit.MILLIS).plusMinutes(1L)
         val updateResult = subScanTaskDao.updateStatus(
-            subtask.id!!, SubScanTaskStatus.EXECUTING, oldStatus, subtask.lastModifiedDate, timeoutDateTime
+            subtask.id!!, SubScanTaskStatus.EXECUTING, oldStatus, subtask.lastModifiedDate
         )
         if (updateResult.modifiedCount == 1L) {
             archiveSubScanTaskDao.save(
