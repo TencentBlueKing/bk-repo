@@ -43,7 +43,7 @@ sealed class HashAlgorithm(
 
     fun hash(file: File) = hash(file.inputStream().buffered())
 
-    fun hash(inputStream: InputStream): String {
+    fun digest(inputStream: InputStream): ByteArray {
         val digest = MessageDigest.getInstance(algorithm)
         inputStream.use {
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -54,7 +54,11 @@ sealed class HashAlgorithm(
             }
         }
 
-        val hashBytes = digest.digest()
+        return digest.digest()
+    }
+
+    fun hash(inputStream: InputStream): String {
+        val hashBytes = digest(inputStream)
         val hashInt = BigInteger(1, hashBytes)
         val hashText = hashInt.toString(RADIX)
         return if (hashText.length < hashLength)

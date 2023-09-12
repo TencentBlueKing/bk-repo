@@ -33,5 +33,6 @@ import org.springframework.util.unit.DataUnit
 
 @ConfigurationProperties("ddc")
 data class DdcProperties(
-    var inlineBlobMaxSize: DataSize = DataSize.of(64L, DataUnit.KILOBYTES)
+    var inlineBlobMaxSize: DataSize = DataSize.of(64L, DataUnit.KILOBYTES),
+    var updateRefLastAccessTime: Boolean = true,
 )

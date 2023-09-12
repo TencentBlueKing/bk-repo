@@ -264,6 +264,7 @@ class ReplicaTaskServiceImpl(
         return when (replicaObjectType) {
             ReplicaObjectType.PACKAGE -> computePackageSize(localProjectId, replicaTaskObjects)
             ReplicaObjectType.PATH -> computeNodeSize(localProjectId, replicaTaskObjects)
+            ReplicaObjectType.REPOSITORY -> computeRepositorySize(localProjectId, replicaTaskObjects)
             else -> -1
         }
     }
@@ -286,7 +287,7 @@ class ReplicaTaskServiceImpl(
         val taskObject = replicaTaskObjects.first()
         return taskObject.pathConstraints!!.sumOf {
             val node = localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!)
-            if (node.folder) {
+            if (node.folder && node.size == 0L) {
                 try {
                     localDataManager.listNode(localProjectId, taskObject.localRepoName, it.path!!).sumOf { n -> n.size }
                 } catch (e: Exception) {
@@ -297,6 +298,11 @@ class ReplicaTaskServiceImpl(
                 node.size
             }
         }
+    }
+
+    private fun computeRepositorySize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
+        val taskObject = replicaTaskObjects.first()
+        return localDataManager.getRepoMetricInfo(localProjectId, taskObject.localRepoName)
     }
 
     private fun validateRequest(request: ReplicaTaskCreateRequest) {

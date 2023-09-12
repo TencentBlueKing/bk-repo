@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,10 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.oauth
+package com.tencent.bkrepo.analyst.dispatcher.dsl
 
-data class CreateTokenRequest(
-    val clientId: String,
-    val clientSecret: String,
-    val code: String
-)
+import io.kubernetes.client.openapi.models.V1ObjectMeta
+import io.kubernetes.client.openapi.models.V1Secret
+
+/**
+ * 创建Secret并配置
+ */
+fun V1Secret(configuration: V1Secret.() -> Unit): V1Secret {
+    return V1Secret().apply(configuration)
+}
+
+/**
+ * 配置Secret元数据
+ */
+fun V1Secret.metadata(configuration: V1ObjectMeta.() -> Unit) {
+    if (metadata == null) {
+        metadata = V1ObjectMeta()
+    }
+    metadata!!.configuration()
+}
