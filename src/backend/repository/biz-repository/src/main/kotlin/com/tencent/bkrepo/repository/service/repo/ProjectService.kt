@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
@@ -92,4 +93,11 @@ interface ProjectService {
      * 判断项目信息是否存在
      */
     fun checkProjectExist(name: String?, displayName: String?): Boolean
+
+    /**
+     * 查询项目统计信息，包含节点数、大小以及仓库的节点数和大小
+     * @param userId 用户id
+     * @param name 项目列表选项
+     */
+    fun getProjectMetricsInfo(name: String): ProjectMetricsInfo?
 }

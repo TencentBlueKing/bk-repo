@@ -29,17 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo
+package com.tencent.bkrepo.repository.dao.repository
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.repository.model.TProjectMetrics
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-data class RepoMetrics(
-    @ApiModelProperty("repoName")
-    val repoName: String,
-    @ApiModelProperty("credentialsKey")
-    val credentialsKey: String? = "default",
-    @ApiModelProperty("size")
-    var size: Long,
-    @ApiModelProperty("num")
-    val num: Long
-)
+@Repository
+interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
+    fun findByProjectId(projectId:String): TProjectMetrics?
+}

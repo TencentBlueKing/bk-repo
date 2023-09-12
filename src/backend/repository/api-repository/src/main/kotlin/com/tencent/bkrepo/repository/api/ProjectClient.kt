@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -69,4 +70,8 @@ interface ProjectClient {
     @ApiOperation("创建项目")
     @PostMapping("/create")
     fun createProject(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>
+
+    @ApiOperation("项目仓库统计信息列表")
+    @PostMapping("/metrics/{name}")
+    fun getProjectMetrics(@ApiParam(value = "项目名") @PathVariable name: String): Response<ProjectMetricsInfo?>
 }

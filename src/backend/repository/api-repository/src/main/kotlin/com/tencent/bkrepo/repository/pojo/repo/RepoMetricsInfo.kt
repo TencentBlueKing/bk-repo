@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.repository.pojo.repo
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import io.swagger.annotations.ApiModelProperty
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterProjectServiceImpl(
-    projectDao: ProjectDao,
-    servicePermissionClient: ServicePermissionClient,
-    projectMetricsRepository: ProjectMetricsRepository
-) : ProjectServiceImpl(
-    projectDao,
-    servicePermissionClient,
-    projectMetricsRepository
+data class RepoMetricsInfo(
+    @ApiModelProperty("repoName")
+    val repoName: String,
+    @ApiModelProperty("credentialsKey")
+    val credentialsKey: String? = "default",
+    @ApiModelProperty("size")
+    var size: Long,
+    @ApiModelProperty("num")
+    val num: Long
 )

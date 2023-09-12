@@ -39,6 +39,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_SIZE
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
@@ -86,7 +87,7 @@ class ProjectListHandler(
             }
             val row = listOf(
                 repo.projectId, repo.nodeNum, repo.capSize,
-                customNum, customSize, pipelineNum, pipelineSize
+                customNum, customSize / TO_GIGABYTE, pipelineNum, pipelineSize / TO_GIGABYTE
             )
             rows.add(row)
         }

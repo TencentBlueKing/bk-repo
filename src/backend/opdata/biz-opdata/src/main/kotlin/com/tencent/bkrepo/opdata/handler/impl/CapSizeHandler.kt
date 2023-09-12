@@ -33,6 +33,7 @@ package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.opdata.constant.OPDATA_CAP_SIZE
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
@@ -58,7 +59,7 @@ class CapSizeHandler(
             size += it.capSize
         }
         val column = Columns(OPDATA_CAP_SIZE, OPDATA_GRAFANA_NUMBER)
-        val row = listOf(size)
+        val row = listOf(size / TO_GIGABYTE)
         val data = QueryResult(listOf(column), listOf(row), target.type)
         result.add(data)
     }

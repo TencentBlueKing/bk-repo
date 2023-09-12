@@ -29,17 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo
+package com.tencent.bkrepo.repository.model
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.repository.pojo.repo.RepoMetricsInfo
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-data class RepoMetrics(
-    @ApiModelProperty("repoName")
-    val repoName: String,
-    @ApiModelProperty("credentialsKey")
-    val credentialsKey: String? = "default",
-    @ApiModelProperty("size")
-    var size: Long,
-    @ApiModelProperty("num")
-    val num: Long
+@Document("project_metrics")
+data class TProjectMetrics(
+    var id: String? = null,
+    var projectId: String,
+    var nodeNum: Long,
+    var capSize: Long,
+    val repoMetrics: List<RepoMetricsInfo>,
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )

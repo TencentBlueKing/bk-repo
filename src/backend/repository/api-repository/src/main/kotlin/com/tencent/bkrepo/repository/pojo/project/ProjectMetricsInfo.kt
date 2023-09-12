@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.repository.pojo.project
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.repository.pojo.repo.RepoMetricsInfo
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterProjectServiceImpl(
-    projectDao: ProjectDao,
-    servicePermissionClient: ServicePermissionClient,
-    projectMetricsRepository: ProjectMetricsRepository
-) : ProjectServiceImpl(
-    projectDao,
-    servicePermissionClient,
-    projectMetricsRepository
+data class ProjectMetricsInfo(
+    @ApiModelProperty("projectId")
+    var projectId: String,
+    @ApiModelProperty("nodeNum")
+    var nodeNum: Long,
+    @ApiModelProperty("capSize")
+    var capSize: Long,
+    @ApiModelProperty("repoMetrics")
+    val repoMetrics: List<RepoMetricsInfo>,
+    @ApiModelProperty("createdDate")
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )
