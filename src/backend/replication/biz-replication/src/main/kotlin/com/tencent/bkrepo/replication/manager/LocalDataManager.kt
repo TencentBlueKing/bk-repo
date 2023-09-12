@@ -253,4 +253,14 @@ class LocalDataManager(
         val repo = findRepoByName(projectId, repoName)
         return getBlobDataByRange(sha256, range, repo)
     }
+
+
+    /**
+     * 从项目仓库统计信息中找出对应仓库的大小
+     */
+    fun getRepoMetricInfo(projectId: String, repoName: String): Long {
+        findRepoByName(projectId, repoName)
+        val projectMetrics = projectClient.getProjectMetrics(projectId).data ?: return 0
+        return projectMetrics.repoMetrics.firstOrNull { it.repoName == repoName }?.size ?: 0
+    }
 }

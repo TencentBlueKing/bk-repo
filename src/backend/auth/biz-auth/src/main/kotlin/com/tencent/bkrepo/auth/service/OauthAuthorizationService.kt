@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.service
 
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
 import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
@@ -42,7 +43,7 @@ interface OauthAuthorizationService {
     /**
      * 确认授权
      */
-    fun authorized(clientId: String, state: String, scope: String?, nonce: String?): AuthorizedResult
+    fun authorized(authorizeRequest: AuthorizeRequest): AuthorizedResult
 
     /**
      * 创建token

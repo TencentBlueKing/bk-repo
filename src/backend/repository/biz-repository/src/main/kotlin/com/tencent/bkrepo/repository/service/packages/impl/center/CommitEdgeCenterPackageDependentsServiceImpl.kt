@@ -46,7 +46,7 @@ class CommitEdgeCenterPackageDependentsServiceImpl(
 ) {
     override fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage? {
         return packageDao
-            .findByKey(projectId, repoName, packageKey)
+            .findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)
             ?.also { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
     }
 }

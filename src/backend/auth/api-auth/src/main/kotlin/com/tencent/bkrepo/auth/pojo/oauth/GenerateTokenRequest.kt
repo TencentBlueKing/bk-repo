@@ -33,5 +33,6 @@ data class GenerateTokenRequest(
     val clientId: String?,
     val clientSecret: String?,
     val refreshToken: String?,
-    val scope: String?
+    val scope: String?,
+    val codeVerifier: String?
 )

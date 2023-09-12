@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
 import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
@@ -59,9 +60,19 @@ class OauthAuthorizationController @Autowired constructor(
         @RequestParam("client_id") clientId: String,
         state: String,
         scope: String?,
-        nonce: String?
+        nonce: String?,
+        @RequestParam("code_challenge") codeChallenge: String?,
+        @RequestParam("code_challenge_method") codeChallengeMethod: String?
     ): Response<AuthorizedResult> {
-        val authorizedResult = oauthAuthorizationService.authorized(clientId, state, scope, nonce)
+        val request = AuthorizeRequest(
+            clientId = clientId,
+            state = state,
+            scope = scope,
+            nonce = nonce,
+            codeChallenge = codeChallenge,
+            codeChallengeMethod = codeChallengeMethod
+        )
+        val authorizedResult = oauthAuthorizationService.authorized(request)
         return ResponseBuilder.success(authorizedResult)
     }
 
@@ -79,9 +90,10 @@ class OauthAuthorizationController @Autowired constructor(
         @RequestParam("client_id") clientId: String?,
         @RequestParam("client_secret") clientSecret: String?,
         @RequestParam("refresh_token") refreshToken: String?,
-        scope: String?
+        scope: String?,
+        @RequestParam("code_verifier") codeVerifier: String?,
     ) {
-        val request = GenerateTokenRequest(code, grantType, clientId, clientSecret, refreshToken, scope)
+        val request = GenerateTokenRequest(code, grantType, clientId, clientSecret, refreshToken, scope, codeVerifier)
         if (request.grantType == "refresh_token") {
             oauthAuthorizationService.refreshToken(request)
         } else {
