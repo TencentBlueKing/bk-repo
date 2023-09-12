@@ -170,7 +170,6 @@ class OauthAuthorizationServiceImpl(
         with(generateTokenRequest) {
             Preconditions.checkNotNull(clientId, this::clientId.name)
             Preconditions.checkNotNull(refreshToken, this::refreshToken.name)
-            checkClientSecret(clientId!!, clientSecret, null, null)
             val token = oauthTokenRepository.findFirstByAccountIdAndRefreshToken(clientId!!, refreshToken!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, refreshToken!!)
             val idToken = generateOpenIdToken(
