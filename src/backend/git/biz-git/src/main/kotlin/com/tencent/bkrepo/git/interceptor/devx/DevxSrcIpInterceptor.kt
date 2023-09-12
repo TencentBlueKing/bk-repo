@@ -30,10 +30,10 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
         val repo = ArtifactContextHolder.getRepoDetail()!!
         val srcIp = HttpContextHolder.getClientAddress()
         if (!inWhiteList(srcIp)) {
-            logger.info("Illegal client ip[$srcIp] in project[${repo.projectId}].")
+            logger.info("Illegal src ip[$srcIp] in project[${repo.projectId}].")
             throw PermissionException()
         }
-        logger.info("Success to permit client ip[$srcIp] access ${repo.projectId}.")
+        logger.info("Allow ip[$srcIp] to access ${repo.projectId}.")
         return true
     }
 
@@ -52,7 +52,9 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
             logger.error("${response.code} $errorMsg")
             return false
         }
-        val whiteList = response.body!!.byteStream().readJsonString<QueryResponse>().data.map { it.inner_ip }.toSet()
+        val whiteList = response.body!!.byteStream().readJsonString<QueryResponse>().data.map {
+            it.inner_ip.substringAfter('.')
+        }.toSet()
         return whiteList.contains(ip)
     }
 
