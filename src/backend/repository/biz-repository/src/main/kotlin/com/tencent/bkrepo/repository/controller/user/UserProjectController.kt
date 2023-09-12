@@ -146,7 +146,6 @@ class UserProjectController(
     @ApiOperation("项目仓库统计信息列表")
     @GetMapping("/metrics/{projectId}")
     fun projectMetricsList(
-        @RequestAttribute userId: String,
         @ApiParam(value = "项目ID", required = true)
         @PathVariable projectId: String
     ): Response<ProjectMetricsInfo?> {
