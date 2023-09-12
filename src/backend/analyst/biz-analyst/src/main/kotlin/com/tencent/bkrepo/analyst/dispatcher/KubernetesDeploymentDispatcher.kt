@@ -3,6 +3,7 @@ package com.tencent.bkrepo.analyst.dispatcher
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.dispatcher.dsl.addContainerItem
+import com.tencent.bkrepo.analyst.dispatcher.dsl.addImagePullSecretsItemIfNeed
 import com.tencent.bkrepo.analyst.dispatcher.dsl.limits
 import com.tencent.bkrepo.analyst.dispatcher.dsl.metadata
 import com.tencent.bkrepo.analyst.dispatcher.dsl.requests
@@ -169,6 +170,7 @@ class KubernetesDeploymentDispatcher(
                             name = deploymentName
                             image = scanner.image
                             command = cmd
+                            addImagePullSecretsItemIfNeed(scanner, k8sProps)
                             resources {
                                 limits(
                                     cpu = k8sProps.limitCpu,

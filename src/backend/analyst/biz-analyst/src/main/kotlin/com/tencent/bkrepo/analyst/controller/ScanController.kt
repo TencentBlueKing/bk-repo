@@ -33,19 +33,24 @@ import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseInfo
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ScanController @Autowired constructor(
     private val scanService: ScanService,
-    private val licenseService: SpdxLicenseService
+    private val licenseService: SpdxLicenseService,
+    private val tokenService: TemporaryScanTokenService,
+    private val scanTaskService: ScanTaskService,
 ) : ScanClient {
 
     override fun scan(scanRequest: ScanRequest): Response<ScanTask> {
@@ -74,5 +79,19 @@ class ScanController @Autowired constructor(
 
     override fun licenseInfoByIds(licenseIds: List<String>): Response<Map<String, SpdxLicenseInfo>> {
         return ResponseBuilder.success(licenseService.listLicenseByIds(licenseIds))
+    }
+
+    override fun verifyToken(subtaskId: String, token: String): Response<Boolean> {
+        val ret = try {
+            tokenService.checkToken(subtaskId, token)
+            true
+        } catch (e: AuthenticationException) {
+            false
+        }
+        return ResponseBuilder.success(ret)
+    }
+
+    override fun getTask(taskId: String): Response<ScanTask> {
+        return ResponseBuilder.success(scanTaskService.task(taskId))
     }
 }
