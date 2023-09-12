@@ -41,13 +41,17 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.component.RefDownloadListener
+import com.tencent.bkrepo.ddc.event.RefDownloadedEvent
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.exception.NotImplementedException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.pojo.Blob
+import com.tencent.bkrepo.ddc.pojo.RefId
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.pojo.UploadCompressedBlobResponse
 import com.tencent.bkrepo.ddc.serialization.CbObject
@@ -76,6 +80,7 @@ class DdcLocalRepository(
     private val referenceService: ReferenceService,
     private val refResolver: ReferenceResolver,
     private val blobService: BlobService,
+    private val refDownloadListener: RefDownloadListener,
 ) : LocalRepository() {
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -110,7 +115,7 @@ class DdcLocalRepository(
     fun finalizeRef(artifactInfo: ReferenceArtifactInfo) {
         with(artifactInfo) {
             val ref = getReference(
-                projectId, repoName, bucket, refId.toString(), checkFinalized = false
+                projectId, repoName, bucket, refKey.toString(), checkFinalized = false
             ) ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
             if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
                 throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
@@ -127,7 +132,7 @@ class DdcLocalRepository(
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
                 val payload = context.getArtifactFile().getInputStream().readBytes()
                 val ref = referenceService.create(Reference.from(artifactInfo, payload))
-                ref.inlineBlob?.let {
+                if (ref.inlineBlob == null) {
                     // inlineBlob为null时表示inlineBlob过大，需要存到文件中
                     val nodeCreateRequest = buildRefNodeCreateRequest(context)
                     storageManager.storeArtifactFile(
@@ -204,8 +209,9 @@ class DdcLocalRepository(
         with(context) {
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
             val ref = getReference(
-                projectId, repoName, artifactInfo.bucket, artifactInfo.refId.toString(), true
+                projectId, repoName, artifactInfo.bucket, artifactInfo.refKey.toString(), true
             ) ?: return null
+            refDownloadListener.onRefDownloaded(RefDownloadedEvent(ref, SecurityUtils.getUserId()))
             response.addHeader(HEADER_NAME_HASH, ref.blobId.toString())
             response.addHeader(HEADER_NAME_LAST_ACCESS, ref.lastAccessDate!!.format(DATE_TIME_FORMATTER))
 
@@ -276,7 +282,7 @@ class DdcLocalRepository(
             if (binaryAttachmentCount > 1 || attachmentCount > 1 || binaryAttachmentCount != attachmentCount) {
                 throw BadRequestException(
                     CommonMessageCode.PARAMETER_INVALID,
-                    "Object ${artifactInfo.bucket} ${artifactInfo.refId} had more then 1 binary attachment field," +
+                    "Object ${artifactInfo.bucket} ${artifactInfo.refKey} had more then 1 binary attachment field," +
                             " unable to inline this object. Use compact object response instead."
                 )
             }
@@ -304,7 +310,7 @@ class DdcLocalRepository(
             } else {
                 throw BadRequestException(
                     CommonMessageCode.PARAMETER_INVALID,
-                    "Object ${artifactInfo.bucket} ${artifactInfo.refId} contained a content id " +
+                    "Object ${artifactInfo.bucket} ${artifactInfo.refKey} contained a content id " +
                             "which resolved to more then 1 blob, unable to inline this object. " +
                             "Use compact object response instead."
                 )
@@ -333,8 +339,9 @@ class DdcLocalRepository(
     private fun getReference(
         projectId: String, repoName: String, bucket: String, key: String, checkFinalized: Boolean
     ): Reference? {
+        val refId = RefId(projectId, repoName, bucket, key)
         val ref = referenceService.getReference(
-            projectId, repoName, bucket, key,
+            refId,
             includePayload = true,
             checkFinalized = checkFinalized
         ) ?: return null

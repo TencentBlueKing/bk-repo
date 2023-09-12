@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.ddc.model
 
-import com.tencent.bkrepo.ddc.pojo.ReferenceKey
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -38,12 +37,18 @@ import java.time.LocalDateTime
     CompoundIndex(
         name = "projectId_repoName_blobId_idx",
         def = "{'projectId': 1, 'repoName': 1, 'blobId': 1}",
-        unique = true
+        unique = true,
+        background = true
     ),
     CompoundIndex(
         name = "projectId_repoName_contentId_idx",
         def = "{'projectId': 1, 'repoName': 1, 'contentId': 1}",
-        unique = true
+        background = true
+    ),
+    CompoundIndex(
+        name = "projectId_repoName_references_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'references': 1}",
+        background = true
     )
 )
 data class TDdcBlob(
@@ -72,7 +77,9 @@ data class TDdcBlob(
      */
     var size: Long,
     /**
-     * 引用了该blob的ref，ref的inline blob和inline blob中引用的blob都会关联到ref
+     * 引用了该blob的ref或blob，ref的inline blob中直接或间接引用的所有blob都会关联到ref
+     * ref类型引用 ref/{bucket}/{key}
+     * blob类型引用 blob/{blobId}
      */
-    var references: Set<ReferenceKey>? = null
+    var references: Set<String> = emptySet()
 )

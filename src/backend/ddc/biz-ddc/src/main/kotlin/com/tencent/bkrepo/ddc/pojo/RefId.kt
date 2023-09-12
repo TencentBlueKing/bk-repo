@@ -27,25 +27,9 @@
 
 package com.tencent.bkrepo.ddc.pojo
 
-import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-
-data class RefId(private var text: String) {
-    init {
-        text = text.toLowerCase()
-        if (text.length != 40) {
-            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "IoHashKeys must be exactly 40 bytes.")
-        }
-        if (text.any { !isValidCharacter(it) }) {
-            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "${this.text} contains invalid character.")
-        }
-    }
-
-    override fun toString(): String = text
-
-    private fun isValidCharacter(c: Char): Boolean = c in 'a'..'z' || c in '0'..'9'
-
-    companion object {
-        fun create(s: String): RefId = RefId(s.toLowerCase())
-    }
-}
+data class RefId(
+    val projectId: String,
+    val repoName: String,
+    val bucket: String,
+    val key: String,
+)

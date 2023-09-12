@@ -31,11 +31,14 @@ import com.mongodb.DuplicateKeyException
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcRef
+import com.tencent.bkrepo.ddc.pojo.RefId
 import org.springframework.data.mongodb.core.FindAndReplaceOptions
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class RefRepository : SimpleMongoDao<TDdcRef>() {
@@ -73,4 +76,16 @@ class RefRepository : SimpleMongoDao<TDdcRef>() {
         val update = Update.update(TDdcRef::finalized.name, true)
         return updateFirst(Query(criteria), update)
     }
+
+    fun updateLastAccess(refId: RefId, lastAccessDate: LocalDateTime): UpdateResult {
+        val criteria = refIdCriteria(refId.projectId, refId.repoName, refId.bucket, refId.key)
+        val update = Update.update(TDdcRef::lastAccessDate.name, lastAccessDate)
+        return updateFirst(Query(criteria), update)
+    }
+
+    private fun refIdCriteria(projectId: String, repoName: String, bucket: String, key: String): Criteria =
+        TDdcRef::projectId.isEqualTo(projectId)
+            .and(TDdcRef::repoName.name).isEqualTo(repoName)
+            .and(TDdcRef::bucket.name).isEqualTo(bucket)
+            .and(TDdcRef::key.name).isEqualTo(key)
 }
