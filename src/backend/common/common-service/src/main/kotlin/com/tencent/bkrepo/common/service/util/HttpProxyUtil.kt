@@ -17,13 +17,13 @@ import javax.servlet.http.HttpServletResponse
 
 object HttpProxyUtil {
     private val logger = LoggerFactory.getLogger(HttpProxyUtil::class.java)
+    private val client = HttpClientBuilderFactory.create().build()
     fun proxy(
         proxyRequest: HttpServletRequest,
         proxyResponse: HttpServletResponse,
         targetUrl: String,
         prefix: String? = null,
     ) {
-        val client = HttpClientBuilderFactory.create().build()
         val newUrl = "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}?${proxyRequest.queryString}"
         val newRequest = Request.Builder()
             .url(newUrl)
@@ -57,7 +57,8 @@ object HttpProxyUtil {
     }
 
     fun HttpServletRequest.body(): RequestBody? {
-        if (this.contentLengthLong <= 0) {
+        val isChunked = headers()[HttpHeaders.TRANSFER_ENCODING] == "chunked"
+        if (this.contentLengthLong <= 0 && !isChunked) {
             return null
         }
         val mediaType = this.contentType?.toMediaTypeOrNull()

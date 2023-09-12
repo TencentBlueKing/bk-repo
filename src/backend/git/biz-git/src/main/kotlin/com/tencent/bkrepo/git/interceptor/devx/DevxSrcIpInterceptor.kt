@@ -29,7 +29,7 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
         request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return false
         val repo = ArtifactContextHolder.getRepoDetail()!!
         val srcIp = HttpContextHolder.getClientAddress()
-        if (!inWhiteList(srcIp)) {
+        if (!inWhiteList(srcIp, repo.projectId)) {
             logger.info("Illegal src ip[$srcIp] in project[${repo.projectId}].")
             throw PermissionException()
         }
@@ -37,13 +37,13 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
         return true
     }
 
-    private fun inWhiteList(ip: String): Boolean {
+    private fun inWhiteList(ip: String, projectId: String): Boolean {
         val devxProperties = properties.devx
         val apiAuth = ApiAuth(devxProperties.appCode, devxProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
         val workspaceUrl = devxProperties.workspaceUrl
         val request = Request.Builder()
-            .url("$workspaceUrl?project_id=bk-repo")
+            .url("$workspaceUrl?project_id=$projectId")
             .header("X-Bkapi-Authorization", token)
             .build()
         val response = httpClient.newCall(request).execute()
