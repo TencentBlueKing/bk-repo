@@ -180,7 +180,8 @@ class DdcLocalRepository(
         metadata.add(
             MetadataModel(
                 key = NODE_METADATA_KEY_CONTENT_ID,
-                value = artifactInfo.contentId
+                value = artifactInfo.contentId,
+                system = true
             )
         )
 
