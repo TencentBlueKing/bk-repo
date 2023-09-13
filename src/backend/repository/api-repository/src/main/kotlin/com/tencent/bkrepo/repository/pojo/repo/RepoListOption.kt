@@ -35,5 +35,7 @@ data class RepoListOption(
     @ApiModelProperty("仓库名称(前缀匹配，忽略大小写)", required = false)
     val name: String? = null,
     @ApiModelProperty("仓库类型", required = false)
-    val type: String? = null
+    val type: String? = null,
+    @ApiModelProperty("仓库类别", required = false)
+    val category: String? = null
 )

@@ -112,6 +112,10 @@ class RepositoryServiceImpl(
     private val servicePermissionClient: ServicePermissionClient,
 ) : RepositoryService {
 
+    init {
+        Companion.repositoryProperties = repositoryProperties
+    }
+
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
         return convertToInfo(tRepository)
@@ -168,6 +172,9 @@ class RepositoryServiceImpl(
             .and(TRepository::name).inValues(names)
             .and(TRepository::deleted).isEqualTo(null)
         option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
+        option.category?.takeIf { it.isNotBlank() }?.apply {
+            criteria.and(TRepository::category).isEqualTo(this.toUpperCase())
+        }
         val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
@@ -236,7 +243,6 @@ class RepositoryServiceImpl(
                     val old = queryCompositeConfiguration(projectId, name, type)
                     updateCompositeConfiguration(repoConfiguration, old, repository, operator)
                 }
-                handlerConfiguration(repoConfiguration, repository)
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
                 checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
@@ -610,21 +616,11 @@ class RepositoryServiceImpl(
         }
     }
 
-    private fun handlerConfiguration(configuration: RepositoryConfiguration, repository: TRepository) {
-        with(repository) {
-            if (configuration is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration &&
-                type == RepositoryType.GIT
-            ) {
-                val url = repositoryProperties.proxyUrlMapping.urls[projectId].orEmpty()
-                configuration.url = "$url/$projectId/$name.git"
-            }
-        }
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESC_MAX_LENGTH = 200
+        private lateinit var repositoryProperties: RepositoryProperties
 
         fun convertToDetail(
             tRepository: TRepository?,
@@ -653,6 +649,7 @@ class RepositoryServiceImpl(
 
         private fun convertToInfo(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
+                handlerConfiguration(it)
                 RepositoryInfo(
                     name = it.name,
                     type = it.type,
@@ -670,6 +667,18 @@ class RepositoryServiceImpl(
                     used = it.used,
                     display = it.display,
                 )
+            }
+        }
+
+        private fun handlerConfiguration(repository: TRepository) {
+            with(repository) {
+                val config = configuration.readJsonString<RepositoryConfiguration>()
+                if (config is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration &&
+                    type == RepositoryType.GIT
+                ) {
+                    config.url = "${repositoryProperties.gitUrl}/$projectId/$name.git"
+                }
+                configuration = config.toJsonString()
             }
         }
 

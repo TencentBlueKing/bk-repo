@@ -48,6 +48,5 @@ data class RepositoryProperties(
     var job: RepoJobProperties = RepoJobProperties(),
     @NestedConfigurationProperty
     var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
-    @NestedConfigurationProperty
-    var proxyUrlMapping: ProjectProxyUrlMapping = ProjectProxyUrlMapping(),
+    var gitUrl: String = "",
 )
