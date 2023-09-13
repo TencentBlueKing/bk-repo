@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
+
 /**
  * 节点 Dao
  */
@@ -82,10 +83,18 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         nodeNum: Long
     ) {
         val query = NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath)
-        val update = Update().inc(TNode::size.name, size)
+
+        val update = Update()
+            .inc(TNode::size.name, size)
             .inc(TNode::nodeNum.name, nodeNum)
             .set(TNode::lastModifiedDate.name, LocalDateTime.now())
         this.updateFirst(query, update)
+
+        // 如果数据为负数，将其设置为 0
+        val updateMax = Update()
+            .max(TNode::size.name, 0L)
+            .max(TNode::nodeNum.name, 0L)
+        this.updateFirst(query, updateMax)
     }
 
     /**
