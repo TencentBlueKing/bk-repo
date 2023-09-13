@@ -741,7 +741,7 @@
                             })
                         }
                     })
-                })
+                }, 5000)
             },
             handlerMultiDownload () {
                 const fullPaths = this.multiSelect.map(r => r.fullPath)

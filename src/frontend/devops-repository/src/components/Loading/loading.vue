@@ -121,6 +121,7 @@
     .mainMessage{
         font-size: 16px;
         font-weight: bold;
+        word-break: break-all;
     }
     .subMessage{
         margin-top: 20px;
