@@ -4,9 +4,19 @@
         header-position="left"
         :title="title"
         width="600"
+        :close-icon="false"
         v-model="isShow">
         <slot></slot>
-        <div class="backup? mainBackUpBody : mainBody">
+        <div v-if="backUp" class="mainBackUpBody">
+            <div>
+                <Icon v-if="!complete && !backUp" name="loading" size="20" class="svg-loading" />
+                <Icon v-else-if="!complete && backUp" name="circle-2-1" size="20" style="color: #3a84ff" class="svg-loading" />
+                <Icon v-else name="check" size="20" class="svg-complete" />
+                <span class="mainMessage">{{ message }}</span>
+            </div>
+            <span class="subMessage">{{ subMessage }}</span>
+        </div>
+        <div v-else class="mainBody">
             <div>
                 <Icon v-if="!complete && !backUp" name="loading" size="20" class="svg-loading" />
                 <Icon v-else-if="!complete && backUp" name="circle-2-1" size="20" style="color: #3a84ff" class="svg-loading" />

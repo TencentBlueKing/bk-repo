@@ -712,6 +712,31 @@
             handlerDownload ({ fullPath }) {
                 const transPath = encodeURIComponent(fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
+                this.$ajax.head(url).then(() => {
+                    window.open(
+                        '/web' + url,
+                        '_self'
+                    )
+                }).catch(e => {
+                    if (e.status === 451) {
+                        this.$refs.loading.isShow = true
+                        this.$refs.loading.complete = false
+                        this.$refs.loading.title = ''
+                        this.$refs.loading.backUp = true
+                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: fullPath })
+                        this.timerDownload(url, fullPath)
+                    } else {
+                        const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
+                })
+            },
+            timerDownload (url, fullPath) {
                 this.timer = setInterval(() => {
                     this.$ajax.head(url).then(() => {
                         clearInterval(this.timer)

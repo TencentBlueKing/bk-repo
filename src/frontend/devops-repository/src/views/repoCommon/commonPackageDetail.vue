@@ -278,6 +278,31 @@
             downloadPackageHandler (row = this.currentVersion) {
                 if (this.repoType === 'docker') return
                 const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}&download=true`
+                this.$ajax.head(url).then(() => {
+                    window.open(
+                        '/web' + url,
+                        '_self'
+                    )
+                }).catch(e => {
+                    if (e.status === 451) {
+                        this.$refs.loading.isShow = true
+                        this.$refs.loading.complete = false
+                        this.$refs.loading.title = ''
+                        this.$refs.loading.backUp = true
+                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: this.currentVersion.contentPath })
+                        this.timerDownload(url, this.currentVersion.contentPath)
+                    } else {
+                        const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
+                })
+            },
+            timerDownload (url, fullPath) {
                 this.timer = setInterval(() => {
                     this.$ajax.head(url).then(() => {
                         clearInterval(this.timer)
@@ -295,7 +320,7 @@
                             this.$refs.loading.backUp = true
                             this.$refs.loading.cancelMessage = this.$t('downloadLater')
                             this.$refs.loading.subMessage = this.$t('backUpSubMessage')
-                            this.$refs.loading.message = this.$t('backUpMessage', { 0: this.currentVersion.contentPath })
+                            this.$refs.loading.message = this.$t('backUpMessage', { 0: fullPath })
                         } else {
                             clearInterval(this.timer)
                             this.timer = null
