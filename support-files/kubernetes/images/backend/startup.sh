@@ -13,6 +13,7 @@ java -server \
      -XX:+HeapDumpOnOutOfMemoryError \
      -XX:HeapDumpPath=oom.hprof \
      -XX:ErrorFile=$BK_REPO_LOGS_DIR/error_sys.log \
+     -XX:+UseContainerSupport \
      -Dspring.profiles.active=$BK_REPO_PROFILE \
      -Dservice.prefix=$BK_REPO_SERVICE_PREFIX \
      $BK_REPO_JVM_OPTION \
