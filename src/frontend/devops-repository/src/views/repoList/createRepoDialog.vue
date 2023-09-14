@@ -42,7 +42,6 @@
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <template v-if="repoBaseInfo.type === 'generic'">
             <template v-if="repoBaseInfo.type === 'generic' || repoBaseInfo.type === 'ddc'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
