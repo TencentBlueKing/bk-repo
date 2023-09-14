@@ -82,9 +82,9 @@
         }
     }
 </script>
-<style lang="scss" scoped>
-.bk-dialog-content bk-dialog-content-drag{
-    width: 500px !important;
+<style lang="scss">
+body .bk-dialog-wrapper .bk-dialog-body {
+    min-height: auto;
 }
 .mainBody {
     display: flex;

@@ -709,8 +709,8 @@
                     fullPath
                 })
             },
-            handlerDownload ({ fullPath }) {
-                const transPath = encodeURIComponent(fullPath)
+            handlerDownload (row) {
+                const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
@@ -725,8 +725,8 @@
                         this.$refs.loading.backUp = true
                         this.$refs.loading.cancelMessage = this.$t('downloadLater')
                         this.$refs.loading.subMessage = this.$t('backUpSubMessage')
-                        this.$refs.loading.message = this.$t('backUpMessage', { 0: fullPath })
-                        this.timerDownload(url, fullPath)
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
+                        this.timerDownload(url, row.fullPath)
                     } else {
                         const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
                         this.$bkMessage({
