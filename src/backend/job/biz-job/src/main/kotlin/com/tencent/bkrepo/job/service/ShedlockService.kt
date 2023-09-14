@@ -31,4 +31,6 @@ import com.tencent.bkrepo.job.pojo.ShedlockInfo
 
 interface ShedlockService {
     fun listShelock(): List<ShedlockInfo>
+
+    fun deleteShelock(id: String)
 }

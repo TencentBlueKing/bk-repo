@@ -93,4 +93,6 @@ data class NodeDetail(
      * 获取node所属package的版本
      */
     fun packageVersion() = metadata[METADATA_KEY_PACKAGE_VERSION]?.toString()
+
+    fun identity(): String = "$projectId/$repoName/$fullPath"
 }

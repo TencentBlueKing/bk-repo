@@ -41,11 +41,14 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
 import com.tencent.bkrepo.repository.model.TProject
+import com.tencent.bkrepo.repository.model.TProjectMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
@@ -77,6 +80,7 @@ import java.util.regex.Pattern
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionClient: ServicePermissionClient,
+    private val projectMetricsRepository: ProjectMetricsRepository,
     private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 ) : ProjectService {
 
@@ -209,6 +213,10 @@ class ProjectServiceImpl(
         return nameResult || displayNameResult
     }
 
+    override fun getProjectMetricsInfo(name: String): ProjectMetricsInfo? {
+        return convert(projectMetricsRepository.findByProjectId(name))
+    }
+
     override fun updateProject(name: String, request: ProjectUpdateRequest): Boolean {
         if (!checkExist(name)) {
             throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
@@ -266,8 +274,19 @@ class ProjectServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                    rbacFlag = rbacFlag
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                )
+            }
+        }
+
+        private fun convert(tProjectMetrics: TProjectMetrics?): ProjectMetricsInfo? {
+            return tProjectMetrics?.let {
+                ProjectMetricsInfo(
+                    projectId = it.projectId,
+                    nodeNum = it.nodeNum,
+                    capSize = it.capSize,
+                    repoMetrics = it.repoMetrics,
+                    createdDate = it.createdDate
                 )
             }
         }
