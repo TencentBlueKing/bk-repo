@@ -726,7 +726,7 @@
                         this.$refs.loading.cancelMessage = this.$t('downloadLater')
                         this.$refs.loading.subMessage = this.$t('backUpSubMessage')
                         this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
-                        this.timerDownload(url, row.fullPath)
+                        this.timerDownload(url, row.fullPath, row.name)
                     } else {
                         const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
                         this.$bkMessage({
@@ -736,7 +736,7 @@
                     }
                 })
             },
-            timerDownload (url, fullPath) {
+            timerDownload (url, fullPath, name) {
                 this.timer = setInterval(() => {
                     this.$ajax.head(url).then(() => {
                         clearInterval(this.timer)
@@ -754,7 +754,7 @@
                             this.$refs.loading.backUp = true
                             this.$refs.loading.cancelMessage = this.$t('downloadLater')
                             this.$refs.loading.subMessage = this.$t('backUpSubMessage')
-                            this.$refs.loading.message = this.$t('backUpMessage', { 0: fullPath })
+                            this.$refs.loading.message = this.$t('backUpMessage', { 0: name })
                         } else {
                             clearInterval(this.timer)
                             this.timer = null
