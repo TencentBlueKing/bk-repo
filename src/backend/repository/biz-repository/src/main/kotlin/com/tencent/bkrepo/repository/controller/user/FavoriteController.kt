@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -40,8 +41,9 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.model.TFavorites
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
 import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteProjectPageRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteRequest
-import com.tencent.bkrepo.repository.service.folder.FolderService
+import com.tencent.bkrepo.repository.service.favorites.FavoriteService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -57,7 +59,7 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/api/favorite")
 class FavoriteController(
-    private val folderService: FolderService,
+    private val favoriteService: FavoriteService,
     private val permissionManager: PermissionManager
 ) {
 
@@ -76,20 +78,26 @@ class FavoriteController(
                 createdDate = LocalDateTime.now(),
                 userId = userId
             )
-            folderService.createFavorite(createRequest)
+            favoriteService.createFavorite(createRequest)
             return ResponseBuilder.success()
         }
     }
 
-    @ApiOperation("删除收藏文件夹")
+    @ApiOperation("删除收藏")
     @DeleteMapping("/delete/{id}")
     fun removeFavorite(
         @RequestAttribute userId: String,
         @PathVariable id:String
     ): Response<Void> {
-        folderService.getFavoriteById(id)?.let {
-            permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName, it.path)
-            folderService.removeFavorite(id)
+        favoriteService.getFavoriteById(id)?.let {
+            if(it.type.equals(ResourceType.PROJECT.name)){
+                permissionManager.checkProjectPermission(PermissionAction.VIEW, it.projectId)
+            } else if (it.type.equals(ResourceType.REPO.name)) {
+                permissionManager.checkRepoPermission(PermissionAction.VIEW, it.projectId, it.repoName?: "")
+            } else {
+                permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName?: "", it.path?: "")
+            }
+            favoriteService.removeFavorite(id)
             return ResponseBuilder.success()
         }
         return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
@@ -100,7 +108,35 @@ class FavoriteController(
     fun pageFavorite(
         @RequestBody favoritePageRequest: FavoritePageRequest
     ): Response<Page<TFavorites>> {
-        return ResponseBuilder.success(folderService.pageFavorite(favoritePageRequest))
+        return ResponseBuilder.success(favoriteService.pageFavorite(favoritePageRequest))
     }
 
+    @ApiOperation("创建项目收藏")
+    @PostMapping( "/create/project/{projectId}")
+    fun mkProjectFavorite(
+        @RequestAttribute userId: String,
+        @PathVariable projectId: String
+    ): Response<Void> {
+        with(projectId) {
+            permissionManager.checkProjectPermission(PermissionAction.VIEW, projectId)
+            val createRequest = FavoriteCreateRequset(
+                projectId = projectId,
+                repoName = null,
+                path = null,
+                createdDate = LocalDateTime.now(),
+                userId = userId,
+                type = ResourceType.PROJECT.name
+            )
+            favoriteService.createFavorite(createRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @ApiOperation("收藏文件夹分页查询")
+    @PostMapping("/page/project")
+    fun pageProjectFavorite(
+        @RequestBody favoriteProjectPageRequest: FavoriteProjectPageRequest
+    ): Response<Page<TFavorites>> {
+        return ResponseBuilder.success(favoriteService.pageProjectFavorite(favoriteProjectPageRequest))
+    }
 }

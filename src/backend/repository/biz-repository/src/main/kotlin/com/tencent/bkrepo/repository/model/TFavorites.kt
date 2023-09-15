@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -40,7 +41,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(
         name = "favorites_idx",
-        def = "{'userId': 1, 'repoName': 1, 'projectId': 1, 'path': 1}",
+        def = "{'userId': 1, 'projectId': 1,'repoName': 1 'path': 1}",
         background = true,
         unique = true
     )
@@ -49,7 +50,8 @@ data class TFavorites(
     var id: String? = null,
     var userId: String,
     var projectId: String,
-    var repoName: String,
-    var path: String,
-    var createdDate: LocalDateTime
+    var repoName: String? = null,
+    var path: String? = null,
+    var createdDate: LocalDateTime,
+    var type: String? = ResourceType.NODE.name
 )

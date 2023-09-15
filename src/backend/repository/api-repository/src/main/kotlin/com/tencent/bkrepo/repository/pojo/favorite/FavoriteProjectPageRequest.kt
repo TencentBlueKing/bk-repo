@@ -29,20 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.folder
+package com.tencent.bkrepo.repository.pojo.favorite
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.model.TFavorites
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
-import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 
-interface FolderService {
-    // 创建收藏文件夹
-    fun createFavorite(favoriteRequest: FavoriteCreateRequset)
-    // 删除收藏文件夹
-    fun removeFavorite(id: String)
-    // 获取列表
-    fun pageFavorite(favoritePageRequest: FavoritePageRequest): Page<TFavorites>
-    // 获取特定的收藏数据
-    fun getFavoriteById(id: String): TFavorites?
-}
+data class FavoriteProjectPageRequest(
+    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    var pageSize: Int = DEFAULT_PAGE_SIZE
+)
