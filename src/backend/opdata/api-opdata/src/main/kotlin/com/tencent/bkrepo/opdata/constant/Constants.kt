@@ -59,8 +59,7 @@ const val OPDATA_PROJECT_ID = "projectId"
 const val OPDATA_REPOSITORY = "repository"
 const val OPDATA_REPO_NAME = "repoName"
 const val OPDATA_PATH = "path"
-
-
+const val TO_GIGABYTE = 1024 * 1024 * 1024
 
 const val OPDATA_FILE_EXTENSION_METRICS = "file_extension_metrics"
 

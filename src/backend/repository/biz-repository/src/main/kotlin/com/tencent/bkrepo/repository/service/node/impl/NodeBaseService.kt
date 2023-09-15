@@ -423,8 +423,10 @@ abstract class NodeBaseService(
                     path = it.path,
                     name = it.name,
                     fullPath = it.fullPath,
-                    size = it.size,
-                    nodeNum = it.nodeNum,
+                    size = if (it.size < 0L) 0L else it.size,
+                    nodeNum = it.nodeNum?.let { nodeNum ->
+                        if (nodeNum < 0L) 0L else nodeNum
+                    },
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,

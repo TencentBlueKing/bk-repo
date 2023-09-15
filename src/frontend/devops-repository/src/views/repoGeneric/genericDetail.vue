@@ -76,20 +76,20 @@
                                     </template>
                                 </bk-table-column>
 
-                                <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
-                                <bk-table-column width="60">
-                                    <template #default="{ row }">
-                                        <Icon class="hover-btn" size="24" name="icon-delete"
-                                            @click.native.stop="deleteMetadataHandler(row)" />
-                                    </template>
-                                </bk-table-column>
-                            </bk-table>
-                        </div>
-                    </bk-tab-panel>
-                </bk-tab>
-            </template>
-        </bk-sideslider>
-        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
+                        <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column width="60">
+                            <template #default="{ row }">
+                                <Icon class="hover-btn" size="24" name="icon-delete" v-if="!row.system"
+                                    @click.native.stop="deleteMetadataHandler(row)" />
+                            </template>
+                        </bk-table-column>
+                    </bk-table>
+                </div>
+            </bk-tab-panel>
+        </bk-tab>
+        </template>
+    </bk-sideslider>
+    <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>

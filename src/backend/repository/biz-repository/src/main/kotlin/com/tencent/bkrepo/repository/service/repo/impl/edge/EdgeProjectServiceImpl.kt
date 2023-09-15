@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterProjectClient
 import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
@@ -48,10 +49,12 @@ class EdgeProjectServiceImpl(
     projectDao: ProjectDao,
     servicePermissionClient: ServicePermissionClient,
     serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    projectMetricsRepository: ProjectMetricsRepository
 ) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
+    projectMetricsRepository,
     serviceBkiamV3ResourceClient
 ) {
 

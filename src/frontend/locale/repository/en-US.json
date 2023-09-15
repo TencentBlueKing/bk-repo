@@ -781,5 +781,12 @@
     "bkPermissionCheck":"BK Permission Check",
     "bkPermissionGeneration":"BK Permission Generation",
     "permissionsGeneratedSuccessTip":"Permissions generated successfully",
-    "permissionsGeneratedFailTip":"Permission generation failed"
+    "permissionsGeneratedFailTip":"Permission generation failed",
+    "fileNum": "File Number",
+    "realSize": "Real Size",
+    "loadingMsg": "Please wait, processing...",
+    "calculateMsg": "Please wait while calculating the {0} size.",
+    "calculateTitle": "Calculate folder size in real time",
+    "calculateCompleteMsg": "The total file size of {0} is {1}",
+    "repoUsage": "usage"
 }

@@ -127,7 +127,7 @@ export default {
         )
     },
     // 仓库内自定义查询
-    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType = 'lastModifiedDate', searchFlag }) {
+    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType, searchFlag }) {
         if (isPipeline && !fullPath && !name) {
             return Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
@@ -140,10 +140,7 @@ export default {
                         pageNumber: current,
                         pageSize: limit
                     },
-                    sort: {
-                        properties: ['folder', sortType],
-                        direction: 'DESC'
-                    },
+                    sort: sortType,
                     rule: {
                         rules: [
                             {
@@ -314,6 +311,11 @@ export default {
     previewCompressedBasicFile (_, { projectId, repoName, path, filePath }) {
         return Vue.prototype.$ajax.get(
             `generic/compressed/preview/${projectId}/${repoName}${path}?filePath=${filePath}`
+        )
+    },
+    getProjectMetrics (_, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/project/metrics/${projectId}`
         )
     }
 }

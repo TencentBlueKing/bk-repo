@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -67,7 +68,9 @@ interface ServiceAccountClient {
         @ApiParam(value = "accesskey")
         @RequestParam accesskey: String,
         @ApiParam(value = "secretkey")
-        @RequestParam secretkey: String
+        @RequestParam secretkey: String,
+        @ApiParam(value = "authorizationGrantType")
+        @RequestParam authorizationGrantType: AuthorizationGrantType? = null
     ): Response<String?>
 
     @ApiOperation("查找sk")

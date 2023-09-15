@@ -75,8 +75,13 @@ class ArrowheadScanExecutor @Autowired constructor(
 
         // 执行扫描
         val result = dockerScanHelper.scan(
-            containerConfig.image, Binds(tmpBind, bind), listOf(containerConfig.args),
-            scannerInputFile, task
+            image = containerConfig.image,
+            binds=Binds(tmpBind, bind),
+            args = listOf(containerConfig.args),
+            scannerInputFile = scannerInputFile,
+            task = task,
+            userName = containerConfig.dockerRegistryUsername,
+            password = containerConfig.dockerRegistryPassword
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
