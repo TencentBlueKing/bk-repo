@@ -453,7 +453,7 @@ class OciRegistryRemoteRepository(
     /**
      * 尝试获取缓存的远程构件节点
      */
-    override fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
+    override fun findCacheNodeDetail(context: ArtifactContext): NodeDetail? {
         with(context) {
             val fullPath = ociOperationService.getNodeFullPath(context.artifactInfo as OciArtifactInfo) ?: return null
             return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
@@ -463,7 +463,7 @@ class OciRegistryRemoteRepository(
     /**
      * 加载要返回的资源: oci协议需要返回特定的请求头和资源类型
      */
-    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactContext): ArtifactResource? {
         return storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
@@ -484,7 +484,7 @@ class OciRegistryRemoteRepository(
 
     private fun buildResponse(
         cacheNode: NodeDetail?,
-        context: ArtifactDownloadContext,
+        context: ArtifactContext,
         artifactResource: ArtifactResource,
         sha256: String? = null,
         size: Long? = null

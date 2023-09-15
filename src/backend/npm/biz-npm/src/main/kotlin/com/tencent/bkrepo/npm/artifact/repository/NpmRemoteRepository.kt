@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.npm.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -45,12 +46,14 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.PACKAGE_JSON
+import com.tencent.bkrepo.npm.constants.REQUEST_URI
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.NpmUtils
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -69,34 +72,13 @@ class NpmRemoteRepository(
         throughput: Throughput
     ) {
         super.onDownloadSuccess(context, artifactResource, throughput)
+        val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(context.artifactInfo.getArtifactFullPath())
+        val versionMetadataFullPath = NpmUtils.getVersionPackageMetadataPath(packageInfo.first, packageInfo.second)
+        val queryContext = ArtifactQueryContext(context.repo, context.artifactInfo)
+        queryContext.putAttribute(NPM_FILE_FULL_PATH, versionMetadataFullPath)
+        queryContext.putAttribute(REQUEST_URI, "/${packageInfo.first}/${packageInfo.second}")
         // 存储package-version.json文件
-        executor.execute { cachePackageVersionMetadata(context) }
-    }
-
-    private fun cachePackageVersionMetadata(context: ArtifactDownloadContext) {
-        with(context) {
-            val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
-            val versionMetadataFullPath = NpmUtils.getVersionPackageMetadataPath(packageInfo.first, packageInfo.second)
-            if (nodeClient.checkExist(projectId, repoName, versionMetadataFullPath).data!!) {
-                logger.info(
-                    "version metadata [$versionMetadataFullPath] is already exits " +
-                        "in repo [$projectId/$repoName]"
-                )
-                return
-            }
-            val remoteConfiguration = context.getRemoteConfiguration()
-            val httpClient = createHttpClient(remoteConfiguration)
-            context.putAttribute("requestURI", "/${packageInfo.first}/${packageInfo.second}")
-            val downloadUri = createRemoteSearchUrl(context)
-            val request = Request.Builder().url(downloadUri).build()
-            val response = httpClient.newCall(request).execute()
-            if (checkResponse(response)) {
-                val artifactFile = createTempFile(response.body!!)
-                context.putAttribute(NPM_FILE_FULL_PATH, versionMetadataFullPath)
-                cacheArtifactFile(context, artifactFile)
-                logger.info("cache version metadata [$versionMetadataFullPath] success.")
-            }
-        }
+        executor.execute { findCacheNodeDetail(queryContext) ?: (super.query(queryContext) as InputStream?)?.close() }
     }
 
     override fun upload(context: ArtifactUploadContext) {
@@ -108,19 +90,44 @@ class NpmRemoteRepository(
     }
 
     override fun query(context: ArtifactQueryContext): InputStream? {
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = createRemoteSearchUrl(context)
-        val request = Request.Builder().url(downloadUri).build()
-        val response = httpClient.newCall(request).execute()
-        return if (checkResponse(response)) {
-            onQueryResponse(context, response)
-        } else null
+        return getCacheArtifactResource(context)?.getSingleStream() ?: super.query(context) as InputStream?
     }
 
-    private fun createRemoteSearchUrl(context: ArtifactContext): String {
+    override fun checkQueryResponse(response: Response): Boolean {
+        return super.checkQueryResponse(response) && run {
+            val contentType = response.body!!.contentType()
+            contentType.toString().contains(APPLICATION_JSON_WITHOUT_CHARSET) || run {
+                logger.warn("Content-Type($contentType) of response from [${response.request.url}] is unsupported")
+                false
+            }
+        }
+    }
+
+    // 仅package.json文件有必要在缓存过期后更新
+    override fun getCacheArtifactResource(context: ArtifactContext): ArtifactResource? {
+        return when (context) {
+            is ArtifactDownloadContext -> findCacheNodeDetail(context)?.let { loadArtifactResource(it, context) }
+            is ArtifactQueryContext -> {
+                if (context.getStringAttribute(NPM_FILE_FULL_PATH)?.endsWith("/$PACKAGE_JSON") == false) {
+                    findCacheNodeDetail(context)?.let { loadArtifactResource(it, context) }
+                } else if (context.getRemoteConfiguration().cache.expiration > 0) {
+                    super.getCacheArtifactResource(context)
+                } else null
+            }
+            else -> null
+        }
+    }
+
+    override fun findCacheNodeDetail(context: ArtifactContext): NodeDetail? {
+        val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
+        with(context) {
+            return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        }
+    }
+
+    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         val configuration = context.getRemoteConfiguration()
-        val requestURI = context.getStringAttribute("requestURI")
+        val requestURI = context.getStringAttribute(REQUEST_URI)
         val artifactUri =
             requestURI ?: context.request.requestURI.substringAfterLast(context.artifactInfo.getRepoIdentify())
         val queryString = context.request.queryString
@@ -128,22 +135,9 @@ class NpmRemoteRepository(
     }
 
     override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream? {
-        val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
         val body = response.body!!
         val artifactFile = createTempFile(body)
-        val sha256 = artifactFile.getFileSha256()
-        with(context) {
-            nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
-                if (it.sha256.equals(sha256)) {
-                    logger.info("artifact [$fullPath] is hit the cache.")
-                    return artifactFile.getInputStream()
-                }
-                cacheArtifactFile(context, artifactFile)
-            } ?: run {
-                // 存储构件
-                cacheArtifactFile(context, artifactFile)
-            }
-        }
+        cacheArtifactFile(context, artifactFile)
         return artifactFile.getInputStream()
     }
 

@@ -62,10 +62,10 @@ const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
 const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
 
 const val NPM_FILE_FULL_PATH = "npm_file_full_path"
-
 const val SEARCH_REQUEST = "search_request"
-
 const val PKG_NAME = "pkg_name"
+const val REQUEST_URI = "requestURI"
+const val PACKAGE_JSON = "package.json"
 
 // constants map
 val ERROR_MAP = mapOf("error" to "not_found", "reason" to "document not found")

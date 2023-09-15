@@ -53,6 +53,7 @@ import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
+import com.tencent.bkrepo.npm.constants.REQUEST_URI
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
@@ -275,6 +276,7 @@ class NpmClientServiceImpl(
             val context = ArtifactQueryContext()
             val packageFullPath = NpmUtils.getPackageMetadataPath(name)
             context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
+            context.putAttribute(REQUEST_URI, name)
             val inputStream =
                 ArtifactContextHolder.getRepository().query(context) as? InputStream
                     ?: throw NpmArtifactNotFoundException("document not found")
@@ -304,6 +306,7 @@ class NpmClientServiceImpl(
             val context = ArtifactQueryContext()
             val packageFullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
+            context.putAttribute(REQUEST_URI, "$name/$version")
             val inputStream =
                 ArtifactContextHolder.getRepository().query(context) as? InputStream
                     ?: throw NpmArtifactNotFoundException("document not found")
