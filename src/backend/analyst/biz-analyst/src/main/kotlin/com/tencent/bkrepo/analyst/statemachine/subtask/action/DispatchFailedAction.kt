@@ -48,7 +48,6 @@ class DispatchFailedAction(
         require(context is DispatchFailedContext)
         val oldStatus = SubScanTaskStatus.valueOf(source)
         val subtask = context.subtask
-        subScanTaskDao.incExecutedTimes(subtask.taskId)
         subScanTaskDao.updateStatus(subtask.taskId, SubScanTaskStatus.CREATED, oldStatus)
         archiveSubScanTaskDao.updateStatus(subtask.taskId, SubScanTaskStatus.CREATED.name)
         scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.CREATED)
