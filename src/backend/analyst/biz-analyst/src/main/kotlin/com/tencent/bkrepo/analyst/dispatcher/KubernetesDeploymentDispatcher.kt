@@ -71,12 +71,19 @@ class KubernetesDeploymentDispatcher(
             lockOperation.doWithLock(lockKey()) {
                 if (subScanTaskDao.countTaskByStatusIn(null, executionCluster.name) == 0L) {
                     val deploymentName = deploymentName()
-                    api!!.deleteNamespacedDeployment(
-                        deploymentName, executionCluster.kubernetesProperties.namespace,
-                        null, null, null, null, "Foreground", null
-                    )
-                    tokenService.deleteToken(deploymentName)
-                    logger.info("delete deployment[$deploymentName] success")
+                    try {
+                        api!!.deleteNamespacedDeployment(
+                            deploymentName, executionCluster.kubernetesProperties.namespace,
+                            null, null, null, null, "Foreground", null
+                        )
+                        tokenService.deleteToken(deploymentName)
+                        logger.info("delete deployment[$deploymentName] success")
+                    } catch (e: ApiException) {
+                        if (e.code != HttpStatus.NOT_FOUND.value()) {
+                            throw e
+                        }
+                        logger.info("delete deployment[$deploymentName] success")
+                    }
                 }
             }
         }
