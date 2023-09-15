@@ -95,7 +95,8 @@ class FavoriteController(
             } else if (it.type.equals(ResourceType.REPO.name)) {
                 permissionManager.checkRepoPermission(PermissionAction.VIEW, it.projectId, it.repoName?: "")
             } else {
-                permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName?: "", it.path?: "")
+                permissionManager
+                    .checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName?: "", it.path?: "")
             }
             favoriteService.removeFavorite(id)
             return ResponseBuilder.success()
