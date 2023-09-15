@@ -87,9 +87,11 @@ class MetadataServiceImpl(
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             ClusterUtils.checkContainsSrcCluster(node.clusterNames)
             val oldMetadata = node.metadata ?: ArrayList()
-            var newMetadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata)
+            val newMetadata = MetadataUtils.compatibleConvertAndCheck(
+                metadata,
+                MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+            )
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
-            newMetadata = changeSystem(newMetadata)
             node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
 
             nodeDao.save(node)
@@ -162,18 +164,6 @@ class MetadataServiceImpl(
     private fun List<String>.intersectIgnoreCase(list: List<String>): List<String> {
         return this.filter { k -> list.any { it.equals(k, true) } }
     }
-
-    /**
-     * 将允许用户新增为系统元数据的元数据设置为System=true
-     */
-    private fun changeSystem(newMetadata: MutableList<TMetadata>) =
-        newMetadata.map { m ->
-            if (repositoryProperties.allowUserAddSystemMetadata.any { it.equals(m.key, true) }) {
-                m.copy(system = true)
-            } else {
-                m
-            }
-        }.toMutableList()
 
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
