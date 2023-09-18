@@ -545,7 +545,7 @@ class FolderStatChildJob(
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
         private const val STORED = "stored"
-        private const val BATCH_LIMIT = 1000
+        private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }
