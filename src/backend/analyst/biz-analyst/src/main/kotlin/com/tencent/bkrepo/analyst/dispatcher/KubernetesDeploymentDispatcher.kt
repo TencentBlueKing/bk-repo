@@ -82,7 +82,7 @@ class KubernetesDeploymentDispatcher(
                         if (e.code != HttpStatus.NOT_FOUND.value()) {
                             throw e
                         }
-                        logger.info("delete deployment[$deploymentName] success")
+                        logger.warn("delete deployment[$deploymentName], not found")
                     }
                 }
             }
@@ -118,14 +118,21 @@ class KubernetesDeploymentDispatcher(
                         "from ${deployment.spec!!.replicas} to $targetReplicas"
             )
             deployment.spec!!.replicas = targetReplicas
-            // 更新Deployment
-            api!!.replaceNamespacedDeployment(
-                deployment.metadata!!.name!!,
-                deployment.metadata!!.namespace!!,
-                deployment,
-                null, null, null
-            )
-            logger.info("scale deployment[${deployment.metadata!!.name}] success")
+            try {
+                // 更新Deployment
+                api!!.replaceNamespacedDeployment(
+                    deployment.metadata!!.name!!,
+                    deployment.metadata!!.namespace!!,
+                    deployment,
+                    null, null, null
+                )
+                logger.info("scale deployment[${deployment.metadata!!.name}] success")
+            } catch (e: ApiException) {
+                if (e.code != HttpStatus.CONFLICT.value()) {
+                    throw e
+                }
+                logger.warn("scale deployment[${deployment.metadata!!.name}] conflict, targetReplicas[$targetReplicas]")
+            }
         }
     }
 
