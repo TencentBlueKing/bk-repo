@@ -204,7 +204,9 @@ class FolderStatChildJob(
         force: Boolean = false
     ) {
         if (context.cacheType != REDIS_CACHE_TYPE) return
-        if (!force && context.folderCache.size < 10000) return
+        if (!force && context.folderCache.size < 50000) return
+        if (context.folderCache.isEmpty()) return
+
         // 避免每次设置值都创建一个 Redis 连接
         redisTemplate.execute { connection ->
             val hashCommands = connection.hashCommands()
@@ -342,7 +344,6 @@ class FolderStatChildJob(
                             .updateOne(updateList)
                             .execute()
                         updateList.clear()
-                        Thread.sleep(200)
                     }
                     hashCommands.hSet(
                         storedProjectIdKey.toByteArray(), storedFolderHkey.toByteArray(), STORED.toByteArray()
@@ -543,7 +544,7 @@ class FolderStatChildJob(
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
         private const val STORED = "stored"
-        private const val BATCH_LIMIT = 250
+        private const val BATCH_LIMIT = 1000
         private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }
