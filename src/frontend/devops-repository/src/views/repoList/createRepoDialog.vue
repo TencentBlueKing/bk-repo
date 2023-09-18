@@ -34,7 +34,7 @@
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <template v-if="repoBaseInfo.type === 'generic'">
+            <template v-if="repoBaseInfo.type === 'generic' || repoBaseInfo.type === 'ddc'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
                     <bk-radio-group v-model="repoBaseInfo[type].enable">
@@ -297,7 +297,7 @@
             async confirm () {
                 await this.$refs.repoBaseInfo.validate()
                 const interceptors = []
-                if (this.repoBaseInfo.type === 'generic') {
+                if (this.repoBaseInfo.type === 'generic' || this.repoBaseInfo.type === 'ddc') {
                     ['mobile', 'web', 'ip_segment'].forEach(type => {
                         const { enable, filename, metadata, ipSegment, whitelistUser, officeNetwork } = this.repoBaseInfo[type]
                         if (['mobile', 'web'].includes(type)) {
