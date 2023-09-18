@@ -156,9 +156,14 @@ class CommitEdgeCenterNodeServiceImpl(
                 }
                 val update = Update().addToSet(TNode::clusterNames.name).each(clusterNames)
                 nodeMetadata?.let { update.set(TNode::metadata.name, it.map { convert(it) }) }
+                val currentTime = LocalDateTime.now()
                 update.set(TNode::lastModifiedBy.name, operator)
-                update.set(TNode::lastModifiedDate.name, LocalDateTime.now())
-                nodeDao.updateFirst(query, update)
+                update.set(TNode::lastModifiedDate.name, currentTime)
+                val modifiedCount = nodeDao.updateFirst(query, update).modifiedCount
+                if (modifiedCount == 1L) {
+                    val parentFullPath = PathUtils.toFullPath(PathUtils.resolveParent(fullPath))
+                    super.updateModifiedInfo(projectId, repoName, parentFullPath, operator, currentTime)
+                }
                 existNode.clusterNames = clusterNames
                 logger.info("Create node[/$projectId/$repoName$fullPath],sha256[$sha256],region[$srcCluster] success.")
                 return convertToDetail(existNode)!!
