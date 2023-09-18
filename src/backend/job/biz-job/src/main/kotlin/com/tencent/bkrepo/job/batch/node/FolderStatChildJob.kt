@@ -407,9 +407,11 @@ class FolderStatChildJob(
         }
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
         val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
+        val storedKeys = mutableSetOf<String>()
         for(entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
             extractFolderInfoFromCacheKey(entry.key)?.let {
+                storedKeys.add(entry.key)
                 updateList.add(buildUpdateClausesForFolder(
                     projectId = it.projectId,
                     repoName = it.repoName,
@@ -430,6 +432,9 @@ class FolderStatChildJob(
             .updateOne(updateList)
             .execute()
         updateList.clear()
+        for (key in storedKeys) {
+            context.folderCache.remove(key)
+        }
     }
 
     /**
