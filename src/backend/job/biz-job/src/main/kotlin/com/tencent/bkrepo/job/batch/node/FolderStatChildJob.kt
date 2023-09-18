@@ -122,7 +122,7 @@ class FolderStatChildJob(
         super.onRunCollectionFinished(collectionName, context)
         require(context is FolderChildContext)
         // 如果使用的是redis作为缓存，将内存中的临时记录写入redis
-        updateRedisCache(context, force = true)
+        updateRedisCache(context, force = true, collectionName = collectionName)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeCacheToDB(collectionName, context)
         context.projectMap.remove(collectionName)
@@ -147,8 +147,9 @@ class FolderStatChildJob(
         size: Long,
         context: FolderChildContext
     ) {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         val elapsedTime = measureTimeMillis {
-            if (context.cacheType == REDIS_CACHE_TYPE) {
+            if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
                 updateRedisCache(
                     collectionName = collectionName,
                     projectId = projectId,
@@ -193,7 +194,7 @@ class FolderStatChildJob(
             size = size,
             context = context
         )
-        updateRedisCache(context)
+        updateRedisCache(context, collectionName = collectionName)
     }
 
     /**
@@ -201,9 +202,12 @@ class FolderStatChildJob(
      */
     private fun updateRedisCache(
         context: FolderChildContext,
-        force: Boolean = false
+        force: Boolean = false,
+        collectionName: String
     ) {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         if (context.cacheType != REDIS_CACHE_TYPE) return
+        if (collectionName !in properties.redisCacheCollections) return
         if (!force && context.folderCache.size < 50000) return
         if (context.folderCache.isEmpty()) return
 
@@ -280,7 +284,8 @@ class FolderStatChildJob(
      * 将缓存中的数据更新到DB中
      */
     private fun storeCacheToDB(collectionName: String, context: FolderChildContext) {
-        if (context.cacheType == REDIS_CACHE_TYPE) {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
+        if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
             storeRedisCacheToDB(collectionName, context)
         } else {
             storeMemoryCacheToDB(collectionName, context)
@@ -418,10 +423,6 @@ class FolderStatChildJob(
                     .updateOne(updateList)
                     .execute()
                 updateList.clear()
-                try {
-                    Thread.sleep(500)
-                } catch (_: Exception) {
-                }
             }
         }
         if (updateList.isEmpty()) return
