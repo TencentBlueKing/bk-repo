@@ -1,11 +1,15 @@
 package com.tencent.bkrepo.git.interceptor.devx
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.git.config.GitProperties
+import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import okhttp3.OkHttpClient
@@ -22,6 +26,11 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
     @Autowired
     lateinit var properties: GitProperties
     private val httpClient = OkHttpClient.Builder().build()
+    private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
+        .maximumSize(MAX_CACHE_PROJECT_SIZE)
+        .expireAfterWrite(CACHE_EXPIRE_TIME, TimeUnit.SECONDS)
+        .build(CacheLoader.from { key -> listIpFromProject(key) })
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         if (!properties.devx.enabled) {
             return true
@@ -38,6 +47,10 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
     }
 
     private fun inWhiteList(ip: String, projectId: String): Boolean {
+        return projectIpsCache.get(projectId).contains(ip)
+    }
+
+    private fun listIpFromProject(projectId: String): Set<String> {
         val devxProperties = properties.devx
         val apiAuth = ApiAuth(devxProperties.appCode, devxProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
@@ -46,16 +59,16 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
             .url("$workspaceUrl?project_id=$projectId")
             .header("X-Bkapi-Authorization", token)
             .build()
+        logger.info("Update project[$projectId] ips.")
         val response = httpClient.newCall(request).execute()
         if (!response.isSuccessful || response.body == null) {
             val errorMsg = response.body?.bytes()?.let { String(it) }
             logger.error("${response.code} $errorMsg")
-            return false
+            return emptySet()
         }
-        val whiteList = response.body!!.byteStream().readJsonString<QueryResponse>().data.map {
+        return response.body!!.byteStream().readJsonString<QueryResponse>().data.map {
             it.inner_ip.substringAfter('.')
         }.toSet()
-        return whiteList.contains(ip)
     }
 
     data class ApiAuth(
@@ -78,5 +91,7 @@ class DevxSrcIpInterceptor : HandlerInterceptor {
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevxSrcIpInterceptor::class.java)
+        private const val MAX_CACHE_PROJECT_SIZE = 1000L
+        private const val CACHE_EXPIRE_TIME = 60L
     }
 }

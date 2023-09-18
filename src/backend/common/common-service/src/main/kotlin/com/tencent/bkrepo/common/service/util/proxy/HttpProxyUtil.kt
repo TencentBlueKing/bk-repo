@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.service.util
+package com.tencent.bkrepo.common.service.util.proxy
 
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
@@ -18,11 +18,13 @@ import javax.servlet.http.HttpServletResponse
 object HttpProxyUtil {
     private val logger = LoggerFactory.getLogger(HttpProxyUtil::class.java)
     private val client = HttpClientBuilderFactory.create().build()
+    private val defaultProxyCallHandler = DefaultProxyCallHandler()
     fun proxy(
         proxyRequest: HttpServletRequest,
         proxyResponse: HttpServletResponse,
         targetUrl: String,
         prefix: String? = null,
+        proxyCallHandler: ProxyCallHandler = defaultProxyCallHandler,
     ) {
         val newUrl = "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}?${proxyRequest.queryString}"
         val newRequest = Request.Builder()
@@ -36,14 +38,7 @@ object HttpProxyUtil {
             .newCall(newRequest)
             .execute()
         proxyRequest.accessLog(newResponse)
-        // 转发状态码
-        proxyResponse.status = newResponse.code
-        // 转发头
-        newResponse.headers.forEach { (key, value) -> proxyResponse.addHeader(key, value) }
-        // 转发body
-        newResponse.body?.byteStream()?.use {
-            it.copyTo(proxyResponse.outputStream)
-        }
+        proxyCallHandler.after(proxyRequest, proxyResponse, newResponse)
     }
 
     fun HttpServletRequest.headers(): Map<String, String> {

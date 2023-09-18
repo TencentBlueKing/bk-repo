@@ -37,5 +37,7 @@ data class RepoListOption(
     @ApiModelProperty("仓库类型", required = false)
     val type: String? = null,
     @ApiModelProperty("仓库类别", required = false)
-    val category: String? = null
+    val category: String? = null,
+    @ApiModelProperty("是否可展示的仓库", required = false)
+    val display: Boolean? = true,
 )

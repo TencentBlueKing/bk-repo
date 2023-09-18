@@ -135,8 +135,8 @@ class RepositoryServiceImpl(
         }
     }
 
-    override fun listRepo(projectId: String, name: String?, type: String?): List<RepositoryInfo> {
-        val query = buildListQuery(projectId, name, type)
+    override fun listRepo(projectId: String, name: String?, type: String?, display: Boolean?): List<RepositoryInfo> {
+        val query = buildListQuery(projectId, name, type, display)
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
 
@@ -168,9 +168,14 @@ class RepositoryServiceImpl(
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
-            .and(TRepository::display).ne(false)
             .and(TRepository::name).inValues(names)
-            .and(TRepository::deleted).isEqualTo(null)
+            .and(TRepository::deleted).isEqualTo(null).apply {
+                if (option.display == true) {
+                    and(TRepository::display).ne(false)
+                } else if (option.display != null) {
+                    and(TRepository::display).isEqualTo(option.display)
+                }
+            }
         option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
         option.category?.takeIf { it.isNotBlank() }?.apply {
             criteria.and(TRepository::category).isEqualTo(this.toUpperCase())
@@ -388,9 +393,16 @@ class RepositoryServiceImpl(
     /**
      * 构造list查询条件
      */
-    private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
+    private fun buildListQuery(
+        projectId: String,
+        repoName: String? = null,
+        repoType: String? = null,
+        display: Boolean? = null,
+    ): Query {
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
-        criteria.and(TRepository::display).ne(false)
+        if (display == true) {
+            criteria.and(TRepository::display).ne(false)
+        }
         criteria.and(TRepository::deleted).isEqualTo(null)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
         repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
