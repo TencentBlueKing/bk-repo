@@ -797,6 +797,7 @@ class OciOperationServiceImpl(
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
+            .page(1, 1)
             .sortByAsc(NODE_FULL_PATH).apply {
                 path?.let {
                     this.path(path, OperationType.PREFIX)
