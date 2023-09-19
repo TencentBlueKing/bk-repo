@@ -299,10 +299,14 @@ abstract class ArtifactReplicationHandler(
         with(filePushContext) {
             logger.info("Will upload blob $sha256 in a single patch request")
             val params = buildBlobUploadWithSingleChunkRequestParam(fileInfo.sha256, filePushContext)
+            val inputStream = localDataManager.loadInputStream(
+                fileInfo.sha256, fileInfo.size, context.localProjectId, context.localRepoName
+            )
+            val rateLimitInputStream = inputStream.rateLimit(
+                replicationProperties.rateLimit.toBytes()
+            )
             val patchBody = StreamRequestBody(
-                localDataManager.loadInputStream(
-                    fileInfo.sha256, fileInfo.size, context.localProjectId, context.localRepoName
-                ),
+                rateLimitInputStream,
                 fileInfo.size
             )
             val patchHeader = Headers.Builder()
