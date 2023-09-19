@@ -28,17 +28,25 @@
 package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
+import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
+import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
+import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping(AUTH_API_OAUTH_PREFIX)
@@ -47,9 +55,25 @@ class OauthAuthorizationController @Autowired constructor(
 ) {
 
     @ApiOperation("用户确认Oauth授权")
-    @PostMapping("/authorize")
-    fun authorize(clientId: String, state: String) {
-        oauthAuthorizationService.authorized(clientId, state)
+    @GetMapping("/authorize")
+    fun authorize(
+        @RequestParam("client_id") clientId: String,
+        state: String,
+        scope: String?,
+        nonce: String?,
+        @RequestParam("code_challenge") codeChallenge: String?,
+        @RequestParam("code_challenge_method") codeChallengeMethod: String?
+    ): Response<AuthorizedResult> {
+        val request = AuthorizeRequest(
+            clientId = clientId,
+            state = state,
+            scope = scope,
+            nonce = nonce,
+            codeChallenge = codeChallenge,
+            codeChallengeMethod = codeChallengeMethod
+        )
+        val authorizedResult = oauthAuthorizationService.authorized(request)
+        return ResponseBuilder.success(authorizedResult)
     }
 
     @ApiOperation("获取oauth token信息")
@@ -58,10 +82,23 @@ class OauthAuthorizationController @Autowired constructor(
         return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
     }
 
-    @ApiOperation("创建oauth token")
-    @PostMapping("/token")
-    fun createToken(clientId: String, clientSecret: String, code: String) {
-        oauthAuthorizationService.createToken(clientId, clientSecret, code)
+    @ApiOperation("创建或刷新oauth token")
+    @PostMapping("/{projectId}/token")
+    fun generateToken(
+        code: String?,
+        @RequestParam("grant_type") grantType: String,
+        @RequestParam("client_id") clientId: String?,
+        @RequestParam("client_secret") clientSecret: String?,
+        @RequestParam("refresh_token") refreshToken: String?,
+        scope: String?,
+        @RequestParam("code_verifier") codeVerifier: String?,
+    ) {
+        val request = GenerateTokenRequest(code, grantType, clientId, clientSecret, refreshToken, scope, codeVerifier)
+        if (request.grantType == "refresh_token") {
+            oauthAuthorizationService.refreshToken(request)
+        } else {
+            oauthAuthorizationService.createToken(request)
+        }
     }
 
     @ApiOperation("删除oauth token")
@@ -75,5 +112,23 @@ class OauthAuthorizationController @Autowired constructor(
     @GetMapping("/token/validate")
     fun validateToken(accessToken: String): Response<String?> {
         return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
+    }
+
+    @ApiOperation("用户信息")
+    @GetMapping("/{projectId}/userInfo")
+    fun userInfo(): UserInfo {
+        return oauthAuthorizationService.getUserInfo()
+    }
+
+    @ApiOperation("OpenId Connect配置")
+    @GetMapping("/{projectId}/.well-known/openid-configuration")
+    fun configuration(@PathVariable projectId: String): OidcConfiguration {
+        return oauthAuthorizationService.getOidcConfiguration(projectId)
+    }
+
+    @ApiOperation("Json web key set")
+    @GetMapping("/{projectId}/.well-known/jwks.json")
+    fun jwks(): JsonWebKeySet {
+        return oauthAuthorizationService.getJwks()
     }
 }

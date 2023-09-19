@@ -39,7 +39,7 @@ data class RepoMetrics(
     @ApiModelProperty("credentialsKey")
     val credentialsKey: String? = "default",
     @ApiModelProperty("size")
-    val size: Long,
+    var size: Long,
     @ApiModelProperty("num")
     val num: Long
 )

@@ -97,7 +97,7 @@ class PackageServiceImpl(
         packageKey: String,
         versionName: String
     ): PackageVersion? {
-        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        val packageId = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)?.id ?: return null
         return convert(packageVersionDao.findByName(packageId, versionName))
     }
 
@@ -107,7 +107,8 @@ class PackageServiceImpl(
         packageKey: String,
         tag: String
     ): String? {
-        val versionTag = packageDao.findByKey(projectId, repoName, packageKey)?.versionTag ?: return null
+        val versionTag = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)?.versionTag
+            ?: return null
         return versionTag[tag]
     }
 
@@ -116,7 +117,7 @@ class PackageServiceImpl(
         repoName: String,
         packageKey: String
     ): PackageVersion? {
-        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        val packageId = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)?.id ?: return null
         return convert(packageVersionDao.findLatest(packageId))
     }
 
@@ -156,7 +157,7 @@ class PackageServiceImpl(
         Preconditions.checkArgument(pageSize >= 0, "pageSize")
         val stageTag = option.stageTag?.split(StringPool.COMMA)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
+        val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)
         return if (tPackage == null) {
             Pages.ofResponse(pageRequest, 0, emptyList())
         } else {
@@ -180,7 +181,7 @@ class PackageServiceImpl(
         option: VersionListOption
     ): List<PackageVersion> {
         val stageTag = option.stageTag?.split(StringPool.COMMA)
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
+        val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return emptyList()
         val query = PackageQueryHelper.versionListQuery(
             packageId = tPackage.id!!,
             name = option.version,
@@ -248,7 +249,7 @@ class PackageServiceImpl(
     }
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
+        val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         packageVersionDao.deleteByPackageId(tPackage.id!!)
         packageDao.deleteByKey(projectId, repoName, packageKey)
         publishEvent(
@@ -273,7 +274,7 @@ class PackageServiceImpl(
         versionName: String,
         realIpAddress: String?
     ) {
-        var tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
+        var tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val packageId = tPackage.id!!
         val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
         checkCluster(tPackageVersion)
@@ -330,7 +331,7 @@ class PackageServiceImpl(
         } else {
             null
         }
-        val tPackage = checkPackage(projectId, repoName, packageKey)
+        val tPackage = findPackageExcludeHistoryVersion(projectId, repoName, packageKey)
         val packageId = tPackage.id.orEmpty()
         val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
             checkCluster(this)
@@ -363,7 +364,7 @@ class PackageServiceImpl(
         versionName: String,
         realIpAddress: String?
     ) {
-        val tPackage = checkPackage(projectId, repoName, packageKey)
+        val tPackage = findPackageExcludeHistoryVersion(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
         if (tPackageVersion.artifactPath.isNullOrBlank()) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "artifactPath is null")
@@ -415,7 +416,7 @@ class PackageServiceImpl(
         packageKey: String,
         packageVersionList: List<String>
     ): List<String> {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
+        val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return emptyList()
         val versionQuery = PackageQueryHelper.versionQuery(tPackage.id!!, packageVersionList)
         return packageVersionDao.find(versionQuery).map { it.name }
     }
@@ -464,6 +465,15 @@ class PackageServiceImpl(
         return packageDao.findByKey(projectId, repoName, packageKey)
             ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, packageKey)
     }
+
+    /**
+     * 查找包，不存在则抛异常
+     */
+    private fun findPackageExcludeHistoryVersion(projectId: String, repoName: String, packageKey: String): TPackage {
+        return packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)
+            ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, packageKey)
+    }
+
 
     /**
      * 查找版本，不存在则抛异常

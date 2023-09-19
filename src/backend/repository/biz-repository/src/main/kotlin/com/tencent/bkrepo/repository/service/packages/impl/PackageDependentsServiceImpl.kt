@@ -78,7 +78,7 @@ class PackageDependentsServiceImpl(
     }
 
     protected fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage? {
-        return packageDao.findByKey(projectId, repoName, packageKey)
+        return packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)
     }
 
     companion object {

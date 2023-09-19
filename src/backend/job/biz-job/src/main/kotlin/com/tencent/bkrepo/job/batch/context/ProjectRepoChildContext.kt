@@ -65,7 +65,7 @@ class ProjectRepoChildContext(
             return ProjectRepoStatChildJob.TProjectMetrics(
                 projectId = projectId,
                 nodeNum = nodeNum.toLong(),
-                capSize = capSize.toLong() / TO_GIGABYTE,
+                capSize = capSize.toLong(),
                 repoMetrics = repoMetrics
             )
         }
@@ -128,7 +128,7 @@ class ProjectRepoChildContext(
             return ProjectRepoStatChildJob.TRepoMetrics(
                 repoName = repoName,
                 credentialsKey = credentialsKey,
-                size = size.toLong() / TO_GIGABYTE,
+                size = size.toLong(),
                 num = num.toLong()
             )
         }

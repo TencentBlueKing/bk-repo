@@ -29,9 +29,6 @@ package com.tencent.bkrepo.oci.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.replication.ThirdPartyReplicationEvent
 import com.tencent.bkrepo.oci.listener.base.EventExecutor
-import com.tencent.bkrepo.oci.service.OciOperationService
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
@@ -40,15 +37,13 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ReplicationEventListener(
-    override val nodeClient: NodeClient,
-    override val repositoryClient: RepositoryClient,
-    override val ociOperationService: OciOperationService
-): EventExecutor(nodeClient, repositoryClient, ociOperationService) {
+    private val eventExecutor: EventExecutor
+){
     /**
      * 第三方同步事件处理
      */
     @EventListener(ThirdPartyReplicationEvent::class)
     fun handle(event: ThirdPartyReplicationEvent) {
-        submit(event)
+        eventExecutor.submit(event)
     }
 }

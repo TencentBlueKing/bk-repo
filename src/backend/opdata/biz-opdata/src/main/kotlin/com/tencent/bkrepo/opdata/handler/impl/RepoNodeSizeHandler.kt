@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
@@ -54,8 +55,9 @@ class RepoNodeSizeHandler(
             val projectId = it.projectId
             it.repoMetrics.forEach {
                 val repoName = it.repoName
-                if (it.size != 0L) {
-                    tmpMap["$projectId-$repoName"] = it.size
+                val gbSize = it.size / TO_GIGABYTE
+                if (gbSize != 0L) {
+                    tmpMap["$projectId-$repoName"] = gbSize
                 }
             }
         }

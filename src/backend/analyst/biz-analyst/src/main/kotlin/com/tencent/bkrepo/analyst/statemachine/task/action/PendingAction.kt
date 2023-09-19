@@ -157,7 +157,8 @@ class PendingAction(
             ).run { Converter.convert(this, plan, force) }
             plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
-            logger.info("create scan task[${scanTask.taskId}] success")
+            val dispatcher = metadata.firstOrNull { it.key == TASK_METADATA_DISPATCHER } ?: "analysis-executor"
+            logger.info("create scan task[${scanTask.taskId}] success, will dispatch to [$dispatcher]")
             return scanTask
         }
     }

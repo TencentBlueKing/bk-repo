@@ -33,6 +33,7 @@ dependencies {
     api(project(":repository:api-repository"))
     api(project(":common:common-job"))
     api(project(":common:common-mongo"))
+    api(project(":analyst:api-analyst"))
     api(project(":common:common-query:query-mongo"))
     api(project(":common:common-artifact:artifact-service"))
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")

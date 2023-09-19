@@ -46,6 +46,7 @@ dependencies {
     implementation(project(":replication:biz-replication"))
     implementation(project(":webhook:biz-webhook"))
     implementation(project(":lfs:biz-lfs"))
+    implementation(project(":ddc:biz-ddc"))
 }
 
 configurations.all {

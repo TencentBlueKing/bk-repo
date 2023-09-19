@@ -177,7 +177,10 @@ abstract class NodeBaseService(
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
                 nodeNum = null,
-                metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
+                metadata = MetadataUtils.compatibleConvertAndCheck(
+                    metadata,
+                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+                ),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
@@ -422,8 +425,10 @@ abstract class NodeBaseService(
                     path = it.path,
                     name = it.name,
                     fullPath = it.fullPath,
-                    size = it.size,
-                    nodeNum = it.nodeNum,
+                    size = if (it.size < 0L) 0L else it.size,
+                    nodeNum = it.nodeNum?.let { nodeNum ->
+                        if (nodeNum < 0L) 0L else nodeNum
+                    },
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,

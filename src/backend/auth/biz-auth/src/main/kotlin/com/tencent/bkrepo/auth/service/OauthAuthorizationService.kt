@@ -27,7 +27,13 @@
 
 package com.tencent.bkrepo.auth.service
 
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
+import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
+import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
+import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
 
 /**
  * Oauth授权服务
@@ -37,12 +43,14 @@ interface OauthAuthorizationService {
     /**
      * 确认授权
      */
-    fun authorized(clientId: String, state: String)
+    fun authorized(authorizeRequest: AuthorizeRequest): AuthorizedResult
 
     /**
      * 创建token
      */
-    fun createToken(clientId: String, clientSecret: String, code: String)
+    fun createToken(generateTokenRequest: GenerateTokenRequest)
+
+    fun refreshToken(generateTokenRequest: GenerateTokenRequest)
 
     /**
      * 获取token信息
@@ -58,4 +66,19 @@ interface OauthAuthorizationService {
      * 删除token
      */
     fun deleteToken(clientId: String, clientSecret: String, accessToken: String)
+
+    /**
+     * 获取用户信息
+     */
+    fun getUserInfo(): UserInfo
+
+    /**
+     * 获取Oidc配置
+     */
+    fun getOidcConfiguration(projectId: String): OidcConfiguration
+
+    /**
+     * 获取Json web key set
+     */
+    fun getJwks(): JsonWebKeySet
 }
