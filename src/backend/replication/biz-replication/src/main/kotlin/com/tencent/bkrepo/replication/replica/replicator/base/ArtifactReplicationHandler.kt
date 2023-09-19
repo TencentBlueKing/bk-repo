@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -196,9 +197,10 @@ abstract class ArtifactReplicationHandler(
             val input = localDataManager.loadInputStreamByRange(
                 fileInfo.sha256, range, filePushContext.context.localProjectId, filePushContext.context.localRepoName
             )
-            val patchBody: RequestBody = RequestBody.create(
-                MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull(), input.readBytes()
+            val rateLimitInputStream = input.rateLimit(
+                replicationProperties.rateLimit.toBytes()
             )
+            val patchBody: RequestBody = StreamRequestBody(rateLimitInputStream, byteCount)
             val patchHeader = Headers.Builder()
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
                 .add(HttpHeaders.CONTENT_RANGE, contentRange)
