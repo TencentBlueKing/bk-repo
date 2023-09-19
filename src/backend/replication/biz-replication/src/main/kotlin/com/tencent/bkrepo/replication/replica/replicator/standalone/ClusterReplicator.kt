@@ -223,7 +223,8 @@ class ClusterReplicator(
                                     context = context,
                                     name = it.fullPath,
                                     size = it.size,
-                                    sha256 = it.sha256
+                                    sha256 = it.sha256,
+                                    md5 = it.md5
                                 ),
                                 pushType = type,
                                 downGrade = downGrade
