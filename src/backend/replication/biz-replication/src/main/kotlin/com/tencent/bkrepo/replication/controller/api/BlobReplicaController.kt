@@ -194,7 +194,7 @@ class BlobReplicaController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
     ) {
-        logger.info("The file with sha256 [$sha256] will be finished with $uuid")
+        logger.info("The file (sha256 [$sha256], size [$size], md5 [$md5]) will be finished with $uuid")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.finishChunkedUpload(
             projectId = projectId,

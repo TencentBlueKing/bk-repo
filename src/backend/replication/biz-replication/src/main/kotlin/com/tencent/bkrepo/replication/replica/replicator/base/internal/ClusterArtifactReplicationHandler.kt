@@ -272,21 +272,21 @@ class ClusterArtifactReplicationHandler(
         md5: String? = null,
         size: Long? = null
     ): String {
-        val params = "$SHA256=$sha256"
+        val builder = StringBuilder("$SHA256=$sha256")
         filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-            "$params&$STORAGE_KEY=$it"
+            builder.append("&$STORAGE_KEY=$it")
         }
         md5?.let {
-            "$params&$MD5=$it"
+            builder.append("&$MD5=$it")
         }
         size?.let {
-            "$params&$SIZE=$size"
+            builder.append("&$SIZE=$it")
         }
-        return params
+        return builder.toString()
     }
 
     /**
-     * 针对配置的仓库进行条件过滤
+     * 针对仓库特殊配置进行过滤
      */
     private fun filterProjectRepo(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
         if (contains(StringPool.POUND, StringPool.POUND, includeRepositories)) {
