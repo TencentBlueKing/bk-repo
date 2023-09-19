@@ -32,7 +32,11 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
-import com.tencent.bkrepo.auth.constant.*
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
