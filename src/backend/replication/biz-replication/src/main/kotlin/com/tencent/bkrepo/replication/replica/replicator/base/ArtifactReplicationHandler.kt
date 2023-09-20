@@ -297,7 +297,7 @@ abstract class ArtifactReplicationHandler(
         filePushContext: FilePushContext
     ): DefaultHandlerResult {
         with(filePushContext) {
-            logger.info("Will upload blob $sha256 in a single patch request")
+            logger.info("Will upload blob ${fileInfo.sha256} in a single patch request")
             val params = buildBlobUploadWithSingleChunkRequestParam(fileInfo.sha256, filePushContext)
             val inputStream = localDataManager.loadInputStream(
                 fileInfo.sha256, fileInfo.size, context.localProjectId, context.localRepoName
