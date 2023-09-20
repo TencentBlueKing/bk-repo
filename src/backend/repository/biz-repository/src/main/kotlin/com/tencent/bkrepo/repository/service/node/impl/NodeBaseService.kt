@@ -177,7 +177,10 @@ abstract class NodeBaseService(
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
                 nodeNum = null,
-                metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
+                metadata = MetadataUtils.compatibleConvertAndCheck(
+                    metadata,
+                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+                ),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
