@@ -80,7 +80,7 @@ abstract class ArtifactReplicationHandler(
             val clusterUrl = context.cluster.url
             val clusterName = context.cluster.name
             logger.info(
-                "Will try to push $name file $sha256 " +
+                "Will try to push $name file $digest or $sha256 " +
                     "in repo ${context.localProjectId}|${context.localRepo} to remote cluster $clusterName."
             )
             logger.info("Will try to obtain uuid from remote cluster $clusterName for blob $name|$digest")
