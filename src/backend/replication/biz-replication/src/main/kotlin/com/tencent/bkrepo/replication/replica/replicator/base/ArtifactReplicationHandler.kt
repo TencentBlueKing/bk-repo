@@ -92,7 +92,7 @@ abstract class ArtifactReplicationHandler(
             val fileInfo = getBlobFileInfo(filePushContext)
             logger.info(
                 "Will try to push file with ${sessionIdHandlerResult.location} " +
-                    "in chunked upload way to remote cluster $clusterUrl for blob $name|$sha256"
+                    "in chunked upload way to remote cluster $clusterUrl for blob $name|${fileInfo.sha256}"
             )
             // 需要将大文件进行分块上传
             var chunkedUploadResult = try {
@@ -118,7 +118,7 @@ abstract class ArtifactReplicationHandler(
 
             if (!chunkedUploadResult.isSuccess) return false
             logger.info(
-                "The file $name|$sha256 is pushed " +
+                "The file $name|${fileInfo.sha256} is pushed " +
                     "and will try to send a completed request with ${chunkedUploadResult.location}."
             )
             val sessionCloseHandlerResult = processSessionCloseHandler(
