@@ -50,8 +50,8 @@ data class TFavorites(
     var id: String? = null,
     var userId: String,
     var projectId: String,
-    var repoName: String? = null,
-    var path: String? = null,
+    var repoName: String,
+    var path: String,
     var createdDate: LocalDateTime,
     var type: String? = ResourceType.NODE.name
 )

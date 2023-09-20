@@ -90,13 +90,10 @@ class FavoriteController(
         @PathVariable id:String
     ): Response<Void> {
         favoriteService.getFavoriteById(id)?.let {
-            if(it.type.equals(ResourceType.PROJECT.name)){
-                permissionManager.checkProjectPermission(PermissionAction.VIEW, it.projectId)
-            } else if (it.type.equals(ResourceType.REPO.name)) {
-                permissionManager.checkRepoPermission(PermissionAction.VIEW, it.projectId, it.repoName?: "")
+            if (it.type == ResourceType.PROJECT.name) {
+                permissionManager.isAdminUser(userId)
             } else {
-                permissionManager
-                    .checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName?: "", it.path?: "")
+                permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName, it.path)
             }
             favoriteService.removeFavorite(id)
             return ResponseBuilder.success()
@@ -113,17 +110,17 @@ class FavoriteController(
     }
 
     @ApiOperation("创建项目收藏")
-    @PostMapping( "/create/project/{projectId}")
+    @PostMapping( "/create/project")
     fun mkProjectFavorite(
         @RequestAttribute userId: String,
-        @PathVariable projectId: String
+        @RequestBody favoriteRequest: FavoriteRequest
     ): Response<Void> {
-        with(projectId) {
-            permissionManager.checkProjectPermission(PermissionAction.VIEW, projectId)
+        with(favoriteRequest) {
+            permissionManager.isAdminUser(userId)
             val createRequest = FavoriteCreateRequset(
                 projectId = projectId,
-                repoName = null,
-                path = null,
+                repoName = repoName,
+                path = path,
                 createdDate = LocalDateTime.now(),
                 userId = userId,
                 type = ResourceType.PROJECT.name
@@ -133,7 +130,7 @@ class FavoriteController(
         }
     }
 
-    @ApiOperation("收藏文件夹分页查询")
+    @ApiOperation("收藏项目分页查询")
     @PostMapping("/page/project")
     fun pageProjectFavorite(
         @RequestBody favoriteProjectPageRequest: FavoriteProjectPageRequest

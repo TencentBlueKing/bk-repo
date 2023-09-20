@@ -139,13 +139,21 @@
   - 中文：创建收藏项目
   - English：create favorite project
 - 请求体
-  此接口请求体为空
+    ```json
+  {
+  "projectId": "",
+  "repoName": "",
+  "path": ""
+  }
+  ```
 - 请求字段说明
 
 
 | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
   | ----------- | -------- | ---------- | -------- | ---------- | -------------- |
 | projectId | string | 是       | 无     | 项目名称 | project name |
+| repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+| path      | string | 是       | 无     | 完整路径 | path         |
 
 - 响应体
 

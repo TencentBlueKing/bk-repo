@@ -38,9 +38,9 @@ data class FavoriteCreateRequset(
     @ApiModelProperty("项目id")
     val projectId: String,
     @ApiModelProperty("仓库Name")
-    val repoName: String?,
+    val repoName: String,
     @ApiModelProperty("文件夹路径")
-    val path: String?,
+    val path: String,
     @ApiModelProperty("收藏用户")
     val userId: String,
     @ApiModelProperty("收藏时间")
