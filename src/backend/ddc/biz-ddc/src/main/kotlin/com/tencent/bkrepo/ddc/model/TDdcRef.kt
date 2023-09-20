@@ -38,7 +38,8 @@ import java.time.LocalDateTime
     CompoundIndex(
         name = "projectId_repoName_bucket_key_idx",
         def = "{'projectId': 1, 'repoName': 1, 'bucket': 1, 'key': 1}",
-        unique = true
+        unique = true,
+        background = true
     )
 )
 data class TDdcRef(

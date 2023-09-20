@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.springframework.data.domain.Page
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -46,6 +47,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
+
 
 /**
  * 节点 Dao
@@ -82,10 +84,20 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         nodeNum: Long
     ) {
         val query = NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath)
-        val update = Update().inc(TNode::size.name, size)
+        val update = Update()
+            .inc(TNode::size.name, size)
             .inc(TNode::nodeNum.name, nodeNum)
             .set(TNode::lastModifiedDate.name, LocalDateTime.now())
-        this.updateFirst(query, update)
+        val options = FindAndModifyOptions()
+        options.returnNew(true)
+        val tNode = this.findAndModify(query, update, options, TNode::class.java)
+        if (tNode != null && (tNode.nodeNum!! < 0L || tNode.size < 0L )) {
+            // 如果数据为负数，将其设置为 0
+            val updateMax = Update()
+                .max(TNode::size.name, 0L)
+                .max(TNode::nodeNum.name, 0L)
+            this.updateFirst(query, updateMax)
+        }
     }
 
     /**

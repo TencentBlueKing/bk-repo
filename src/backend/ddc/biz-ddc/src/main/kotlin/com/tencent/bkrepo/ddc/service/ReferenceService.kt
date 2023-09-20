@@ -30,12 +30,14 @@ package com.tencent.bkrepo.ddc.service
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.model.TDdcRef
 import com.tencent.bkrepo.ddc.pojo.ContentHash
 import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
+import com.tencent.bkrepo.ddc.pojo.RefId
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.repository.RefRepository
 import com.tencent.bkrepo.ddc.serialization.CbObject
@@ -71,14 +73,14 @@ class ReferenceService(
             createdDate = now,
             lastModifiedBy = userId,
             lastModifiedDate = now,
-            lastAccessDate = now, // TODO 更新lastAccessDate
+            lastAccessDate = now,
             projectId = ref.projectId,
             repoName = ref.repoName,
             bucket = ref.bucket,
             key = ref.key.toString(),
             finalized = ref.finalized!!,
             blobId = ref.blobId!!.toString(),
-            inlineBlob = Binary(inlineBlob),
+            inlineBlob = inlineBlob?.let { Binary(it) },
             expireDate = null // TODO 设置expireDate
         )
         refRepository.replace(tRef)
@@ -90,8 +92,8 @@ class ReferenceService(
         repoName: String,
         bucket: String,
         key: String,
-        includePayload: Boolean = true,
         checkFinalized: Boolean = true,
+        includePayload: Boolean = true,
     ): Reference? {
         val tRef = refRepository.find(projectId, repoName, bucket, key, includePayload) ?: return null
         if (checkFinalized && !tRef.finalized) {
@@ -100,7 +102,20 @@ class ReferenceService(
             )
         }
 
-        return Reference.from(tRef)
+        val ref = Reference.from(tRef)
+        if (ref.inlineBlob == null) {
+            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
+            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let {
+                storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
+            }
+        }
+
+        return if (ref.inlineBlob == null) {
+            logger.warn("Blob was null when attempting to fetch ${ref.repoName} ${ref.bucket} ${ref.key}")
+            null
+        } else {
+            ref
+        }
     }
 
     fun finalize(ref: Reference, payload: ByteArray): CreateRefResponse {
@@ -109,7 +124,7 @@ class ReferenceService(
         if (cbObject.hasAttachments()) {
             try {
                 val blobs = refResolver.getReferencedBlobs(ref.projectId, ref.repoName, cbObject)
-                blobService.addRefToBlobs(ref, blobs.mapTo(HashSet()) { it.toString() })
+                blobService.addRefToBlobs(ref, blobs.mapTo(HashSet()) { it.blobId.toString() })
             } catch (e: ReferenceIsMissingBlobsException) {
                 missingBlobs = e.missingBlobs
             }
@@ -120,6 +135,10 @@ class ReferenceService(
         }
 
         return CreateRefResponse((missingBlobs).mapTo(HashSet()) { it.toString() })
+    }
+
+    fun updateLastAccess(refId: RefId, lastAccessDate: LocalDateTime) {
+        refRepository.updateLastAccess(refId, lastAccessDate)
     }
 
     companion object {
