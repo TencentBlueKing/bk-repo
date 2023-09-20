@@ -41,7 +41,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(
         name = "favorites_idx",
-        def = "{'userId': 1, 'projectId': 1,'repoName': 1, 'path': 1, 'type':'1'}",
+        def = "{'userId': 1, 'projectId': 1,'repoName': 1, 'path': 1, 'type':1}",
         background = true,
         unique = true
     )
