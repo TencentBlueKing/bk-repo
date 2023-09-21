@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.resolve
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileCleanInterceptor
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileReceiveLimiterInterceptor
 import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.ArtifactFileMethodArgumentResolver
@@ -67,7 +68,9 @@ class ArtifactResolverConfiguration {
     fun artifactFileMapMethodArgumentResolver() = ArtifactFileMapMethodArgumentResolver()
 
     @Bean
-    fun artifactArgumentResolveConfigurer(resolver: ArtifactInfoMethodArgumentResolver): WebMvcConfigurer {
+    fun artifactArgumentResolveConfigurer(
+        resolver: ArtifactInfoMethodArgumentResolver, storageProperties: StorageProperties
+    ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
                 resolvers.add(resolver)
@@ -77,6 +80,7 @@ class ArtifactResolverConfiguration {
 
             override fun addInterceptors(registry: InterceptorRegistry) {
                 registry.addInterceptor(ArtifactFileCleanInterceptor())
+                registry.addInterceptor(ArtifactFileReceiveLimiterInterceptor(storageProperties))
                 super.addInterceptors(registry)
             }
         }

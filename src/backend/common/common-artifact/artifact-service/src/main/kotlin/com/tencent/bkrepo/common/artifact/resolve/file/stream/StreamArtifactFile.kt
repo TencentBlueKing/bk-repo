@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.io.InputStream
 
@@ -47,7 +48,8 @@ open class StreamArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
-    private val contentLength: Long? = null
+    private val contentLength: Long? = null,
+    private val receiveRateLimit: DataSize = DataSize.ofBytes(-1)
 ) : ArtifactFile {
 
     /**
@@ -83,7 +85,8 @@ open class StreamArtifactFile(
             storageProperties.receive,
             storageProperties.monitor,
             receivePath,
-            randomPath = !useLocalPath
+            randomPath = !useLocalPath,
+            receiveRateLimit = receiveRateLimit
         )
         if (!storageProperties.receive.resolveLazily) {
             init()

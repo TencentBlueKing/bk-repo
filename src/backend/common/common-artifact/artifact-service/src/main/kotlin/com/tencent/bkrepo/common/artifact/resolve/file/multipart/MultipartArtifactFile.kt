@@ -31,15 +31,17 @@ import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import org.springframework.util.unit.DataSize
 import org.springframework.web.multipart.MultipartFile
 
 class MultipartArtifactFile(
     private val multipartFile: MultipartFile,
     monitor: StorageHealthMonitor,
     storageProperties: StorageProperties,
-    storageCredentials: StorageCredentials
+    storageCredentials: StorageCredentials,
+    receiveRateLimit: DataSize = DataSize.ofBytes(-1)
 ) : StreamArtifactFile(
-    multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size
+    multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size, receiveRateLimit
 ) {
     fun getOriginalFilename() = multipartFile.originalFilename.orEmpty()
 }

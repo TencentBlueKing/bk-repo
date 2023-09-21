@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
 import org.slf4j.LoggerFactory
+import org.springframework.util.unit.DataSize
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -73,7 +74,8 @@ class ArtifactDataReceiver(
     private var path: Path,
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
-    private val originPath: Path = path
+    private val originPath: Path = path,
+    private val receiveRateLimit: DataSize = DataSize.ofBytes(-1)
 ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
@@ -183,11 +185,9 @@ class ArtifactDataReceiver(
         if (startTime == 0L) {
             startTime = System.nanoTime()
         }
-        try {
-            writeData(chunk, offset, length)
-        } catch (exception: IOException) {
-            handleIOException(exception)
-        }
+        receiveStream(
+            chunk.inputStream(), offset, length
+        )
     }
 
     /**
@@ -202,6 +202,7 @@ class ArtifactDataReceiver(
         try {
             checkFallback()
             outputStream.write(b)
+
             listener.data(b)
             received += 1
             checkThreshold()
@@ -214,16 +215,25 @@ class ArtifactDataReceiver(
      * 接收数据流
      * @param source 数据流
      */
-    fun receiveStream(source: InputStream) {
+    fun receiveStream(
+        source: InputStream,
+        offset: Int? = null,
+        length: Int? =null
+    ) {
         require(!finished) { "Receiver is close" }
         if (startTime == 0L) {
             startTime = System.nanoTime()
         }
         try {
-            val input = source.rateLimit(receiveProperties.rateLimit.toBytes())
+            val rateLimit = getReceiveRateLimiter()
+            val input = source.rateLimit(rateLimit)
             val buffer = ByteArray(bufferSize)
             input.use {
-                var bytes = input.read(buffer)
+                var bytes = if (offset != null && length != null) {
+                    input.read(buffer, offset, length)
+                } else {
+                    input.read(buffer)
+                }
                 while (bytes >= 0) {
                     writeData(buffer, 0, bytes)
                     bytes = input.read(buffer)
@@ -296,6 +306,17 @@ class ArtifactDataReceiver(
         try {
             outputStream.close()
         } catch (ignored: IOException) {
+        }
+    }
+
+    /**
+     * 获取每秒接收数据量
+     */
+    private fun getReceiveRateLimiter(): Long {
+        return if (receiveRateLimit != DataSize.ofBytes(-1)) {
+            receiveRateLimit.toBytes()
+        } else {
+            receiveProperties.rateLimit.toBytes()
         }
     }
 

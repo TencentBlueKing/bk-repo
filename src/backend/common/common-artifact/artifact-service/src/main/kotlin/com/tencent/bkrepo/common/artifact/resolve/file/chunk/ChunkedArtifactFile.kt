@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.io.InputStream
 
@@ -47,6 +48,7 @@ class ChunkedArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
+    receiveRateLimit: DataSize = DataSize.ofBytes(-1)
 ) : ArtifactFile {
 
     /**
@@ -71,6 +73,7 @@ class ChunkedArtifactFile(
             storageProperties.monitor,
             path,
             randomPath = true,
+            receiveRateLimit = receiveRateLimit
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

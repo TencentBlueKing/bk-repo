@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
@@ -23,7 +24,8 @@ import java.nio.file.NoSuchFileException
 class RandomAccessArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageCredentials: StorageCredentials,
-    storageProperties: StorageProperties
+    storageProperties: StorageProperties,
+    receiveRateLimit: DataSize = DataSize.ofBytes(-1)
 ) : ArtifactFile {
 
     /**
@@ -43,7 +45,9 @@ class RandomAccessArtifactFile(
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
+        receiver = ArtifactDataReceiver(
+            storageProperties.receive, storageProperties.monitor, path, receiveRateLimit = receiveRateLimit
+        )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {
             receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
