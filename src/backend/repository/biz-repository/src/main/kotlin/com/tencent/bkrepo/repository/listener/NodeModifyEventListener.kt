@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -86,7 +87,8 @@ class NodeModifyEventListener(
         EventType.NODE_COPIED,
         EventType.NODE_CREATED,
         EventType.NODE_DELETED,
-        EventType.NODE_MOVED
+        EventType.NODE_MOVED,
+        EventType.NODE_RENAMED
     )
 
 
@@ -179,6 +181,18 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(createdNode)
             }
+            EventType.NODE_RENAMED -> {
+                require(event is NodeRenamedEvent)
+                // 节点重命名逻辑和其他操作不同，它会对旧节点下的目录删除，然后新建，但是对于非目录节点是进行更新动作，而不是删除再新建
+                // 节点重命名操作只需要更新该节点下的子目录的统计信息，不需要更新其上层目录统计信息
+                val renamedNode = ModifiedNodeInfo(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    fullPath = event.newFullPath,
+                    includePrefix = event.newFullPath
+                )
+                modifiedNodeList.add(renamedNode)
+            }
             else -> throw UnsupportedOperationException()
         }
         modifiedNodeList.forEach {
@@ -206,7 +220,8 @@ class NodeModifyEventListener(
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
                 deleted = node.nodeInfo.deleted,
-                deletedFlag = modifiedNode.deleted
+                deletedFlag = modifiedNode.deleted,
+                includePrefix = modifiedNode.includePrefix
             )
         } else {
             updateCache(
@@ -214,40 +229,51 @@ class NodeModifyEventListener(
                 repoName = artifactInfo.repoName,
                 fullPath = artifactInfo.getArtifactFullPath(),
                 size = node.size,
-                deleted = modifiedNode.deleted
+                deleted = modifiedNode.deleted,
+                includePrefix = modifiedNode.includePrefix
             )
         }
     }
 
+
+    /**
+     * 更新缓存
+     * 当要更新包含该文件所有的目录的缓存记录时includePrefix为空
+     * 当只需要更新特定目录前缀目录的缓存记录时设置includePrefix
+     */
     private fun updateCache(
         projectId: String,
         repoName: String,
         fullPath: String,
         size: Long,
-        deleted: Boolean = false
+        deleted: Boolean = false,
+        includePrefix: String? = null
     ) {
 
         // 更新当前节点所有上级目录统计信息
-        PathUtils.resolveAncestorFolder(fullPath).forEach{
-            if (it != PathUtils.ROOT) {
-                val key = Triple(projectId, repoName, it)
-                var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
-                if (deleted) {
-                    cachedSize -= size
-                    nodeNum -= 1
-                } else {
-                    cachedSize += size
-                    nodeNum += 1
-                }
-                cache.put(key, Pair(cachedSize, nodeNum))
+        val folderPaths = PathUtils.resolveAncestorFolder(fullPath)
+        for (it in folderPaths) {
+            if (it == PathUtils.ROOT) continue
+            // 当只需要更新特定目录前缀目录的缓存记录时设置folderPrefix
+            if (!includePrefix.isNullOrEmpty() && !it.startsWith(includePrefix)) continue
+            val key = Triple(projectId, repoName, it)
+            var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+            if (deleted) {
+                cachedSize -= size
+                nodeNum -= 1
+            } else {
+                cachedSize += size
+                nodeNum += 1
             }
+            cache.put(key, Pair(cachedSize, nodeNum))
         }
     }
 
     private fun findAndCacheSubFolders(
         artifactInfo: ArtifactInfo,
         deleted: String? = null,
-        deletedFlag: Boolean = false
+        deletedFlag: Boolean = false,
+        includePrefix: String? = null
     ) {
         findAllNodesUnderFolder(
             artifactInfo.projectId,
@@ -260,7 +286,8 @@ class NodeModifyEventListener(
                 repoName = artifactInfo.repoName,
                 fullPath = it.fullPath.getFolderPath(),
                 size = it.size,
-                deleted = deletedFlag
+                deleted = deletedFlag,
+                includePrefix = includePrefix
             )
         }
     }
@@ -319,7 +346,8 @@ class NodeModifyEventListener(
         var projectId: String,
         var repoName: String,
         var fullPath: String,
-        var deleted: Boolean = false
+        var deleted: Boolean = false,
+        var includePrefix: String? = null
     )
 
     companion object {
