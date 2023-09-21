@@ -29,23 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.folder.impl
+package com.tencent.bkrepo.repository.service.favorites.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.FavoriteDao
 import com.tencent.bkrepo.repository.model.TFavorites
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
 import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
-import com.tencent.bkrepo.repository.service.folder.FolderService
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteProjectPageRequest
+import com.tencent.bkrepo.repository.service.favorites.FavoriteService
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 
 @Service
-class FolderServiceImpl(
+class FavoriteServiceImpl(
     private val favoriteDao: FavoriteDao,
-) :FolderService{
+) : FavoriteService {
 
     override fun createFavorite(favoriteRequest: FavoriteCreateRequset) {
         val favorite = TFavorites(
@@ -53,7 +55,8 @@ class FolderServiceImpl(
             repoName = favoriteRequest.repoName,
             projectId = favoriteRequest.projectId,
             userId = favoriteRequest.userId,
-            createdDate = favoriteRequest.createdDate
+            createdDate = favoriteRequest.createdDate,
+            type = favoriteRequest.type
         )
         favoriteDao.insert(favorite)
     }
@@ -63,6 +66,10 @@ class FolderServiceImpl(
            val query = Query()
            projectId?.let { query.addCriteria(Criteria.where("prokectId").`is`(projectId)) }
            repoName?.let { query.addCriteria(Criteria.where("repoId").`is`(repoName)) }
+           query.addCriteria(Criteria().orOperator(
+               Criteria.where("type").exists(false),
+               Criteria.where("type").`is`(ResourceType.NODE.name)
+           ))
            val records = favoriteDao.find(query)
            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
            val totalRecords = favoriteDao.count(query)
@@ -76,5 +83,16 @@ class FolderServiceImpl(
 
     override fun getFavoriteById(id: String): TFavorites? {
         return favoriteDao.findById(id)
+    }
+
+    override fun pageProjectFavorite(favoritePageRequest: FavoriteProjectPageRequest): Page<TFavorites> {
+        with(favoritePageRequest) {
+            val query = Query()
+            query.addCriteria(Criteria.where("type").`is`(ResourceType.PROJECT.name))
+            val records = favoriteDao.find(query)
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val totalRecords = favoriteDao.count(query)
+            return Pages.ofResponse(pageRequest, totalRecords, records)
+        }
     }
 }
