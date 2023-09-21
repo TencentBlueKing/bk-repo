@@ -38,7 +38,7 @@ import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
 
 interface FavoriteService {
     // 创建收藏
-    fun createFavorite(favoriteRequest: FavoriteCreateRequest)
+    fun createFavorite(request: FavoriteCreateRequest)
 
     // 删除收藏
     fun removeFavorite(id: String)

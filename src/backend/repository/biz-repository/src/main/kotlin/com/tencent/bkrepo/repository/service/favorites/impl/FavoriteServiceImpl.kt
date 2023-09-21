@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.service.favorites.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.FavoriteDao
@@ -49,14 +48,14 @@ class FavoriteServiceImpl(
     private val favoriteDao: FavoriteDao,
 ) : FavoriteService {
 
-    override fun createFavorite(favoriteRequest: FavoriteCreateRequest) {
+    override fun createFavorite(request: FavoriteCreateRequest) {
         val favorite = TFavorites(
-            path = favoriteRequest.path,
-            repoName = favoriteRequest.repoName,
-            projectId = favoriteRequest.projectId,
-            userId = favoriteRequest.userId,
-            createdDate = favoriteRequest.createdDate,
-            type = favoriteRequest.type
+            path = request.path,
+            repoName = request.repoName,
+            projectId = request.projectId,
+            userId = request.userId,
+            createdDate = request.createdDate,
+            type = request.type
         )
         favoriteDao.insert(favorite)
     }
@@ -73,6 +72,7 @@ class FavoriteServiceImpl(
                 query.addCriteria(
                     Criteria.where(TFavorites::type.name).`is`(FavoriteType.USER)
                         .and(TFavorites::projectId.name).`is`(projectId)
+                        .and(TFavorites::userId.name).`is`(userId)
                 )
             }
             val records = favoriteDao.find(query)
