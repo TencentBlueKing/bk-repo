@@ -39,6 +39,9 @@ import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
 import com.tencent.bkrepo.repository.service.favorites.FavoriteService
+import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
+import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
@@ -50,6 +53,7 @@ class FavoriteServiceImpl(
 
     override fun createFavorite(request: FavoriteCreateRequest) {
         val favorite = TFavorites(
+            id = null,
             path = request.path,
             repoName = request.repoName,
             projectId = request.projectId,
@@ -57,7 +61,12 @@ class FavoriteServiceImpl(
             createdDate = request.createdDate,
             type = request.type
         )
-        favoriteDao.insert(favorite)
+        try {
+            favoriteDao.insert(favorite)
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("invalid params $request")
+        }
+
     }
 
     override fun queryFavorite(userId: String, request: FavoriteQueryRequest): Page<TFavorites> {
@@ -75,6 +84,9 @@ class FavoriteServiceImpl(
                         .and(TFavorites::userId.name).`is`(userId)
                 )
             }
+            query.fields().include(TFavorites::type.name).include(TFavorites::id.name)
+                .include(TFavorites::projectId.name).include(TFavorites::repoName.name)
+                .include(TFavorites::path.name)
             val records = favoriteDao.find(query)
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val totalRecords = favoriteDao.count(query)
@@ -88,6 +100,10 @@ class FavoriteServiceImpl(
 
     override fun getFavoriteById(id: String): TFavorites? {
         return favoriteDao.findById(id)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FavoriteServiceImpl::class.java)
     }
 
 }

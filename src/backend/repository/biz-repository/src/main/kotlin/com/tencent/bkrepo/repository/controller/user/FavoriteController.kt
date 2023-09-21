@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -69,9 +70,11 @@ class FavoriteController(
         @RequestBody request: FavoriteRequest
     ): Response<Void> {
         with(request) {
+            var userIdParams = userId
             if (type == FavoriteType.USER) {
                 permissionManager.checkNodePermission(PermissionAction.VIEW, projectId, repoName, path)
             } else {
+                userIdParams = ANONYMOUS_USER
                 permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
             }
             val createRequest = FavoriteCreateRequest(
@@ -79,7 +82,7 @@ class FavoriteController(
                 repoName = repoName,
                 path = path,
                 createdDate = LocalDateTime.now(),
-                userId = userId,
+                userId = userIdParams,
                 type = type
             )
             favoriteService.createFavorite(createRequest)

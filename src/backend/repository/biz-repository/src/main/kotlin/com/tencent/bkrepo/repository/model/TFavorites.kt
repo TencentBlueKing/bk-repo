@@ -47,6 +47,7 @@ import java.time.LocalDateTime
     )
 )
 data class TFavorites(
+    var id: String?,
     var userId: String?,
     var projectId: String,
     var repoName: String,
