@@ -39,7 +39,6 @@ import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
 import com.tencent.bkrepo.repository.service.favorites.FavoriteService
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
