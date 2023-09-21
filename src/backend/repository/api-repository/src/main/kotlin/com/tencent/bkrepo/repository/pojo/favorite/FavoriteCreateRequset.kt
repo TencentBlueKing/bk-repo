@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.pojo.favorite
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
-data class FavoriteCreateRequset(
+data class FavoriteCreateRequest(
     @ApiModelProperty("项目id")
     val projectId: String,
     @ApiModelProperty("仓库Name")
@@ -46,5 +46,5 @@ data class FavoriteCreateRequset(
     @ApiModelProperty("收藏时间")
     val createdDate: LocalDateTime,
     @ApiModelProperty("类型")
-    val type: String? = "NODE",
+    val type: FavoriteType
 )

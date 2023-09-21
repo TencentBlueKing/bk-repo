@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.repository.pojo.favorite
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 
-data class FavoriteProjectPageRequest(
-    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    var pageSize: Int = DEFAULT_PAGE_SIZE
-)
+enum class FavoriteType {
+    USER,
+    PROJECT;
+
+    fun id() = this.name.toLowerCase()
+}
