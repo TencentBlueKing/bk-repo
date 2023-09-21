@@ -490,6 +490,53 @@
                             name: v.metadata?.displayName || v.name
                         }
                     })
+                    if (this.repoName === 'pipeline' && !this.inFolderSearchName) {
+                        const direction = this.sortParams.some(param => {
+                            return param.direction === 'ASC'
+                        })
+                        if (!direction) {
+                            const hasFolder = sortTypes.properties.some(param => {
+                                return param === 'folder'
+                            })
+                            if (hasFolder) {
+                                const hasName = sortTypes.properties.some(param => {
+                                    return param === 'name'
+                                })
+                                records.sort(function (a) {
+                                    return a.folder
+                                }).sort(function (a, b) {
+                                    if (hasName) {
+                                        return b.name - a.name
+                                    } else {
+                                        return a.lastModifiedDate - b.lastModifiedDate
+                                    }
+                                })
+                            } else {
+                                const hasSize = sortTypes.properties.some(param => {
+                                    return param === 'size'
+                                })
+                                records.sort(function (a, b) {
+                                    if (hasSize) {
+                                        return b.size - a.size
+                                    } else {
+                                        return b.nodeNum - a.nodeNum
+                                    }
+                                })
+                            }
+                        } else {
+                            const hasSize = sortTypes.properties.some(param => {
+                                return param === 'size'
+                            })
+                            records.sort(function (a, b) {
+                                if (hasSize) {
+                                    return a.size - b.size
+                                } else {
+                                    return a.nodeNum - b.nodeNum
+                                }
+                            })
+                        }
+                        this.artifactoryList = records
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
