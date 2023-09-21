@@ -70,6 +70,7 @@
         </div>
 
         <common-form-dialog ref="commonFormDialog" @refresh="refresh"></common-form-dialog>
+        <loading ref="loading" @closeLoading="closeLoading"></loading>
     </div>
 </template>
 <script>
@@ -78,9 +79,10 @@
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
     import { mapState, mapActions } from 'vuex'
+    import Loading from '@repository/components/Loading/loading'
     export default {
         name: 'commonPackageDetail',
-        components: { OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
+        components: { Loading, OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
         data () {
             return {
                 tabName: 'commonVersion',
@@ -118,7 +120,8 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                timer: null
             }
         },
         computed: {
@@ -281,12 +284,55 @@
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
-                    this.$bkMessage({
-                        theme: 'error',
-                        message
-                    })
+                    if (e.status === 451) {
+                        this.$refs.loading.isShow = true
+                        this.$refs.loading.complete = false
+                        this.$refs.loading.title = ''
+                        this.$refs.loading.backUp = true
+                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: this.currentVersion.contentPath })
+                        this.timerDownload(url, this.currentVersion.contentPath)
+                    } else {
+                        const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
                 })
+            },
+            timerDownload (url, fullPath) {
+                this.timer = setInterval(() => {
+                    this.$ajax.head(url).then(() => {
+                        clearInterval(this.timer)
+                        this.timer = null
+                        this.$refs.loading.isShow = false
+                        window.open(
+                            '/web' + url,
+                            '_self'
+                        )
+                    }).catch(e => {
+                        if (e.status === 451) {
+                            this.$refs.loading.isShow = true
+                            this.$refs.loading.complete = false
+                            this.$refs.loading.title = ''
+                            this.$refs.loading.backUp = true
+                            this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                            this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                            this.$refs.loading.message = this.$t('backUpMessage', { 0: fullPath })
+                        } else {
+                            clearInterval(this.timer)
+                            this.timer = null
+                            this.$refs.loading.isShow = false
+                            const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
+                            this.$bkMessage({
+                                theme: 'error',
+                                message
+                            })
+                        }
+                    })
+                }, 5000)
             },
             deleteVersionHandler ({ name: version } = this.currentVersion) {
                 this.$confirm({
@@ -309,6 +355,10 @@
                         })
                     }
                 })
+            },
+            closeLoading () {
+                clearInterval(this.timer)
+                this.timer = null
             }
         }
     }
