@@ -38,8 +38,11 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.model.TFavorites
-import com.tencent.bkrepo.repository.pojo.favorite.*
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteResult
 import com.tencent.bkrepo.repository.service.favorites.FavoriteService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation

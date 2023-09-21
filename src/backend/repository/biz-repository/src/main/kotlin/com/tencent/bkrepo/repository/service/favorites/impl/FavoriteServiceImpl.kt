@@ -83,8 +83,6 @@ class FavoriteServiceImpl(
                         .`is`(projectId).and(TFavorites::userId.name).`is`(userId)
                 )
             }
-            query.fields().include(TFavorites::type.name).include(TFavorites::id.name)
-                .include(TFavorites::projectId.name).include(TFavorites::repoName.name).include(TFavorites::path.name)
             val records =
                 favoriteDao.find(query).map { FavoriteResult(it.id, it.projectId, it.repoName, it.path, it.type) }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
