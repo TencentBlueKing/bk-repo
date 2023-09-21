@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.dao.FavoriteDao
 import com.tencent.bkrepo.repository.model.TFavorites
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteResult
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
 import com.tencent.bkrepo.repository.service.favorites.FavoriteService
 import org.slf4j.LoggerFactory
@@ -68,25 +69,24 @@ class FavoriteServiceImpl(
 
     }
 
-    override fun queryFavorite(userId: String, request: FavoriteQueryRequest): Page<TFavorites> {
+    override fun queryFavorite(userId: String, request: FavoriteQueryRequest): Page<FavoriteResult> {
         with(request) {
             val query = Query()
             if (type == FavoriteType.PROJECT) {
                 query.addCriteria(
-                    Criteria.where(TFavorites::type.name).`is`(FavoriteType.PROJECT)
-                        .and(TFavorites::projectId.name).`is`(projectId)
+                    Criteria.where(TFavorites::type.name).`is`(FavoriteType.PROJECT).and(TFavorites::projectId.name)
+                        .`is`(projectId)
                 )
             } else {
                 query.addCriteria(
-                    Criteria.where(TFavorites::type.name).`is`(FavoriteType.USER)
-                        .and(TFavorites::projectId.name).`is`(projectId)
-                        .and(TFavorites::userId.name).`is`(userId)
+                    Criteria.where(TFavorites::type.name).`is`(FavoriteType.USER).and(TFavorites::projectId.name)
+                        .`is`(projectId).and(TFavorites::userId.name).`is`(userId)
                 )
             }
             query.fields().include(TFavorites::type.name).include(TFavorites::id.name)
-                .include(TFavorites::projectId.name).include(TFavorites::repoName.name)
-                .include(TFavorites::path.name)
-            val records = favoriteDao.find(query)
+                .include(TFavorites::projectId.name).include(TFavorites::repoName.name).include(TFavorites::path.name)
+            val records =
+                favoriteDao.find(query).map { FavoriteResult(it.id, it.projectId, it.repoName, it.path, it.type) }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val totalRecords = favoriteDao.count(query)
             return Pages.ofResponse(pageRequest, totalRecords, records)

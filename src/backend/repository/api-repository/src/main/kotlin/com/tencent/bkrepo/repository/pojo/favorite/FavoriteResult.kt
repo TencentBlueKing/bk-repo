@@ -29,24 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.favorites
+package com.tencent.bkrepo.repository.pojo.favorite
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.model.TFavorites
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteResult
+import io.swagger.annotations.ApiModelProperty
 
-interface FavoriteService {
-    // 创建收藏
-    fun createFavorite(request: FavoriteCreateRequest)
-
-    // 删除收藏
-    fun removeFavorite(id: String)
-
-    // 获取收藏文件列表
-    fun queryFavorite(userId: String, request: FavoriteQueryRequest): Page<FavoriteResult>
-
-    // 获取特定的收藏数据
-    fun getFavoriteById(id: String): TFavorites?
-}
+data class FavoriteResult(
+    @ApiModelProperty("id")
+    val id: String?,
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库id")
+    val repoName: String,
+    @ApiModelProperty("文件夹路径")
+    val path: String,
+    @ApiModelProperty("文件夹路径")
+    val type: FavoriteType
+)
