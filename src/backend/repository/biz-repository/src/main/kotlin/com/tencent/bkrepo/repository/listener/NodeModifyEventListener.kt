@@ -352,7 +352,7 @@ class NodeModifyEventListener(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
-        private const val FIXED_DELAY = 30000L
+        private const val FIXED_DELAY = 10000L
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
     }
