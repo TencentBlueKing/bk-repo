@@ -2,6 +2,8 @@ package com.tencent.bkrepo.git.config
 
 import com.tencent.bkrepo.git.artifact.GitRepoInterceptor
 import com.tencent.bkrepo.git.interceptor.ContextSettingInterceptor
+import com.tencent.bkrepo.git.interceptor.devx.DevxSrcIpInterceptor
+import com.tencent.bkrepo.git.interceptor.ProxyInterceptor
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,9 +22,18 @@ class GitWebConfig : WebMvcConfigurer {
         registry.addInterceptor(ContextSettingInterceptor())
             .addPathPatterns("/**")
             .order(Ordered.LOWEST_PRECEDENCE)
+        registry.addInterceptor(ProxyInterceptor())
+            .addPathPatterns("/**")
+            .order(Ordered.HIGHEST_PRECEDENCE + 1)
+        registry.addInterceptor(devxSrcIpInterceptor())
+            .addPathPatterns("/**")
+            .order(Ordered.HIGHEST_PRECEDENCE)
         super.addInterceptors(registry)
     }
 
     @Bean
     fun repoInterceptor() = GitRepoInterceptor()
+
+    @Bean
+    fun devxSrcIpInterceptor() = DevxSrcIpInterceptor()
 }
