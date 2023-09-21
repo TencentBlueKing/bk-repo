@@ -284,7 +284,7 @@ class NodeModifyEventListener(
             updateCache(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
-                fullPath = it.fullPath.getFolderPath(),
+                fullPath = it.fullPath,
                 size = it.size,
                 deleted = deletedFlag,
                 includePrefix = includePrefix
