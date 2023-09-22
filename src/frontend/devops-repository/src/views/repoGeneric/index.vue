@@ -491,6 +491,7 @@
                         }
                     })
                     if (this.repoName === 'pipeline' && !this.inFolderSearchName) {
+                        const originData = this.artifactoryList
                         const direction = this.sortParams.some(param => {
                             return param.direction === 'ASC'
                         })
@@ -502,7 +503,7 @@
                                 const hasName = sortTypes.properties.some(param => {
                                     return param === 'name'
                                 })
-                                records.sort(function (a) {
+                                originData.sort(function (a) {
                                     return a.folder
                                 }).sort(function (a, b) {
                                     if (hasName) {
@@ -515,7 +516,7 @@
                                 const hasSize = sortTypes.properties.some(param => {
                                     return param === 'size'
                                 })
-                                records.sort(function (a, b) {
+                                originData.sort(function (a, b) {
                                     if (hasSize) {
                                         return b.size - a.size
                                     } else {
@@ -527,7 +528,7 @@
                             const hasSize = sortTypes.properties.some(param => {
                                 return param === 'size'
                             })
-                            records.sort(function (a, b) {
+                            originData.sort(function (a, b) {
                                 if (hasSize) {
                                     return a.size - b.size
                                 } else {
@@ -535,7 +536,7 @@
                                 }
                             })
                         }
-                        this.artifactoryList = records
+                        this.artifactoryList = originData
                     }
                 }).finally(() => {
                     this.isLoading = false
