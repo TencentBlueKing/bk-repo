@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.svn.config
 
 import com.tencent.bkrepo.common.security.interceptor.devx.DevxSrcIpInterceptor
+import com.tencent.bkrepo.svn.interceptor.ChangeAncestorProxyHandler
 import com.tencent.bkrepo.svn.interceptor.ProxyInterceptor
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
@@ -44,7 +45,7 @@ class SvnConfiguration(
         registry.addInterceptor(DevxSrcIpInterceptor(properties.devx))
             .addPathPatterns("/**")
             .order(Ordered.HIGHEST_PRECEDENCE)
-        registry.addInterceptor(ProxyInterceptor())
+        registry.addInterceptor(ProxyInterceptor(ChangeAncestorProxyHandler()))
             .addPathPatterns("/**")
             .order(Ordered.HIGHEST_PRECEDENCE + 1)
         super.addInterceptors(registry)

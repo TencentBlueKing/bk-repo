@@ -32,15 +32,20 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfigur
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
+import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
 import org.springframework.web.servlet.HandlerInterceptor
-import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class ProxyInterceptor : HandlerInterceptor {
+class ProxyInterceptor(private val proxyHandler: ProxyCallHandler) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return false
-        val repo = ArtifactContextHolder.getRepoDetail()!!
+        val paths = request.servletPath.split("/")
+        if (paths.size <= 2) {
+            return false
+        }
+        val projectId = paths[1]
+        val repoName = paths[2]
+        val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
         // 只有PROXY类型的仓库才进行拦截
         if (repo.category != RepositoryCategory.PROXY) {
             return true
@@ -49,7 +54,13 @@ class ProxyInterceptor : HandlerInterceptor {
         val configuration = repo.configuration as ProxyConfiguration
         val proxyUrl = configuration.proxy.url
         val prefix = "/${repo.projectId}/${repo.name}"
-        HttpProxyUtil.proxy(HttpContextHolder.getRequest(), HttpContextHolder.getResponse(), proxyUrl, prefix)
+        HttpProxyUtil.proxy(
+            HttpContextHolder.getRequest(),
+            HttpContextHolder.getResponse(),
+            proxyUrl,
+            prefix,
+            proxyHandler
+        )
         return false
     }
 }

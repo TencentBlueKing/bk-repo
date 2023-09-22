@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -26,7 +27,7 @@ object HttpProxyUtil {
         prefix: String? = null,
         proxyCallHandler: ProxyCallHandler = defaultProxyCallHandler,
     ) {
-        val newUrl = if (proxyRequest.queryString.isNullOrEmpty()){
+        val newUrl = if (proxyRequest.queryString.isNullOrEmpty()) {
             "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}"
         } else {
             "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}?${proxyRequest.queryString}"
@@ -36,8 +37,10 @@ object HttpProxyUtil {
             .apply {
                 proxyRequest.headers().forEach { (key, value) -> this.header(key, value) }
             }
+            .header(HttpHeaders.HOST, hostHeader(targetUrl))
             .method(proxyRequest.method, proxyRequest.body())
             .build()
+            .let { proxyCallHandler.pre(proxyRequest, proxyResponse, it) }
         val newResponse = client
             .newCall(newRequest)
             .execute()
@@ -73,6 +76,17 @@ object HttpProxyUtil {
                     sink.writeAll(it)
                 }
             }
+        }
+    }
+
+    private fun hostHeader(url: String): String {
+        val httpUrl = url.toHttpUrl()
+        val isHttpPort = httpUrl.port == 80 && httpUrl.scheme == "http"
+        val isHttpsPort = httpUrl.port == 443 && httpUrl.scheme == "https"
+        return if (isHttpPort || isHttpsPort) {
+            httpUrl.host
+        } else {
+            "${httpUrl.host}:${httpUrl.port}"
         }
     }
 
