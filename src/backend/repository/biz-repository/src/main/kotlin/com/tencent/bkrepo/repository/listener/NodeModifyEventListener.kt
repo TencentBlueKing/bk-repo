@@ -49,6 +49,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
+import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -92,6 +93,7 @@ class NodeModifyEventListener(
     )
 
 
+    @Async
     @EventListener(ArtifactEvent::class)
     fun handle(event: ArtifactEvent) {
         if (!acceptTypes.contains(event.type)) {
