@@ -184,6 +184,8 @@ open class NodeMoveCopySupport(
                 path = dstPath,
                 name = dstName,
                 fullPath = dstFullPath,
+                size = if (node.folder) 0 else node.size,
+                nodeNum = if (node.folder) null else node.nodeNum,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
