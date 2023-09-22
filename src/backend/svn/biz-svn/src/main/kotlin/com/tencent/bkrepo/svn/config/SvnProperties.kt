@@ -33,6 +33,11 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 @ConfigurationProperties("svn")
 data class SvnProperties(
+    /**
+     * 仓库前缀，在使用SVN Proxy类型的仓库时需要配置
+     * 比如SVN客户端访问http://bkrepo.exmaple.com/svn/projectId/repoName，此时需要配置repoPrefix为/svn
+     */
+    var repoPrefix: String = "",
     @NestedConfigurationProperty
     var devx: DevxProperties = DevxProperties()
 )

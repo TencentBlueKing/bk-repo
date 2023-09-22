@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.headers
+import com.tencent.bkrepo.svn.config.SvnProperties
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -42,13 +43,17 @@ import javax.servlet.http.HttpServletResponse
 /**
  * 制品库的SVN仓库路径前缀为/{projectId}/{repoName}，与代理的仓库可能不一致，需要调整请求与响应中的前缀
  */
-class ChangeAncestorProxyHandler : DefaultProxyCallHandler() {
+class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : DefaultProxyCallHandler() {
     override fun pre(
         proxyRequest: HttpServletRequest,
         proxyResponse: HttpServletResponse,
         request: Request
     ): Request {
-        val oldPrefix = prefix(proxyRequest.servletPath)
+        val oldPrefix = if (svnProperties.repoPrefix.isEmpty()){
+            prefix(proxyRequest.servletPath)
+        } else {
+            svnProperties.repoPrefix + prefix(proxyRequest.servletPath)
+        }
         val newPrefix = prefix(request.url.encodedPath)
         if (oldPrefix.isNullOrEmpty() || newPrefix.isNullOrEmpty()) {
             logger.warn("prefix not found: oldPrefix[$oldPrefix], newPrefix[$newPrefix]")
@@ -80,7 +85,11 @@ class ChangeAncestorProxyHandler : DefaultProxyCallHandler() {
         }
 
         val oldPrefix = prefix(response.request.url.encodedPath)
-        val newPrefix = prefix(proxyRequest.servletPath)
+        val newPrefix = if (svnProperties.repoPrefix.isEmpty()){
+            prefix(proxyRequest.servletPath)
+        } else {
+            svnProperties.repoPrefix + prefix(proxyRequest.servletPath)
+        }
         if (oldPrefix.isNullOrEmpty() || newPrefix.isNullOrEmpty()) {
             return super.after(proxyRequest, proxyResponse, response)
         }

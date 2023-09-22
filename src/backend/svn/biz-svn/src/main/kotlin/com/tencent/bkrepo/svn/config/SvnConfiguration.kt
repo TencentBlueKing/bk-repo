@@ -45,7 +45,7 @@ class SvnConfiguration(
         registry.addInterceptor(DevxSrcIpInterceptor(properties.devx))
             .addPathPatterns("/**")
             .order(Ordered.HIGHEST_PRECEDENCE)
-        registry.addInterceptor(ProxyInterceptor(ChangeAncestorProxyHandler()))
+        registry.addInterceptor(ProxyInterceptor(ChangeAncestorProxyHandler(properties)))
             .addPathPatterns("/**")
             .order(Ordered.HIGHEST_PRECEDENCE + 1)
         super.addInterceptors(registry)
