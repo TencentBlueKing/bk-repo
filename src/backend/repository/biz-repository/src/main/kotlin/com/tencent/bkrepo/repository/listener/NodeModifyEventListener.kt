@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -173,14 +173,14 @@ class NodeModifyEventListener(
                 require(event is NodeMovedEvent)
                 // 1 move空目录，2 move到已存在目录, 3 move到新目录 4 同路径，跳过  5 src为dst目录下的子节点，跳过
                 // 针对1 2 两种情况，需要判断原目录中的节点，然后再进行目标目录的统计信息更新
-                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
                 val createdNode = ModifiedNodeInfo(
                     projectId = event.dstProjectId,
                     repoName = event.dstRepoName,
-                    fullPath = dstFullPath,
+                    fullPath = event.dstFullPath,
                     srcProjectId = event.projectId,
                     srcRepoName = event.repoName,
-                    srcFullPath = event.resourceKey
+                    srcFullPath = event.resourceKey,
+                    srcDeleted = true
                 )
                 val deletedNode = ModifiedNodeInfo(
                     projectId = event.projectId,
@@ -195,11 +195,10 @@ class NodeModifyEventListener(
                 require(event is NodeCopiedEvent)
                 // 1 copy空目录， 2 copy到已存在目录，3 copy到新目录  4 同路径，跳过  5 src为dst目录下的子节点，跳过
                 // 针对1 2 两种情况，需要判断原目录中的节点，然后再进行目标目录的统计信息更新
-                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
                 val createdNode = ModifiedNodeInfo(
                     projectId = event.dstProjectId,
                     repoName = event.dstRepoName,
-                    fullPath = dstFullPath,
+                    fullPath = event.dstFullPath,
                     srcProjectId = event.projectId,
                     srcRepoName = event.repoName,
                     srcFullPath = event.resourceKey,
@@ -231,6 +230,9 @@ class NodeModifyEventListener(
                         " in repo ${node.projectId}|${node.repoName}")
         if (node.folder) {
             val sourceNodes = filterSourceNodesFromMoveOrCopy(modifiedNode)
+            logger.info("the size of node ${modifiedNode.srcFullPath} is ${sourceNodes?.size}" +
+                            " in repo ${modifiedNode.srcProjectId}|${modifiedNode.srcRepoName}")
+            if (sourceNodes != null && sourceNodes.isEmpty()) return
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
                 deleted = node.nodeInfo.deleted,
@@ -288,7 +290,7 @@ class NodeModifyEventListener(
         deleted: String? = null,
         deletedFlag: Boolean = false,
         includePrefix: String? = null,
-        sourceNodes: List<String> = emptyList()
+        sourceNodes: List<String>? = null
     ) {
         findAllNodesUnderFolder(
             artifactInfo.projectId,
@@ -296,7 +298,7 @@ class NodeModifyEventListener(
             artifactInfo.getArtifactFullPath(),
             deleted = deleted
         ).forEach {
-            if (sourceNodes.isNotEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
+            if (!sourceNodes.isNullOrEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
             updateCache(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -325,15 +327,15 @@ class NodeModifyEventListener(
      * 针对move/copy情况下目标节点是目录的情况下，过滤出变更的节点信息
      * 可能情况：1 源节点为空目录 2 目标节点为已存在的目录，其下可能已经包含文件
      */
-    private fun filterSourceNodesFromMoveOrCopy(modifiedNode: ModifiedNodeInfo): List<String> {
-        if (modifiedNode.srcFullPath.isNullOrEmpty()) return emptyList()
+    private fun filterSourceNodesFromMoveOrCopy(modifiedNode: ModifiedNodeInfo): List<String>? {
+        if (modifiedNode.srcFullPath.isNullOrEmpty()) return null
         val artifactInfo = ArtifactInfo(
             projectId = modifiedNode.srcProjectId!!,
             repoName = modifiedNode.srcRepoName!!,
             artifactUri = modifiedNode.srcFullPath!!
         )
         val sourceNodes = mutableListOf<String>()
-        val node = if (modifiedNode.deleted) {
+        val node = if (modifiedNode.srcDeleted) {
             nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return emptyList()
         } else {
             // 查询节点信息，当节点新增，然后删除后可能会找不到节点
@@ -345,12 +347,13 @@ class NodeModifyEventListener(
             findAllNodesUnderFolder(
                 artifactInfo.projectId,
                 artifactInfo.repoName,
-                artifactInfo.getArtifactFullPath()
+                artifactInfo.getArtifactFullPath(),
+                node.nodeInfo.deleted
             ).map {
-                sourceNodes.add(combinePath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
+                sourceNodes.add(combineFullPath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
             }
         } else {
-            sourceNodes.add(combinePath(modifiedNode.fullPath, node.fullPath.removePrefix(path)))
+            sourceNodes.add(combineFullPath(modifiedNode.fullPath, node.fullPath.removePrefix(path)))
         }
         return sourceNodes
     }
@@ -381,18 +384,6 @@ class NodeModifyEventListener(
         return Query(criteria).withHint(TNode.FULL_PATH_IDX)
     }
 
-
-    private fun buildDstFullPath(dstFullPath: String, srcFullPath: String): String {
-        val path = PathUtils.toPath(dstFullPath)
-        val name = PathUtils.resolveName(srcFullPath)
-        return PathUtils.combineFullPath(path, name)
-    }
-
-    private fun String.getFolderPath(): String {
-        val path = PathUtils.resolveParent(this)
-        return PathUtils.normalizeFullPath(path)
-    }
-
     private data class ModifiedNodeInfo(
         var projectId: String,
         var repoName: String,
@@ -403,7 +394,8 @@ class NodeModifyEventListener(
         // 针对move/copy 目标节点是目录的情况下去判断来源节点信息
         var srcProjectId: String? = null,
         var srcRepoName: String? = null,
-        var srcFullPath: String? = null
+        var srcFullPath: String? = null,
+        var srcDeleted: Boolean = false
     )
 
     companion object {
