@@ -40,7 +40,7 @@ object HttpProxyUtil {
             .header(HttpHeaders.HOST, hostHeader(targetUrl))
             .method(proxyRequest.method, proxyRequest.body())
             .build()
-            .let { proxyCallHandler.pre(proxyRequest, proxyResponse, it) }
+            .let { proxyCallHandler.before(proxyRequest, proxyResponse, it) }
         val newResponse = client
             .newCall(newRequest)
             .execute()

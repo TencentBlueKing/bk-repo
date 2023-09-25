@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 interface ProxyCallHandler {
-    fun pre(proxyRequest: HttpServletRequest, proxyResponse: HttpServletResponse, request: Request): Request
+    fun before(proxyRequest: HttpServletRequest, proxyResponse: HttpServletResponse, request: Request): Request
 
     fun after(proxyRequest: HttpServletRequest, proxyResponse: HttpServletResponse, response: Response)
 }

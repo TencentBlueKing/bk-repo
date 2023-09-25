@@ -6,7 +6,11 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 open class DefaultProxyCallHandler : ProxyCallHandler {
-    override fun pre(proxyRequest: HttpServletRequest, proxyResponse: HttpServletResponse, request: Request): Request {
+    override fun before(
+        proxyRequest: HttpServletRequest,
+        proxyResponse: HttpServletResponse,
+        request: Request
+    ): Request {
         return request
     }
 
