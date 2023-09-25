@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -47,11 +47,11 @@ import java.time.LocalDateTime
     )
 )
 data class TFavorites(
-    var id: String? = null,
-    var userId: String,
+    var id: String?,
+    var userId: String?,
     var projectId: String,
     var repoName: String,
     var path: String,
     var createdDate: LocalDateTime,
-    var type: String? = ResourceType.NODE.name
+    var type: FavoriteType
 )

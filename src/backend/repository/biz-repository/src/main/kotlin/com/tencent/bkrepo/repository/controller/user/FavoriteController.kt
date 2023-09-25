@@ -32,17 +32,17 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.model.TFavorites
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
-import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteProjectPageRequest
 import com.tencent.bkrepo.repository.pojo.favorite.FavoriteRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteResult
 import com.tencent.bkrepo.repository.service.favorites.FavoriteService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -64,19 +64,26 @@ class FavoriteController(
 ) {
 
     @ApiOperation("创建收藏文件夹")
-    @PostMapping( "/create")
-    fun mkFavorite(
+    @PostMapping("/create")
+    fun createFavorite(
         @RequestAttribute userId: String,
-        @RequestBody favoriteRequest: FavoriteRequest
+        @RequestBody request: FavoriteRequest
     ): Response<Void> {
-        with(favoriteRequest) {
-            permissionManager.checkNodePermission(PermissionAction.VIEW, projectId, repoName, path)
-            val createRequest = FavoriteCreateRequset(
+        with(request) {
+            var userIdParams = userId
+            if (type == FavoriteType.USER) {
+                permissionManager.checkNodePermission(PermissionAction.VIEW, projectId, repoName, path)
+            } else {
+                userIdParams = ANONYMOUS_USER
+                permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
+            }
+            val createRequest = FavoriteCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 path = path,
                 createdDate = LocalDateTime.now(),
-                userId = userId
+                userId = userIdParams,
+                type = type
             )
             favoriteService.createFavorite(createRequest)
             return ResponseBuilder.success()
@@ -87,11 +94,11 @@ class FavoriteController(
     @DeleteMapping("/delete/{id}")
     fun removeFavorite(
         @RequestAttribute userId: String,
-        @PathVariable id:String
+        @PathVariable id: String
     ): Response<Void> {
         favoriteService.getFavoriteById(id)?.let {
-            if (it.type == ResourceType.PROJECT.name) {
-                permissionManager.isAdminUser(userId)
+            if (it.type == FavoriteType.PROJECT) {
+                permissionManager.checkProjectPermission(PermissionAction.MANAGE, it.projectId)
             } else {
                 permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName, it.path)
             }
@@ -102,39 +109,12 @@ class FavoriteController(
     }
 
     @ApiOperation("收藏文件夹分页查询")
-    @PostMapping("/page")
+    @PostMapping("/query")
     fun pageFavorite(
-        @RequestBody favoritePageRequest: FavoritePageRequest
-    ): Response<Page<TFavorites>> {
-        return ResponseBuilder.success(favoriteService.pageFavorite(favoritePageRequest))
-    }
-
-    @ApiOperation("创建项目收藏")
-    @PostMapping( "/create/project")
-    fun mkProjectFavorite(
         @RequestAttribute userId: String,
-        @RequestBody favoriteRequest: FavoriteRequest
-    ): Response<Void> {
-        with(favoriteRequest) {
-            permissionManager.isAdminUser(userId)
-            val createRequest = FavoriteCreateRequset(
-                projectId = projectId,
-                repoName = repoName,
-                path = path,
-                createdDate = LocalDateTime.now(),
-                userId = userId,
-                type = ResourceType.PROJECT.name
-            )
-            favoriteService.createFavorite(createRequest)
-            return ResponseBuilder.success()
-        }
+        @RequestBody request: FavoriteQueryRequest
+    ): Response<Page<FavoriteResult>> {
+        return ResponseBuilder.success(favoriteService.queryFavorite(userId, request))
     }
 
-    @ApiOperation("收藏项目分页查询")
-    @PostMapping("/page/project")
-    fun pageProjectFavorite(
-        @RequestBody favoriteProjectPageRequest: FavoriteProjectPageRequest
-    ): Response<Page<TFavorites>> {
-        return ResponseBuilder.success(favoriteService.pageProjectFavorite(favoriteProjectPageRequest))
-    }
 }

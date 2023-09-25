@@ -31,10 +31,20 @@
 
 package com.tencent.bkrepo.repository.pojo.favorite
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-data class FavoriteProjectPageRequest(
-    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    var pageSize: Int = DEFAULT_PAGE_SIZE
+data class FavoriteCreateRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库Name")
+    val repoName: String,
+    @ApiModelProperty("文件夹路径")
+    val path: String,
+    @ApiModelProperty("收藏用户")
+    val userId: String,
+    @ApiModelProperty("收藏时间")
+    val createdDate: LocalDateTime,
+    @ApiModelProperty("类型")
+    val type: FavoriteType
 )
