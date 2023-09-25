@@ -73,13 +73,11 @@ open class NodeMoveCopySupport(
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
-        publishEvent(NodeEventFactory.buildMovedEvent(moveRequest))
         logger.info("Move node success: [$moveRequest]")
     }
 
     override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         moveCopy(copyRequest, false)
-        publishEvent(NodeEventFactory.buildCopiedEvent(copyRequest))
         logger.info("Copy node success: [$copyRequest]")
     }
 
@@ -96,6 +94,11 @@ open class NodeMoveCopySupport(
                 moveCopyFolder(this)
             } else {
                 moveCopyFile(this)
+            }
+            if (move) {
+                publishEvent(NodeEventFactory.buildMovedEvent(request))
+            } else {
+                publishEvent(NodeEventFactory.buildCopiedEvent(request))
             }
         }
     }

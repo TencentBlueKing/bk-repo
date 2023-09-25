@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.NodeService
@@ -137,23 +138,6 @@ class NodeModifyEventListener(
         logger.info("event type ${event.type}")
         val modifiedNodeList = mutableListOf<ModifiedNodeInfo>()
         when (event.type) {
-            EventType.NODE_MOVED -> {
-                require(event is NodeMovedEvent)
-                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
-                val createdNode = ModifiedNodeInfo(
-                    projectId = event.dstProjectId,
-                    repoName = event.dstRepoName,
-                    fullPath = dstFullPath
-                )
-                val deletedNode = ModifiedNodeInfo(
-                    projectId = event.projectId,
-                    repoName = event.repoName,
-                    fullPath = event.resourceKey,
-                    deleted = true
-                )
-                modifiedNodeList.add(createdNode)
-                modifiedNodeList.add(deletedNode)
-            }
             EventType.NODE_DELETED -> {
                 require(event is NodeDeletedEvent)
                 val deletedNode = ModifiedNodeInfo(
@@ -163,16 +147,6 @@ class NodeModifyEventListener(
                     deleted = true
                 )
                 modifiedNodeList.add(deletedNode)
-            }
-            EventType.NODE_COPIED -> {
-                require(event is NodeCopiedEvent)
-                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
-                val createdNode = ModifiedNodeInfo(
-                    projectId = event.dstProjectId,
-                    repoName = event.dstRepoName,
-                    fullPath = dstFullPath
-                )
-                modifiedNodeList.add(createdNode)
             }
             EventType.NODE_CREATED -> {
                 require(event is NodeCreatedEvent)
@@ -194,6 +168,43 @@ class NodeModifyEventListener(
                     includePrefix = event.newFullPath
                 )
                 modifiedNodeList.add(renamedNode)
+            }
+            EventType.NODE_MOVED -> {
+                require(event is NodeMovedEvent)
+                // 1 move空目录，2 move到已存在目录, 3 move到新目录 4 同路径，跳过  5 src为dst目录下的子节点，跳过
+                // 针对1 2 两种情况，需要判断原目录中的节点，然后再进行目标目录的统计信息更新
+                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
+                val createdNode = ModifiedNodeInfo(
+                    projectId = event.dstProjectId,
+                    repoName = event.dstRepoName,
+                    fullPath = dstFullPath,
+                    srcProjectId = event.projectId,
+                    srcRepoName = event.repoName,
+                    srcFullPath = event.resourceKey
+                )
+                val deletedNode = ModifiedNodeInfo(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    fullPath = event.resourceKey,
+                    deleted = true
+                )
+                modifiedNodeList.add(createdNode)
+                modifiedNodeList.add(deletedNode)
+            }
+            EventType.NODE_COPIED -> {
+                require(event is NodeCopiedEvent)
+                // 1 copy空目录， 2 copy到已存在目录，3 copy到新目录  4 同路径，跳过  5 src为dst目录下的子节点，跳过
+                // 针对1 2 两种情况，需要判断原目录中的节点，然后再进行目标目录的统计信息更新
+                val dstFullPath = buildDstFullPath(event.dstFullPath, event.resourceKey)
+                val createdNode = ModifiedNodeInfo(
+                    projectId = event.dstProjectId,
+                    repoName = event.dstRepoName,
+                    fullPath = dstFullPath,
+                    srcProjectId = event.projectId,
+                    srcRepoName = event.repoName,
+                    srcFullPath = event.resourceKey,
+                )
+                modifiedNodeList.add(createdNode)
             }
             else -> throw UnsupportedOperationException()
         }
@@ -219,11 +230,13 @@ class NodeModifyEventListener(
         logger.info("start to stat modified node size with fullPath ${node.fullPath}" +
                         " in repo ${node.projectId}|${node.repoName}")
         if (node.folder) {
+            val sourceNodes = filterSourceNodesFromMoveOrCopy(modifiedNode)
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
                 deleted = node.nodeInfo.deleted,
                 deletedFlag = modifiedNode.deleted,
-                includePrefix = modifiedNode.includePrefix
+                includePrefix = modifiedNode.includePrefix,
+                sourceNodes = sourceNodes
             )
         } else {
             updateCache(
@@ -236,7 +249,6 @@ class NodeModifyEventListener(
             )
         }
     }
-
 
     /**
      * 更新缓存
@@ -254,10 +266,10 @@ class NodeModifyEventListener(
 
         // 更新当前节点所有上级目录统计信息
         val folderPaths = PathUtils.resolveAncestorFolder(fullPath)
-        for (it in folderPaths) {
-            if (it == PathUtils.ROOT) continue
+        folderPaths.forEach { it ->
+            if (it == PathUtils.ROOT) return@forEach
             // 当只需要更新特定目录前缀目录的缓存记录时设置folderPrefix
-            if (!includePrefix.isNullOrEmpty() && !it.startsWith(includePrefix)) continue
+            if (!includePrefix.isNullOrEmpty() && !it.startsWith(includePrefix)) return@forEach
             val key = Triple(projectId, repoName, it)
             var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
             if (deleted) {
@@ -275,7 +287,8 @@ class NodeModifyEventListener(
         artifactInfo: ArtifactInfo,
         deleted: String? = null,
         deletedFlag: Boolean = false,
-        includePrefix: String? = null
+        includePrefix: String? = null,
+        sourceNodes: List<String> = emptyList()
     ) {
         findAllNodesUnderFolder(
             artifactInfo.projectId,
@@ -283,6 +296,7 @@ class NodeModifyEventListener(
             artifactInfo.getArtifactFullPath(),
             deleted = deleted
         ).forEach {
+            if (sourceNodes.isNotEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
             updateCache(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -304,6 +318,41 @@ class NodeModifyEventListener(
         val srcRootNodePath = PathUtils.toPath(fullPath)
         val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
         return nodeDao.find(query)
+    }
+
+
+    /**
+     * 针对move/copy情况下目标节点是目录的情况下，过滤出变更的节点信息
+     * 可能情况：1 源节点为空目录 2 目标节点为已存在的目录，其下可能已经包含文件
+     */
+    private fun filterSourceNodesFromMoveOrCopy(modifiedNode: ModifiedNodeInfo): List<String> {
+        if (modifiedNode.srcFullPath.isNullOrEmpty()) return emptyList()
+        val artifactInfo = ArtifactInfo(
+            projectId = modifiedNode.srcProjectId!!,
+            repoName = modifiedNode.srcRepoName!!,
+            artifactUri = modifiedNode.srcFullPath!!
+        )
+        val sourceNodes = mutableListOf<String>()
+        val node = if (modifiedNode.deleted) {
+            nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return emptyList()
+        } else {
+            // 查询节点信息，当节点新增，然后删除后可能会找不到节点
+            nodeService.getNodeDetail(artifactInfo)
+                ?: nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return emptyList()
+        }
+        val path = PathUtils.resolveParent(modifiedNode.srcFullPath!!)
+        if (node.folder) {
+            findAllNodesUnderFolder(
+                artifactInfo.projectId,
+                artifactInfo.repoName,
+                artifactInfo.getArtifactFullPath()
+            ).map {
+                sourceNodes.add(combinePath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
+            }
+        } else {
+            sourceNodes.add(combinePath(modifiedNode.fullPath, node.fullPath.removePrefix(path)))
+        }
+        return sourceNodes
     }
 
 
@@ -349,7 +398,12 @@ class NodeModifyEventListener(
         var repoName: String,
         var fullPath: String,
         var deleted: Boolean = false,
-        var includePrefix: String? = null
+        // 针对重命名去过滤上层目录
+        var includePrefix: String? = null,
+        // 针对move/copy 目标节点是目录的情况下去判断来源节点信息
+        var srcProjectId: String? = null,
+        var srcRepoName: String? = null,
+        var srcFullPath: String? = null
     )
 
     companion object {
