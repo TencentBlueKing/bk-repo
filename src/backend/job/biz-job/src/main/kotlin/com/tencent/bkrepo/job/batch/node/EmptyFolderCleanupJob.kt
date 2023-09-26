@@ -140,10 +140,11 @@ class EmptyFolderCleanupJob(
         path: String,
         collectionName: String
     ): Boolean {
+        val nodePath = PathUtils.toPath(path)
         val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
             .and(REPO).isEqualTo(repoName)
             .and(DELETED_DATE).isEqualTo(null)
-            .and(FULLPATH).regex("^${PathUtils.escapeRegex(path)}")
+            .and(FULLPATH).regex("^${PathUtils.escapeRegex(nodePath)}")
             .and(FOLDER).isEqualTo(false)
 
         val query = Query(criteria).withHint(FULL_PATH_IDX)
