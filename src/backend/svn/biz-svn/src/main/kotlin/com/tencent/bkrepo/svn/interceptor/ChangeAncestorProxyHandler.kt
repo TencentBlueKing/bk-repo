@@ -44,7 +44,7 @@ import javax.servlet.http.HttpServletResponse
  * 制品库的SVN仓库路径前缀为/{projectId}/{repoName}，与代理的仓库可能不一致，需要调整请求与响应中的前缀
  */
 class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : DefaultProxyCallHandler() {
-    override fun pre(
+    override fun before(
         proxyRequest: HttpServletRequest,
         proxyResponse: HttpServletResponse,
         request: Request
