@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.repository.pojo.favorite
 
-import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("创建收藏文件夹")
-data class FavoriteRequest(
+data class FavoriteResult(
+    @ApiModelProperty("id")
+    val id: String?,
     @ApiModelProperty("项目id")
     val projectId: String,
     @ApiModelProperty("仓库id")

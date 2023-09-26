@@ -31,9 +31,12 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
+import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.SIZE
@@ -77,7 +80,7 @@ abstract class ArtifactReplicationHandler(
             val clusterUrl = context.cluster.url
             val clusterName = context.cluster.name
             logger.info(
-                "Will try to push $name file $sha256 " +
+                "Will try to push $name file $digest or $sha256 " +
                     "in repo ${context.localProjectId}|${context.localRepo} to remote cluster $clusterName."
             )
             logger.info("Will try to obtain uuid from remote cluster $clusterName for blob $name|$digest")
@@ -86,16 +89,15 @@ abstract class ArtifactReplicationHandler(
             if (!sessionIdHandlerResult.isSuccess) {
                 return false
             }
-            val (sha256, size) = getBlobSha256AndSize(filePushContext)
+            val fileInfo = getBlobFileInfo(filePushContext)
             logger.info(
                 "Will try to push file with ${sessionIdHandlerResult.location} " +
-                    "in chunked upload way to remote cluster $clusterUrl for blob $name|$sha256"
+                    "in chunked upload way to remote cluster $clusterUrl for blob $name|${fileInfo.sha256}"
             )
             // 需要将大文件进行分块上传
             var chunkedUploadResult = try {
                 processFileChunkUpload(
-                    size = size,
-                    sha256 = sha256,
+                    fileInfo = fileInfo,
                     filePushContext = filePushContext,
                     location = buildRequestUrl(clusterUrl, sessionIdHandlerResult.location)
                 )
@@ -108,8 +110,7 @@ abstract class ArtifactReplicationHandler(
                     return false
                 }
                 chunkedUploadResult = processBlobUploadWithSingleChunk(
-                    size = size,
-                    sha256 = sha256,
+                    fileInfo = fileInfo,
                     location = buildRequestUrl(clusterUrl, sessionIdHandlerResult.location),
                     filePushContext = filePushContext
                 )
@@ -117,13 +118,13 @@ abstract class ArtifactReplicationHandler(
 
             if (!chunkedUploadResult.isSuccess) return false
             logger.info(
-                "The file $name|$sha256 is pushed " +
+                "The file $name|${fileInfo.sha256} is pushed " +
                     "and will try to send a completed request with ${chunkedUploadResult.location}."
             )
             val sessionCloseHandlerResult = processSessionCloseHandler(
                 location = buildRequestUrl(clusterUrl, chunkedUploadResult.location),
                 filePushContext = filePushContext,
-                sha256 = sha256
+                fileInfo = fileInfo
             )
             return sessionCloseHandlerResult.isSuccess
         }
@@ -173,33 +174,33 @@ abstract class ArtifactReplicationHandler(
      * 上传file文件step2: patch分块上传
      */
     private fun processFileChunkUpload(
-        size: Long,
-        sha256: String,
+        fileInfo: FileInfo,
         location: String?,
         filePushContext: FilePushContext
     ): DefaultHandlerResult? {
         var startPosition: Long = 0
         var chunkedHandlerResult: DefaultHandlerResult? = null
-        val (params, ignoredFailureCode) = buildChunkUploadRequestInfo(sha256, filePushContext)
-        while (startPosition < size) {
-            val offset = size - startPosition - replicationProperties.chunkedSize
+        val (params, ignoredFailureCode) = buildChunkUploadRequestInfo(fileInfo.sha256, filePushContext)
+        while (startPosition < fileInfo.size) {
+            val offset = fileInfo.size - startPosition - replicationProperties.chunkedSize
             val byteCount: Long = if (offset < 0) {
-                (size - startPosition)
+                (fileInfo.size - startPosition)
             } else {
                 replicationProperties.chunkedSize
             }
             val contentRange = "$startPosition-${startPosition + byteCount - 1}"
             logger.info(
                 "${Thread.currentThread().name} start is $startPosition, " +
-                    "size is $size, byteCount is $byteCount contentRange is $contentRange"
+                    "size is ${fileInfo.size}, byteCount is $byteCount contentRange is $contentRange"
             )
-            val range = Range(startPosition, startPosition + byteCount - 1, size)
+            val range = Range(startPosition, startPosition + byteCount - 1, fileInfo.size)
             val input = localDataManager.loadInputStreamByRange(
-                sha256, range, filePushContext.context.localProjectId, filePushContext.context.localRepoName
+                fileInfo.sha256, range, filePushContext.context.localProjectId, filePushContext.context.localRepoName
             )
-            val patchBody: RequestBody = RequestBody.create(
-                MediaTypes.APPLICATION_OCTET_STREAM.toMediaTypeOrNull(), input.readBytes()
+            val rateLimitInputStream = input.rateLimit(
+                replicationProperties.rateLimit.toBytes()
             )
+            val patchBody: RequestBody = StreamRequestBody(rateLimitInputStream, byteCount)
             val patchHeader = Headers.Builder()
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
                 .add(HttpHeaders.CONTENT_RANGE, contentRange)
@@ -209,8 +210,9 @@ abstract class ArtifactReplicationHandler(
                     REPOSITORY_INFO,
                     "${filePushContext.context.localProjectId}|${filePushContext.context.localRepoName}"
                 )
-                .add(SHA256, sha256)
-                .add(SIZE, size.toString())
+                .add(SHA256, fileInfo.sha256)
+                .add(SIZE, fileInfo.size.toString())
+                .add(MD5, fileInfo.md5)
                 .build()
             val property = RequestProperty(
                 requestBody = patchBody,
@@ -218,7 +220,7 @@ abstract class ArtifactReplicationHandler(
                 requestMethod = RequestMethod.PATCH,
                 headers = patchHeader,
                 requestUrl = location,
-                requestTag = buildRequestTag(filePushContext.context, sha256 + range, byteCount),
+                requestTag = buildRequestTag(filePushContext.context, fileInfo.sha256 + range, byteCount),
                 params = params
             )
             chunkedHandlerResult = DefaultHandler.process(
@@ -250,13 +252,13 @@ abstract class ArtifactReplicationHandler(
      */
     private fun processSessionCloseHandler(
         location: String?,
-        sha256: String,
+        fileInfo: FileInfo,
         filePushContext: FilePushContext
     ): DefaultHandlerResult {
         val putBody: RequestBody = RequestBody.create(
             null, ByteString.EMPTY
         )
-        val params = buildSessionCloseRequestParam(sha256, filePushContext)
+        val params = buildSessionCloseRequestParam(fileInfo, filePushContext)
         val putHeader = Headers.Builder()
             .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
             .add(HttpHeaders.CONTENT_LENGTH, "0")
@@ -278,7 +280,7 @@ abstract class ArtifactReplicationHandler(
     }
 
     open fun buildSessionCloseRequestParam(
-        sha256: String,
+        fileInfo: FileInfo,
         filePushContext: FilePushContext
     ) : String {
         return StringPool.EMPTY
@@ -290,23 +292,28 @@ abstract class ArtifactReplicationHandler(
      * 针对部分registry不支持将blob分成多块上传，将blob文件整块上传
      */
     private fun processBlobUploadWithSingleChunk(
-        size: Long,
-        sha256: String,
+        fileInfo: FileInfo,
         location: String?,
         filePushContext: FilePushContext
     ): DefaultHandlerResult {
         with(filePushContext) {
-            logger.info("Will upload blob $sha256 in a single patch request")
-            val params = buildBlobUploadWithSingleChunkRequestParam(sha256, filePushContext)
+            logger.info("Will upload blob ${fileInfo.sha256} in a single patch request")
+            val params = buildBlobUploadWithSingleChunkRequestParam(fileInfo.sha256, filePushContext)
+            val inputStream = localDataManager.loadInputStream(
+                fileInfo.sha256, fileInfo.size, context.localProjectId, context.localRepoName
+            )
+            val rateLimitInputStream = inputStream.rateLimit(
+                replicationProperties.rateLimit.toBytes()
+            )
             val patchBody = StreamRequestBody(
-                localDataManager.loadInputStream(sha256, size, context.localProjectId, context.localRepoName),
-                size
+                rateLimitInputStream,
+                fileInfo.size
             )
             val patchHeader = Headers.Builder()
                 .add(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_OCTET_STREAM)
-                .add(HttpHeaders.CONTENT_RANGE, "0-${0 + size - 1}")
+                .add(HttpHeaders.CONTENT_RANGE, "0-${0 + fileInfo.size - 1}")
                 .add(REPOSITORY_INFO, "${context.localProjectId}|${context.localRepoName}")
-                .add(SHA256, sha256)
+                .add(SHA256, fileInfo.sha256)
                 .add(HttpHeaders.CONTENT_LENGTH, "$size")
                 .add(CHUNKED_UPLOAD, CHUNKED_UPLOAD)
                 .build()
@@ -317,7 +324,7 @@ abstract class ArtifactReplicationHandler(
                 headers = patchHeader,
                 requestUrl = location,
                 params = params,
-                requestTag = buildRequestTag(context, sha256, size)
+                requestTag = buildRequestTag(context, fileInfo.sha256, fileInfo.size)
             )
             return DefaultHandler.process(
                 httpClient = httpClient,
@@ -336,7 +343,7 @@ abstract class ArtifactReplicationHandler(
 
 
 
-    abstract fun getBlobSha256AndSize(filePushContext: FilePushContext): Pair<String, Long>
+    abstract fun getBlobFileInfo(filePushContext: FilePushContext): FileInfo
 
     /**
      * 获取上传blob的location

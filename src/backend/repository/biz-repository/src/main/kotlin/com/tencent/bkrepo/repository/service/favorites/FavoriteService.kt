@@ -33,19 +33,20 @@ package com.tencent.bkrepo.repository.service.favorites
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TFavorites
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequset
-import com.tencent.bkrepo.repository.pojo.favorite.FavoritePageRequest
-import com.tencent.bkrepo.repository.pojo.favorite.FavoriteProjectPageRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteCreateRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteQueryRequest
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteResult
 
 interface FavoriteService {
     // 创建收藏
-    fun createFavorite(favoriteRequest: FavoriteCreateRequset)
+    fun createFavorite(request: FavoriteCreateRequest)
+
     // 删除收藏
     fun removeFavorite(id: String)
+
     // 获取收藏文件列表
-    fun pageFavorite(favoritePageRequest: FavoritePageRequest): Page<TFavorites>
+    fun queryFavorite(userId: String, request: FavoriteQueryRequest): Page<FavoriteResult>
+
     // 获取特定的收藏数据
     fun getFavoriteById(id: String): TFavorites?
-    // 获取收藏项目
-    fun pageProjectFavorite(favoritePageRequest: FavoriteProjectPageRequest): Page<TFavorites>
 }
