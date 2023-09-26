@@ -47,7 +47,7 @@ import javax.servlet.http.HttpServletResponse
 /**
  * 云研发源ip拦截器，只允许项目的云桌面ip通过
  * */
-class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : HandlerInterceptor {
+open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : HandlerInterceptor {
     private val httpClient = OkHttpClient.Builder().build()
     private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
         .maximumSize(MAX_CACHE_PROJECT_SIZE)
@@ -59,17 +59,20 @@ class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Handler
             return true
         }
 
-
-        val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return false
-        require(uriAttribute is Map<*, *>)
-        val projectId = uriAttribute[PROJECT_ID].toString()
+        val projectId = getProjectId(request) ?: return false
         val srcIp = HttpContextHolder.getClientAddress()
         if (!inWhiteList(srcIp, projectId)) {
-            logger.info("Illegal src ip[$srcIp] in project[${projectId}].")
+            logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
-        logger.info("Allow ip[$srcIp] to access ${projectId}.")
+        logger.info("Allow ip[$srcIp] to access $projectId.")
         return true
+    }
+
+    protected open fun getProjectId(request: HttpServletRequest): String? {
+        val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return null
+        require(uriAttribute is Map<*, *>)
+        return uriAttribute[PROJECT_ID]?.toString()
     }
 
     private fun inWhiteList(ip: String, projectId: String): Boolean {
