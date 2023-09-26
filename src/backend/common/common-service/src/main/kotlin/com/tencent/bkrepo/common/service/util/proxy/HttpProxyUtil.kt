@@ -26,7 +26,11 @@ object HttpProxyUtil {
         prefix: String? = null,
         proxyCallHandler: ProxyCallHandler = defaultProxyCallHandler,
     ) {
-        val newUrl = "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}?${proxyRequest.queryString}"
+        val newUrl = if (proxyRequest.queryString.isNullOrEmpty()) {
+            "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}"
+        } else {
+            "$targetUrl${proxyRequest.requestURI.removePrefix(prefix.orEmpty())}?${proxyRequest.queryString}"
+        }
         val newRequest = Request.Builder()
             .url(newUrl)
             .apply {
@@ -34,6 +38,7 @@ object HttpProxyUtil {
             }
             .method(proxyRequest.method, proxyRequest.body())
             .build()
+            .let { proxyCallHandler.before(proxyRequest, proxyResponse, it) }
         val newResponse = client
             .newCall(newRequest)
             .execute()

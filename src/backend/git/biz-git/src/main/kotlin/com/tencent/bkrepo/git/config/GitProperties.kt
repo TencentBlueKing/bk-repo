@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.git.config
 
 import com.tencent.bkrepo.git.constant.HubType
-import com.tencent.bkrepo.git.interceptor.devx.DevxProperties
+import com.tencent.bkrepo.common.security.interceptor.devx.DevxProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 

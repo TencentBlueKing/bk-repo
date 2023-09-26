@@ -1,10 +1,19 @@
 package com.tencent.bkrepo.common.service.util.proxy
 
+import okhttp3.Request
+import okhttp3.Response
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import okhttp3.Response
 
 open class DefaultProxyCallHandler : ProxyCallHandler {
+    override fun before(
+        proxyRequest: HttpServletRequest,
+        proxyResponse: HttpServletResponse,
+        request: Request
+    ): Request {
+        return request
+    }
+
     override fun after(proxyRequest: HttpServletRequest, proxyResponse: HttpServletResponse, response: Response) {
         // 转发状态码
         proxyResponse.status = response.code
