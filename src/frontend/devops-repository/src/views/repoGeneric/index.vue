@@ -849,7 +849,7 @@
                                 resourceType: 'NODE',
                                 uid: this.userInfo.name,
                                 repoName: this.repoName,
-                                path: fullPath
+                                path: row.fullPath
                             }
                         }).then(res => {
                             if (res !== '') {
@@ -857,7 +857,7 @@
                                 this.showData = {
                                     projectId: this.projectId,
                                     repoName: this.repoName,
-                                    path: fullPath,
+                                    path: row.fullPath,
                                     action: 'READ',
                                     url: res
                                 }
