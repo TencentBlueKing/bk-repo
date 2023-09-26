@@ -796,5 +796,8 @@
     "calculateMsg": "正在计算{0}大小,请稍候。",
     "calculateTitle": "实时计算文件夹大小",
     "calculateCompleteMsg": "{0}的文件总大小为{1}",
-    "repoUsage": "仓库用量"
+    "repoUsage": "仓库用量",
+    "downloadLater": "稍后再下载",
+    "backUpSubMessage": "仅首次下载需等待，准备时长和包大小有关，500MB的包大概需要1分钟",
+    "backUpMessage": "{0}为内部测试版本，正在准备下载，请稍等"
 }

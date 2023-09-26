@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -51,7 +50,6 @@ import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.exception.NotImplementedException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.pojo.Blob
-import com.tencent.bkrepo.ddc.pojo.RefId
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.pojo.UploadCompressedBlobResponse
 import com.tencent.bkrepo.ddc.serialization.CbObject
@@ -109,19 +107,6 @@ class DdcLocalRepository(
             onDownloadReference(context)
         } else {
             onDownloadBlob(context)
-        }
-    }
-
-    fun finalizeRef(artifactInfo: ReferenceArtifactInfo) {
-        with(artifactInfo) {
-            val ref = getReference(
-                projectId, repoName, bucket, refKey.toString(), checkFinalized = false
-            ) ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
-            if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
-                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
-            }
-            val res = referenceService.finalize(ref, ref.inlineBlob!!)
-            HttpContextHolder.getResponse().writer.println(res.toJsonString())
         }
     }
 
@@ -195,7 +180,8 @@ class DdcLocalRepository(
         metadata.add(
             MetadataModel(
                 key = NODE_METADATA_KEY_CONTENT_ID,
-                value = artifactInfo.contentId
+                value = artifactInfo.contentId,
+                system = true
             )
         )
 
@@ -208,8 +194,8 @@ class DdcLocalRepository(
     private fun onDownloadReference(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-            val ref = getReference(
-                projectId, repoName, artifactInfo.bucket, artifactInfo.refKey.toString(), true
+            val ref = referenceService.getReference(
+                projectId, repoName, artifactInfo.bucket, artifactInfo.refKey.toString()
             ) ?: return null
             refDownloadListener.onRefDownloaded(RefDownloadedEvent(ref, SecurityUtils.getUserId()))
             response.addHeader(HEADER_NAME_HASH, ref.blobId.toString())
@@ -333,31 +319,6 @@ class DdcLocalRepository(
             } catch (e: BlobNotFoundException) {
                 null
             }
-        }
-    }
-
-    private fun getReference(
-        projectId: String, repoName: String, bucket: String, key: String, checkFinalized: Boolean
-    ): Reference? {
-        val refId = RefId(projectId, repoName, bucket, key)
-        val ref = referenceService.getReference(
-            refId,
-            includePayload = true,
-            checkFinalized = checkFinalized
-        ) ?: return null
-
-        if (ref.inlineBlob == null) {
-            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let {
-                storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
-            }
-        }
-
-        return if (ref.inlineBlob == null) {
-            logger.warn("Blob was null when attempting to fetch ${ref.repoName} ${ref.bucket} ${ref.key}")
-            null
-        } else {
-            ref
         }
     }
 

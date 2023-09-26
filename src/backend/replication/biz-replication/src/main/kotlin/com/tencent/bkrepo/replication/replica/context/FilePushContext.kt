@@ -34,6 +34,7 @@ class FilePushContext(
     val context: ReplicaContext,
     val sha256: String? = null,
     val size: Long? = null,
+    val md5: String? = null,
     val digest: String? = null,
     val name: String,
     val token: String? = null,

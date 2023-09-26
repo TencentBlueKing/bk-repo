@@ -63,7 +63,12 @@ interface RepositoryService {
     /**
      * 查询项目[projectId]下的所有仓库
      */
-    fun listRepo(projectId: String, name: String? = null, type: String? = null): List<RepositoryInfo>
+    fun listRepo(
+        projectId: String,
+        name: String? = null,
+        type: String? = null,
+        display: Boolean? = null,
+    ): List<RepositoryInfo>
 
     /**
      * 分页查询仓库列表

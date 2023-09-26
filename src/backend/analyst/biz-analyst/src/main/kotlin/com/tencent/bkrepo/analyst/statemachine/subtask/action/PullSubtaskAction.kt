@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.statemachine.subtask.action
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
+import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.PullSubtaskContext
@@ -38,12 +39,15 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.TransitResult
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @Action
 class PullSubtaskAction(
     private val subScanTaskDao: SubScanTaskDao,
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
-    private val scannerMetrics: ScannerMetrics
+    private val scannerMetrics: ScannerMetrics,
+    private val scannerService: ScannerService,
 ) : SubtaskAction {
 
     override fun execute(source: String, target: String, event: Event): TransitResult {
@@ -52,7 +56,13 @@ class PullSubtaskAction(
         val subtask = context.subtask
         // 更新任务，更新成功说明任务没有被其他扫描执行器拉取过，可以返回
         val oldStatus = SubScanTaskStatus.valueOf(subtask.status)
-        val updateResult = subScanTaskDao.updateStatus(subtask.id!!, PULLED, oldStatus, subtask.lastModifiedDate)
+        val scanner = scannerService.get(subtask.scanner)
+        val maxScanDuration = scanner.maxScanDuration(subtask.packageSize)
+        // 多加1分钟，避免执行器超时后正在上报结果又被重新触发
+        val timeoutDateTime = LocalDateTime.now().plus(maxScanDuration, ChronoUnit.MILLIS).plusMinutes(1L)
+        val updateResult = subScanTaskDao.updateStatus(
+            subtask.id!!, PULLED, oldStatus, subtask.lastModifiedDate, timeoutDateTime
+        )
         return if (updateResult.modifiedCount != 0L) {
             archiveSubScanTaskDao.save(SubtaskConverter.convertToArchiveSubtask(subtask, PULLED.name))
             scannerMetrics.subtaskStatusChange(oldStatus, PULLED)

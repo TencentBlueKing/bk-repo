@@ -27,17 +27,23 @@
 
 package com.tencent.bkrepo.ddc.service
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
-import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository
 import org.springframework.stereotype.Service
 
 @Service
-class ReferenceArtifactService : ArtifactService() {
+class ReferenceArtifactService(
+    private val referenceService: ReferenceService,
+) : ArtifactService() {
     fun downloadRef(artifactInfo: ReferenceArtifactInfo) {
         repository.download(ArtifactDownloadContext())
     }
@@ -47,6 +53,15 @@ class ReferenceArtifactService : ArtifactService() {
     }
 
     fun finalize(artifactInfo: ReferenceArtifactInfo) {
-        (ArtifactContextHolder.getRepository() as DdcLocalRepository).finalizeRef(artifactInfo)
+        with(artifactInfo) {
+            val ref = referenceService.getReference(
+                projectId, repoName, bucket, refKey.toString(), checkFinalized = false
+            ) ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
+            if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
+                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
+            }
+            val res = referenceService.finalize(ref, ref.inlineBlob!!)
+            HttpContextHolder.getResponse().writer.println(res.toJsonString())
+        }
     }
 }

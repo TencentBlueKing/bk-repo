@@ -788,5 +788,8 @@
     "calculateMsg": "Please wait while calculating the {0} size.",
     "calculateTitle": "Calculate folder size in real time",
     "calculateCompleteMsg": "The total file size of {0} is {1}",
-    "repoUsage": "usage"
+    "repoUsage": "usage",
+    "downloadLater": "Download Later",
+    "backUpSubMessage": "Only the first download needs to wait. The preparation time is related to the package size. A 500MB package takes about 1 minute.",
+    "backUpMessage": "{0} is an internal testing version and is being downloaded, please wait."
 }

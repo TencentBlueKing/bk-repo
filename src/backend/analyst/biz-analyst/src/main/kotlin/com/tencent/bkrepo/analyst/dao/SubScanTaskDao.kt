@@ -117,14 +117,15 @@ class SubScanTaskDao(
             .set(TSubScanTask::lastModifiedDate.name, now)
             .set(TSubScanTask::status.name, status.name)
         if (status == EXECUTING) {
-            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
             update.set(TSubScanTask::startDateTime.name, now)
-            update.inc(TSubScanTask::executedTimes.name, 1)
-        } else {
-            update.unset(TSubScanTask::timeoutDateTime.name)
-        }
-        if (status == EXECUTING || status == PULLED) {
+        } else if (status == PULLED) {
             update.set(TSubScanTask::heartbeatDateTime.name, now)
+            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
+            update.inc(TSubScanTask::executedTimes.name, 1)
+        }
+        if (status != PULLED && status != EXECUTING) {
+            update.unset(TSubScanTask::timeoutDateTime.name)
+            update.unset(TSubScanTask::heartbeatDateTime.name)
         }
 
         val updateResult = updateFirst(query, update)
@@ -142,14 +143,6 @@ class SubScanTaskDao(
     fun heartbeat(subtaskId: String): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(subtaskId).and(TSubScanTask::status.name).`in`(PULLED, EXECUTING)
         val update = Update.update(TSubScanTask::heartbeatDateTime.name, LocalDateTime.now())
-        return updateFirst(Query(criteria), update)
-    }
-
-    fun incExecutedTimes(subTaskId: String): UpdateResult {
-        val criteria = Criteria.where(ID).isEqualTo(subTaskId)
-        val update = Update()
-            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
-            .inc(TSubScanTask::executedTimes.name, 1)
         return updateFirst(Query(criteria), update)
     }
 
