@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterMetadataClient
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -42,9 +43,11 @@ import org.springframework.stereotype.Service
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgeMetadataServiceImpl(
     nodeDao: NodeDao,
+    repositoryProperties: RepositoryProperties,
     clusterProperties: ClusterProperties
 ) : MetadataServiceImpl(
-    nodeDao
+    nodeDao,
+    repositoryProperties
 ) {
 
     private val centerMetadataClient: ClusterMetadataClient by lazy {

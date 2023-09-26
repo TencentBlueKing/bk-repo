@@ -142,7 +142,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           ./build-images.sh --all-in-one -v $version --username ${{ secrets.DOCKER_USER }} \
           --password ${{ secrets.DOCKER_PASS }} -n ${{ secrets.DOCKER_NAMESPACE }} \
-          -r ${{ secrets.DOCKER_HOST }} --slim-package-path ../bkrepo-slim.tar.gz -p
+          -r ${{ secrets.DOCKER_HOST }} --slim-package-path ../bkrepo-slim.tar.gz -p -l
   
 
   release-all:

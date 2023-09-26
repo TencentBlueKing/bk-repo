@@ -141,6 +141,18 @@ object MetadataUtils {
         }
     }
 
+    /**
+     * 将允许用户新增为系统元数据的元数据设置为System=true
+     */
+    fun changeSystem(nodeMetadata: List<MetadataModel>?, allowUserAddSystemMetadata: List<String>) =
+        nodeMetadata?.map { m ->
+            if (allowUserAddSystemMetadata.any { it.equals(m.key, true) }) {
+                m.copy(system = true)
+            } else {
+                m
+            }
+        }?.toMutableList()
+
     private fun convertAndCheck(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
         return metadataMap
             ?.filter { it.key.isNotBlank() }

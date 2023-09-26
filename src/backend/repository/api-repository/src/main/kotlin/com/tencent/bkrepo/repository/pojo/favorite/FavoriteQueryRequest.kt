@@ -34,9 +34,9 @@ package com.tencent.bkrepo.repository.pojo.favorite
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 
-data class FavoritePageRequest(
-    var projectId: String?,
-    var repoName: String?,
+data class FavoriteQueryRequest(
+    var projectId: String,
+    var type: FavoriteType,
     var pageNumber: Int = DEFAULT_PAGE_NUMBER,
     var pageSize: Int = DEFAULT_PAGE_SIZE
 )

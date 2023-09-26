@@ -21,6 +21,7 @@ NAMESPACE=bkrepo
 USERNAME=
 PASSWORD=
 SLIM_PACKAGE_PATH=
+LATEST=0
 BACKENDS=(repository auth generic oci helm npm pypi replication opdata)
 
 cd $(dirname $0)
@@ -44,6 +45,7 @@ usage () {
             [ --init-rbac           [可选] 打包init-rbac镜像 ]
             [ -v, --version         [可选] 镜像版本tag, 默认latest ]
             [ -p, --push            [可选] 推送镜像到docker远程仓库，默认不推送 ]
+            [ -l, --latest          [可选] 是否更新并推送latest tag ]
             [ -r, --registry        [可选] docker仓库地址, 默认docker.io ]
             [ -n, --namespace        [可选] docker仓库地址, 默认docker.io ]
             [ --username            [可选] docker仓库用户名 ]
@@ -102,6 +104,9 @@ while (( $# > 0 )); do
         -p | --push )
             PUSH=1
             ;;
+        -l | --latest )
+            LATEST=1
+            ;;
         -r | --registry )
             shift
             REGISTRY=$1
@@ -153,8 +158,14 @@ if [[ ($ALL -eq 1 || $ALL_IN_ONE -eq 1)  && -n "$SLIM_PACKAGE_PATH" ]] ; then
     rm -rf $tmp_dir/*
     cp $SLIM_PACKAGE_PATH $tmp_dir/
     docker build -f $ROOT_DIR/support-files/docker/bkrepo.Dockerfile -t $REGISTRY/$NAMESPACE/bkrepo:$VERSION $tmp_dir --no-cache --network=host
+    if [[ $LATEST -eq 1 ]] ; then
+        docker tag   $REGISTRY/$NAMESPACE/bkrepo:latest $REGISTRY/$NAMESPACE/bkrepo:$VERSION
+    fi
     if [[ $PUSH -eq 1 ]] ; then
         docker push $REGISTRY/$NAMESPACE/bkrepo:$VERSION
+        if [[ $LATEST -eq 1 ]] ; then
+            docker push $REGISTRY/$NAMESPACE/bkrepo:latest
+        fi
     fi
 fi
 
